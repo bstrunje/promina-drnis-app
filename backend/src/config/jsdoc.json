@@ -1,0 +1,9 @@
+{
+    "source": {
+      "include": ["server.js", "routes/"],
+      "exclude": ["node_modules"]
+    },
+    "opts": {
+      "destination": "./docs"
+    }
+  }
