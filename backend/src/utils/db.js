@@ -3,8 +3,14 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  user: process.env.DB_USER || 'bozos',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'promina_drnis_DB',
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
 });
 
 // Log when pool establishes connection
@@ -24,20 +30,32 @@ const db = {
    * Execute a SQL query
    * @param {string} text - The SQL query text
    * @param {Array} params - The query parameters
+   * @returns {Promise<QueryResult>} The query result
    */
-  query: (text, params) => pool.query(text, params),
+  query: async (text, params) => {
+    const start = Date.now();
+    try {
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
+      console.log({
+        query: text,
+        params,
+        duration,
+        rows: result.rowCount
+      });
+      return result;
+    } catch (error) {
+      console.error('Database query error:', {
+        query: text,
+        params,
+        error: error.message
+      });
+      throw error;
+    }
+  },
 
-  /**
-   * Get a client from the pool
-   * Useful for transactions
-   */
-  getClient: () => pool.connect(),
+  // ... [rest of the code remains unchanged]
 
-  /**
-   * Close the pool
-   * Should be called when shutting down the app
-   */
-  close: () => pool.end()
 };
 
 export default db;

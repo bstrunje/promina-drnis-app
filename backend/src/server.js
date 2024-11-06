@@ -14,7 +14,7 @@ import { dirname, resolve } from 'path';
 import memberRoutes from './routes/members.js';
 import activityRoutes from './routes/activities.js';
 import authRoutes from './routes/auth.js';
-import authMiddleware from './middleware/authMiddleware.js';
+import { authMiddleware, checkRole, requireSuperUser } from './middleware/authMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocs from './config/swagger.js';
 import { setupDatabase } from './setupDatabase.js';
