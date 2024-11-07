@@ -1,5 +1,3 @@
-// src/routes/auth.js
-
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -22,22 +20,23 @@ router.post('/login', async (req, res) => {
 
         // Get user with role
         const result = await db.query(
-            `SELECT u.*, r.role_name 
+            `SELECT u.*, m.member_id, m.user_id, r.role_name
              FROM users u
-             JOIN user_roles ur ON u.user_id = ur.user_id
-             JOIN roles r ON ur.role_id = r.role_id
+             LEFT JOIN members m ON u.id = m.user_id
+             LEFT JOIN user_roles ur ON u.id = ur.user_id
+             LEFT JOIN roles r ON ur.role_name = r.role_name
              WHERE u.username = $1`,
             [username]
         );
 
-        const user = result.rows[0];
-
-        if (!user) {
+        if (result.rows.length === 0) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        const user = result.rows[0];
+
         // Check password
-        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -49,33 +48,33 @@ router.post('/login', async (req, res) => {
 
         // Update last login
         await db.query(
-            'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1',
-            [user.user_id]
+            'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
+            [user.id]
         );
 
         // Create JWT token
         const token = jwt.sign(
-            {
-                id: user.user_id,
+            { 
+                id: user.id, 
                 username: user.username,
-                role: user.role_name
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+                role: user.role_name 
+            }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '1h' }
         );
 
         // Send response
-        res.json({
+        res.json({ 
             token,
             user: {
-                id: user.user_id,
+                id: user.id,
                 username: user.username,
                 email: user.email,
                 role: user.role_name,
-                firstName: user.first_name,
-                lastName: user.last_name
+                memberId: user.member_id
             }
         });
+        
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Server error during login' });
@@ -116,9 +115,9 @@ router.post('/register', authMiddleware, checkRole(['administrator', 'super_user
 
             // Create user
             const userResult = await client.query(
-                `INSERT INTO users (username, email, password_hash, first_name, last_name, is_active)
+                `INSERT INTO users (username, email, password, first_name, last_name, is_active)
                  VALUES ($1, $2, $3, $4, $5, true)
-                 RETURNING user_id`,
+                 RETURNING id`,
                 [username, email, hashedPassword, firstName, lastName]
             );
 
@@ -136,7 +135,7 @@ router.post('/register', authMiddleware, checkRole(['administrator', 'super_user
             // Assign role
             await client.query(
                 'INSERT INTO user_roles (user_id, role_id, granted_by) VALUES ($1, $2, $3)',
-                [userResult.rows[0].user_id, roleResult.rows[0].role_id, req.user.user_id]
+                [userResult.rows[0].id, roleResult.rows[0].role_id, req.user.id]
             );
 
             await client.query('COMMIT');
@@ -158,23 +157,34 @@ router.post('/register', authMiddleware, checkRole(['administrator', 'super_user
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         const result = await db.query(
-            `SELECT u.user_id, u.username, u.email, u.first_name, u.last_name, 
-                    u.is_active, u.last_login, r.role_name
+            `SELECT u.*, m.member_id, r.role_name
              FROM users u
-             JOIN user_roles ur ON u.user_id = ur.user_id
-             JOIN roles r ON ur.role_id = r.role_id
-             WHERE u.user_id = $1`,
-            [req.user.user_id]
+             LEFT JOIN members m ON u.id = m.user_id
+             LEFT JOIN user_roles ur ON u.id = ur.user_id
+             LEFT JOIN roles r ON ur.role_id = r.role_id
+             WHERE u.id = $1`,
+            [req.user.id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.json(result.rows[0]);
+        const user = result.rows[0];
+        res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            role: user.role_name,
+            memberId: user.member_id,
+            isActive: user.is_active,
+            lastLogin: user.last_login
+        });
     } catch (error) {
-        console.error('Get profile error:', error);
-        res.status(500).json({ message: 'Error retrieving user profile' });
+        console.error('Database query error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -183,14 +193,20 @@ router.post('/change-password', authMiddleware, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ 
+                message: 'Please provide both current and new password' 
+            });
+        }
+
         // Get user's current password hash
         const result = await db.query(
-            'SELECT password_hash FROM users WHERE user_id = $1',
-            [req.user.user_id]
+            'SELECT password FROM users WHERE id = $1',
+            [req.user.id]
         );
 
         // Verify current password
-        const isValidPassword = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+        const isValidPassword = await bcrypt.compare(currentPassword, result.rows[0].password);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Current password is incorrect' });
         }
@@ -201,8 +217,8 @@ router.post('/change-password', authMiddleware, async (req, res) => {
 
         // Update password
         await db.query(
-            'UPDATE users SET password_hash = $1 WHERE user_id = $2',
-            [hashedPassword, req.user.user_id]
+            'UPDATE users SET password = $1 WHERE id = $2',
+            [hashedPassword, req.user.id]
         );
 
         res.json({ message: 'Password updated successfully' });

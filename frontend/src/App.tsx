@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import MemberList from './components/members/MemberList'
+import Login from './components/members/Login'  // Add this import
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -25,6 +26,7 @@ function App() {
             <div className="flex space-x-4">
               <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
               <Link to="/members" className="text-gray-700 hover:text-blue-600">Members</Link>
+              <Link to="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
             </div>
           </div>
         </nav>
@@ -49,6 +51,7 @@ function App() {
               </div>
             } />
             <Route path="/members" element={<MemberList />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
       </div>

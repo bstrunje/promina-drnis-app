@@ -36,7 +36,7 @@ const app = express();
  * Ensure we're using a proper port for the web server (not the database port)
  */
 const DEFAULT_PORT = 3000;
-const port = process.env.PORT ? parseInt(process.env.PORT) : DEFAULT_PORT;
+let port = process.env.PORT ? parseInt(process.env.PORT) : DEFAULT_PORT;  // Changed to let
 
 // Validate port
 if (port === 5432) {
@@ -68,7 +68,10 @@ if (!process.env.JWT_SECRET) {
  * Middleware to parse JSON bodies and enable CORS.
  */
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
 
 // Add request logging middleware
 app.use((req, res, next) => {
@@ -77,7 +80,21 @@ app.use((req, res, next) => {
 });
 
 /**
- * Health check endpoint - moved outside of error handler
+ * Database connection check
+ */
+async function checkDatabaseConnection() {
+  try {
+    await db.query('SELECT 1');
+    console.log('Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return false;
+  }
+}
+
+/**
+ * Health check endpoint
  */
 app.get('/health', async (req, res) => {
   try {
@@ -163,7 +180,16 @@ let server;
  */
 async function startServer() {
   try {
+    // Check database connection first
+    const isConnected = await checkDatabaseConnection();
+    if (!isConnected) {
+      throw new Error('Unable to connect to database');
+    }
+
+    // Setup database
     await setupDatabase();
+
+    // Start the server
     return new Promise((resolve, reject) => {
       server = app.listen(port, () => {
         console.log(`Server is running on port ${port}`);
@@ -181,7 +207,7 @@ async function startServer() {
       });
     });
   } catch (error) {
-    console.error('Failed to set up database:', error);
+    console.error('Failed to start application:', error);
     throw error;
   }
 }

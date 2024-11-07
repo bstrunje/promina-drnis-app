@@ -7,6 +7,7 @@ import EditMemberForm from './EditMemberForm';
 import ConfirmationModal from './ConfirmationModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+console.log('Actual API_URL:', API_URL);
 
 export default function MemberList(): JSX.Element {
   const [members, setMembers] = useState<Member[]>([]);
@@ -23,16 +24,33 @@ export default function MemberList(): JSX.Element {
 
   const fetchMembers = async (): Promise<void> => {
     try {
+      console.log('Fetching members...');
       setLoading(true);
-      const response = await fetch(`${API_URL}/members`);
-      if (!response.ok) throw new Error('Failed to fetch members');
+      console.log('API_URL:', API_URL);
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/members`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }); 
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        console.log('Response not OK. Status:', response.status);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
+        throw new Error(`Failed to fetch members: ${response.status} ${errorText}`);
+      }
       const data: Member[] = await response.json();
+      console.log('Fetched data:', data);
       setMembers(data);
       setError(null);
-    } catch (_err) {
+    } catch (err: unknown) {
+      console.error('Error fetching members:', err);
       setError('Failed to load members. Please try again later.');
     } finally {
       setLoading(false);
+      console.log('Fetch attempt completed.');
     }
   };
 
@@ -58,7 +76,7 @@ export default function MemberList(): JSX.Element {
       setMembers(members.filter((m: Member) => m.member_id !== deletingMember.member_id));
       setDeletingMember(null);
       setShowConfirmModal(false);
-    } catch (_err) {
+    } catch (err) {
       setError('Failed to delete member. Please try again later.');
     }
   };
