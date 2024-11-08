@@ -1,4 +1,4 @@
-// src/components/dashboard/MemberDashboard.tsx
+// src\features\dashboard/MemberDashboard.tsx
 
 import { Calendar, Clock, Award } from 'lucide-react';
 

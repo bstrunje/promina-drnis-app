@@ -1,3 +1,5 @@
+// src/features/auth/LoginPage.tsx
+
 import { FormEvent } from 'react';
 import { useState } from 'react';
 import { Eye, EyeOff, UserPlus, LogIn, FileText, ChevronRight } from 'lucide-react';
