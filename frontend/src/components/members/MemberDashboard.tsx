@@ -1,12 +1,29 @@
+// src/components/dashboard/MemberDashboard.tsx
+
 import { Link } from 'react-router-dom';
 import { Users, Activity, Clock, CalendarDays } from 'lucide-react';
 
-export default function Dashboard() {
+interface User {
+  id: string;
+  username: string;
+  role: string;
+}
+
+interface Props {
+  user: User;
+}
+
+const MemberDashboard = ({ user }: Props) => {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Members Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="p-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-lg text-white p-6 mb-6">
+        <h1 className="text-2xl font-bold mb-2">Welcome, {user.username}</h1>
+        <p className="opacity-90">Member Dashboard</p>
+      </div>
+
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Members Card */}
         <Link to="/members" className="block">
           <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
@@ -14,7 +31,7 @@ export default function Dashboard() {
               <div>
                 <Users className="h-8 w-8 text-blue-500" />
                 <h2 className="text-xl font-semibold text-gray-800 mt-2">Members</h2>
-                <p className="text-gray-600">Manage members</p>
+                <p className="text-gray-600">View members</p>
               </div>
             </div>
           </div>
@@ -61,7 +78,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Stats Section */}
-      <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Stats</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-blue-50 rounded-lg">
@@ -84,4 +101,6 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+};
+
+export default MemberDashboard;
