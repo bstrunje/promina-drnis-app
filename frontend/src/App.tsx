@@ -1,3 +1,6 @@
+import ActivitiesList from './components/activities/ActivitiesList';
+import EventsList from './components/events/EventsList';
+import HoursLog from './components/hours/HoursLog';
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import MemberList from './components/members/MemberList';
@@ -73,50 +76,70 @@ function App() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4">
-          <Routes>
-            {/* Public Routes */}
-            <Route 
-              path="/" 
-              element={
-                user ? <Navigate to="/dashboard" replace /> : <LoginPage />
-              } 
-            />
-            <Route 
-              path="/login" 
-              element={
-                user ? <Navigate to="/dashboard" replace /> : <LoginPage />
-              } 
-            />
+        <Routes>
+  {/* Public Routes */}
+  <Route 
+    path="/" 
+    element={
+      user ? <Navigate to="/dashboard" replace /> : <LoginPage />
+    } 
+  />
+  <Route 
+    path="/login" 
+    element={
+      user ? <Navigate to="/dashboard" replace /> : <LoginPage />
+    } 
+  />
 
-            {/* Protected Routes */}
-            <Route
-  path="/dashboard"
-  element={
-    user ? (
-      <Dashboard />
-    ) : (
-      <Navigate to="/login" replace />
-    )
-  }
-/>
-            <Route
-              path="/members"
-              element={
-                user ? <MemberList /> : <Navigate to="/login" replace />
-              }
-            />
+  {/* Protected Routes */}
+  <Route
+    path="/dashboard"
+    element={
+      user ? (
+        <Dashboard />
+      ) : (
+        <Navigate to="/login" replace />
+      )
+    }
+  />
+  <Route
+    path="/members"
+    element={
+      user ? <MemberList /> : <Navigate to="/login" replace />
+    }
+  />
+  
+  {/* New Routes */}
+  <Route
+    path="/activities"
+    element={
+      user ? <ActivitiesList /> : <Navigate to="/login" replace />
+    }
+  />
+  <Route
+    path="/hours"
+    element={
+      user ? <HoursLog /> : <Navigate to="/login" replace />
+    }
+  />
+  <Route
+    path="/events"
+    element={
+      user ? <EventsList /> : <Navigate to="/login" replace />
+    }
+  />
 
-            {/* Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                user?.role === 'administrator' ? (
-                  <div>Admin Panel</div> // Replace with your Admin component
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
+  {/* Admin Routes */}
+  <Route
+    path="/admin"
+    element={
+      user?.role === 'administrator' ? (
+        <div>Admin Panel</div>
+      ) : (
+        <Navigate to="/dashboard" replace />
+      )
+    }
+  />
 
             {/* Catch all route */}
 <Route

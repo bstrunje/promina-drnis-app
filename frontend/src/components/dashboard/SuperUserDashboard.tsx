@@ -1,6 +1,5 @@
 // src/components/dashboard/SuperUserDashboard.tsx
 
-import { useState } from 'react';
 import { Users, Activity, Shield, ChevronRight } from 'lucide-react';
 
 interface User {
