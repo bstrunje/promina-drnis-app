@@ -1,7 +1,7 @@
-// backend/src/routes/activities.js
+// backend/src/routes/activities.ts
 import express from 'express';
-import activityController from '../controllers/activity.controller.js';
-import { authenticateToken, roles } from '../middleware/authMiddleware.js';
+import activityController from '../controllers/activity.controller';
+import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware';
 
 const router = express.Router();
 

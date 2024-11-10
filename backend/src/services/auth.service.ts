@@ -1,9 +1,23 @@
-// backend/src/services/auth.service.js
+// backend/src/services/auth.service.ts
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.js';
-import authRepository from '../repositories/auth.repository.js';
-import db from '../utils/db.js';
+import config from '../config/config';
+import authRepository from '../repositories/auth.repository';
+import db from '../utils/db';
+import { User } from '../types/user';
+
+interface UserRegistrationData {
+    username: string;
+    email: string;
+    password: string;
+    role?: string;
+    // Add any other fields that might be in userData
+}
+
+interface UserCredentials {
+    username: string;
+    password: string;
+}
 
 const ROLES = {
     MEMBER: 'member',
@@ -14,7 +28,7 @@ const ROLES = {
 const authService = {
     ROLES,
 
-    async register(userData) {
+    async register(userData: UserRegistrationData) {
         // Validate role if provided
         if (userData.role && !Object.values(ROLES).includes(userData.role)) {
             throw new Error('Invalid role specified');
@@ -50,7 +64,7 @@ const authService = {
 
             await client.query('COMMIT');
             return { message: 'User registered successfully' };
-        } catch (error) {
+        } catch (error: any) {
             await client.query('ROLLBACK');
             throw new Error('Error registering user: ' + error.message);
         } finally {
@@ -58,7 +72,7 @@ const authService = {
         }
     },
 
-    async login(credentials) {
+    async login(credentials: UserCredentials) {
         const user = await authRepository.findUserByUsername(credentials.username);
 
         if (!user) {
@@ -98,15 +112,19 @@ const authService = {
         };
     },
 
-    validateRole(requiredRole) {
-        return (user) => {
-            const roleHierarchy = {
-                [ROLES.MEMBER]: 1,
-                [ROLES.ADMIN]: 2,
-                [ROLES.SUPERUSER]: 3
+    validateRole(requiredRole: keyof typeof ROLES) {
+        return (user: User) => {
+            const roleHierarchy: Record<keyof typeof ROLES, number> = {
+                MEMBER: 1,
+                ADMIN: 2,
+                SUPERUSER: 3
             };
-
-            return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+    
+            if (user.role in roleHierarchy) {
+                return roleHierarchy[user.role as keyof typeof ROLES] >= roleHierarchy[requiredRole];
+            } else {
+                throw new Error('Invalid user role');
+            }
         };
     }
 };

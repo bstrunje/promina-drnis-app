@@ -1,7 +1,7 @@
-// backend/src/routes/members.js
+// backend/src/routes/members.ts
 import express from 'express';
-import memberController from '../controllers/member.controller.js';
-import { authenticateToken, roles } from '../middleware/authMiddleware.js';
+import memberController from '../controllers/member.controller';
+import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -13,6 +13,6 @@ router.get('/:memberId/stats', authenticateToken, memberController.getMemberStat
 // Protected routes
 router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);
 router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
-router.delete('/:memberId', authenticateToken, roles.requireSuperuser, memberController.deleteMember);
+router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
 
 export default router;

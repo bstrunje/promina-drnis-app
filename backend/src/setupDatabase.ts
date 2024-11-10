@@ -1,8 +1,14 @@
-import db from './utils/db.js';
+// src/setupDatabase.ts
+
+import db from './utils/db';
 
 let isInitialized = false;
 
-async function checkTablesExist() {
+interface TableCheck {
+  exists: boolean;
+}
+
+async function checkTablesExist(): Promise<boolean> {
     const tables = [
         'users', 
         'roles', 
@@ -15,7 +21,7 @@ async function checkTablesExist() {
     ];
     
     for (const table of tables) {
-        const result = await db.query(`
+        const result = await db.query<TableCheck>(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_schema = 'public' 
@@ -31,7 +37,7 @@ async function checkTablesExist() {
     return true;
 }
 
-async function setupDatabase() {
+export async function setupDatabase(): Promise<void> {
     // Prevent multiple initializations
     if (isInitialized) {
         console.log('Database already initialized, skipping setup');
@@ -53,18 +59,20 @@ async function setupDatabase() {
         // Users table
         await db.query(`
             CREATE TABLE IF NOT EXISTS users (
-                id serial NOT NULL,
-                username character varying(50) NOT NULL,
-                email character varying(255) NOT NULL,
-                password character varying(255) NOT NULL,
-                role character varying(20) NOT NULL DEFAULT 'member',
-                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT users_pkey PRIMARY KEY (id),
-                CONSTRAINT users_email_key UNIQUE (email),
-                CONSTRAINT users_username_key UNIQUE (username)
+        id serial NOT NULL,
+        username character varying(50) NOT NULL,
+        email character varying(255) NOT NULL,
+        password character varying(255) NOT NULL,
+        role character varying(20) NOT NULL DEFAULT 'member',
+        status character varying(20) DEFAULT 'pending',
+        created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT users_pkey PRIMARY KEY (id),
+        CONSTRAINT users_email_key UNIQUE (email),
+        CONSTRAINT users_username_key UNIQUE (username)
             );
         `);
-        console.log('Users table created successfully');
+        console.log('✅ Users table created successfully');
 
         // Roles table
         await db.query(`
@@ -78,7 +86,7 @@ async function setupDatabase() {
                 CONSTRAINT roles_role_name_key UNIQUE (role_name)
             );
         `);
-        console.log('Roles table created successfully');
+        console.log('✅ Roles table created successfully');
 
         // User roles table
         await db.query(`
@@ -96,7 +104,7 @@ async function setupDatabase() {
                     REFERENCES users (id)
             );
         `);
-        console.log('User roles table created successfully');
+        console.log('✅ User roles table created successfully');
 
         // Members table
         await db.query(`
@@ -114,7 +122,7 @@ async function setupDatabase() {
                 CONSTRAINT members_pkey PRIMARY KEY (member_id)
             );
         `);
-        console.log('Members table created successfully');
+        console.log('✅ Members table created successfully');
 
         // Activity types table
         await db.query(`
@@ -127,7 +135,7 @@ async function setupDatabase() {
                 CONSTRAINT activity_types_name_key UNIQUE (name)
             );
         `);
-        console.log('Activity types table created successfully');
+        console.log('✅ Activity types table created successfully');
 
         // Activities table
         await db.query(`
@@ -148,7 +156,7 @@ async function setupDatabase() {
                     REFERENCES activity_types (type_id)
             );
         `);
-        console.log('Activities table created successfully');
+        console.log('✅ Activities table created successfully');
 
         // Activity participants table
         await db.query(`
@@ -168,7 +176,7 @@ async function setupDatabase() {
                     REFERENCES members (member_id)
             );
         `);
-        console.log('Activity participants table created successfully');
+        console.log('✅ Activity participants table created successfully');
 
         // Annual statistics table
         await db.query(`
@@ -186,7 +194,7 @@ async function setupDatabase() {
                     REFERENCES members (member_id)
             );
         `);
-        console.log('Annual statistics table created successfully');
+        console.log('✅ Annual statistics table created successfully');
 
         // Create indexes
         await db.query(`
@@ -199,7 +207,7 @@ async function setupDatabase() {
             CREATE INDEX IF NOT EXISTS idx_activity_participants_member 
             ON activity_participants(member_id);
         `);
-        console.log('Indexes created successfully');
+        console.log('✅ Indexes created successfully');
 
         // Insert default roles
         await db.query(`
@@ -210,7 +218,7 @@ async function setupDatabase() {
                 ('super_user', 'Super user with complete system control')
             ON CONFLICT (role_name) DO NOTHING;
         `);
-        console.log('Default roles created successfully');
+        console.log('✅ Default roles created successfully');
 
         // Insert default activity types
         await db.query(`
@@ -223,20 +231,18 @@ async function setupDatabase() {
                 ('social', 'Social gatherings and meetings')
             ON CONFLICT (name) DO NOTHING;
         `);
-        console.log('Default activity types created successfully');
+        console.log('✅ Default activity types created successfully');
 
         // Commit transaction
         await db.query('COMMIT');
         
-        console.log('Database setup completed successfully');
+        console.log('✅ Database setup completed successfully');
         isInitialized = true;
 
     } catch (error) {
         // Rollback transaction on error
         await db.query('ROLLBACK');
-        console.error('Error setting up database:', error);
+        console.error('❌ Error setting up database:', error);
         throw error;
     }
 }
-
-export { setupDatabase };
