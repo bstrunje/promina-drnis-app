@@ -1,78 +1,60 @@
 // backend/src/services/auth.service.ts
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import config from '../config/config';
-import authRepository from '../repositories/auth.repository';
-import db from '../utils/db';
-import { User } from '../types/user';
-
-interface UserRegistrationData {
-    username: string;
-    email: string;
-    password: string;
-    role?: string;
-    // Add any other fields that might be in userData
-}
-
-interface UserCredentials {
-    username: string;
-    password: string;
-}
+import config from '../config/config.ts';
+import authRepository from '../repositories/auth.repository.ts';
+import db from '../utils/db.ts';
+import { User, UserRegistrationData } from '../types/user.ts';
 
 const ROLES = {
     MEMBER: 'member',
     ADMIN: 'admin',
     SUPERUSER: 'superuser'
-};
+} as const;
+
+type Role = typeof ROLES[keyof typeof ROLES];
+
+interface LoginCredentials {
+    username: string;
+    password: string;
+}
 
 const authService = {
     ROLES,
 
-    async register(userData: UserRegistrationData) {
+    async register(userData: Omit<UserRegistrationData, 'hashedPassword' | 'username'>) {
         // Validate role if provided
-        if (userData.role && !Object.values(ROLES).includes(userData.role)) {
+        if (userData.role && !Object.values(ROLES).includes(userData.role as Role)) {
             throw new Error('Invalid role specified');
         }
 
-        // Check if user exists
-        const existingUser = await authRepository.findUserByEmailOrUsername(
-            userData.email,
-            userData.username
-        );
+        // Generate username
+        const username = await authRepository.generateUsername(userData.firstName, userData.lastName);
 
-        if (existingUser) {
-            throw new Error('Username or email already exists');
-        }
-
-        // Hash password
+        // Hash password (initially same as username)
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.password, salt);
+        const hashedPassword = await bcrypt.hash(username, salt);
 
         // Begin transaction
-        const client = await db.getClient();
-        try {
-            await client.query('BEGIN');
-
-            await authRepository.createUserWithMember(
+        return db.transaction(async (client) => {
+            const newUser = await authRepository.createUserWithMember(
                 {
                     ...userData,
+                    username,
                     hashedPassword,
                     role: userData.role || ROLES.MEMBER
                 },
                 client
             );
 
-            await client.query('COMMIT');
-            return { message: 'User registered successfully' };
-        } catch (error: any) {
-            await client.query('ROLLBACK');
-            throw new Error('Error registering user: ' + error.message);
-        } finally {
-            client.release();
-        }
+            // Set initial password
+            await authRepository.setInitialPassword(newUser.user_id, hashedPassword);
+
+            return { message: 'User registered successfully', userId: newUser.user_id, username };
+        });
     },
 
-    async login(credentials: UserCredentials) {
+    async login(credentials: LoginCredentials) {
         const user = await authRepository.findUserByUsername(credentials.username);
 
         if (!user) {
@@ -112,16 +94,16 @@ const authService = {
         };
     },
 
-    validateRole(requiredRole: keyof typeof ROLES) {
+    validateRole(requiredRole: Role) {
         return (user: User) => {
-            const roleHierarchy: Record<keyof typeof ROLES, number> = {
-                MEMBER: 1,
-                ADMIN: 2,
-                SUPERUSER: 3
+            const roleHierarchy: Record<Role, number> = {
+                [ROLES.MEMBER]: 1,
+                [ROLES.ADMIN]: 2,
+                [ROLES.SUPERUSER]: 3
             };
-    
+
             if (user.role in roleHierarchy) {
-                return roleHierarchy[user.role as keyof typeof ROLES] >= roleHierarchy[requiredRole];
+                return roleHierarchy[user.role as Role] >= roleHierarchy[requiredRole];
             } else {
                 throw new Error('Invalid user role');
             }

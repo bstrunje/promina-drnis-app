@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Member } from '@/types/member';
+import { Member } from '@shared/types';
 import AddMemberForm from './AddMemberForm';
 import EditMemberForm from './EditMemberForm';
 import ConfirmationModal from './ConfirmationModal';
@@ -76,7 +76,8 @@ export default function MemberList(): JSX.Element {
       setMembers(members.filter((m: Member) => m.member_id !== deletingMember.member_id));
       setDeletingMember(null);
       setShowConfirmModal(false);
-    } catch (err) {
+    } catch (error) { // Changed from 'err' to 'error'
+      console.error('Error deleting member:', error);
       setError('Failed to delete member. Please try again later.');
     }
   };

@@ -1,4 +1,3 @@
-// shared/types/activity.ts
 export interface Activity {
     activity_id: number;
     title: string;
@@ -12,7 +11,6 @@ export interface Activity {
     created_at: Date;
     activity_type_id: number;
 }
-
 export interface ActivityCreateInput {
     title: string;
     description?: string;
@@ -24,7 +22,6 @@ export interface ActivityCreateInput {
     activity_type_id: number;
     created_by?: number;
 }
-
 export interface ActivityMember {
     participation_id: number;
     activity_id: number;
@@ -35,11 +32,9 @@ export interface ActivityMember {
     verified_by?: number;
     verified_at?: Date;
 }
-
 export interface ActivityWithParticipants extends Activity {
     participants: ActivityMember[];
 }
-
 export interface ActivityUpdateData {
     title?: string;
     description?: string;
@@ -50,9 +45,7 @@ export interface ActivityUpdateData {
     max_participants?: number;
     activity_type_id?: number;
 }
-export class ActivityError extends Error {
-    constructor(message: string, public code?: string) {
-        super(message);
-        this.name = 'ActivityError';
-    }
+export declare class ActivityError extends Error {
+    code?: string | undefined;
+    constructor(message: string, code?: string | undefined);
 }

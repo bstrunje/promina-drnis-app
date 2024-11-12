@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { Member } from '@/types/member';
+import { Member } from '@shared/types';
 import { Save, X } from 'lucide-react';
 
 interface MemberFormProps {
   member?: Member;
   onSubmit: (member: Member) => void;
   onCancel: () => void;
-};
+}
+
+interface MemberFormData {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  emergency_contact: string;
+  notes: string;
+}
 
 export default function MemberForm({ member, onSubmit, onCancel }: MemberFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<MemberFormData>({
     first_name: member?.first_name || '',
     last_name: member?.last_name || '',
     phone: member?.phone || '',
@@ -19,7 +27,12 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData as Member);
+    // Combine existing member data with form data
+    const updatedMember = {
+      ...(member || {}),
+      ...formData,
+    } as Member;
+    onSubmit(updatedMember);
   };
 
   return (

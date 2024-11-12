@@ -1,7 +1,6 @@
 // backend/src/controllers/activity.controller.js
 import { Request, Response } from 'express';
-import activityService from '../services/activity.service';
-import { DatabaseUser } from '../middleware/authMiddleware';
+import activityService from '../services/activity.service.js';
 
 // Interfaces
 interface ActivityCreateData {
@@ -24,7 +23,11 @@ interface AddMemberData {
 declare global {
     namespace Express {
         interface Request {
-            user?: DatabaseUser;
+            user?: {
+                id: number;
+                username: string;
+                role: string;
+            };
         }
     }
 }
@@ -64,9 +67,9 @@ const activityController = {
         res: Response
     ): Promise<void> {
         try {
-            const activityData: ActivityCreateData = {
+            const activityData = {
                 ...req.body,
-                created_by: req.user?.user_id
+                created_by: req.user?.id // Using the user info from request
             };
             const activity = await activityService.createActivity(activityData);
             res.status(201).json(activity);

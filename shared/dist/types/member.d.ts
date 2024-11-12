@@ -1,5 +1,4 @@
 export type MembershipType = 'active' | 'passive';
-
 export interface Member {
     member_id: number;
     first_name: string;
@@ -11,9 +10,8 @@ export interface Member {
     total_hours?: number;
     notes?: string;
 }
-
-export interface MemberCreate extends Omit<Member, 'member_id'> {}
-
+export interface MemberCreate extends Omit<Member, 'member_id'> {
+}
 export interface MemberUpdate extends Partial<Member> {
     member_id: number;
 }

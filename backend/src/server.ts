@@ -7,13 +7,13 @@ import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 
 // Route imports
-import memberRoutes from './routes/members';
-import activityRoutes from './routes/activities';
-import authRoutes from './routes/auth';
-import { authMiddleware } from './middleware/authMiddleware';
-import swaggerDocs from './config/swagger';
-import { setupDatabase } from './setupDatabase';
-import db from './utils/db';
+import memberRoutes from './routes/members.js';
+import activityRoutes from './routes/activities.js';
+import authRoutes from './routes/auth.js';
+import { authMiddleware } from './middleware/authMiddleware.js';
+import swaggerDocs from './config/swagger.js';
+import { setupDatabase } from './setupDatabase.js';
+import db from './utils/db.js';
 
 // Windows-friendly path resolution
 const __dirname = path.resolve();

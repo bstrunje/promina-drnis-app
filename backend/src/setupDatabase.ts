@@ -1,6 +1,6 @@
 // src/setupDatabase.ts
 
-import db from './utils/db';
+import db from './utils/db.js';
 
 let isInitialized = false;
 

@@ -1,12 +1,12 @@
 import { PoolClient } from 'pg';
-import  DatabaseTransactionClient  from '../utils/db';
-import { DatabaseError } from '../utils/db';
+import  DatabaseTransactionClient  from '../utils/db.js';
+import { DatabaseError } from '../utils/db.js';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import db from '../utils/db';
-import { User } from '../types/user';
-import { sendPasswordEmail } from '../services/email.service';
+import db from '../utils/db.js';
+import { User } from '../types/user.js';
+import { sendPasswordEmail } from '../services/email.service.js';
 
 interface UserRegistration {
     username: string;

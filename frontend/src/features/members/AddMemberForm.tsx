@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '@/types/member';
+import { Member } from '@shared/types';
 
 interface AddMemberFormProps {
   onClose: () => void;
@@ -20,7 +20,10 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setMember(prev => ({ ...prev, [name]: value }));
+    setMember(prev => ({
+      ...prev,
+      [name]: name === 'total_hours' ? Number(value) : value
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -101,10 +104,17 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             className="mt-2 p-2 w-full border rounded"
           />
           <div className="mt-4">
-            <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            <button 
+              type="submit" 
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
               Add Member
             </button>
-            <button type="button" onClick={onClose} className="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            >
               Cancel
             </button>
           </div>

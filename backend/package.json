@@ -48,9 +48,15 @@
     "typescript": "^5.6.3"
   },
   "scripts": {
-    "test": "cross-env NODE_ENV=test TS_NODE_PROJECT=./tsconfig.json mocha --require ts-node/esm --require tsconfig-paths/register --trace-warnings 'tests/**/*.test.{js,ts}'",
-  "test:unit": "cross-env NODE_ENV=test mocha -r ts-node/esm -r tsconfig-paths/register 'tests/unit/**/*.test.{js,ts}'",
-  "test:repositories": "cross-env NODE_ENV=test mocha -r ts-node/esm -r tsconfig-paths/register 'tests/repositories/**/*.{js,ts}'"
+    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/server.ts",
+    "dev": "ts-node-dev --esm --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "cross-env NODE_ENV=test mocha --require ts-node/esm --require tsconfig-paths/register 'tests/unit/**/*.test.{js,ts}'",
+    "test:repositories": "cross-env NODE_ENV=test mocha --require ts-node/esm --require tsconfig-paths/register 'tests/repositories/**/*.{js,ts}'",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "ts-node": "node --loader ts-node/esm"
   },
   "imports": {
     "#shared/*": "../shared/*",

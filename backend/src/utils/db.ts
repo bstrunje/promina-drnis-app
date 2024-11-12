@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult, QueryConfig, QueryResultRow,  } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryConfig, QueryResultRow } from 'pg';
 
 // Error class for database operations
 export class DatabaseError extends Error {
@@ -10,7 +10,6 @@ export class DatabaseError extends Error {
         this.name = 'DatabaseError';
     }
 }
-
 
 // Pool configuration interface
 interface PoolConfig {
@@ -86,14 +85,14 @@ const db = {
             console.log({
                 query: queryConfig.text,
                 duration,
-                rows: result.rowCount ?? 0 // Use the nullish coalescing operator to provide a default value
-              });
-              
-              if (options.requireResults && result.rowCount === 0) {
+                rows: result.rowCount ?? 0
+            });
+
+            if (options.requireResults && (result.rowCount === null || result.rowCount === 0)) {
                 throw new DatabaseError('No results found', 404);
-              }
-              
-              if (options.singleRow && result.rowCount !== null && result.rowCount > 1) {
+            }
+            
+            if (options.singleRow && result.rowCount !== null && result.rowCount > 1) {
                 throw new DatabaseError('Multiple rows found when single row expected', 409);
             }
 
@@ -122,34 +121,19 @@ const db = {
     /**
      * Transaction wrapper
      */
-    /**
- * Executes a callback function within a database transaction.
- * 
- * @template T The type of the value returned by the callback function.
- * @param {function(PoolClient): Promise<T>} callback An async function that takes a PoolClient and returns a Promise.
- * @returns {Promise<T>} A promise that resolves with the result of the callback function.
- * @throws {Error} If an error occurs during the transaction, it will be thrown after rolling back.
- * 
- * @example
- * await db.transaction(async (client) => {
- *   const result1 = await client.query('INSERT INTO users...');
- *   const result2 = await client.query('INSERT INTO profiles...');
- *   return result2.rows[0];
- * });
- */
-async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const result = await callback(client);
-        await client.query('COMMIT');
-        return result;
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+    async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const result = await callback(client);
+            await client.query('COMMIT');
+            return result;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
 
     /**
@@ -182,11 +166,7 @@ async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
     async close(): Promise<void> {
         await pool.end();
         console.log('Database pool closed');
-    },
-
-    async getClient(): Promise<PoolClient> {
-        return await pool.connect();
-      }
+    }
 };
 
 export default db;

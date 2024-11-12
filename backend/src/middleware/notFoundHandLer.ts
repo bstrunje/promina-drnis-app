@@ -1,7 +1,7 @@
 // src/middleware/errorHandler.ts
 
 import { Request, Response, NextFunction } from 'express';
-import { DatabaseError } from '../types/errors';
+import { DatabaseError } from '../types/errors.js';
 
 export const errorHandler = (
     err: Error | DatabaseError,

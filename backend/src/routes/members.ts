@@ -1,7 +1,7 @@
 // backend/src/routes/members.ts
 import express from 'express';
-import memberController from '../controllers/member.controller';
-import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware';
+import memberController from '../controllers/member.controller.js';
+import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

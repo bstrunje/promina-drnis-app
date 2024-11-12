@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import memberService from '../services/member.service';
+import memberService from '../services/member.service.js';
 
 interface MemberCreateData {
     firstName: string;

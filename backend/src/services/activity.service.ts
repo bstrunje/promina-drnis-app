@@ -3,8 +3,8 @@ import {
     ActivityCreateInput, 
     ActivityMember, 
     ActivityError 
-} from '../../shared/types/activity';
-import activityRepository from '../repositories/activity.repository';
+} from 'shared/types/activity.js';
+import activityRepository from '../repositories/activity.repository.js';
 
 const activityService = {
     async getAllActivities(): Promise<Activity[]> {
