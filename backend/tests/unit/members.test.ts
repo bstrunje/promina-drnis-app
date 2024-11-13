@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import request from 'supertest';
-import { app, startServer, stopServer } from '../server/server.test.js';
+import { app, startServer, stopServer } from '../../src/server';
 import { describe, it, before, after } from 'mocha';
 
 describe('Members API', function() {

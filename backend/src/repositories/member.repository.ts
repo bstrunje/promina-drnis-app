@@ -1,7 +1,7 @@
 // backend/src/repositories/member.repository.ts
-import db from '../utils/db.ts';
+import db from '../utils/db';
 
-interface Member {
+export interface Member {
     member_id: number;
     user_id: number;
     first_name: string;
@@ -17,7 +17,7 @@ interface Member {
     total_hours?: number;
 }
 
-interface MemberCreateData {
+export interface MemberCreateData {
     firstName: string;
     lastName: string;
     email: string;
@@ -26,7 +26,7 @@ interface MemberCreateData {
     notes: string;
 }
 
-interface MemberUpdateData {
+export interface MemberUpdateData {
     firstName: string;
     lastName: string;
     phone: string;
@@ -34,7 +34,7 @@ interface MemberUpdateData {
     notes: string;
 }
 
-interface MemberStats {
+export interface MemberStats {
     total_activities: number;
     total_hours: number;
     membership_type: string;

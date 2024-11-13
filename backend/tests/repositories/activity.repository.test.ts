@@ -1,8 +1,8 @@
 // backend\tests\repositories/activity.repository.test.ts
 import * as path from 'path';
 import { expect } from 'chai';
-import db from '../../src/utils/db.js';
-import activityRepository from '../../src/repositories/activity.repository.js';
+import db from '../../src/utils/db';
+import activityRepository from '../../src/repositories/activity.repository';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -64,7 +64,7 @@ describe('Activity Repository', () => {
 
     const activity = await activityRepository.findById(1);
     expect(activity).to.be.an('object');
-    expect(activity.title).to.equal('Test Activity');
+    expect(activity!.title).to.equal('Test Activity');
   });
 
   it('should create a new activity', async () => {

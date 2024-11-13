@@ -1,5 +1,5 @@
 export interface Activity {
-    activity_id: number;
+    activity_id: string | number;
     title: string;
     description?: string;
     start_date: Date;

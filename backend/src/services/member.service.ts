@@ -1,70 +1,69 @@
-// backend/src/services/member.service.js
-import memberRepository from '../repositories/member.repository.js';
+import memberRepository, { Member, MemberStats, MemberUpdateData, MemberCreateData } from '@/repositories/member.repository';
 
 const memberService = {
-    async getAllMembers() {
+    async getAllMembers(): Promise<Member[]> {
         try {
             return await memberRepository.findAll();
-        } catch (error) {
-            throw new Error('Error fetching members: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching members: ' + errorMessage);
         }
     },
 
-    async getMemberById(memberId) {
+    async getMemberById(memberId: number): Promise<Member | null> {
         try {
             const member = await memberRepository.findById(memberId);
             if (!member) {
-                throw new Error('Member not found');
+                return null;
             }
             return member;
-        } catch (error) {
-            throw new Error('Error fetching member: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member: ' + errorMessage);
         }
     },
 
-    async updateMember(memberId, memberData) {
+    async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member> {
         try {
-            const member = await memberRepository.update(memberId, memberData);
-            if (!member) {
-                throw new Error('Member not found');
-            }
-            return member;
-        } catch (error) {
-            throw new Error('Error updating member: ' + error.message);
+            return await memberRepository.update(memberId, memberData);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error updating member: ' + errorMessage);
         }
     },
 
-    async getMemberStats(memberId) {
+    async getMemberStats(memberId: number): Promise<MemberStats> {
         try {
             const stats = await memberRepository.getStats(memberId);
-            return stats || { 
-                total_activities: 0, 
-                total_hours: 0, 
-                membership_type: 'passive', 
-                status: 'inactive' 
-            };
-        } catch (error) {
-            throw new Error('Error fetching member statistics: ' + error.message);
+            if (!stats) {
+                throw new Error('Member stats not found');
+            }
+            return stats;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member statistics: ' + errorMessage);
         }
     },
 
-    async createMember(memberData) {
+    async createMember(memberData: MemberCreateData): Promise<Member> {
         try {
             return await memberRepository.create(memberData);
-        } catch (error) {
-            throw new Error('Error creating member: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error creating member: ' + errorMessage);
         }
     },
 
-    async deleteMember(memberId) {
+    async deleteMember(memberId: number): Promise<Member | null> {
         try {
-            const member = await memberRepository.delete(memberId);
-            if (!member) {
-                throw new Error('Member not found');
+            const deletedMember = await memberRepository.delete(memberId);
+            if (!deletedMember) {
+                return null;
             }
-            return member;
-        } catch (error) {
-            throw new Error('Error deleting member: ' + error.message);
+            return deletedMember;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error deleting member: ' + errorMessage);
         }
     }
 };
