@@ -1,6 +1,6 @@
 // shared/types/activity.ts
 export interface Activity {
-    activity_id: number;
+    activity_id: string | number;
     title: string;
     description?: string;
     start_date: Date;
@@ -50,6 +50,7 @@ export interface ActivityUpdateData {
     max_participants?: number;
     activity_type_id?: number;
 }
+
 export class ActivityError extends Error {
     constructor(message: string, public code?: string) {
         super(message);

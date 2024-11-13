@@ -1,19 +1,21 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
+    "composite": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "..",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@tests/*": ["tests/*"]
+      "@tests/*": ["tests/*"],
+      "@shared/*": ["../shared/*"]
     },
     "types": ["node", "mocha", "chai", "supertest", "chai-http"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
@@ -28,6 +30,13 @@
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": [
+    "src/**/*", 
+    "tests/**/*", 
+    "../shared/**/*"
+  ],
+  "references": [
+    { "path": "../shared" }  // Add this to reference the shared project
+  ],
   "exclude": ["node_modules", "dist"]
 }

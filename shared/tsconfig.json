@@ -1,16 +1,23 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "node",  // Changed from "bundler" for better compatibility
     "esModuleInterop": true,
     "strict": true,
-    "declaration": true,
-    "composite": true,
+    "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": ".",
-    "skipLibCheck": true
+    "baseUrl": ".",
+    "declaration": true,         // Added to generate .d.ts files
+    "composite": true,          // Added for project references
+    "paths": {
+      "*": ["*", "*.ts"]
+    },
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false            // Changed to false so we can emit files
   },
-  "include": ["types/**/*"],
-  "exclude": ["dist"]
+  "include": ["types/**/*.ts"],  // More specific include
+  "exclude": ["node_modules", "dist"]
 }

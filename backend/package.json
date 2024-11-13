@@ -1,6 +1,4 @@
 {
-  "name": "promina-drnis-backend",
-  "type": "module",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
@@ -39,6 +37,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "jsdoc": "^4.0.4",
+    "madge": "^8.0.0",
     "mocha": "^10.2.0",
     "nodemon": "^3.1.7",
     "supertest": "^7.0.0",
@@ -47,19 +46,21 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"
   },
+  "imports": {
+    "#chai": "chai",
+    "#shared/*": "../shared/*"
+  },
+  "name": "promina-drnis-app-backend",
+  "type": "module",
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/server.ts",
-    "dev": "ts-node-dev --esm --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:unit": "cross-env NODE_ENV=test mocha --require ts-node/esm --require tsconfig-paths/register 'tests/unit/**/*.test.{js,ts}'",
-    "test:repositories": "cross-env NODE_ENV=test mocha --require ts-node/esm --require tsconfig-paths/register 'tests/repositories/**/*.{js,ts}'",
+    "dev": "node --loader ts-node/esm --experimental-specifier-resolution=node -r tsconfig-paths/register src/server.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
+    "start": "node -r tsconfig-paths/register dist/server.ts",
+    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --loader ts-node/esm node_modules/jest/bin/jest.js",
+    "test:repositories": "cross-env NODE_ENV=test mocha --require ts-node/esm 'tests/repositories/**/*.{js,ts}'",
+    "test:unit": "cross-env NODE_ENV=test mocha --require ts-node/esm 'tests/unit/**/*.test.{js,ts}'",
     "ts-node": "node --loader ts-node/esm"
-  },
-  "imports": {
-    "#shared/*": "../shared/*",
-    "#chai": "chai"
   }
 }

@@ -2,22 +2,12 @@ import {
     Activity, 
     ActivityCreateInput, 
     ActivityMember, 
-    ActivityError 
-} from 'shared/types/activity.js';
-import activityRepository from '../repositories/activity.repository.js';
+    ActivityError,
+    ActivityUpdateData
+} from '@shared/types/activity';
+import activityRepository from '../repositories/activity.repository';
 
 const activityService = {
-    async getAllActivities(): Promise<Activity[]> {
-        try {
-            return await activityRepository.findAll();
-        } catch (error) {
-            throw new ActivityError(
-                `Error fetching activities: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'FETCH_ALL_ERROR'
-            );
-        }
-    },
-
     async getActivityById(id: string | number): Promise<Activity> {
         try {
             const activity = await activityRepository.findById(id);
@@ -34,7 +24,18 @@ const activityService = {
                 'FETCH_ERROR'
             );
         }
-    },
+    },   
+    
+    async getAllActivities(): Promise<Activity[]> {
+        try {
+            return await activityRepository.findAll();
+        } catch (error) {
+          throw new ActivityError(
+            `Error fetching activities: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            'FETCH_ALL_ERROR'
+          );
+        }
+      },
 
     async createActivity(activityData: ActivityCreateInput): Promise<Activity> {
         try {
@@ -59,7 +60,7 @@ const activityService = {
                 throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
             }
 
-            return await activityRepository.create(activityData);
+            return await activityRepository.create(activityData as any); // Type assertion to match repository
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -73,7 +74,7 @@ const activityService = {
 
     async addMemberToActivity(
         activityId: string | number, 
-        memberId: string | number, 
+        memberId: number, // Changed to number only as per repository
         hoursSpent: number
     ): Promise<ActivityMember> {
         try {
@@ -96,7 +97,7 @@ const activityService = {
                 }
             }
 
-            return await activityRepository.addMember(activityId, memberId, hoursSpent);
+            return await activityRepository.addMember(activityId, memberId, hoursSpent) as ActivityMember;
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -110,7 +111,7 @@ const activityService = {
 
     async removeMemberFromActivity(
         activityId: string | number, 
-        memberId: string | number
+        memberId: number  // Changed to number only as per repository
     ): Promise<boolean> {
         try {
             // Check if activity exists
@@ -134,6 +135,66 @@ const activityService = {
             throw new ActivityError(
                 `Error removing member from activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 'REMOVE_MEMBER_ERROR'
+            );
+        }
+    },
+
+    async updateActivity(id: string | number, updateData: ActivityUpdateData): Promise<Activity> {
+        try {
+            // Check if activity exists
+            const activity = await activityRepository.findById(id);
+            if (!activity) {
+                throw new ActivityError('Activity not found', 'NOT_FOUND');
+            }
+
+            // Validate dates if they're being updated
+            if (updateData.start_date || updateData.end_date) {
+                const startDate = new Date(updateData.start_date || activity.start_date);
+                const endDate = new Date(updateData.end_date || activity.end_date);
+                
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    throw new ActivityError('Invalid date format', 'VALIDATION_ERROR');
+                }
+
+                if (startDate > endDate) {
+                    throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
+                }
+            }
+
+            const updatedActivity = await activityRepository.update(id, updateData);
+            if (!updatedActivity) {
+                throw new ActivityError('Failed to update activity', 'UPDATE_ERROR');
+            }
+
+            return updatedActivity;
+        } catch (error) {
+            if (error instanceof ActivityError) {
+                throw error;
+            }
+            throw new ActivityError(
+                `Error updating activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                'UPDATE_ERROR'
+            );
+        }
+    },
+
+    async deleteActivity(id: string | number): Promise<void> {
+        try {
+            // Check if activity exists
+            const activity = await activityRepository.findById(id);
+            if (!activity) {
+                throw new ActivityError('Activity not found', 'NOT_FOUND');
+            }
+
+            // Attempt to delete the activity
+            await activityRepository.delete(id);
+        } catch (error) {
+            if (error instanceof ActivityError) {
+                throw error;
+            }
+            throw new ActivityError(
+                `Error deleting activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                'DELETE_ERROR'
             );
         }
     }

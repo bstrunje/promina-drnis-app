@@ -1,7 +1,7 @@
 // backend/src/routes/activities.ts
 import express from 'express';
-import activityController from '../controllers/activity.controller.js';
-import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import activityController from '../controllers/activity.controller';
+import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -10,8 +10,8 @@ router.get('/', authenticateToken, activityController.getAllActivities);
 router.get('/:id', authenticateToken, activityController.getActivityById);
 
 // Member+ routes
-router.post('/:id/members', authenticateToken, roles.requireMember, activityController.addMemberToActivity);
-router.delete('/:id/members/:memberId', authenticateToken, roles.requireMember, activityController.removeMemberFromActivity);
+router.post('/:activityId/members/:memberId', authenticateToken, roles.requireMember, activityController.addMemberToActivity);  // Updated parameters
+router.delete('/:activityId/members/:memberId', authenticateToken, roles.requireMember, activityController.removeMemberFromActivity);  // Updated parameters
 
 // Admin+ routes
 router.post('/', authenticateToken, roles.requireAdmin, activityController.createActivity);

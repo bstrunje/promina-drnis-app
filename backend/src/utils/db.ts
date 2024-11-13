@@ -136,6 +136,10 @@ const db = {
         }
     },
 
+    async getClient(): Promise<PoolClient> {
+        return await pool.connect();
+      },
+
     /**
      * Get pool statistics
      */

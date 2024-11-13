@@ -1,10 +1,19 @@
-// src/controllers/messageController.js
-// In-memory store for messages (replace with database in production)
-let messages = [];
+// src/controllers/message.controller.ts
+import { Request, Response } from 'express';
 
-exports.createMessage = async (req, res) => {
+interface Message {
+    id: number;
+    content: string;
+    sender: string;
+    timestamp: Date;
+}
+
+// In-memory store for messages (replace with database in production)
+let messages: Message[] = [];
+
+exports.createMessage = async (req: Request, res: Response): Promise<void> => {
     try {
-        const message = {
+        const message: Message = {
             id: Date.now(),
             content: req.body.content,
             sender: req.body.sender,
@@ -16,7 +25,7 @@ exports.createMessage = async (req, res) => {
         // Simulate AI response if message is from user
         if (req.body.sender === 'user') {
             setTimeout(() => {
-                const aiResponse = {
+                const aiResponse: Message = {
                     id: Date.now() + 1,
                     content: `AI response to: ${req.body.content}`,
                     sender: 'assistant',
@@ -33,12 +42,12 @@ exports.createMessage = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: error.message
+            message: error instanceof Error ? error.message : 'An unknown error occurred'
         });
     }
 };
 
-exports.getMessages = async (req, res) => {
+exports.getMessages = async (req: Request, res: Response): Promise<void> => {
     try {
         res.status(200).json({
             success: true,
@@ -47,20 +56,21 @@ exports.getMessages = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: error.message
+            message: error instanceof Error ? error.message : 'An unknown error occurred'
         });
     }
 };
 
-exports.getMessage = async (req, res) => {
+exports.getMessage = async (req: Request, res: Response): Promise<void> => {
     try {
         const message = messages.find(m => m.id === parseInt(req.params.id));
         
         if (!message) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 message: 'Message not found'
             });
+            return;
         }
 
         res.status(200).json({
@@ -70,20 +80,21 @@ exports.getMessage = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: error.message
+            message: error instanceof Error ? error.message : 'An unknown error occurred'
         });
     }
 };
 
-exports.deleteMessage = async (req, res) => {
+exports.deleteMessage = async (req: Request, res: Response): Promise<void> => {
     try {
         const index = messages.findIndex(m => m.id === parseInt(req.params.id));
         
         if (index === -1) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 message: 'Message not found'
             });
+            return;
         }
 
         messages.splice(index, 1);
@@ -95,7 +106,7 @@ exports.deleteMessage = async (req, res) => {
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: error.message
+            message: error instanceof Error ? error.message : 'An unknown error occurred'
         });
     }
 };
