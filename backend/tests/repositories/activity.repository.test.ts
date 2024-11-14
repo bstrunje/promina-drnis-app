@@ -1,8 +1,8 @@
 // backend\tests\repositories/activity.repository.test.ts
 import * as path from 'path';
 import { expect } from 'chai';
-import db from '../../src/utils/db';
-import activityRepository from '../../src/repositories/activity.repository';
+import db from '@utils/db.js';
+import activityRepository from '@repositories/activity.repository.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -64,7 +64,7 @@ describe('Activity Repository', () => {
 
     const activity = await activityRepository.findById(1);
     expect(activity).to.be.an('object');
-    expect(activity!.title).to.equal('Test Activity');
+    expect(activity?.title).to.equal('Test Activity');
   });
 
   it('should create a new activity', async () => {
@@ -96,6 +96,30 @@ describe('Activity Repository', () => {
     expect(result.activity_id).to.equal(1);
     expect(result.member_id).to.equal(1);
     expect(result.hours_spent).to.equal(2);
+  });
+
+  it('should update an activity', async () => {
+    const testActivity: ActivityData = {
+      title: 'Test Activity',
+      description: 'Test Description',
+      start_date: new Date(),
+      end_date: new Date(),
+      location: 'Test Location',
+      activity_type_id: 1,
+      created_by: 1,
+      max_participants: 10
+    };
+    const activity = await activityRepository.create(testActivity);
+    if (activity === null) {
+      throw new Error('Failed to create activity for update test');
+    }
+    const updatedData = { ...activity, title: 'Updated Activity' };
+    
+    const updatedActivity = await activityRepository.update(activity.activity_id, updatedData);
+    expect(updatedActivity).to.not.be.null;
+    if (updatedActivity !== null) {
+      expect(updatedActivity.title).to.equal('Updated Activity');
+    }
   });
 
   it('should remove a member from an activity', async () => {

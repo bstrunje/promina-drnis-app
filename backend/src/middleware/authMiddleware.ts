@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import db from '../utils/db.js';
+import db from '../utils/db';
 
 // Types
 interface JWTPayload {

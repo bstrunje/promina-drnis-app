@@ -1,6 +1,6 @@
 {
     "source": {
-      "include": ["server.js", "routes/"],
+      "include": ["server.ts", "routes/"],
       "exclude": ["node_modules"]
     },
     "opts": {

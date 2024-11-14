@@ -53,14 +53,9 @@
   "name": "promina-drnis-app-backend",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "node --loader ts-node/esm --experimental-specifier-resolution=node -r tsconfig-paths/register src/server.ts",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
-    "start": "node -r tsconfig-paths/register dist/server.ts",
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --loader ts-node/esm node_modules/jest/bin/jest.js",
-    "test:repositories": "cross-env NODE_ENV=test mocha --require ts-node/esm 'tests/repositories/**/*.{js,ts}'",
-    "test:unit": "cross-env NODE_ENV=test mocha --require ts-node/esm 'tests/unit/**/*.test.{js,ts}'",
-    "ts-node": "node --loader ts-node/esm"
+    "build": "tsc -b",
+    "dev": "ts-node -r tsconfig-paths/register src/server.ts",
+    "start": "node -r tsconfig-paths/register dist/src/server",
+    "test": "cross-env NODE_ENV=test mocha --require ts-node/register 'tests/**/*.test.ts'"
   }
 }
