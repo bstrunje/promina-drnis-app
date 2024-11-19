@@ -1,6 +1,6 @@
 // src/repositories/auth.repository.ts
-import db from '../utils/db';
-import { User, UserRegistrationData } from '../types/user';
+import db from '../utils/db.js';
+import { User, UserRegistrationData } from '../types/user.js';
 import { PoolClient } from 'pg';
 
 const authRepository = {

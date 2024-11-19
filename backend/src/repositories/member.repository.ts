@@ -1,5 +1,5 @@
 // backend/src/repositories/member.repository.ts
-import db from '../utils/db';
+import db from '../utils/db.js';
 
 export interface Member {
     member_id: number;

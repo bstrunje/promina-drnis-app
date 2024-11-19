@@ -1,0 +1,10 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Get All Activities
+GET http://localhost:3000/api/activities
+Content-Type: application/json
+
+### Get Single Activity
+GET http://localhost:3000/api/activities/1
+Content-Type: application/json

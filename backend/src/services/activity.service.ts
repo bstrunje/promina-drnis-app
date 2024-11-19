@@ -4,8 +4,8 @@ import {
     ActivityMember, 
     ActivityError,
     ActivityUpdateData
-} from '@shared/types/activity';
-import activityRepository from '../repositories/activity.repository';
+} from 'promina-drnis-app-shared/types/activity';
+import activityRepository from '../repositories/activity.repository.js';
 
 const activityService = {
     async getActivityById(id: string | number): Promise<Activity> {

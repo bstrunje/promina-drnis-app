@@ -1,0 +1,27 @@
+{
+  "name": "promina-drnis-app-shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types/*": {
+      "import": "./dist/types/*.js",
+      "types": "./dist/types/*.d.ts"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsc -b",
+    "watch": "tsc -w",
+    "prebuild": "npm run clean"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.0.0"
+  }
+}

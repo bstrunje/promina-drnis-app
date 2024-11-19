@@ -22,8 +22,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@types/*": ["./src/types/*"],
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "@components/ui/*": ["./components/ui/*"]
     }
   },
-  "include": ["src/**/*", "types/**/*", "../shared/**/*"]
+  "include": ["src/**/*", "types/**/*", "../shared/**/*", "components/**/*"]
 }

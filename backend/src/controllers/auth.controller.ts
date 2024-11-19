@@ -1,12 +1,12 @@
 import { PoolClient } from 'pg';
-import  DatabaseTransactionClient  from '../utils/db';
-import { DatabaseError } from '../utils/db';
+import  DatabaseTransactionClient  from '../utils/db.js';
+import { DatabaseError } from '../utils/db.js';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../utils/db.js';
-import { User } from '../types/user';
-import { sendPasswordEmail } from '../services/email.service';
+import { User } from '../types/user.js';
+import { sendPasswordEmail } from '../services/email.service.js';
 
 interface UserRegistration {
     username: string;
@@ -208,26 +208,34 @@ const authController = {
     async login(req: Request<{}, {}, UserLogin>, res: Response): Promise<void> {
         try {
             const { username, password } = req.body;
-
+            console.log(`Login attempt for username: ${username}`);
+    
             const result = await db.query<User>(
                 'SELECT * FROM users WHERE username = $1 AND status = \'active\'',
                 [username],
                 { singleRow: true }
             );
-
+    
             if (result.rowCount === 0) {
+                console.log(`User not found or not active: ${username}`);
                 res.status(401).json({ message: 'Invalid credentials or account not active' });
                 return;
             }
-
+    
             const user = result.rows[0];
+            console.log(`User found: ${username}, checking password`);
+    
             const validPassword = await bcrypt.compare(password, user.password);
-
+            console.log(`Password valid: ${validPassword}`);
+    
             if (!validPassword) {
+                console.log(`Invalid password for user: ${username}`);
                 res.status(401).json({ message: 'Invalid credentials' });
                 return;
             }
-
+    
+            console.log(`Password verified for user: ${username}, generating token`);
+    
             const token = jwt.sign(
                 { 
                     id: user.id, 
@@ -237,7 +245,9 @@ const authController = {
                 process.env.JWT_SECRET!,
                 { expiresIn: '24h' }
             );
-
+    
+            console.log(`Token generated successfully for user: ${username}`);
+    
             res.json({
                 user: {
                     id: user.id,
@@ -255,7 +265,30 @@ const authController = {
                 res.status(500).json({ message: 'Error logging in' });
             }
         }
+    },
+
+    // Add new searchMembers function
+    async searchMembers(req: Request, res: Response) {
+        try {
+            const { searchTerm } = req.query;
+            const query = `
+                SELECT member_id, full_name 
+                FROM members 
+                WHERE full_name ILIKE $1 
+                    AND status = 'active'
+                ORDER BY full_name 
+                LIMIT 10`;
+    
+            const result = await db.query(query, [`%${searchTerm}%`]);
+            res.json(result.rows);
+        } catch (error) {
+            res.status(500).json({ 
+                message: 'Error searching members', 
+                error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
     }
+    
 };
 
 export default authController;

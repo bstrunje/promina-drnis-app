@@ -1,162 +1,92 @@
-import ActivitiesList from './components/activities/ActivitiesList';
-import EventsList from './components/events/EventsList';
-import HoursLog from './components/hours/HoursLog';
-import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
-import MemberList from './components/members/MemberList';
-import LoginPage from './components/auth/LoginPage';  // Update this import to your new LoginPage
+import React from 'react';
+import { Navigate, Outlet, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { useAuth, AuthProvider } from './context/AuthContext';
+import ActivitiesList from '../src/features/activities/ActivitiesList';
+import EventsList from '../src/features/events/EventsList';
+import HoursLog from '../src/features/hours/HoursLog';
+import MemberList from '../src/features/members/MemberList';
+import LoginPage from '../src/features/auth/LoginPage';
+import MemberDashboard from '../src/features/dashboard/MemberDashboard';
+import AdminDashboard from '../src/features/dashboard/AdminDashboard';
+import SuperUserDashboard from '../src/features/dashboard/SuperUserDashboard';
+import Navigation from '../components/Navigation';
 import './App.css';
-import Dashboard from './components/dashboard/Dashboard';
 
-// You can move this to a separate types file later
-type User = {
-  id: string;
-  username: string;
-  role: string;
-} | null;
-
-function App() {
-  const [user, setUser] = useState<User>(null);
-
-  // Check if user is logged in
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-  };
-
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        {/* Navigation Header - Only show if user is logged in */}
-        {user && (
-          <nav className="bg-white shadow-md p-4 mb-4">
-            <div className="container mx-auto flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <Link to="/dashboard" className="text-xl font-bold text-blue-600">
-                  Promina Drnis
-                </Link>
-              </div>
-              <div className="flex items-center space-x-6">
-                <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
-                  Dashboard
-                </Link>
-                <Link to="/members" className="text-gray-700 hover:text-blue-600">
-                  Members
-                </Link>
-                {/* Add more nav links based on user role */}
-                {user.role === 'administrator' && (
-                  <Link to="/admin" className="text-gray-700 hover:text-blue-600">
-                    Admin
-                  </Link>
-                )}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">
-                    Welcome, {user.username}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm text-red-600 hover:text-red-800"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </nav>
-        )}
-
-        {/* Main Content */}
-        <main className="container mx-auto px-4">
-        <Routes>
-  {/* Public Routes */}
-  <Route 
-    path="/" 
-    element={
-      user ? <Navigate to="/dashboard" replace /> : <LoginPage />
-    } 
-  />
-  <Route 
-    path="/login" 
-    element={
-      user ? <Navigate to="/dashboard" replace /> : <LoginPage />
-    } 
-  />
-
-  {/* Protected Routes */}
-  <Route
-    path="/dashboard"
-    element={
-      user ? (
-        <Dashboard />
-      ) : (
-        <Navigate to="/login" replace />
-      )
-    }
-  />
-  <Route
-    path="/members"
-    element={
-      user ? <MemberList /> : <Navigate to="/login" replace />
-    }
-  />
-  
-  {/* New Routes */}
-  <Route
-    path="/activities"
-    element={
-      user ? <ActivitiesList /> : <Navigate to="/login" replace />
-    }
-  />
-  <Route
-    path="/hours"
-    element={
-      user ? <HoursLog /> : <Navigate to="/login" replace />
-    }
-  />
-  <Route
-    path="/events"
-    element={
-      user ? <EventsList /> : <Navigate to="/login" replace />
-    }
-  />
-
-  {/* Admin Routes */}
-  <Route
-    path="/admin"
-    element={
-      user?.role === 'administrator' ? (
-        <div>Admin Panel</div>
-      ) : (
-        <Navigate to="/dashboard" replace />
-      )
-    }
-  />
-
-            {/* Catch all route */}
-<Route
-  path="/dashboard"
-  element={
-    user ? (
-      <Dashboard />
-    ) : (
-      <Navigate to="/login" replace />
-    )
-  }
-/>
-</Routes>
-</main>
-</div>
-</Router>
-);
+export interface User {
+ id: number;
+ username: string;
+ role: 'member' | 'admin' | 'superuser';
 }
+
+const AppRoutes: React.FC = () => {
+  const { user, logout } = useAuth();
+
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: (
+        <div className="min-h-screen bg-gray-50">
+          <Navigation user={user} onLogout={logout} />
+          <main className="container mx-auto px-4">
+            <Outlet />
+          </main>
+        </div>
+      ),
+      children: [
+        { 
+          index: true, 
+          element: <Navigate to="/dashboard" replace /> 
+        },
+        { 
+          path: "login", 
+          element: user ? <Navigate to="/dashboard" replace /> : <LoginPage /> 
+        },
+        { 
+          path: "dashboard", 
+          element: user ? (
+            user.role === 'member' ? <MemberDashboard user={user} /> :
+            user.role === 'admin' ? <AdminDashboard user={user} /> :
+            user.role === 'superuser' ? <SuperUserDashboard user={user} /> :
+            <Navigate to="/login" replace />
+          ) : <Navigate to="/login" replace /> 
+        },
+        { 
+          path: "members", 
+          element: user ? <MemberList /> : <Navigate to="/login" replace /> 
+        },
+        { 
+          path: "activities", 
+          element: user ? <ActivitiesList /> : <Navigate to="/login" replace /> 
+        },
+        { 
+          path: "hours", 
+          element: user ? <HoursLog /> : <Navigate to="/login" replace /> 
+        },
+        { 
+          path: "events", 
+          element: user ? <EventsList /> : <Navigate to="/login" replace /> 
+        },
+        { 
+          path: "admin", 
+          element: user?.role === 'admin' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" replace />
+        },
+        { 
+          path: "super-user", 
+          element: user?.role === 'superuser' ? <SuperUserDashboard user={user} /> : <Navigate to="/dashboard" replace />
+        }
+      ],
+    },
+  ]);
+
+  return <RouterProvider router={router} />;
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
+};
 
 export default App;

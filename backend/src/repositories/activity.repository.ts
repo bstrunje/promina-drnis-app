@@ -1,5 +1,5 @@
 // backend/src/repositories/activity.repository.ts
-import db from '../utils/db';
+import db from '../utils/db.js';
 import { PoolClient } from 'pg';
 
 interface Activity {

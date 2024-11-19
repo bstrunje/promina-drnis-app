@@ -1,10 +1,10 @@
 // backend/src/services/auth.service.ts
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import config from '../config/config';
-import authRepository from '../repositories/auth.repository';
-import db from '../utils/db';
-import { User, UserRegistrationData } from '../types/user';
+import config from '../config/config.js';
+import authRepository from '../repositories/auth.repository.js';
+import db from '../utils/db.js';
+import { User, UserRegistrationData } from '../types/user.js';
 
 const ROLES = {
     MEMBER: 'member',

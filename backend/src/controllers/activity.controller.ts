@@ -1,8 +1,8 @@
 // backend/src/controllers/activity.controller.ts
 import { Request, Response } from 'express';
-import { DatabaseUser } from '../middleware/authMiddleware';
-import activityService from '../services/activity.service';
-import { ActivityCreateInput } from '@shared/types';
+import { DatabaseUser } from '../middleware/authMiddleware.js';
+import activityService from '../services/activity.service.js';
+import { ActivityCreateInput } from '@shared/activity.js';
 
 // Interfaces
 interface ActivityCreateData {

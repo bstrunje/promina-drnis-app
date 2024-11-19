@@ -1,4 +1,5 @@
 // shared/types/activity.ts
+
 export interface Activity {
     activity_id: string | number;
     title: string;

@@ -1,4 +1,4 @@
-import memberRepository, { Member, MemberStats, MemberUpdateData, MemberCreateData } from '@/repositories/member.repository';
+import memberRepository, { Member, MemberStats, MemberUpdateData, MemberCreateData } from '../repositories/member.repository.js';
 
 const memberService = {
     async getAllMembers(): Promise<Member[]> {

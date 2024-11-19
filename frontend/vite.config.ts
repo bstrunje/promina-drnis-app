@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, '../', '')
   
   return {
@@ -11,7 +10,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@shared': path.resolve(__dirname, '../shared')
+        '@types': path.resolve(__dirname, './src/types'),
+        '@shared': path.resolve(__dirname, '../shared'),
+        '@components/ui': path.resolve(__dirname, './components/ui')
       },
     },
     server: {
@@ -27,6 +28,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __MODE__: JSON.stringify(mode),
+      'process.env.NODE_ENV': JSON.stringify(mode)
     }
   }
 })

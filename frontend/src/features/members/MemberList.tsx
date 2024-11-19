@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@components/ui/alert";
 import { Member } from '@shared/types';
 import AddMemberForm from './AddMemberForm';
 import EditMemberForm from './EditMemberForm';

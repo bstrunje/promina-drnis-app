@@ -3,13 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import config from './config/config';
+import config from './config/config.js';
 
 // Import routes
-import memberRoutes from './routes/members';
-import activityRoutes from './routes/activities';
-import authRoutes from './routes/auth';
-import { authMiddleware } from './middleware/authMiddleware';
+import memberRoutes from './routes/members.js';
+import activityRoutes from './routes/activities.js';
+import authRoutes from './routes/auth.js';
+import { authMiddleware } from './middleware/authMiddleware.js';
 
 const app: Express = express();
 

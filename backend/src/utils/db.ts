@@ -1,4 +1,13 @@
-import { Pool, PoolClient, QueryResult, QueryConfig, QueryResultRow } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Error class for database operations
 export class DatabaseError extends Error {
@@ -60,14 +69,14 @@ const db = {
     /**
      * Execute a SQL query with proper error handling and logging
      */
-    async query<T extends QueryResultRow = any>(
-        textOrConfig: string | QueryConfig,
+    async query<T extends pkg.QueryResultRow = any>(
+        textOrConfig: string | pkg.QueryConfig,
         params?: any[],
         options: QueryOptions = {}
-    ): Promise<QueryResult<T>> {
+    ): Promise<pkg.QueryResult<T>> {
         const start = Date.now();
         const queryConfig = typeof textOrConfig === 'string'
-            ? { text: textOrConfig, params }
+            ? { text: textOrConfig, values: params }
             : textOrConfig;
 
         try {
@@ -121,7 +130,7 @@ const db = {
     /**
      * Transaction wrapper
      */
-    async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    async transaction<T>(callback: (client: pkg.PoolClient) => Promise<T>): Promise<T> {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -136,19 +145,18 @@ const db = {
         }
     },
 
-    async getClient(): Promise<PoolClient> {
+    async getClient(): Promise<pkg.PoolClient> {
         return await pool.connect();
-      },
+    },
 
     /**
      * Get pool statistics
      */
     getPoolStats() {
         return {
-            total: 0,
-            active: 0,
-            idle: 0,
-            waiting: 0
+            total: pool.totalCount,
+            idle: pool.idleCount,
+            waiting: pool.waitingCount
         };
     },
 

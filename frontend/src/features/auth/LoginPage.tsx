@@ -1,11 +1,15 @@
-// src/features/auth/LoginPage.tsx
-
-import { FormEvent } from 'react';
-import { useState } from 'react';
-import { Eye, EyeOff, UserPlus, LogIn, FileText, ChevronRight } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { register } from '../../utils/api';
+import { FormEvent, useState } from 'react';
+import { Eye, EyeOff, LogIn, FileText, ChevronRight } from 'lucide-react';
+import { Alert, AlertDescription } from '@components/ui/alert';
+import { useAuth } from '../../context/AuthContext';
+import { login, LoginResponse } from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
+import ErrorMessage from '../../../components/ErrorMessage';
 
 const LoginPage = () => {
+  const { login: authLogin } = useAuth();
+  const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -13,13 +17,11 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Login form state
   const [loginData, setLoginData] = useState({
     username: '',
     password: ''
   });
 
-  // Registration form state
   const [registerData, setRegisterData] = useState({
     username: '',
     email: '',
@@ -33,12 +35,41 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    console.log('Login attempt with username:', loginData.username);
     
     try {
-        console.log('Login attempt:', loginData);
+        console.log('Calling login function');
+        const data: LoginResponse = await login(loginData.username, loginData.password);
+        console.log('Login response received:', data);
+        authLogin(data.user, data.token);
+        console.log('User role:', data.user.role);
+        
+        // Redirect based on user role
+        switch (data.user.role) {
+          case 'admin':
+            console.log('Redirecting to /admin');
+            navigate('/admin');
+            console.log('Navigation function called for admin');
+            break;
+          case 'member':
+            console.log('Redirecting to /dashboard');
+            navigate('/dashboard');
+            console.log('Navigation function called for member');
+            break;
+          case 'superuser':
+            console.log('Redirecting to /super-user');
+            navigate('/super-user');
+            console.log('Navigation function called for superuser');
+            break;
+          default:
+            console.log('Redirecting to /');
+            navigate('/');
+            console.log('Navigation function called for default');
+            break;
+      }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Failed to login. Please check your credentials.');
+      setError('Failed to login. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -52,28 +83,41 @@ const LoginPage = () => {
     }
     
     if (registerData.password !== registerData.confirmPassword) {
-        setError('Passwords do not match');
-        return;
+      setError('Passwords do not match');
+      return;
     }
-
+  
     setError('');
     setLoading(true);
     
     try {
-      // Add your registration API call here
-      console.log('Registration attempt:', registerData);
-  } catch (error) {
-    console.error('Registration error:', error);
-    setError('Failed to register. Please try again.');
-  } finally {
-    setLoading(false);
+      const data = await register(registerData);
+      authLogin(data.user, data.token);
+      // Redirect based on user role
+      switch (data.user.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'member':
+          navigate('/member');
+          break;
+        case 'superuser':
+          navigate('/super-user');
+          break;
+        default:
+          navigate('/');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError('Failed to register. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-        {/* Header */}
         <div className="p-6 bg-blue-600 text-white">
           <h2 className="text-center text-3xl font-bold">
             {isRegistering ? 'Create Account' : 'Welcome Back'}
@@ -83,7 +127,8 @@ const LoginPage = () => {
           </p>
         </div>
 
-        {/* Document Links */}
+        {error && <ErrorMessage message={error} />}
+
         <div className="px-6 py-4 bg-gray-50 border-b">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-medium text-gray-700">Important Documents</h3>
@@ -114,19 +159,15 @@ const LoginPage = () => {
           )}
         </div>
 
-        {/* Error Alert */}
         {error && (
           <Alert variant="destructive" className="mx-6 mt-4">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Forms */}
         <div className="p-6">
           {isRegistering ? (
-            /* Registration Form */
             <form onSubmit={handleRegister} className="space-y-4">
-              {/* Terms Acceptance */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <label className="flex items-start">
                   <input
@@ -219,23 +260,28 @@ const LoginPage = () => {
 
               <button
                 type="submit"
-                disabled={!acceptedTerms || loading}
+                disabled={loading}
                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  (!acceptedTerms || loading) && 'opacity-50 cursor-not-allowed'
-                }`}
-              >
-                {loading ? (
-                  <span>Registering...</span>
-                ) : (
-                  <span className="flex items-center">
-                    <UserPlus className="w-5 h-5 mr-2" />
-                    Register
-                  </span>
-                )}
-              </button>
+                  loading && 'opacity-50 cursor-not-allowed'
+             }`}
+          >
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+               </span>
+             ) : (
+               <span className="flex items-center">
+                 <LogIn className="w-5 h-5 mr-2" />
+                 Sign In
+               </span>
+             )}
+          </button>
             </form>
           ) : (
-            /* Login Form */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Username</label>
@@ -287,7 +333,6 @@ const LoginPage = () => {
             </form>
           )}
 
-          {/* Toggle between login and register */}
           <div className="mt-6 text-center">
             <button
               type="button"

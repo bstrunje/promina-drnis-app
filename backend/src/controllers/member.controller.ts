@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import memberService from '../services/member.service';
-import { MemberCreateData, MemberUpdateData } from '../repositories/member.repository';
+import memberService from '../services/member.service.js';
+import { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 
 interface MemberStats {
     totalActivities: number;

@@ -9,19 +9,9 @@ interface TableCheck {
 }
 
 async function checkTablesExist(): Promise<boolean> {
-    const tables = [
-        'users', 
-        'roles', 
-        'user_roles', 
-        'members', 
-        'activities', 
-        'activity_types',
-        'activity_participants', 
-        'annual_statistics'
-    ];
-    
+    const tables = ['members', 'activities', 'user_activities'];
     for (const table of tables) {
-        const result = await db.query<TableCheck>(`
+        const result = await db.query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_schema = 'public' 
@@ -215,7 +205,7 @@ export async function setupDatabase(): Promise<void> {
             VALUES 
                 ('member', 'Regular member with basic access'),
                 ('administrator', 'Administrator with full system access'),
-                ('super_user', 'Super user with complete system control')
+                ('superuser', 'Super user with complete system control')
             ON CONFLICT (role_name) DO NOTHING;
         `);
         console.log('✅ Default roles created successfully');

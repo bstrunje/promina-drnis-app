@@ -1,18 +1,14 @@
-// src/components/dashboard/SuperUserDashboard.tsx
-
+// frontend\src\features\dashboard\SuperUserDashboard.tsx
 import { Users, Activity, Shield, ChevronRight } from 'lucide-react';
-
-interface User {
-  id: string;
-  username: string;
-  role: string;
-}
+import { useNavigate } from 'react-router-dom';
+import { User } from '../../App';
 
 interface Props {
   user: User;
 }
 
 const SuperUserDashboard = ({ user }: Props) => {
+  const navigate = useNavigate();
   
   const stats = {
     totalMembers: 156,
@@ -25,15 +21,16 @@ const SuperUserDashboard = ({ user }: Props) => {
 
   return (
     <div className="p-6">
-      {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
         <h1 className="text-2xl font-bold mb-2">Welcome, {user.username}</h1>
         <p className="opacity-90">Super User Dashboard</p>
       </div>
 
-      {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div 
+          onClick={() => navigate('/members')}
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">Members</h3>
             <Users className="h-6 w-6 text-blue-600" />
@@ -46,7 +43,10 @@ const SuperUserDashboard = ({ user }: Props) => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div 
+          onClick={() => navigate('/activities')}
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">Recent Activities</h3>
             <Activity className="h-6 w-6 text-green-600" />
@@ -69,24 +69,35 @@ const SuperUserDashboard = ({ user }: Props) => {
         </div>
       </div>
 
-      {/* Main Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group">
+            <button 
+              onClick={() => navigate('/members')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
+            >
               <span>User Management</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group">
+            <button 
+              onClick={() => navigate('/activities')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
+            >
               <span>Activity Approvals</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group">
+            <button 
+              onClick={() => navigate('/settings')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
+            >
               <span>System Settings</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
-            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group">
+            <button 
+              onClick={() => navigate('/logs')}
+              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
+            >
               <span>Audit Logs</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import db from '../utils/db';
+import db from '../utils/db.js';
 
 // Types
 interface JWTPayload {
@@ -104,7 +104,7 @@ const requireSuperUser = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || req.user.role_name !== 'super_user') {
+        if (!req.user || req.user.role_name !== 'superuser') {
             res.status(403).json({ 
                 message: 'Access denied. Super user privileges required.' 
             });
@@ -119,8 +119,8 @@ const requireSuperUser = async (
 
 // Role-based middleware shortcuts
 const roles = {
-    requireAdmin: checkRole(['admin', 'super_user']),
-    requireMember: checkRole(['member', 'admin', 'super_user']),
+    requireAdmin: checkRole(['admin', 'superuser']),
+    requireMember: checkRole(['member', 'admin', 'superuser']),
     requireSuperUser: requireSuperUser
 };
 
