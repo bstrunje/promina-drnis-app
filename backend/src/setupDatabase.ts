@@ -46,73 +46,30 @@ export async function setupDatabase(): Promise<void> {
         // Begin transaction
         await db.query('BEGIN');
 
-        // Users table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS users (
-        id serial NOT NULL,
-        username character varying(50) NOT NULL,
-        email character varying(255) NOT NULL,
-        password character varying(255) NOT NULL,
-        role character varying(20) NOT NULL DEFAULT 'member',
-        status character varying(20) DEFAULT 'pending',
-        created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-        updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT users_pkey PRIMARY KEY (id),
-        CONSTRAINT users_email_key UNIQUE (email),
-        CONSTRAINT users_username_key UNIQUE (username)
-            );
-        `);
-        console.log('✅ Users table created successfully');
-
-        // Roles table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS roles (
-                role_id serial NOT NULL,
-                role_name character varying(50) NOT NULL,
-                description text,
-                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-                updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT roles_pkey PRIMARY KEY (role_id),
-                CONSTRAINT roles_role_name_key UNIQUE (role_name)
-            );
-        `);
-        console.log('✅ Roles table created successfully');
-
-        // User roles table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS user_roles (
-                id serial NOT NULL,
-                user_id integer,
-                role_name character varying(50) NOT NULL,
-                granted_by integer,
-                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT user_roles_pkey PRIMARY KEY (id),
-                CONSTRAINT user_roles_user_id_role_name_key UNIQUE (user_id, role_name),
-                CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id)
-                    REFERENCES users (id),
-                CONSTRAINT user_roles_granted_by_fkey FOREIGN KEY (granted_by)
-                    REFERENCES users (id)
-            );
-        `);
-        console.log('✅ User roles table created successfully');
-
         // Members table
         await db.query(`
             CREATE TABLE IF NOT EXISTS members (
-                member_id serial NOT NULL,
-                user_id integer,
-                first_name character varying(50) NOT NULL,
-                last_name character varying(50) NOT NULL,
-                join_date date NOT NULL,
-                status character varying(20) DEFAULT 'active',
-                phone character varying(20),
-                emergency_contact character varying(100),
-                membership_type character varying(20) DEFAULT 'passive',
-                notes text,
-                CONSTRAINT members_pkey PRIMARY KEY (member_id)
-            );
+        member_id SERIAL PRIMARY KEY,
+        status character varying(50) DEFAULT 'pending',
+        date_of_birth date,
+        oib character varying(13) NOT NULL,
+        cell_phone character varying(20) NOT NULL,
+        city character varying(100) NOT NULL,
+        street_address character varying(200) NOT NULL,
+        email character varying(255),
+        first_name character varying(100) NOT NULL,
+        last_name character varying(100) NOT NULL,
+        life_status character varying(25),
+        role character varying(20) DEFAULT 'member' NOT NULL,
+        total_hours numeric(10,2) DEFAULT 0,
+        full_name character varying(100) GENERATED ALWAYS AS ((((first_name)::text || ' '::text) || (last_name)::text)) STORED,
+        tshirt_size character varying(4),
+        shell_jacket_size character varying(4),
+        CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),
+        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))
+    );
         `);
-        console.log('✅ Members table created successfully');
+        console.log('✅ Activity participants table created successfully');
 
         // Activity types table
         await db.query(`
@@ -148,26 +105,6 @@ export async function setupDatabase(): Promise<void> {
         `);
         console.log('✅ Activities table created successfully');
 
-        // Activity participants table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS activity_participants (
-                participation_id serial NOT NULL,
-                activity_id integer,
-                member_id integer,
-                hours_spent numeric(5,2) NOT NULL,
-                role character varying(50),
-                notes text,
-                verified_by integer,
-                verified_at timestamp without time zone,
-                CONSTRAINT activity_participants_pkey PRIMARY KEY (participation_id),
-                CONSTRAINT activity_participants_activity_id_fkey FOREIGN KEY (activity_id)
-                    REFERENCES activities (activity_id),
-                CONSTRAINT activity_participants_member_id_fkey FOREIGN KEY (member_id)
-                    REFERENCES members (member_id)
-            );
-        `);
-        console.log('✅ Activity participants table created successfully');
-
         // Annual statistics table
         await db.query(`
             CREATE TABLE IF NOT EXISTS annual_statistics (
@@ -198,17 +135,6 @@ export async function setupDatabase(): Promise<void> {
             ON activity_participants(member_id);
         `);
         console.log('✅ Indexes created successfully');
-
-        // Insert default roles
-        await db.query(`
-            INSERT INTO roles (role_name, description)
-            VALUES 
-                ('member', 'Regular member with basic access'),
-                ('administrator', 'Administrator with full system access'),
-                ('superuser', 'Super user with complete system control')
-            ON CONFLICT (role_name) DO NOTHING;
-        `);
-        console.log('✅ Default roles created successfully');
 
         // Insert default activity types
         await db.query(`

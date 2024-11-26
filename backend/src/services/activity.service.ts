@@ -1,3 +1,5 @@
+import { PoolClient } from 'pg';
+import db from '../utils/db.js';
 import { 
     Activity, 
     ActivityCreateInput, 
@@ -6,6 +8,23 @@ import {
     ActivityUpdateData
 } from 'promina-drnis-app-shared/types/activity';
 import activityRepository from '../repositories/activity.repository.js';
+
+interface ActivityWithParticipants extends Activity {
+    participants?: {
+        member_id: number;
+        first_name: string;
+        last_name: string;
+        hours_spent: number;
+    }[];
+}
+
+interface ActivityParticipant {
+    member_id: number;
+    activity_id: number;
+    hours_spent: number;
+    role?: string;
+    notes?: string;
+}
 
 const activityService = {
     async getActivityById(id: string | number): Promise<Activity> {
@@ -74,7 +93,7 @@ const activityService = {
 
     async addMemberToActivity(
         activityId: string | number, 
-        memberId: number, // Changed to number only as per repository
+        memberId: number,
         hoursSpent: number
     ): Promise<ActivityMember> {
         try {
@@ -82,13 +101,13 @@ const activityService = {
             if (hoursSpent < 0) {
                 throw new ActivityError('Hours spent cannot be negative', 'VALIDATION_ERROR');
             }
-
+    
             // Check if activity exists
             const activity = await activityRepository.findById(activityId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
-
+    
             // Check max participants if set
             if (activity.max_participants) {
                 const currentParticipants = await activityRepository.getParticipantsCount(activityId);
@@ -96,8 +115,22 @@ const activityService = {
                     throw new ActivityError('Activity has reached maximum participants', 'MAX_PARTICIPANTS');
                 }
             }
-
-            return await activityRepository.addMember(activityId, memberId, hoursSpent) as ActivityMember;
+    
+            // Use transaction to update both activity_participants and members
+            return await db.transaction(async (client: PoolClient) => {
+                // Add member to activity
+                const participation = await activityRepository.addMember(activityId, memberId, hoursSpent);
+                
+                // Update member's total hours
+                await client.query(`
+                    UPDATE members 
+                    SET total_hours = COALESCE(total_hours, 0) + $1 
+                    WHERE member_id = $2
+                `, [hoursSpent, memberId]);
+    
+                return participation as ActivityMember;
+            });
+    
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -109,25 +142,30 @@ const activityService = {
         }
     },
 
-    async removeMemberFromActivity(
-        activityId: string | number, 
-        memberId: number  // Changed to number only as per repository
-    ): Promise<boolean> {
+    async removeMemberFromActivity(activityId: string | number, memberId: number): Promise<boolean> {
         try {
-            // Check if activity exists
             const activity = await activityRepository.findById(activityId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
-
-            // Check if member is in activity
+    
             const membership = await activityRepository.getMembership(activityId, memberId);
             if (!membership) {
                 throw new ActivityError('Member not found in activity', 'NOT_FOUND');
             }
-
-            await activityRepository.removeMember(activityId, memberId);
-            return true;
+    
+            return await db.transaction(async (client: PoolClient) => {
+                // Update member's total hours
+                await client.query(`
+                    UPDATE members 
+                    SET total_hours = COALESCE(total_hours, 0) - $1 
+                    WHERE member_id = $2
+                `, [membership.hours_spent, memberId]);
+    
+                // Remove member from activity
+                await activityRepository.removeMember(activityId, memberId);
+                return true;
+            });
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;

@@ -7,14 +7,35 @@ interface EditMemberFormProps {
   onEdit: (member: Member) => void;
 }
 
+interface SizeOptions {
+  value: string;
+  label: string;
+}
+
+const sizeOptions: SizeOptions[] = [
+  { value: 'XS', label: 'XS' },
+  { value: 'S', label: 'S' },
+  { value: 'M', label: 'M' },
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' },
+  { value: 'XXL', label: 'XXL' },
+  { value: 'XXXL', label: 'XXXL' }
+];
+
+const lifeStatusOptions = [
+  { value: 'employed/unemployed', label: 'Employed/Unemployed' },
+  { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
+  { value: 'pensioner', label: 'Pensioner' }
+];
+
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
   const [editedMember, setEditedMember] = useState<Member>({...member});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditedMember(prev => ({
       ...prev,
-      [name]: name === 'total_hours' ? Number(value) : value
+      [name]: value
     }));
   };
 
@@ -48,12 +69,98 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
           />
           <input
             type="date"
-            name="join_date"
-            value={editedMember.join_date.split('T')[0]}
+            name="date_of_birth"
+            value={editedMember.date_of_birth}
             onChange={handleChange}
             className="mt-2 p-2 w-full border rounded"
             required
           />
+          <input
+            type="text"
+            name="street_address"
+            value={editedMember.street_address}
+            onChange={handleChange}
+            placeholder="Street Address"
+            className="mt-2 p-2 w-full border rounded"
+            required
+          />
+          <input
+            type="text"
+            name="city"
+            value={editedMember.city}
+            onChange={handleChange}
+            placeholder="City"
+            className="mt-2 p-2 w-full border rounded"
+            required
+          />
+          <input
+            type="text"
+            name="oib"
+            value={editedMember.oib}
+            onChange={handleChange}
+            placeholder="OIB"
+            pattern="[0-9]{13}"
+            title="OIB must be exactly 13 digits"
+            className="mt-2 p-2 w-full border rounded"
+            required
+          />
+          <input
+            type="tel"
+            name="cell_phone"
+            value={editedMember.cell_phone}
+            onChange={handleChange}
+            placeholder="Cell Phone"
+            className="mt-2 p-2 w-full border rounded"
+            required
+          />
+          <input
+            type="email"
+            name="email"
+            value={editedMember.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="mt-2 p-2 w-full border rounded"
+            required
+          />
+          <select
+            name="life_status"
+            value={editedMember.life_status}
+            onChange={handleChange}
+            className="mt-2 p-2 w-full border rounded"
+            required
+          >
+            {lifeStatusOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            name="tshirt_size"
+            value={editedMember.tshirt_size}
+            onChange={handleChange}
+            className="mt-2 p-2 w-full border rounded"
+            required
+          >
+            {sizeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            name="shell_jacket_size"
+            value={editedMember.shell_jacket_size}
+            onChange={handleChange}
+            className="mt-2 p-2 w-full border rounded"
+            required
+          >
+            {sizeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <select
             name="membership_type"
             value={editedMember.membership_type}
@@ -64,37 +171,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             <option value="active">Active</option>
             <option value="passive">Passive</option>
           </select>
-          <input
-            type="tel"
-            name="phone"
-            value={editedMember.phone || ''}
-            onChange={handleChange}
-            placeholder="Phone"
-            className="mt-2 p-2 w-full border rounded"
-          />
-          <input
-            type="text"
-            name="emergency_contact"
-            value={editedMember.emergency_contact || ''}
-            onChange={handleChange}
-            placeholder="Emergency Contact"
-            className="mt-2 p-2 w-full border rounded"
-          />
-          <input
-            type="number"
-            name="total_hours"
-            value={editedMember.total_hours || 0}
-            onChange={handleChange}
-            placeholder="Total Hours"
-            className="mt-2 p-2 w-full border rounded"
-          />
-          <textarea
-            name="notes"
-            value={editedMember.notes || ''}
-            onChange={handleChange}
-            placeholder="Notes"
-            className="mt-2 p-2 w-full border rounded"
-          />
+
           <div className="mt-4">
             <button 
               type="submit" 

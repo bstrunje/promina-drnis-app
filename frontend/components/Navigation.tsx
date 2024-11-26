@@ -1,4 +1,3 @@
-// src/components/Navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { User } from '../src/App';
@@ -33,7 +32,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
           )}
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">
-              Welcome, {user.username}
+              Welcome, {user.full_name}
             </span>
             <button
               onClick={onLogout}

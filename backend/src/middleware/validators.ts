@@ -23,10 +23,10 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
 };
 
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
-    const { username, password } = req.body;
+    const { full_name, password } = req.body;
 
-    if (!username || typeof username !== 'string') {
-        return res.status(400).json({ message: 'Username is required' });
+    if (!full_name || typeof full_name !== 'string') {
+        return res.status(400).json({ message: 'full name is required' });
     }
 
     if (!password || typeof password !== 'string') {

@@ -7,10 +7,19 @@ interface Props {
   user: User;
 }
 
+interface DashboardStats {
+  totalMembers: number;
+  activeMembers: number;
+  pendingApprovals: number;
+  recentActivities: number;
+  systemHealth: string;
+  lastBackup: string;
+}
+
 const SuperUserDashboard = ({ user }: Props) => {
   const navigate = useNavigate();
   
-  const stats = {
+  const stats: DashboardStats = {
     totalMembers: 156,
     activeMembers: 124,
     pendingApprovals: 8,
@@ -19,10 +28,12 @@ const SuperUserDashboard = ({ user }: Props) => {
     lastBackup: '2024-03-07 15:30'
   };
 
+  // Rest of the component remains the same
+  
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Welcome, {user.username}</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome, {user.full_name}</h1>
         <p className="opacity-90">Super User Dashboard</p>
       </div>
 

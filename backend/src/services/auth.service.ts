@@ -1,62 +1,13 @@
-// backend/src/services/auth.service.ts
+import { User, UserLogin } from '../types/user.js';
+import authRepository from '../repositories/auth.repository.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.js';
-import authRepository from '../repositories/auth.repository.js';
 import db from '../utils/db.js';
-import { User, UserRegistrationData } from '../types/user.js';
-
-const ROLES = {
-    MEMBER: 'member',
-    ADMIN: 'admin',
-    SUPERUSER: 'superuser'
-} as const;
-
-type Role = typeof ROLES[keyof typeof ROLES];
-
-interface LoginCredentials {
-    username: string;
-    password: string;
-}
+import { PoolClient } from 'pg';
 
 const authService = {
-    ROLES,
-
-    async register(userData: Omit<UserRegistrationData, 'hashedPassword' | 'username'>) {
-        // Validate role if provided
-        if (userData.role && !Object.values(ROLES).includes(userData.role as Role)) {
-            throw new Error('Invalid role specified');
-        }
-
-        // Generate username
-        const username = await authRepository.generateUsername(userData.firstName, userData.lastName);
-
-        // Hash password (initially same as username)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(username, salt);
-
-        // Begin transaction
-        return db.transaction(async (client) => {
-            const newUser = await authRepository.createUserWithMember(
-                {
-                    ...userData,
-                    username,
-                    hashedPassword,
-                    role: userData.role || ROLES.MEMBER
-                },
-                client
-            );
-
-            // Set initial password
-            await authRepository.setInitialPassword(newUser.user_id, hashedPassword);
-
-            return { message: 'User registered successfully', userId: newUser.user_id, username };
-        });
-    },
-
-    async login(credentials: LoginCredentials) {
-        const user = await authRepository.findUserByUsername(credentials.username);
-
+    async login(credentials: UserLogin) {
+        const user = await authRepository.findUserByFullName(credentials.full_name);
         if (!user) {
             throw new Error('Invalid credentials');
         }
@@ -67,45 +18,26 @@ const authService = {
         }
 
         // Update last login
-        await authRepository.updateLastLogin(user.user_id);
+        await db.query(
+            'UPDATE members SET last_login = CURRENT_TIMESTAMP WHERE member_id = $1',
+            [user.member_id]
+        );
 
-        // Create token
         const token = jwt.sign(
             {
-                userId: user.user_id,
-                memberId: user.member_id,
-                username: user.username,
+                member_id: user.member_id,
                 role: user.role
             },
-            config.jwt.secret,
-            { expiresIn: config.jwt.expiresIn }
+            process.env.JWT_SECRET!,
+            { expiresIn: '24h' }
         );
 
         return {
             token,
             user: {
-                userId: user.user_id,
-                memberId: user.member_id,
-                username: user.username,
-                role: user.role,
-                firstName: user.first_name,
-                lastName: user.last_name
-            }
-        };
-    },
-
-    validateRole(requiredRole: Role) {
-        return (user: User) => {
-            const roleHierarchy: Record<Role, number> = {
-                [ROLES.MEMBER]: 1,
-                [ROLES.ADMIN]: 2,
-                [ROLES.SUPERUSER]: 3
-            };
-
-            if (user.role in roleHierarchy) {
-                return roleHierarchy[user.role as Role] >= roleHierarchy[requiredRole];
-            } else {
-                throw new Error('Invalid user role');
+                member_id: user.member_id,
+                full_name: user.full_name,
+                role: user.role
             }
         };
     }

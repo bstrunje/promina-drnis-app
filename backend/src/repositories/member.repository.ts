@@ -29,25 +29,29 @@ export interface MemberCreateData {
 export interface MemberUpdateData {
     firstName: string;
     lastName: string;
-    phone: string;
-    emergencyContact: string;
-    notes: string;
+    street_address: string;
+    city: string;
+    oib: string;
+    cell_phone: string;
+    email: string;
+    life_status: string;
+    tshirt_size: string;
+    shell_jacket_size: string;
+    total_hours?: number;
 }
 
 export interface MemberStats {
     total_activities: number;
     total_hours: number;
-    membership_type: string;
-    status: string;
+    membership_type: 'active' | 'passive';
+    status: 'active' | 'pending' | 'inactive';
 }
 
 const memberRepository = {
     async findAll(): Promise<Member[]> {
         const result = await db.query<Member>(`
-            SELECT m.*, u.email, u.username, u.role,
-                   COALESCE(stats.total_hours, 0) as total_hours
+            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours
             FROM members m
-            JOIN users u ON m.user_id = u.user_id
             LEFT JOIN (
                 SELECT member_id, SUM(hours_spent) as total_hours
                 FROM activity_participants
@@ -70,32 +74,35 @@ const memberRepository = {
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
-        const { firstName, lastName, phone, emergencyContact, notes } = memberData;
         const result = await db.query<Member>(`
             UPDATE members
             SET first_name = $1,
                 last_name = $2,
-                phone = $3,
-                emergency_contact = $4,
-                notes = $5
-            WHERE member_id = $6
+                street_address = $3,
+                city = $4,
+                oib = $5,
+                cell_phone = $6,
+                email = $7,
+                life_status = $8,
+                tshirt_size = $9,
+                shell_jacket_size = $10,
+                total_hours = $11
+            WHERE member_id = $12
             RETURNING *
-        `, [firstName, lastName, phone, emergencyContact, notes, memberId]);
-        return result.rows[0];
-    },
-
-    async getStats(memberId: number): Promise<MemberStats> {
-        const result = await db.query<MemberStats>(`
-            SELECT 
-                COUNT(DISTINCT ap.activity_id) as total_activities,
-                COALESCE(SUM(ap.hours_spent), 0) as total_hours,
-                m.membership_type,
-                m.status
-            FROM members m
-            LEFT JOIN activity_participants ap ON m.member_id = ap.member_id
-            WHERE m.member_id = $1
-            GROUP BY m.member_id, m.membership_type, m.status
-        `, [memberId]);
+        `, [
+            memberData.firstName,
+            memberData.lastName,
+            memberData.street_address,
+            memberData.city,
+            memberData.oib,
+            memberData.cell_phone,
+            memberData.email,
+            memberData.life_status,
+            memberData.tshirt_size,
+            memberData.shell_jacket_size,
+            memberData.total_hours || 0,
+            memberId
+        ]);
         return result.rows[0];
     },
 
@@ -107,6 +114,25 @@ const memberRepository = {
             RETURNING *
         `, [firstName, lastName, email, phone, emergencyContact, notes]);
         return result.rows[0];
+    },
+    async getStats(memberId: number): Promise<MemberStats> {
+        const stats = await db.query(`
+            SELECT 
+                COUNT(DISTINCT ap.activity_id) as total_activities,
+                COALESCE(SUM(ap.hours_spent), 0) as total_hours,
+                m.membership_type,
+                m.status
+            FROM members m
+            LEFT JOIN activity_participants ap ON m.member_id = ap.member_id
+            WHERE m.member_id = $1
+            GROUP BY m.member_id, m.membership_type, m.status
+        `, [memberId]);
+    
+        if (stats.rows.length === 0) {
+            throw new Error('Member not found');
+        }
+    
+        return stats.rows[0];
     },
 
     async delete(memberId: number): Promise<Member | null> {

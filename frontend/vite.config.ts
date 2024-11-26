@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    css: {
+      postcss: './postcss.config.js',
+    },
     define: {
       __MODE__: JSON.stringify(mode),
       'process.env.NODE_ENV': JSON.stringify(mode)

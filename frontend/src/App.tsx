@@ -11,11 +11,12 @@ import AdminDashboard from '../src/features/dashboard/AdminDashboard';
 import SuperUserDashboard from '../src/features/dashboard/SuperUserDashboard';
 import Navigation from '../components/Navigation';
 import './App.css';
+import AssignPassword from './features/members/AssignPassword';
 
 export interface User {
- id: number;
- username: string;
- role: 'member' | 'admin' | 'superuser';
+  id: number;
+  full_name: string;
+  role: 'member' | 'admin' | 'superuser';
 }
 
 const AppRoutes: React.FC = () => {
@@ -52,7 +53,7 @@ const AppRoutes: React.FC = () => {
         },
         { 
           path: "members", 
-          element: user ? <MemberList /> : <Navigate to="/login" replace /> 
+          element: user && ['admin', 'superuser'].includes(user.role) ? <MemberList /> : <Navigate to="/dashboard" replace /> 
         },
         { 
           path: "activities", 
@@ -61,6 +62,10 @@ const AppRoutes: React.FC = () => {
         { 
           path: "hours", 
           element: user ? <HoursLog /> : <Navigate to="/login" replace /> 
+        },
+        {
+          path: 'assign-password',
+          element: user && ['admin', 'superuser'].includes(user.role) ? <AssignPassword /> : <Navigate to="/dashboard" replace />
         },
         { 
           path: "events", 
@@ -73,7 +78,7 @@ const AppRoutes: React.FC = () => {
         { 
           path: "super-user", 
           element: user?.role === 'superuser' ? <SuperUserDashboard user={user} /> : <Navigate to="/dashboard" replace />
-        }
+        },
       ],
     },
   ]);

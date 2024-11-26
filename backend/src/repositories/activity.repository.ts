@@ -41,6 +41,16 @@ interface ActivityMember {
     hours_spent: number;
 }
 
+interface ActivityMemberStats {
+    participation_id: number;
+    activity_id: number;
+    member_id: number;
+    hours_spent: number;
+    role: string;
+    verified_at?: Date;
+    verified_by?: number;
+}
+
 const activityRepository = {
     async findAll(): Promise<Activity[]> {
         const query = `
@@ -128,24 +138,28 @@ const activityRepository = {
         }
     },
 
-    async addMember(activityId: string | number, memberId: number, hoursSpent: number): Promise<ActivityMember> {  // Updated return type
+    async addMember(activityId: string | number, memberId: number, hoursSpent: number, client?: PoolClient): Promise<ActivityMember> {
         const query = `
             INSERT INTO activity_participants (activity_id, member_id, hours_spent)
             VALUES ($1, $2, $3)
             RETURNING *
         `;
-
-        const result = await db.query(query, [activityId, memberId, hoursSpent]);
+    
+        const result = client ? 
+            await client.query(query, [activityId, memberId, hoursSpent]) :
+            await db.query(query, [activityId, memberId, hoursSpent]);
         return result.rows[0];
     },
-
-    async removeMember(activityId: string | number, memberId: number): Promise<boolean> {  // Updated parameter type
+    
+    async removeMember(activityId: string | number, memberId: number, client?: PoolClient): Promise<boolean> {
         const query = `
             DELETE FROM activity_participants
             WHERE activity_id = $1 AND member_id = $2
         `;
-
-        await db.query(query, [activityId, memberId]);
+    
+        const result = client ? 
+            await client.query(query, [activityId, memberId]) :
+            await db.query(query, [activityId, memberId]);
         return true;
     },
 

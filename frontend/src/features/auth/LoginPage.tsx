@@ -1,71 +1,123 @@
-import { register } from '../../utils/api';
-import { FormEvent, useState } from 'react';
+// frontend/src/features/auth/LogiPage.tsx
+import { FormEvent, useState, useEffect } from 'react';
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from 'lucide-react';
-import { Alert, AlertDescription } from '@components/ui/alert';
 import { useAuth } from '../../context/AuthContext';
-import { login, LoginResponse } from '../../utils/api';
+import { login, register, LoginResponse, searchMembers } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 import ErrorMessage from '../../../components/ErrorMessage';
+import { Member } from '@shared/types/member';
+
+interface SearchResult {
+  member_id: number;
+  full_name: string;
+}
+
+interface SizeOptions {
+  value: string;
+  label: string;
+}
+
+const sizeOptions: SizeOptions[] = [
+  { value: 'XS', label: 'XS' },
+  { value: 'S', label: 'S' },
+  { value: 'M', label: 'M' },
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' },
+  { value: 'XXL', label: 'XXL' },
+  { value: 'XXXL', label: 'XXXL' }
+];
+
+
+const lifeStatusOptions = [
+ { value: 'employed/unemployed', label: 'Employed/Unemployed' },
+ { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
+ { value: 'pensioner', label: 'Pensioner' }
+];
+
 
 const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [step, setStep] = useState(0); // 0: Initial, 1: Enter Name, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
   const [loginData, setLoginData] = useState({
-    username: '',
+    full_name: '',
     password: ''
+});
+
+  const [registerData, setRegisterData] = useState<Omit<Member, 'member_id' | 'total_hours'>>({
+    first_name: '',
+    last_name: '',
+    date_of_birth: '',
+    street_address: '',
+    city: '',
+    oib: '',
+    cell_phone: '',
+    email: '',
+    life_status: 'employed/unemployed', // Set a default value from the allowed types
+    tshirt_size: 'M', // Default size
+    shell_jacket_size: 'M', // Default size
+    status: 'pending',
+    membership_type: 'regular' as const,
   });
 
-  const [registerData, setRegisterData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: ''
-  });
+  
+  type MessageType = 'success' | 'error';
+  interface Message {
+     type: MessageType;
+     content: string;
+}
+const [message, setMessage] = useState<Message | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showResults && !(event.target as HTMLElement).closest('.search-container')) {
+        setShowResults(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showResults]);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    console.log('Login attempt with username:', loginData.username);
     
     try {
-        console.log('Calling login function');
-        const data: LoginResponse = await login(loginData.username, loginData.password);
-        console.log('Login response received:', data);
-        authLogin(data.user, data.token);
-        console.log('User role:', data.user.role);
-        
-        // Redirect based on user role
-        switch (data.user.role) {
-          case 'admin':
-            console.log('Redirecting to /admin');
-            navigate('/admin');
-            console.log('Navigation function called for admin');
-            break;
-          case 'member':
-            console.log('Redirecting to /dashboard');
-            navigate('/dashboard');
-            console.log('Navigation function called for member');
-            break;
-          case 'superuser':
-            console.log('Redirecting to /super-user');
-            navigate('/super-user');
-            console.log('Navigation function called for superuser');
-            break;
-          default:
-            console.log('Redirecting to /');
-            navigate('/');
-            console.log('Navigation function called for default');
-            break;
+      const data: LoginResponse = await login(loginData.full_name, loginData.password);
+      const user = {
+        id: data.member.id,
+        full_name: data.member.full_name,
+        role: data.member.role
+      };
+      authLogin(user, data.token);
+    
+      // Redirect based on user role
+      switch (data.member.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'member':
+          navigate('/dashboard');
+          break;
+        case 'superuser':
+          navigate('/super-user');
+          break;
+        default:
+          navigate('/');
+          break;
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -73,60 +125,117 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+};
 
-  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!acceptedTerms) {
-      setError('You must accept the terms and conditions to register');
-      return;
-    }
-    
-    if (registerData.password !== registerData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  if (!acceptedTerms) {
+    setMessage({ type: 'error', content: 'You must accept the terms and conditions to register' });
+    return;
+  }
+
+  if (!/^\d{13}$/.test(registerData.oib)) {
+    setMessage({ type: 'error', content: 'OIB must be exactly 13 digits' });
+    return;
+  }
+
+  if (!registerData.email.includes('@')) {
+    setMessage({ type: 'error', content: 'Please enter a valid email address' });
+    return;
+  }
+
+  setMessage(null);
+  setLoading(true);
   
-    setError('');
-    setLoading(true);
-    
-    try {
-      const data = await register(registerData);
-      authLogin(data.user, data.token);
-      // Redirect based on user role
-      switch (data.user.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'member':
-          navigate('/member');
-          break;
-        case 'superuser':
-          navigate('/super-user');
-          break;
-        default:
-          navigate('/');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError('Failed to register. Please try again.');
-    } finally {
-      setLoading(false);
+  try {
+    const memberData: Omit<Member, 'member_id' | 'total_hours'> = {
+      ...registerData,
+      status: 'pending',
+      membership_type: 'regular' as const,
+      first_name: registerData.first_name,
+      last_name: registerData.last_name,
+      date_of_birth: registerData.date_of_birth,
+      street_address: registerData.street_address,
+      city: registerData.city,
+      oib: registerData.oib,
+      cell_phone: registerData.cell_phone,
+      email: registerData.email,
+      life_status: registerData.life_status,
+      tshirt_size: registerData.tshirt_size,
+      shell_jacket_size: registerData.shell_jacket_size
+    };
+
+    const response = await register(memberData);
+    if (response.message) {
+      setMessage({ type: 'success', content: response.message });
+      setTimeout(() => {
+        setIsRegistering(false);
+      }, 3000);
     }
-  };
+  } catch (error: unknown) {
+    console.error('Registration error:', error);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status: number; data?: { message?: string } } };
+      if (axiosError.response?.status === 400 && typeof axiosError.response.data?.message === 'string') {
+        const errorMessage = axiosError.response.data.message;
+        if (errorMessage === "Member with this OIB already exists") {
+          setMessage({ 
+            type: 'error', 
+            content: 'A member with this OIB is already registered. Please use a different OIB or contact support if you think this is a mistake.' 
+          });
+        } else {
+          setMessage({
+            type: 'error',
+            content: errorMessage || 'Failed to register. Please try again.'
+          });
+        }
+      } else {
+        setMessage({
+          type: 'error',
+          content: 'Failed to register. Please try again.'
+        });
+      }
+    } else if (error instanceof Error) {
+      setMessage({
+        type: 'error',
+        content: error.message
+      });
+    } else {
+      setMessage({
+        type: 'error',
+        content: 'Failed to register. Please try again.'
+      });
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-        <div className="p-6 bg-blue-600 text-white">
-          <h2 className="text-center text-3xl font-bold">
-            {isRegistering ? 'Create Account' : 'Welcome Back'}
-          </h2>
-          <p className="mt-2 text-center text-blue-100">
-            {isRegistering ? 'Join our mountaineering community' : 'Sign in to your account'}
-          </p>
+        <div className="p-6 bg-blue-600 text-white text-center">
+          <div className="mb-4">
+            {/* Placeholder for Logo */}
+            <div className="w-20 h-20 bg-gray-300 mx-auto rounded-full"></div>
+          </div>
+          <h2 className="text-2xl font-bold">Mountain Society "Promina"</h2>
         </div>
 
+        <div className="p-6 bg-blue-600 text-white text-center">
+  {/* ... existing header content ... */}
+</div>
+
+{message && (
+  <div className={`p-4 rounded-md mx-6 mt-4 ${
+    message.type === 'success' 
+      ? 'bg-green-50 text-green-800 border border-green-200' 
+      : 'bg-red-50 text-red-800 border border-red-200'
+  }`}>
+    {message.content}
+  </div>
+)}
+        
         {error && <ErrorMessage message={error} />}
 
         <div className="px-6 py-4 bg-gray-50 border-b">
@@ -159,192 +268,361 @@ const LoginPage = () => {
           )}
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mx-6 mt-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        
 
         <div className="p-6">
-          {isRegistering ? (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">
-                    I have read and accept the terms and conditions, privacy policy, and membership rules
-                  </span>
-                </label>
-              </div>
+        {isRegistering ? (
+  <form onSubmit={handleRegister} className="space-y-6">
+    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+      <label className="flex items-start">
+        <input
+          type="checkbox"
+          checked={acceptedTerms}
+          onChange={(e) => setAcceptedTerms(e.target.checked)}
+          className="mt-1 h-4 w-4 text-blue-600"
+        />
+        <span className="ml-2 text-sm text-gray-600">
+          I have read and accept the terms and conditions, privacy policy, and membership rules
+        </span>
+      </label>
+    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={registerData.firstName}
-                    onChange={(e) => setRegisterData({...registerData, firstName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={registerData.lastName}
-                    onChange={(e) => setRegisterData({...registerData, lastName: e.target.value})}
-                  />
-                </div>
-              </div>
+    {/* Name */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Name</label>
+      <input
+        type="text"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.first_name}
+        onChange={(e) => setRegisterData({...registerData, first_name: e.target.value})}
+      />
+    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  type="email"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                />
-              </div>
+    {/* Surname */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Surname</label>
+      <input
+        type="text"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.last_name}
+        onChange={(e) => setRegisterData({...registerData, last_name: e.target.value})}
+      />
+    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Username</label>
-                <input
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={registerData.username}
-                  onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
-                />
-              </div>
+    {/* Date of birth */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Date of birth</label>
+      <input
+        type="date"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.date_of_birth}
+        onChange={(e) => setRegisterData({...registerData, date_of_birth: e.target.value})}
+      />
+    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-                <div className="mt-1 relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
-                  </button>
-                </div>
-              </div>
+    {/* Address */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Address</label>
+      <input
+        type="text"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.street_address}
+        onChange={(e) => setRegisterData({...registerData, street_address: e.target.value})}
+      />
+    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                <input
-                  type="password"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={registerData.confirmPassword}
-                  onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                />
-              </div>
+    {/* City/town */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">City/town</label>
+      <input
+        type="text"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.city}
+        onChange={(e) => setRegisterData({...registerData, city: e.target.value})}
+      />
+    </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  loading && 'opacity-50 cursor-not-allowed'
-             }`}
-          >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-               </span>
-             ) : (
-               <span className="flex items-center">
-                 <LogIn className="w-5 h-5 mr-2" />
-                 Sign In
-               </span>
-             )}
-          </button>
-            </form>
-          ) : (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Username</label>
-                <input
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={loginData.username}
-                  onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-                />
-              </div>
+    {/* OIB */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">OIB</label>
+      <input
+        type="text"
+        required
+        pattern="[0-9]{13}"
+        title="OIB must be exactly 13 digits"
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.oib}
+        onChange={(e) => setRegisterData({...registerData, oib: e.target.value})}
+      />
+    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-                <div className="mt-1 relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
-                  </button>
-                </div>
-              </div>
+    {/* Mobile phone number */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Mobile phone number</label>
+      <input
+        type="tel"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.cell_phone}
+        onChange={(e) => setRegisterData({...registerData, cell_phone: e.target.value})}
+      />
+    </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  loading && 'opacity-50 cursor-not-allowed'
-                }`}
-              >
-                {loading ? (
-                  <span>Signing in...</span>
-                ) : (
-                  <span className="flex items-center">
-                    <LogIn className="w-5 h-5 mr-2" />
-                    Sign In
-                  </span>
-                )}
-              </button>
-            </form>
+    {/* E-mail */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">E-mail</label>
+      <input
+        type="email"
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.email}
+        onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+      />
+    </div>
+
+    {/* Life status */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Life status</label>
+      <select
+    required
+    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    value={registerData.life_status}
+    onChange={(e) => setRegisterData({
+        ...registerData,
+        life_status: e.target.value as "employed/unemployed" | "child/pupil/student" | "pensioner"
+    })}
+>
+    <option value="">Select status</option>
+    {lifeStatusOptions.map(option => (
+        <option key={option.value} value={option.value}>
+            {option.label}
+        </option>
+    ))}
+</select>
+    </div>
+
+    {/* T-shirt */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">T-shirt</label>
+      <select
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.tshirt_size}
+        onChange={(e) => setRegisterData({...registerData, tshirt_size: e.target.value as "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL"})}
+      >
+        <option value="">Select size</option>
+        {sizeOptions.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Shell jacket */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Shell jacket</label>
+      <select
+        required
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        value={registerData.shell_jacket_size}
+        onChange={(e) => setRegisterData({...registerData, shell_jacket_size: e.target.value as "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL"})}
+      >
+        <option value="">Select size</option>
+        {sizeOptions.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="flex space-x-4">
+      <button
+        type="button"
+        onClick={() => {
+          setIsRegistering(false);
+          setError('');
+        }}
+        className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        Back
+      </button>
+      <button
+        type="submit"
+        disabled={loading || !acceptedTerms}
+        className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+          (loading || !acceptedTerms) && 'opacity-50 cursor-not-allowed'
+        }`}
+      >
+        {loading ? (
+          <span>Registering...</span>
+        ) : (
+          <span className="flex items-center">
+            <LogIn className="w-5 h-5 mr-2" />
+            Register
+          </span>
+        )}
+      </button>
+    </div>
+  </form>
+) : (
+            <>
+{step === 0 && (
+    <div className="space-y-4">
+       <button
+          onClick={() => setStep(1)}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >           
+          Login
+        </button>
+        <button
+           onClick={() => setIsRegistering(true)}
+           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Do you want to become a new member? Register
+        </button>
+    </div>            
+  )}                                                                                                                                         
+
+{step === 1 && (
+  <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+	<div className="relative">
+		<input
+		  type="text"
+		  required
+		  placeholder="Enter your full name"
+		  className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
+		  value={loginData.full_name}
+		  onChange={async (e) => {
+			const value = e.target.value;
+			setLoginData({...loginData, full_name: value});
+			
+			if (value.length >= 2) {
+			  try {
+				const results = await searchMembers(value) as SearchResult[];
+				setSearchResults(results);
+				setShowResults(true);
+			  } catch (error) {
+				console.error('Search error:', error);
+			  }
+			} else {
+			  setSearchResults([]);
+			  setShowResults(false);
+			}
+		  }}
+		  onFocus={() => {
+			if (searchResults.length > 0) {
+			  setShowResults(true);
+			}
+		  }}
+		  />
+		</div>
+		
+		{/* Search Results Dropdown */}
+		{showResults && searchResults.length > 0 && (
+		  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+			{searchResults.map((result) => (
+			  <button
+        type="button"
+        key={result.member_id}
+        className="w-full px-4 py-2 text-left"
+        onMouseDown={() => {
+          setLoginData({...loginData, full_name: result.full_name});
+          setShowResults(false);
+          setStep(2);
+        }}
+      >
+        {result.full_name}
+      </button>
+    ))}
+		  </div>
+		)}
+
+	
+	<div className="flex space-x-4">
+	  <button
+		type="button"
+		onClick={() => setStep(0)}
+		className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+	  >
+		Back
+	  </button>
+	</div>
+  </form>
+)}
+
+{step === 2 && (
+  <form onSubmit={handleLogin} className="space-y-4">
+    <div>
+      <div className="mt-1 relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          required
+          placeholder="Enter your password"
+          className="block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
+          value={loginData.password}
+          onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+        />
+        <button
+          type="button"
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+        </button>
+      </div>
+    </div>
+
+    <div className="flex space-x-4">
+      <button
+        type="button"
+        onClick={() => setStep(1)}
+        className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        Back
+      </button>
+      <button
+        type="submit"
+        disabled={loading}
+        className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+          loading && 'opacity-50 cursor-not-allowed'
+        }`}
+      >
+        {loading ? (
+          <span>Signing in...</span>
+        ) : (
+          <span className="flex items-center">
+            <LogIn className="w-5 h-5 mr-2" />
+            Sign In
+          </span>
+        )}
+      </button>
+    </div>
+  </form>
+)}
+            </>
           )}
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              {isRegistering ? 'Already have an account? Sign in' : 'Need an account? Register'}
-            </button>
-          </div>
+<div className="mt-6 text-center">
+  {isRegistering && (
+    <button
+      type="button"
+      onClick={() => {
+        setIsRegistering(false);
+        setError('');
+      }}
+      className="text-sm text-blue-600 hover:text-blue-800"
+    >
+      Already have an account? Sign in
+    </button>
+  )}
+</div>
         </div>
       </div>
     </div>

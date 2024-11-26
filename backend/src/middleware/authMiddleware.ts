@@ -9,8 +9,8 @@ interface JWTPayload {
 }
 
 export interface DatabaseUser {
-    id: number; // Primary key in the users table
-    user_id: number;    // Alias for id, used as foreign key in other tables
+    id: number;
+    user_id: number;
     username: string;
     email: string;
     role_name: string;
@@ -43,30 +43,38 @@ const authMiddleware = async (
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
-        // Get user from database with their role
-        const result = await db.query<DatabaseUser>(
-            `SELECT u.*, r.role_name 
-             FROM users u
-             JOIN user_roles ur ON u.user_id = ur.user_id
-             JOIN roles r ON ur.role_id = r.role_id
-             WHERE u.user_id = $1 AND u.is_active = true`,
-            [decoded.id]
-        );
+// Get member from database
+const result = await db.query<DatabaseUser>(
+    `SELECT 
+        m.member_id as id, 
+        m.member_id as user_id,
+        m.first_name || ' ' || m.last_name as username,
+        m.email,
+        CASE 
+            WHEN m.role = 'admin' THEN 'admin'
+            WHEN m.role = 'superuser' THEN 'superuser'
+            ELSE 'member'
+        END as role_name,
+        m.status = 'active' as is_active
+     FROM members m
+     WHERE m.member_id = $1 AND m.status = 'active'`,
+    [decoded.id]
+);
 
-        if (result.rows.length === 0) {
-            res.status(401).json({ message: 'User not found or inactive' });
-            return;
-        }
+if (result.rows.length === 0) {
+    res.status(401).json({ message: 'Member not found or inactive' });
+    return;
+}
 
-        // Attach user to request object
-        req.user = result.rows[0];
-        next();
-    } catch (error) {
-        console.error('Authentication error:', error);
-        res.status(401).json({ message: 'Token is not valid' });
-    }
+// Attach member to request object
+req.user = result.rows[0];
+next();
+} catch (error) {
+    console.error('Authentication error:', error);
+    res.status(401).json({ message: 'Token is not valid' });
+}
 };
 
 // Role checking middleware

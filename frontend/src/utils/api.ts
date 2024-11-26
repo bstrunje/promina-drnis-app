@@ -1,13 +1,30 @@
 import axios from 'axios';
+import { Member } from '@shared/types/member';
 
 export interface RegisterResponse {
-  user: {
+  member: {
     id: number;
-    username: string;
+    full_name: string;
     email: string;
-    role: string;
+    role: 'member' | 'admin' | 'superuser';
   };
   token: string;
+}
+
+export interface LoginResponse {
+  member: {
+    id: number;
+    full_name: string;
+    email: string;
+    role: 'member' | 'admin' | 'superuser';
+  };
+  token: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  member_id?: number;
+  status: 'pending';
 }
 
 const API_URL = 'http://localhost:3000/api'; // Adjust this URL as needed
@@ -20,38 +37,38 @@ const api = axios.create({
 });
 
 export interface LoginResponse {
-  user: {
+  member: {
     id: number;
-    username: string;
+    full_name: string;
     email: string;
     role: 'member' | 'admin' | 'superuser';
   };
   token: string;
 }
 
-export const login = async (username: string, password: string): Promise<LoginResponse> => {
-  console.log('Sending login request for username:', username);
+export const login = async (full_name: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>('/auth/login', { username, password });
-    console.log('Login response received:', response.data);
+    const response = await api.post<LoginResponse>('/auth/login', { full_name, password });
     return response.data;
-  } catch (error: unknown) {
-    console.error('Login request failed:', error);
-    if (error && typeof error === 'object' && 'response' in error) {
-      console.log('Error response:', (error as any).response?.data);
-    }
+  } catch (error) {
+    console.error('Login error:', error);
     throw error;
   }
 };
 
-export const register = async (registerData: {
-  username: string;
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}): Promise<RegisterResponse> => {
-  const response = await api.post<RegisterResponse>('/auth/register', registerData);
+// Use Member type in register function
+export const register = async (registerData: Omit<Member, 'member_id' | 'total_hours'>): Promise<RegisterResponse> => {
+  try {
+    const response = await api.post<RegisterResponse>('/auth/register', registerData);
+    return response.data;
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+};
+
+export const searchMembers = async (searchTerm: string) => {
+  const response = await api.get(`/auth/search-members?searchTerm=${encodeURIComponent(searchTerm)}`);
   return response.data;
 };
 

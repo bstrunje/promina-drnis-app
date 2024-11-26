@@ -3,8 +3,7 @@ import React, { createContext, useState, useContext, ReactNode, useCallback } fr
 
 interface User {
   id: number;
-  username: string;
-  email: string;
+  full_name: string;
   role: 'member' | 'admin' | 'superuser';
 }
 

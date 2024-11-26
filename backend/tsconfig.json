@@ -28,7 +28,7 @@
   },
   "include": [
     "src/**/*"
-  ],
+, "hash-password.js"  ],
   "exclude": [
     "node_modules",
     "dist",
