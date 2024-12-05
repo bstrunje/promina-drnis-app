@@ -1,4 +1,3 @@
-// backend/src/controllers/activity.controller.ts
 import { Request, Response } from 'express';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import activityService from '../services/activity.service.js';
@@ -28,12 +27,11 @@ interface ActivityUpdateData {
     start_date?: Date;
     end_date?: Date;
     location?: string;
-    difficulty_level?: 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme'; 
+    difficulty_level?: 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';
     max_participants?: number;
     activity_type_id?: number;
 }
 
-// Extend Express Request to include user
 declare global {
     namespace Express {
         interface Request {
@@ -79,7 +77,7 @@ const activityController = {
         try {
             const activityData: ActivityCreateInput = {
                 ...req.body,
-                created_by: req.user?.id // Using the user info from request
+                created_by: req.user?.id
             };
             
             const activity = await activityService.createActivity(activityData);
@@ -133,7 +131,7 @@ const activityController = {
         
         const result = await activityService.addMemberToActivity(
             activityId,
-            parseInt(memberId, 10), // Convert string to number
+            parseInt(memberId, 10),
             hoursSpent
         );
         res.status(200).json(result);
@@ -153,29 +151,27 @@ const activityController = {
         }
     },
 
-    
     async removeMemberFromActivity(
         req: Request<{ activityId: string; memberId: string }>, 
-    res: Response
-): Promise<void> {
-    try {
-        const { activityId, memberId } = req.params;
-        await activityService.removeMemberFromActivity(
-            activityId,
-            parseInt(memberId, 10)  // Convert string to number
-        );
-        res.json({ message: 'Member removed from activity successfully' });
-    } catch (error) {
-        console.error('Controller error:', error);
-        if (error instanceof Error && error.message.includes('not found')) {
-            res.status(404).json({ message: error.message });
-        } else {
-            res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Unknown error' 
-            });
+        res: Response
+    ): Promise<void> {
+        try {
+            const { activityId, memberId } = req.params;
+            await activityService.removeMemberFromActivity(
+                activityId,
+                parseInt(memberId, 10)
+            );
+            res.json({ message: 'Member removed from activity successfully' });
+        } catch (error) {
+            console.error('Controller error:', error);
+            if (error instanceof Error && error.message.includes('not found')) {
+                res.status(404).json({ message: error.message });
+            } else {
+                res.status(500).json({ 
+                    message: error instanceof Error ? error.message : 'Unknown error' 
+                });
             }
         }
-        
     },
 
     async deleteActivity(
@@ -199,7 +195,6 @@ const activityController = {
             }
         }
     }
-    
 };
 
 export default activityController;

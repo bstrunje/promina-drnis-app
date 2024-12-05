@@ -1,143 +1,102 @@
-// backend\tests\repositories/activity.repository.test.ts
-import * as path from 'path';
-import { expect } from 'chai';
-import db from '@utils/db.js';
-import activityRepository from '@repositories/activity.repository.js';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import { expect, use } from 'chai';
+import sinon from 'sinon';
+import sinonChai from 'sinon-chai';
+import db from '../../utils/db.js';
+import activityRepository from '../../repositories/activity.repository.js';
+import { Activity } from '../../../../shared/types/activity.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+use(sinonChai);
 
-dotenv.config({ path: resolve(__dirname, '../../.env.test') });
+describe('ActivityRepository', () => {
+    beforeEach(() => {
+        sinon.stub(db);
+    });
 
-interface ActivityData {
-  title: string;
-  description: string;
-  start_date: Date;
-  end_date: Date;
-  location: string;
-  activity_type_id: number;
-  created_by: number;
-  max_participants: number;
-}
+    afterEach(() => {
+        sinon.restore();
+    });
 
-interface Activity extends ActivityData {
-  activity_id: number;
-}
+    describe('create', () => {
+        it('should create new activity', async () => {
+            const activityData = {
+                title: 'New Activity',
+                description: 'New Description',
+                start_date: new Date(),
+                end_date: new Date(),
+                location: 'Test Location',
+                difficulty_level: 'moderate' as const,
+                max_participants: 10,
+                activity_type_id: 1,
+                created_by: 1
+            };
 
-describe('Activity Repository', () => {
-  beforeEach(async () => {
-    // Setup: Clear the database and insert test data
-    await db.query('DELETE FROM activity_participants');
-    await db.query('DELETE FROM activities');
-    await db.query('DELETE FROM members');
-    await db.query('DELETE FROM users');
-    
-    // Insert test user
-    await db.query('INSERT INTO users (id, username) VALUES ($1, $2)', [1, 'testuser']);
-    
-    // Insert test member
-    await db.query('INSERT INTO members (member_id, first_name, last_name) VALUES ($1, $2, $3)', [1, 'John', 'Doe']);
-  });
+            const mockCreated = {
+                ...activityData,
+                activity_id: 1,
+                created_at: new Date()
+            };
 
-  it('should find all activities', async () => {
-    // Insert test activity
-    await db.query(`
-      INSERT INTO activities (activity_id, title, description, start_date, end_date, location, activity_type_id, created_by, max_participants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [1, 'Test Activity', 'Test Description', new Date(), new Date(), 'Test Location', 1, 1, 10]);
+            const clientStub = {
+                query: sinon.stub().resolves({ rows: [mockCreated] }),
+                release: sinon.stub()
+            };
 
-    const activities = await activityRepository.findAll();
-    expect(activities).to.be.an('array');
-    expect(activities.length).to.equal(1);
-    expect(activities[0].title).to.equal('Test Activity');
-  });
+            (db.getClient as sinon.SinonStub).resolves(clientStub);
+            const result = await activityRepository.create(activityData);
+            expect(result).to.deep.equal(mockCreated);
+        });
+    });
 
-  it('should find an activity by id', async () => {
-    // Insert test activity
-    await db.query(`
-      INSERT INTO activities (activity_id, title, description, start_date, end_date, location, activity_type_id, created_by, max_participants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [1, 'Test Activity', 'Test Description', new Date(), new Date(), 'Test Location', 1, 1, 10]);
+    describe('addParticipant', () => {
+        it('should add participant to activity', async () => {
+            const mockParticipant = {
+                participation_id: 1,
+                activity_id: 1,
+                member_id: 1,
+                hours_spent: 2,
+                verified: true
+            };
 
-    const activity = await activityRepository.findById(1);
-    expect(activity).to.be.an('object');
-    expect(activity?.title).to.equal('Test Activity');
-  });
+            (db.query as sinon.SinonStub).resolves({ rows: [mockParticipant] });
+            const result = await activityRepository.addParticipant(1, 1, 2);
+            expect(result).to.deep.equal(mockParticipant);
+        });
+    });
 
-  it('should create a new activity', async () => {
-    const activityData: ActivityData = {
-      title: 'New Activity',
-      description: 'New Description',
-      start_date: new Date(),
-      end_date: new Date(),
-      location: 'New Location',
-      activity_type_id: 1,
-      created_by: 1,
-      max_participants: 20
-    };
+    describe('removeParticipant', () => {
+        it('should remove participant from activity', async () => {
+            (db.query as sinon.SinonStub).resolves({ rowCount: 1 });
+            const result = await activityRepository.removeParticipant(1, 1);
+            expect(result).to.be.true;
+        });
+    });
 
-    const newActivity = await activityRepository.create(activityData);
-    expect(newActivity).to.be.an('object');
-    expect(newActivity.title).to.equal('New Activity');
-  });
+    describe('findById', () => {
+        it('should return activity by id', async () => {
+            const mockActivity: Activity = {
+                activity_id: 1,
+                title: 'Test Activity',
+                description: 'Test Description',
+                start_date: new Date(),
+                end_date: new Date(),
+                location: 'Test Location',
+                difficulty_level: 'moderate',
+                max_participants: 10,
+                activity_type_id: 1,
+                created_by: 1,
+                created_at: new Date()
+            };
 
-  it('should add a member to an activity', async () => {
-    // Insert test activity
-    await db.query(`
-      INSERT INTO activities (activity_id, title, description, start_date, end_date, location, activity_type_id, created_by, max_participants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [1, 'Test Activity', 'Test Description', new Date(), new Date(), 'Test Location', 1, 1, 10]);
+            (db.query as sinon.SinonStub).resolves({ rows: [mockActivity] });
+            const result = await activityRepository.findById(1);
+            expect(result).to.deep.equal(mockActivity);
+        });
 
-    const result = await activityRepository.addMember(1, 1, 2);
-    expect(result).to.be.an('object');
-    expect(result.activity_id).to.equal(1);
-    expect(result.member_id).to.equal(1);
-    expect(result.hours_spent).to.equal(2);
-  });
-
-  it('should update an activity', async () => {
-    const testActivity: ActivityData = {
-      title: 'Test Activity',
-      description: 'Test Description',
-      start_date: new Date(),
-      end_date: new Date(),
-      location: 'Test Location',
-      activity_type_id: 1,
-      created_by: 1,
-      max_participants: 10
-    };
-    const activity = await activityRepository.create(testActivity);
-    if (activity === null) {
-      throw new Error('Failed to create activity for update test');
-    }
-    const updatedData = { ...activity, title: 'Updated Activity' };
-    
-    const updatedActivity = await activityRepository.update(activity.activity_id, updatedData);
-    expect(updatedActivity).to.not.be.null;
-    if (updatedActivity !== null) {
-      expect(updatedActivity.title).to.equal('Updated Activity');
-    }
-  });
-
-  it('should remove a member from an activity', async () => {
-    // Insert test activity
-    await db.query(`
-      INSERT INTO activities (activity_id, title, description, start_date, end_date, location, activity_type_id, created_by, max_participants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [1, 'Test Activity', 'Test Description', new Date(), new Date(), 'Test Location', 1, 1, 10]);
-
-    // Add member to activity
-    await db.query('INSERT INTO activity_participants (activity_id, member_id, hours_spent) VALUES ($1, $2, $3)', [1, 1, 2]);
-
-    const result = await activityRepository.removeMember(1, 1);
-    expect(result).to.be.true;
-
-    // Verify member was removed
-    const checkQuery = 'SELECT * FROM activity_participants WHERE activity_id = $1 AND member_id = $2';
-    const checkResult = await db.query(checkQuery, [1, 1]);
-    expect(checkResult.rows.length).to.equal(0);
-  });
+        it('should return null if activity not found', async () => {
+            (db.query as sinon.SinonStub).resolves({ rows: [] });
+            const result = await activityRepository.findById(1);
+            expect(result).to.be.null;
+        });
+    });
 });

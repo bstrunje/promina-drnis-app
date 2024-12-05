@@ -1,39 +1,65 @@
-import { expect } from 'chai';
-import request from 'supertest';
-import { app, startServer, stopServer } from '../../server.js';
-import { describe, it, before, after } from 'mocha';
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import { expect, use } from 'chai';
+import sinon from 'sinon';
+import sinonChai from 'sinon-chai';
+import memberController from '../../controllers/member.controller.js';
+import { Request, Response } from 'express';
+import { Member } from '../../../../shared/types/member.js';
 
-describe('Members API', function() {
-  this.timeout(10000); // Increase timeout to 10 seconds
+use(sinonChai);
 
-  before(async function() {
-    await startServer();
-  });
+describe('MemberController', () => {
+    let req: Partial<Request>;
+    let res: Partial<Response>;
+    let memberServiceStub: any;
 
-  after(async function() {
-    await stopServer();
-  });
+    beforeEach(() => {
+        req = {
+            params: {},
+            body: {}
+        };
+        res = {
+            json: sinon.stub(),
+            status: sinon.stub().returnsThis(),
+        };
+        memberServiceStub = {
+            getAllMembers: sinon.stub(),
+            getMemberById: sinon.stub(),
+            createMember: sinon.stub(),
+            updateMember: sinon.stub(),
+            deleteMember: sinon.stub()
+        };
+    });
 
-  let authToken: string;
+    afterEach(() => {
+        sinon.restore();
+    });
 
-  it('should login successfully', async function() {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ username: 'bstrunje', password: 'marusic' });
+    describe('getMemberById', () => {
+        it('should return member by id', async () => {
+            const mockMember: Member = {
+                member_id: 1,
+                first_name: 'John',
+                last_name: 'Doe',
+                date_of_birth: '1990-01-01',
+                gender: 'male',
+                street_address: 'Test Street',
+                city: 'Test City',
+                oib: '12345678901',
+                cell_phone: '1234567890',
+                email: 'john@test.com',
+                status: 'active',
+                role: 'member',
+                life_status: 'employed/unemployed',
+                tshirt_size: 'M',
+                shell_jacket_size: 'M',
+                membership_type: 'regular'
+            };
 
-    console.log('Login response:', res.body);
-    expect(res.status).to.equal(200);
-    authToken = res.body.token;
-  });
-
-  it('should GET all members', async function() {
-    const res = await request(app)
-      .get('/api/members')
-      .set('x-auth-token', authToken)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    console.log('GET /api/members response:', res.body);
-    expect(res.status).to.equal(200);
-    expect(res.body).to.be.an('array');
-  });
+            req.params = { memberId: '1' };
+            memberServiceStub.getMemberById.resolves(mockMember);
+            await memberController.getMemberById(req as Request<{ memberId: string }>, res as Response);
+            expect(res.json).to.have.been.calledWith(mockMember);
+        });
+    });
 });

@@ -14,5 +14,11 @@ router.get('/:memberId/stats', authenticateToken, memberController.getMemberStat
 router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);
 router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
 router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
+router.post('/assign-password', authenticateToken, roles.requireAdmin, memberController.assignPassword);
 
+router.get('/test', (req, res) => {
+    console.log('Test route hit');
+    res.json({ message: 'Member routes are working' });
+  });
+  
 export default router;

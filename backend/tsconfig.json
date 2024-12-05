@@ -1,40 +1,36 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "outDir": "./dist/src",
+    "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src*"],
-      "@shared/*": ["../shared/types/*"],
-      "@utils/*": ["./src/utils/*"],
-      "@repositories/*": ["./src/repositories/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/types/*"]
     },
-    "types": ["node", "mocha", "chai", "supertest", "chai-http"],
-    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": ["node", "mocha", "chai", "supertest", "sinon", "sinon-chai"],
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types", "./src/types"],
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
     "composite": true,
     "declaration": true
   },
+  "references": [
+    { "path": "../shared" }
+  ],
   "include": [
-    "src/**/*"
-, "hash-password.js"  ],
+    "src/**/*",
+    "src/types/*.d.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
-    "tests"
-  ],
-  "references": [
-    { "path": "../shared" }
+    "**/*.spec.ts"
   ]
 }

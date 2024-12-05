@@ -9,7 +9,6 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// Error class for database operations
 export class DatabaseError extends Error {
     constructor(
         message: string,
@@ -20,7 +19,6 @@ export class DatabaseError extends Error {
     }
 }
 
-// Pool configuration interface
 interface PoolConfig {
     user: string;
     host: string;
@@ -32,14 +30,12 @@ interface PoolConfig {
     connectionTimeoutMillis?: number;
 }
 
-// Query options interface
 interface QueryOptions {
     singleRow?: boolean;
     requireResults?: boolean;
     timeout?: number;
 }
 
-// Database configuration
 const poolConfig: PoolConfig = {
     user: process.env.DB_USER || 'bozos',
     host: process.env.DB_HOST || 'localhost',
@@ -51,10 +47,8 @@ const poolConfig: PoolConfig = {
     connectionTimeoutMillis: 2000,
 };
 
-// Create pool instance
 const pool = new Pool(poolConfig);
 
-// Pool event handlers
 pool.on('connect', () => {
     console.log('📦 Database pool connected');
 });
@@ -64,11 +58,7 @@ pool.on('error', (err: Error) => {
     process.exit(-1);
 });
 
-// Database interface
 const db = {
-    /**
-     * Execute a SQL query with proper error handling and logging
-     */
     async query<T extends pkg.QueryResultRow = any>(
         textOrConfig: string | pkg.QueryConfig,
         params?: any[],
@@ -127,9 +117,6 @@ const db = {
         }
     },
 
-    /**
-     * Transaction wrapper
-     */
     async transaction<T>(callback: (client: pkg.PoolClient) => Promise<T>): Promise<T> {
         const client = await pool.connect();
         try {
@@ -149,9 +136,6 @@ const db = {
         return await pool.connect();
     },
 
-    /**
-     * Get pool statistics
-     */
     getPoolStats() {
         return {
             total: pool.totalCount,
@@ -160,9 +144,6 @@ const db = {
         };
     },
 
-    /**
-     * Check database connection
-     */
     async checkConnection(): Promise<boolean> {
         try {
             await this.query('SELECT 1');
@@ -172,9 +153,6 @@ const db = {
         }
     },
 
-    /**
-     * Properly close the pool
-     */
     async close(): Promise<void> {
         await pool.end();
         console.log('Database pool closed');

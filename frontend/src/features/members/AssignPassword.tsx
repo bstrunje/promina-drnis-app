@@ -1,4 +1,4 @@
-// frontend/src/features/members/AssignPassword.tsx
+// root/frontend/src/features/members/AssignPassword.tsx
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../../utils/config';
 
@@ -11,7 +11,6 @@ const AssignPassword: React.FC = () => {
   const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<number | ''>('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('member');
 
   useEffect(() => {
     fetchPendingMembers();
@@ -42,15 +41,13 @@ const AssignPassword: React.FC = () => {
         body: JSON.stringify({
           memberId: selectedMember,
           password,
-          role,
         }),
       });
 
       if (response.ok) {
-        alert('Password assigned and role updated successfully');
+        alert('Password assigned successfully');
         setSelectedMember('');
         setPassword('');
-        setRole('member');
         fetchPendingMembers();
       } else {
         alert('Failed to assign password');
@@ -89,20 +86,8 @@ const AssignPassword: React.FC = () => {
             className="w-full p-2 border rounded"
           />
         </div>
-        <div>
-          <label className="block mb-2">Role:</label>
-          <select 
-            value={role} 
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-            <option value="superuser">Superuser</option>
-          </select>
-        </div>
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-          Assign Password and Set Role
+          Assign Password
         </button>
       </form>
     </div>

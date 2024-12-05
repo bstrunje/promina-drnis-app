@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, XCircle, Key } from 'lucide-react';
-import { Alert, AlertDescription } from '@components/ui/alert';
-import { Member, MemberStatus } from '@shared/types';
+import { Alert, AlertDescription } from '@/../components/ui/alert.js';
+import { Member, MemberStatus } from '../../../../shared/types/member';
 import AddMemberForm from './AddMemberForm';
 import EditMemberForm from './EditMemberForm';
 import ConfirmationModal from './ConfirmationModal';
-import AssignPasswordForm from '../members/AssignPasswordForm';
+import AssignPasswordForm from './AssignPasswordForm';
 import { API_URL } from '../../utils/config';
 
 export default function MemberList(): JSX.Element {
@@ -154,6 +154,7 @@ const calculateStatus = (member: Member): MemberStatus => {
          <table className="w-full text-left">
            <thead className="bg-gray-50">
              <tr>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
@@ -165,6 +166,11 @@ const calculateStatus = (member: Member): MemberStatus => {
            <tbody className="divide-y divide-gray-200">
              {members.map((member: Member) => (
                <tr key={member.member_id} className="hover:bg-gray-50">
+                 <td className="px-6 py-4">
+                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                   {member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : 'N/A'}
+                   </span>
+                 </td>
                  <td className="px-6 py-4">
                    <div className="flex items-center">
                      <div>
@@ -187,6 +193,36 @@ const calculateStatus = (member: Member): MemberStatus => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
+                    {member.total_hours || 0}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleEdit(member)}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(member)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      {member.status === 'pending' && (
+                        <button 
+                          onClick={() => handleAssignPassword(member)}
+                          className="text-yellow-600 hover:text-yellow-900"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${
                       member.membership_type === 'regular' 
                         ? 'bg-blue-100 text-blue-800' 
@@ -194,41 +230,11 @@ const calculateStatus = (member: Member): MemberStatus => {
                         ? 'bg-green-100 text-green-800'
                         : member.membership_type === 'honorary'
                         ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'  // fallback style
+                        : 'bg-gray-100 text-gray-800'
                     }`}>
                       {member.membership_type}
                     </span>
                   </td>
-                 <td className="px-6 py-4">
-                   {member.total_hours || 0}
-                 </td>
-                 <td className="px-6 py-4 text-sm text-gray-500">
-                   {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}
-                 </td>
-                 <td className="px-6 py-4 text-sm font-medium">
-                   <div className="flex items-center gap-2">
-                     <button 
-                       onClick={() => handleEdit(member)}
-                       className="text-blue-600 hover:text-blue-900"
-                     >
-                       <Edit className="w-4 h-4" />
-                     </button>
-                     <button 
-                       onClick={() => handleDelete(member)}
-                       className="text-red-600 hover:text-red-900"
-                     >
-                       <Trash2 className="w-4 h-4" />
-                     </button>
-                     {member.status === 'pending' && (
-                       <button 
-                         onClick={() => handleAssignPassword(member)}
-                         className="text-yellow-600 hover:text-yellow-900"
-                       >
-                         <Key className="w-4 h-4" />
-                       </button>
-                     )}
-                   </div>
-                 </td>
                </tr>
              ))}
            </tbody>
@@ -254,7 +260,7 @@ const calculateStatus = (member: Member): MemberStatus => {
        />
      )}
 
-{assigningPasswordMember && (
+     {assigningPasswordMember && (
         <AssignPasswordForm
         member={assigningPasswordMember}
         onClose={() => setAssigningPasswordMember(null)}
@@ -263,7 +269,7 @@ const calculateStatus = (member: Member): MemberStatus => {
           setAssigningPasswordMember(null);
         }}
       />
-      )}
+     )}
 
      {showConfirmModal && deletingMember && (
        <ConfirmationModal

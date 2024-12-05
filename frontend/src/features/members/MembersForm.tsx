@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Member, MembershipType, MemberStatus } from '@shared/types';
+import { Member, MembershipType, MemberStatus } from '@shared/types/member';
 import { Save, X } from 'lucide-react';
 
 interface MemberFormProps {
@@ -75,6 +75,11 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
     } as Member;
     onSubmit(updatedMember);
   };
+
+  const genderOptions = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' }
+];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -157,8 +162,8 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="text"
               required
-              pattern="[0-9]{13}"
-              title="OIB must be exactly 13 digits"
+              pattern="[0-9]{11}"
+              title="OIB must be exactly 11 digits"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
               value={formData.oib}
               onChange={(e) => setFormData({...formData, oib: e.target.value})}
@@ -190,6 +195,21 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
               onChange={(e) => setFormData({...formData, email: e.target.value})}
             />
           </div>
+
+          <select
+    name="gender"
+    value={member?.gender}
+    onChange={handleChange}
+    className="mt-2 p-2 w-full border rounded"
+    required
+>
+    <option value="">Select Gender</option>
+    {genderOptions.map(option => (
+        <option key={option.value} value={option.value}>
+            {option.label}
+        </option>
+    ))}
+</select>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">

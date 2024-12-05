@@ -1,3 +1,4 @@
+// /backend/src/global.d.ts
 import * as chaiHttp from 'chai-http';
 
 declare global {

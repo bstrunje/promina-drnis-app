@@ -52,7 +52,7 @@ export async function setupDatabase(): Promise<void> {
         member_id SERIAL PRIMARY KEY,
         status character varying(50) DEFAULT 'pending',
         date_of_birth date,
-        oib character varying(13) NOT NULL,
+        oib character varying(11) NOT NULL,
         cell_phone character varying(20) NOT NULL,
         city character varying(100) NOT NULL,
         street_address character varying(200) NOT NULL,

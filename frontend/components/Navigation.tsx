@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User } from '../src/App';
+import { Member } from '@shared/types/member';
 
 interface NavigationProps {
-  user: User | null;
+  user: Member | null;
   onLogout: () => void;
 }
 
@@ -22,17 +22,35 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
           <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
             Dashboard
           </Link>
-          <Link to="/members" className="text-gray-700 hover:text-blue-600">
-            Members
+          {(user.role === 'admin' || user.role === 'superuser') && (
+            <Link to="/members" className="text-gray-700 hover:text-blue-600">
+              Members
+            </Link>
+          )}
+          <Link to="/activities" className="text-gray-700 hover:text-blue-600">
+            Activities
           </Link>
-          {user.role === 'admin' && (
-            <Link to="/admin" className="text-gray-700 hover:text-blue-600">
-              Admin
+          <Link to="/hours" className="text-gray-700 hover:text-blue-600">
+            Hours
+          </Link>
+          {(user.role === 'admin' || user.role === 'superuser') && (
+            <>
+              <Link to="/admin" className="text-gray-700 hover:text-blue-600">
+                Admin
+              </Link>
+              <Link to="/assign-password" className="text-gray-700 hover:text-blue-600">
+                Assign Passwords
+              </Link>
+            </>
+          )}
+          {user.role === 'superuser' && (
+            <Link to="/super-user" className="text-gray-700 hover:text-blue-600">
+              Super User
             </Link>
           )}
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">
-              Welcome, {user.full_name}
+              Welcome, {`${user.first_name} ${user.last_name}`}
             </span>
             <button
               onClick={onLogout}
@@ -46,5 +64,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
     </nav>
   );
 });
+
+Navigation.displayName = 'Navigation';
 
 export default Navigation;

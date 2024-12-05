@@ -1,5 +1,4 @@
 // src/server.ts
-
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -8,6 +7,7 @@ import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 
 // Route imports
+import membersRouter from './routes/members.js';
 import memberRoutes from './routes/members.js';
 import activityRoutes from './routes/activities.js';
 import authRoutes from './routes/auth.js';
@@ -82,6 +82,7 @@ app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true
 }));
+app.use(helmet());
 
 // Request logging middleware with formatted timestamps for Windows
 app.use((req, res, next) => {
@@ -134,6 +135,8 @@ app.get('/health', async (req, res) => {
 });
 
 // API Routes
+app.use('/api/members', membersRouter);
+console.log('Members router set up');
 app.use('/api/auth', authRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);

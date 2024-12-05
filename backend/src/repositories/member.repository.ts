@@ -1,50 +1,46 @@
 // backend/src/repositories/member.repository.ts
 import db from '../utils/db.js';
+import { Member, MemberStatus, MemberRole, Gender } from '../../../shared/types/member.js';
 
-export interface Member {
-    member_id: number;
-    user_id: number;
+// Interfaces for data operations
+export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'last_login' | 'password_hash' | 'full_name'> {
     first_name: string;
     last_name: string;
-    email: string;
-    phone: string;
-    emergency_contact: string;
-    notes: string;
-    membership_type: string;
-    status: string;
-    username: string;
-    role: string;
-    total_hours?: number;
-}
-
-export interface MemberCreateData {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    emergencyContact: string;
-    notes: string;
-}
-
-export interface MemberUpdateData {
-    firstName: string;
-    lastName: string;
+    date_of_birth: string;
+    gender: Gender;
     street_address: string;
     city: string;
     oib: string;
     cell_phone: string;
     email: string;
-    life_status: string;
-    tshirt_size: string;
-    shell_jacket_size: string;
+    life_status: Member['life_status'];
+    tshirt_size: Member['tshirt_size'];
+    shell_jacket_size: Member['shell_jacket_size'];
+    membership_type: Member['membership_type'];
+}
+
+export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'status' | 'role'>> {
+    first_name?: string;
+    last_name?: string;
+    date_of_birth?: string;
+    gender?: Gender;
+    street_address?: string;
+    city?: string;
+    oib?: string;
+    cell_phone?: string;
+    email?: string;
+    life_status?: Member['life_status'];
+    tshirt_size?: Member['tshirt_size'];
+    shell_jacket_size?: Member['shell_jacket_size'];
     total_hours?: number;
+    membership_type?: Member['membership_type'];
 }
 
 export interface MemberStats {
     total_activities: number;
     total_hours: number;
-    membership_type: 'active' | 'passive';
-    status: 'active' | 'pending' | 'inactive';
+    membership_type: Member['membership_type'];
+    status: MemberStatus;
 }
 
 const memberRepository = {
@@ -65,10 +61,7 @@ const memberRepository = {
 
     async findById(memberId: number): Promise<Member | null> {
         const result = await db.query<Member>(`
-            SELECT m.*, u.email, u.username, u.role
-            FROM members m
-            JOIN users u ON m.user_id = u.user_id
-            WHERE m.member_id = $1
+            SELECT * FROM members WHERE member_id = $1
         `, [memberId]);
         return result.rows[0] || null;
     },
@@ -76,22 +69,28 @@ const memberRepository = {
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
         const result = await db.query<Member>(`
             UPDATE members
-            SET first_name = $1,
-                last_name = $2,
-                street_address = $3,
-                city = $4,
-                oib = $5,
-                cell_phone = $6,
-                email = $7,
-                life_status = $8,
-                tshirt_size = $9,
-                shell_jacket_size = $10,
-                total_hours = $11
-            WHERE member_id = $12
+            SET 
+                first_name = COALESCE($1, first_name),
+                last_name = COALESCE($2, last_name),
+                date_of_birth = COALESCE($3, date_of_birth),
+                gender = COALESCE($4, gender),
+                street_address = COALESCE($5, street_address),
+                city = COALESCE($6, city),
+                oib = COALESCE($7, oib),
+                cell_phone = COALESCE($8, cell_phone),
+                email = COALESCE($9, email),
+                life_status = COALESCE($10, life_status),
+                tshirt_size = COALESCE($11, tshirt_size),
+                shell_jacket_size = COALESCE($12, shell_jacket_size),
+                total_hours = COALESCE($13, total_hours),
+                membership_type = COALESCE($14, membership_type)
+            WHERE member_id = $15
             RETURNING *
         `, [
-            memberData.firstName,
-            memberData.lastName,
+            memberData.first_name,
+            memberData.last_name,
+            memberData.date_of_birth,
+            memberData.gender,
             memberData.street_address,
             memberData.city,
             memberData.oib,
@@ -100,23 +99,45 @@ const memberRepository = {
             memberData.life_status,
             memberData.tshirt_size,
             memberData.shell_jacket_size,
-            memberData.total_hours || 0,
+            memberData.total_hours,
+            memberData.membership_type,
             memberId
         ]);
         return result.rows[0];
     },
 
     async create(memberData: MemberCreateData): Promise<Member> {
-        const { firstName, lastName, email, phone, emergencyContact, notes } = memberData;
         const result = await db.query<Member>(`
-            INSERT INTO members (first_name, last_name, email, phone, emergency_contact, notes)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO members (
+                first_name, last_name, date_of_birth, gender,
+                street_address, city, oib, cell_phone, 
+                email, life_status, tshirt_size, shell_jacket_size,
+                status, role, membership_type
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                'pending', 'member', $13
+            )
             RETURNING *
-        `, [firstName, lastName, email, phone, emergencyContact, notes]);
+        `, [
+            memberData.first_name,
+            memberData.last_name,
+            memberData.date_of_birth,
+            memberData.gender,
+            memberData.street_address,
+            memberData.city,
+            memberData.oib,
+            memberData.cell_phone,
+            memberData.email,
+            memberData.life_status,
+            memberData.tshirt_size,
+            memberData.shell_jacket_size,
+            memberData.membership_type
+        ]);
         return result.rows[0];
     },
+
     async getStats(memberId: number): Promise<MemberStats> {
-        const stats = await db.query(`
+        const stats = await db.query<MemberStats>(`
             SELECT 
                 COUNT(DISTINCT ap.activity_id) as total_activities,
                 COALESCE(SUM(ap.hours_spent), 0) as total_hours,
@@ -136,8 +157,26 @@ const memberRepository = {
     },
 
     async delete(memberId: number): Promise<Member | null> {
-        const result = await db.query<Member>('DELETE FROM members WHERE member_id = $1 RETURNING *', [memberId]);
+        const result = await db.query<Member>(
+            'DELETE FROM members WHERE member_id = $1 RETURNING *', 
+            [memberId]
+        );
         return result.rows[0] || null;
+    },
+
+    async updatePassword(memberId: number, hashedPassword: string): Promise<void> {
+        await db.query(
+            'UPDATE members SET password_hash = $1 WHERE member_id = $2',
+            [hashedPassword, memberId]
+        );
+    },
+
+    async assignPassword(memberId: number, password: string): Promise<void> {
+        await db.query(`
+            UPDATE members
+            SET password_hash = $1, status = 'active'
+            WHERE member_id = $2
+        `, [password, memberId]);
     }
 };
 

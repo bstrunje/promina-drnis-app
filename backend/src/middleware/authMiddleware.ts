@@ -34,8 +34,7 @@ const authMiddleware = async (
 ): Promise<void> => {
     try {
         // Get token from header
-        const token = req.header('x-auth-token') || 
-                     req.header('Authorization')?.replace('Bearer ', '');
+        const token = req.header('Authorization')?.replace('Bearer ', '');
         
         if (!token) {
             res.status(401).json({ message: 'No token, authorization denied' });

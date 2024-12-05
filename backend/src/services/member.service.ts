@@ -1,6 +1,8 @@
+// src/services/member.service.ts
 import db from '../utils/db.js';
-import memberRepository from '../repositories/member.repository.js';
-import { Member, MemberStats, MemberUpdateData, MemberCreateData } from '../repositories/member.repository.js';
+import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
+import { Member } from '../../../shared/types/member.js';
+import bcrypt from 'bcrypt';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -49,7 +51,6 @@ const memberService = {
             }
 
             return await memberRepository.update(memberId, memberData);
-            
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error updating member: ' + errorMessage);
@@ -62,16 +63,7 @@ const memberService = {
             if (!stats) {
                 throw new Error('Member stats not found');
             }
-            const totalHoursResult = await db.query(`
-                SELECT COALESCE(SUM(hours_spent), 0) as total_hours
-                FROM activity_participants
-                WHERE member_id = $1 AND verified_at IS NOT NULL
-            `, [memberId]);
-            
-            stats.total_hours = parseFloat(totalHoursResult.rows[0].total_hours);
-            
-            return await memberRepository.getStats(memberId);
-            
+            return stats;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching member statistics: ' + errorMessage);
@@ -80,7 +72,12 @@ const memberService = {
 
     async createMember(memberData: MemberCreateData): Promise<Member> {
         try {
-            return await memberRepository.create(memberData);
+            // Set default values for new members
+            const newMemberData: MemberCreateData = {
+                ...memberData,
+                membership_type: memberData.membership_type || 'regular'
+            };
+            return await memberRepository.create(newMemberData);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error creating member: ' + errorMessage);
@@ -97,6 +94,43 @@ const memberService = {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error deleting member: ' + errorMessage);
+        }
+    },
+
+    async assignPassword(memberId: number, password: string): Promise<void> {
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await memberRepository.updatePassword(memberId, hashedPassword);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error assigning password: ' + errorMessage);
+        }
+    },
+
+    async getMemberWithActivities(memberId: number): Promise<MemberWithActivities | null> {
+        try {
+            const member = await this.getMemberById(memberId);
+            if (!member) return null;
+
+            const activitiesQuery = await db.query(`
+                SELECT 
+                    a.activity_id,
+                    a.title,
+                    a.start_date as date,
+                    ap.hours_spent
+                FROM activities a
+                JOIN activity_participants ap ON a.activity_id = ap.activity_id
+                WHERE ap.member_id = $1
+                ORDER BY a.start_date DESC
+            `, [memberId]);
+
+            return {
+                ...member,
+                activities: activitiesQuery.rows
+            };
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member with activities: ' + errorMessage);
         }
     }
 };

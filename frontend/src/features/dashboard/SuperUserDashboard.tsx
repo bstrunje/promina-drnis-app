@@ -1,10 +1,9 @@
-// frontend\src\features\dashboard\SuperUserDashboard.tsx
 import { Users, Activity, Shield, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '../../App';
+import { Member } from '@shared/types/member';
 
 interface Props {
-  user: User;
+  member: Member;
 }
 
 interface DashboardStats {
@@ -16,7 +15,7 @@ interface DashboardStats {
   lastBackup: string;
 }
 
-const SuperUserDashboard = ({ user }: Props) => {
+const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   
   const stats: DashboardStats = {
@@ -27,13 +26,11 @@ const SuperUserDashboard = ({ user }: Props) => {
     systemHealth: 'Optimal',
     lastBackup: '2024-03-07 15:30'
   };
-
-  // Rest of the component remains the same
   
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Welcome, {user.full_name}</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome, {member.full_name}</h1>
         <p className="opacity-90">Super User Dashboard</p>
       </div>
 

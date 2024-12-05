@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '@shared/types';
+import { Member } from '../../../../shared/types/member';
 
 interface EditMemberFormProps {
   member: Member;
@@ -26,6 +26,11 @@ const lifeStatusOptions = [
   { value: 'employed/unemployed', label: 'Employed/Unemployed' },
   { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
   { value: 'pensioner', label: 'Pensioner' }
+];
+
+const genderOptions = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' }
 ];
 
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
@@ -75,6 +80,20 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             className="mt-2 p-2 w-full border rounded"
             required
           />
+          {/* Add gender select field */}
+          <select
+            name="gender"
+            value={editedMember.gender}
+            onChange={handleChange}
+            className="mt-2 p-2 w-full border rounded"
+            required
+          >
+            {genderOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             name="street_address"
@@ -99,8 +118,8 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             value={editedMember.oib}
             onChange={handleChange}
             placeholder="OIB"
-            pattern="[0-9]{13}"
-            title="OIB must be exactly 13 digits"
+            pattern="[0-9]{11}"
+            title="OIB must be exactly 11 digits"
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -168,8 +187,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             className="mt-2 p-2 w-full border rounded"
             required
           >
-            <option value="active">Active</option>
-            <option value="passive">Passive</option>
+            <option value="regular">Regular</option>
+            <option value="supporting">Supporting</option>
+            <option value="honorary">Honorary</option>
           </select>
 
           <div className="mt-4">

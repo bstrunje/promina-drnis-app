@@ -1,4 +1,5 @@
 // src/types/database.ts
+import { MemberRole, MemberStatus } from '../../../shared/types/member.js';
 
 // Common types
 type Timestamp = Date;
@@ -34,18 +35,11 @@ export interface UserRole {
 export interface Member {
   member_id: number;
   user_id: number;
-  first_name: string;
-  last_name: string;
-  join_date: Date;
-  status: MemberStatus;
-  phone: string | null;
-  emergency_contact: string | null;
-  membership_type: MembershipType;
-  notes: string | null;
+  username: string;
+  email: string;
+  role: string;
+  created_at: TimestampTZ;
 }
-
-export type MemberStatus = 'active' | 'inactive' | 'suspended';
-export type MembershipType = 'active' | 'passive';
 
 // Activity related interfaces
 export interface ActivityType {
@@ -86,13 +80,31 @@ export interface AnnualStatistics {
   year: number;
   total_hours: number;
   total_activities: number;
-  membership_status: MembershipType;
-  calculated_at: Timestamp;
+  status: MemberStatus;
+  calculated_at: TimestampTZ;
 }
 
 // Enum-like types
 export type DifficultyLevel = 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';
 export type ParticipantRole = 'leader' | 'assistant' | 'participant' | 'trainee';
+
+// Join result types
+export interface MemberWithUser extends Member {
+  username: string;
+  email: string;
+  role: MemberRole;
+}
+
+export interface ActivityWithType extends Activity {
+  type_name: string;
+  participant_count: number;
+}
+
+export interface ParticipantWithDetails extends ActivityParticipant {
+  member_name: string;
+  activity_title: string;
+  activity_date: Timestamp;
+}
 
 // Database operation results
 export interface DatabaseResult<T> {
@@ -104,7 +116,6 @@ export interface DatabaseResult<T> {
 
 export interface DatabaseTransactionClient {
   query: (text: string, params?: any[]) => Promise<any>;
-  // Add other necessary methods/properties
 }
 
 // Query helper types
@@ -122,32 +133,14 @@ export interface FilterParams {
   search?: string;
 }
 
-// Join result types
-export interface MemberWithUser extends Member {
-  username: string;
-  email: string;
-  role: string;
-}
-
-export interface ActivityWithType extends Activity {
-  type_name: string;
-  participant_count: number;
-}
-
-export interface ParticipantWithDetails extends ActivityParticipant {
-  member_name: string;
-  activity_title: string;
-  activity_date: Timestamp;
-}
-
 // Repository response types
 export interface RepositoryResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
   meta?: {
-    total?: number;
-    page?: number;
-    totalPages?: number;
+      total?: number;
+      page?: number;
+      totalPages?: number;
   };
 }

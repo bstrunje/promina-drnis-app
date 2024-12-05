@@ -1,18 +1,18 @@
 import { Calendar, Clock, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '../../App';
+import { Member } from '@shared/types/member';
 
 interface Props {
-  user: User;
+  member: Member;
 }
 
-const MemberDashboard = ({ user }: Props) => {
+const MemberDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Welcome, {user.full_name}</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome, {member.full_name}</h1>
         <p className="opacity-90">Member Dashboard</p>
       </div>
 

@@ -1,26 +1,21 @@
-import { PoolClient } from 'pg';
-import DatabaseTransactionClient from '../utils/db.js';
-import { DatabaseError } from '../utils/db.js';
 import { Request, Response } from 'express';
+import { DatabaseUser } from '../middleware/authMiddleware.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../utils/db.js';
-import { User } from '../types/user.js';
+import { Member, MemberLoginData, MemberSearchResult } from '../../../shared/types/member.js';
+import { PoolClient } from 'pg';
+import { DatabaseError } from '../utils/db.js';
+import authRepository from '../repositories/auth.repository.js';
 import { sendPasswordEmail } from '../services/email.service.js';
 
-// Interfaces
-interface UserRegistration {
-    username: string;
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    role?: string;
-}
-
-interface UserLogin {
-    full_name: string;
-    password: string;
+// Extend Express Request to include user
+declare global {
+    namespace Express {
+        interface Request {
+            user?: DatabaseUser
+        }
+    }
 }
 
 interface SetPasswordRequest {
@@ -28,76 +23,11 @@ interface SetPasswordRequest {
     suffix_numbers: string;
 }
 
-interface DatabaseUser {
-    id: number;
-    user_id: number;
-    username: string;
-    email: string;
-    role_name: string;
-    is_active: boolean;
-}
-
-interface MemberRegistration {
-    first_name: string;
-    last_name: string;
-    date_of_birth: string;
-    street_address: string;
-    city: string;
-    oib: string;
-    cell_phone: string;
-    email: string;
-    life_status: string;
-    tshirt_size: string;
-    shell_jacket_size: string;
-}
-
-interface Member {
-    member_id: number;
-    first_name: string;
-    last_name: string;
-    full_name: string;
-    password_hash: string;
-    role: 'member' | 'admin' | 'superuser';
-    status: string;
-    last_login?: Date;
-    date_of_birth: Date;
-    oib: string;
-    cell_phone: string;
-    city: string;
-    street_address: string;
-    email: string;
-    life_status?: string;
-}
-
-interface LocalUser {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-}
-
-interface UserWithMemberDetails extends User {
-    first_name: string;
-    last_name: string;
-}
-
-interface PasswordUpdate {
-    userId: number;
-    suffixNumbers: string;
-}
-
-interface DatabaseTransactionClient {
-    query: (query: string, params: any[]) => Promise<any>;
-}
-
 function validatePassword(password: string, suffixNumbers?: string): { 
     isValid: boolean; 
     message?: string;
     formattedPassword?: string;
 } {
-    // Basic password validation (before suffix)
     if (password.length < 6) {
         return { 
             isValid: false, 
@@ -105,7 +35,6 @@ function validatePassword(password: string, suffixNumbers?: string): {
         };
     }
 
-    // If suffix numbers are provided, validate them
     if (suffixNumbers) {
         if (!/^\d{5}$/.test(suffixNumbers)) {
             return {
@@ -119,73 +48,11 @@ function validatePassword(password: string, suffixNumbers?: string): {
         };
     }
 
-    // For initial registration without suffix
     return { isValid: true };
 }
 
 const authController = {
-    async registerInitial(req: Request<{}, {}, UserRegistration>, res: Response): Promise<void> {
-        try {
-            const { username, email, password, firstName, lastName, role } = req.body;
-
-            // Validate initial password
-            const passwordValidation = validatePassword(password);
-            if (!passwordValidation.isValid) {
-                res.status(400).json({ message: passwordValidation.message });
-                return;
-            }
-
-            // Check if user already exists
-            const userExists = await db.query<User>(
-                'SELECT * FROM users WHERE username = $1 OR email = $2',
-                [username, email],
-                { singleRow: true }
-            );
-
-            if (userExists && userExists.rowCount && userExists.rowCount > 0) {
-                res.status(400).json({ 
-                    message: 'User with this username or email already exists' 
-                });
-                return;
-            }
-
-            // Store user with temporary status
-            await db.transaction(async (client: PoolClient) => {
-                // Insert user with temporary password and pending status
-                const result = await client.query<User>(
-                    `INSERT INTO users (username, email, password, role, status)
-                     VALUES ($1, $2, $3, $4, 'pending')
-                     RETURNING member_id, username, email, role`,
-                    [username, email, password, role || 'member']
-                );
-
-                const user = result.rows[0];
-
-                // Insert member details
-                await client.query(
-                    `INSERT INTO members (user_id, first_name, last_name, join_date)
-                     VALUES ($1, $2, $3, CURRENT_DATE)`,
-                    [user.member_id, firstName, lastName]
-                );
-
-                res.status(201).json({
-                    message: 'User pre-registered successfully. Awaiting admin password configuration.',
-                    user_Id: user.member_id,
-                    username: user.full_name,
-                    email: user.email
-                });
-            });
-        } catch (error) {
-            console.error('Registration error:', error);
-            if (error instanceof DatabaseError) {
-                res.status(error.statusCode).json({ message: error.message });
-            } else {
-                res.status(500).json({ message: 'Error registering user' });
-            }
-        }
-    },
-
-    async login(req: Request<{}, {}, UserLogin>, res: Response): Promise<void> {
+    async login(req: Request<{}, {}, MemberLoginData>, res: Response): Promise<void> {
         try {
             const { full_name, password } = req.body;
             console.log(`Login attempt for member: ${full_name}`);
@@ -205,6 +72,12 @@ const authController = {
             const member = result.rows[0];
             console.log(`Member found: ${full_name}, checking password`);
     
+            if (!member.password_hash) {
+                console.log(`No password set for member: ${full_name}`);
+                res.status(401).json({ message: 'Invalid credentials' });
+                return;
+            }
+    
             const validPassword = await bcrypt.compare(password, member.password_hash);
             console.log(`Password valid: ${validPassword}`);
     
@@ -216,30 +89,42 @@ const authController = {
     
             console.log(`Password verified for member: ${full_name}, generating token`);
     
-            const token = jwt.sign(
-                { 
-                    id: member.member_id, 
-                    full_name: member.full_name,
-                    role: member.role 
-                },
-                process.env.JWT_SECRET!,
-                { expiresIn: '24h' }
-            );
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                console.error('JWT_SECRET not found in environment variables');
+                res.status(500).json({ message: 'Server configuration error' });
+                return;
+            }
     
-            // Update last login
-            await db.query(
-                'UPDATE members SET last_login = CURRENT_TIMESTAMP WHERE member_id = $1',
-                [member.member_id]
-            );
+            try {
+                const token = jwt.sign(
+                    { 
+                        id: member.member_id, 
+                        full_name: member.full_name,
+                        role: member.role 
+                    },
+                    jwtSecret,
+                    { expiresIn: '24h' }
+                );
     
-            res.json({
-                member: {
-                    id: member.member_id,
-                    full_name: member.full_name,
-                    role: member.role
-                },
-                token
-            });
+                await db.query(
+                    'UPDATE members SET last_login = CURRENT_TIMESTAMP WHERE member_id = $1',
+                    [member.member_id]
+                );
+    
+                res.json({
+                    member: {
+                        id: member.member_id,
+                        full_name: member.full_name,
+                        role: member.role
+                    },
+                    token
+                });
+            } catch (error) {
+                console.error('Token generation error:', error);
+                res.status(500).json({ message: 'Error generating authentication token' });
+                return;
+            }
         } catch (error) {
             console.error('Login error:', error);
             if (error instanceof DatabaseError) {
@@ -250,12 +135,55 @@ const authController = {
         }
     },
 
-    async registerMember(req: Request<{}, {}, MemberRegistration>, res: Response) {
+    async registerInitial(req: Request<{}, {}, Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'password_hash' | 'last_login'>>, res: Response): Promise<void> {
+        try {
+            const { first_name, last_name, email } = req.body;
+
+            const memberExists = await db.query<Member>(
+                'SELECT * FROM members WHERE email = $1',
+                [email],
+                { singleRow: true }
+            );
+            
+            if (memberExists?.rowCount && memberExists.rowCount > 0) {
+                res.status(400).json({ message: 'Member with this email already exists' });
+                return;
+            }
+
+            await db.transaction(async (client: PoolClient) => {
+                const result = await client.query<Member>(
+                    `INSERT INTO members (
+                        first_name, last_name, email, status, role
+                    ) VALUES ($1, $2, $3, 'pending', 'member')
+                    RETURNING member_id, first_name, last_name, email, role`,
+                    [first_name, last_name, email]
+                );
+
+                const member = result.rows[0];
+                res.status(201).json({
+                    message: 'Member pre-registered successfully. Awaiting admin password configuration.',
+                    member_id: member.member_id,
+                    full_name: `${member.first_name} ${member.last_name}`,
+                    email: member.email
+                });
+            });
+        } catch (error) {
+            console.error('Registration error:', error);
+            if (error instanceof DatabaseError) {
+                res.status(error.statusCode).json({ message: error.message });
+            } else {
+                res.status(500).json({ message: 'Error registering member' });
+            }
+        }
+    },
+
+    async registerMember(req: Request<{}, {}, Omit<Member, 'member_id' | 'password_hash' | 'total_hours' | 'last_login' | 'full_name'>>, res: Response): Promise<void> {
         try {
             const {
                 first_name,
                 last_name,
                 date_of_birth,
+                gender,
                 street_address,
                 city,
                 oib,
@@ -266,39 +194,37 @@ const authController = {
                 shell_jacket_size
             } = req.body;
 
-            // Check if OIB exists
             const existingMember = await db.query(
                 'SELECT member_id FROM members WHERE oib = $1',
                 [oib],
                 { singleRow: true }
             );
             
-            // Update this condition to handle possible null value
             if (existingMember?.rowCount && existingMember.rowCount > 0) {
-                return res.status(400).json({
+                res.status(400).json({
                     message: 'Member with this OIB already exists'
                 });
+                return;
             }
 
-            // Insert new member
             const result = await db.query<Member>(
                 `INSERT INTO members (
-                    first_name, last_name, date_of_birth, street_address, 
-                    city, oib, cell_phone, email, life_status, 
-                    tshirt_size, shell_jacket_size
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    first_name, last_name, date_of_birth, gender,
+                    street_address, city, oib, cell_phone, 
+                    email, life_status, tshirt_size, shell_jacket_size,
+                    status, role
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', 'member')
                 RETURNING member_id`,
                 [
-                    first_name, last_name, date_of_birth, street_address,
-                    city, oib, cell_phone, email, life_status,
-                    tshirt_size, shell_jacket_size
+                    first_name, last_name, date_of_birth, gender,
+                    street_address, city, oib, cell_phone,
+                    email, life_status, tshirt_size, shell_jacket_size
                 ]
             );
 
             res.status(201).json({
                 message: 'Registration successful. Please wait for admin approval.',
-                member_id: result.rows[0].member_id,
-                status: 'pending'
+                member_id: result.rows[0].member_id
             });
         } catch (error) {
             console.error('Registration error:', error);
@@ -307,145 +233,68 @@ const authController = {
             });
         }
     },
-
-    async setPasswordSuffix(req: Request<{}, {}, PasswordUpdate>, res: Response): Promise<void> {
-        try {
-            const { userId, suffixNumbers } = req.body;
-
-            // Get user's current password
-            const userResult = await db.query<UserWithMemberDetails>(
-                'SELECT password, email, username, first_name, last_name FROM users u JOIN members m ON u.id = m.user_id WHERE u.id = $1',
-                [userId],
-                { singleRow: true }
-            );
-
-            if (userResult.rowCount === 0) {
-                res.status(404).json({ message: 'User not found' });
-                return;
-            }
-
-            const user = userResult.rows[0];
-            const currentPassword = user.full_name.split('-isk-')[0]; // Get base password
-
-            // Validate and format new password
-            const passwordValidation = validatePassword(currentPassword, suffixNumbers);
-            if (!passwordValidation.isValid) {
-                res.status(400).json({ message: passwordValidation.message });
-                return;
-            }
-
-            const finalPassword = passwordValidation.formattedPassword!;
-            const hashedPassword = await bcrypt.hash(finalPassword, 10);
-
-            // Update password and status
-            await db.transaction(async (client: DatabaseTransactionClient) => {
-                await client.query(
-                    `UPDATE users 
-                     SET password = $1, status = 'active', updated_at = CURRENT_TIMESTAMP 
-                     WHERE id = $2`,
-                    [hashedPassword, userId]
-                );
-
-                // Send email with the new password
-                await sendPasswordEmail({
-                    to: user.email,
-                    username: user.full_name,
-                    password: finalPassword,
-                    firstName: user.first_name,
-                    lastName: user.last_name
-                });
-
-                res.json({
-                    message: 'Password suffix set and email sent successfully',
-                    userId,
-                    emailSent: true
-                });
-            });
-        } catch (error) {
-            console.error('Password suffix update error:', error);
-            if (error instanceof DatabaseError) {
-                res.status(error.statusCode).json({ message: error.message });
-            } else {
-                res.status(500).json({ message: 'Error updating password suffix' });
-            }
-        }
-    },
-
-    async searchMembers(req: Request, res: Response) {
+	
+	async searchMembers(req: Request, res: Response): Promise<void> {
         try {
             const { searchTerm } = req.query;
-            const query = `
-                SELECT member_id, full_name 
-                FROM members 
-                WHERE full_name ILIKE $1 
-                    AND status = 'active' | 'pasive'
-                ORDER BY full_name 
-                LIMIT 10`;
-    
-            const result = await db.query(query, [`%${searchTerm}%`]);
-            res.json(result.rows);
+            if (typeof searchTerm !== 'string' || !searchTerm) {
+                res.status(400).json({ message: 'Valid search term is required' });
+                return;
+            }
+            const results = await authRepository.searchMembers(searchTerm);
+            res.json(results);
         } catch (error) {
+            console.error('Search error:', error);
             res.status(500).json({ 
-                message: 'Error searching members', 
-                error: error instanceof Error ? error.message : 'Unknown error' 
+                message: error instanceof Error ? error.message : 'Error searching members'
             });
         }
     },
 
-    setMemberPassword: async (req: Request<{}, {}, SetPasswordRequest>, res: Response): Promise<void> => {
+    async setMemberPassword(req: Request<{}, {}, SetPasswordRequest>, res: Response): Promise<void> {
         try {
             const { member_id, suffix_numbers } = req.body;
 
-            // Validate suffix format (exactly 5 digits)
             if (!/^\d{5}$/.test(suffix_numbers)) {
-                res.status(400).json({ message: 'Suffix must be exactly 5 digits' });
+                res.status(400).json({ message: 'Password suffix must be exactly 5 digits' });
                 return;
             }
 
-            // Get member details
-            const memberResult = await db.query<Member>(
-                'SELECT first_name, last_name, email, status FROM members WHERE member_id = $1',
-                [member_id],
-                { singleRow: true }
-            );
-
-            if (!memberResult.rowCount) {
+            const member = await authRepository.findUserById(member_id);
+            if (!member) {
                 res.status(404).json({ message: 'Member not found' });
                 return;
             }
 
-            const member = memberResult.rows[0];
-
-            // Check if member is in pending status
             if (member.status !== 'pending') {
                 res.status(400).json({ message: 'Can only set password for pending members' });
                 return;
             }
 
-            // Create password in required format
             const password = `${member.first_name} ${member.last_name}-isk-${suffix_numbers}`;
-            
-            // Hash the password
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-            // Update member with password and change status to active
-            await db.query(
-                'UPDATE members SET password_hash = $1, status = $2 WHERE member_id = $3',
-                [hashedPassword, 'active', member_id]
-            );
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await authRepository.updatePassword(member_id, hashedPassword);
 
             res.json({ 
                 message: 'Password set successfully',
                 member_id,
                 status: 'active'
             });
-
         } catch (error) {
             console.error('Set password error:', error);
-            res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Error setting password'
-            });
+            res.status(500).json({ message: 'Error setting password' });
+        }
+    },
+
+    async assignPassword(req: Request<{}, {}, { memberId: number; password: string }>, res: Response): Promise<void> {
+        try {
+            const { memberId, password } = req.body;
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await authRepository.updatePassword(memberId, hashedPassword);
+            res.json({ message: 'Password assigned successfully' });
+        } catch (error) {
+            console.error('Password assignment error:', error);
+            res.status(500).json({ message: 'Failed to assign password' });
         }
     }
 };

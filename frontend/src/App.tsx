@@ -13,11 +13,12 @@ import Navigation from '../components/Navigation';
 import './App.css';
 import AssignPassword from './features/members/AssignPassword';
 
-export interface User {
-  id: number;
-  full_name: string;
-  role: 'member' | 'admin' | 'superuser';
-}
+const Reports: React.FC = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold mb-4">Reports</h1>
+    <p>Reports functionality coming soon.</p>
+  </div>
+);
 
 const AppRoutes: React.FC = () => {
   const { user, logout } = useAuth();
@@ -45,9 +46,9 @@ const AppRoutes: React.FC = () => {
         { 
           path: "dashboard", 
           element: user ? (
-            user.role === 'member' ? <MemberDashboard user={user} /> :
-            user.role === 'admin' ? <AdminDashboard user={user} /> :
-            user.role === 'superuser' ? <SuperUserDashboard user={user} /> :
+            user.role === 'member' ? <MemberDashboard member={user} /> :
+            user.role === 'admin' ? <AdminDashboard member={user} /> :
+            user.role === 'superuser' ? <SuperUserDashboard member={user} /> :
             <Navigate to="/login" replace />
           ) : <Navigate to="/login" replace /> 
         },
@@ -73,11 +74,15 @@ const AppRoutes: React.FC = () => {
         },
         { 
           path: "admin", 
-          element: user?.role === 'admin' ? <AdminDashboard user={user} /> : <Navigate to="/dashboard" replace />
+          element: user?.role === 'admin' ? <AdminDashboard member={user} /> : <Navigate to="/dashboard" replace />
         },
         { 
           path: "super-user", 
-          element: user?.role === 'superuser' ? <SuperUserDashboard user={user} /> : <Navigate to="/dashboard" replace />
+          element: user?.role === 'superuser' ? <SuperUserDashboard member={user} /> : <Navigate to="/dashboard" replace />
+        },
+        { 
+          path: "reports", 
+          element: user?.role === 'admin' ? <Reports /> : <Navigate to="/dashboard" replace /> 
         },
       ],
     },
@@ -86,12 +91,10 @@ const AppRoutes: React.FC = () => {
   return <RouterProvider router={router} />;
 };
 
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
-  );
-};
+const App: React.FC = () => (
+  <AuthProvider>
+    <AppRoutes />
+  </AuthProvider>
+);
 
 export default App;

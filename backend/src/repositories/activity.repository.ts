@@ -1,20 +1,23 @@
-// backend/src/repositories/activity.repository.ts
 import db from '../utils/db.js';
 import { PoolClient } from 'pg';
+import { DatabaseError } from '../utils/db.js';
+import { Member } from '../../../shared/types/member';
+import { ActivityParticipant } from '@shared/activity';
 
 interface Activity {
-    created_at: Date;
-    difficulty_level: any;
     activity_id: number;
     title: string;
     description: string;
     start_date: Date;
     end_date: Date;
     location: string;
+    difficulty_level: 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';
+    max_participants: number;
     activity_type_id: number;
     created_by: number;
-    max_participants: number;
-    members?: Array<{
+    created_at: Date;
+    participants?: Array<{
+        verified: boolean;
         member_id: number;
         first_name: string;
         last_name: string;
@@ -23,7 +26,7 @@ interface Activity {
     organizer_name?: string;
 }
 
-interface ActivityCreateData {
+export interface ActivityCreateData {
     title: string;
     description: string;
     start_date: Date;
@@ -32,28 +35,19 @@ interface ActivityCreateData {
     activity_type_id: number;
     created_by: number;
     max_participants: number;
+    difficulty_level: Activity['difficulty_level'];
 }
 
 interface ActivityMember {
     participation_id: number;
-    activity_id: string | number;
-    member_id: number;
-    hours_spent: number;
-}
-
-interface ActivityMemberStats {
-    participation_id: number;
     activity_id: number;
     member_id: number;
     hours_spent: number;
-    role: string;
-    verified_at?: Date;
-    verified_by?: number;
 }
 
 const activityRepository = {
     async findAll(): Promise<Activity[]> {
-        const query = `
+        const result = await db.query<Activity>(`
             SELECT 
                 a.*,
                 json_agg(
@@ -61,24 +55,23 @@ const activityRepository = {
                         'member_id', ap.member_id,
                         'first_name', m.first_name,
                         'last_name', m.last_name,
-                        'hours_spent', ap.hours_spent
+                        'hours_spent', ap.hours_spent,
+                        'verified', COALESCE(ap.verified_at IS NOT NULL, false)
                     )
-                ) as members,
-                u.username as organizer_name
+                ) as participants,
+                u.first_name || ' ' || u.last_name as organizer_name
             FROM activities a
             LEFT JOIN activity_participants ap ON a.activity_id = ap.activity_id
             LEFT JOIN members m ON ap.member_id = m.member_id
-            LEFT JOIN users u ON a.created_by = u.id
-            GROUP BY a.activity_id, u.username
+            LEFT JOIN members u ON a.created_by = u.member_id
+            GROUP BY a.activity_id, u.first_name, u.last_name
             ORDER BY a.start_date DESC
-        `;
-
-        const result = await db.query(query);
+        `);
         return result.rows;
     },
 
-    async findById(id: string | number): Promise<Activity | null> {  // Updated parameter type
-        const query = `
+    async findById(id: number): Promise<Activity | null> {
+        const result = await db.query<Activity>(`
             SELECT 
                 a.*,
                 json_agg(
@@ -86,38 +79,34 @@ const activityRepository = {
                         'member_id', ap.member_id,
                         'first_name', m.first_name,
                         'last_name', m.last_name,
-                        'hours_spent', ap.hours_spent
+                        'hours_spent', ap.hours_spent,
+                        'verified', COALESCE(ap.verified_at IS NOT NULL, false)
                     )
-                ) as members,
-                u.username as organizer_name
+                ) as participants,
+                u.first_name || ' ' || u.last_name as organizer_name
             FROM activities a
             LEFT JOIN activity_participants ap ON a.activity_id = ap.activity_id
             LEFT JOIN members m ON ap.member_id = m.member_id
-            LEFT JOIN users u ON a.created_by = u.id
+            LEFT JOIN members u ON a.created_by = u.member_id
             WHERE a.activity_id = $1
-            GROUP BY a.activity_id, u.username
-        `;
-
-        const result = await db.query(query, [id]);
+            GROUP BY a.activity_id, u.first_name, u.last_name
+        `, [id]);
         return result.rows[0] || null;
     },
 
     async create(activityData: ActivityCreateData): Promise<Activity> {
         const client = await db.getClient();
-        
         try {
             await client.query('BEGIN');
             
-            const activityQuery = `
+            const activityResult = await client.query<Activity>(`
                 INSERT INTO activities (
                     title, description, start_date, end_date,
                     location, activity_type_id, created_by,
-                    max_participants
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    max_participants, difficulty_level
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING *
-            `;
-            
-            const activityResult = await client.query(activityQuery, [
+            `, [
                 activityData.title,
                 activityData.description,
                 activityData.start_date,
@@ -125,7 +114,8 @@ const activityRepository = {
                 activityData.location,
                 activityData.activity_type_id,
                 activityData.created_by,
-                activityData.max_participants
+                activityData.max_participants,
+                activityData.difficulty_level
             ]);
 
             await client.query('COMMIT');
@@ -138,9 +128,9 @@ const activityRepository = {
         }
     },
 
-    async addMember(activityId: string | number, memberId: number, hoursSpent: number, client?: PoolClient): Promise<ActivityMember> {
+    async addParticipant(activityId: number, memberId: number, hoursSpent: number, client?: PoolClient): Promise<ActivityMember> {
         const query = `
-            INSERT INTO activity_participants (activity_id, member_id, hours_spent)
+            INSERT INTO activity_participants (activity_id, member_id, hours_spent, verified)
             VALUES ($1, $2, $3)
             RETURNING *
         `;
@@ -151,48 +141,37 @@ const activityRepository = {
         return result.rows[0];
     },
     
-    async removeMember(activityId: string | number, memberId: number, client?: PoolClient): Promise<boolean> {
-        const query = `
-            DELETE FROM activity_participants
-            WHERE activity_id = $1 AND member_id = $2
-        `;
-    
-        const result = client ? 
-            await client.query(query, [activityId, memberId]) :
-            await db.query(query, [activityId, memberId]);
-        return true;
+    async removeParticipant(activityId: number, memberId: number): Promise<boolean> {
+        const result = await db.query(
+            'DELETE FROM activity_participants WHERE activity_id = $1 AND member_id = $2',
+            [activityId, memberId]
+        );
+        return result.rowCount ? result.rowCount > 0 : false;
     },
 
-    // Added missing methods referenced in service
-    async getParticipantsCount(activityId: string | number): Promise<number> {
-        const query = `
+    async getParticipantsCount(activityId: number): Promise<number> {
+        const result = await db.query(`
             SELECT COUNT(*) as count
             FROM activity_participants
             WHERE activity_id = $1
-        `;
-
-        const result = await db.query(query, [activityId]);
+        `, [activityId]);
         return parseInt(result.rows[0].count);
     },
 
-    async getMembership(activityId: string | number, memberId: number): Promise<ActivityMember | null> {
-        const query = `
+    async getParticipation(activityId: number, memberId: number): Promise<ActivityParticipant | null> {
+        const result = await db.query(`
             SELECT *
             FROM activity_participants
             WHERE activity_id = $1 AND member_id = $2
-        `;
-
-        const result = await db.query(query, [activityId, memberId]);
+        `, [activityId, memberId]);
         return result.rows[0] || null;
     },
 
-    async update(id: string | number, updateData: Partial<ActivityCreateData>): Promise<Activity | null> {
+    async update(id: number, updateData: Partial<ActivityCreateData>): Promise<Activity | null> {
         const client = await db.getClient();
-        
         try {
             await client.query('BEGIN');
             
-            // Build the update query dynamically based on provided fields
             const updateFields: string[] = [];
             const values: any[] = [];
             let parameterCount = 1;
@@ -210,6 +189,7 @@ const activityRepository = {
             }
             
             values.push(id);
+            
             const updateQuery = `
                 UPDATE activities
                 SET ${updateFields.join(', ')}
@@ -220,13 +200,7 @@ const activityRepository = {
             const result = await client.query(updateQuery, values);
             await client.query('COMMIT');
             
-            if (result.rows.length === 0) {
-                return null;
-            }
-            
-            // Fetch the updated activity with all related data
-            return await this.findById(id);
-            
+            return result.rows[0] || null;
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
@@ -235,19 +209,16 @@ const activityRepository = {
         }
     },
 
-    async delete(id: string | number): Promise<boolean> {
+    async delete(id: number): Promise<boolean> {
         const client = await db.getClient();
-        
         try {
             await client.query('BEGIN');
             
-            // First delete all participant records
             await client.query(
                 'DELETE FROM activity_participants WHERE activity_id = $1',
                 [id]
             );
             
-            // Then delete the activity
             const result = await client.query(
                 'DELETE FROM activities WHERE activity_id = $1',
                 [id]
@@ -255,14 +226,13 @@ const activityRepository = {
             
             await client.query('COMMIT');
             return result.rowCount ? result.rowCount > 0 : false;
-            
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
         } finally {
             client.release();
         }
-    } 
+    }
 };
 
 export default activityRepository;

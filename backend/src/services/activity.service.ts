@@ -3,37 +3,23 @@ import db from '../utils/db.js';
 import { 
     Activity, 
     ActivityCreateInput, 
-    ActivityMember, 
+    ActivityParticipant, 
     ActivityError,
-    ActivityUpdateData
-} from 'promina-drnis-app-shared/types/activity';
+    ActivityUpdateData,
+    ActivityMember
+} from '../../../shared/types/activity';
 import activityRepository from '../repositories/activity.repository.js';
 
-interface ActivityWithParticipants extends Activity {
-    participants?: {
-        member_id: number;
-        first_name: string;
-        last_name: string;
-        hours_spent: number;
-    }[];
-}
-
-interface ActivityParticipant {
-    member_id: number;
-    activity_id: number;
-    hours_spent: number;
-    role?: string;
-    notes?: string;
-}
 
 const activityService = {
     async getActivityById(id: string | number): Promise<Activity> {
         try {
-            const activity = await activityRepository.findById(id);
+            const numericId = typeof id === 'string' ? parseInt(id) : id;
+            const activity = await activityRepository.findById(numericId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
-            return activity;
+            return activity as Activity;
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -47,18 +33,20 @@ const activityService = {
     
     async getAllActivities(): Promise<Activity[]> {
         try {
-            return await activityRepository.findAll();
+            const activities = await activityRepository.findAll();
+            return activities;
         } catch (error) {
           throw new ActivityError(
             `Error fetching activities: ${error instanceof Error ? error.message : 'Unknown error'}`,
             'FETCH_ALL_ERROR'
           );
         }
-      },
+    },
+
+
 
     async createActivity(activityData: ActivityCreateInput): Promise<Activity> {
         try {
-            // Validation
             if (!activityData.title) {
                 throw new ActivityError('Activity title is required', 'VALIDATION_ERROR');
             }
@@ -67,7 +55,6 @@ const activityService = {
                 throw new ActivityError('Start and end dates are required', 'VALIDATION_ERROR');
             }
 
-            // Validate dates
             const startDate = new Date(activityData.start_date);
             const endDate = new Date(activityData.end_date);
             
@@ -79,7 +66,11 @@ const activityService = {
                 throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
             }
 
-            return await activityRepository.create(activityData as any); // Type assertion to match repository
+            const newActivity = await activityRepository.create(activityData as any);
+return {
+    ...newActivity,
+    participants: []  // New activity won't have participants yet
+};
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -95,40 +86,47 @@ const activityService = {
         activityId: string | number, 
         memberId: number,
         hoursSpent: number
-    ): Promise<ActivityMember> {
+    ): Promise<ActivityParticipant> {
         try {
-            // Validate hours spent
             if (hoursSpent < 0) {
                 throw new ActivityError('Hours spent cannot be negative', 'VALIDATION_ERROR');
             }
     
-            // Check if activity exists
-            const activity = await activityRepository.findById(activityId);
+            const numericActivityId = typeof activityId === 'string' ? parseInt(activityId) : activityId;
+            const activity = await activityRepository.findById(numericActivityId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
     
-            // Check max participants if set
             if (activity.max_participants) {
-                const currentParticipants = await activityRepository.getParticipantsCount(activityId);
+                const currentParticipants = await activityRepository.getParticipantsCount(numericActivityId);
                 if (currentParticipants >= activity.max_participants) {
                     throw new ActivityError('Activity has reached maximum participants', 'MAX_PARTICIPANTS');
                 }
             }
     
-            // Use transaction to update both activity_participants and members
             return await db.transaction(async (client: PoolClient) => {
-                // Add member to activity
-                const participation = await activityRepository.addMember(activityId, memberId, hoursSpent);
+                const member = await client.query(`
+                    SELECT first_name, last_name 
+                    FROM members 
+                    WHERE member_id = $1
+                `, [memberId]);
+
+                const participation = await activityRepository.addParticipant(numericActivityId, memberId, hoursSpent);
                 
-                // Update member's total hours
                 await client.query(`
                     UPDATE members 
                     SET total_hours = COALESCE(total_hours, 0) + $1 
                     WHERE member_id = $2
                 `, [hoursSpent, memberId]);
     
-                return participation as ActivityMember;
+                return {
+                    member_id: participation.member_id,
+                    first_name: member.rows[0].first_name,
+                    last_name: member.rows[0].last_name,
+                    hours_spent: participation.hours_spent,
+                    verified: false
+                } as ActivityParticipant;
             });
     
         } catch (error) {
@@ -144,27 +142,25 @@ const activityService = {
 
     async removeMemberFromActivity(activityId: string | number, memberId: number): Promise<boolean> {
         try {
-            const activity = await activityRepository.findById(activityId);
+            const numericActivityId = typeof activityId === 'string' ? parseInt(activityId) : activityId;
+            const activity = await activityRepository.findById(numericActivityId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
     
-            const membership = await activityRepository.getMembership(activityId, memberId);
-            if (!membership) {
+            const participation = await activityRepository.getParticipation(numericActivityId, memberId);
+            if (!participation) {
                 throw new ActivityError('Member not found in activity', 'NOT_FOUND');
             }
     
             return await db.transaction(async (client: PoolClient) => {
-                // Update member's total hours
                 await client.query(`
                     UPDATE members 
                     SET total_hours = COALESCE(total_hours, 0) - $1 
                     WHERE member_id = $2
-                `, [membership.hours_spent, memberId]);
+                `, [participation.hours_spent, memberId]);
     
-                // Remove member from activity
-                await activityRepository.removeMember(activityId, memberId);
-                return true;
+                return await activityRepository.removeParticipant(numericActivityId, memberId);
             });
         } catch (error) {
             if (error instanceof ActivityError) {
@@ -179,13 +175,12 @@ const activityService = {
 
     async updateActivity(id: string | number, updateData: ActivityUpdateData): Promise<Activity> {
         try {
-            // Check if activity exists
-            const activity = await activityRepository.findById(id);
+            const numericId = typeof id === 'string' ? parseInt(id) : id;
+            const activity = await activityRepository.findById(numericId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
 
-            // Validate dates if they're being updated
             if (updateData.start_date || updateData.end_date) {
                 const startDate = new Date(updateData.start_date || activity.start_date);
                 const endDate = new Date(updateData.end_date || activity.end_date);
@@ -199,12 +194,17 @@ const activityService = {
                 }
             }
 
-            const updatedActivity = await activityRepository.update(id, updateData);
-            if (!updatedActivity) {
-                throw new ActivityError('Failed to update activity', 'UPDATE_ERROR');
-            }
-
-            return updatedActivity;
+            const updatedActivity = await activityRepository.update(numericId, updateData);
+if (!updatedActivity) {
+    throw new ActivityError('Failed to update activity', 'UPDATE_ERROR');
+}
+return {
+    ...updatedActivity,
+    participants: updatedActivity.participants?.map(p => ({
+        ...p,
+        verified: p.verified ?? false
+    }))
+};
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
@@ -218,14 +218,13 @@ const activityService = {
 
     async deleteActivity(id: string | number): Promise<void> {
         try {
-            // Check if activity exists
-            const activity = await activityRepository.findById(id);
+            const numericId = typeof id === 'string' ? parseInt(id) : id;
+            const activity = await activityRepository.findById(numericId);
             if (!activity) {
                 throw new ActivityError('Activity not found', 'NOT_FOUND');
             }
 
-            // Attempt to delete the activity
-            await activityRepository.delete(id);
+            await activityRepository.delete(numericId);
         } catch (error) {
             if (error instanceof ActivityError) {
                 throw error;
