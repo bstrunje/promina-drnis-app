@@ -1,36 +1,25 @@
-/**
- * Member status types
- * - pending: New member awaiting admin approval
- * - active: Member with sufficient activity hours
- * - passive: Member with insufficient activity hours
- */
-export type MemberStatus = 'pending' | 'active' | 'passive';
+import { MembershipDetails, MembershipHistory } from './membership';
 /**
  * Member role types
- * - member: Default role for new registrations
- * - admin: Administrative privileges
- * - superuser: Full system access
  */
 export type MemberRole = 'member' | 'admin' | 'superuser';
 /**
- * Membership classification types
- * - regular: Standard membership
- * - supporting: Supporting member status
- * - honorary: Honorary member status
+ * Membership classification types (UI display only)
  */
 export type MembershipType = 'regular' | 'supporting' | 'honorary';
 /**
- * Member life status categories
+ * Activity status for display
+ */
+export type ActivityStatus = 'active' | 'passive';
+export type Gender = 'male' | 'female';
+/**
+ * Life status categories
  */
 export type LifeStatus = 'employed/unemployed' | 'child/pupil/student' | 'pensioner';
 /**
- * Available clothing sizes for member equipment
+ * Available clothing sizes
  */
 export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
-/**
- * Member gender types
- */
-export type Gender = 'male' | 'female';
 /**
  * Main Member interface representing a society member
  */
@@ -40,27 +29,43 @@ export interface Member {
     last_name: string;
     full_name?: string;
     date_of_birth: string;
-    gender: Gender;
+    gender: 'male' | 'female';
     street_address: string;
     city: string;
     oib: string;
     cell_phone: string;
     email: string;
-    status: MemberStatus;
-    membership_type: MembershipType;
     life_status: LifeStatus;
+    profile_image?: string;
     role: MemberRole;
+    registration_completed: boolean;
+    password_hash?: string;
+    last_login?: Date;
+    total_hours?: number;
+    activity_status?: ActivityStatus;
+    membership_type: MembershipType;
     tshirt_size: ClothingSize;
     shell_jacket_size: ClothingSize;
-    password_hash?: string;
-    total_hours?: number;
-    last_login?: Date;
+    membership_details?: MembershipDetails;
+    membership_history?: MembershipHistory;
+}
+/**
+ * Used for member search functionality in login
+ */
+export interface MemberSearchResult {
+    member_id: number;
+    full_name: string;
+}
+/**
+ * Used for profile display and calculations
+ */
+export interface MemberProfile {
+    total_hours: number;
+    activity_status: ActivityStatus;
+    membership_type: MembershipType;
 }
 export interface MemberLoginData {
     full_name: string;
     password: string;
 }
-export interface MemberSearchResult {
-    member_id: number;
-    full_name: string;
-}
+export type RegistrationStatus = 'pending' | 'completed';

@@ -1,7 +1,8 @@
 // src/services/member.service.ts
 import db from '../utils/db.js';
+import membershipService from './membership.service.js';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
-import { Member } from '../../../shared/types/member.js';
+import { Member } from '@shared/member';
 import bcrypt from 'bcrypt';
 
 interface MemberWithActivities extends Member {
@@ -131,6 +132,63 @@ const memberService = {
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching member with activities: ' + errorMessage);
+        }
+    },
+	
+	async getMemberWithDetails(memberId: number): Promise<Member | null> {
+        try {
+            const member = await memberRepository.findById(memberId);
+            if (!member) return null;
+
+            // Get membership details
+            const membershipDetails = await membershipService.getMembershipHistory(memberId);
+            const currentPeriod = membershipDetails.currentPeriod;
+            
+            return {
+                ...member,
+                membership_details: (await membershipService.getMembershipDetails(memberId)) || undefined,
+                membership_history: membershipDetails,
+                activity_status: (member.total_hours ?? 0) >= 20 ? 'active' : 'passive'
+            };
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member with details: ' + errorMessage);
+        }
+    },
+
+    // Add to existing member service methods
+    async updateMembershipFee(memberId: number, paymentDate: Date): Promise<void> {
+        try {
+            await membershipService.processFeePayment(memberId, paymentDate);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error processing fee payment: ' + errorMessage);
+        }
+    },
+
+    async updateMembershipCard(
+        memberId: number, 
+        cardNumber: string, 
+        stampIssued: boolean
+    ): Promise<void> {
+        try {
+            await membershipService.updateCardDetails(memberId, cardNumber, stampIssued);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error updating card details: ' + errorMessage);
+        }
+    },
+
+    async terminateMembership(
+        memberId: number, 
+        reason: 'withdrawal' | 'non_payment' | 'expulsion' | 'death', 
+        endDate?: Date
+    ): Promise<void> {
+        try {
+            await membershipService.endMembership(memberId, reason, endDate);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error terminating membership: ' + errorMessage);
         }
     }
 };

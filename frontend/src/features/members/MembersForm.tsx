@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Member, MembershipType, MemberStatus } from '@shared/types/member';
+import { Member, MembershipType } from '@shared/types/member';
 import { Save, X } from 'lucide-react';
 
 interface MemberFormProps {
@@ -22,8 +22,10 @@ interface MemberFormData {
   tshirt_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
   shell_jacket_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
   membership_type: MembershipType;
-  status: MemberStatus;
+  registration_completed: boolean;
   total_hours: number;
+  role: 'member' | 'admin' | 'superuser';
+  gender: 'male' | 'female';
 }
 
 interface SizeOptions {
@@ -62,8 +64,10 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
     tshirt_size: member?.tshirt_size || 'M',
     shell_jacket_size: member?.shell_jacket_size || 'M',
     membership_type: member?.membership_type || 'regular',
-    status: member?.status || 'pending',
+    registration_completed: member?.registration_completed || false,
+    role: member?.role || 'member',
     total_hours: member?.total_hours || 0,
+    gender: member?.gender || 'male'
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -91,8 +95,24 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
+            <label className="block text-sm font-medium mb-1">Registration Status</label>
+            <select
+              name="registration_completed"
+              value={formData.registration_completed.toString()}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                registration_completed: e.target.value === 'true'
+              }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+            >
+              <option value="false">Pending</option>
+              <option value="true">Completed</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700">
-              First Name
+              Name
             </label>
             <input
               type="text"
@@ -264,36 +284,46 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
               ))}
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Role
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                role: e.target.value as Member['role']
+              }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+            >
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="superuser">Superuser</option>
+            </select>
+          </div>
+
          </div> 
 
       <div>
-        <label htmlFor="membership_type">Membership Type</label>
-        <select
-          id="membership_type"
-          name="membership_type"
-          value={formData.membership_type}
-          onChange={handleChange}
-        >
-          <option value="regular">Regular Member</option>
-          <option value="supporting">Supporting Member</option>
-          <option value="honorary">Honorary Member</option>
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="status">Status</label>
-        <select
-          id="status"
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          disabled // Status should be calculated based on total_hours
-        >
-          <option value="pending">Pending</option>
-          <option value="active">Active</option>
-          <option value="passive">Passive</option>
-        </select>
-      </div>
+            <label className="block text-sm font-medium text-gray-700">
+              Membership Type
+            </label>
+            <select
+              name="membership_type"
+              value={formData.membership_type}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                membership_type: e.target.value as MembershipType
+              }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+            >
+              <option value="regular">Regular Member</option>
+              <option value="supporting">Supporting Member</option>
+              <option value="honorary">Honorary Member</option>
+            </select>
+          </div>
 
         <div className="flex justify-end gap-4">
           <button

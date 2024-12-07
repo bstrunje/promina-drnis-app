@@ -38,9 +38,11 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <Link to="/admin" className="text-gray-700 hover:text-blue-600">
                 Admin
               </Link>
-              <Link to="/assign-password" className="text-gray-700 hover:text-blue-600">
-                Assign Passwords
-              </Link>
+              {!user.registration_completed && (
+                <Link to="/assign-password" className="text-gray-700 hover:text-blue-600">
+                  Assign Passwords
+                </Link>
+              )}
             </>
           )}
           {user.role === 'superuser' && (
@@ -49,8 +51,9 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             </Link>
           )}
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">
-              Welcome, {`${user.first_name} ${user.last_name}`}
+            <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
+              Welcome, {user.first_name} {user.last_name}
+              {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
             </span>
             <button
               onClick={onLogout}

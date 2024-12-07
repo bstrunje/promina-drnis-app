@@ -4,6 +4,17 @@ import memberService from '../services/member.service.js';
 import { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 
+interface MembershipUpdateRequest {
+    paymentDate: string;
+    cardNumber?: string;
+    stampIssued?: boolean;
+}
+
+interface MembershipTerminationRequest {
+    reason: 'withdrawal' | 'non_payment' | 'expulsion' | 'death';
+    endDate?: string;
+}
+
 // Extend Express Request to include user
 declare global {
     namespace Express {
@@ -169,7 +180,89 @@ const memberController = {
         } catch (error) {
             handleControllerError(error, res);
         }
-    }
+    },
+	
+    async updateMembership(
+        req: Request<{ memberId: string }, {}, MembershipUpdateRequest>,
+        res: Response
+    ): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            if (isNaN(memberId)) {
+                res.status(400).json({ message: 'Invalid member ID' });
+                return;
+            }
+
+            const { paymentDate, cardNumber, stampIssued } = req.body;
+            
+            await memberService.updateMembershipFee(memberId, new Date(paymentDate));
+            
+            if (cardNumber || stampIssued !== undefined) {
+                await memberService.updateMembershipCard(
+                    memberId,
+                    cardNumber || '',
+                    stampIssued || false
+                );
+            }
+
+            res.json({ message: 'Membership updated successfully' });
+        } catch (error) {
+            console.error('Controller error:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    },
+
+    async terminateMembership(
+        req: Request<{ memberId: string }, {}, MembershipTerminationRequest>,
+        res: Response
+    ): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            if (isNaN(memberId)) {
+                res.status(400).json({ message: 'Invalid member ID' });
+                return;
+            }
+
+            const { reason, endDate } = req.body;
+            await memberService.terminateMembership(
+                memberId,
+                reason,
+                endDate ? new Date(endDate) : undefined
+            );
+
+            res.json({ message: 'Membership terminated successfully' });
+        } catch (error) {
+            console.error('Controller error:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    },
+
+    async getMemberDetails(req: Request<{ memberId: string }>, res: Response): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            if (isNaN(memberId)) {
+                res.status(400).json({ message: 'Invalid member ID' });
+                return;
+            }
+
+            const memberDetails = await memberService.getMemberWithDetails(memberId);
+            if (!memberDetails) {
+                res.status(404).json({ message: 'Member not found' });
+                return;
+            }
+
+            res.json(memberDetails);
+        } catch (error) {
+            console.error('Controller error:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    }	
 };
 
 export default memberController;

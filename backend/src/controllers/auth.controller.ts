@@ -266,7 +266,7 @@ const authController = {
                 return;
             }
 
-            if (member.status !== 'pending') {
+            if (member.registration_completed) {
                 res.status(400).json({ message: 'Can only set password for pending members' });
                 return;
             }

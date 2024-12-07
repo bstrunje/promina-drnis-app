@@ -48,12 +48,12 @@ describe('MemberController', () => {
                 oib: '12345678901',
                 cell_phone: '1234567890',
                 email: 'john@test.com',
-                status: 'active',
                 role: 'member',
                 life_status: 'employed/unemployed',
                 tshirt_size: 'M',
                 shell_jacket_size: 'M',
-                membership_type: 'regular'
+                membership_type: 'regular',
+                registration_completed: false
             };
 
             req.params = { memberId: '1' };

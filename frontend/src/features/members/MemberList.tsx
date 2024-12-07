@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, XCircle, Key } from 'lucide-react';
+import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, Key } from 'lucide-react';
 import { Alert, AlertDescription } from '@/../components/ui/alert.js';
-import { Member, MemberStatus } from '../../../../shared/types/member';
+import { Member } from '@shared/types/member';
 import AddMemberForm from './AddMemberForm';
 import EditMemberForm from './EditMemberForm';
 import ConfirmationModal from './ConfirmationModal';
@@ -54,9 +54,9 @@ export default function MemberList(): JSX.Element {
 }, []);
 
 // Helper function to calculate status
-const calculateStatus = (member: Member): MemberStatus => {
-  if (member.status === 'pending') return 'pending';
-  return (member.total_hours || 0) >= 20 ? 'active' : 'passive';
+const calculateStatus = (member: Member): boolean => {
+  if (!member.registration_completed) return false;
+  return true;
 };
 
  const handleAssignPassword = (member: Member) => {
@@ -107,17 +107,9 @@ const calculateStatus = (member: Member): MemberStatus => {
    }
  };
 
- const getStatusColor = (status: MemberStatus) => {
-  switch (status) {
-    case 'active':
-      return 'bg-green-100 text-green-800';
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'passive':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+ const getRegistrationStatusColor = (isRegistered: boolean) => {
+  if (!isRegistered) return 'bg-yellow-100 text-yellow-800'; // pending
+  return 'bg-green-100 text-green-800'; // completed
 };
 
  if (loading) {
@@ -180,18 +172,16 @@ const calculateStatus = (member: Member): MemberStatus => {
                      </div>
                    </div>
                  </td>
-                 <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getStatusColor(member.status)}`}>
-                    {member.status === 'active' ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : member.status === 'pending' ? (
-                      <RefreshCw className="w-4 h-4" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
-                    {member.status}
-                    </span>
-                  </td>
+                  <td className="px-6 py-4">
+                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(member.registration_completed)}`}>
+                         {member.registration_completed ? (
+                              <CheckCircle className="w-4 h-4" />
+                          ) : (
+                              <RefreshCw className="w-4 h-4" />
+                          )}
+                          {member.registration_completed ? 'Registered' : 'Pending'}
+                     </span>
+                    </td>
                   <td className="px-6 py-4">
                     {member.total_hours || 0}
                   </td>
@@ -212,7 +202,7 @@ const calculateStatus = (member: Member): MemberStatus => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      {member.status === 'pending' && (
+                      {!member.registration_completed && (
                         <button 
                           onClick={() => handleAssignPassword(member)}
                           className="text-yellow-600 hover:text-yellow-900"
@@ -261,12 +251,12 @@ const calculateStatus = (member: Member): MemberStatus => {
      )}
 
      {assigningPasswordMember && (
-        <AssignPasswordForm
-        member={assigningPasswordMember}
-        onClose={() => setAssigningPasswordMember(null)}
-        onAssign={(updatedMember: Member) => {
-          setMembers(members.map(m => m.member_id === updatedMember.member_id ? updatedMember : m));
-          setAssigningPasswordMember(null);
+  <AssignPasswordForm
+    member={assigningPasswordMember}
+    onClose={() => setAssigningPasswordMember(null)}
+    onAssign={(updatedMember: Member) => {
+      setMembers(members.map(m => m.member_id === updatedMember.member_id ? updatedMember : m));
+      setAssigningPasswordMember(null);
         }}
       />
      )}

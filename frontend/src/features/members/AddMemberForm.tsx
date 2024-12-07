@@ -46,7 +46,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     life_status: 'employed/unemployed',
     tshirt_size: 'M',
     shell_jacket_size: 'M',
-    status: 'pending',
+    registration_completed: false,
     membership_type: 'regular',
     total_hours: 0,
     role: 'member'

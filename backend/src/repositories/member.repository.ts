@@ -1,6 +1,6 @@
 // backend/src/repositories/member.repository.ts
 import db from '../utils/db.js';
-import { Member, MemberStatus, MemberRole, Gender } from '../../../shared/types/member.js';
+import { Member, MemberRole, Gender } from '../../../shared/types/member.js';
 
 // Interfaces for data operations
 export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'last_login' | 'password_hash' | 'full_name'> {
@@ -40,7 +40,7 @@ export interface MemberStats {
     total_activities: number;
     total_hours: number;
     membership_type: Member['membership_type'];
-    status: MemberStatus;
+    activity_status: 'active' | 'passive';
 }
 
 const memberRepository = {

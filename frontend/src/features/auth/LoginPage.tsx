@@ -5,7 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { login, register, LoginResponse, searchMembers } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../../../components/ErrorMessage";
-import { Member, MemberSearchResult, MemberLoginData } from "@shared/types/member";
+import { Member, MemberSearchResult } from "@shared/types/member";
+import { MemberLoginData } from "@shared/types/member";
 
 interface SearchResult {
   member_id: number;
@@ -71,7 +72,7 @@ const LoginPage = () => {
     life_status: "employed/unemployed", // Set a default value from the allowed types
     tshirt_size: "M", // Default size
     shell_jacket_size: "M", // Default size
-    status: "pending",
+    registration_completed: true,
     membership_type: "regular" as const,
     role: 'member'
   });
@@ -118,7 +119,7 @@ const LoginPage = () => {
         oib: '',
         cell_phone: '',
         email: '',
-        status: 'active',
+        registration_completed: true,
         membership_type: 'regular',
         life_status: 'employed/unemployed',
         role: data.member.role,
@@ -177,11 +178,11 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const memberData: Omit<Member, "member_id" | "total_hours"> = {
+      const memberData: Omit<Member, 'member_id' | 'total_hours'> = {
         ...registerData,
-        status: "pending",
-        membership_type: "regular" as const,
-        gender: "male",
+        registration_completed: false,
+        membership_type: "regular",
+        role: 'member',
         first_name: registerData.first_name,
         last_name: registerData.last_name,
         date_of_birth: registerData.date_of_birth,
@@ -193,7 +194,7 @@ const LoginPage = () => {
         life_status: registerData.life_status,
         tshirt_size: registerData.tshirt_size,
         shell_jacket_size: registerData.shell_jacket_size,
-      };
+    };
 
       const response = await register(memberData);
       if (response.message) {

@@ -1,5 +1,5 @@
 // src/types/database.ts
-import { MemberRole, MemberStatus } from '../../../shared/types/member.js';
+import { MemberRole } from '../../../shared/types/member.js';
 
 // Common types
 type Timestamp = Date;
@@ -80,7 +80,6 @@ export interface AnnualStatistics {
   year: number;
   total_hours: number;
   total_activities: number;
-  status: MemberStatus;
   calculated_at: TimestampTZ;
 }
 
@@ -128,7 +127,6 @@ export interface PaginationParams {
 export interface FilterParams {
   startDate?: Date;
   endDate?: Date;
-  status?: MemberStatus;
   type?: string;
   search?: string;
 }

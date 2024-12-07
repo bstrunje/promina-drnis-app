@@ -13,7 +13,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    target: 'es2015'
   },
   server: {
     port: 5173,

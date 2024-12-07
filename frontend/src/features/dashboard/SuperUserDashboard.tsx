@@ -46,7 +46,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           <div className="space-y-2">
             <p className="text-2xl font-bold">{stats.totalMembers}</p>
             <p className="text-sm text-gray-500">
-              {stats.activeMembers} active members
+              {stats.activeMembers} active ({(stats.activeMembers/stats.totalMembers * 100).toFixed(1)}%)
             </p>
           </div>
         </div>
@@ -67,12 +67,12 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Pending Approvals</h3>
+            <h3 className="text-gray-600 font-medium">Pending Registrations</h3>
             <Shield className="h-6 w-6 text-orange-600" />
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-            <p className="text-sm text-gray-500">Require your attention</p>
+            <p className="text-sm text-gray-500">Await password assignment</p>
           </div>
         </div>
       </div>
@@ -85,7 +85,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
               onClick={() => navigate('/members')}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
-              <span>User Management</span>
+              <span>Member Management</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
             <button 

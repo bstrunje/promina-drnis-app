@@ -11,8 +11,8 @@
     "start": "node --loader ts-node/esm --experimental-specifier-resolution=node src/server.ts",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "mocha -r ts-node/register 'tests/**/*.test.ts'",
-    "test:watch": "mocha -r ts-node/register -w --watch-files 'tests/**/*.test.ts' 'tests/**/*.test.ts'",
+    "_test": "mocha -r ts-node/register 'tests/**/*.test.ts'",
+    "_test:watch": "mocha -r ts-node/register -w --watch-files 'tests/**/*.test.ts' 'tests/**/*.test.ts'",
     "migrate": "node dist/scripts/runMigration.js"
   },
   "dependencies": {
