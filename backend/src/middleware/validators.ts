@@ -1,22 +1,55 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { 
+        first_name, 
+        last_name, 
+        email, 
+        oib, 
+        date_of_birth,
+        cell_phone,
+        city,
+        street_address,
+        gender,
+        life_status,
+        tshirt_size,
+        shell_jacket_size
+    } = req.body;
 
-    if (!username || typeof username !== 'string') {
-        return res.status(400).json({ message: 'Valid username is required' });
+    if (!first_name || !last_name) {
+        return res.status(400).json({ message: 'First and last name are required' });
     }
 
     if (!email || !email.includes('@')) {
         return res.status(400).json({ message: 'Valid email is required' });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    if (!oib || !/^\d{11}$/.test(oib)) {
+        return res.status(400).json({ message: 'OIB must be exactly 11 digits' });
     }
 
-    if (!firstName || !lastName) {
-        return res.status(400).json({ message: 'First and last name are required' });
+    if (!date_of_birth) {
+        return res.status(400).json({ message: 'Date of birth is required' });
+    }
+
+    if (!cell_phone) {
+        return res.status(400).json({ message: 'Cell phone is required' });
+    }
+
+    if (!city || !street_address) {
+        return res.status(400).json({ message: 'Address information is required' });
+    }
+
+    if (!gender || !['male', 'female'].includes(gender)) {
+        return res.status(400).json({ message: 'Valid gender is required' });
+    }
+
+    if (!life_status || !['employed/unemployed', 'child/pupil/student', 'pensioner'].includes(life_status)) {
+        return res.status(400).json({ message: 'Valid life status is required' });
+    }
+
+    if (!tshirt_size || !shell_jacket_size) {
+        return res.status(400).json({ message: 'Size information is required' });
     }
 
     next();

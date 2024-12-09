@@ -42,7 +42,7 @@ const AssignPasswordForm = ({ member, onClose, onAssign }: Props) => {
                 {error && <p className="text-red-500 mb-4">{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <input
-                        type="password"
+                        type="text"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter new password"

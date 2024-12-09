@@ -3,11 +3,10 @@ import { DatabaseUser } from '../middleware/authMiddleware.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../utils/db.js';
-import { Member, MemberLoginData, MemberSearchResult } from '../../../shared/types/member.js';
+import { Member, MemberLoginData } from '../../../shared/types/member.js';
 import { PoolClient } from 'pg';
 import { DatabaseError } from '../utils/db.js';
 import authRepository from '../repositories/auth.repository.js';
-import { sendPasswordEmail } from '../services/email.service.js';
 
 // Extend Express Request to include user
 declare global {
@@ -212,7 +211,7 @@ const authController = {
                     first_name, last_name, date_of_birth, gender,
                     street_address, city, oib, cell_phone, 
                     email, life_status, tshirt_size, shell_jacket_size,
-                    status, role
+                    status, role, membership_type
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', 'member')
                 RETURNING member_id`,
                 [
@@ -289,12 +288,14 @@ const authController = {
     async assignPassword(req: Request<{}, {}, { memberId: number; password: string }>, res: Response): Promise<void> {
         try {
             const { memberId, password } = req.body;
-            const hashedPassword = await bcrypt.hash(password, 10);
-            await authRepository.updatePassword(memberId, hashedPassword);
-            res.json({ message: 'Password assigned successfully' });
-        } catch (error) {
-            console.error('Password assignment error:', error);
-            res.status(500).json({ message: 'Failed to assign password' });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await authRepository.updatePassword(memberId, hashedPassword);
+        await db.query('COMMIT');
+        res.json({ message: 'Password assigned successfully' });
+    } catch (error) {
+        await db.query('ROLLBACK');
+        console.error('Password assignment error:', error);
+        res.status(500).json({ message: 'Failed to assign password' });
         }
     }
 };

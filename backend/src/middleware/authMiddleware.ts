@@ -5,13 +5,13 @@ import db from '../utils/db.js';
 // Types
 interface JWTPayload {
     id: number;
-    username: string;
+    full_name: string;
 }
 
 export interface DatabaseUser {
     id: number;
     user_id: number;
-    username: string;
+    full_name: string;
     email: string;
     role_name: string;
     is_active: boolean;
@@ -49,7 +49,7 @@ const result = await db.query<DatabaseUser>(
     `SELECT 
         m.member_id as id, 
         m.member_id as user_id,
-        m.first_name || ' ' || m.last_name as username,
+        m.first_name || ' ' || m.last_name as full_name,
         m.email,
         CASE 
             WHEN m.role = 'admin' THEN 'admin'

@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, Key } from 'lucide-react';
 import { Alert, AlertDescription } from '@/../components/ui/alert.js';
@@ -9,6 +10,7 @@ import AssignPasswordForm from './AssignPasswordForm';
 import { API_URL } from '../../utils/config';
 
 export default function MemberList(): JSX.Element {
+ const { user } = useAuth();
  const [members, setMembers] = useState<Member[]>([]);
  const [loading, setLoading] = useState<boolean>(true);
  const [error, setError] = useState<string | null>(null);
@@ -132,7 +134,7 @@ const calculateStatus = (member: Member): boolean => {
    <div className="container mx-auto px-4 py-8">
      <div className="flex justify-between items-center mb-6">
        <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
-       <button 
+       <button
          className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
          onClick={() => setShowAddForm(true)}
        >
@@ -146,13 +148,27 @@ const calculateStatus = (member: Member): boolean => {
          <table className="w-full text-left">
            <thead className="bg-gray-50">
              <tr>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Birth Date</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Membership Type</th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Gender
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Name
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Status
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Hours
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Birth Date
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Actions
+               </th>
+               <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 Membership Type
+               </th>
              </tr>
            </thead>
            <tbody className="divide-y divide-gray-200">
@@ -160,7 +176,10 @@ const calculateStatus = (member: Member): boolean => {
                <tr key={member.member_id} className="hover:bg-gray-50">
                  <td className="px-6 py-4">
                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                   {member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : 'N/A'}
+                     {member.gender
+                       ? member.gender.charAt(0).toUpperCase() +
+                         member.gender.slice(1)
+                       : "N/A"}
                    </span>
                  </td>
                  <td className="px-6 py-4">
@@ -172,59 +191,67 @@ const calculateStatus = (member: Member): boolean => {
                      </div>
                    </div>
                  </td>
-                  <td className="px-6 py-4">
-                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(member.registration_completed)}`}>
-                         {member.registration_completed ? (
-                              <CheckCircle className="w-4 h-4" />
-                          ) : (
-                              <RefreshCw className="w-4 h-4" />
-                          )}
-                          {member.registration_completed ? 'Registered' : 'Pending'}
-                     </span>
-                    </td>
-                  <td className="px-6 py-4">
-                    {member.total_hours || 0}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => handleEdit(member)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(member)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      {!member.registration_completed && (
-                        <button 
-                          onClick={() => handleAssignPassword(member)}
-                          className="text-yellow-600 hover:text-yellow-900"
-                        >
-                          <Key className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${
-                      member.membership_type === 'regular' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : member.membership_type === 'supporting'
-                        ? 'bg-green-100 text-green-800'
-                        : member.membership_type === 'honorary'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {member.membership_type}
-                    </span>
-                  </td>
+                 <td className="px-6 py-4">
+                   <span
+                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(
+                       member.registration_completed
+                     )}`}
+                   >
+                     {member.registration_completed ? (
+                       <CheckCircle className="w-4 h-4" />
+                     ) : (
+                       <RefreshCw className="w-4 h-4" />
+                     )}
+                     {member.registration_completed ? "Registered" : "Pending"}
+                   </span>
+                 </td>
+                 <td className="px-6 py-4">{member.total_hours || 0}</td>
+                 <td className="px-6 py-4 text-sm text-gray-500">
+                   {member.date_of_birth
+                     ? new Date(member.date_of_birth).toLocaleDateString()
+                     : "N/A"}
+                 </td>
+                 <td className="px-6 py-4 text-sm font-medium">
+                   <div className="flex items-center gap-2">
+                     <button
+                       onClick={() => handleEdit(member)}
+                       className="text-blue-600 hover:text-blue-900"
+                     >
+                       <Edit className="w-4 h-4" />
+                     </button>
+                     {user?.role === "superuser" && (
+                       <button
+                         onClick={() => handleDelete(member)}
+                         className="text-red-600 hover:text-red-900"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     )}
+                     {!member.registration_completed && (
+                       <button
+                         onClick={() => handleAssignPassword(member)}
+                         className="text-yellow-600 hover:text-yellow-900"
+                       >
+                         <Key className="w-4 h-4" />
+                       </button>
+                     )}
+                   </div>
+                 </td>
+                 <td className="px-6 py-4">
+                   <span
+                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${
+                       member.membership_type === "regular"
+                         ? "bg-blue-100 text-blue-800"
+                         : member.membership_type === "supporting"
+                         ? "bg-green-100 text-green-800"
+                         : member.membership_type === "honorary"
+                         ? "bg-purple-100 text-purple-800"
+                         : "bg-gray-100 text-gray-800"
+                     }`}
+                   >
+                     {member.membership_type}
+                   </span>
+                 </td>
                </tr>
              ))}
            </tbody>
@@ -233,10 +260,7 @@ const calculateStatus = (member: Member): boolean => {
      </div>
 
      {showAddForm && (
-       <AddMemberForm
-         onClose={() => setShowAddForm(false)}
-         onAdd={handleAdd}
-       />
+       <AddMemberForm onClose={() => setShowAddForm(false)} onAdd={handleAdd} />
      )}
 
      {editingMember && (
@@ -244,21 +268,29 @@ const calculateStatus = (member: Member): boolean => {
          member={editingMember}
          onClose={() => setEditingMember(null)}
          onEdit={(updatedMember: Member) => {
-           setMembers(members.map(m => m.member_id === updatedMember.member_id ? updatedMember : m));
+           setMembers(
+             members.map((m) =>
+               m.member_id === updatedMember.member_id ? updatedMember : m
+             )
+           );
            setEditingMember(null);
          }}
        />
      )}
 
      {assigningPasswordMember && (
-  <AssignPasswordForm
-    member={assigningPasswordMember}
-    onClose={() => setAssigningPasswordMember(null)}
-    onAssign={(updatedMember: Member) => {
-      setMembers(members.map(m => m.member_id === updatedMember.member_id ? updatedMember : m));
-      setAssigningPasswordMember(null);
-        }}
-      />
+       <AssignPasswordForm
+         member={assigningPasswordMember}
+         onClose={() => setAssigningPasswordMember(null)}
+         onAssign={(updatedMember: Member) => {
+           setMembers(
+             members.map((m) =>
+               m.member_id === updatedMember.member_id ? updatedMember : m
+             )
+           );
+           setAssigningPasswordMember(null);
+         }}
+       />
      )}
 
      {showConfirmModal && deletingMember && (

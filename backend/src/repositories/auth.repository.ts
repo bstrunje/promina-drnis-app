@@ -49,8 +49,8 @@ const authRepository = {
 
     async updatePassword(id: number, hashedPassword: string): Promise<void> {
         await db.query(
-            'UPDATE members SET password_hash = $1 WHERE member_id = $2',
-            [hashedPassword, id]
+            'UPDATE members SET password_hash = $1, registration_completed = true, status = $3 WHERE member_id = $2',
+            [hashedPassword, id, 'active']
         );
     },
 
@@ -62,7 +62,7 @@ const authRepository = {
         FROM members 
         WHERE 
             LOWER(full_name) LIKE LOWER($1)
-            AND status != 'pending'
+            AND registration_completed = true
         ORDER BY first_name, last_name 
         LIMIT 10`,
         [`%${searchTerm}%`]

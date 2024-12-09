@@ -8,7 +8,7 @@ type TimestampTZ = Date;
 // User related interfaces
 export interface User {
   id: number;
-  username: string;
+  full_name: string;
   email: string;
   password: string;
   role: UserRole;
@@ -35,7 +35,7 @@ export interface UserRole {
 export interface Member {
   member_id: number;
   user_id: number;
-  username: string;
+  full_name: string;
   email: string;
   role: string;
   created_at: TimestampTZ;
@@ -89,7 +89,7 @@ export type ParticipantRole = 'leader' | 'assistant' | 'participant' | 'trainee'
 
 // Join result types
 export interface MemberWithUser extends Member {
-  username: string;
+  full_name: string;
   email: string;
   role: MemberRole;
 }

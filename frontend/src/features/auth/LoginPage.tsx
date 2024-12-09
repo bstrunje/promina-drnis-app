@@ -8,11 +8,6 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import { Member, MemberSearchResult } from "@shared/types/member";
 import { MemberLoginData } from "@shared/types/member";
 
-interface SearchResult {
-  member_id: number;
-  full_name: string;
-}
-
 interface SizeOptions {
   value: string;
   label: string;
@@ -74,7 +69,7 @@ const LoginPage = () => {
     shell_jacket_size: "M", // Default size
     registration_completed: true,
     membership_type: "regular" as const,
-    role: 'member'
+    role: "member",
   });
 
   type MessageType = "success" | "error";
@@ -100,6 +95,24 @@ const LoginPage = () => {
     };
   }, [showResults]);
 
+  useEffect(() => {
+    if (step === 1) {
+      const nameInput = document.querySelector('input[type="text"]');
+      if (nameInput) {
+        (nameInput as HTMLElement).focus();
+      }
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 2) {
+      const passwordInput = document.querySelector('input[type="password"]');
+      if (passwordInput) {
+        (passwordInput as HTMLElement).focus();
+      }
+    }
+  }, [step]);
+
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
@@ -109,40 +122,25 @@ const LoginPage = () => {
       const data: LoginResponse = await login(loginData);
       const member: Member = {
         member_id: data.member.id,
-        first_name: data.member.full_name.split(' ')[0],
-        last_name: data.member.full_name.split(' ')[1],
+        first_name: data.member.full_name.split(" ")[0],
+        last_name: data.member.full_name.split(" ")[1],
         full_name: data.member.full_name,
-        date_of_birth: '', // These will be populated by backend
-        gender: 'male',    // These should come from backend
-        street_address: '',
-        city: '',
-        oib: '',
-        cell_phone: '',
-        email: '',
+        date_of_birth: "",
+        gender: "male",
+        street_address: "",
+        city: "",
+        oib: "",
+        cell_phone: "",
+        email: "",
         registration_completed: true,
-        membership_type: 'regular',
-        life_status: 'employed/unemployed',
+        membership_type: "regular",
+        life_status: "employed/unemployed",
         role: data.member.role,
-        tshirt_size: 'M',
-        shell_jacket_size: 'M'
+        tshirt_size: "M",
+        shell_jacket_size: "M",
       };
       authLogin(member, data.token);
-
-      // Redirect based on user role
-      switch (data.member.role) {
-        case "admin":
-          navigate("/admin");
-          break;
-        case "member":
-          navigate("/dashboard");
-          break;
-        case "superuser":
-          navigate("/super-user");
-          break;
-        default:
-          navigate("/");
-          break;
-      }
+      navigate("/profile");
     } catch (error) {
       console.error("Login error:", error);
       setError("Failed to login. Please check your credentials and try again.");
@@ -150,7 +148,6 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
-
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!acceptedTerms) {
@@ -178,11 +175,11 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const memberData: Omit<Member, 'member_id' | 'total_hours'> = {
+      const memberData: Omit<Member, "member_id" | "total_hours"> = {
         ...registerData,
         registration_completed: false,
         membership_type: "regular",
-        role: 'member',
+        role: "member",
         first_name: registerData.first_name,
         last_name: registerData.last_name,
         date_of_birth: registerData.date_of_birth,
@@ -194,7 +191,7 @@ const LoginPage = () => {
         life_status: registerData.life_status,
         tshirt_size: registerData.tshirt_size,
         shell_jacket_size: registerData.shell_jacket_size,
-    };
+      };
 
       const response = await register(memberData);
       if (response.message) {
@@ -662,15 +659,36 @@ const LoginPage = () => {
                       placeholder="Enter your full name"
                       className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
                       value={loginData.full_name}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter" && searchResults.length > 0) {
+                          e.preventDefault();
+                          const selectedMember = searchResults[0];
+                          setLoginData({
+                            ...loginData,
+                            full_name: selectedMember.full_name,
+                          });
+                          setShowResults(false);
+                          setStep(2);
+                        } else if (
+                          e.key === "ArrowDown" &&
+                          showResults &&
+                          searchResults.length > 0
+                        ) {
+                          e.preventDefault();
+                          // Focus first result
+                          const firstResult =
+                            document.querySelector(".search-result");
+                          if (firstResult) {
+                            (firstResult as HTMLElement).focus();
+                          }
+                        }
+                      }}
                       onChange={async (e) => {
                         const value = e.target.value;
                         setLoginData({ ...loginData, full_name: value });
-
                         if (value.length >= 2) {
                           try {
-                            const results = (await searchMembers(
-                              value
-                            )) as SearchResult[];
+                            const results = await searchMembers(value);
                             setSearchResults(results);
                             setShowResults(true);
                           } catch (error) {
@@ -681,29 +699,60 @@ const LoginPage = () => {
                           setShowResults(false);
                         }
                       }}
-                      onFocus={() => {
-                        if (searchResults.length > 0) {
-                          setShowResults(true);
-                        }
-                      }}
                     />
                   </div>
 
                   {/* Search Results Dropdown */}
                   {showResults && searchResults.length > 0 && (
-                    <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center">
-                      {searchResults.map((result) => (
+                    <div className="absolute w-full bg-white shadow-lg rounded-b border mt-1 z-10">
+                      {searchResults.map((result, index) => (
                         <button
-                          type="button"
                           key={result.member_id}
-                          className="w-full px-4 py-2 text-left"
-                          onMouseDown={() => {
-                            setLoginData({
-                              ...loginData,
-                              full_name: result.full_name,
-                            });
+                          className="search-result w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLoginData({ ...loginData, full_name: result.full_name });
                             setShowResults(false);
                             setStep(2);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              setLoginData({
+                                ...loginData,
+                                full_name: result.full_name,
+                              });
+                              setShowResults(false);
+                              setStep(2);
+                            } else if (
+                              e.key === "ArrowDown" &&
+                              index < searchResults.length - 1
+                            ) {
+                              e.preventDefault();
+                              const nextResult =
+                                document.querySelectorAll(".search-result")[
+                                  index + 1
+                                ];
+                              if (nextResult) {
+                                (nextResult as HTMLElement).focus();
+                              }
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              if (index === 0) {
+                                const input =
+                                  document.querySelector('input[type="text"]');
+                                if (input) {
+                                  (input as HTMLElement).focus();
+                                }
+                              } else {
+                                const prevResult =
+                                  document.querySelectorAll(".search-result")[
+                                    index - 1
+                                  ];
+                                if (prevResult) {
+                                  (prevResult as HTMLElement).focus();
+                                }
+                              }
+                            }
                           }}
                         >
                           {result.full_name}
@@ -791,6 +840,7 @@ const LoginPage = () => {
                 type="button"
                 onClick={() => {
                   setIsRegistering(false);
+                  setStep(1);
                   setError("");
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800"

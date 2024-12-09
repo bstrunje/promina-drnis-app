@@ -2,13 +2,13 @@ import nodemailer from 'nodemailer';
 
 interface EmailParams {
     to: string;
-    username: string;
+    full_name: string;
     password: string;
     firstName: string;
     lastName: string;
 }
 
-export async function sendPasswordEmail({ to, username, password, firstName, lastName }: EmailParams): Promise<void> {
+export async function sendPasswordEmail({ to, full_name, password, firstName, lastName }: EmailParams): Promise<void> {
     // Create transporter
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -26,7 +26,7 @@ export async function sendPasswordEmail({ to, username, password, firstName, las
         <p>Your account password has been set/updated.</p>
         <p>Your login credentials are:</p>
         <ul>
-            <li>Username: ${username}</li>
+            <li>Username: ${full_name}</li>
             <li>Password: ${password}</li>
         </ul>
         <p>Please login using these credentials and change your password after first login.</p>
