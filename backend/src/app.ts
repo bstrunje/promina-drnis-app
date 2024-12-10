@@ -1,3 +1,4 @@
+import db from './utils/db.js';
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

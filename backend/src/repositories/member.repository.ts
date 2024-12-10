@@ -164,17 +164,18 @@ const memberRepository = {
         return result.rows[0] || null;
     },
 
-    async updatePassword(memberId: number, hashedPassword: string): Promise<void> {
-        await db.query(
-            'UPDATE members SET password_hash = $1 WHERE member_id = $2',
-            [hashedPassword, memberId]
-        );
-    },
-
     async assignPassword(memberId: number, password: string): Promise<void> {
         await db.query(`
             UPDATE members
-            SET password_hash = $1, status = 'active'
+            SET password_hash = $1, status = 'registered'
+            WHERE member_id = $2
+        `, [password, memberId]);
+    },
+
+    async updatePassword(memberId: number, password: string): Promise<void> {
+        await db.query(`
+            UPDATE members
+            SET password_hash = $1
             WHERE member_id = $2
         `, [password, memberId]);
     }

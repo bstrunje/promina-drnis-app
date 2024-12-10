@@ -57,14 +57,14 @@ const authController = {
             console.log(`Login attempt for member: ${full_name}`);
     
             const result = await db.query<Member>(
-                'SELECT * FROM members WHERE full_name = $1 AND status = \'active\'',
+                'SELECT * FROM members WHERE full_name = $1 AND status = \'registered\'',
                 [full_name],
                 { singleRow: true }
             );
     
             if (result.rowCount === 0) {
-                console.log(`Member not found or not active: ${full_name}`);
-                res.status(401).json({ message: 'Invalid credentials or account not active' });
+                console.log(`Member not found or not registered: ${full_name}`);
+                res.status(401).json({ message: 'Invalid credentials or account not registered' });
                 return;
             }
     
@@ -211,7 +211,7 @@ const authController = {
                     first_name, last_name, date_of_birth, gender,
                     street_address, city, oib, cell_phone, 
                     email, life_status, tshirt_size, shell_jacket_size,
-                    status, role, membership_type
+                    status, role
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', 'member')
                 RETURNING member_id`,
                 [
@@ -277,7 +277,7 @@ const authController = {
             res.json({ 
                 message: 'Password set successfully',
                 member_id,
-                status: 'active'
+                status: 'registered',
             });
         } catch (error) {
             console.error('Set password error:', error);
@@ -287,9 +287,11 @@ const authController = {
 
     async assignPassword(req: Request<{}, {}, { memberId: number; password: string }>, res: Response): Promise<void> {
         try {
-            const { memberId, password } = req.body;
+        const { memberId, password } = req.body;
+        console.log('Received password assignment request for member:', memberId);
         const hashedPassword = await bcrypt.hash(password, 10);
         await authRepository.updatePassword(memberId, hashedPassword);
+        console.log('Password updated in database');
         await db.query('COMMIT');
         res.json({ message: 'Password assigned successfully' });
     } catch (error) {

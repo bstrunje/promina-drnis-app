@@ -56,9 +56,9 @@ const result = await db.query<DatabaseUser>(
             WHEN m.role = 'superuser' THEN 'superuser'
             ELSE 'member'
         END as role_name,
-        m.status = 'active' as is_active
+        m.status = 'registered' as is_active
      FROM members m
-     WHERE m.member_id = $1 AND m.status = 'active'`,
+     WHERE m.member_id = $1 AND m.status = 'registered'`,
     [decoded.id]
 );
 
@@ -78,25 +78,34 @@ next();
 
 // Role checking middleware
 const checkRole = (allowedRoles: string[]) => {
-    return async (
-        req: Request, 
-        res: Response, 
-        next: NextFunction
-    ): Promise<void> => {
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.user) {
                 res.status(401).json({ message: 'User not authenticated' });
                 return;
             }
 
-            if (!allowedRoles.includes(req.user.role_name)) {
-                res.status(403).json({ 
-                    message: `Access denied. Required role: ${allowedRoles.join(' or ')}`
-                });
+            // Superuser can do everything
+            if (req.user.role_name === 'superuser') {
+                next();
                 return;
             }
 
-            next();
+            // For admin, allow both admin and member actions
+            if (req.user.role_name === 'admin' && allowedRoles.includes('admin')) {
+                next();
+                return;
+            }
+
+            // For regular member, only allow member actions
+            if (allowedRoles.includes(req.user.role_name)) {
+                next();
+                return;
+            }
+
+            res.status(403).json({ 
+                message: `Access denied. Required role: ${allowedRoles.join(' or ')}`
+            });
         } catch (error) {
             console.error('Role checking error:', error);
             res.status(500).json({ message: 'Error checking user role' });

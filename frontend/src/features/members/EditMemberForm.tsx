@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Member } from '../../../../shared/types/member';
 
 interface EditMemberFormProps {
@@ -34,7 +34,23 @@ const genderOptions = [
 ];
 
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
-  const [editedMember, setEditedMember] = useState<Member>({...member});
+  const [editedMember, setEditedMember] = useState<Member>(() => ({
+    ...member,
+    tshirt_size: member.tshirt_size || '',
+    shell_jacket_size: member.shell_jacket_size || '',
+    life_status: member.life_status || '',
+    gender: member.gender || ''
+  }));
+
+  useEffect(() => {
+    setEditedMember({
+      ...member,
+      tshirt_size: member.tshirt_size || '',
+      shell_jacket_size: member.shell_jacket_size || '',
+      life_status: member.life_status || '',
+      gender: member.gender || ''
+    });
+  }, [member]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

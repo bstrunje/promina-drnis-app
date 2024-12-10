@@ -14,10 +14,12 @@ const AssignPasswordForm = ({ member, onClose, onAssign }: Props) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Submitting password for member:', member.member_id);
         setError(null);
         
         try {
             await assignPassword(member.member_id, password);
+            console.log('Password assignment response received');
             onAssign({
                 ...member,
                 registration_completed: true

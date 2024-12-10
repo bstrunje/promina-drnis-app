@@ -113,7 +113,7 @@ const MemberProfile = () => {
               </div>
               <div>
                 <label className="text-sm text-gray-500">Status</label>
-                <p>{user.registration_completed ? 'Active' : 'Pending'}</p>
+                <p>{user.registration_completed ? 'Registered' : 'Pending'}</p>
               </div>
             </div>
           </CardContent>

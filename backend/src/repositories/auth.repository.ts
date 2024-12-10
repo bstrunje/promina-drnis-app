@@ -48,10 +48,12 @@ const authRepository = {
     },
 
     async updatePassword(id: number, hashedPassword: string): Promise<void> {
-        await db.query(
-            'UPDATE members SET password_hash = $1, registration_completed = true, status = $3 WHERE member_id = $2',
-            [hashedPassword, id, 'active']
+        console.log('Executing updatePassword in auth.repository');
+        const result = await db.query(
+            'UPDATE members SET password_hash = $1, registration_completed = true, status = \'registered\' WHERE member_id = $2',
+            [hashedPassword, id]
         );
+        console.log('Update query result:', result);
     },
 
     async searchMembers(searchTerm: string): Promise<MemberSearchResult[]> {

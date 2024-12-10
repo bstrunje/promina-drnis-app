@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import memberService from '../services/member.service.js';
 import { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
+import bcrypt from 'bcrypt';
+import authRepository from '../repositories/auth.repository.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -148,18 +150,16 @@ const memberController = {
         }
     },
 
-    async assignPassword(req: Request, res: Response): Promise<void> {
+    async assignPassword(req: Request<{}, {}, { memberId: number; password: string }>, res: Response): Promise<void> {
         try {
             const { memberId, password } = req.body;
-            if (!memberId || !password) {
-                res.status(400).json({ message: 'Member ID and password are required' });
-                return;
-            }
-            await memberService.assignPassword(memberId, password);
-            res.status(200).json({ message: 'Password assigned successfully' });
+            console.log('Starting password assignment in member.controller');
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await authRepository.updatePassword(memberId, hashedPassword);
+            console.log('Password assignment completed');
+            res.json({ message: 'Password assigned successfully' });
         } catch (error) {
-            handleControllerError(error, res);
-            console.error('Error in assignPassword controller:', error);
+            console.error('Password assignment error:', error);
             res.status(500).json({ message: 'Failed to assign password' });
         }
     },

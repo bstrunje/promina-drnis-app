@@ -11,12 +11,5 @@ router.post('/register', validateRegistration, authController.registerMember);
 router.post('/login', validateLogin, authController.login);
 router.get('/search-members', authController.searchMembers);
 
-// Protected admin route for setting member passwords
-router.post(
-    '/set-password',
-    authMiddleware,  // Verify JWT token
-    roles.requireAdmin,  // Ensure user is admin
-    authController.setMemberPassword
-);
 
 export default router;
