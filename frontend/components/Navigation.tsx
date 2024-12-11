@@ -1,3 +1,4 @@
+// frontend/components/Navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/types/member';
@@ -8,6 +9,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
+  console.log('User role in Navigation:', user?.role);
   if (!user) return null;
   
   return (

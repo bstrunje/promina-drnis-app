@@ -1,3 +1,4 @@
+// backend/src/app.ts
 import db from './utils/db.js';
 import express, { Express } from 'express';
 import cors from 'cors';
@@ -11,6 +12,7 @@ import memberRoutes from './routes/members.js';
 import activityRoutes from './routes/activities.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
+import auditRoutes from './routes/audit.js';
 
 const app: Express = express();
 
@@ -63,6 +65,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
+app.use('/api/audit', authMiddleware, auditRoutes);
 
 // API root endpoint
 app.get('/api', (req, res) => {
@@ -73,7 +76,8 @@ app.get('/api', (req, res) => {
         endpoints: {
             auth: '/api/auth',
             members: '/api/members',
-            activities: '/api/activities'
+            activities: '/api/activities',
+            audit: '/api/audit'
         }
     });
 });

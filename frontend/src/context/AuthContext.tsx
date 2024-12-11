@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { Member } from '@shared/types/member';
+// frontend/src/context/AuthContext.tsx
+import React, { createContext, useState, useContext, ReactNode } from "react";
+import { Member } from "@shared/types/member";
 
 interface AuthContextType {
   user: Member | null;
@@ -9,20 +10,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<Member | null>(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const savedUser = localStorage.getItem("user");
+    console.log('Saved user from localStorage:', savedUser);
+    const savedToken = localStorage.getItem("token");
+    if (savedUser && savedToken) {
       try {
         const parsedUser = JSON.parse(savedUser);
-        // Ensure registration_completed is properly set when loading from storage
         return {
           ...parsedUser,
-          registration_completed: !!parsedUser.registration_completed
+          registration_completed: !!parsedUser.registration_completed,
+          token: savedToken,
         };
       } catch (error) {
-        console.error('Failed to parse user data from localStorage:', error);
-        localStorage.removeItem('user');
+        console.error("Failed to parse user data from localStorage:", error);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
         return null;
       }
     }
@@ -30,20 +36,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const login = (user: Member, token: string) => {
+    console.log('User role after login:', user.role);
     // Ensure registration_completed is properly set when logging in
     const userWithStatus = {
       ...user,
-      registration_completed: true
+      registration_completed: true,
+      token: token
     };
     setUser(userWithStatus);
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userWithStatus));
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(userWithStatus));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   return (
@@ -56,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

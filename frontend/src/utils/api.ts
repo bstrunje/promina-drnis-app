@@ -1,5 +1,7 @@
+// frontend/src/utils/api.ts
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '@shared/types/member';
+import { AuditLog } from '@promina-drnis-app/shared/types/audit';
 
 export interface LoginResponse {
   member: {
@@ -36,8 +38,15 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return Promise.reject(error);
 });
 
+export const getAuditLogs = async (): Promise<AuditLog[]> => {
+  const response = await api.get('/audit/logs');
+  return response.data;
+};
+
 export const login = async ({ full_name, password }: MemberLoginData): Promise<LoginResponse> => {
   const response = await api.post<LoginResponse>('/auth/login', { full_name, password });
+  console.log('User data from API:', response.data);
+  localStorage.setItem('userRole', response.data.member.role);
   return response.data;
 };
 

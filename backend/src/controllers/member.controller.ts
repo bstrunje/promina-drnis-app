@@ -5,6 +5,7 @@ import { MemberCreateData, MemberUpdateData } from '../repositories/member.repos
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import bcrypt from 'bcrypt';
 import authRepository from '../repositories/auth.repository.js';
+import auditService from '../services/audit.service.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -73,12 +74,18 @@ const memberController = {
     ): Promise<void> {
         try {
             const memberId = parseInt(req.params.memberId, 10);
-            if (isNaN(memberId)) {
-                res.status(400).json({ message: 'Invalid member ID' });
-                return;
+            const updatedMember = await memberService.updateMember(memberId, req.body);
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'UPDATE_MEMBER',
+                    req.user.id,
+                    `Updated member: ${updatedMember.full_name}`,
+                    req,
+                    'success',
+                    memberId
+                );
             }
-            const member = await memberService.updateMember(memberId, req.body);
-            res.json(member);
+            res.json(updatedMember);
         } catch (error) {
             handleControllerError(error, res);
         }
@@ -130,6 +137,16 @@ const memberController = {
             }
 
             const member = await memberService.createMember(req.body);
+            if (req.user && req.user.id) {
+                await auditService.logAction(
+                    'CREATE_MEMBER',
+                    req.user.id,
+                    `Created member: ${member.first_name} ${member.last_name}`,
+                    req,
+                    'success',
+                    member.member_id
+                );
+            }
             res.status(201).json(member);
         } catch (error) {
             handleControllerError(error, res);
@@ -139,11 +156,17 @@ const memberController = {
     async deleteMember(req: Request<{ memberId: string }>, res: Response): Promise<void> {
         try {
             const memberId = parseInt(req.params.memberId, 10);
-            if (isNaN(memberId)) {
-                res.status(400).json({ message: 'Invalid member ID' });
-                return;
+            const deletedMember = await memberService.deleteMember(memberId);
+            if (deletedMember && req.user?.id) {
+                await auditService.logAction(
+                    'DELETE_MEMBER',
+                    req.user.id,
+                    `Deleted member: ${deletedMember.full_name}`,
+                    req,
+                    'success',
+                    memberId
+                );
             }
-            await memberService.deleteMember(memberId);
             res.json({ message: 'Member deleted successfully' });
         } catch (error) {
             handleControllerError(error, res);
@@ -156,6 +179,16 @@ const memberController = {
             console.log('Starting password assignment in member.controller');
             const hashedPassword = await bcrypt.hash(password, 10);
             await authRepository.updatePassword(memberId, hashedPassword);
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'ASSIGN_PASSWORD',
+                    req.user.id,
+                    `Password assigned for member ${memberId}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
             console.log('Password assignment completed');
             res.json({ message: 'Password assigned successfully' });
         } catch (error) {

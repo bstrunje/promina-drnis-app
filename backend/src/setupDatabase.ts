@@ -105,6 +105,20 @@ export async function setupDatabase(): Promise<void> {
         `);
         console.log('✅ Activities table created successfully');
 
+        // Audit logs table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                log_id SERIAL PRIMARY KEY,
+                action_type VARCHAR(50) NOT NULL,
+                performed_by INTEGER REFERENCES members(member_id),
+                action_details TEXT NOT NULL,
+                ip_address VARCHAR(45),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status VARCHAR(20),
+                affected_member INTEGER REFERENCES members(member_id)
+            );
+        `);
+        
         // Annual statistics table
         await db.query(`
             CREATE TABLE IF NOT EXISTS annual_statistics (

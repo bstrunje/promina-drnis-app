@@ -15,6 +15,7 @@ import { authMiddleware } from './middleware/authMiddleware.js';
 import swaggerDocs from './config/swagger.js';
 import { setupDatabase } from './setupDatabase.js';
 import db from './utils/db.js';
+import auditRoutes from './routes/audit';
 
 // Windows-friendly path resolution
 const __dirname = path.resolve();
@@ -75,6 +76,9 @@ if (!process.env.JWT_SECRET) {
     console.error('📝 Tip: Make sure your .env file exists in:', path.resolve(__dirname, '.env'));
     process.exit(1);
 }
+
+const JWT_SECRET: string = process.env.JWT_SECRET;
+export { JWT_SECRET };
 
 // Middleware
 app.use(express.json());
@@ -140,6 +144,7 @@ console.log('Members router set up');
 app.use('/api/auth', authRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
