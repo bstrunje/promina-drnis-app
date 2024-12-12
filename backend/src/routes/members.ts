@@ -2,6 +2,7 @@
 import express from 'express';
 import memberController from '../controllers/member.controller.js'
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import { uploadConfig } from '../config/upload.js';
 
 const router = express.Router();
 
@@ -16,6 +17,20 @@ router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController
 router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
 router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
 router.post('/assign-password', authenticateToken, roles.requireAdmin, memberController.assignPassword);
+
+// Profile image routes
+router.post(
+  '/:memberId/profile-image',
+  authenticateToken,
+  uploadConfig.single('image'),
+  memberController.uploadProfileImage
+);
+
+router.delete(
+  '/:memberId/profile-image',
+  authenticateToken,
+  memberController.deleteProfileImage
+);
 
 router.get('/test', (req, res) => {
     console.log('Test route hit');

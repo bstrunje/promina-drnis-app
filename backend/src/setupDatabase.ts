@@ -1,6 +1,6 @@
 // src/setupDatabase.ts
-
-import db from './utils/db.js';
+import db from "./utils/db.js";
+import fs from 'fs/promises';
 
 let isInitialized = false;
 
@@ -9,45 +9,48 @@ interface TableCheck {
 }
 
 async function checkTablesExist(): Promise<boolean> {
-    const tables = ['members', 'activities', 'user_activities'];
-    for (const table of tables) {
-        const result = await db.query(`
+  const tables = ["members", "activities", "user_activities"];
+  for (const table of tables) {
+    const result = await db.query(
+      `
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_schema = 'public' 
                 AND table_name = $1
             )
-        `, [table]);
+        `,
+      [table]
+    );
 
-        if (!result.rows[0].exists) {
-            return false;
-        }
+    if (!result.rows[0].exists) {
+      return false;
     }
+  }
 
-    return true;
+  return true;
 }
 
 export async function setupDatabase(): Promise<void> {
-    // Prevent multiple initializations
-    if (isInitialized) {
-        console.log('Database already initialized, skipping setup');
-        return;
+  // Prevent multiple initializations
+  if (isInitialized) {
+    console.log("Database already initialized, skipping setup");
+    return;
+  }
+
+  try {
+    const tablesExist = await checkTablesExist();
+
+    if (tablesExist) {
+      console.log("All tables already exist, skipping creation");
+      isInitialized = true;
+      return;
     }
 
-    try {
-        const tablesExist = await checkTablesExist();
+    // Begin transaction
+    await db.query("BEGIN");
 
-        if (tablesExist) {
-            console.log('All tables already exist, skipping creation');
-            isInitialized = true;
-            return;
-        }
-
-        // Begin transaction
-        await db.query('BEGIN');
-
-        // Members table
-        await db.query(`
+    // Members table
+    await db.query(`
             CREATE TABLE IF NOT EXISTS members (
         member_id SERIAL PRIMARY KEY,
         status character varying(50) DEFAULT 'pending',
@@ -69,10 +72,10 @@ export async function setupDatabase(): Promise<void> {
         CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))
     );
         `);
-        console.log('✅ Activity participants table created successfully');
+    console.log("✅ Activity participants table created successfully");
 
-        // Activity types table
-        await db.query(`
+    // Activity types table
+    await db.query(`
             CREATE TABLE IF NOT EXISTS activity_types (
                 type_id serial NOT NULL,
                 name character varying(50) NOT NULL,
@@ -82,10 +85,10 @@ export async function setupDatabase(): Promise<void> {
                 CONSTRAINT activity_types_name_key UNIQUE (name)
             );
         `);
-        console.log('✅ Activity types table created successfully');
+    console.log("✅ Activity types table created successfully");
 
-        // Activities table
-        await db.query(`
+    // Activities table
+    await db.query(`
             CREATE TABLE IF NOT EXISTS activities (
                 activity_id serial NOT NULL,
                 title character varying(100) NOT NULL,
@@ -103,10 +106,10 @@ export async function setupDatabase(): Promise<void> {
                     REFERENCES activity_types (type_id)
             );
         `);
-        console.log('✅ Activities table created successfully');
+    console.log("✅ Activities table created successfully");
 
-        // Audit logs table
-        await db.query(`
+    // Audit logs table
+    await db.query(`
             CREATE TABLE IF NOT EXISTS audit_logs (
                 log_id SERIAL PRIMARY KEY,
                 action_type VARCHAR(50) NOT NULL,
@@ -118,9 +121,9 @@ export async function setupDatabase(): Promise<void> {
                 affected_member INTEGER REFERENCES members(member_id)
             );
         `);
-        
-        // Annual statistics table
-        await db.query(`
+
+    // Annual statistics table
+    await db.query(`
             CREATE TABLE IF NOT EXISTS annual_statistics (
                 stat_id serial NOT NULL,
                 member_id integer,
@@ -135,10 +138,10 @@ export async function setupDatabase(): Promise<void> {
                     REFERENCES members (member_id)
             );
         `);
-        console.log('✅ Annual statistics table created successfully');
+    console.log("✅ Annual statistics table created successfully");
 
-        // Create indexes
-        await db.query(`
+    // Create indexes
+    await db.query(`
             CREATE INDEX IF NOT EXISTS idx_activities_type 
             ON activities(activity_type_id);
             
@@ -148,10 +151,10 @@ export async function setupDatabase(): Promise<void> {
             CREATE INDEX IF NOT EXISTS idx_activity_participants_member 
             ON activity_participants(member_id);
         `);
-        console.log('✅ Indexes created successfully');
+    console.log("✅ Indexes created successfully");
 
-        // Insert default activity types
-        await db.query(`
+    // Insert default activity types
+    await db.query(`
             INSERT INTO activity_types (name, description)
             VALUES 
                 ('hiking', 'Mountain hiking activities'),
@@ -161,18 +164,27 @@ export async function setupDatabase(): Promise<void> {
                 ('social', 'Social gatherings and meetings')
             ON CONFLICT (name) DO NOTHING;
         `);
-        console.log('✅ Default activity types created successfully');
+    console.log("✅ Default activity types created successfully");
 
-        // Commit transaction
-        await db.query('COMMIT');
-        
-        console.log('✅ Database setup completed successfully');
-        isInitialized = true;
+    // Add image_profile column to members table
+    await db.query(`
+    ALTER TABLE members 
+    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP
+`);
 
-    } catch (error) {
-        // Rollback transaction on error
-        await db.query('ROLLBACK');
-        console.error('❌ Error setting up database:', error);
-        throw error;
-    }
+    // Create directory for image storage if it doesn't exist
+    await fs.mkdir("uploads/profile_images", { recursive: true });
+
+    // Commit transaction
+    await db.query("COMMIT");
+
+    console.log("✅ Database setup completed successfully");
+    isInitialized = true;
+  } catch (error) {
+    // Rollback transaction on error
+    await db.query("ROLLBACK");
+    console.error("❌ Error setting up database:", error);
+    throw error;
+  }
 }

@@ -6,6 +6,8 @@ import { DatabaseUser } from '../middleware/authMiddleware.js';
 import bcrypt from 'bcrypt';
 import authRepository from '../repositories/auth.repository.js';
 import auditService from '../services/audit.service.js';
+import { uploadConfig } from '../../src/config/upload.js';
+import imageService from '../../src/services/image.service.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -25,6 +27,10 @@ declare global {
             user?: DatabaseUser
         }
     }
+}
+
+interface RequestWithFile extends Request {
+    file?: Express.Multer.File;
 }
 
 function handleControllerError(error: unknown, res: Response): void {
@@ -328,7 +334,65 @@ export const memberController = {
                 message: error instanceof Error ? error.message : 'Unknown error' 
             });
         }
-    }	
+    },
+    
+    async uploadProfileImage(req: RequestWithFile, res: Response): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            if (!req.file) {
+                res.status(400).json({ message: 'No image file provided' });
+                return;
+            }
+    
+            const imagePath = await imageService.processAndSaveProfileImage(req.file, memberId);
+            
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'UPLOAD_PROFILE_IMAGE',
+                    req.user.id,
+                    `Profile image uploaded for member ${memberId}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
+    
+            res.json({ 
+                message: 'Profile image uploaded successfully',
+                imagePath 
+            });
+        } catch (error) {
+            console.error('Error uploading profile image:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Error uploading profile image' 
+            });
+        }
+    },
+    
+    async deleteProfileImage(req: Request, res: Response): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            await imageService.deleteProfileImage(memberId);
+            
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'DELETE_PROFILE_IMAGE',
+                    req.user.id,
+                    `Profile image deleted for member ${memberId}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
+    
+            res.json({ message: 'Profile image deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting profile image:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Error deleting profile image' 
+            });
+        }
+    }
 };
 
 export default memberController;

@@ -156,6 +156,24 @@ const memberRepository = {
         return stats.rows[0];
     },
 
+    async updateProfileImage(memberId: number, imagePath: string): Promise<void> {
+        await db.query(
+            `UPDATE members 
+             SET profile_image_path = $1, 
+                 profile_image_updated_at = CURRENT_TIMESTAMP 
+             WHERE member_id = $2`,
+            [imagePath, memberId]
+        );
+    },
+    
+    async getProfileImage(memberId: number): Promise<string | null> {
+        const result = await db.query<{ profile_image_path: string }>(
+            'SELECT profile_image_path FROM members WHERE member_id = $1',
+            [memberId]
+        );
+        return result.rows[0]?.profile_image_path || null;
+    },
+
     async delete(memberId: number): Promise<Member | null> {
         const result = await db.query<Member>(
             'DELETE FROM members WHERE member_id = $1 RETURNING *', 

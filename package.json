@@ -41,7 +41,10 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@types/multer": "^1.4.12",
     "bcrypt": "^5.1.1",
-    "react-router-dom": "^7.0.2"
+    "multer": "^1.4.5-lts.1",
+    "react-router-dom": "^7.0.2",
+    "sharp": "^0.33.5"
   }
 }
