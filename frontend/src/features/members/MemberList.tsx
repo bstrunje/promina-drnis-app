@@ -8,6 +8,8 @@ import EditMemberForm from './EditMemberForm';
 import ConfirmationModal from './ConfirmationModal';
 import AssignPasswordForm from './AssignPasswordForm';
 import { API_URL } from '../../utils/config';
+import { UserCog } from 'lucide-react';
+import RoleAssignmentModal from './RoleAssignmentModal';
 
 export default function MemberList(): JSX.Element {
  const { user } = useAuth();
@@ -19,6 +21,7 @@ export default function MemberList(): JSX.Element {
  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
  const [assigningPasswordMember, setAssigningPasswordMember] = useState<Member | null>(null);
+ const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
 
  useEffect(() => {
   const fetchMembers = async (): Promise<void> => {
@@ -86,6 +89,29 @@ const calculateStatus = (member: Member): boolean => {
    setShowConfirmModal(true);
  };
 
+ const handleRoleAssignment = async (memberId: number, newRole: 'member' | 'admin' | 'superuser') => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/members/${memberId}/role`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ role: newRole })
+    });
+
+    if (!response.ok) throw new Error('Failed to update role');
+
+    setMembers(members.map(m => 
+      m.member_id === memberId ? { ...m, role: newRole } : m
+    ));
+    setRoleAssignmentMember(null);
+  } catch (error) {
+    console.error('Error updating role:', error);
+    setError('Failed to update member role');
+  }
+};
  const confirmDelete = async (): Promise<void> => {
    if (!deletingMember) return;
 
@@ -219,6 +245,15 @@ const calculateStatus = (member: Member): boolean => {
                      >
                        <Edit className="w-4 h-4" />
                      </button>
+                     {user?.role === 'superuser' && (
+  <button
+    onClick={() => setRoleAssignmentMember(member)}
+    className="text-blue-600 hover:text-blue-900"
+    title="Assign Role"
+  >
+    <UserCog className="w-4 h-4" />
+  </button>
+)}
                      {user?.role === "superuser" && (
                        <button
                          onClick={() => handleDelete(member)}
@@ -303,6 +338,15 @@ const calculateStatus = (member: Member): boolean => {
          }}
        />
      )}
+
+     {roleAssignmentMember && (
+  <RoleAssignmentModal
+    member={roleAssignmentMember}
+    onClose={() => setRoleAssignmentMember(null)}
+    onAssign={handleRoleAssignment}
+  />
+)}
    </div>
  );
+
 }

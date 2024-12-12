@@ -14,6 +14,7 @@ router.get('/:memberId/stats', authenticateToken, memberController.getMemberStat
 router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);
 router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
 router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
+router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
 router.post('/assign-password', authenticateToken, roles.requireAdmin, memberController.assignPassword);
 
 router.get('/test', (req, res) => {

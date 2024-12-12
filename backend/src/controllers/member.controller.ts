@@ -40,7 +40,7 @@ function handleControllerError(error: unknown, res: Response): void {
     }
 }
 
-const memberController = {
+export const memberController = {
     async getAllMembers(req: Request, res: Response): Promise<void> {
         try {
             const members = await memberService.getAllMembers();
@@ -87,6 +87,39 @@ const memberController = {
             }
             res.json(updatedMember);
         } catch (error) {
+            handleControllerError(error, res);
+        }
+    },
+
+    async updateMemberRole(
+        req: Request<{ memberId: string }, {}, { role: 'member' | 'admin' | 'superuser' }>,
+        res: Response
+    ): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId, 10);
+            const { role } = req.body;
+    
+            if (!['member', 'admin', 'superuser'].includes(role)) {
+                res.status(400).json({ message: 'Invalid role' });
+                return;
+            }
+    
+            const updatedMember = await memberService.updateMemberRole(memberId, role);
+    
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'UPDATE_MEMBER_ROLE',
+                    req.user.id,
+                    `Updated member role: ${updatedMember.full_name} to ${role}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
+            console.log(`[INFO] Successfully updated role for member ${memberId} to ${role}`);
+            res.json(updatedMember);
+        } catch (error) {
+            console.error(`[ERROR] Failed to update role for member ${req.params.memberId}:`, error);
             handleControllerError(error, res);
         }
     },

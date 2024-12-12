@@ -58,6 +58,15 @@ const memberService = {
         }
     },
 
+    async updateMemberRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
+        try {
+            return await memberRepository.updateRole(memberId, role);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error updating member role: ' + errorMessage);
+        }
+    },
+
     async getMemberStats(memberId: number): Promise<MemberStats> {
         try {
             const stats = await memberRepository.getStats(memberId);

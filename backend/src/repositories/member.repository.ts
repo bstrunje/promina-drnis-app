@@ -164,6 +164,19 @@ const memberRepository = {
         return result.rows[0] || null;
     },
 
+    async updateRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
+        const result = await db.query<Member>(
+            'UPDATE members SET role = $1 WHERE member_id = $2 RETURNING *',
+            [role, memberId]
+        );
+    
+        if (result.rows.length === 0) {
+            throw new Error('Member not found');
+        }
+    
+        return result.rows[0];
+    },
+
     async assignPassword(memberId: number, password: string): Promise<void> {
         await db.query(`
             UPDATE members

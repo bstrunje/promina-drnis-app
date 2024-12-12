@@ -1,6 +1,5 @@
 // backend/src/app.ts
-import db from './utils/db.js';
-import express, { Express } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -30,14 +29,17 @@ app.use(cors({
 }));
 
 // Request logging middleware
-app.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const timestamp = new Date().toLocaleString('en-US', { 
+        timeZone: 'Europe/Zagreb',
+        hour12: false 
+    });
     console.log(`[${timestamp}] ${req.method} ${req.path}`);
     next();
 });
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/health', async (req: Request, res: Response) => {
     try {
         res.json({
             status: 'healthy',
@@ -68,7 +70,7 @@ app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 
 // API root endpoint
-app.get('/api', (req, res) => {
+app.get('/api', (req: Request, res: Response) => {
     res.json({
         message: 'Welcome to Promina Drnis API',
         version: '1.0.0',
@@ -79,6 +81,18 @@ app.get('/api', (req, res) => {
             activities: '/api/activities',
             audit: '/api/audit'
         }
+    });
+});
+
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error('❌ Error occurred:', err);
+    
+    res.status(500).json({
+        error: 'Internal Server Error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
+        environment: process.env.NODE_ENV,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 

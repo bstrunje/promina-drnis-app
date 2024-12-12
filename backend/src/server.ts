@@ -1,49 +1,19 @@
 // src/server.ts
 import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import path from 'path';
-import swaggerUi from 'swagger-ui-express';
-
-// Route imports
-import membersRouter from './routes/members.js';
-import memberRoutes from './routes/members.js';
-import activityRoutes from './routes/activities.js';
-import authRoutes from './routes/auth.js';
-import { authMiddleware } from './middleware/authMiddleware.js';
-import swaggerDocs from './config/swagger.js';
+import { Server } from 'http';
+import app from './app.js';
 import { setupDatabase } from './setupDatabase.js';
 import db from './utils/db.js';
-import auditRoutes from './routes/audit';
 
 // Windows-friendly path resolution
 const __dirname = path.resolve();
-
-// Environment types
-declare global {
-    namespace NodeJS {
-        interface ProcessEnv {
-            NODE_ENV: 'development' | 'production' | 'test';
-            PORT: string;
-            DATABASE_URL: string;
-            JWT_SECRET: string;
-            FRONTEND_URL?: string;
-            // Windows-specific path variables
-            USERPROFILE: string;
-            APPDATA: string;
-        }
-    }
-}
 
 // Load environment variables - Windows path style
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Constants
 const DEFAULT_PORT = 3000;
-
-// Express app creation and configuration
-const app = express();
 
 // Port configuration with validation
 let port = process.env.PORT ? parseInt(process.env.PORT) : DEFAULT_PORT;
@@ -80,24 +50,6 @@ if (!process.env.JWT_SECRET) {
 const JWT_SECRET: string = process.env.JWT_SECRET;
 export { JWT_SECRET };
 
-// Middleware
-app.use(express.json());
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
-}));
-app.use(helmet());
-
-// Request logging middleware with formatted timestamps for Windows
-app.use((req, res, next) => {
-    const timestamp = new Date().toLocaleString('en-US', { 
-        timeZone: 'Europe/Zagreb',
-        hour12: false 
-    });
-    console.log(`[${timestamp}] ${req.method} ${req.path}`);
-    next();
-});
-
 // Database connection check
 async function checkDatabaseConnection(): Promise<boolean> {
     try {
@@ -110,90 +62,8 @@ async function checkDatabaseConnection(): Promise<boolean> {
     }
 }
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-    try {
-        await db.query('SELECT 1');
-        res.json({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            services: {
-                database: 'connected',
-                api: 'running'
-            },
-            environment: process.env.NODE_ENV
-        });
-    } catch (error) {
-        const err = error as Error;
-        res.status(500).json({
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            services: {
-                database: 'disconnected',
-                api: 'running'
-            },
-            error: err.message,
-            environment: process.env.NODE_ENV
-        });
-    }
-});
-
-// API Routes
-app.use('/api/members', membersRouter);
-console.log('Members router set up');
-app.use('/api/auth', authRoutes);
-app.use('/api/members', authMiddleware, memberRoutes);
-app.use('/api/activities', authMiddleware, activityRoutes);
-app.use('/api/audit', auditRoutes);
-
-// Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-// API root endpoint
-app.get('/api', (req, res) => {
-    res.json({
-        message: 'Welcome to Promina Drnis API',
-        version: '1.0.0',
-        environment: process.env.NODE_ENV,
-        endpoints: {
-            auth: '/api/auth',
-            members: '/api/members',
-            activities: '/api/activities',
-            docs: '/api-docs'
-        }
-    });
-});
-
-// Application root endpoint
-app.get('/', (req, res) => {
-    res.json({
-        name: 'Mountaineering Association API',
-        documentation: '/api-docs',
-        apiRoot: '/api',
-        environment: process.env.NODE_ENV
-    });
-});
-
-// Error handling middleware
-interface ErrorWithStatus extends Error {
-    status?: number;
-}
-
-app.use((err: ErrorWithStatus, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('❌ Error occurred:', err);
-    console.error('📜 Stack trace:', err.stack);
-    
-    const response = {
-        error: 'Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
-        environment: process.env.NODE_ENV
-    };
-    
-    res.status(err.status || 500).json(response);
-});
-
 // Server instance
-let server: ReturnType<typeof app.listen>;
+let server: Server;
 
 // Server management functions
 async function startServer(): Promise<void> {
@@ -219,7 +89,7 @@ async function startServer(): Promise<void> {
                 if (error.code === 'EADDRINUSE') {
                     console.error(`❌ Port ${port} is already in use. Please try these steps:`);
                     console.error('   1. Check if another instance is running');
-                    console.error('   2. Close any application using port ${port}');
+                    console.error(`   2. Close any application using port ${port}`);
                     console.error('   3. Or change the port in your .env file');
                 } else {
                     console.error('❌ Failed to start server:', error);
