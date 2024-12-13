@@ -173,6 +173,26 @@ return {
         }
     },
 
+    async getMemberActivities(memberId: number): Promise<{
+        activity_id: number;
+        title: string;
+        date: string;
+        hours_spent: number;
+    }[]> {
+        const result = await db.query(`
+            SELECT 
+                a.activity_id,
+                a.title,
+                a.start_date as date,
+                ap.hours_spent
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            WHERE ap.member_id = $1
+            ORDER BY a.start_date DESC
+        `, [memberId]);
+        return result.rows;
+    },
+
     async updateActivity(id: string | number, updateData: ActivityUpdateData): Promise<Activity> {
         try {
             const numericId = typeof id === 'string' ? parseInt(id) : id;

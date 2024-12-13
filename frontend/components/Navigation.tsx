@@ -9,36 +9,30 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
-  console.log('User role in Navigation:', user?.role);
   if (!user) return null;
   
   return (
     <nav className="bg-white shadow-md p-4 mb-4">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-4">
-          <Link to="/dashboard" className="text-xl font-bold text-blue-600">
+          <Link to="/profile" className="text-xl font-bold text-blue-600">
             Promina Drnis
           </Link>
         </div>
         <div className="flex items-center space-x-6">
-          <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
-            Dashboard
+          <Link to="/profile" className="text-gray-700 hover:text-blue-600">
+            Profile
           </Link>
-          {(user.role === 'admin' || user.role === 'superuser') && (
-            <Link to="/members" className="text-gray-700 hover:text-blue-600">
-              Members
-            </Link>
-          )}
           <Link to="/activities" className="text-gray-700 hover:text-blue-600">
             Activities
-          </Link>
-          <Link to="/hours" className="text-gray-700 hover:text-blue-600">
-            Hours
           </Link>
           {(user.role === 'admin' || user.role === 'superuser') && (
             <>
               <Link to="/admin" className="text-gray-700 hover:text-blue-600">
                 Admin
+              </Link>
+              <Link to="/members" className="text-gray-700 hover:text-blue-600">
+                Members
               </Link>
               {!user.registration_completed && (
                 <Link to="/assign-password" className="text-gray-700 hover:text-blue-600">
@@ -48,13 +42,18 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             </>
           )}
           {user.role === 'superuser' && (
-            <Link to="/super-user" className="text-gray-700 hover:text-blue-600">
-              Super User
-            </Link>
+            <>
+              <Link to="/super-user" className="text-gray-700 hover:text-blue-600">
+                Super User
+              </Link>
+              <Link to="/audit-logs" className="text-gray-700 hover:text-blue-600">
+                Audit Logs
+              </Link>
+            </>
           )}
           <div className="flex items-center space-x-2">
             <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
-              Welcome, {user.first_name} {user.last_name}
+              {user.first_name} {user.last_name}
               {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
             </span>
             <button

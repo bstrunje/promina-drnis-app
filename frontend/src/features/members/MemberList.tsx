@@ -10,6 +10,7 @@ import AssignPasswordForm from './AssignPasswordForm';
 import { API_URL } from '../../utils/config';
 import { UserCog } from 'lucide-react';
 import RoleAssignmentModal from './RoleAssignmentModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function MemberList(): JSX.Element {
  const { user } = useAuth();
@@ -22,7 +23,8 @@ export default function MemberList(): JSX.Element {
  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
  const [assigningPasswordMember, setAssigningPasswordMember] = useState<Member | null>(null);
  const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
-
+ const navigate = useNavigate();
+ 
  useEffect(() => {
   const fetchMembers = async (): Promise<void> => {
     try {
@@ -78,10 +80,7 @@ const calculateStatus = (member: Member): boolean => {
  };
 
  const handleEdit = (member: Member) => {
-  setEditingMember({
-    ...member,
-    total_hours: member.total_hours || 0
-  });
+  navigate(`/members/${member.member_id}/edit`);
 };
 
  const handleDelete = (member: Member): void => {

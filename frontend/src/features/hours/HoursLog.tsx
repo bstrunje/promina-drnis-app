@@ -1,5 +1,5 @@
+// frontend/src/features/hours/HoursLog.tsx
 import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 
 interface LoggedHours {
@@ -23,7 +23,15 @@ const HoursLog: React.FC = () => {
   const fetchHours = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/hours');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await fetch('/api/hours', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch hours');
       const data = await response.json();
       setHours(data);
@@ -59,34 +67,16 @@ const HoursLog: React.FC = () => {
         {hours.length > 0 ? (
           <div className="grid gap-4">
             {hours.map((log) => (
-              <div 
-                key={log.id}
-                className="border rounded-lg p-4"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium">{log.activity_name}</h3>
-                    <p className="text-sm text-gray-600">{new Date(log.date).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{log.hours} hours</span>
-                    {log.verified && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                </div>
+              <div key={log.id} className="border rounded-lg p-4">
+                <h3 className="font-medium">{log.activity_name}</h3>
+                <p className="text-gray-600">{log.date}</p>
+                <p className="text-gray-600">{log.hours} hours</p>
+                <p className="text-gray-600">{log.verified ? 'Verified' : 'Not Verified'}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-40 text-gray-500">
-            <div className="text-center">
-              <Clock className="h-12 w-12 mx-auto mb-2" />
-              <p>No hours logged yet</p>
-            </div>
-          </div>
+          <p>No hours logged yet.</p>
         )}
       </div>
     </div>

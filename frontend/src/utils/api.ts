@@ -77,6 +77,97 @@ export const assignPassword = async (memberId: number, password: string): Promis
   }
 };
 
+export const updateMembership = async (memberId: number, data: {
+  paymentDate: string;
+  cardNumber: string;
+  stampIssued: boolean;
+}) => {
+  const response = await fetch(`${API_URL}/members/${memberId}/membership`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update membership');
+  }
+};
+
+export const terminateMembership = async (memberId: number, reason: string) => {
+  const response = await fetch(`${API_URL}/members/${memberId}/membership/terminate`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      reason,
+      endDate: new Date().toISOString()
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to terminate membership');
+  }
+};
+
+export const uploadProfileImage = async (memberId: number, imageFile: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+
+  const response = await fetch(`${API_URL}/members/${memberId}/profile-image`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    },
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload image');
+  }
+
+  const data = await response.json();
+  return data.imagePath;
+};
+
+export const sendMemberMessage = async (memberId: number, messageText: string): Promise<void> => {
+  const response = await fetch(`${API_URL}/members/${memberId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ messageText })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send message');
+  }
+};
+
+interface MemberActivity {
+  activity_id: number;
+  title: string;
+  date: string;
+  hours_spent: number;
+}
+
+export const getMemberActivities = async (memberId: number): Promise<MemberActivity[]> => {
+  const response = await fetch(`${API_URL}/members/${memberId}/activities`, {
+      headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+  });
+  if (!response.ok) {
+      throw new Error('Failed to fetch member activities');
+  }
+  return response.json();
+};
+
 // Add more API functions here as needed
 
 export default api;

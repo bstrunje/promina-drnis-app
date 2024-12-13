@@ -1,5 +1,4 @@
 // shared/types/activity.ts
-
 import { Member } from './member';
 
 export type DifficultyLevel = 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';

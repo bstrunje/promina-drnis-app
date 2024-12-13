@@ -1,3 +1,4 @@
+//frontend/src/features/activities/ActivitiesList.tsx
 import React, { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { Member } from '@shared/types/member';
@@ -28,7 +29,12 @@ const ActivitiesList: React.FC = () => {
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/activities');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/activities', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch activities');
       const data = await response.json();
       setActivities(data);

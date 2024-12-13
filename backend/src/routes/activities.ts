@@ -1,13 +1,14 @@
 // backend/src/routes/activities.ts
 import express from 'express';
-import activityController from '../controllers/activity.controller.js';
-import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import activityController from '../controllers/activity.controller';
+import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 // Public routes (still require authentication)
 router.get('/', authenticateToken, activityController.getAllActivities);
 router.get('/:id', authenticateToken, activityController.getActivityById);
+router.get('/members/:memberId/activities', authenticateToken, activityController.getMemberActivities);
 
 // Member+ routes
 router.post('/:activityId/members/:memberId', authenticateToken, roles.requireMember, activityController.addMemberToActivity);  // Updated parameters

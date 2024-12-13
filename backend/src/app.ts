@@ -12,8 +12,21 @@ import activityRoutes from './routes/activities.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
+import memberMessagesRouter from './routes/member.messages.js';
+import sequelize from './types/database';
+import hoursRoutes from './routes/hours';
 
 const app: Express = express();
+
+// Test database connection
+sequelize.authenticate()
+  .then(() => console.log('Database connected...'))
+  .catch((err: any) => console.log('Error: ' + err));
+
+// Sync database
+sequelize.sync()
+.then(() => console.log('Database synced...'))
+.catch((err: any) => console.log('Error: ' + err));
 
 // Basic middleware setup
 app.use(helmet());
@@ -68,6 +81,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
+app.use('/api/members', authMiddleware, memberMessagesRouter);
+app.use('/api/hours', hoursRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

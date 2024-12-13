@@ -1,5 +1,18 @@
 // src/types/database.ts
-import { MemberRole } from '../../../shared/types/member.js';
+import { MemberRole } from '../../../shared/types/member';
+import { Sequelize } from 'sequelize';
+import config from '../config/config';
+
+const sequelize = new Sequelize({
+  database: config.database.database,
+  username: config.database.user,
+  password: config.database.password,
+  host: config.database.host,
+  port: config.database.port,
+  dialect: 'postgres', // or 'mysql', 'sqlite', 'mariadb', etc.
+});
+
+export default sequelize;
 
 // Common types
 type Timestamp = Date;

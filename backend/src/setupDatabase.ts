@@ -1,6 +1,6 @@
 // src/setupDatabase.ts
 import db from "./utils/db.js";
-import fs from 'fs/promises';
+import fs from "fs/promises";
 
 let isInitialized = false;
 
@@ -72,7 +72,7 @@ export async function setupDatabase(): Promise<void> {
         CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))
     );
         `);
-    console.log("✅ Activity participants table created successfully");
+    console.log("✅ Members table created successfully");
 
     // Activity types table
     await db.query(`
@@ -108,6 +108,22 @@ export async function setupDatabase(): Promise<void> {
         `);
     console.log("✅ Activities table created successfully");
 
+    // Activity participants table
+    await db.query(`
+            CREATE TABLE IF NOT EXISTS activity_participants (
+                participant_id serial NOT NULL,
+                activity_id integer NOT NULL,
+                member_id integer NOT NULL,
+                joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT activity_participants_pkey PRIMARY KEY (participant_id),
+                CONSTRAINT activity_participants_activity_id_fkey FOREIGN KEY (activity_id)
+                    REFERENCES activities (activity_id),
+                CONSTRAINT activity_participants_member_id_fkey FOREIGN KEY (member_id)
+                    REFERENCES members (member_id)
+            );
+        `);
+    console.log("✅ Activity participants table created successfully");
+
     // Audit logs table
     await db.query(`
             CREATE TABLE IF NOT EXISTS audit_logs (
@@ -121,6 +137,7 @@ export async function setupDatabase(): Promise<void> {
                 affected_member INTEGER REFERENCES members(member_id)
             );
         `);
+    console.log("✅ Audit logs table created successfully");
 
     // Annual statistics table
     await db.query(`
@@ -139,6 +156,19 @@ export async function setupDatabase(): Promise<void> {
             );
         `);
     console.log("✅ Annual statistics table created successfully");
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS member_messages (
+          message_id SERIAL PRIMARY KEY,
+          member_id INTEGER REFERENCES members(member_id),
+          message_text TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          read_at TIMESTAMP,
+          status VARCHAR(20) DEFAULT 'unread',
+          CONSTRAINT status_values CHECK (status IN ('unread', 'read', 'archived'))
+      );
+  `);
+    console.log("✅ Member messages table created successfully");
 
     // Create indexes
     await db.query(`
@@ -171,7 +201,9 @@ export async function setupDatabase(): Promise<void> {
     ALTER TABLE members 
     ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255),
     ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP
-`);
+    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary')),
+    ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+  `);
 
     // Create directory for image storage if it doesn't exist
     await fs.mkdir("uploads/profile_images", { recursive: true });

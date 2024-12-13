@@ -128,6 +128,19 @@ const activityController = {
             }
         }
     },
+
+    async getMemberActivities(req: Request<{ memberId: string }>, res: Response): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            const activities = await activityService.getMemberActivities(memberId);
+            res.json(activities);
+        } catch (error) {
+            console.error('Controller error:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    },
     
     async addMemberToActivity(req: Request<{ activityId: string; memberId: string }, {}, { hoursSpent: number }>, res: Response): Promise<void> {
         try {

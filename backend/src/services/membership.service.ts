@@ -1,3 +1,4 @@
+// src/services/membership.service.ts
 import membershipRepository from '../repositories/membership.repository.js';
 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '@shared/membership';
 
