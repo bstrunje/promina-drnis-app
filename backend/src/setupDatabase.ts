@@ -199,9 +199,21 @@ export async function setupDatabase(): Promise<void> {
     // Add image_profile column to members table
     await db.query(`
     ALTER TABLE members 
-    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255),
-    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP
-    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary')),
+    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255);
+  `);
+
+    await db.query(`
+    ALTER TABLE members 
+    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP;
+  `);
+
+    await db.query(`
+    ALTER TABLE members 
+    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary'));
+  `);
+
+    await db.query(`
+    ALTER TABLE members 
     ADD COLUMN IF NOT EXISTS date_of_birth DATE;
   `);
 

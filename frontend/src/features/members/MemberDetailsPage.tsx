@@ -7,6 +7,7 @@ import { API_URL } from "../../utils/config";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import ActivityHistory from './ActivityHistory';
 
 // Types we need
 interface Member {
@@ -51,6 +52,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const [error, setError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [comment, setComment] = useState('');
 
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   const isOwnProfile = user?.member_id === memberId;
@@ -147,7 +149,39 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     );
   };
 
+  const sendMemberMessage = async (memberId: number, message: string) => {
+    try {
+      const response = await fetch(`${API_URL}/members/${memberId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageText: message })
+      });
+      if (!response.ok) throw new Error('Failed to send message');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to send message');
+    }
+  };
+
   const navigate = useNavigate();
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!user?.member_id) {
+        setError('User not found');
+        return;
+      }
+      await sendMemberMessage(user.member_id, comment);
+      setComment(''); // Clear form after success
+      // Optional: Show success message
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Optional: Show error message
+    }
+  };
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -506,7 +540,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Membership Details</CardTitle>
+            <CardTitle>Membership Details1</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -591,7 +625,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         </Card>
         <Card>
   <CardHeader>
-    <CardTitle>Membership Details</CardTitle>
+    <CardTitle>Membership Details2</CardTitle>
   </CardHeader>
   <CardContent>
     <form onSubmit={handleMembershipUpdate} className="space-y-4">
@@ -655,6 +689,47 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   </CardContent>
 </Card>
 
+{/* Membership Fee Payment Section */}
+<Card>
+  <CardHeader>
+    <CardTitle>Membership Fee Payment</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Payment Confirmation Date</label>
+        <input
+          type="date"
+          value={membershipData.fee_payment_date}
+          onChange={(e) => {
+            const paymentDate = new Date(e.target.value);
+            const startYear = paymentDate.getMonth() >= 10 ? 
+              paymentDate.getFullYear() + 1 : 
+              paymentDate.getFullYear();
+            
+            setMembershipData(prev => ({
+              ...prev,
+              fee_payment_date: e.target.value,
+              fee_payment_year: startYear
+            }));
+          }}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <div className="text-sm text-gray-600">
+        {membershipData.fee_payment_date && (
+          <p>
+            Membership will {new Date(membershipData.fee_payment_date).getMonth() >= 10 ? 
+              'start on January 1st, ' + (new Date(membershipData.fee_payment_date).getFullYear() + 1) :
+              'be active for current year'
+            }
+          </p>
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 {(user?.role === 'admin' || user?.role === 'superuser') && (
   <Card>
     <CardHeader>
@@ -673,7 +748,43 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       </select>
     </CardContent>
   </Card>
-)}
+)} 
+
+  {/* Message Section */}
+<Card>
+  <CardHeader>
+    <CardTitle>Send Message to Admin</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <form onSubmit={handleCommentSubmit}>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        className="w-full p-2 border rounded-md mb-4"
+        rows={4}
+        placeholder="Type your message here..."
+      />
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Send Message
+      </button>
+    </form>
+  </CardContent>
+</Card>
+
+{/* Activity History Section */}
+{user?.member_id && <ActivityHistory memberId={user.member_id} />}
+
+<Card>
+  <CardHeader>
+    <CardTitle>Activity History</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {/* TODO: Add activity history component */}
+  </CardContent>
+</Card>
       </div>
     </div>
   );

@@ -1,20 +1,39 @@
 // frontend/src/features/members/MemberProfile.tsx
-import { useAuth } from '../../context/AuthContext';
-import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { Clock, Calendar, Award, User } from 'lucide-react';
+import { useAuth } from "../../context/AuthContext";
+import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
+import {
+  Clock,
+  Calendar,
+  Award,
+  User,
+  Clipboard,
+} from "lucide-react";
+import { MembershipPeriod } from '@shared/types/membership';
+
+interface MembershipHistory {
+  periods: MembershipPeriod[];
+  total_duration?: string;
+  current_period?: MembershipPeriod;
+}
+
+declare module '@shared/types/member' {
+  interface Member {
+    membership_history?: MembershipHistory;
+  }
+}
 
 const MemberProfile = () => {
   const { user } = useAuth();
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <div className="p-6">Loading...</div>;
   }
 
   const getActivityStatus = () => {
     const hours = user.total_hours ?? 0;
     return {
-      status: hours >= 20 ? 'active' : 'passive',
-      hours: hours
+      status: hours >= 20 ? "active" : "passive",
+      hours: hours,
     };
   };
 
@@ -26,18 +45,25 @@ const MemberProfile = () => {
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-2">{user.first_name} {user.last_name}</h1>
+            <h1 className="text-2xl font-bold">
+              {user.first_name} {user.last_name}
+            </h1>
             <p className="opacity-90">Member Profile</p>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm ${
-            activityStatus.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
-          }`}>
-            {activityStatus.status.charAt(0).toUpperCase() + activityStatus.status.slice(1)} Member
+          <span
+            className={`px-3 py-1 rounded-full text-sm ${
+              activityStatus.status === "active"
+                ? "bg-green-500"
+                : "bg-yellow-500"
+            }`}
+          >
+            {activityStatus.status.charAt(0).toUpperCase() +
+              activityStatus.status.slice(1)}{" "}
+            Member
           </span>
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Personal Information Card */}
         <Card>
@@ -63,6 +89,18 @@ const MemberProfile = () => {
                 <p>{user.city}</p>
               </div>
               <div>
+                <label className="text-sm text-gray-500">Gender</label>
+                <p>{user.gender}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Date of Birth</label>
+                <p>{new Date(user.date_of_birth).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">OIB</label>
+                <p>{user.oib}</p>
+              </div>
+              <div>
                 <label className="text-sm text-gray-500">Life Status</label>
                 <p>{user.life_status}</p>
               </div>
@@ -84,11 +122,60 @@ const MemberProfile = () => {
                 <label className="text-sm text-gray-500">Total Hours</label>
                 <p className="text-2xl font-bold">{activityStatus.hours}</p>
               </div>
-              {activityStatus.status === 'passive' && (
+              {activityStatus.status === "passive" && (
                 <div className="text-yellow-600">
-                  <p>Need {20 - activityStatus.hours} more hours to become active</p>
+                  <p>
+                    Need {20 - activityStatus.hours} more hours to become active
+                  </p>
                 </div>
               )}
+              <div>
+                <label className="text-sm text-gray-500">
+                  Registration Status
+                </label>
+                <p>{user.registration_completed ? "Completed" : "Pending"}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Membership History Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Membership History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+            {user?.membership_history?.periods?.map((period: MembershipPeriod, index: number) => (
+                <div key={index} className="border-l-2 border-purple-500 pl-4 py-2">
+                  <div className="text-sm">
+                    <span className="font-medium">Start: </span>
+                    {new Date(period.start_date).toLocaleDateString()}
+                  </div>
+                  {period.end_date && (
+                    <>
+                      <div className="text-sm">
+                        <span className="font-medium">End: </span>
+                        {new Date(period.end_date).toLocaleDateString()}
+                      </div>
+                      {period.end_reason && (
+                        <div className="text-sm text-gray-600">
+                          Reason: {period.end_reason}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+              <div className="mt-4 pt-4 border-t">
+                <span className="text-sm font-medium">Total Duration: </span>
+                <span className="text-sm">
+                  {user.membership_history?.total_duration || "N/A"}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -104,27 +191,23 @@ const MemberProfile = () => {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">Member Since</label>
-                <p>{new Date(user.date_of_birth).toLocaleDateString()}</p>
-              </div>
-              <div>
                 <label className="text-sm text-gray-500">Membership Type</label>
                 <p>{user.membership_type}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Status</label>
-                <p>{user.registration_completed ? 'Registered' : 'Pending'}</p>
+                <label className="text-sm text-gray-500">Role</label>
+                <p>{user.role}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Equipment Sizes Card */}
+        {/* Equipment Details Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Equipment Sizes
+              <Clipboard className="h-5 w-5" />
+              Equipment Details
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -134,7 +217,9 @@ const MemberProfile = () => {
                 <p>{user.tshirt_size}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Shell Jacket Size</label>
+                <label className="text-sm text-gray-500">
+                  Shell Jacket Size
+                </label>
                 <p>{user.shell_jacket_size}</p>
               </div>
             </div>
