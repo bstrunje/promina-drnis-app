@@ -8,6 +8,8 @@ import authRepository from '../repositories/auth.repository.js';
 import auditService from '../services/audit.service.js';
 import { uploadConfig } from '../../src/config/upload.js';
 import imageService from '../../src/services/image.service.js';
+import stampService from '../services/stamp.service.js';
+import membershipService from '../services/membership.service.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -187,6 +189,44 @@ export const memberController = {
                 );
             }
             res.status(201).json(member);
+        } catch (error) {
+            handleControllerError(error, res);
+        }
+    },
+
+    async assignCardNumber(req: Request<{ memberId: string }>, res: Response): Promise<void> {
+        try {
+            const { memberId } = req.params;
+            const { cardNumber } = req.body;
+            
+            await membershipService.updateCardDetails(parseInt(memberId), cardNumber, true);
+            
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'ASSIGN_CARD_NUMBER',
+                    req.user.id,
+                    `Card number ${cardNumber} assigned to member ${memberId}`,
+                    req,
+                    'success',
+                    parseInt(memberId)
+                );
+            }
+            
+            res.json({ message: 'Card number assigned successfully' });
+        } catch (error) {
+            handleControllerError(error, res);
+        }
+    },
+    
+    async issueStamp(req: Request<{ memberId: string }>, res: Response): Promise<void> {
+        try {
+            const { memberId } = req.params;
+            
+            const result = await stampService.issueStamp(parseInt(memberId));
+            
+            if (result.success) {
+                res.json({ message: 'Stamp issued successfully' });
+            }
         } catch (error) {
             handleControllerError(error, res);
         }

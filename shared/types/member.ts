@@ -1,5 +1,5 @@
 // shared/types/member.ts
-import { MembershipDetails, MembershipHistory } from './membership';
+import { MembershipDetails, MembershipHistory, MembershipPeriod } from './membership';
 /**
  * Member role types
  */
@@ -62,7 +62,12 @@ export interface Member {
     shell_jacket_size: ClothingSize;
 
     // Membership Information
-    membership_details?: MembershipDetails;
+    membership_details?: {
+        fee_payment_date: string;
+        card_number?: string;
+        fee_payment_year?: number;
+        card_stamp_issued?: boolean;
+    };
     membership_history?: MembershipHistory;
 }
 

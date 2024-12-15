@@ -15,6 +15,7 @@ import auditRoutes from './routes/audit.js';
 import memberMessagesRouter from './routes/member.messages.js';
 import sequelize from './types/database';
 import hoursRoutes from './routes/hours';
+import stampRoutes from './routes/stamp.js';
 
 const app: Express = express();
 
@@ -83,6 +84,7 @@ app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter);
 app.use('/api/hours', hoursRoutes);
+app.use('/api/stamps', stampRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

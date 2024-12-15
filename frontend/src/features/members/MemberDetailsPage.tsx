@@ -8,23 +8,13 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ActivityHistory from './ActivityHistory';
+import { useToast } from "../../../components/ui/use-toast";
+import { Toaster } from "../../../components/ui/toaster";
+import { cn } from "../../lib/utils";
+import { AlertCircle } from "lucide-react";
+import { Member } from "@shared/types/member";
+import MembershipCardManager from "./MembershipCardManager";
 
-// Types we need
-interface Member {
-  member_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  cell_phone: string;
-  street_address: string;
-  city: string;
-  life_status: "employed/unemployed" | "child/pupil/student" | "pensioner";
-  membership_type: "regular" | "supporting" | "honorary";
-  tshirt_size: "XS" | "S" | "M" | "L" | "XL" | "XXL";
-  shell_jacket_size: "XS" | "S" | "M" | "L" | "XL" | "XXL";
-  total_hours?: number;
-  profile_image?: string;
-}
 
 interface Props {
   memberId?: number;
@@ -44,6 +34,7 @@ interface MembershipFormData {
 
 const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const memberId = parseInt(id || "0");
   const [member, setMember] = useState<Member | null>(null);
@@ -53,6 +44,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [comment, setComment] = useState('');
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
 
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   const isOwnProfile = user?.member_id === memberId;
@@ -64,31 +57,39 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     fee_payment_year: new Date().getFullYear()
   });
 
-  useEffect(() => {
-    const fetchMemberDetails = async () => {
-      try {
-        // If no id in URL, use the current user's id
+  const fetchMemberDetails = async () => {
+    try {
+        setLoading(true);
+        setError(null);
+
         const memberId = id || user?.member_id;
         if (!memberId) {
-          setError('No member ID available');
-          return;
+            setError('No member ID available');
+            return;
         }
-  
+
         const response = await fetch(`${API_URL}/members/${memberId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
         });
-  
-        if (!response.ok) throw new Error("Failed to fetch member details");
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch member details");
+        }
+
         const data = await response.json();
         setMember(data);
         setEditedMember(data);
-      } catch (err) {
+    } catch (err) {
         setError(err instanceof Error ? err.message : "Error fetching member details");
-      }
-    };
-  
+    } finally {
+        setLoading(false);
+    }
+};
+
+  useEffect(() => {
+     
     fetchMemberDetails();
   }, [id, user]);
 
@@ -165,9 +166,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const navigate = useNavigate();
-
-  const handleCommentSubmit = async (e: React.FormEvent) => {
+    const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (!user?.member_id) {
@@ -251,6 +250,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const handleMembershipUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setError(null);
       const response = await fetch(`${API_URL}/members/${memberId}/membership`, {
         method: 'POST',
         headers: {
@@ -258,16 +258,39 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fee_payment_date: membershipData.fee_payment_date,
-          card_number: membershipData.card_number,
-          card_stamp_issued: membershipData.card_stamp_issued,
-          fee_payment_year: membershipData.fee_payment_year
+          payment_date: membershipData.fee_payment_date,
+          payment_year: membershipData.fee_payment_year
         })
       });
   
-      if (!response.ok) throw new Error('Failed to update membership');
-      // Add success notification or refresh data
+      if (!response.ok) {
+        throw new Error('Failed to update membership');
+      }
+  
+      // Clear form
+      setMembershipData(prev => ({
+        ...prev,
+        fee_payment_date: ''
+      }));
+  
+      // Show success notification
+      toast({
+        title: "Payment Processed",
+        description: "Membership fee payment has been successfully recorded.",
+        variant: "success",
+        duration: 5000
+      });
+  
+      // Refresh member data
+      await fetchMemberDetails();
+  
     } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update membership',
+        variant: "destructive",
+        duration: 5000
+      });
       setError(error instanceof Error ? error.message : 'Failed to update membership');
     }
   };
@@ -294,7 +317,19 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
+    <>
     <div className="p-6">
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
@@ -540,7 +575,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Membership Details1</CardTitle>
+            <CardTitle>Membership Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -623,112 +658,106 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
             </div>
           </CardContent>
         </Card>
-        <Card>
-  <CardHeader>
-    <CardTitle>Membership Details2</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <form onSubmit={handleMembershipUpdate} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Fee Payment Date</label>
-        <input
-          type="date"
-          value={membershipData.fee_payment_date}
-          onChange={(e) => setMembershipData(prev => ({
-            ...prev,
-            fee_payment_date: e.target.value
-          }))}
-          className="w-full p-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Fee Payment Year</label>
-        <input
-          type="number"
-          value={membershipData.fee_payment_year}
-          onChange={(e) => setMembershipData(prev => ({
-            ...prev,
-            fee_payment_year: parseInt(e.target.value)
-          }))}
-          className="w-full p-2 border rounded"
-          min={2000}
-          max={2100}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Card Number</label>
-        <input
-          type="text"
-          value={membershipData.card_number}
-          onChange={(e) => setMembershipData(prev => ({
-            ...prev,
-            card_number: e.target.value
-          }))}
-          className="w-full p-2 border rounded"
-        />
-      </div>
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          checked={membershipData.card_stamp_issued}
-          onChange={(e) => setMembershipData(prev => ({
-            ...prev,
-            card_stamp_issued: e.target.checked
-          }))}
-          className="mr-2"
-        />
-        <label className="text-sm font-medium">Card Stamp Issued</label>
-      </div>
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-      >
-        Update Membership
-      </button>
-    </form>
-  </CardContent>
-</Card>
-
+        
 {/* Membership Fee Payment Section */}
-<Card>
-  <CardHeader>
-    <CardTitle>Membership Fee Payment</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Payment Confirmation Date</label>
-        <input
-          type="date"
-          value={membershipData.fee_payment_date}
-          onChange={(e) => {
-            const paymentDate = new Date(e.target.value);
-            const startYear = paymentDate.getMonth() >= 10 ? 
-              paymentDate.getFullYear() + 1 : 
-              paymentDate.getFullYear();
-            
-            setMembershipData(prev => ({
-              ...prev,
-              fee_payment_date: e.target.value,
-              fee_payment_year: startYear
-            }));
-          }}
-          className="w-full p-2 border rounded"
-        />
-      </div>
-      <div className="text-sm text-gray-600">
+{(user?.role === 'admin' || user?.role === 'superuser') ? (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <AlertCircle className="h-5 w-5" />
+        Membership Fee Payment
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <form onSubmit={handleMembershipUpdate} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Payment Confirmation Date</label>
+          <input
+            type="date"
+            value={membershipData.fee_payment_date}
+            onChange={(e) => {
+              const paymentDate = new Date(e.target.value);
+              const startYear = paymentDate.getMonth() >= 10 ? 
+                paymentDate.getFullYear() + 1 : 
+                paymentDate.getFullYear();
+              
+              setMembershipData(prev => ({
+                ...prev,
+                fee_payment_date: e.target.value,
+                fee_payment_year: startYear
+              }));
+            }}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+
         {membershipData.fee_payment_date && (
-          <p>
-            Membership will {new Date(membershipData.fee_payment_date).getMonth() >= 10 ? 
-              'start on January 1st, ' + (new Date(membershipData.fee_payment_date).getFullYear() + 1) :
-              'be active for current year'
-            }
-          </p>
+          <div className="mt-2">
+            <div className="text-sm p-2 bg-blue-50 border border-blue-200 rounded">
+              <p className="font-medium text-blue-800">
+                Membership Period Information
+              </p>
+              <p className="text-blue-600">
+                {new Date(membershipData.fee_payment_date).getMonth() >= 10 
+                  ? `Membership will start on January 1st, ${new Date(membershipData.fee_payment_date).getFullYear() + 1}` 
+                  : `Membership will start immediately (${new Date(membershipData.fee_payment_date).toLocaleDateString()})`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <Button 
+          type="submit" 
+          disabled={!membershipData.fee_payment_date}
+          className={cn(
+            "w-full bg-blue-600 hover:bg-blue-700 text-white",
+            !membershipData.fee_payment_date && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          Confirm Payment
+        </Button>
+      </form>
+    </CardContent>
+  </Card>
+) : (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <AlertCircle className="h-5 w-5" />
+        Membership Status
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="text-sm">
+          <p className="font-medium">Last Payment Date:</p>
+          <p>{member.membership_details?.fee_payment_date ? 
+            new Date(member.membership_details.fee_payment_date).toLocaleDateString() : 
+            'No payment recorded'}</p>
+        </div>
+        <div className="text-sm">
+          <p className="font-medium">Current Period:</p>
+          <p>{member.membership_history?.current_period ? 
+            `Started: ${new Date(member.membership_history.current_period.start_date).toLocaleDateString()}` : 
+            'No active period'}</p>
+        </div>
+        {member.membership_history?.current_period && (
+          <div className="p-2 bg-green-50 border border-green-200 rounded">
+            <p className="text-green-800">Active Membership</p>
+          </div>
         )}
       </div>
-    </div>
-  </CardContent>
-</Card>
+    </CardContent>
+  </Card>
+)}
+
+{(user?.role === 'admin' || user?.role === 'superuser') && (
+  <MembershipCardManager 
+    member={member} 
+    onUpdate={fetchMemberDetails} 
+  />
+)}
 
 {(user?.role === 'admin' || user?.role === 'superuser') && (
   <Card>
@@ -787,6 +816,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 </Card>
       </div>
     </div>
+    <Toaster />
+</>
   );
 };
 

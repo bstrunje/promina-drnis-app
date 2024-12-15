@@ -1,4 +1,4 @@
-import { MembershipDetails, MembershipHistory } from './membership';
+import { MembershipHistory } from './membership';
 /**
  * Member role types
  */
@@ -46,7 +46,12 @@ export interface Member {
     membership_type: MembershipType;
     tshirt_size: ClothingSize;
     shell_jacket_size: ClothingSize;
-    membership_details?: MembershipDetails;
+    membership_details?: {
+        fee_payment_date: string;
+        card_number?: string;
+        fee_payment_year?: number;
+        card_stamp_issued?: boolean;
+    };
     membership_history?: MembershipHistory;
 }
 /**

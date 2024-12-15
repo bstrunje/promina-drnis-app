@@ -145,25 +145,27 @@ const memberService = {
     },
 	
 	async getMemberWithDetails(memberId: number): Promise<Member | null> {
-        try {
-            const member = await memberRepository.findById(memberId);
-            if (!member) return null;
+    try {
+        const member = await memberRepository.findById(memberId);
+        if (!member) return null;
 
-            // Get membership details
-            const membershipDetails = await membershipService.getMembershipHistory(memberId);
-            const currentPeriod = membershipDetails.currentPeriod;
-            
-            return {
-                ...member,
-                membership_details: (await membershipService.getMembershipDetails(memberId)) || undefined,
-                membership_history: membershipDetails,
-                activity_status: (member.total_hours ?? 0) >= 20 ? 'active' : 'passive'
-            };
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error('Error fetching member with details: ' + errorMessage);
-        }
-    },
+        // Get membership details
+        const membershipDetails = await membershipService.getMembershipDetails(memberId);
+        const membershipHistory = await membershipService.getMembershipHistory(memberId);
+        
+        return {
+            ...member,
+            membership_details: {
+                ...membershipDetails,
+                fee_payment_date: membershipDetails?.fee_payment_date || '',
+            },
+            membership_history: membershipHistory
+        };
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error('Error fetching member with details: ' + errorMessage);
+    }
+},
 
     // Add to existing member service methods
     async updateMembershipFee(memberId: number, paymentDate: Date): Promise<void> {

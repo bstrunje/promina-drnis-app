@@ -1,22 +1,11 @@
 // frontend/src/features/members/MemberProfile.tsx
 import { useAuth } from "../../context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import {
-  Clock,
-  Calendar,
-  Award,
-  User,
-  Clipboard,
-} from "lucide-react";
-import { MembershipPeriod } from '@shared/types/membership';
+import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
+import { MembershipPeriod, MembershipHistory } from "@shared/types/membership";
+import { Member } from "@shared/types/member";
 
-interface MembershipHistory {
-  periods: MembershipPeriod[];
-  total_duration?: string;
-  current_period?: MembershipPeriod;
-}
-
-declare module '@shared/types/member' {
+declare module "@shared/types/member" {
   interface Member {
     membership_history?: MembershipHistory;
   }
@@ -38,6 +27,19 @@ const MemberProfile = () => {
   };
 
   const activityStatus = getActivityStatus();
+
+  const getStatusColor = (status: Member["life_status"]) => {
+    switch (status) {
+      case "employed/unemployed":
+        return "bg-blue-600 text-white";
+      case "child/pupil/student":
+        return "bg-green-600 text-white";
+      case "pensioner":
+        return "bg-red-600 text-white";
+      default:
+        return "bg-gray-600 text-white";
+    }
+  };
 
   return (
     <div className="p-6">
@@ -75,6 +77,20 @@ const MemberProfile = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-500">Card Number</label>
+                {user.membership_details?.card_number ? (
+                  <p
+                    className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
+                      user.life_status
+                    )}`}
+                  >
+                    {user.membership_details.card_number}
+                  </p>
+                ) : (
+                  <p className="text-gray-400">Not assigned</p>
+                )}
+              </div>
               <div>
                 <label className="text-sm text-gray-500">Email</label>
                 <p>{user.email}</p>
@@ -149,27 +165,32 @@ const MemberProfile = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-            {user?.membership_history?.periods?.map((period: MembershipPeriod, index: number) => (
-                <div key={index} className="border-l-2 border-purple-500 pl-4 py-2">
-                  <div className="text-sm">
-                    <span className="font-medium">Start: </span>
-                    {new Date(period.start_date).toLocaleDateString()}
-                  </div>
-                  {period.end_date && (
-                    <>
-                      <div className="text-sm">
-                        <span className="font-medium">End: </span>
-                        {new Date(period.end_date).toLocaleDateString()}
-                      </div>
-                      {period.end_reason && (
-                        <div className="text-sm text-gray-600">
-                          Reason: {period.end_reason}
+              {user?.membership_history?.periods?.map(
+                (period: MembershipPeriod, index: number) => (
+                  <div
+                    key={index}
+                    className="border-l-2 border-purple-500 pl-4 py-2"
+                  >
+                    <div className="text-sm">
+                      <span className="font-medium">Start: </span>
+                      {new Date(period.start_date).toLocaleDateString()}
+                    </div>
+                    {period.end_date && (
+                      <>
+                        <div className="text-sm">
+                          <span className="font-medium">End: </span>
+                          {new Date(period.end_date).toLocaleDateString()}
                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
+                        {period.end_reason && (
+                          <div className="text-sm text-gray-600">
+                            Reason: {period.end_reason}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )
+              )}
               <div className="mt-4 pt-4 border-t">
                 <span className="text-sm font-medium">Total Duration: </span>
                 <span className="text-sm">
