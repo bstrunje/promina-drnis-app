@@ -20,7 +20,7 @@ const membershipRepository = {
                  fee_payment_year = EXCLUDED.fee_payment_year,
                  card_stamp_issued = EXCLUDED.card_stamp_issued,
                  fee_payment_date = EXCLUDED.fee_payment_date
-             RETURNING *`,
+             RETURNING *, (SELECT life_status FROM members WHERE member_id = $1) as life_status`,
             [memberId, details.card_number, details.fee_payment_year, details.card_stamp_issued, details.fee_payment_date]
         );
         return result.rows[0];

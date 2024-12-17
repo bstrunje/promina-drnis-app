@@ -19,7 +19,7 @@ router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberCon
 router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
 router.post('/assign-password', authenticateToken, roles.requireAdmin, memberController.assignPassword);
 router.post('/:memberId/card', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
-
+router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, memberController.updateMembership);
 // Profile image routes
 router.post(
   '/:memberId/profile-image',

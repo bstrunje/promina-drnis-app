@@ -145,27 +145,34 @@ const memberService = {
     },
 	
 	async getMemberWithDetails(memberId: number): Promise<Member | null> {
-    try {
-        const member = await memberRepository.findById(memberId);
-        if (!member) return null;
-
-        // Get membership details
-        const membershipDetails = await membershipService.getMembershipDetails(memberId);
-        const membershipHistory = await membershipService.getMembershipHistory(memberId);
-        
-        return {
-            ...member,
-            membership_details: {
-                ...membershipDetails,
-                fee_payment_date: membershipDetails?.fee_payment_date || '',
-            },
-            membership_history: membershipHistory
-        };
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error('Error fetching member with details: ' + errorMessage);
-    }
-},
+        try {
+            const member = await memberRepository.findById(memberId);
+            if (!member) return null;
+    
+            const membershipDetails = await membershipService.getMembershipDetails(memberId);
+            const membershipHistory = await membershipService.getMembershipHistory(memberId);
+            
+            return {
+                ...member,
+                date_of_birth: member.date_of_birth,
+                oib: member.oib,
+                gender: member.gender,
+                life_status: member.life_status, // Keep life_status at the member level
+                membership_details: membershipDetails ? {
+                    card_number: membershipDetails.card_number,
+                    fee_payment_year: membershipDetails.fee_payment_year,
+                    card_stamp_issued: membershipDetails.card_stamp_issued,
+                    fee_payment_date: membershipDetails.fee_payment_date 
+                        ? new Date(membershipDetails.fee_payment_date).toISOString() 
+                        : ''  // Provide an empty string as default
+                } : undefined,
+                membership_history: membershipHistory
+            };
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member with details: ' + errorMessage);
+        }
+    },
 
     // Add to existing member service methods
     async updateMembershipFee(memberId: number, paymentDate: Date): Promise<void> {

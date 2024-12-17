@@ -92,6 +92,19 @@ const MemberProfile = () => {
                 )}
               </div>
               <div>
+                <label className="text-sm text-gray-500">Gender</label>
+                <p className="capitalize">{user.gender}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Date of Birth</label>
+                <p>{new Date(user.date_of_birth).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">OIB</label>
+                <p>{user.oib}</p>
+              </div>
+              <div></div>
+              <div>
                 <label className="text-sm text-gray-500">Email</label>
                 <p>{user.email}</p>
               </div>
@@ -103,18 +116,6 @@ const MemberProfile = () => {
                 <label className="text-sm text-gray-500">Address</label>
                 <p>{user.street_address}</p>
                 <p>{user.city}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Gender</label>
-                <p>{user.gender}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Date of Birth</label>
-                <p>{new Date(user.date_of_birth).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">OIB</label>
-                <p>{user.oib}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">Life Status</label>

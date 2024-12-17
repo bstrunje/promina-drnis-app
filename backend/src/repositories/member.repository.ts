@@ -59,10 +59,28 @@ const memberRepository = {
         return result.rows;
     },
 
-    async findById(memberId: number): Promise<Member | null> {
-        const result = await db.query<Member>(`
-            SELECT * FROM members WHERE member_id = $1
-        `, [memberId]);
+    async findById(id: number): Promise<Member | null> {
+        const result = await db.query<Member>(
+            `SELECT 
+                member_id, 
+                first_name, 
+                last_name, 
+                date_of_birth,
+                gender,
+                oib,
+                street_address,
+                city,
+                cell_phone,
+                email,
+                life_status,
+                role,
+                membership_type,
+                registration_completed,
+                total_hours
+            FROM members 
+            WHERE member_id = $1`,
+            [id]
+        );
         return result.rows[0] || null;
     },
 

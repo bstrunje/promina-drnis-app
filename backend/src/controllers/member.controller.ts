@@ -304,7 +304,7 @@ export const memberController = {
                 res.status(400).json({ message: 'Invalid member ID' });
                 return;
             }
-
+    
             const { paymentDate, cardNumber, stampIssued } = req.body;
             
             await memberService.updateMembershipFee(memberId, new Date(paymentDate));
@@ -316,7 +316,18 @@ export const memberController = {
                     stampIssued || false
                 );
             }
-
+    
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'UPDATE_MEMBERSHIP',
+                    req.user.id,
+                    `Membership fee payment updated for member ${memberId}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
+    
             res.json({ message: 'Membership updated successfully' });
         } catch (error) {
             console.error('Controller error:', error);
