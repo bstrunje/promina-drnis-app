@@ -67,6 +67,25 @@ const memberMessageRepository = {
              WHERE message_id = $1`,
             [messageId]
         );
+    },
+
+    async deleteMessage(messageId: number): Promise<void> {
+        await db.query(
+            `DELETE FROM member_messages WHERE message_id = $1`,
+            [messageId]
+        );
+    },
+
+    async deleteAllMessages(): Promise<void> {
+        await db.query(`DELETE FROM member_messages`);
+    },
+
+    async messageExists(messageId: number): Promise<boolean> {
+        const result = await db.query(
+            `SELECT 1 FROM member_messages WHERE message_id = $1`,
+            [messageId]
+        );
+        return result.rowCount !== null && result.rowCount > 0;
     }
 };
 

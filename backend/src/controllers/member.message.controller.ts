@@ -101,6 +101,59 @@ const messageController = {
                 message: error instanceof Error ? error.message : 'Failed to archive message' 
             });
         }
+    },
+
+    async deleteMessage(req: Request, res: Response): Promise<void> {
+        try {
+            const messageId = parseInt(req.params.messageId);
+            const exists = await messageService.messageExists(messageId);
+            if (!exists) {
+                res.status(404).json({ message: 'Message not found' });
+                return;
+            }
+            await messageService.deleteMessage(messageId);
+            
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'DELETE_MESSAGE',
+                    req.user.id,
+                    `Message ${messageId} deleted`,
+                    req,
+                    'success'
+                );
+            }
+
+            res.json({ message: 'Message deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            const statusCode = error instanceof Error && error.message === 'Message not found' ? 404 : 500;
+            res.status(statusCode).json({ 
+                message: error instanceof Error ? error.message : 'Failed to delete message' 
+            });
+        }
+    },
+
+    async deleteAllMessages(req: Request, res: Response): Promise<void> {
+        try {
+            await messageService.deleteAllMessages();
+            
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'DELETE_ALL_MESSAGES',
+                    req.user.id,
+                    `All messages deleted`,
+                    req,
+                    'success'
+                );
+            }
+
+            res.json({ message: 'All messages deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting all messages:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Failed to delete all messages' 
+            });
+        }
     }
 };
 

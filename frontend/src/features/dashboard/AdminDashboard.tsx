@@ -44,9 +44,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
   });
   const [editValues, setEditValues] = useState(inventory);
+  const [unreadMessages, setUnreadMessages] = useState(false);
 
   useEffect(() => {
     fetchInventory();
+    checkUnreadMessages();
   }, []);
 
   const fetchInventory = async () => {
@@ -80,6 +82,25 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to fetch inventory',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const checkUnreadMessages = async () => {
+    try {
+      const response = await fetch('/api/messages/admin', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
+      setUnreadMessages(data.some((message: any) => message.status === 'unread'));
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch messages',
         variant: "destructive"
       });
     }
@@ -181,7 +202,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             <Mail className="h-5 w-5 text-purple-600" />
           </div>
           <p className="text-sm text-gray-600">
-            {inventory.employedStamps.initial > 0 ? (
+            {unreadMessages ? (
               <span className="text-red-600">There are unread messages</span>
             ) : (
               "No unread messages"

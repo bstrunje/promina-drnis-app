@@ -19,6 +19,22 @@ const messageService = {
 
     async archiveMessage(messageId: number): Promise<void> {
         await memberMessageRepository.archiveMessage(messageId);
+    },
+
+    async deleteMessage(messageId: number): Promise<void> {
+        const exists = await memberMessageRepository.messageExists(messageId);
+        if (!exists) {
+            throw new Error('Message not found');
+        }
+        await memberMessageRepository.deleteMessage(messageId);
+    },
+
+    async deleteAllMessages(): Promise<void> {
+        await memberMessageRepository.deleteAllMessages();
+    },
+
+    async messageExists(messageId: number): Promise<boolean> {
+        return await memberMessageRepository.messageExists(messageId);
     }
 };
 
