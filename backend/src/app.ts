@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
 import memberMessagesRouter from './routes/member.messages.js';
+import adminMessagesRouter from './routes/admin.messages.js';
 import sequelize from './types/database';
 import hoursRoutes from './routes/hours';
 import stampRoutes from './routes/stamp.js';
@@ -82,7 +83,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
-app.use('/api/members', authMiddleware, memberMessagesRouter);
+app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
+app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin messages routes
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 

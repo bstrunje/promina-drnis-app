@@ -1,9 +1,7 @@
-// frontend/src/features/dashboard/AdminDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Activity } from "lucide-react";
+import { Users, Activity, Mail } from "lucide-react";
 import { Member } from "@shared/types/member";
-import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 
@@ -47,46 +45,46 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   });
   const [editValues, setEditValues] = useState(inventory);
 
-  // Add this after your state declarations
-useEffect(() => {
-  fetchInventory();
-}, []);
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
-const fetchInventory = async () => {
-  try {
+  const fetchInventory = async () => {
+    try {
       const response = await fetch('/api/stamps/inventory', {
-          headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       if (!response.ok) throw new Error('Failed to fetch inventory');
       
       const data = await response.json() as InventoryData[];
       setInventory({
-          employedStamps: {
-              initial: data.find((i: InventoryData) => i.stamp_type === 'employed')?.initial_count || 0,
-              issued: data.find((i: InventoryData) => i.stamp_type === 'employed')?.issued_count || 0,
-              remaining: data.find((i: InventoryData) => i.stamp_type === 'employed')?.remaining || 0
-          },
-          studentStamps: {
-              initial: data.find((i: InventoryData) => i.stamp_type === 'student')?.initial_count || 0,
-              issued: data.find((i: InventoryData) => i.stamp_type === 'student')?.issued_count || 0,
-              remaining: data.find((i: InventoryData) => i.stamp_type === 'student')?.remaining || 0
-          },
-          pensionerStamps: {
-              initial: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.initial_count || 0,
-              issued: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.issued_count || 0,
-              remaining: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.remaining || 0
-          }
+        employedStamps: {
+          initial: data.find((i: InventoryData) => i.stamp_type === 'employed')?.initial_count || 0,
+          issued: data.find((i: InventoryData) => i.stamp_type === 'employed')?.issued_count || 0,
+          remaining: data.find((i: InventoryData) => i.stamp_type === 'employed')?.remaining || 0
+        },
+        studentStamps: {
+          initial: data.find((i: InventoryData) => i.stamp_type === 'student')?.initial_count || 0,
+          issued: data.find((i: InventoryData) => i.stamp_type === 'student')?.issued_count || 0,
+          remaining: data.find((i: InventoryData) => i.stamp_type === 'student')?.remaining || 0
+        },
+        pensionerStamps: {
+          initial: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.initial_count || 0,
+          issued: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.issued_count || 0,
+          remaining: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.remaining || 0
+        }
       });
-  } catch (error) {
+    } catch (error) {
       toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : 'Failed to fetch inventory',
-          variant: "destructive"
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch inventory',
+        variant: "destructive"
       });
-  }
-};
+    }
+  };
+
   const handleEdit = () => {
     setEditValues(inventory);
     setIsEditing(true);
@@ -173,24 +171,40 @@ const fetchInventory = async () => {
           </div>
           <p className="text-sm text-gray-600">Manage and monitor activities</p>
         </div>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Stamp Inventory</CardTitle>
-          {!isEditing ? (
-            <Button variant="outline" onClick={handleEdit}>
-              Edit Inventory
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
+
+        <div
+          onClick={() => navigate("/messages")}
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Messages</h3>
+            <Mail className="h-5 w-5 text-purple-600" />
+          </div>
+          <p className="text-sm text-gray-600">
+            {inventory.employedStamps.initial > 0 ? (
+              <span className="text-red-600">There are unread messages</span>
+            ) : (
+              "No unread messages"
+            )}
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Stamp Inventory</h3>
+            {!isEditing ? (
+              <Button variant="outline" onClick={handleEdit}>
+                Edit Inventory
               </Button>
-              <Button onClick={handleSave}>Save Changes</Button>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>Save Changes</Button>
+              </div>
+            )}
+          </div>
           <div className="space-y-4">
             {/* Employed/Unemployed Stamps */}
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -316,8 +330,8 @@ const fetchInventory = async () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

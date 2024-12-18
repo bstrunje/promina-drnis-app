@@ -1,11 +1,11 @@
-import memberMessageRepository, { MemberMessage } from '../repositories/member.message.repository.js';
+import memberMessageRepository, { MemberMessage, MemberMessageWithSender } from '../repositories/member.message.repository.js';
 
 const messageService = {
     async createMessage(memberId: number, messageText: string): Promise<MemberMessage> {
         return await memberMessageRepository.create(memberId, messageText);
     },
 
-    async getAdminMessages(): Promise<MemberMessage[]> {
+    async getAdminMessages(): Promise<MemberMessageWithSender[]> {
         return await memberMessageRepository.getAllForAdmin();
     },
 

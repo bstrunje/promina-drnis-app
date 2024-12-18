@@ -32,7 +32,8 @@ const messageController = {
     async getAdminMessages(req: Request, res: Response): Promise<void> {
         try {
             const messages = await messageService.getAdminMessages();
-            res.json(messages);
+            console.log('Fetched admin messages:', messages); // Add logging
+            res.status(200).json(messages);
         } catch (error) {
             console.error('Error fetching admin messages:', error);
             res.status(500).json({ 

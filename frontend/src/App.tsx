@@ -13,6 +13,7 @@ import HoursLog from './features/hours/HoursLog';
 import AssignPassword from './features/members/AssignPassword';
 import AuditLogsPage from './features/audit/AuditLogsPage';
 import MemberDetailsPage from './features/members/MemberDetailsPage';
+import MessageList from './features/messages/MessageList';
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -36,6 +37,7 @@ function AppContent() {
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
+          <Route path="/messages" element={<MessageList />} />
           {(user?.role === 'admin' || user?.role === 'superuser') && (
             <>
               <Route path="/admin" element={<AdminDashboard member={user} />} />
