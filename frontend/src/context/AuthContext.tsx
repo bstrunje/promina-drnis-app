@@ -15,7 +15,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<Member | null>(() => {
     const savedUser = localStorage.getItem("user");
-    console.log('Saved user from localStorage:', savedUser);
     const savedToken = localStorage.getItem("token");
     if (savedUser && savedToken) {
       try {

@@ -1,56 +1,117 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import { Button } from "@components/ui/button";
-import { useToast } from "@components/ui/use-toast";
-import { AlertCircle, Stamp } from "lucide-react";
-import { Member } from "@shared/types/member";
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
+import { Button } from '@components/ui/button';
+import { useToast } from '@components/ui/use-toast';
+import { Stamp } from 'lucide-react';
+import { Member } from '../../../../shared/types/member';
+import { cn } from '@/lib/utils';
 
 interface Props {
   member: Member;
-  onUpdate: () => void;
+  onUpdate: (updatedMember: Member) => Promise<void>;
 }
 
 const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const [cardNumber, setCardNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, setIsAssigning] = useState(false);
+  const [isIssuingStamp, setIsIssuingStamp] = useState(false);
+  const [inventoryStatus, setInventoryStatus] = useState<{
+    type: string;
+    remaining: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const checkInventory = async () => {
+      try {
+        const response = await fetch('/api/stamps/inventory', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch inventory');
+        const data = await response.json();
+        
+        const stampType = member.life_status === 'employed/unemployed' ? 'employed' :
+                         member.life_status === 'child/pupil/student' ? 'student' :
+                         member.life_status === 'pensioner' ? 'pensioner' : 'employed';
+
+        const relevantInventory = data.find((item: { stamp_type: string; }) => item.stamp_type === stampType);
+        if (relevantInventory) {
+          setInventoryStatus({
+            type: stampType,
+            remaining: relevantInventory.remaining
+          });
+        }
+      } catch (error) {
+        console.error('Error checking inventory:', error);
+        toast({
+          title: "Error",
+          description: "Failed to check stamp inventory",
+          variant: "destructive"
+        });
+      }
+    };
+
+    checkInventory();
+  }, [member.life_status]);
 
   const handleCardNumberAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      const response = await fetch(`/api/members/${member.member_id}/card`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ cardNumber })
-      });
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/members/${member.member_id}/card`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                cardNumber,
+                stampIssued: true 
+            })
+        });
 
-      if (!response.ok) throw new Error('Failed to assign card number');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to assign card number');
+        }
 
-      toast({
-        title: "Success",
-        description: "Card number assigned successfully",
-        variant: "success"
-      });
-      
-      onUpdate();
-      setCardNumber('');
+        toast({
+            title: "Success",
+            description: "Card number assigned successfully",
+            variant: "success"
+        });
+        
+        onUpdate({ ...member });
+        setCardNumber('');
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to assign card number',
-        variant: "destructive"
-      });
+        console.error('Card assignment error:', error);
+        toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : 'Failed to assign card number',
+            variant: "destructive"
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
+        setIsAssigning(false);
     }
-  };
+};
 
   const handleStampIssue = async () => {
+    if (!inventoryStatus?.remaining) {
+      toast({
+        title: "Error",
+        description: "No stamps available in inventory",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsIssuingStamp(true);
     try {
       const response = await fetch(`/api/members/${member.member_id}/stamp`, {
         method: 'POST',
@@ -59,7 +120,10 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         }
       });
 
-      if (!response.ok) throw new Error('Failed to issue stamp');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to issue stamp');
+      }
 
       toast({
         title: "Success",
@@ -67,13 +131,20 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         variant: "success"
       });
       
-      onUpdate();
+      setInventoryStatus(prev => prev ? {
+        ...prev,
+        remaining: prev.remaining - 1
+      } : null);
+      
+      onUpdate({ ...member });
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to issue stamp',
         variant: "destructive"
       });
+    } finally {
+      setIsIssuingStamp(false);
     }
   };
 
@@ -93,12 +164,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5" />
-          Membership Card Management
-        </CardTitle>
+        <CardTitle>Membership Card Management</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {/* Current Card Status */}
         <div className="p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium mb-2">Current Status</h4>
@@ -128,27 +196,33 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
 
         {/* Card Number Assignment Form */}
         {!member.membership_details?.card_number && (
-          <form onSubmit={handleCardNumberAssign} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Assign Card Number
-              </label>
-              <div className="flex space-x-2">
+          <form onSubmit={handleCardNumberAssign} className="mt-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Card Number
+                </label>
                 <input
                   type="text"
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value)}
-                  className="flex-1 rounded-md border px-3 py-2"
-                  placeholder="Enter card number"
+                  pattern="[0-9]{5}"
+                  title="Card number must be exactly 5 digits"
+                  maxLength={5}
+                  className="w-full p-2 border rounded"
                   required
                 />
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                >
-                  Assign
-                </Button>
               </div>
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+                className={cn(
+                  "w-full",
+                  isSubmitting && "opacity-50"
+                )}
+              >
+                {isSubmitting ? "Assigning..." : "Assign Card Number"}
+              </Button>
             </div>
           </form>
         )}
@@ -156,13 +230,25 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         {/* Stamp Issuance */}
         {member.membership_details?.card_number && !member.membership_details?.card_stamp_issued && (
           <div className="mt-4">
+            <div className="mb-2 text-sm">
+              {inventoryStatus && (
+                <span className={`${
+                  inventoryStatus.remaining > 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {inventoryStatus.remaining > 0 
+                    ? `${inventoryStatus.remaining} stamps available`
+                    : 'No stamps available'}
+                </span>
+              )}
+            </div>
             <Button 
               onClick={handleStampIssue}
               className="w-full"
               variant="outline"
+              disabled={isIssuingStamp || !inventoryStatus?.remaining}
             >
               <Stamp className="w-4 h-4 mr-2" />
-              Issue Stamp
+              {isIssuingStamp ? "Issuing Stamp..." : "Issue Stamp"}
             </Button>
           </div>
         )}

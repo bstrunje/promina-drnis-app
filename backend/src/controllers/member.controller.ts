@@ -198,6 +198,9 @@ export const memberController = {
         try {
             const { memberId } = req.params;
             const { cardNumber } = req.body;
+
+            console.log('Token:', req.headers.authorization);
+            console.log('Assigning card number:', { memberId, cardNumber });
             
             await membershipService.updateCardDetails(parseInt(memberId), cardNumber, true);
             
@@ -214,6 +217,7 @@ export const memberController = {
             
             res.json({ message: 'Card number assigned successfully' });
         } catch (error) {
+            console.error('Controller error:', error);
             handleControllerError(error, res);
         }
     },
@@ -306,8 +310,19 @@ export const memberController = {
             }
     
             const { paymentDate, cardNumber, stampIssued } = req.body;
-            
-            await memberService.updateMembershipFee(memberId, new Date(paymentDate));
+
+            // Validate payment date
+            const parsedDate = new Date(paymentDate);
+            if (!paymentDate || isNaN(parsedDate.getTime())) {
+                res.status(400).json({ message: 'Invalid payment date format' });
+                return;
+            }
+
+            // Set time to noon to avoid timezone issues
+            parsedDate.setHours(12, 0, 0, 0);
+
+            console.log('Processing payment date:', parsedDate.toISOString());
+            await memberService.updateMembershipFee(memberId, new Date(paymentDate), req);
             
             if (cardNumber || stampIssued !== undefined) {
                 await memberService.updateMembershipCard(

@@ -4,6 +4,7 @@ import membershipService from './membership.service.js';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { Member } from '@shared/member';
 import bcrypt from 'bcrypt';
+import { Request } from 'express';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -175,12 +176,29 @@ const memberService = {
     },
 
     // Add to existing member service methods
-    async updateMembershipFee(memberId: number, paymentDate: Date): Promise<void> {
+    async updateMembershipFee(memberId: number, paymentDate: Date, req: Request): Promise<void> {
         try {
-            await membershipService.processFeePayment(memberId, paymentDate);
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error('Error processing fee payment: ' + errorMessage);
+            console.log('Received date in service:', paymentDate);
+            
+            // Convert string to Date if needed
+            const dateObject = typeof paymentDate === 'string' 
+                ? new Date(paymentDate)
+                : paymentDate;
+    
+            // Validate date
+            if (isNaN(dateObject.getTime())) {
+                console.error('Invalid date object:', dateObject);
+                throw new Error('Invalid payment date format');
+            }
+    
+            // Standardize time to noon UTC
+            dateObject.setUTCHours(12, 0, 0, 0);
+            
+            console.log('Processed date:', dateObject.toISOString());
+            await membershipService.processFeePayment(memberId, dateObject, req);
+        } catch (error) {
+            console.error('Service error:', error);
+            throw error instanceof Error ? error : new Error(String(error));
         }
     },
 

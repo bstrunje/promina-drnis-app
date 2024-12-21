@@ -1,5 +1,5 @@
 // frontend/src/utils/api.ts
-import axios, { InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '@shared/types/member';
 import { AuditLog } from '@promina-drnis-app/shared/types/audit';
 
@@ -28,10 +28,10 @@ const api = axios.create({
 });
 
 // Add a request interceptor
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token && config.headers) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 }, (error) => {

@@ -60,29 +60,30 @@ const memberRepository = {
     },
 
     async findById(id: number): Promise<Member | null> {
-        const result = await db.query<Member>(
-            `SELECT 
-                member_id, 
-                first_name, 
-                last_name, 
-                date_of_birth,
-                gender,
-                oib,
-                street_address,
-                city,
-                cell_phone,
-                email,
-                life_status,
-                role,
-                membership_type,
-                registration_completed,
-                total_hours
-            FROM members 
-            WHERE member_id = $1`,
-            [id]
-        );
-        return result.rows[0] || null;
-    },
+    const result = await db.query<Member>(
+        `SELECT 
+            m.*,
+            md.card_number,
+            md.fee_payment_year,
+            md.card_stamp_issued,
+            md.fee_payment_date,
+            (SELECT json_agg(
+                json_build_object(
+                    'period_id', mp.period_id,
+                    'start_date', mp.start_date,
+                    'end_date', mp.end_date,
+                    'end_reason', mp.end_reason
+                )
+            )
+            FROM membership_periods mp
+            WHERE mp.member_id = m.member_id) as membership_history
+        FROM members m
+        LEFT JOIN membership_details md ON m.member_id = md.member_id
+        WHERE m.member_id = $1`,
+        [id]
+    );
+    return result.rows[0] || null;
+},
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
         const result = await db.query<Member>(`

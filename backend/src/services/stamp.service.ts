@@ -30,6 +30,7 @@ const stampService = {
                 throw new Error('Member not found');
             }
 
+            // Determine stamp type based on life status
             let stampType: string;
             switch (member.life_status) {
                 case 'employed/unemployed':
@@ -45,6 +46,19 @@ const stampService = {
                     throw new Error('Invalid life status');
             }
 
+            // Check if stamp is available in inventory
+            const inventory = await stampRepository.getInventory();
+            const stampInventory = inventory.find(item => item.stamp_type === stampType);
+            
+            if (!stampInventory) {
+                throw new Error(`No inventory found for ${stampType} stamps`);
+            }
+
+            if (stampInventory.initial_count <= stampInventory.issued_count) {
+                throw new Error(`No ${stampType} stamps available in inventory`);
+            }
+
+            // Issue stamp and update inventory
             await stampRepository.incrementIssuedCount(stampType);
             await membershipRepository.updateMembershipDetails(memberId, {
                 card_stamp_issued: true
@@ -52,7 +66,8 @@ const stampService = {
             
             return { success: true };
         } catch (error) {
-            throw new DatabaseError('Error issuing stamp');
+            throw new DatabaseError('Error issuing stamp: ' + 
+                (error instanceof Error ? error.message : 'Unknown error'));
         }
     }
 };

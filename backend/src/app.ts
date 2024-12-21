@@ -18,6 +18,7 @@ import sequelize from './types/database';
 import hoursRoutes from './routes/hours';
 import stampRoutes from './routes/stamp.js';
 
+
 const app: Express = express();
 
 // Test database connection
@@ -80,13 +81,13 @@ app.get('/health', async (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
 app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin messages routes
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
+app.use('/api/members', authMiddleware, memberRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

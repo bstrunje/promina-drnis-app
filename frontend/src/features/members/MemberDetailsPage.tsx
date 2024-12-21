@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import { Alert, AlertDescription } from "@components/ui/alert";
-import { Button } from "@components/ui/button";
-import { Edit, Save, X, User, AlertCircle, Clock } from "lucide-react";
-import { API_URL } from "../../utils/config";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import ActivityHistory from "./ActivityHistory";
-import { useToast } from "../../../components/ui/use-toast";
-import { Toaster } from "../../../components/ui/toaster";
-import { cn } from "../../lib/utils";
-import { Member } from "@shared/types/member";
-import MembershipCardManager from "./MembershipCardManager";
+import { Edit, Save, X } from "lucide-react";
+import { Button } from "@components/ui/button";
+import { Alert, AlertDescription } from "@components/ui/alert";
+import { Member } from "../../../../shared/types/member";
+import { Toaster } from "@components/ui/toaster";
+import { useToast } from "@components/ui/use-toast";
+import api from "../../utils/api";
+import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
+
+// Import new components
+import MemberBasicInfo from "../../../components/MemberBasicInfo";
+import MemberActivityStatus from "../../../components/MemberActivityStatus";
+import MembershipFeeSection from "../../../components/MembershipFeeSection";
+import MembershipCardManager from "../members/MembershipCardManager";
+import MemberMessagesSection from "../../../components/MemberMessagesSection";
+import MembershipPeriods from "../../../components/MembershipPeriods";
 
 interface Props {
   memberId?: number;
@@ -23,126 +27,71 @@ interface Props {
   onUpdate?: (member: Member) => void;
 }
 
-interface MembershipFormData {
-  fee_payment_date: string;
-  card_number: string;
-  card_stamp_issued: boolean;
-  fee_payment_year: number;
-}
-
 const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const memberId = parseInt(id || "0");
+  const { toast } = useToast();
+  const memberId = parseInt(id || String(user?.member_id) || "0");
+
   const [member, setMember] = useState<Member | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMember, setEditedMember] = useState<Member | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [comment, setComment] = useState("");
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   const isOwnProfile = user?.member_id === memberId;
 
-  const [membershipData, setMembershipData] = useState<MembershipFormData>({
-    fee_payment_date: "",
-    card_number: "",
-    card_stamp_issued: false,
-    fee_payment_year: new Date().getFullYear(),
-  });
-
-  const getActivityStatus = (totalHours: number) => {
-    return totalHours >= 20 ? "active" : "passive";
-  };
+  const isFeeCurrent = useMemo(() => {
+    if (!member?.membership_details?.fee_payment_date) return false;
+    const lastPaymentDate = new Date(
+      member.membership_details.fee_payment_date
+    );
+    const currentYear = new Date().getFullYear();
+    return lastPaymentDate.getFullYear() >= currentYear;
+  }, [member?.membership_details?.fee_payment_date]);
 
   const fetchMemberDetails = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
-      setError(null);
-
-      const memberId = id || user?.member_id;
-      if (!memberId) {
-        setError("No member ID available");
-        return;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
       }
 
-      const response = await fetch(`${API_URL}/members/${memberId}`, {
+      const response = await fetch(`/api/members/${memberId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch member details");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch member details");
       const data = await response.json();
       console.log("Member data:", data);
       setMember(data);
       setEditedMember(data);
-    } catch (err) {
+    } catch (error) {
       setError(
-        err instanceof Error ? err.message : "Error fetching member details"
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch member details"
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMemberDetails();
-  }, [id, user]);
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditedMember(member);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setEditedMember(member);
-    setError(null);
-  };
-
-  const handleSave = async () => {
-    if (!editedMember) return;
-
-    try {
-      const response = await fetch(
-        `${API_URL}/members/${editedMember.member_id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(editedMember),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update member");
-
-      const updatedMember = await response.json();
-      setMember(updatedMember);
-      setIsEditing(false);
-      setError(null);
-      if (onUpdate) {
-        onUpdate(updatedMember);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error updating member");
+    if (memberId) {
+      fetchMemberDetails();
     }
-  };
+  }, [memberId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    if (!editedMember) return;
-
     const { name, value } = e.target;
     setEditedMember((prev) =>
       prev
@@ -154,777 +103,192 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     );
   };
 
-  const sendMemberMessage = async (memberId: number, message: string) => {
+  const handleMemberUpdate = async (updatedMember: Member) => {
     try {
-      const response = await fetch(`${API_URL}/members/${memberId}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messageText: message }),
-      });
-      if (!response.ok) throw new Error("Failed to send message");
+      setMember(updatedMember);
+      await fetchMemberDetails();
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to send message"
-      );
+      setError("Failed to update member");
     }
   };
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    if (!editedMember) return;
+    setIsSubmitting(true);
     try {
-      if (!user?.member_id) {
-        setError("User not found");
-        return;
-      }
-      await sendMemberMessage(user.member_id, comment);
-      setComment(""); // Clear form after success
-      // Optional: Show success message
-    } catch (error) {
-      console.error("Error sending message:", error);
-      // Optional: Show error message
-    }
-  };
+      const response = await api.put(`/members/${memberId}`, editedMember);
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || !files[0] || !member) return;
-
-    try {
-      setIsUploading(true);
-      setError(null);
-      setImageFile(files[0]);
-
-      const formData = new FormData();
-      formData.append("image", files[0]);
-
-      const response = await fetch(
-        `${API_URL}/members/${member.member_id}/profile-image`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: formData,
+      if (response.data) {
+        setMember(response.data);
+        setIsEditing(false);
+        toast({
+          title: "Success",
+          description: "Member details updated successfully",
+          variant: "success",
+        });
+        if (onUpdate) {
+          onUpdate(response.data);
         }
-      );
-
-      if (!response.ok) throw new Error("Failed to upload image");
-
-      const data = await response.json();
-      setMember((prev) =>
-        prev ? { ...prev, profile_image: data.imagePath } : null
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error uploading image");
+      }
+    } catch (error) {
+      setError("Failed to save member details");
+      toast({
+        title: "Error",
+        description: "Failed to update member details",
+        variant: "destructive",
+      });
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <Button
-          onClick={() => navigate("/members")}
-          className="mt-4 bg-gray-500 hover:bg-gray-600"
-        >
-          Back to Member List
-        </Button>
-      </div>
-    );
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedMember(member);
+  };
+
+  const handleCancel = () => {
+    setEditedMember(member);
+    setIsEditing(false);
+    setError(null);
+  };
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
   }
 
   if (!member) {
-    return (
-      <div className="p-6 flex justify-center items-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Loading...</p>
-        </div>
-      </div>
-    );
+    return <div className="p-6">Member not found</div>;
   }
 
-  const handleMembershipUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setError(null);
-      const response = await fetch(
-        `${API_URL}/members/${memberId}/membership`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            payment_date: membershipData.fee_payment_date,
-            payment_year: membershipData.fee_payment_year,
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update membership");
-
-      setMembershipData((prev) => ({
-        ...prev,
-        fee_payment_date: "",
-      }));
-
-      toast({
-        title: "Success",
-        description: "Membership fee payment processed successfully",
-        variant: "success",
-      });
-
-      await fetchMemberDetails();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to update membership",
-        variant: "destructive",
-      });
-      setError(
-        error instanceof Error ? error.message : "Failed to update membership"
-      );
+  const getStatusColor = (status: Member["life_status"]) => {
+    switch (status) {
+        case "employed/unemployed":
+            return "bg-blue-600 text-white";
+        case "child/pupil/student":
+            return "bg-green-600 text-white";
+        case "pensioner":
+            return "bg-red-600 text-white";
+        default:
+            return "bg-gray-600 text-white";
     }
-  };
-
-  const handleTermination = async (reason: string) => {
-    if (!reason) return;
-    try {
-      const response = await fetch(
-        `${API_URL}/members/${memberId}/membership/terminate`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reason,
-            end_date: new Date().toISOString(),
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to terminate membership");
-      // Add success notification
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to terminate membership"
-      );
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6 flex justify-center items-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+};
 
   return (
-    <>
-      <div className="p-6">
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold mb-2">Member Profile</h1>
-            {canEdit && !isOwnProfile && (
-              <div>
-                {isEditing ? (
-                  <div className="space-x-2">
-                    <Button
-                      onClick={handleSave}
-                      className="bg-green-500 hover:bg-green-600"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button
-                      onClick={handleCancel}
-                      className="bg-gray-500 hover:bg-gray-600"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => navigate("/members")}
-                      className="bg-gray-500 hover:bg-gray-600"
-                    >
-                      Back to List
-                    </Button>
-                  </div>
-                ) : (
-                  <Button onClick={handleEdit}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-      <div className="w-1/4"></div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Image</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden">
-                {imageFile ? (
-                  <img
-                    src={URL.createObjectURL(imageFile)}
-                    alt="Profile preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500">
-                    No Image
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
-                disabled={isUploading}
-              />
-              <label
-                htmlFor="image-upload"
-                className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 ${
-                  isUploading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                {isUploading ? "Uploading..." : "Upload New Image"}
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <User className="h-5 w-5" />
-                Personal Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {isEditing ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        name="first_name"
-                        value={editedMember?.first_name || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        name="last_name"
-                        value={editedMember?.last_name || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Date of Birth
-                      </label>
-                      <input
-                        type="date"
-                        name="date_of_birth"
-                        value={
-                          editedMember?.date_of_birth
-                            ? editedMember.date_of_birth.split("T")[0]
-                            : ""
-                        }
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Gender
-                      </label>
-                      <select
-                        name="gender"
-                        value={editedMember?.gender || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        OIB
-                      </label>
-                      <input
-                        type="text"
-                        name="oib"
-                        value={editedMember?.oib || ""}
-                        onChange={handleChange}
-                        pattern="[0-9]{11}"
-                        title="OIB must be exactly 11 digits"
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={editedMember?.email || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Phone
-                      </label>
-                      <input
-                        type="tel"
-                        name="cell_phone"
-                        value={editedMember?.cell_phone || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Street Address
-                      </label>
-                      <input
-                        type="text"
-                        name="street_address"
-                        value={editedMember?.street_address || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={editedMember?.city || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Life Status
-                      </label>
-                      <select
-                        name="life_status"
-                        value={editedMember?.life_status || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="employed/unemployed">
-                          Employed/Unemployed
-                        </option>
-                        <option value="child/pupil/student">
-                          Child/Pupil/Student
-                        </option>
-                        <option value="pensioner">Pensioner</option>
-                      </select>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <label className="text-sm text-gray-500">Full Name</label>
-                      <p>
-                        {member.first_name} {member.last_name}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">
-                        Date of Birth
-                      </label>
-                      <p>
-                        {member?.date_of_birth
-                          ? new Date(member.date_of_birth).toLocaleDateString()
-                          : ""}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">Gender</label>
-                      <p className="capitalize">{member?.gender}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">OIB</label>
-                      <p>{member?.oib}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">Email</label>
-                      <p>{member.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">Phone</label>
-                      <p>{member.cell_phone}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">Address</label>
-                      <p>{member.street_address}</p>
-                      <p>{member.city}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">
-                        Life Status
-                      </label>
-                      <p>{member.life_status}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Activity Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-500">Total Hours</label>
-                  <p className="text-2xl font-bold">
-                    {member?.total_hours || 0}
-                  </p>
-                </div>
-                {getActivityStatus(Number(member?.total_hours) || 0) ===
-                  "passive" && (
-                  <div className="text-yellow-600">
-                    <p>
-                      Need {20 - (Number(member?.total_hours) || 0)} more hours
-                      to become active
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm text-gray-500">Status</label>
-                  <p>{getActivityStatus(Number(member?.total_hours) || 0)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Membership Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {isEditing ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Membership Type
-                      </label>
-                      <select
-                        name="membership_type"
-                        value={editedMember?.membership_type || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="regular">Regular</option>
-                        <option value="supporting">Supporting</option>
-                        <option value="honorary">Honorary</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        T-Shirt Size
-                      </label>
-                      <select
-                        name="tshirt_size"
-                        value={editedMember?.tshirt_size || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="XS">XS</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                        <option value="XXL">XXL</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Shell Jacket Size
-                      </label>
-                      <select
-                        name="shell_jacket_size"
-                        value={editedMember?.shell_jacket_size || ""}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="XS">XS</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                        <option value="XXL">XXL</option>
-                      </select>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <label className="text-sm text-gray-500">
-                        Membership Type
-                      </label>
-                      <p>{member.membership_type}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">
-                        T-Shirt Size
-                      </label>
-                      <p>{member.tshirt_size}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500">
-                        Shell Jacket Size
-                      </label>
-                      <p>{member.shell_jacket_size}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Membership Fee Payment Section */}
-          {user?.role === "admin" || user?.role === "superuser" ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  Membership Fee Payment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleMembershipUpdate} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Payment Confirmation Date
-                    </label>
-                    <input
-                      type="date"
-                      value={membershipData.fee_payment_date}
-                      onChange={(e) => {
-                        const paymentDate = new Date(e.target.value);
-                        const startYear =
-                          paymentDate.getMonth() >= 10
-                            ? paymentDate.getFullYear() + 1
-                            : paymentDate.getFullYear();
-
-                        setMembershipData((prev) => ({
-                          ...prev,
-                          fee_payment_date: e.target.value,
-                          fee_payment_year: startYear,
-                        }));
-                      }}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-
-                  {membershipData.fee_payment_date && (
-                    <div className="mt-2">
-                      <div className="text-sm p-2 bg-blue-50 border border-blue-200 rounded">
-                        <p className="font-medium text-blue-800">
-                          Membership Period Information
-                        </p>
-                        <p className="text-blue-600">
-                          {new Date(
-                            membershipData.fee_payment_date
-                          ).getMonth() >= 10
-                            ? `Membership will start on January 1st, ${
-                                new Date(
-                                  membershipData.fee_payment_date
-                                ).getFullYear() + 1
-                              }`
-                            : `Membership will start immediately (${new Date(
-                                membershipData.fee_payment_date
-                              ).toLocaleDateString()})`}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
+    <div className="p-6">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold mb-2">Member Profile</h1>
+          {(canEdit ||
+            (isOwnProfile &&
+              (user?.role === "admin" || user?.role === "superuser"))) && (
+            <div>
+              {isEditing ? (
+                <div className="space-x-2">
                   <Button
-                    type="submit"
-                    disabled={!membershipData.fee_payment_date}
-                    className={cn(
-                      "w-full bg-blue-600 hover:bg-blue-700 text-white",
-                      !membershipData.fee_payment_date &&
-                        "opacity-50 cursor-not-allowed"
-                    )}
+                    onClick={handleSave}
+                    className="bg-green-500 hover:bg-green-600"
+                    disabled={isSubmitting}
                   >
-                    Confirm Payment
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSubmitting ? "Saving..." : "Save"}
                   </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  Membership Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-sm">
-                    <p className="font-medium">Last Payment Date:</p>
-                    <p>
-                      {member.membership_details?.fee_payment_date
-                        ? new Date(
-                            member.membership_details.fee_payment_date
-                          ).toLocaleDateString()
-                        : "No payment recorded"}
-                    </p>
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium">Current Period:</p>
-                    <p>
-                      {member.membership_history?.current_period
-                        ? `Started: ${new Date(
-                            member.membership_history.current_period.start_date
-                          ).toLocaleDateString()}`
-                        : "No active period"}
-                    </p>
-                  </div>
-                  {member.membership_history?.current_period && (
-                    <div className="p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-green-800">Active Membership</p>
-                    </div>
-                  )}
+                  <Button
+                    onClick={handleCancel}
+                    className="bg-gray-500 hover:bg-gray-600"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <Button onClick={handleEdit}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              )}
+            </div>
           )}
-
-          {(user?.role === "admin" || user?.role === "superuser") && (
-            <MembershipCardManager
-              member={member}
-              onUpdate={fetchMemberDetails}
-            />
-          )}
-
-          {(user?.role === "admin" || user?.role === "superuser") && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Termination</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <select
-                  className="w-full p-2 border rounded mb-4"
-                  onChange={(e) => handleTermination(e.target.value)}
-                >
-                  <option value="">Select Reason</option>
-                  <option value="withdrawal">Personal Withdrawal</option>
-                  <option value="non_payment">Non Payment</option>
-                  <option value="expulsion">Expulsion</option>
-                  <option value="death">Death</option>
-                </select>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Message Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Send Message to Admin</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCommentSubmit}>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full p-2 border rounded-md mb-4"
-                  rows={4}
-                  placeholder="Type your message here..."
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Send Message
-                </button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Activity History Section */}
-          {user?.member_id && <ActivityHistory memberId={user.member_id} />}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* TODO: Add activity history component */}
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Membership Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {member.membership_details?.card_number && (
+              <div>
+                <label className="text-sm text-gray-500">Card Number</label>
+                <p
+                  className={`px-3 py-1 rounded-lg font-mono ${getStatusColor(
+                    member.life_status
+                  )}`}
+                >
+                  {member.membership_details.card_number}
+                </p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm text-gray-500">Membership Type</label>
+              <p>{member.membership_type}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Role</label>
+              <p>{member.role}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <MemberBasicInfo
+          member={member}
+          isEditing={isEditing}
+          editedMember={editedMember}
+          handleChange={handleChange}
+        />
+
+        <MemberActivityStatus member={member} />
+
+        <MembershipFeeSection
+          member={member}
+          isEditing={isEditing}
+          isFeeCurrent={isFeeCurrent}
+          onUpdate={handleMemberUpdate}
+          userRole={user?.role}
+        />
+
+        {isEditing && (
+          <MembershipCardManager
+            member={member}
+            onUpdate={handleMemberUpdate}
+          />
+        )}
+
+        {member.membership_history && member.membership_history.periods && (
+          <MembershipPeriods
+            member={member}
+            periods={member.membership_history.periods}
+          />
+        )}
+      </div>
+
+      {/* Always visible sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <MemberMessagesSection member={member} />
+      </div>
+
       <Toaster />
-    </>
+    </div>
   );
 };
 
