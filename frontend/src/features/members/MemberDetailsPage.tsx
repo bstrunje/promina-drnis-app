@@ -8,7 +8,6 @@ import { Member } from "../../../../shared/types/member";
 import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 
 // Import new components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -17,6 +16,8 @@ import MembershipFeeSection from "../../../components/MembershipFeeSection";
 import MembershipCardManager from "../members/MembershipCardManager";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MembershipPeriods from "../../../components/MembershipPeriods";
+import MemberProfileImage from "../../../components/MemberProfileImage";
+import MembershipDetailsCard from '../../../components/MembershipDetailsCard';
 
 interface Props {
   memberId?: number;
@@ -161,19 +162,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     return <div className="p-6">Member not found</div>;
   }
 
-  const getStatusColor = (status: Member["life_status"]) => {
-    switch (status) {
-        case "employed/unemployed":
-            return "bg-blue-600 text-white";
-        case "child/pupil/student":
-            return "bg-green-600 text-white";
-        case "pensioner":
-            return "bg-red-600 text-white";
-        default:
-            return "bg-gray-600 text-white";
-    }
-};
-
   return (
     <div className="p-6">
       {/* Header Section */}
@@ -219,37 +207,12 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         </Alert>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Membership Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {member.membership_details?.card_number && (
-              <div>
-                <label className="text-sm text-gray-500">Card Number</label>
-                <p
-                  className={`px-3 py-1 rounded-lg font-mono ${getStatusColor(
-                    member.life_status
-                  )}`}
-                >
-                  {member.membership_details.card_number}
-                </p>
-              </div>
-            )}
-            <div>
-              <label className="text-sm text-gray-500">Membership Type</label>
-              <p>{member.membership_type}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Role</label>
-              <p>{member.role}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <MemberProfileImage member={member} onUpdate={fetchMemberDetails} />
+
+        <MembershipDetailsCard member={member} />
+        
         <MemberBasicInfo
           member={member}
           isEditing={isEditing}
