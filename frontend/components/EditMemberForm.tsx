@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Member } from '../../../../shared/types/member';
+import { Member } from '@shared/types/member';
 
 interface EditMemberFormProps {
   member: Member;

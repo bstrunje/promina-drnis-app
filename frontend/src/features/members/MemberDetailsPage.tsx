@@ -13,11 +13,13 @@ import api from "../../utils/api";
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
 import MemberActivityStatus from "../../../components/MemberActivityStatus";
 import MembershipFeeSection from "../../../components/MembershipFeeSection";
-import MembershipCardManager from "../members/MembershipCardManager";
+import MembershipCardManager from "../../../components/MembershipCardManager";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
-import MembershipPeriods from "../../../components/MembershipPeriods";
+import MembershipHistory from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
-import MembershipDetailsCard from '../../../components/MembershipDetailsCard';
+import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
+import ActivityHistory from "../../../components/ActivityHistory";
+
 
 interface Props {
   memberId?: number;
@@ -89,6 +91,12 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       fetchMemberDetails();
     }
   }, [memberId]);
+
+  useEffect(() => {
+    if (member && member.membership_history) {
+      console.log("Membership history:", member.membership_history);
+    }
+  }, [member]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -207,12 +215,11 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         </Alert>
       )}
 
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MemberProfileImage member={member} onUpdate={fetchMemberDetails} />
 
         <MembershipDetailsCard member={member} />
-        
+
         <MemberBasicInfo
           member={member}
           isEditing={isEditing}
@@ -237,12 +244,17 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           />
         )}
 
-        {member.membership_history && member.membership_history.periods && (
-          <MembershipPeriods
-            member={member}
-            periods={member.membership_history.periods}
-          />
-        )}
+{member?.membership_history && (
+        <MembershipHistory 
+          periods={member.membership_history.periods}
+          feePaymentYear={member.membership_details?.fee_payment_year}
+          feePaymentDate={member.membership_details?.fee_payment_date}
+          totalDuration={member.membership_history.total_duration}
+          currentPeriod={member.membership_history.current_period}
+        />
+      )}
+
+        <ActivityHistory memberId={member.member_id} />
       </div>
 
       {/* Always visible sections */}

@@ -1,7 +1,7 @@
 // frontend/src/features/members/ActivityHistory.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { getMemberActivities } from '../../utils/api';
+import { getMemberActivities } from '../../frontend/src/utils/api';
 
 interface Props {
   memberId: number;

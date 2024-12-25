@@ -7,6 +7,7 @@ import { MembershipPeriod } from '@shared/types/membership';
 interface MembershipPeriodsProps {
   member: Member;
   periods: MembershipPeriod[];
+  totalDuration?: string;
 }
 
 const MembershipPeriods: React.FC<MembershipPeriodsProps> = ({ member, periods }) => {
@@ -18,7 +19,7 @@ const MembershipPeriods: React.FC<MembershipPeriodsProps> = ({ member, periods }
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Membership History
+          <h2>Membership History</h2>
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -4,9 +4,9 @@ import { RefreshCw, UserPlus, Edit, Trash2, CheckCircle, Key } from 'lucide-reac
 import { Alert, AlertDescription } from '@/../components/ui/alert.js';
 import { Member } from '@shared/types/member';
 import AddMemberForm from './AddMemberForm';
-import EditMemberForm from './EditMemberForm';
-import ConfirmationModal from './ConfirmationModal';
-import AssignPasswordForm from './AssignPasswordForm';
+import EditMemberForm from '../../../components/EditMemberForm';
+import ConfirmationModal from '../../../components/ConfirmationModal';
+import AssignPasswordForm from '../../../components/AssignPasswordForm';
 import { API_URL } from '../../utils/config';
 import { UserCog } from 'lucide-react';
 import RoleAssignmentModal from './RoleAssignmentModal';
