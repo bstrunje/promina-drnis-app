@@ -1,200 +1,223 @@
-import React, { useEffect, useState } from 'react';
-import { useToast } from '@components/ui/use-toast';
-import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { Button } from '@components/ui/button';
-import { useAuth } from '../../context/AuthContext'; // Correct the import statement
+import { useState, useEffect } from 'react';
+import { getAdminMessages } from '../../utils/api';
+import { useToast } from "@components/ui/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Button } from "@components/ui/button";
+import { Bell, CheckCircle, Archive, Trash2 } from "lucide-react";
 
 interface Message {
   message_id: number;
-  memberName: string;
-  messageText: string;
-  createdAt: string;
+  member_id: number;
   sender_name: string;
+  message_text: string;
+  created_at: string;
   status: 'unread' | 'read' | 'archived';
 }
 
-const MessageList: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [showArchived, setShowArchived] = useState(false);
+export default function MessageList() {
   const { toast } = useToast();
-  const { user } = useAuth(); // Add this line to get the user context
-
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/messages/admin', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      const data = await response.json();
-      console.log('Fetched messages:', data); // Add logging
-      setMessages(data.map((message: any) => ({
-        ...message,
-        createdAt: new Date(message.created_at).toISOString(), // Map created_at to createdAt and ensure it is an ISO string
-        memberName: message.sender_name, // Ensure memberName is correctly populated
-        messageText: message.message_text, // Ensure messageText is correctly populated
-        status: message.status // Ensure status is correctly populated
-      })));
+      const data = await getAdminMessages();
+      setMessages(data);
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching messages:', error); // Add logging
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to fetch messages',
         variant: "destructive"
       });
+      setLoading(false);
     }
   };
 
-  const markMessageAsRead = async (messageId: number) => {
+  const onMarkAsRead = async (messageId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/messages/${messageId}/read`, {
+      await fetch(`/api/messages/${messageId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to mark message as read');
-      fetchMessages(); // Refresh messages after marking as read
+      await fetchMessages();
+      toast({
+        title: "Success",
+        description: "Message marked as read",
+        variant: "success"
+      });
     } catch (error) {
-      console.error('Error marking message as read:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to mark message as read',
+        description: "Failed to mark message as read",
         variant: "destructive"
       });
     }
   };
 
-  const archiveMessage = async (messageId: number) => {
+  const onArchive = async (messageId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/messages/${messageId}/archive`, {
+      await fetch(`/api/messages/${messageId}/archive`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to archive message');
-      fetchMessages(); // Refresh messages after archiving
+      await fetchMessages();
+      toast({
+        title: "Success",
+        description: "Message archived",
+        variant: "success"
+      });
     } catch (error) {
-      console.error('Error archiving message:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to archive message',
+        description: "Failed to archive message",
         variant: "destructive"
       });
     }
   };
 
-  const deleteMessage = async (messageId: number) => {
+  const onDelete = async (messageId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/messages/${messageId}`, {
+      await fetch(`/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) {
-        if (response.status === 404) {
-          setMessages(prevMessages => prevMessages.filter(message => message.message_id !== messageId)); // Remove the message from the state
-          return;
-        } else {
-          throw new Error('Failed to delete message');
-        }
-      }
-      setMessages(prevMessages => prevMessages.filter(message => message.message_id !== messageId)); // Remove the message from the state
+      setMessages(prevMessages => prevMessages.filter(m => m.message_id !== messageId));
+      toast({
+        title: "Success",
+        description: "Message deleted",
+        variant: "success"
+      });
     } catch (error) {
-      console.error('Error deleting message:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to delete message',
+        description: "Failed to delete message",
         variant: "destructive"
       });
     }
   };
 
-  const deleteAllMessages = async () => {
+  const onDeleteAll = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/messages', {
+      await fetch('/api/messages', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Failed to delete all messages');
-      fetchMessages(); // Refresh messages after deletion
+      setMessages([]);
+      toast({
+        title: "Success",
+        description: "All messages deleted",
+        variant: "success"
+      });
     } catch (error) {
-      console.error('Error deleting all messages:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to delete all messages',
+        description: "Failed to delete all messages",
         variant: "destructive"
       });
     }
   };
 
-  const confirmDelete = async (messageId?: number) => {
-    if (window.confirm('Are you sure you want to delete the message(s)?')) {
-      if (messageId) {
-        await deleteMessage(messageId);
-      } else {
-        await deleteAllMessages();
-      }
-    }
-  };
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  const unreadCount = messages.filter(m => m.status === 'unread').length;
 
   return (
     <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Member Messages</CardTitle>
-          <Button variant="outline" onClick={() => setShowArchived(!showArchived)}>
-            {showArchived ? 'Hide Archived' : 'Show Archived'}
-          </Button>
-          {user?.role === 'superuser' && (
-            <div className="flex gap-2 mb-4">
-              <Button variant="outline" onClick={() => confirmDelete()}>Delete All Messages</Button>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Messages</h1>
+            <p className="opacity-90">Member Communications</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Bell className="h-6 w-6" />
+            <span className="text-lg font-bold">{unreadCount} unread</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {messages.length > 0 ? (
+          <>
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="destructive"
+                onClick={onDeleteAll}
+                className="flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete All Messages</span>
+              </Button>
             </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          {messages.length === 0 ? (
-            <p>No messages at this time.</p>
-          ) : (
-            <ul>
-              {messages
-                .filter(message => showArchived ? message.status === 'archived' : message.status !== 'archived')
-                .map((message, index) => (
-                  <li key={index} className={`mb-4 p-2 border-b ${message.status === 'read' ? 'bg-gray-100' : ''}`}>
-                    <p><strong>From:</strong> {message.memberName}</p>
-                    <p><strong>Message:</strong> {message.messageText}</p>
-                    <p><strong>Sent:</strong> {new Date(message.createdAt).toLocaleString()}</p> {/* Correctly parse and display the date */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <input
-                        type="checkbox"
-                        checked={message.status === 'read'}
-                        onChange={() => markMessageAsRead(message.message_id)}
-                      />
-                      <label>Mark as Read</label>
-                      <Button variant="outline" onClick={() => archiveMessage(message.message_id)}>
-                        Archive
+
+            {messages.map((message) => (
+              <Card key={message.message_id} className={message.status === 'unread' ? 'border-blue-500' : ''}>
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    <span>{message.sender_name}</span>
+                    <span className="text-sm text-gray-500">
+                      {new Date(message.created_at).toLocaleString()}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-4">{message.message_text}</p>
+                  <div className="flex justify-end space-x-2">
+                    {message.status === 'unread' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => onMarkAsRead(message.message_id)}
+                        className="flex items-center space-x-2"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Mark as Read</span>
                       </Button>
-                      {user?.role === 'superuser' && (
-                        <Button variant="outline" onClick={() => confirmDelete(message.message_id)}>Delete</Button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                    )}
+                    {message.status !== 'archived' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => onArchive(message.message_id)}
+                        className="flex items-center space-x-2"
+                      >
+                        <Archive className="h-4 w-4" />
+                        <span>Archive</span>
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      onClick={() => onDelete(message.message_id)}
+                      className="flex items-center space-x-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : (
+          <div className="text-center py-10 bg-gray-50 rounded-lg">
+            <Bell className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+            <p className="text-gray-500">No messages to display</p>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default MessageList;
+}

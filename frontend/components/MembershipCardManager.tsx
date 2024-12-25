@@ -5,17 +5,17 @@ import { useToast } from '@components/ui/use-toast';
 import { Stamp } from 'lucide-react';
 import { Member } from '@shared/types/member';
 import { cn } from '@/lib/utils';
+import { updateMembership } from '../src/utils/api';
 
 interface Props {
   member: Member;
-  onUpdate: (updatedMember: Member) => Promise<void>;
+  onUpdate: (member: Member) => Promise<void>;
 }
 
 const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const [cardNumber, setCardNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, setIsAssigning] = useState(false);
   const [isIssuingStamp, setIsIssuingStamp] = useState(false);
   const [inventoryStatus, setInventoryStatus] = useState<{
     type: string;
@@ -62,44 +62,31 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     setIsSubmitting(true);
     
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/members/${member.member_id}/card`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                cardNumber,
-                stampIssued: true 
-            })
-        });
+      await updateMembership(member.member_id, {
+        paymentDate: new Date().toISOString(),
+        cardNumber,
+        stampIssued: true
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to assign card number');
-        }
-
-        toast({
-            title: "Success",
-            description: "Card number assigned successfully",
-            variant: "success"
-        });
-        
-        onUpdate({ ...member });
-        setCardNumber('');
+      await onUpdate({ ...member });
+      setCardNumber('');
+      
+      toast({
+        title: "Success",
+        description: "Card number assigned successfully",
+        variant: "success"
+      });
     } catch (error) {
-        console.error('Card assignment error:', error);
-        toast({
-            title: "Error",
-            description: error instanceof Error ? error.message : 'Failed to assign card number',
-            variant: "destructive"
-        });
+      console.error('Card assignment error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to assign card number',
+        variant: "destructive"
+      });
     } finally {
-        setIsSubmitting(false);
-        setIsAssigning(false);
+      setIsSubmitting(false);
     }
-};
+  };
 
   const handleStampIssue = async () => {
     if (!inventoryStatus?.remaining) {
@@ -136,7 +123,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         remaining: prev.remaining - 1
       } : null);
       
-      onUpdate({ ...member });
+      await onUpdate({ ...member });
     } catch (error) {
       toast({
         title: "Error",
@@ -167,7 +154,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         <CardTitle>Membership Card Management</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Current Card Status */}
+        {/* Current Card Status */}							   
         <div className="p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium mb-2">Current Status</h4>
           <div className="space-y-2">
@@ -194,7 +181,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
           </div>
         </div>
 
-        {/* Card Number Assignment Form */}
+        {/* Card Number Assignment Form */}										   
         {!member.membership_details?.card_number && (
           <form onSubmit={handleCardNumberAssign} className="mt-4">
             <div className="space-y-4">
@@ -227,7 +214,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
           </form>
         )}
 
-        {/* Stamp Issuance */}
+        {/* Stamp Issuance */}							  
         {member.membership_details?.card_number && !member.membership_details?.card_stamp_issued && (
           <div className="mt-4">
             <div className="mb-2 text-sm">

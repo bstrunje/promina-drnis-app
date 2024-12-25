@@ -1,5 +1,4 @@
-// frontend/src/utils/api.ts
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '@shared/types/member';
 import { AuditLog } from '@promina-drnis-app/shared/types/audit';
 
@@ -18,7 +17,7 @@ export interface RegisterResponse {
   status: 'pending';
 }
 
-const API_URL = 'http://localhost:3000/api'; // Adjust this URL as needed
+export const API_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -27,27 +26,52 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Request interceptor for API calls
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+);
 
-export const getAuditLogs = async (): Promise<AuditLog[]> => {
-  const response = await api.get('/audit/logs');
-  return response.data;
+// Response interceptor for API calls
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return Promise.reject(new Error('Session expired. Please login again.'));
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Centralized error handler
+const handleApiError = (error: unknown, defaultMessage: string): never => {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message || defaultMessage;
+    throw new Error(message);
+  }
+  throw new Error(defaultMessage);
 };
 
+// Authentication APIs
 export const login = async ({ full_name, password }: MemberLoginData): Promise<LoginResponse> => {
-  const response = await api.post<LoginResponse>('/auth/login', { full_name, password });
-  console.log('User data from API:', response.data);
-  localStorage.setItem('userRole', response.data.member.role);
-  return response.data;
+  try {
+    const response = await api.post<LoginResponse>('/auth/login', { full_name, password });
+    localStorage.setItem('userRole', response.data.member.role);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Login failed. Please check your credentials.');
+  }
 };
 
 export const register = async (registerData: Omit<Member, 'member_id' | 'total_hours'>): Promise<RegisterResponse> => {
@@ -55,119 +79,136 @@ export const register = async (registerData: Omit<Member, 'member_id' | 'total_h
     const response = await api.post<RegisterResponse>('/auth/register', registerData);
     return response.data;
   } catch (error) {
-    console.error('Registration error:', error);
-    throw error;
+    throw handleApiError(error, 'Registration failed. Please try again.');
   }
 };
 
 export const searchMembers = async (searchTerm: string): Promise<MemberSearchResult[]> => {
-  const response = await api.get(`/auth/search-members?searchTerm=${encodeURIComponent(searchTerm)}`);
-  return response.data;
-};
-
-export const assignPassword = async (memberId: number, password: string): Promise<void> => {
-  console.log('Assigning password for member ID:', memberId);
-    console.log('Assigning password to URL:', `${api.defaults.baseURL}/members/assign-password`);
   try {
-  await api.post('/members/assign-password', { memberId, password });
-  console.log('Assigning password for member ID:', memberId);
+    const response = await api.get(`/auth/search-members?searchTerm=${encodeURIComponent(searchTerm)}`);
+    return response.data;
   } catch (error) {
-    console.error('Password assignment error:', error);
-    throw error;
+    throw handleApiError(error, 'Member search failed');
   }
 };
 
+export const assignPassword = async (memberId: number, password: string): Promise<void> => {
+  try {
+    await api.post('/members/assign-password', { memberId, password });
+  } catch (error) {
+    throw handleApiError(error, 'Failed to assign password');
+  }
+};
+
+// Membership APIs
 export const updateMembership = async (memberId: number, data: {
   paymentDate: string;
-  cardNumber: string;
-  stampIssued: boolean;
+  cardNumber?: string;
+  stampIssued?: boolean;
 }) => {
-  const response = await fetch(`${API_URL}/members/${memberId}/membership`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to update membership');
+  try {
+    const response = await api.post(`/members/${memberId}/membership`, data);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to update membership');
   }
 };
 
 export const terminateMembership = async (memberId: number, reason: string) => {
-  const response = await fetch(`${API_URL}/members/${memberId}/membership/terminate`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  try {
+    const response = await api.post(`/members/${memberId}/membership/terminate`, {
       reason,
       endDate: new Date().toISOString()
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to terminate membership');
+    });
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to terminate membership');
   }
 };
 
+// Profile and Activities APIs
 export const uploadProfileImage = async (memberId: number, imageFile: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append('image', imageFile);
-
-  const response = await fetch(`${API_URL}/members/${memberId}/profile-image`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    },
-    body: formData
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to upload image');
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    const response = await api.post(`/members/${memberId}/profile-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.imagePath;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to upload image');
   }
+};
 
-  const data = await response.json();
-  return data.imagePath;
+export const getMemberActivities = async (memberId: number) => {
+  try {
+    const response = await api.get(`/members/${memberId}/activities`);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch member activities');
+  }
+};
+
+// Message APIs
+export const getAdminMessages = async () => {
+  try {
+    const response = await api.get('/messages/admin');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch messages');
+  }
 };
 
 export const sendMemberMessage = async (memberId: number, messageText: string): Promise<void> => {
-  const response = await fetch(`${API_URL}/members/${memberId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ messageText })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to send message');
+  try {
+    await api.post(`/members/${memberId}/messages`, { messageText });
+  } catch (error) {
+    throw handleApiError(error, 'Failed to send message');
   }
 };
 
-interface MemberActivity {
-  activity_id: number;
-  title: string;
-  date: string;
-  hours_spent: number;
-}
-
-export const getMemberActivities = async (memberId: number): Promise<MemberActivity[]> => {
-  const response = await fetch(`${API_URL}/members/${memberId}/activities`, {
-      headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-  });
-  if (!response.ok) {
-      throw new Error('Failed to fetch member activities');
+export const markMessageAsRead = async (messageId: number): Promise<void> => {
+  try {
+    await api.put(`/messages/${messageId}/read`);
+  } catch (error) {
+    throw handleApiError(error, 'Failed to mark message as read');
   }
-  return response.json();
 };
 
-// Add more API functions here as needed
+export const archiveMessage = async (messageId: number): Promise<void> => {
+  try {
+    await api.put(`/messages/${messageId}/archive`);
+  } catch (error) {
+    throw handleApiError(error, 'Failed to archive message');
+  }
+};
+
+export const deleteMessage = async (messageId: number): Promise<void> => {
+  try {
+    await api.delete(`/messages/${messageId}`);
+  } catch (error) {
+    throw handleApiError(error, 'Failed to delete message');
+  }
+};
+
+export const deleteAllMessages = async (): Promise<void> => {
+  try {
+    await api.delete('/messages');
+  } catch (error) {
+    throw handleApiError(error, 'Failed to delete all messages');
+  }
+};
+
+// Audit APIs
+export const getAuditLogs = async (): Promise<AuditLog[]> => {
+  try {
+    const response = await api.get('/audit/logs');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch audit logs');
+  }
+};
 
 export default api;

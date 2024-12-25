@@ -14,29 +14,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<Member | null>(() => {
-    const savedUser = localStorage.getItem("user");
-    const savedToken = localStorage.getItem("token");
-    if (savedUser && savedToken) {
-      try {
+    try {
+      const savedUser = localStorage.getItem("user");
+      const savedToken = localStorage.getItem("token");
+      if (savedUser && savedToken) {
         const parsedUser = JSON.parse(savedUser);
         return {
           ...parsedUser,
           registration_completed: !!parsedUser.registration_completed,
           token: savedToken,
         };
-      } catch (error) {
-        console.error("Failed to parse user data from localStorage:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        return null;
       }
+      return null;
+    } catch (error) {
+      console.error("Failed to parse user data from localStorage:", error);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      return null;
     }
-    return null;
   });
 
   const login = (user: Member, token: string) => {
-    console.log('User role after login:', user.role);
-    // Ensure registration_completed is properly set when logging in
     const userWithStatus = {
       ...user,
       registration_completed: true,
@@ -51,6 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
   };
 
   return (

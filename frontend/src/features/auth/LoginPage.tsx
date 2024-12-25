@@ -2,7 +2,7 @@
 import { FormEvent, useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { login, register, LoginResponse, searchMembers } from "../../utils/api";
+import { login, register, searchMembers } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { Member, MemberSearchResult } from "@shared/types/member";
@@ -113,13 +113,13 @@ const LoginPage = () => {
     }
   }, [step]);
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const data: LoginResponse = await login(loginData);
+      const data = await login(loginData);
       const member: Member = {
         member_id: data.member.id,
         first_name: data.member.full_name.split(" ")[0],
@@ -142,12 +142,12 @@ const LoginPage = () => {
       authLogin(member, data.token);
       navigate("/profile");
     } catch (error) {
-      console.error("Login error:", error);
-      setError("Failed to login. Please check your credentials and try again.");
+      setError(error instanceof Error ? error.message : 'Failed to login');
     } finally {
       setLoading(false);
     }
   };
+
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!acceptedTerms) {
@@ -200,36 +200,8 @@ const LoginPage = () => {
           setIsRegistering(false);
         }, 3000);
       }
-    } catch (error: unknown) {
-      console.error("Registration error:", error);
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: { status: number; data?: { message?: string } };
-        };
-        if (
-          axiosError.response?.status === 400 &&
-          typeof axiosError.response.data?.message === "string"
-        ) {
-          const errorMessage = axiosError.response.data.message;
-          if (errorMessage === "Member with this OIB already exists") {
-            setMessage({
-              type: "error",
-              content:
-                "A member with this OIB is already registered. Please use a different OIB or contact support if you think this is a mistake.",
-            });
-          } else {
-            setMessage({
-              type: "error",
-              content: errorMessage || "Failed to register. Please try again.",
-            });
-          }
-        } else {
-          setMessage({
-            type: "error",
-            content: "Failed to register. Please try again.",
-          });
-        }
-      } else if (error instanceof Error) {
+    } catch (error) {
+      if (error instanceof Error) {
         setMessage({
           type: "error",
           content: error.message,

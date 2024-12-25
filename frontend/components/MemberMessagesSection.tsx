@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/types/member';
+import { sendMemberMessage } from '../src/utils/api';
 
 interface MemberMessagesSectionProps {
   member: Member;
@@ -15,17 +16,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/members/${member.member_id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messageText: comment }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to send message');
-      
+      await sendMemberMessage(member.member_id, comment);
       setComment('');
       toast({
         title: "Success",
@@ -35,7 +26,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send message",
+        description: error instanceof Error ? error.message : "Failed to send message",
         variant: "destructive"
       });
     }

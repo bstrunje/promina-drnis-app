@@ -58,29 +58,12 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const fetchMemberDetails = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const response = await fetch(`/api/members/${memberId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch member details");
-      const data = await response.json();
-      console.log("Member data:", data);
-      setMember(data);
-      setEditedMember(data);
+      const response = await api.get(`/members/${memberId}`);
+      console.log("Member data:", response.data);
+      setMember(response.data);
+      setEditedMember(response.data);
     } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch member details"
-      );
+      setError(error instanceof Error ? error.message : "Failed to fetch member details");
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +109,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     setIsSubmitting(true);
     try {
       const response = await api.put(`/members/${memberId}`, editedMember);
-
+  
       if (response.data) {
         setMember(response.data);
         setIsEditing(false);
@@ -143,7 +126,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       setError("Failed to save member details");
       toast({
         title: "Error",
-        description: "Failed to update member details",
+        description: error instanceof Error ? error.message : "Failed to update member details",
         variant: "destructive",
       });
     } finally {

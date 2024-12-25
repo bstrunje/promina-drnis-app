@@ -1,7 +1,7 @@
-// frontend/src/features/members/ActivityHistory.tsx
-import React, { useState, useEffect } from 'react';
+// frontend/components/ActivityHistory.tsx
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { getMemberActivities } from '../../frontend/src/utils/api';
+import { getMemberActivities } from '../src/utils/api';
 
 interface Props {
   memberId: number;
@@ -25,13 +25,6 @@ const ActivityHistory: React.FC<Props> = ({ memberId }) => {
 
   const fetchMemberActivities = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/members/${memberId}/activities`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch activities');
       const data = await getMemberActivities(memberId);
       setActivities(data);
     } catch (err) {

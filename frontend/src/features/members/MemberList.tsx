@@ -11,8 +11,11 @@ import { API_URL } from '../../utils/config';
 import { UserCog } from 'lucide-react';
 import RoleAssignmentModal from './RoleAssignmentModal';
 import { useNavigate } from 'react-router-dom';
+import api from "../../utils/api";
+import { useToast } from "@components/ui/use-toast";
 
 export default function MemberList(): JSX.Element {
+ const { toast } = useToast();
  const { user } = useAuth();
  const [members, setMembers] = useState<Member[]>([]);
  const [loading, setLoading] = useState<boolean>(true);
@@ -29,29 +32,20 @@ export default function MemberList(): JSX.Element {
   const fetchMembers = async (): Promise<void> => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/members`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch members: ${response.status}`);
-      }
-      const data: Member[] = await response.json();
+      const response = await api.get<Member[]>('/members');
+      const data = response.data;
       
       // Calculate status for each member
-      const updatedMembers = data.map(member => ({
+      const updatedMembers = data.map((member: Member) => ({
         ...member,
         status: calculateStatus(member)
       }));
-
+  
       setMembers(updatedMembers);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching members:', err);
-      setError('Failed to load members');
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load members');
     } finally {
       setLoading(false);
     }
@@ -70,45 +64,76 @@ const calculateStatus = (member: Member): boolean => {
   setAssigningPasswordMember(member);
 };
 
- const handleAdd = (newMember: Member) => {
-   const memberWithDefaults = {
-     ...newMember,
-     total_hours: newMember.total_hours || 0
-   };
-   setMembers([...members, memberWithDefaults]);
-   setShowAddForm(false);
- };
+const handleAdd = async (newMember: Member) => {
+  try {
+    const response = await api.post('/members', newMember);
+    const memberWithDefaults = {
+      ...response.data,
+      total_hours: response.data.total_hours || 0
+    };
+    setMembers([...members, memberWithDefaults]);
+    setShowAddForm(false);
+    toast({
+      title: "Success",
+      description: "Member added successfully",
+      variant: "success",
+    });
+  } catch (error) {
+    setError(error instanceof Error ? error.message : 'Failed to add member');
+    toast({
+      title: "Error",
+      description: "Failed to add member",
+      variant: "destructive",
+    });
+  }
+};
 
  const handleEdit = (member: Member) => {
   navigate(`/members/${member.member_id}/edit`);
 };
 
- const handleDelete = (member: Member): void => {
-   setDeletingMember(member);
-   setShowConfirmModal(true);
- };
-
- const handleRoleAssignment = async (memberId: number, newRole: 'member' | 'admin' | 'superuser') => {
+const handleDelete = async (memberId: number): Promise<void> => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/members/${memberId}/role`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ role: newRole })
+    await api.delete(`/members/${memberId}`);
+    setMembers(members.filter(m => m.member_id !== memberId));
+    setDeletingMember(null);
+    setShowConfirmModal(false);
+    toast({
+      title: "Success",
+      description: "Member deleted successfully",
+      variant: "success",
     });
+  } catch (error) {
+    console.error('Error deleting member:', error);
+    setError(error instanceof Error ? error.message : 'Failed to delete member');
+    toast({
+      title: "Error",
+      description: "Failed to delete member",
+      variant: "destructive",
+    });
+  }
+};
 
-    if (!response.ok) throw new Error('Failed to update role');
-
+const handleRoleAssignment = async (memberId: number, newRole: 'member' | 'admin' | 'superuser') => {
+  try {
+    await api.put(`/members/${memberId}/role`, { role: newRole });
+    
     setMembers(members.map(m => 
       m.member_id === memberId ? { ...m, role: newRole } : m
     ));
     setRoleAssignmentMember(null);
+    toast({
+      title: "Success",
+      description: "Role updated successfully",
+      variant: "success",
+    });
   } catch (error) {
-    console.error('Error updating role:', error);
-    setError('Failed to update member role');
+    setError(error instanceof Error ? error.message : 'Failed to update member role');
+    toast({
+      title: "Error",
+      description: "Failed to update role",
+      variant: "destructive",
+    });
   }
 };
  const confirmDelete = async (): Promise<void> => {
@@ -255,7 +280,7 @@ const calculateStatus = (member: Member): boolean => {
 )}
                      {user?.role === "superuser" && (
                        <button
-                         onClick={() => handleDelete(member)}
+                         onClick={() => handleDelete(member.member_id)}
                          className="text-red-600 hover:text-red-900"
                        >
                          <Trash2 className="w-4 h-4" />
