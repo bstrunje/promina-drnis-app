@@ -239,20 +239,51 @@ export const memberController = {
     async deleteMember(req: Request<{ memberId: string }>, res: Response): Promise<void> {
         try {
             const memberId = parseInt(req.params.memberId, 10);
+            if (isNaN(memberId)) {
+                res.status(400).json({ message: 'Invalid member ID' });
+                return;
+            }
+    
             const deletedMember = await memberService.deleteMember(memberId);
-            if (deletedMember && req.user?.id) {
+    
+            if (req.user?.id) {
                 await auditService.logAction(
                     'DELETE_MEMBER',
                     req.user.id,
-                    `Deleted member: ${deletedMember.full_name}`,
+                    `Member deletion: ${deletedMember?.full_name || memberId}`,
                     req,
-                    'success',
-                    memberId
+                    'success'
                 );
             }
-            res.json({ message: 'Member deleted successfully' });
+    
+            res.json({ 
+                success: true,
+                message: 'Member deleted successfully' 
+            });
         } catch (error) {
-            handleControllerError(error, res);
+            console.error('Member deletion error:', error);
+            
+            if (error instanceof Error) {
+                const statusCode = error.message.includes('Member not found') ? 404 : 500;
+                res.status(statusCode).json({ 
+                    message: error.message 
+                });
+            } else {
+                res.status(500).json({ 
+                    message: 'An unknown error occurred while deleting member' 
+                });
+            }
+    
+            // Log failed deletion attempt
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'DELETE_MEMBER',
+                    req.user.id,
+                    `Failed member deletion: ${req.params.memberId}`,
+                    req,
+                    'error'
+                );
+            }
         }
     },
 

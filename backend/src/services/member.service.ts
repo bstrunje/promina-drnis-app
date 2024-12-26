@@ -1,5 +1,5 @@
 // src/services/member.service.ts
-import db from '../utils/db.js';
+import db, { DatabaseError } from '../utils/db.js';
 import membershipService from './membership.service.js';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { Member } from '@shared/member';
@@ -96,16 +96,23 @@ const memberService = {
     },
 
     async deleteMember(memberId: number): Promise<Member | null> {
-        try {
-            const deletedMember = await memberRepository.delete(memberId);
-            if (!deletedMember) {
-                return null;
+        return await db.transaction(async (client) => {
+            try {
+                const member = await memberRepository.findById(memberId);
+                if (!member) {
+                    throw new Error('Member not found');
+                }
+    
+                const deletedMember = await memberRepository.delete(memberId, client);
+                if (!deletedMember) {
+                    throw new Error('Failed to delete member');
+                }
+    
+                return deletedMember;
+            } catch (error) {
+                throw new Error(`Failed to delete member: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
-            return deletedMember;
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error('Error deleting member: ' + errorMessage);
-        }
+        });
     },
 
     async assignPassword(memberId: number, password: string): Promise<void> {

@@ -1,4 +1,4 @@
-import pkg from 'pg';
+import pkg, { PoolClient } from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
 import path from 'path';
@@ -137,7 +137,7 @@ const db = {
         }
     },
 
-    async transaction<T>(callback: (client: pkg.PoolClient) => Promise<T>): Promise<T> {
+    async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -146,7 +146,10 @@ const db = {
             return result;
         } catch (error) {
             await client.query('ROLLBACK');
-            throw error;
+            if (error instanceof Error) {
+                throw new DatabaseError(error.message);
+            }
+            throw new DatabaseError('An unknown error occurred');
         } finally {
             client.release();
         }

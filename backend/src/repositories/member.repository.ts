@@ -1,5 +1,6 @@
 // backend/src/repositories/member.repository.ts
 import db from '../utils/db.js';
+import { PoolClient } from 'pg';
 import { Member, MemberRole, Gender } from '../../../shared/types/member.js';
 
 // Interfaces for data operations
@@ -193,12 +194,44 @@ const memberRepository = {
         return result.rows[0]?.profile_image_path || null;
     },
 
-    async delete(memberId: number): Promise<Member | null> {
-        const result = await db.query<Member>(
-            'DELETE FROM members WHERE member_id = $1 RETURNING *', 
+    async delete(memberId: number, client: PoolClient): Promise<Member | null> {
+        await client.query(
+            'DELETE FROM audit_logs WHERE performed_by = $1',
+            [memberId]
+        );;
+        // First verify if period exists
+        const periodCheck = await client.query(
+            'SELECT EXISTS(SELECT 1 FROM membership_periods WHERE member_id = $1)',
             [memberId]
         );
-        return result.rows[0] || null;
+    
+        if (periodCheck.rows[0].exists) {
+            // Explicitly delete membership period first
+            await client.query(
+                'DELETE FROM membership_periods WHERE member_id = $1',
+                [memberId]
+            );
+        }
+    
+        // Continue with other deletions
+        const deletionOrder = [
+            'membership_details',
+            'activity_participants',
+            'member_messages',
+            'annual_statistics'
+        ];
+    
+        for (const table of deletionOrder) {
+            await client.query(`DELETE FROM ${table} WHERE member_id = $1`, [memberId]);
+        }
+    
+        // Finally delete member
+        const result = await client.query<Member>(
+            'DELETE FROM members WHERE member_id = $1 RETURNING *',
+            [memberId]
+        );
+    
+        return result.rows[0];
     },
 
     async updateRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
