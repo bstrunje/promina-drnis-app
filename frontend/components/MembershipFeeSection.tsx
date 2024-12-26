@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/types/member';
 import axios from 'axios';
+import { cn } from '@/lib/utils';
+// Import date-fns for date formatting
+import { parse } from 'date-fns';
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -25,29 +28,45 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValid, setIsValid] = useState(false);
 
   const validatePaymentDate = (date: string): boolean => {
-    const selectedDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate > today) {
-      setPaymentError('Payment date cannot be in the future');
-      return false;
+    // Check if the date matches the expected format
+    const datePattern = /^\d{2}\.\d{2}\.\d{4}$/;
+    if (!datePattern.test(date)) {
+        setPaymentError("Invalid date format. Please use dd.mm.yyyy");
+        setIsValid(false);
+        return false;
     }
 
-    const isLateYearPayment = selectedDate.getMonth() >= 9;
-    if (isLateYearPayment) {
-      setPaymentDate(prev => {
-        const nextYear = new Date(prev);
-        nextYear.setFullYear(nextYear.getFullYear() + 1);
-        return nextYear.toISOString().split('T')[0];
-      });
+    const selectedDate = parse(date, 'dd.MM.yyyy', new Date());
+    const today = new Date();
+    
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+        setPaymentError("Payment date cannot be in the future");
+        setIsValid(false);
+        return false;
     }
 
     setPaymentError(null);
+    setIsValid(true);
     return true;
-  };
+};
+
+useEffect(() => {
+  if (paymentDate) {
+      validatePaymentDate(paymentDate);
+  }
+}, [paymentDate]);
+
+const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  setPaymentDate(value);
+  requestAnimationFrame(() => validatePaymentDate(value));
+};
 
   const handleFeePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +78,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         throw new Error('No authentication token found');
       }
   
+      // Parse the payment date and set the time to 00:00:00
+      const parsedDate = parse(paymentDate, 'dd.MM.yyyy', new Date());
+      parsedDate.setHours(0, 0, 0, 0);
+  
       const response = await axios.post(
         `/api/members/${member.member_id}/membership`,
-        { paymentDate: paymentDate },
+        { paymentDate: parsedDate.toISOString() },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -127,24 +150,19 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   Payment Date
                 </label>
                 <input
-                  type="date"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  value={paymentDate}
-                  onChange={(e) => {
-                    const newDate = e.target.value;
-                    if (validatePaymentDate(newDate)) {
-                      setPaymentDate(newDate);
-                    }
-                  }}
-                  required
-                  max={new Date().toISOString().split('T')[0]}
-                />
+  type="text"
+  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+  value={paymentDate}
+  onChange={handleDateChange}
+  required
+  placeholder="dd.mm.yyyy"
+/>
                 {paymentError && (
                   <p className="mt-1 text-sm text-red-600">
                     {paymentError}
                   </p>
                 )}
-                {new Date(paymentDate).getMonth() >= 9 && (
+                {parse(paymentDate, 'dd.MM.yyyy', new Date()).getMonth() >= 10 && (
                   <p className="mt-1 text-sm text-blue-600">
                     Payment will be counted for next year's membership
                   </p>
@@ -153,13 +171,17 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
               {!showPaymentConfirm ? (
                 <Button
-                  type="button"
-                  onClick={() => setShowPaymentConfirm(true)}
-                  disabled={isSubmitting || !paymentDate}
-                  variant="default"
-                  className="w-full"
-                >
-                  Process Payment
+                type="button"
+                onClick={() => setShowPaymentConfirm(true)}
+                disabled={!isValid || isSubmitting}
+                variant={isValid ? "default" : "outline"}
+                className={cn(
+                    "w-full",
+                    isValid ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-200",
+                    isSubmitting && "opacity-50"
+                )}
+            >
+                Process Payment
                 </Button>
               ) : (
                 <div className="space-y-2">
@@ -171,7 +193,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       type="submit"
                       disabled={isSubmitting}
                       variant="default"
-                      className="flex-1"
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                     >
                       {isSubmitting ? "Processing..." : "Confirm"}
                     </Button>
@@ -179,7 +201,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       type="button"
                       onClick={() => setShowPaymentConfirm(false)}
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white"
                     >
                       Cancel
                     </Button>
