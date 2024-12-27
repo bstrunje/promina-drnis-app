@@ -151,6 +151,21 @@ const membershipService = {
     }
   },
 
+  async updateMembershipHistory(
+    memberId: number,
+    periods: MembershipPeriod[]
+  ): Promise<void> {
+    try {
+      const member = await memberRepository.findById(memberId);
+      if (!member) throw new Error('Member not found');
+  
+      await membershipRepository.updateMembershipPeriods(memberId, periods);
+    } catch (error) {
+      console.error('Error updating membership history:', error);
+      throw error;
+    }
+  },
+
   async endMembership(
     memberId: number,
     reason: MembershipEndReason,

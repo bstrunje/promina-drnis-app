@@ -10,6 +10,7 @@ import { uploadConfig } from '../../src/config/upload.js';
 import imageService from '../../src/services/image.service.js';
 import stampService from '../services/stamp.service.js';
 import membershipService from '../services/membership.service.js';
+import { MembershipPeriod } from '@shared/membership.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -382,6 +383,33 @@ export const memberController = {
             });
         }
     },
+
+    async updateMembershipHistory(
+        req: Request<{ memberId: string }, {}, { periods: MembershipPeriod[] }>,
+        res: Response
+      ): Promise<void> {
+        try {
+          const memberId = parseInt(req.params.memberId, 10);
+          const { periods } = req.body;
+      
+          await membershipService.updateMembershipHistory(memberId, periods);
+      
+          if (req.user?.id) {
+            await auditService.logAction(
+              'UPDATE_MEMBERSHIP_HISTORY',
+              req.user.id,
+              `Updated membership history for member ${memberId}`,
+              req,
+              'success',
+              memberId
+            );
+          }
+      
+          res.json({ message: 'Membership history updated successfully' });
+        } catch (error) {
+          handleControllerError(error, res);
+        }
+      },
 
     async terminateMembership(
         req: Request<{ memberId: string }, {}, MembershipTerminationRequest>,

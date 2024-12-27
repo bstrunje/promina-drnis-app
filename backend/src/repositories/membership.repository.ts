@@ -75,6 +75,34 @@ const membershipRepository = {
         });
       },
 
+      async updateMembershipPeriods(
+        memberId: number, 
+        periods: MembershipPeriod[]
+      ): Promise<void> {
+        return await db.transaction(async (client) => {
+          // Delete existing periods
+          await client.query(
+            'DELETE FROM membership_periods WHERE member_id = $1',
+            [memberId]
+          );
+      
+          // Insert new periods
+          for (const period of periods) {
+            await client.query(
+              `INSERT INTO membership_periods 
+               (member_id, start_date, end_date, end_reason) 
+               VALUES ($1, $2, $3, $4)`,
+              [
+                memberId,
+                period.start_date,
+                period.end_date || null,
+                period.end_reason || null
+              ]
+            );
+          }
+        });
+      },
+
     async getCurrentPeriod(memberId: number): Promise<MembershipPeriod | null> {
         const result = await db.query<MembershipPeriod>(
             'SELECT * FROM membership_periods WHERE member_id = $1 AND end_date IS NULL',

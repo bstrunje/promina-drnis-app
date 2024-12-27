@@ -4,18 +4,19 @@ import { useAuth } from "../../context/AuthContext";
 import { Edit, Save, X } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Alert, AlertDescription } from "@components/ui/alert";
-import { Member } from "../../../../shared/types/member";
+import { Member } from "@shared/types/member";
+import { MembershipPeriod } from "@shared/types/membership";
 import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
 
-// Import new components
+// Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
 import MemberActivityStatus from "../../../components/MemberActivityStatus";
 import MembershipFeeSection from "../../../components/MembershipFeeSection";
 import MembershipCardManager from "../../../components/MembershipCardManager";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
-import MembershipHistory from "../../../components/MembershipHistory";
+import MembershipHistoryComponent from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
@@ -59,14 +60,63 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     setIsLoading(true);
     try {
       const response = await api.get(`/members/${memberId}`);
-      console.log("Member data:", response.data);
-      setMember(response.data);
-      setEditedMember(response.data);
+      
+      // Properly handle membership_history array
+      const memberData = {
+        ...response.data,
+        membership_history: {
+          periods: Array.isArray(response.data.membership_history) 
+            ? response.data.membership_history // Keep original array if it's an array
+            : response.data.membership_history?.periods || [],
+          total_duration: calculateTotalDuration(
+            Array.isArray(response.data.membership_history) 
+              ? response.data.membership_history 
+              : response.data.membership_history?.periods || []
+          ),
+          current_period: Array.isArray(response.data.membership_history) 
+          ? response.data.membership_history.find((period: MembershipPeriod) => !period.end_date)
+            : response.data.membership_history?.current_period
+        }
+      };
+  
+      // Debug logs
+      console.log("Raw member data:", response.data);
+      console.log("Membership history array:", response.data.membership_history);
+      console.log("Transformed data:", memberData);
+  
+      // Validate transformed data
+      if (!Array.isArray(memberData.membership_history.periods)) {
+        console.warn("Invalid periods structure, resetting to empty array");
+        memberData.membership_history.periods = [];
+      }
+  
+      setMember(memberData);
+      setEditedMember(memberData);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to fetch member details");
+      console.error("Error fetching member details:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch member details"
+      );
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Helper function to calculate total duration
+  const calculateTotalDuration = (periods: MembershipPeriod[]): string => {
+    if (!Array.isArray(periods) || periods.length === 0) return '';
+    
+    const totalDays = periods.reduce((total: number, period: MembershipPeriod) => {
+      const start = new Date(period.start_date);
+      const end = period.end_date ? new Date(period.end_date) : new Date();
+      return total + Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    }, 0);
+  
+    const years = Math.floor(totalDays / 365);
+    const months = Math.floor((totalDays % 365) / 30);
+    const days = totalDays % 30;
+  
+    return `${years} years, ${months} months, ${days} days`;
   };
 
   useEffect(() => {
@@ -95,6 +145,27 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     );
   };
 
+  const handleMembershipHistoryUpdate = async (updatedPeriods: MembershipPeriod[]) => {
+    try {
+      await api.put(`/members/${memberId}/membership-history`, {
+        periods: updatedPeriods
+      });
+      
+      await fetchMemberDetails();
+      toast({
+        title: "Success",
+        description: "Membership history updated successfully",
+      });
+    } catch (error) {
+      console.error('Failed to update membership history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update membership history",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleMemberUpdate = async (updatedMember: Member) => {
     try {
       setMember(updatedMember);
@@ -109,7 +180,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     setIsSubmitting(true);
     try {
       const response = await api.put(`/members/${memberId}`, editedMember);
-  
+
       if (response.data) {
         setMember(response.data);
         setIsEditing(false);
@@ -126,7 +197,10 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       setError("Failed to save member details");
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update member details",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update member details",
         variant: "destructive",
       });
     } finally {
@@ -227,15 +301,18 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           />
         )}
 
-{member?.membership_history && (
-        <MembershipHistory 
-          periods={member.membership_history.periods}
-          feePaymentYear={member.membership_details?.fee_payment_year}
-          feePaymentDate={member.membership_details?.fee_payment_date}
-          totalDuration={member.membership_history.total_duration}
-          currentPeriod={member.membership_history.current_period}
-        />
-      )}
+{isLoading ? (
+    <div>Loading membership history...</div>
+  ) : (
+    <MembershipHistoryComponent
+      periods={member?.membership_history?.periods || []}
+      feePaymentYear={member?.membership_details?.fee_payment_year}
+      feePaymentDate={member?.membership_details?.fee_payment_date}
+      totalDuration={member?.membership_history?.total_duration}
+      currentPeriod={member?.membership_history?.current_period}
+      onUpdate={handleMembershipHistoryUpdate}
+    />
+  )}
 
         <ActivityHistory memberId={member.member_id} />
       </div>
