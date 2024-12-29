@@ -19,11 +19,11 @@ const stampRepository = {
         initial_count: number
     ): Promise<void> {
         await db.query(
-            `INSERT INTO stamp_inventory (stamp_type, initial_count)
-             VALUES ($1, $2)
-             ON CONFLICT (stamp_type) 
-             DO UPDATE SET initial_count = $2, last_updated = CURRENT_TIMESTAMP`,
-            [stamp_type, initial_count]
+            `UPDATE stamp_inventory 
+             SET initial_count = $1,
+                 last_updated = CURRENT_TIMESTAMP
+             WHERE stamp_type = $2`,
+            [initial_count, stamp_type]
         );
     },
 

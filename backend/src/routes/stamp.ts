@@ -13,18 +13,24 @@ router.get('/inventory', authenticateToken, roles.requireAdmin, async (req, res)
     }
 });
 
-router.put('/inventory', authenticateToken, roles.requireAdmin, async (req, res) => {
-    try {
-        const { employed, student, pensioner } = req.body;
-        await Promise.all([
-            stampService.updateInitialCount('employed', employed),
-            stampService.updateInitialCount('student', student),
-            stampService.updateInitialCount('pensioner', pensioner)
-        ]);
-        res.json({ message: 'Inventory updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to update inventory' });
+router.put('/inventory', 
+    authenticateToken, 
+    roles.requireAdmin, 
+    async (req, res) => {
+        try {
+            const { employed, student, pensioner } = req.body;
+            await Promise.all([
+                stampService.updateInitialCount('employed', employed),
+                stampService.updateInitialCount('student', student),
+                stampService.updateInitialCount('pensioner', pensioner)
+            ]);
+            res.json({ message: 'Inventory updated successfully' });
+        } catch (error) {
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Failed to update inventory' 
+            });
+        }
     }
-});
+);
 
 export default router;

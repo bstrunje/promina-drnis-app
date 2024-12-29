@@ -36,45 +36,20 @@ interface QueryOptions {
     timeout?: number;
 }
 
-let poolConfig!: PoolConfig;
-
-if (process.env.DATABASE_URL) {
-    // Parse the DATABASE_URL
-    const matches = process.env.DATABASE_URL.match(/postgres:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
-    if (matches) {
-        poolConfig = {
-            user: matches[1],
-            password: matches[2],
-            host: matches[3],
-            port: parseInt(matches[4], 10),
-            database: matches[5],
-            max: 20,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
-        };
-    }
-} else {
-    // Fallback to individual parameters
-    poolConfig = {
-        user: process.env.DB_USER || 'bozos',
-        host: process.env.DB_HOST || 'localhost',
-        database: process.env.DB_NAME || 'promina_drnis_DB',
-        password: process.env.DB_PASSWORD || 'Listopad24$',
-        port: parseInt(process.env.DB_PORT || '5432', 10),
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-    };
-};
-
-const pool = new Pool(poolConfig);
+const pool = new Pool({
+    user: 'your_username',
+    host: 'localhost',
+    database: 'your_database',
+    password: 'your_password',
+    port: 5432,
+});
 
 pool.on('connect', () => {
     console.log('📦 Database pool connected');
 });
 
-pool.on('error', (err: Error) => {
-    console.error('❌ Unexpected error on idle client', err);
+pool.on('error', (err) => {
+    console.error('⚠️ Unexpected error on idle client', err);
     process.exit(-1);
 });
 

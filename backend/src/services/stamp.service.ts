@@ -17,9 +17,23 @@ const stampService = {
 
     async updateInitialCount(type: string, count: number) {
         try {
+            if (count < 0) {
+                throw new Error('Initial count cannot be negative');
+            }
+    
+            const inventory = await stampRepository.getInventory();
+            const currentInventory = inventory.find(item => item.stamp_type === type);
+            
+            if (currentInventory && count < currentInventory.issued_count) {
+                throw new Error('New count cannot be less than already issued stamps');
+            }
+    
             await stampRepository.updateInventory(type, count);
         } catch (error) {
-            throw new DatabaseError('Error updating stamp inventory');
+            throw new DatabaseError(
+                'Error updating stamp inventory: ' + 
+                (error instanceof Error ? error.message : 'Unknown error')
+            );
         }
     },
 

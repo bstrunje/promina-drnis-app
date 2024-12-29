@@ -88,19 +88,27 @@ export async function setupDatabase(): Promise<void> {
     console.log("✅ Activity types table created successfully");
 
     // Stamp inventory management table
-
-    // Activities table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS stamp_inventory (
+      DROP TABLE IF EXISTS stamp_inventory;
+      
+      CREATE TABLE stamp_inventory (
           id SERIAL PRIMARY KEY,
           stamp_type VARCHAR(20) NOT NULL,
-          initial_count INTEGER NOT NULL,
+          initial_count INTEGER NOT NULL DEFAULT 0,
           issued_count INTEGER DEFAULT 0,
+          remaining INTEGER GENERATED ALWAYS AS (initial_count - issued_count) STORED,
           last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT stamp_type_check CHECK (
-              stamp_type IN ('employed', 'student', 'pensioner')
-          )
+          CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),
+          CONSTRAINT stamp_type_unique UNIQUE (stamp_type)
       );
+
+      -- Ensure initial data exists
+      INSERT INTO stamp_inventory (stamp_type, initial_count, issued_count) 
+      VALUES 
+          ('employed', 0, 0),
+          ('student', 0, 0),
+          ('pensioner', 0, 0)
+      ON CONFLICT (stamp_type) DO NOTHING;
   `);
     console.log("✅ Stamp inventory table created successfully");
     await db.query(`
