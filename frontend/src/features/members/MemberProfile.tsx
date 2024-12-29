@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
 import { MembershipPeriod, MembershipHistory } from "@shared/types/membership";
 import { Member } from "@shared/types/member";
+import { format, parseISO } from 'date-fns';
 
 declare module "@shared/types/member" {
   interface Member {
@@ -97,7 +98,7 @@ const MemberProfile = () => {
               </div>
               <div>
                 <label className="text-sm text-gray-500">Date of Birth</label>
-                <p>{new Date(user.date_of_birth).toLocaleDateString()}</p>
+                <p>{format(parseISO(user.date_of_birth), 'dd.MM.yyyy')}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">OIB</label>

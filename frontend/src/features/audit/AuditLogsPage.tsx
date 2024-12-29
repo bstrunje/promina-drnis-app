@@ -3,6 +3,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { AuditLog } from '@promina-drnis-app/shared/types/audit';
 import { getAuditLogs } from '../../utils/api';
+import { format, parseISO } from 'date-fns';
 
 const AuditLogsPage: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -40,15 +41,8 @@ const AuditLogsPage: React.FC = () => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
+    return format(parseISO(date), 'dd.MM.yyyy HH:mm:ss');
+};
 
   const handleSort = (field: keyof AuditLog) => {
     setSortDirection(current => current === 'asc' ? 'desc' : 'asc');

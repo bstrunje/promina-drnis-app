@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarDays } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 interface Event {
   id: number;
@@ -62,7 +63,7 @@ const EventsList: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="font-medium">{event.title}</h3>
-                    <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600">{format(parseISO(event.date), 'dd.MM.yyyy')}</p>
                     <p className="text-sm text-gray-600">{event.location}</p>
                   </div>
                   <div className="text-right">

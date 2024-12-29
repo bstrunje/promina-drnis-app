@@ -5,8 +5,8 @@ import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/types/member';
 import axios from 'axios';
 import { cn } from '@/lib/utils';
-// Import date-fns for date formatting
-import { parse } from 'date-fns';
+									  
+import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns'; // Rename isValid to isValidDate
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -28,45 +28,45 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isValid, setIsValid] = useState(false);
+  const [isValidPayment, setIsValidPayment] = useState(false); // Rename isValid to isValidPayment
 
-  const validatePaymentDate = (date: string): boolean => {
-    // Check if the date matches the expected format
-    const datePattern = /^\d{2}\.\d{2}\.\d{4}$/;
-    if (!datePattern.test(date)) {
-        setPaymentError("Invalid date format. Please use dd.mm.yyyy");
-        setIsValid(false);
-        return false;
+  const validatePaymentDate = (dateString: string): boolean => {
+    if (!dateString) {
+      setPaymentError("Date is required");
+      setIsValidPayment(false);
+      return false;
     }
 
-    const selectedDate = parse(date, 'dd.MM.yyyy', new Date());
-    const today = new Date();
+    const date = parseISO(dateString);
     
-    today.setHours(0, 0, 0, 0);
-    selectedDate.setHours(0, 0, 0, 0);
+    if (!isValidDate(date)) { // Use renamed import
+      setPaymentError("Invalid date format");
+      setIsValidPayment(false);
+      return false;
+    }
 
-    if (selectedDate > today) {
-        setPaymentError("Payment date cannot be in the future");
-        setIsValid(false);
-        return false;
+    if (isFuture(date)) {
+      setPaymentError("Payment date cannot be in the future");
+      setIsValidPayment(false);
+      return false;
     }
 
     setPaymentError(null);
-    setIsValid(true);
+    setIsValidPayment(true);
     return true;
-};
+  };
 
-useEffect(() => {
-  if (paymentDate) {
+  useEffect(() => {
+    if (paymentDate) {
       validatePaymentDate(paymentDate);
-  }
-}, [paymentDate]);
+    }
+  }, [paymentDate]);
 
-const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target.value;
-  setPaymentDate(value);
-  requestAnimationFrame(() => validatePaymentDate(value));
-};
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPaymentDate(value);
+    validatePaymentDate(value);
+  };
 
   const handleFeePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +78,9 @@ const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         throw new Error('No authentication token found');
       }
   
-      // Parse the payment date and set the time to 00:00:00
-      const parsedDate = parse(paymentDate, 'dd.MM.yyyy', new Date());
-      parsedDate.setHours(0, 0, 0, 0);
+															
+      const parsedDate = parseISO(paymentDate);
+      parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
   
       const response = await axios.post(
         `/api/members/${member.member_id}/membership`,
@@ -130,7 +130,7 @@ const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             <>
               <div>
                 <span className="text-sm text-gray-500">Last Payment Date:</span>
-                <p>{new Date(member.membership_details.fee_payment_date).toLocaleDateString()}</p>
+                <p>{format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}</p>
               </div>
               <div>
                 <span className="text-sm text-gray-500">Status:</span>
@@ -150,19 +150,19 @@ const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   Payment Date
                 </label>
                 <input
-  type="text"
-  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-  value={paymentDate}
-  onChange={handleDateChange}
-  required
-  placeholder="dd.mm.yyyy"
-/>
+                  type="date"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  value={paymentDate}
+                  onChange={handleDateChange}
+                  required
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                />
                 {paymentError && (
                   <p className="mt-1 text-sm text-red-600">
                     {paymentError}
                   </p>
                 )}
-                {parse(paymentDate, 'dd.MM.yyyy', new Date()).getMonth() >= 10 && (
+                {paymentDate && parseISO(paymentDate).getMonth() >= 10 && (
                   <p className="mt-1 text-sm text-blue-600">
                     Payment will be counted for next year's membership
                   </p>
@@ -171,17 +171,17 @@ const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
               {!showPaymentConfirm ? (
                 <Button
-                type="button"
-                onClick={() => setShowPaymentConfirm(true)}
-                disabled={!isValid || isSubmitting}
-                variant={isValid ? "default" : "outline"}
-                className={cn(
+                  type="button"
+                  onClick={() => setShowPaymentConfirm(true)}
+                  disabled={!isValidPayment || isSubmitting}
+                  variant={isValidPayment ? "default" : "outline"}
+                  className={cn(
                     "w-full",
-                    isValid ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-200",
+                    isValidPayment ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-200",
                     isSubmitting && "opacity-50"
-                )}
-            >
-                Process Payment
+                  )}
+                >
+                  Process Payment
                 </Button>
               ) : (
                 <div className="space-y-2">

@@ -5,6 +5,7 @@ import { MembershipPeriod } from "@shared/types/membership";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { useAuth } from "../src/context/AuthContext";
+import { format, parseISO } from 'date-fns';
 
 interface MembershipHistoryProps {
   periods: MembershipPeriod[];
@@ -238,13 +239,13 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                     <>
                       <div className="text-sm">
                         <span className="font-medium">Start: </span>
-                        {new Date(period.start_date).toLocaleDateString()}
+                        {format(parseISO(period.start_date.toString()), 'dd.MM.yyyy')}
                       </div>
                       {period.end_date && (
                         <>
                           <div className="text-sm">
                             <span className="font-medium">End: </span>
-                            {new Date(period.end_date).toLocaleDateString()}
+                            {format(parseISO(period.end_date.toString()), 'dd.MM.yyyy')}
                           </div>
                           {period.end_reason && (
                             <div className="text-sm text-gray-600">
