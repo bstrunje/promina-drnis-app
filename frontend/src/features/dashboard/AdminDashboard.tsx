@@ -118,7 +118,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
   const handleSave = async () => {
     try {
-      const response = await fetch("/api/admin/stamp-inventory", {
+      const response = await fetch("/api/stamps/inventory", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -130,9 +130,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
           pensioner: editValues.pensionerStamps.initial,
         }),
       });
-
+  
       if (!response.ok) throw new Error("Failed to update inventory");
-
+  
       setInventory(editValues);
       setIsEditing(false);
       toast({
@@ -143,21 +143,22 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to update inventory",
+        description: error instanceof Error ? error.message : "Failed to update inventory",
         variant: "destructive",
       });
     }
   };
 
   const handleInputChange = (type: keyof StampInventory, value: number) => {
-    setEditValues((prev) => ({
+    if (isNaN(value)) return;
+  
+    setEditValues(prev => ({
       ...prev,
       [type]: {
         ...prev[type],
         initial: value,
-        remaining: value - prev[type].issued,
-      },
+        remaining: value - prev[type].issued
+      }
     }));
   };
 
@@ -237,16 +238,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-blue-600">Initial</label>
                   {isEditing ? (
                     <input
-                      type="number"
-                      min={inventory.employedStamps.issued}
-                      value={editValues.employedStamps.initial}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "employedStamps",
-                          parseInt(e.target.value)
-                        )
-                      }
-                      className="w-full mt-1 p-1 border rounded"
+                    type="number"
+                    min={inventory.employedStamps.issued}
+                    value={editValues.employedStamps.initial}
+                    onChange={(e) => handleInputChange("employedStamps", e.target.valueAsNumber)}
+                    className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-blue-700">
@@ -279,16 +275,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-green-600">Initial</label>
                   {isEditing ? (
                     <input
-                      type="number"
-                      min={inventory.studentStamps.issued}
-                      value={editValues.studentStamps.initial}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "studentStamps",
-                          parseInt(e.target.value)
-                        )
-                      }
-                      className="w-full mt-1 p-1 border rounded"
+                    type="number"
+                    min={inventory.studentStamps.issued}
+                    value={editValues.studentStamps.initial}
+                    onChange={(e) => handleInputChange("studentStamps", e.target.valueAsNumber)}
+                    className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-green-700">
@@ -319,16 +310,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-red-600">Initial</label>
                   {isEditing ? (
                     <input
-                      type="number"
-                      min={inventory.pensionerStamps.issued}
-                      value={editValues.pensionerStamps.initial}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "pensionerStamps",
-                          parseInt(e.target.value)
-                        )
-                      }
-                      className="w-full mt-1 p-1 border rounded"
+                    type="number"
+                    min={inventory.pensionerStamps.issued}
+                    value={editValues.pensionerStamps.initial}
+                    onChange={(e) => handleInputChange("pensionerStamps", e.target.valueAsNumber)}
+                    className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-red-700">
