@@ -14,6 +14,7 @@ import AssignPassword from './features/members/AssignPassword';
 import AuditLogsPage from './features/audit/AuditLogsPage';
 import MemberDetailsPage from './features/members/MemberDetailsPage';
 import MessageList from './features/messages/MessageList';
+import Settings from "./features/settings/Settings";
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -44,6 +45,7 @@ function AppContent() {
               <Route path="/members" element={<MemberList />} />
               <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
               <Route path="/assign-password" element={<AssignPassword />} />
+              <Route path="/settings" element={<Settings />} />
             </>
           )}
           {user?.role === 'superuser' && (

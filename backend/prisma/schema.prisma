@@ -1,0 +1,130 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+model Member {
+  member_id       Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  name           String    @db.VarChar(255)
+  full_name      String    @unique @db.VarChar(255)
+  email          String    @unique @db.VarChar(255)
+  membership_details MembershipDetails?
+  activities ActivityParticipant[]
+  messages   MemberMessage[]
+  hours      Hours[]
+  performedAudits AuditLog[] @relation("AuditPerformer")
+  affectedAudits  AuditLog[] @relation("AuditAffected")
+
+  @@index([full_name])
+  @@index([email])
+}
+
+model MembershipDetails {
+  id               String    @id @default(cuid())
+  memberId         Int       @unique @map("member_id")
+  cardNumber       String?   @map("card_number")
+  cardStampIssued  Boolean   @default(false) @map("card_stamp_issued")
+  member           Member    @relation(fields: [memberId], references: [member_id])
+  periods          MembershipPeriod[]
+
+  @@map("membership_details")
+}
+
+model ActivityType {
+  id         String     @id @default(cuid())
+  name       String
+  activities Activity[]
+
+  @@map("activity_types")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  name        String
+  typeId      String   @map("type_id")
+  type        ActivityType @relation(fields: [typeId], references: [id])
+  participants ActivityParticipant[]
+
+  @@map("activities")
+}
+
+model ActivityParticipant {
+  activityId String   @map("activity_id")
+  memberId   Int      @map("member_id")
+  activity   Activity @relation(fields: [activityId], references: [id])
+  member     Member   @relation(fields: [memberId], references: [member_id])
+
+  @@id([activityId, memberId])
+  @@map("activity_participants")
+}
+
+model SystemSettings {
+  id              String   @id
+  cardNumberLength Int     @default(5)
+  renewalStartDay Int     @default(1)
+  updatedAt       DateTime @default(now()) @updatedAt
+  updatedBy       String?
+
+  @@map("system_settings")
+}
+
+model MemberMessage {
+  id        String   @id @default(cuid())
+  memberId  Int      @map("member_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+  member    Member   @relation(fields: [memberId], references: [member_id])
+
+  @@map("member_messages")
+}
+
+model Hours {
+  id        String   @id @default(cuid())
+  memberId  Int      @map("member_id")
+  hours     Int
+  date      DateTime
+  member    Member   @relation(fields: [memberId], references: [member_id])
+
+  @@map("hours")
+}
+
+model MembershipPeriod {
+  id                String           @id @default(cuid())
+  membershipId      String           @map("membership_id")
+  startDate         DateTime         @map("start_date")
+  endDate           DateTime         @map("end_date")
+  membership        MembershipDetails @relation(fields: [membershipId], references: [id])
+
+  @@map("membership_periods")
+}
+
+model StampInventory {
+  id          String   @id @default(cuid())
+  stampType   String   @map("stamp_type")
+  quantity    Int
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("stamp_inventory")
+}
+
+model AuditLog {
+  log_id          Int      @id @default(autoincrement()) @map("log_id")
+  action_type     String   @map("action_type")
+  performed_by    Int?     @map("performed_by")
+  action_details  String   @map("action_details")
+  ip_address      String   @map("ip_address")
+  created_at      DateTime @default(now()) @map("created_at")
+  status          String   @default("completed")
+  affected_member Int?     @map("affected_member")
+  performer       Member?  @relation("AuditPerformer", fields: [performed_by], references: [member_id], onDelete: SetNull)
+  affected        Member?  @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

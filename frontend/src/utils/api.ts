@@ -211,4 +211,22 @@ export const getAuditLogs = async (): Promise<AuditLog[]> => {
   }
 };
 
+// Settings APIs
+export const getCardNumberLength = async (): Promise<number> => {
+  try {
+    const response = await api.get('/settings/card-length');
+    return response.data.cardNumberLength;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch card number length setting');
+  }
+};
+
+export const updateCardNumberLength = async (length: number): Promise<void> => {
+  try {
+    await api.put('/settings/card-length', { length });
+  } catch (error) {
+    throw handleApiError(error, 'Failed to update card number length');
+  }
+};
+
 export default api;

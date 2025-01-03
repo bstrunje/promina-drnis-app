@@ -7,14 +7,20 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, '../shared/types'),
-      '@components/ui': path.resolve(__dirname, './components/ui')
+      '@shared': path.resolve(__dirname, '../shared'),
+      '@components': path.resolve(__dirname, './components')
     }
   },
   build: {
     outDir: 'dist',
     sourcemap: true,
-    target: 'es2015'
+    target: 'es2015',
+    // Add this to fix source map warnings
+    rollupOptions: {
+      output: {
+        sourcemapExcludeSources: true
+      }
+    }
   },
   server: {
     port: 5173,
@@ -24,5 +30,9 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  // Add this to suppress source map warnings
+  optimizeDeps: {
+    exclude: ['@promina-drnis-app/shared']
   }
 });

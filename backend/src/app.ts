@@ -17,6 +17,7 @@ import adminMessagesRouter from './routes/admin.messages.js';
 import sequelize from './types/database';
 import hoursRoutes from './routes/hours';
 import stampRoutes from './routes/stamp.js';
+import settingsRouter from './routes/settings.routes.js';
 
 
 const app: Express = express();
@@ -88,6 +89,7 @@ app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
+app.use('/api/settings', settingsRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

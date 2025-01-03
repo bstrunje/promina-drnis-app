@@ -28,6 +28,8 @@ interface PoolConfig {
     max?: number;
     idleTimeoutMillis?: number;
     connectionTimeoutMillis?: number;
+    client_encoding?: string;  // Dodano
+    query_timeout?: number;    // Dodano
 }
 
 interface QueryOptions {
@@ -37,11 +39,12 @@ interface QueryOptions {
 }
 
 const pool = new Pool({
-    user: 'your_username',
-    host: 'localhost',
-    database: 'your_database',
-    password: 'your_password',
-    port: 5432,
+    database: process.env.POSTGRES_DB || 'promina_drnis_db',
+    user: process.env.POSTGRES_USER || 'bozos',
+    host: process.env.POSTGRES_HOST || 'localhost',
+    password: process.env.POSTGRES_PASSWORD || 'Listopad24$',
+    port: parseInt(process.env.POSTGRES_PORT || '5432'),
+    query_timeout: 10000
 });
 
 pool.on('connect', () => {

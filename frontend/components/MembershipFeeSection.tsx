@@ -7,6 +7,7 @@ import axios from 'axios';
 import { cn } from '@/lib/utils';
 									  
 import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns'; // Rename isValid to isValidDate
+import { SystemSettings } from '@promina-drnis-app/shared/types/settings.types';
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -30,30 +31,55 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false); // Rename isValid to isValidPayment
 
-  const validatePaymentDate = (dateString: string): boolean => {
+  const validatePaymentDate = async (dateString: string): Promise<boolean> => {
     if (!dateString) {
       setPaymentError("Date is required");
       setIsValidPayment(false);
       return false;
     }
-
-    const date = parseISO(dateString);
-    
-    if (!isValidDate(date)) { // Use renamed import
-      setPaymentError("Invalid date format");
+  
+    try {
+      // Fetch settings for renewal start day
+      const response = await fetch('/api/settings');
+      const settings: SystemSettings = await response.json();
+      
+      const date = parseISO(dateString);
+      
+      if (!isValidDate(date)) {
+        setPaymentError("Invalid date format");
+        setIsValidPayment(false);
+        return false;
+      }
+  
+      if (isFuture(date)) {
+        setPaymentError("Payment date cannot be in the future");
+        setIsValidPayment(false);
+        return false;
+      }
+  
+      // Check if date is within renewal period
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      const isValidPeriod = 
+        (month === 10 && day >= settings.renewalStartDay) || // November
+        (month === 11); // December (whole month)
+  
+      if (!isValidPeriod) {
+        setPaymentError(`Renewal period is from November ${settings.renewalStartDay} to December 31`);
+        setIsValidPayment(false);
+        return false;
+      }
+  
+      setPaymentError(null);
+      setIsValidPayment(true);
+      return true;
+    } catch (error) {
+      console.error("Error validating date:", error);
+      setPaymentError("Failed to validate payment date");
       setIsValidPayment(false);
       return false;
     }
-
-    if (isFuture(date)) {
-      setPaymentError("Payment date cannot be in the future");
-      setIsValidPayment(false);
-      return false;
-    }
-
-    setPaymentError(null);
-    setIsValidPayment(true);
-    return true;
   };
 
   useEffect(() => {
