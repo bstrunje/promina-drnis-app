@@ -19,6 +19,6 @@
       "@components/*": ["components/*"]
     }
   },
-  "include": ["src/**/*", "shared/**/*"],
+  "include": ["src/**/*", "shared/**/*", "components/ui/toast.tsx"],
   "references": []
 }

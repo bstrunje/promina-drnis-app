@@ -18,7 +18,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         sourcemapExcludeSources: true
-      }
+      },
     }
   }
 });

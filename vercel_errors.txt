@@ -1,0 +1,37 @@
+[14:28:48.422] Running build in Washington, D.C., USA (East) – iad1
+[14:28:48.575] Retrieving list of deployment files...
+[14:28:48.899] Previous build cache not available
+[14:28:49.046] Downloading 134 deployment files...
+[14:28:49.909] Running "vercel build"
+[14:28:50.321] Vercel CLI 39.2.0
+[14:28:50.976] Running "install" command: `npm install`...
+[14:29:16.001] 
+[14:29:16.002] added 309 packages, and audited 310 packages in 24s
+[14:29:16.002] 
+[14:29:16.003] 65 packages are looking for funding
+[14:29:16.003]   run `npm fund` for details
+[14:29:16.003] 
+[14:29:16.003] found 0 vulnerabilities
+[14:29:16.306] 
+[14:29:16.306] > @promina-drnis-app/frontend@1.0.0 build
+[14:29:16.308] > tsc && vite build
+[14:29:16.308] 
+[14:29:17.484] [36mvite v5.4.11 [32mbuilding for production...[36m[39m
+[14:29:17.544] transforming...
+[14:29:18.776] [32m✓[39m 35 modules transformed.
+[14:29:18.783] [31mx[39m Build failed in 1.27s
+[14:29:18.783] [31merror during build:
+[14:29:18.784] [31m[vite]: Rollup failed to resolve import "date-fns" from "/vercel/path0/src/features/events/EventsList.tsx".
+[14:29:18.784] This is most likely unintended because it can break your application at runtime.
+[14:29:18.784] If you do want to externalize this module explicitly add it to
+[14:29:18.784] `build.rollupOptions.external`[31m
+[14:29:18.784]     at viteWarn (file:///vercel/path0/node_modules/vite/dist/node/chunks/dep-CB_7IfJ-.js:65589:17)
+[14:29:18.784]     at onwarn (file:///vercel/path0/node_modules/@vitejs/plugin-react/dist/index.mjs:282:9)
+[14:29:18.784]     at onRollupWarning (file:///vercel/path0/node_modules/vite/dist/node/chunks/dep-CB_7IfJ-.js:65619:5)
+[14:29:18.784]     at onwarn (file:///vercel/path0/node_modules/vite/dist/node/chunks/dep-CB_7IfJ-.js:65284:7)
+[14:29:18.784]     at file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:19537:13
+[14:29:18.784]     at Object.logger [as onLog] (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:21263:9)
+[14:29:18.784]     at ModuleLoader.handleInvalidResolvedId (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:20152:26)
+[14:29:18.784]     at file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:20110:26[39m
+[14:29:18.807] Error: Command "npm run build" exited with 1
+[14:29:18.997] 
