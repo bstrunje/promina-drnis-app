@@ -9,15 +9,5 @@
       { "handle": "filesystem" },
       { "src": "/api/(.*)", "dest": "http://localhost:3000/api/$1" },
       { "src": "/(.*)", "dest": "/index.html" }
-    ],
-    "github": {
-      "enabled": true,
-      "silent": true
-    },
-    "builds": [
-      {
-        "src": "package.json",
-        "use": "@vercel/node"
-      }
     ]
   }
