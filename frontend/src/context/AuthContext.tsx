@@ -1,6 +1,6 @@
 // frontend/src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, ReactNode } from "react";
-import { Member } from "@shared/types/member";
+import { Member } from "@shared/member";
 
 interface AuthContextType {
   user: Member | null;

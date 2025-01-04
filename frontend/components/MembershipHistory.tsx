@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Calendar, Edit, Save, X } from "lucide-react";
-import { MembershipPeriod } from "@shared/types/membership";
+import { MembershipPeriod } from "@shared/membership";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { useAuth } from "../src/context/AuthContext";

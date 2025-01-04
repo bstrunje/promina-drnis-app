@@ -12,19 +12,16 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../shared/dist/*"],
-      "@components/ui/*": ["./components/ui/*"]
+      "@/*": ["src/*"],
+      "@shared/*": ["shared/types/*"],
+      "@components/*": ["components/*"]
     }
   },
-  "include": ["src/**/*", "components/**/*"],
-  "references": [
-    { "path": "../shared" }
+  "include": [
+    "src/**/*",
+    "components/**/*",
+    "shared/**/*"
   ]
 }

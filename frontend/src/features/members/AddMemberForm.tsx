@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '../../../../shared/types/member.js';
+import { Member } from '@shared/member';
 
 interface AddMemberFormProps {
   onClose: () => void;

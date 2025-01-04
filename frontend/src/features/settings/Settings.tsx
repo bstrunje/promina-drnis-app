@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SystemSettings } from '../../../../shared/types/settings.types';
+import { SystemSettings } from '@shared/settings.types';
 
 const Settings: React.FC = () => {
     const [settings, setSettings] = useState<SystemSettings>({

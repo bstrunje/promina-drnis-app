@@ -9,7 +9,7 @@ import {
   Key,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
-import { Member } from "@shared/types/member";
+import { Member } from "@shared/member";
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "../../../components/EditMemberForm";
 import ConfirmationModal from "../../../components/ConfirmationModal";

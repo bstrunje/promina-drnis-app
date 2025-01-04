@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { useToast } from '@components/ui/use-toast';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface MemberProfileImageProps {
   member: Member;

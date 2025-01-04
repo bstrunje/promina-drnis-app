@@ -5,8 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { login, register, searchMembers } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../../../components/ErrorMessage";
-import { Member, MemberSearchResult } from "@shared/types/member";
-import { MemberLoginData } from "@shared/types/member";
+import { Member, MemberSearchResult } from "@shared/member";
+import { MemberLoginData } from "@shared/member";
 
 interface SizeOptions {
   value: string;

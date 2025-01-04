@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 import { sendMemberMessage } from '../src/utils/api';
 
 interface MemberMessagesSectionProps {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Activity, Mail } from "lucide-react";
-import { Member } from "@shared/types/member";
+import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 

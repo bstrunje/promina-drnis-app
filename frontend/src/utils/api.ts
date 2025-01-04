@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
-import { Member, MemberLoginData, MemberSearchResult } from '@shared/types/member';
-import { AuditLog } from '@promina-drnis-app/shared/types/audit';
+import { Member, MemberLoginData, MemberSearchResult } from '@shared/member';
+import { AuditLog } from '@shared/audit';
 
 export interface LoginResponse {
   member: {

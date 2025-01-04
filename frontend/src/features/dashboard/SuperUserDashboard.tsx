@@ -7,7 +7,7 @@ import {
   Shield,
   ChevronRight,
 } from "lucide-react";
-import { Member } from "@shared/types/member";
+import { Member } from "@shared/member";
 
 interface Props {
   member: Member;

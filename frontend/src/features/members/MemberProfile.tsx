@@ -2,11 +2,11 @@
 import { useAuth } from "../../context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
-import { MembershipPeriod, MembershipHistory } from "@shared/types/membership";
-import { Member } from "@shared/types/member";
+import { MembershipPeriod, MembershipHistory } from "@shared/membership";
+import { Member } from "@shared/member";
 import { format, parseISO } from 'date-fns';
 
-declare module "@shared/types/member" {
+declare module "@shared/member" {
   interface Member {
     membership_history?: MembershipHistory;
   }

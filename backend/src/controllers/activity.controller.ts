@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import activityService from '../services/activity.service.js';
-import { ActivityCreateInput } from '@shared/activity.js';
+import { ActivityCreateInput } from '@shared/activity';
 import auditService from '../services/audit.service.js';
 
 // Interfaces

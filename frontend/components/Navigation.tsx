@@ -1,7 +1,7 @@
 // frontend/components/Navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface NavigationProps {
   user: Member | null;

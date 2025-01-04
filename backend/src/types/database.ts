@@ -1,5 +1,5 @@
 // src/types/database.ts
-import { MemberRole } from '../../../shared/types/member';
+import { MemberRole } from '@shared/member';
 import { Sequelize } from 'sequelize';
 import config from '../config/config';
 

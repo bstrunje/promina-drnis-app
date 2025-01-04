@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 import { assignPassword } from '../../frontend/src/utils/api';
 
 interface Props {

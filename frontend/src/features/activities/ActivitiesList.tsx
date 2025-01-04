@@ -1,7 +1,7 @@
 //frontend/src/features/activities/ActivitiesList.tsx
 import React, { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 import { Alert, AlertDescription } from '@components/ui/alert';
 
 interface ActivityItem {

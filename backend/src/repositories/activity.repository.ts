@@ -1,7 +1,7 @@
 import db from '../utils/db.js';
 import { PoolClient } from 'pg';
 import { DatabaseError } from '../utils/db.js';
-import { Member } from '../../../shared/types/member';
+import { Member } from '@shared/member.js';
 import { ActivityParticipant } from '@shared/activity';
 
 interface Activity {

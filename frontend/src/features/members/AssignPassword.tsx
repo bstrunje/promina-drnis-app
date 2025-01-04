@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../../utils/config';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface PendingMember {
     member_id: number;

@@ -1,7 +1,7 @@
 // backend/src/repositories/member.repository.ts
 import db from '../utils/db.js';
 import { PoolClient } from 'pg';
-import { Member, MemberRole, Gender } from '../../../shared/types/member.js';
+import { Member, MemberRole, Gender } from '@shared/member.js';
 
 // Interfaces for data operations
 export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'last_login' | 'password_hash' | 'full_name'> {

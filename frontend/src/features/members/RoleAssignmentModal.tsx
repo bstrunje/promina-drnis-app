@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface RoleAssignmentModalProps {
   member: Member;

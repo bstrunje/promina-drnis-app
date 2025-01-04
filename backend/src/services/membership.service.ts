@@ -6,7 +6,7 @@ import {
   MembershipPeriod,
   MembershipEndReason,
 } from "@shared/membership";
-import { Member } from "../../../shared/types/member.js";
+import { Member } from "@shared/member";
 import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service";
 import { Request } from "express";

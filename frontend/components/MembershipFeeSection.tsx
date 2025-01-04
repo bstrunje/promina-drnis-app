@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 import axios from 'axios';
 import { cn } from '@/lib/utils';
 									  
 import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns'; // Rename isValid to isValidDate
-import { SystemSettings } from '@promina-drnis-app/shared/types/settings.types';
+import { SystemSettings } from '@shared/settings.types';
 
 interface MembershipFeeSectionProps {
   member: Member;

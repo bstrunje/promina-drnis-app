@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface EditMemberFormProps {
   member: Member;
@@ -36,19 +36,19 @@ const genderOptions = [
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
   const [editedMember, setEditedMember] = useState<Member>(() => ({
     ...member,
-    tshirt_size: member.tshirt_size || '',
-    shell_jacket_size: member.shell_jacket_size || '',
-    life_status: member.life_status || '',
-    gender: member.gender || ''
+    tshirt_size: member.tshirt_size || 'XS',
+    shell_jacket_size: member.shell_jacket_size || 'XS',
+    life_status: member.life_status || 'employed/unemployed',
+    gender: member.gender || 'male'
   }));
 
   useEffect(() => {
     setEditedMember({
       ...member,
-      tshirt_size: member.tshirt_size || '',
-      shell_jacket_size: member.shell_jacket_size || '',
-      life_status: member.life_status || '',
-      gender: member.gender || ''
+      tshirt_size: member.tshirt_size || 'XS',
+      shell_jacket_size: member.shell_jacket_size || 'XS',
+      life_status: member.life_status || 'employed/unemployed',
+      gender: member.gender || 'male'
     });
   }, [member]);
 

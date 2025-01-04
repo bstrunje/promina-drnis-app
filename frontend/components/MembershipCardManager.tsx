@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Stamp } from 'lucide-react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
 import { updateMembership } from '../src/utils/api';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Member, MembershipType } from '@shared/types/member';
+import { Member, MembershipType } from '@shared/member';
 import { Save, X } from 'lucide-react';
 
 interface MemberFormProps {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
-import { AuditLog } from '@promina-drnis-app/shared/types/audit';
+import { AuditLog } from '@shared/audit';
 import { getAuditLogs } from '../../utils/api';
 import { format, parseISO } from 'date-fns';
 

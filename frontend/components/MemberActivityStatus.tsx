@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Clock } from 'lucide-react';
-import { Member } from '@shared/types/member';
+import { Member } from '@shared/member';
 
 interface MemberActivityStatusProps {
   member: Member;
