@@ -1,4 +1,3 @@
-// backend/src/app.ts
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,7 +18,6 @@ import hoursRoutes from './routes/hours';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.routes.js';
 
-
 const app: Express = express();
 
 // Test database connection
@@ -39,10 +37,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: config.cors.origin || 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'https://frontend-xi-six-19.vercel.app'],
     credentials: true,
-    methods: config.cors.methods,
-    allowedHeaders: config.cors.allowedHeaders
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Request logging middleware

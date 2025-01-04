@@ -17,7 +17,9 @@ export interface RegisterResponse {
   status: 'pending';
 }
 
-export const API_URL = 'http://localhost:3000/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-production-api-url.com/api' 
+  : 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
