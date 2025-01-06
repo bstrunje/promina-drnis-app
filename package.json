@@ -5,7 +5,7 @@
   "workspaces": [
     "frontend",
     "backend",
-    "shared"
+    "frontend/shared"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
@@ -14,19 +14,21 @@
     "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
     "start:frontend": "npm run preview -w frontend",
     "start:backend": "npm run start -w backend",
-    "build": "npm run clean && npm run build:frontend && npm run build:backend",
+    "build": "npm run clean && npm run build:shared && npm run build:frontend && npm run build:backend",
+    "build:shared": "npm run build -w frontend/shared",
     "build:frontend": "npm run build -w frontend",
     "build:backend": "npm run build -w backend",
-    "_test": "npm run test:frontend && npm run test:backend",
-    "_test:frontend": "npm run test -w frontend",
-    "_test:backend": "npm run test -w backend",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "npm run test -w frontend",
+    "test:backend": "npm run test -w backend",
     "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "npm run lint -w frontend",
     "lint:backend": "npm run lint -w backend",
     "typecheck": "npm run typecheck:frontend && npm run typecheck:backend",
     "typecheck:frontend": "npm run typecheck -w frontend",
     "typecheck:backend": "npm run typecheck -w backend",
-    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean": "npm run clean:shared && npm run clean:frontend && npm run clean:backend",
+    "clean:shared": "rimraf frontend/shared/dist",
     "clean:frontend": "npm run clean -w frontend",
     "clean:backend": "npm run clean -w backend"
   },

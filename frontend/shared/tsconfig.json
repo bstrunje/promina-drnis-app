@@ -13,5 +13,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["types/**/*"]
+  "include": ["types/**/*"],
+  "exclude": ["dist", "node_modules"]
 }

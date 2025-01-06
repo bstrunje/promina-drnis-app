@@ -1,5 +1,0 @@
-Access to XMLHttpRequest at 'http://localhost:3000/api/auth/search-members?searchTerm=Su' from origin 'https://frontend-xi-six-19.vercel.app' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:5173' that is not equal to the supplied origin.Understand this errorAI
-index-Dsw0QSQF.js:1 
-        
-        
-       GET http://localhost:3000/api/auth/search-members?searchTerm=Su net::ERR_FAILED 200 (OK)

@@ -19,6 +19,29 @@
       "@components/*": ["components/*"]
     }
   },
-  "include": ["src/**/*", "shared/**/*", "components/ui/toast.tsx"],
+  "include": [
+    "src/**/*",
+    "shared/**/*",
+    "components/**/*",
+    "components/ui/**/*",
+    "components/ProtectedRoute.tsx",
+    "components/Navigation.tsx",
+    "components/ErrorMessage.tsx",
+    "components/MembershipFeeSection.tsx",
+    "components/MembershipCardManager.tsx",
+    "components/MemberMessagesSection.tsx",
+    "components/MembershipHistory.tsx",
+    "components/MemberProfileImage.tsx",
+    "components/MembershipDetailsCard.tsx",
+    "components/ActivityHistory.tsx",
+    "components/EditMemberForm.tsx",
+    "components/ConfirmationModal.tsx",
+    "components/AssignPasswordForm.tsx",
+    "components/MemberBasicInfo.tsx",
+    "components/MemberActivityStatus.tsx",
+    "components/ui/button.tsx",
+    "components/ui/use-toast.ts",
+    "components/ui/toaster.tsx"
+  ],
   "references": []
 }

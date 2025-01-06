@@ -13,7 +13,7 @@ import { Member } from "@shared/member";
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "../../../components/EditMemberForm";
 import ConfirmationModal from "../../../components/ConfirmationModal";
-import AssignPasswordForm from "../../../components/AssignPasswordForm";
+import AssignPasswordForm from "@components/AssignPasswordForm";
 import { UserCog } from "lucide-react";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { useNavigate } from "react-router-dom";
