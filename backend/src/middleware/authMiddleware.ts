@@ -34,6 +34,7 @@ const authMiddleware = async (
 ): Promise<void> => {
     try {
         // Get token from header
+        console.log('Auth headers:', req.headers.authorization);
         const token = req.header('Authorization')?.replace('Bearer ', '');
         
         if (!token) {

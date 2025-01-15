@@ -87,7 +87,7 @@ app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
-app.use('/api/settings', settingsRouter);
+app.use('/api/settings', authMiddleware, settingsRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
@@ -99,7 +99,8 @@ app.get('/api', (req: Request, res: Response) => {
             auth: '/api/auth',
             members: '/api/members',
             activities: '/api/activities',
-            audit: '/api/audit'
+            audit: '/api/audit',
+            settings: '/api/settings'
         }
     });
 });

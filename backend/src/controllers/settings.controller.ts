@@ -1,5 +1,19 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
+import { SystemSettings } from '@shared/settings.types';
+import { validateSettings } from '../utils/validation';
+import { createAuditLog } from '../utils/auditLog';
+import { sanitizeInput } from '../utils/sanitization';
+import { createRateLimit } from '../middleware/rateLimit';
+import { DatabaseUser } from '../../src/middleware/authMiddleware';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: DatabaseUser;
+    }
+  }
+}
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
@@ -20,40 +34,59 @@ export const getSettings = async (req: Request, res: Response) => {
 
     return res.json(settings);
   } catch (error) {
+    console.error('Error fetching settings:', error);
     return res.status(500).json({ error: 'Failed to fetch settings' });
   }
 };
 
-export const updateSettings = async (req: Request, res: Response) => {
-  const { cardNumberLength, renewalStartDay } = req.body;
-  
-  // Add validation
-  if (renewalStartDay < 1 || renewalStartDay > 30) {
-    return res.status(400).json({ error: 'Renewal start day must be between 1 and 30' });
-  }
-
-  if (cardNumberLength < 1 || cardNumberLength > 10) {
-    return res.status(400).json({ error: 'Card number length must be between 1 and 10' });
-  }
-
-  try {
-    const settings = await prisma.systemSettings.upsert({
-      where: { id: 'default' },
-      update: { 
-        cardNumberLength,
-        renewalStartDay,
-        updatedAt: new Date(),
-        updatedBy: req.user?.id?.toString() || null // Add user ID if available in request
-      },
-      create: {
-        id: 'default',
-        cardNumberLength,
-        renewalStartDay
-      }
-    });
+export const updateSettings = [
+  createRateLimit({ windowMs: 15 * 60 * 1000, max: 5 }),
+  async (req: Request, res: Response) => {
+    const { cardNumberLength = 5, renewalStartDay = 1 } = req.body;
     
-    return res.json(settings);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to update settings' });
+    const sanitizedInput = sanitizeInput({ cardNumberLength, renewalStartDay });
+
+    const validationError = validateSettings(sanitizedInput);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
+    }
+
+    if (!req.user) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    if (req.user.role_name !== 'superuser') {
+      return res.status(403).json({ error: 'Unauthorized to update settings' });
+    }
+
+    try {
+      await prisma.$transaction(async (prisma) => {
+        const settings = await prisma.systemSettings.upsert({
+          where: { id: 'default' },
+          update: { 
+            cardNumberLength: sanitizedInput.cardNumberLength!,
+            renewalStartDay: sanitizedInput.renewalStartDay!,
+            updatedBy: req.user!.id.toString() // We know req.user is defined here
+          },
+          create: {
+            id: 'default',
+            cardNumberLength: sanitizedInput.cardNumberLength!,
+            renewalStartDay: sanitizedInput.renewalStartDay!
+          }
+        });
+
+        await createAuditLog({
+          action: 'UPDATE_SETTINGS',
+          performedBy: req.user?.id || null,
+          details: JSON.stringify(sanitizedInput),
+          ipAddress: req.ip || 'unknown',
+        });
+
+        return res.json(settings);
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      return res.status(500).json({ error: 'Failed to update settings' });
+    }
   }
-};
+];

@@ -15,6 +15,7 @@ model Member {
   name           String    @db.VarChar(255)
   full_name      String    @unique @db.VarChar(255)
   email          String    @unique @db.VarChar(255)
+  password_hash String?
   membership_details MembershipDetails?
   activities ActivityParticipant[]
   messages   MemberMessage[]
@@ -66,11 +67,11 @@ model ActivityParticipant {
 }
 
 model SystemSettings {
-  id              String   @id
-  cardNumberLength Int     @default(5)
-  renewalStartDay Int     @default(1)
-  updatedAt       DateTime @default(now()) @updatedAt
-  updatedBy       String?
+  id                 String   @id @default("default")
+  cardNumberLength   Int      @map("card_number_length")
+  renewalStartDay    Int      @map("renewal_start_day")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  updatedBy          String?  @default("system") @map("updated_by")
 
   @@map("system_settings")
 }

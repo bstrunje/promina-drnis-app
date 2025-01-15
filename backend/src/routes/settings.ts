@@ -19,7 +19,7 @@ router.put('/card-length', authMiddleware, roles.requireAdmin, async (req, res) 
     const settings = await prisma.systemSettings.upsert({
       where: { id: 'default' },
       update: { cardNumberLength: length },
-      create: { id: 'default', cardNumberLength: length }
+      create: { id: 'default', cardNumberLength: length, renewalStartDay: 1 }
     });
     return res.json(settings);
   } catch (error) {
