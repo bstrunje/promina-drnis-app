@@ -5,8 +5,7 @@ import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import axios from 'axios';
 import { cn } from '@/lib/utils';
-									  
-import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns'; // Rename isValid to isValidDate
+import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
 import { SystemSettings } from '@shared/settings.types';
 
 interface MembershipFeeSectionProps {
@@ -29,7 +28,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isValidPayment, setIsValidPayment] = useState(false); // Rename isValid to isValidPayment
+  const [isValidPayment, setIsValidPayment] = useState(false);
 
   const validatePaymentDate = async (dateString: string): Promise<boolean> => {
     if (!dateString) {
@@ -104,7 +103,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         throw new Error('No authentication token found');
       }
   
-															
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
   

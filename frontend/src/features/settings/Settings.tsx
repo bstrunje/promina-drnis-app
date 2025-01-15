@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { SystemSettings } from '@shared/settings.types';
+import axios from "axios";
 
 const Settings: React.FC = () => {
-    const [settings, setSettings] = useState<SystemSettings>({
-      id: 'default',
-      cardNumberLength: 5,
-      renewalStartDay: 1,    // Default: November 1st
-      updatedAt: new Date(),
-    });
+  const [settings, setSettings] = useState<SystemSettings>({
+    id: 'default',
+    cardNumberLength: 5,
+    renewalStartDay: 1,    // Default: November 1st
+    updatedAt: new Date(),
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,18 +16,28 @@ const Settings: React.FC = () => {
     loadSettings();
   }, []);
 
-  const loadSettings = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/settings');
-      const data = await response.json();
-      setSettings(data);
-    } catch (err) {
-      setError("Failed to load settings");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const loadSettings = async () => {
+  try {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`${API_URL}/settings`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    setSettings(response.data);
+  } catch (err) {
+    const errorMessage = axios.isAxiosError(err)
+      ? err.response?.data?.message || err.message
+      : 'An unknown error occurred';
+    setError(`Failed to load settings: ${errorMessage}`);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
