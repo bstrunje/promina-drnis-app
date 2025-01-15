@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import path from 'path';
 import config from './config/config.js';
 
 // Import routes
@@ -36,8 +37,18 @@ app.use(compression());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Konfiguracija za CORS
+const allowedOrigins = ['http://localhost:5173', 'https://frontend-xi-six-19.vercel.app', 'https://promina-drnis-backend-9a4747fd9284.herokuapp.com/'];
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://frontend-xi-six-19.vercel.app'],
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -52,6 +63,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log(`[${timestamp}] ${req.method} ${req.path}`);
     next();
 });
+
+// Serve static files from the React frontend app
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+}
 
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response) => {
@@ -104,6 +120,13 @@ app.get('/api', (req: Request, res: Response) => {
         }
     });
 });
+
+// Catch-all route za serviranje React app-a u produkciji
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+    });
+}
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

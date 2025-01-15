@@ -30,7 +30,9 @@
     "clean": "npm run clean:shared && npm run clean:frontend && npm run clean:backend",
     "clean:shared": "rimraf frontend/shared/dist",
     "clean:frontend": "npm run clean -w frontend",
-    "clean:backend": "npm run clean -w backend"
+    "clean:backend": "npm run clean -w backend",
+    "heroku-postbuild": "npm run build",
+    "start:prod": "npm run start:backend"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
