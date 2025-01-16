@@ -6,9 +6,9 @@
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
-    "build": "tsc -b",
+    "build": "tsc",
     "postbuild": "copyfiles -u 1 \"src/**/*.json\" dist",
-    "start": "node --loader ts-node/esm --experimental-specifier-resolution=node src/server.ts",
+    "start": "node dist/server.js",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "mocha -r ts-node/register 'tests/**/*.test.ts'",
