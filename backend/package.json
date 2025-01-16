@@ -16,7 +16,8 @@
     "test:watch": "mocha -r ts-node/register -w --watch-files 'tests/**/*.test.ts' 'tests/**/*.test.ts'",
     "migrate": "node dist/scripts/runMigration.js",
     "db:backup": "pg_dump -U postgres -d promina_drnis_db > backup.sql",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
