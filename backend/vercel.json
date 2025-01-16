@@ -14,5 +14,11 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "new-main": true
+    }
   }
 }
