@@ -1,83 +1,177 @@
-> @promina-drnis-app/backend@1.0.0 build
-> tsc -b
-
-src/controllers/activity.controller.ts:4:37 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/activity.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/activity.ts'.     
-
-4 import { ActivityCreateInput } from '@shared/activity';
-                                      ~~~~~~~~~~~~~~~~~~
-
-src/controllers/auth.controller.ts:6:41 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-6 import { Member, MemberLoginData } from "@shared/member.js";
-                                          ~~~~~~~~~~~~~~~~~~~
-
-src/controllers/member.controller.ts:13:34 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/membership.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/membership.ts'.  
-
-13 import { MembershipPeriod } from '@shared/membership.js';
-                                    ~~~~~~~~~~~~~~~~~~~~~~~
-
-src/repositories/activity.repository.ts:4:24 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.        
-
-4 import { Member } from '@shared/member.js';
-                         ~~~~~~~~~~~~~~~~~~~
-
-src/repositories/activity.repository.ts:5:37 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/activity.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/activity.ts'.    
-
-5 import { ActivityParticipant } from '@shared/activity';
-                                      ~~~~~~~~~~~~~~~~~~
-
-src/repositories/auth.repository.ts:2:44 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-2 import { Member, MemberSearchResult } from '@shared/member.js';
-                                             ~~~~~~~~~~~~~~~~~~~
-
-src/repositories/member.repository.ts:4:44 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-4 import { Member, MemberRole, Gender } from '@shared/member.js';
-                                             ~~~~~~~~~~~~~~~~~~~
-
-src/repositories/membership.repository.ts:3:74 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/membership.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/membership.ts'.
-
-3 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '@shared/membership';
-                                                                           ~~~~~~~~~~~~~~~~~~~~
-
-src/services/activity.service.ts:10:8 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/activity.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/activity.ts'.
-
-10 } from '../../../frontend/shared/types/activity';
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-src/services/auth.service.ts:2:24 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-2 import { Member } from '@shared/member.js';
-                         ~~~~~~~~~~~~~~~~~~~
-
-src/services/member.service.ts:5:24 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-5 import { Member } from '@shared/member';
-                         ~~~~~~~~~~~~~~~~
-
-src/services/membership.service.ts:8:8 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/membership.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/membership.ts'.      
-
-8 } from "@shared/membership";
-         ~~~~~~~~~~~~~~~~~~~~
-
-src/services/membership.service.ts:9:24 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-9 import { Member } from "@shared/member";
-                         ~~~~~~~~~~~~~~~~
-
-src/types/database.ts:2:28 - error TS6305: Output file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/dist/member.d.ts' has not been built from source file 'C:/sinkronizacija/promina-drnis-app/frontend/shared/types/member.ts'.
-
-2 import { MemberRole } from '@shared/member';
-                             ~~~~~~~~~~~~~~~~
-
-
-Found 14 errors.
-
+-----> Building on the Heroku-24 stack
+-----> Using buildpack: heroku/nodejs
+-----> Node.js app detected
+       
+-----> Creating runtime environment
+       
+       NPM_CONFIG_LOGLEVEL=error
+       NODE_VERBOSE=false
+       NODE_ENV=production
+       NODE_MODULES_CACHE=true
+       
+-----> Installing binaries
+       engines.node (package.json):   unspecified
+       engines.npm (package.json):    unspecified (use default)
+       
+       Resolving node version 22.x...
+       Downloading and installing node 22.13.0...
+       Using default npm version: 10.9.2
+       
+-----> Installing dependencies
+       Installing node modules
+       
+       added 716 packages, and audited 720 packages in 13s
+       
+       104 packages are looking for funding
+         run `npm fund` for details
+       
+       found 0 vulnerabilities
+       npm notice
+       npm notice New major version of npm available! 10.9.2 -> 11.0.0
+       npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.0.0
+       npm notice To update run: npm install -g npm@11.0.0
+       npm notice
+       
+-----> Build
+       Detected both "build" and "heroku-postbuild" scripts
+       Running heroku-postbuild
+       
+       > heroku-postbuild
+       > npm run build
+       
+       
+       > build
+       > npm run clean && npm run build:shared && npm run build:frontend && npm run build:backend
+       
+       
+       > clean
+       > npm run clean:shared && npm run clean:frontend && npm run clean:backend
+       
+       
+       > clean:shared
+       > rimraf frontend/shared/dist
+       
+       
+       > clean:frontend
+       > npm run clean -w frontend
+       
+       
+       > @promina-drnis-app/frontend@1.0.0 clean
+       > rimraf dist
+       
+       
+       > @promina-drnis-app/shared@1.0.0 clean
+       > rimraf dist
+       
+       
+       > clean:backend
+       > npm run clean -w backend
+       
+       
+       > @promina-drnis-app/backend@1.0.0 clean
+       > rimraf dist
+       
+       
+       > build:shared
+       > npm run build -w frontend/shared
+       
+       
+       > @promina-drnis-app/shared@1.0.0 prebuild
+       > npm run clean
+       
+       
+       > @promina-drnis-app/shared@1.0.0 clean
+       > rimraf dist
+       
+       
+       > @promina-drnis-app/shared@1.0.0 build
+       > tsc -b --force --verbose
+       
+       2:55:46 PM - Projects in this build: 
+           * tsconfig.json
+       
+       2:55:46 PM - Project 'tsconfig.json' is being forcibly rebuilt
+       
+       2:55:46 PM - Building project '/tmp/build_90b9e154/frontend/shared/tsconfig.json'...
+       
+       
+       > build:frontend
+       > npm run build -w frontend
+       
+       
+       > @promina-drnis-app/frontend@1.0.0 build
+       > tsc && vite build
+       
+/tmp/build_90b9e154/node_modules/rollup/dist/native.js:63
+		throw new Error(
+		      ^
+Error: Cannot find module @rollup/rollup-linux-x64-gnu. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at requireWithFriendlyError (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:63:9)
+    at Object.<anonymous> (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:72:76)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object..js (node:internal/modules/cjs/loader:1699:10)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+    at cjsLoader (node:internal/modules/esm/translators:263:5)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:196:7) {
+  [cause]: Error: Cannot find module '@rollup/rollup-linux-x64-gnu'
+  Require stack:
+  - /tmp/build_90b9e154/node_modules/rollup/dist/native.js
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
+      at Function._load (node:internal/modules/cjs/loader:1070:27)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
+      at Module.require (node:internal/modules/cjs/loader:1335:12)
+      at require (node:internal/modules/helpers:136:16)
+      at requireWithFriendlyError (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:45:10)
+      at Object.<anonymous> (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:72:76)
+      at Module._compile (node:internal/modules/cjs/loader:1562:14)
+      at Object..js (node:internal/modules/cjs/loader:1699:10) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/tmp/build_90b9e154/node_modules/rollup/dist/native.js' ]
+  }
+}
+Node.js v22.13.0
 npm error Lifecycle script `build` failed with error:
 npm error code 1
-npm error path C:\sinkronizacija\promina-drnis-app\backend
-npm error workspace @promina-drnis-app/backend@1.0.0
-npm error location C:\sinkronizacija\promina-drnis-app\backend
+npm error path /tmp/build_90b9e154/frontend
+npm error workspace @promina-drnis-app/frontend@1.0.0
+npm error location /tmp/build_90b9e154/frontend
 npm error command failed
-npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc -b
+npm error command sh -c tsc && vite build
+       
+       > @promina-drnis-app/shared@1.0.0 prebuild
+       > npm run clean
+       
+       
+       > @promina-drnis-app/shared@1.0.0 clean
+       > rimraf dist
+       
+       
+       > @promina-drnis-app/shared@1.0.0 build
+       > tsc -b --force --verbose
+       
+       2:55:48 PM - Projects in this build: 
+           * tsconfig.json
+       
+       2:55:48 PM - Project 'tsconfig.json' is being forcibly rebuilt
+       
+       2:55:48 PM - Building project '/tmp/build_90b9e154/frontend/shared/tsconfig.json'...
+       
+-----> Build failed
+       
+       We're sorry this build is failing! You can troubleshoot common issues here:
+       https://devcenter.heroku.com/articles/troubleshooting-node-deploys
+       
+       Some possible problems:
+       
+       - Node version not specified in package.json
+         https://devcenter.heroku.com/articles/nodejs-support#specifying-a-node-js-version
+       
+       Love,
+       Heroku
+       
+ !     Push rejected, failed to compile Node.js app.
+ !     Push failed

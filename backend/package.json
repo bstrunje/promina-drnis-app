@@ -2,20 +2,15 @@
   "name": "@promina-drnis-app/backend",
   "version": "1.0.0",
   "type": "module",
-  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
-    "clean": "rimraf dist",
-    "prebuild": "npm run clean",
-    "build": "tsc",
-    "postbuild": "copyfiles -u 1 \"src/**/*.json\" dist",
     "start": "node dist/server.js",
+    "build": "tsc",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "mocha -r ts-node/register 'tests/**/*.test.ts'",
-    "test:watch": "mocha -r ts-node/register -w --watch-files 'tests/**/*.test.ts' 'tests/**/*.test.ts'",
-    "migrate": "node dist/scripts/runMigration.js",
-    "db:backup": "pg_dump -U postgres -d promina_drnis_db > backup.sql",
-    "vercel-build": "npm run build"
+    "vercel-build": "prisma generate && tsc",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
@@ -38,7 +33,10 @@
     "sequelize": "^6.37.5",
     "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "typescript": "^5.6.3",
+    "tsconfig": "^7.0.0",
+    "@types/node": "^20.17.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -50,7 +48,6 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.9.9",
-    "@types/node": "^20.17.6",
     "@types/nodemailer": "^6.4.16",
     "@types/pg": "^8.10.9",
     "@types/sinon": "^10.0.20",
@@ -68,8 +65,7 @@
     "sinon-chai": "^3.7.0",
     "supertest": "^7.0.0",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.3"
+    "ts-node-dev": "^2.0.0"
   },
   "optionalDependencies": {
     "@promina-drnis/shared": "1.0.0"
