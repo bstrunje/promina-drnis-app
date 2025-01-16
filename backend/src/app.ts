@@ -39,7 +39,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Konfiguracija za CORS
-const allowedOrigins = ['http://localhost:5173', 'https://frontend-xi-six-19.vercel.app', 'https://promina-drnis-backend-9a4747fd9284.herokuapp.com/'];
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'https://frontend-xi-six-19.vercel.app', 
+  'https://promina-drnis-backend.herokuapp.com'
+];
 
 app.use(cors({
     origin: (origin, callback) => {
