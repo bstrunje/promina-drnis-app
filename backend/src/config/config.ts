@@ -46,7 +46,7 @@ const config: Config = {
     },
     
     server: {
-        port: parseInt(process.env.PORT || '3000'),
+        port: parseInt(process.env.PORT || '3000'), // Dodali port property nazad
         nodeEnv: process.env.NODE_ENV || 'development'
     },
     

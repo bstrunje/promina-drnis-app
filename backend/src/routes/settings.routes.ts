@@ -1,5 +1,5 @@
 import express from 'express';
-import { getSettings, updateSettings } from '../controllers/settings.controller';
+import { getSettings, updateSettings } from '../controllers/settings.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();

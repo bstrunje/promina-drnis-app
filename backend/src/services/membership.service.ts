@@ -1,14 +1,14 @@
 // src/services/membership.service.ts
-import db from "../utils/db";
+import db from "../utils/db.js";
 import membershipRepository from "../repositories/membership.repository.js";
 import {
   MembershipDetails,
   MembershipPeriod,
   MembershipEndReason,
-} from "@shared/membership";
-import { Member } from "@shared/member";
+} from "@shared/membership.js";
+import { Member } from "@shared/member.js";
 import memberRepository from "../repositories/member.repository.js";
-import auditService from "./audit.service";
+import auditService from "./audit.service.js";
 import { Request } from "express";
 
 const membershipService = {

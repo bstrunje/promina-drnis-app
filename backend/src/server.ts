@@ -17,7 +17,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 const DEFAULT_PORT = 3000;
 
 // Port configuration with validation
-let port = process.env.PORT ? parseInt(process.env.PORT) : config.server.port || DEFAULT_PORT;
+let port = parseInt(process.env.PORT || '3000'); // Promijenili 'const' u 'let' i dodali parseInt
 
 // Validate port (avoid PostgreSQL default port)
 if (port === 5432) {
@@ -25,9 +25,11 @@ if (port === 5432) {
     port = DEFAULT_PORT;
 }
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+// Ukloni ovaj dio
+// app.listen(port, () => {
+//     console.log(`Server running on port ${port}`);
+// });
+
 // Windows-style environment logging
 console.log('🏃 Current directory:', path.resolve(__dirname));
 console.log('📁 Loading .env from:', path.resolve(__dirname, '.env'));

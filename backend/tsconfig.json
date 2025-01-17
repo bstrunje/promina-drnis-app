@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
@@ -11,7 +11,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["../frontend/shared/dist/*"]
+      "@shared/*": ["./src/shared/types/*"]
     },
     "types": ["node", "mocha", "chai", "supertest", "sinon", "sinon-chai"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
@@ -19,9 +19,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "references": [
-    { "path": "../frontend/shared" }
-  ],
+  "references": [],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

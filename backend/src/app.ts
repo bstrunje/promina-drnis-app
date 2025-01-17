@@ -14,8 +14,8 @@ import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
 import memberMessagesRouter from './routes/member.messages.js';
 import adminMessagesRouter from './routes/admin.messages.js';
-import sequelize from './types/database';
-import hoursRoutes from './routes/hours';
+import sequelize from './types/database.js';  // dodaj .js ekstenziju
+import hoursRoutes from './routes/hours.js';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.routes.js';
 

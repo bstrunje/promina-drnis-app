@@ -1,6 +1,6 @@
 // backend/src/controllers/hours.controller.ts
 import { Request, Response } from 'express';
-import Hours from '../models/hours.model';
+import Hours from '../models/hours.model.js';
 
 const getAllHours = async (req: Request, res: Response) => {
   try {

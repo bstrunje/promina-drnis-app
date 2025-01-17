@@ -7,7 +7,7 @@ import {
     ActivityError,
     ActivityUpdateData,
     ActivityMember
-} from '../../../frontend/shared/types/activity';
+} from '../shared/types/index.js';
 import activityRepository from '../repositories/activity.repository.js';
 
 

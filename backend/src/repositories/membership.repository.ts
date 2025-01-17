@@ -1,6 +1,6 @@
 import db from '../utils/db.js';
 import { PoolClient } from 'pg';
-import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '@shared/membership';
+import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 
 const membershipRepository = {
     async getMembershipDetails(memberId: number): Promise<MembershipDetails | null> {

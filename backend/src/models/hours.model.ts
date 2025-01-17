@@ -1,6 +1,6 @@
 // src/models/hours.model.ts
 import { Model, DataTypes } from "sequelize";
-import sequelize from "../types/database";
+import sequelize from "../types/database.js";
 
 class Hours extends Model {
   public id!: number;

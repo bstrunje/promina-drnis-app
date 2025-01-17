@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import prisma from '../utils/prisma';
-import { SystemSettings } from '@shared/settings.types';
-import { validateSettings } from '../utils/validation';
-import { createAuditLog } from '../utils/auditLog';
-import { sanitizeInput } from '../utils/sanitization';
-import { createRateLimit } from '../middleware/rateLimit';
-import { DatabaseUser } from '../../src/middleware/authMiddleware';
+import prisma from '../utils/prisma.js';
+import { SystemSettings } from '@shared/settings.types.js';
+import { validateSettings } from '../utils/validation.js';
+import { createAuditLog } from '../utils/auditLog.js';
+import { sanitizeInput } from '../utils/sanitization.js';
+import { createRateLimit } from '../middleware/rateLimit.js';
+import { DatabaseUser } from '../middleware/authMiddleware.js';
 
 declare global {
   namespace Express {

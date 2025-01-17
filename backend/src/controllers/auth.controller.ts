@@ -8,7 +8,7 @@ import { PoolClient } from "pg";
 import { DatabaseError } from "../utils/db.js";
 import authRepository from "../repositories/auth.repository.js";
 import auditService from "../services/audit.service.js";
-import { JWT_SECRET } from "../../src/server.js";
+import { JWT_SECRET } from '../config/jwt.config.js';
 
 // Extend Express Request to include user
 declare global {

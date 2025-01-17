@@ -1,5 +1,6 @@
 # Dependencies
 /node_modules
+node_modules/
 
 # Environment variables
 .env
@@ -9,6 +10,7 @@
 # Logs
 *.log
 logs/
+*.log
 
 # Runtime data
 pids
@@ -18,11 +20,16 @@ pids
 
 # Testing
 /coverage
+coverage/
 
 # Production build
 /dist
 /build
+dist/
 
 # Temporary files
 *.tmp
 *.temp
+
+# Uploads
+uploads/

@@ -1,4 +1,4 @@
-import { SystemSettings } from '@shared/settings.types';
+import { SystemSettings } from '@shared/settings.types.js';
 
 export const sanitizeInput = (input: Partial<SystemSettings>): Partial<SystemSettings> => {
   return {

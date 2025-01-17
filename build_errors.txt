@@ -1,177 +1,303 @@
------> Building on the Heroku-24 stack
------> Using buildpack: heroku/nodejs
------> Node.js app detected
-       
------> Creating runtime environment
-       
-       NPM_CONFIG_LOGLEVEL=error
-       NODE_VERBOSE=false
-       NODE_ENV=production
-       NODE_MODULES_CACHE=true
-       
------> Installing binaries
-       engines.node (package.json):   unspecified
-       engines.npm (package.json):    unspecified (use default)
-       
-       Resolving node version 22.x...
-       Downloading and installing node 22.13.0...
-       Using default npm version: 10.9.2
-       
------> Installing dependencies
-       Installing node modules
-       
-       added 716 packages, and audited 720 packages in 13s
-       
-       104 packages are looking for funding
-         run `npm fund` for details
-       
-       found 0 vulnerabilities
-       npm notice
-       npm notice New major version of npm available! 10.9.2 -> 11.0.0
-       npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.0.0
-       npm notice To update run: npm install -g npm@11.0.0
-       npm notice
-       
------> Build
-       Detected both "build" and "heroku-postbuild" scripts
-       Running heroku-postbuild
-       
-       > heroku-postbuild
-       > npm run build
-       
-       
-       > build
-       > npm run clean && npm run build:shared && npm run build:frontend && npm run build:backend
-       
-       
-       > clean
-       > npm run clean:shared && npm run clean:frontend && npm run clean:backend
-       
-       
-       > clean:shared
-       > rimraf frontend/shared/dist
-       
-       
-       > clean:frontend
-       > npm run clean -w frontend
-       
-       
-       > @promina-drnis-app/frontend@1.0.0 clean
-       > rimraf dist
-       
-       
-       > @promina-drnis-app/shared@1.0.0 clean
-       > rimraf dist
-       
-       
-       > clean:backend
-       > npm run clean -w backend
-       
-       
-       > @promina-drnis-app/backend@1.0.0 clean
-       > rimraf dist
-       
-       
-       > build:shared
-       > npm run build -w frontend/shared
-       
-       
-       > @promina-drnis-app/shared@1.0.0 prebuild
-       > npm run clean
-       
-       
-       > @promina-drnis-app/shared@1.0.0 clean
-       > rimraf dist
-       
-       
-       > @promina-drnis-app/shared@1.0.0 build
-       > tsc -b --force --verbose
-       
-       2:55:46 PM - Projects in this build: 
-           * tsconfig.json
-       
-       2:55:46 PM - Project 'tsconfig.json' is being forcibly rebuilt
-       
-       2:55:46 PM - Building project '/tmp/build_90b9e154/frontend/shared/tsconfig.json'...
-       
-       
-       > build:frontend
-       > npm run build -w frontend
-       
-       
-       > @promina-drnis-app/frontend@1.0.0 build
-       > tsc && vite build
-       
-/tmp/build_90b9e154/node_modules/rollup/dist/native.js:63
-		throw new Error(
-		      ^
-Error: Cannot find module @rollup/rollup-linux-x64-gnu. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
-    at requireWithFriendlyError (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:63:9)
-    at Object.<anonymous> (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:72:76)
-    at Module._compile (node:internal/modules/cjs/loader:1562:14)
-    at Object..js (node:internal/modules/cjs/loader:1699:10)
-    at Module.load (node:internal/modules/cjs/loader:1313:32)
-    at Function._load (node:internal/modules/cjs/loader:1123:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
-    at cjsLoader (node:internal/modules/esm/translators:263:5)
-    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:196:7) {
-  [cause]: Error: Cannot find module '@rollup/rollup-linux-x64-gnu'
-  Require stack:
-  - /tmp/build_90b9e154/node_modules/rollup/dist/native.js
-      at Function._resolveFilename (node:internal/modules/cjs/loader:1244:15)
-      at Function._load (node:internal/modules/cjs/loader:1070:27)
-      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-      at wrapModuleLoad (node:internal/modules/cjs/loader:217:24)
-      at Module.require (node:internal/modules/cjs/loader:1335:12)
-      at require (node:internal/modules/helpers:136:16)
-      at requireWithFriendlyError (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:45:10)
-      at Object.<anonymous> (/tmp/build_90b9e154/node_modules/rollup/dist/native.js:72:76)
-      at Module._compile (node:internal/modules/cjs/loader:1562:14)
-      at Object..js (node:internal/modules/cjs/loader:1699:10) {
-    code: 'MODULE_NOT_FOUND',
-    requireStack: [ '/tmp/build_90b9e154/node_modules/rollup/dist/native.js' ]
-  }
+PS C:\sinkronizacija\promina-drnis-app\backend> npm start                                                     
+
+> @promina-drnis-app/backend@1.0.0 start
+> node dist/server.js
+
+🏃 Current directory: C:\sinkronizacija\promina-drnis-app\backend
+📁 Loading .env from: C:\sinkronizacija\promina-drnis-app\backend\.env
+⚙️  Environment configuration: {
+  PORT: '3000 (Web Server)',
+  DATABASE_URL: 'Set (Hidden for security)',
+  JWT_SECRET: 'Set (Hidden for security)',
+  NODE_ENV: 'development'
 }
-Node.js v22.13.0
-npm error Lifecycle script `build` failed with error:
-npm error code 1
-npm error path /tmp/build_90b9e154/frontend
-npm error workspace @promina-drnis-app/frontend@1.0.0
-npm error location /tmp/build_90b9e154/frontend
-npm error command failed
-npm error command sh -c tsc && vite build
-       
-       > @promina-drnis-app/shared@1.0.0 prebuild
-       > npm run clean
-       
-       
-       > @promina-drnis-app/shared@1.0.0 clean
-       > rimraf dist
-       
-       
-       > @promina-drnis-app/shared@1.0.0 build
-       > tsc -b --force --verbose
-       
-       2:55:48 PM - Projects in this build: 
-           * tsconfig.json
-       
-       2:55:48 PM - Project 'tsconfig.json' is being forcibly rebuilt
-       
-       2:55:48 PM - Building project '/tmp/build_90b9e154/frontend/shared/tsconfig.json'...
-       
------> Build failed
-       
-       We're sorry this build is failing! You can troubleshoot common issues here:
-       https://devcenter.heroku.com/articles/troubleshooting-node-deploys
-       
-       Some possible problems:
-       
-       - Node version not specified in package.json
-         https://devcenter.heroku.com/articles/nodejs-support#specifying-a-node-js-version
-       
-       Love,
-       Heroku
-       
- !     Push rejected, failed to compile Node.js app.
- !     Push failed
+Server running on port 3000
+📦 Database pool connected
+{ query: 'SELECT 1', duration: 98, rows: 1 }
+✅ Database connection successful
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 5,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 1,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 2,
+  rows: 1
+}
+{ query: 'BEGIN', duration: 6, rows: 0 }
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS members (\n' +
+    '        member_id SERIAL PRIMARY KEY,\n' +
+    "        status character varying(50) DEFAULT 'pending',\n" +
+    '        date_of_birth date,\n' +
+    '        oib character varying(11) NOT NULL,\n' +
+    '        cell_phone character varying(20) NOT NULL,\n' +
+    '        city character varying(100) NOT NULL,\n' +
+    '        street_address character varying(200) NOT NULL,\n' +
+    '        email character varying(255),\n' +
+    '        first_name character varying(100) NOT NULL,\n' +
+    '        last_name character varying(100) NOT NULL,\n' +
+    '        life_status character varying(25),\n' +
+    "        role character varying(20) DEFAULT 'member' NOT NULL,\n" +
+    '        total_hours numeric(10,2) DEFAULT 0,\n' +
+    "        full_name character varying(100) GENERATED ALWAYS AS ((((first_name)::text || ' '::text) || (last_name)::text)) STORED,\n" +
+    '        tshirt_size character varying(4),\n' +
+    '        shell_jacket_size character varying(4),\n' +
+    "        CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),\n" +
+    "        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))\n" +
+    '    );\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Members table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activity_types (\n' +
+    '                type_id serial NOT NULL,\n' +
+    '                name character varying(50) NOT NULL,\n' +
+    '                description text,\n' +
+    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT activity_types_pkey PRIMARY KEY (type_id),\n' +
+    '                CONSTRAINT activity_types_name_key UNIQUE (name)\n' +
+    '            );\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Activity types table created successfully
+{
+  query: '\n' +
+    '      DROP TABLE IF EXISTS stamp_inventory;\n' +
+    '      \n' +
+    '      CREATE TABLE stamp_inventory (\n' +
+    '          id SERIAL PRIMARY KEY,\n' +
+    '          stamp_type VARCHAR(20) NOT NULL,\n' +
+    '          initial_count INTEGER NOT NULL DEFAULT 0,\n' +
+    '          issued_count INTEGER DEFAULT 0,\n' +
+    '          remaining INTEGER GENERATED ALWAYS AS (initial_count - issued_count) STORED,\n' +
+    '          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    "          CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),\n" +   
+    '          CONSTRAINT stamp_type_unique UNIQUE (stamp_type)\n' +
+    '      );\n' +
+    '\n' +
+    '      -- Ensure initial data exists\n' +
+    '      INSERT INTO stamp_inventory (stamp_type, initial_count, issued_count) \n' +
+    '      VALUES \n' +
+    "          ('employed', 0, 0),\n" +
+    "          ('student', 0, 0),\n" +
+    "          ('pensioner', 0, 0)\n" +
+    '      ON CONFLICT (stamp_type) DO NOTHING;\n' +
+    '  ',
+  duration: 13,
+  rows: 0
+}
+✅ Stamp inventory table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activities (\n' +
+    '                activity_id serial NOT NULL,\n' +
+    '                title character varying(100) NOT NULL,\n' +
+    '                description text,\n' +
+    '                start_date timestamp without time zone NOT NULL,\n' +
+    '                end_date timestamp without time zone NOT NULL,\n' +
+    '                location character varying(100),\n' +
+    '                difficulty_level character varying(20),\n' +
+    '                max_participants integer,\n' +
+    '                created_by integer,\n' +
+    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                activity_type_id integer,\n' +
+    '                CONSTRAINT activities_pkey PRIMARY KEY (activity_id),\n' +
+    '                CONSTRAINT activities_activity_type_id_fkey FOREIGN KEY (activity_type_id)\n' +
+    '                    REFERENCES activity_types (type_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 4,
+  rows: 0
+}
+✅ Activities table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activity_participants (\n' +
+    '                participant_id serial NOT NULL,\n' +
+    '                activity_id integer NOT NULL,\n' +
+    '                member_id integer NOT NULL,\n' +
+    '                joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT activity_participants_pkey PRIMARY KEY (participant_id),\n' +
+    '                CONSTRAINT activity_participants_activity_id_fkey FOREIGN KEY (activity_id)\n' +
+    '                    REFERENCES activities (activity_id),\n' +
+    '                CONSTRAINT activity_participants_member_id_fkey FOREIGN KEY (member_id)\n' +
+    '                    REFERENCES members (member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Activity participants table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS audit_logs (\n' +
+    '                log_id SERIAL PRIMARY KEY,\n' +
+    '                action_type VARCHAR(50) NOT NULL,\n' +
+    '                performed_by INTEGER REFERENCES members(member_id),\n' +
+    '                action_details TEXT NOT NULL,\n' +
+    '                ip_address VARCHAR(45),\n' +
+    '                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                status VARCHAR(20),\n' +
+    '                affected_member INTEGER REFERENCES members(member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Audit logs table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS annual_statistics (\n' +
+    '                stat_id serial NOT NULL,\n' +
+    '                member_id integer,\n' +
+    '                year integer NOT NULL,\n' +
+    '                total_hours numeric(7,2) NOT NULL,\n' +
+    '                total_activities integer NOT NULL,\n' +
+    '                membership_status character varying(20) NOT NULL,\n' +
+    '                calculated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT annual_statistics_pkey PRIMARY KEY (stat_id),\n' +
+    '                CONSTRAINT unique_member_year UNIQUE (member_id, year),\n' +
+    '                CONSTRAINT annual_statistics_member_id_fkey FOREIGN KEY (member_id)\n' +
+    '                    REFERENCES members (member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Annual statistics table created successfully
+{
+  query: '\n' +
+    '      CREATE TABLE IF NOT EXISTS member_messages (\n' +
+    '          message_id SERIAL PRIMARY KEY,\n' +
+    '          member_id INTEGER REFERENCES members(member_id),\n' +
+    '          message_text TEXT NOT NULL,\n' +
+    '          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    '          read_at TIMESTAMP,\n' +
+    "          status VARCHAR(20) DEFAULT 'unread',\n" +
+    "          CONSTRAINT status_values CHECK (status IN ('unread', 'read', 'archived'))\n" +
+    '      );\n' +
+    '  ',
+  duration: 1,
+  rows: 0
+}
+✅ Member messages table created successfully
+{
+  query: '\n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activities_type \n' +
+    '            ON activities(activity_type_id);\n' +
+    '            \n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_activity \n' +
+    '            ON activity_participants(activity_id);\n' +
+    '            \n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_member \n' +
+    '            ON activity_participants(member_id);\n' +
+    '        ',
+  duration: 1,
+  rows: 0
+}
+✅ Indexes created successfully
+{
+  query: '\n' +
+    '            INSERT INTO activity_types (name, description)\n' +
+    '            VALUES \n' +
+    "                ('hiking', 'Mountain hiking activities'),\n" +
+    "                ('climbing', 'Rock climbing activities'),\n" +
+    "                ('training', 'Training and educational activities'),\n" +
+    "                ('maintenance', 'Trail and equipment maintenance'),\n" +
+    "                ('social', 'Social gatherings and meetings')\n" +
+    '            ON CONFLICT (name) DO NOTHING;\n' +
+    '        ',
+  duration: 0,
+  rows: 0
+}
+✅ Default activity types created successfully
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255);\n' +
+    '  ',
+  duration: 1,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP;\n' +
+    '  ',
+  duration: 1,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    "    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary'));\n" +
+    '  ',
+  duration: 1,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS date_of_birth DATE;\n' +
+    '  ',
+  duration: 1,
+  rows: 0
+}
+{ query: 'COMMIT', duration: 4, rows: 0 }
+✅ Database setup completed successfully
+❌ Port 3000 is already in use. Please try these steps:
+   1. Check if another instance is running
+   2. Close any application using port 3000
+   3. Or change the port in your .env file
+❌ Failed to start application: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at Function.listen (C:\sinkronizacija\promina-drnis-app\node_modules\express\lib\application.js:635:24)   
+    at file:///C:/sinkronizacija/promina-drnis-app/backend/dist/server.js:68:26
+    at new Promise (<anonymous>)
+    at startServer (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/server.js:67:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+npm notice
+npm notice New major version of npm available! 10.9.0 -> 11.0.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.0.0
+npm notice To update run: npm install -g npm@11.0.0
+npm notice
+PS C:\sinkronizacija\promina-drnis-app\backend> 

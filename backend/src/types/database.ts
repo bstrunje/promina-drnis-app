@@ -1,7 +1,6 @@
 // src/types/database.ts
-import { MemberRole } from '@shared/member';
 import { Sequelize } from 'sequelize';
-import config from '../config/config';
+import config from '../config/config.js';
 
 const sequelize = new Sequelize({
   database: config.database.database,
@@ -99,6 +98,9 @@ export interface AnnualStatistics {
 // Enum-like types
 export type DifficultyLevel = 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';
 export type ParticipantRole = 'leader' | 'assistant' | 'participant' | 'trainee';
+
+// Dodati lokalnu definiciju
+export type MemberRole = 'member' | 'admin' | 'superuser';
 
 // Join result types
 export interface MemberWithUser extends Member {

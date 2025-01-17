@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
   "builds": [
     {
       "src": "dist/server.js",
@@ -8,17 +9,11 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/(.*)",
       "dest": "dist/server.js"
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "git": {
-    "deploymentEnabled": {
-      "main": false,
-      "new-main": true
-    }
   }
 }
