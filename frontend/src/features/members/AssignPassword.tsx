@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_URL } from '../../utils/config';
-import { Member } from '@shared/member';
+import { API_BASE_URL } from '../../utils/config';
+import { Member } from '../../../shared/types/member';
 
 interface PendingMember {
     member_id: number;
@@ -18,7 +18,7 @@ const AssignPassword: React.FC = () => {
 
     const fetchPendingMembers = async () => {
         try {
-            const response = await fetch(`${API_URL}/members/pending`);
+            const response = await fetch(`${API_BASE_URL}/members/pending`);
             if (response.ok) {
                 const data = await response.json();
                 setPendingMembers(data.filter((member: Member) => !member.registration_completed));
@@ -33,7 +33,7 @@ const AssignPassword: React.FC = () => {
         if (!selectedMember || !password) return;
 
         try {
-            const response = await fetch(`${API_URL}/members/assign-password`, {
+            const response = await fetch(`${API_BASE_URL}/members/assign-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
