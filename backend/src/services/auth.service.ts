@@ -1,5 +1,5 @@
 // src/services/auth.service.ts
-import { Member } from '@shared/member.js';
+import { Member } from '../shared/types/member.js';
 import authRepository from '../repositories/auth.repository.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';

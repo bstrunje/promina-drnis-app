@@ -10,8 +10,7 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@shared/*": ["./src/shared/types/*"]
+      "@/*": ["src/*"]
     },
     "types": ["node", "mocha", "chai", "supertest", "sinon", "sinon-chai"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],

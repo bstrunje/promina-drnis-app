@@ -1,4 +1,4 @@
-import { SystemSettings } from '@shared/settings.types.js';
+import { SystemSettings } from '../shared/types/settings.types.js';
 
 export const validateSettings = (settings: Partial<SystemSettings>): string | null => {
   if (settings.renewalStartDay && (settings.renewalStartDay < 1 || settings.renewalStartDay > 30)) {

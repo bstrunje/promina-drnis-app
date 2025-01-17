@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma.js';
-import { SystemSettings } from '@shared/settings.types.js';
+import { SystemSettings } from '../shared/types/settings.types.js';
 import { validateSettings } from '../utils/validation.js';
 import { createAuditLog } from '../utils/auditLog.js';
 import { sanitizeInput } from '../utils/sanitization.js';

@@ -2,7 +2,7 @@
 import db, { DatabaseError } from '../utils/db.js';
 import membershipService from './membership.service.js';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
-import { Member } from '@shared/member.js';
+import { Member } from '../shared/types/member.js';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
 

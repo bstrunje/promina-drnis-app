@@ -3,7 +3,7 @@ import { DatabaseUser } from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../utils/db.js";
-import { Member, MemberLoginData } from "@shared/member.js";
+import { Member, MemberLoginData } from "../shared/types/member.js";
 import { PoolClient } from "pg";
 import { DatabaseError } from "../utils/db.js";
 import authRepository from "../repositories/auth.repository.js";

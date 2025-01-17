@@ -5,8 +5,8 @@ import {
   MembershipDetails,
   MembershipPeriod,
   MembershipEndReason,
-} from "@shared/membership.js";
-import { Member } from "@shared/member.js";
+} from "../shared/types/membership.js";
+import { Member } from "../shared/types/member.js";
 import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";

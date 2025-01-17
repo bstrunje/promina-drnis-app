@@ -1,5 +1,5 @@
 import db from '../utils/db.js';
-import { Member, MemberSearchResult } from '@shared/member.js';
+import { Member, MemberSearchResult } from '../shared/types/member.js';
 
 const authRepository = {
     async findUserByFullName(full_name: string): Promise<Member | null> {
