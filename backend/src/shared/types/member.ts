@@ -1,5 +1,5 @@
 // shared/types/member.ts
-import { MembershipDetails, MembershipHistory, MembershipPeriod } from './membership.js';
+import { MembershipDetails, MembershipHistory, MembershipPeriod } from './membership';
 /**
  * Member role types
  */
