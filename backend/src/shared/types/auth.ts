@@ -1,5 +1,5 @@
 // shared/types/auth.ts
-import { Member } from './member';
+import { Member } from './member.js';
 
 export interface LoginCredentials {
     full_name: string;

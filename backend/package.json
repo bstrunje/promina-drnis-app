@@ -11,7 +11,9 @@
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "vercel-build": "prisma generate && tsc",
     "postinstall": "prisma generate",
-    "update-imports": "node scripts/update-imports.js"
+    "update-imports": "node scripts/update-imports.js",
+    "sync-types": "node scripts/sync-types.js",
+    "prebuild": "npm run sync-types"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
