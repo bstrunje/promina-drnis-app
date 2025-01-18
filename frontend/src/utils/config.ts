@@ -1,3 +1,3 @@
 export const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://backend-5snfbm28t-bozo-strunjes-projects.vercel.app/api'  // Novi backend URL
+  ? 'https://backend-sandy-pi-26.vercel.app/api'  // Točna backend domena
   : 'http://localhost:3000/api';
