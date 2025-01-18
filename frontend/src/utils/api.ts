@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '@shared/member';
 import { AuditLog } from '@shared/audit';
+import { API_BASE_URL } from '../utils/config';
 
 export interface LoginResponse {
   member: {
@@ -17,12 +18,8 @@ export interface RegisterResponse {
   status: 'pending';
 }
 
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://backend-sandy-pi-26.vercel.app/api' 
-  : 'http://localhost:3000';
-
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
