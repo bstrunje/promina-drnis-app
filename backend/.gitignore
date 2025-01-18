@@ -34,3 +34,5 @@ dist/
 # Uploads
 uploads/
 .vercel
+
+scripts/

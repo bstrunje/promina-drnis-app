@@ -10,10 +10,8 @@
     "build": "tsc",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "vercel-build": "prisma generate && tsc",
-    "postinstall": "prisma generate",
-    "sync-types": "node scripts/sync-types.js",
-    "prebuild": "npm run sync-types"
-  },
+    "postinstall": "prisma generate"
+      },
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "@types/bcrypt": "^5.0.0",
