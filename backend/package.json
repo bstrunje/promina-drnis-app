@@ -7,11 +7,11 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
-    "vercel-build": "prisma generate && tsc",
+    "vercel-build": "npm run build",
     "postinstall": "prisma generate"
-      },
+  },
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "@types/bcrypt": "^5.0.0",
@@ -47,9 +47,9 @@
     "tsconfig": "^7.0.0",
     "typescript": "^5.6.3"
   },
-  "devDependencies": {    
-    "@types/chai": "^4.3.20",  
-    "@types/mocha": "^10.0.10",  
+  "devDependencies": {
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
     "@types/sinon": "^10.0.20",
     "@types/sinon-chai": "^3.2.12",
     "@types/supertest": "^6.0.2",
