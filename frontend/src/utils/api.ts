@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
-import { Member, MemberLoginData, MemberSearchResult } from '@shared/member';
-import { AuditLog } from '@shared/audit';
-import { API_BASE_URL } from '../utils/config';
+import { Member, MemberLoginData, MemberSearchResult } from '../../shared/types/member.js';
+import { AuditLog } from '../../shared/types/audit.js';
+import { API_BASE_URL } from './config';
 
 export interface LoginResponse {
   member: {
