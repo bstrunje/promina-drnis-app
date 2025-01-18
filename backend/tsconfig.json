@@ -12,7 +12,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node", "mocha", "chai", "supertest", "sinon", "sinon-chai"],
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
     "resolveJsonModule": true,
     "skipLibCheck": true,
