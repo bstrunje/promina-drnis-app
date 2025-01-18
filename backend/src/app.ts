@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 // Konfiguracija za CORS
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://frontend-xi-six-19.vercel.app'  // Glavna domena projekta
+  'https://frontend-hmfeev46f-bozo-strunjes-projects.vercel.app'  // Novi frontend URL
 ];
 
 app.use(cors({
