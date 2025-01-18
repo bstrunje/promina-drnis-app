@@ -18,7 +18,7 @@ export interface RegisterResponse {
 }
 
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-production-api-url.com/api' 
+  ? 'https://backend-sandy-pi-26.vercel.app/api' 
   : 'http://localhost:3000';
 
 const api = axios.create({
