@@ -1,0 +1,63 @@
+PS C:\sinkronizacija\promina-drnis-app\backend> vercel ls
+Vercel CLI 39.2.4
+> Deployments for bozo-strunjes-projects/backend [265ms]
+
+  Age     Deployment                                                      Status      Environment     Duration     Username
+  1d      https://backend-b73wd5b3i-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  1d      https://backend-9o1putcx2-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
+  1d      https://backend-7mcbusxo7-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  1d      https://backend-107mt71rt-bozo-strunjes-projects.vercel.app     ● Error     Production      15s          bstrunje
+  1d      https://backend-omyvnizka-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  1d      https://backend-q0apyrm9x-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
+  1d      https://backend-31vyrlrlm-bozo-strunjes-projects.vercel.app     ● Error     Production      18s          bstrunje
+  1d      https://backend-4o5m4sd0g-bozo-strunjes-projects.vercel.app     ● Error     Production      18s          bstrunje
+  1d      https://backend-orm1pgq9d-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
+  1d      https://backend-m0q8vtawm-bozo-strunjes-projects.vercel.app     ● Ready     Production      3s           bstrunje
+  1d      https://backend-h10zwvakf-bozo-strunjes-projects.vercel.app     ● Error     Production      22s          bstrunje
+  1d      https://backend-go3nayui9-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  1d      https://backend-augt83d3c-bozo-strunjes-projects.vercel.app     ● Error     Production      15s          bstrunje
+  1d      https://backend-atjyutong-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
+  1d      https://backend-kf6x24gbc-bozo-strunjes-projects.vercel.app     ● Error     Production      20s          bstrunje
+  1d      https://backend-76vx6fono-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  2d      https://backend-ip33kp86p-bozo-strunjes-projects.vercel.app     ● Error     Production      24s          bstrunje
+  2d      https://backend-hrqiw1in0-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
+  2d      https://backend-crs9u1efy-bozo-strunjes-projects.vercel.app     ● Error     Production      48s          bstrunje
+  2d      https://backend-4uejogrsk-bozo-strunjes-projects.vercel.app     ● Ready     Production      3s           bstrunje
+
+> To display the next page, run `vercel ls --next 1737164932244`
+PS C:\sinkronizacija\promina-drnis-app\backend> vercel status
+Vercel CLI 39.2.4
+Error: Could not find “C:\sinkronizacija\promina-drnis-app\backend\status”
+PS C:\sinkronizacija\promina-drnis-app\backend> cd..
+PS C:\sinkronizacija\promina-drnis-app> cd frontend
+PS C:\sinkronizacija\promina-drnis-app\frontend> vercel ls
+Vercel CLI 39.2.4
+> Deployments for bozo-strunjes-projects/frontend [274ms]
+
+  Age     Deployment                                                       Status      Environment     Duration     Username
+  23h     https://frontend-ovpl2be9k-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
+  23h     https://frontend-hiplfstx2-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
+  24h     https://frontend-o3mvqbolg-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
+  24h     https://frontend-qx3x8321t-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
+  24h     https://frontend-jj67ogtsr-bozo-strunjes-projects.vercel.app     ● Ready     Production      39s          bstrunje
+  2d      https://frontend-kveusfipr-bozo-strunjes-projects.vercel.app     ● Ready     Production      14s          bstrunje
+  2d      https://frontend-hmfeev46f-bozo-strunjes-projects.vercel.app     ● Ready     Production      14s          bstrunje
+  2d      https://frontend-ptx90v13n-bozo-strunjes-projects.vercel.app     ● Ready     Production      16s          bstrunje
+  2d      https://frontend-cfu1m46jv-bozo-strunjes-projects.vercel.app     ● Ready     Production      12s          bstrunje
+  2d      https://frontend-p8ds2j2kv-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
+  2d      https://frontend-k3afk5dog-bozo-strunjes-projects.vercel.app     ● Ready     Production      29s          bstrunje
+  2d      https://frontend-8lv3n859n-bozo-strunjes-projects.vercel.app     ● Ready     Production      16s          bstrunje
+  2d      https://frontend-1huiv0pbx-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
+  2d      https://frontend-kytrg95oo-bozo-strunjes-projects.vercel.app     ● Ready     Production      1m           bstrunje
+  15d     https://frontend-7jn8xjpjg-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
+  15d     https://frontend-bbh09ihuu-bozo-strunjes-projects.vercel.app     ● Ready     Production      37s          bstrunje
+  15d     https://frontend-m62zfv0po-bozo-strunjes-projects.vercel.app     ● Error     Production      36s          bstrunje
+  15d     https://frontend-hyorq70mu-bozo-strunjes-projects.vercel.app     ● Error     Production      41s          bstrunje
+  15d     https://frontend-m9y28zf1j-bozo-strunjes-projects.vercel.app     ● Error     Production      30s          bstrunje
+  15d     https://frontend-3596ofa1o-bozo-strunjes-projects.vercel.app     ● Error     Production      31s          bstrunje
+
+> To display the next page, run `vercel ls --next 1735997327207`
+PS C:\sinkronizacija\promina-drnis-app\frontend> vercel status
+Vercel CLI 39.2.4
+Error: Could not find “C:\sinkronizacija\promina-drnis-app\frontend\status”
+PS C:\sinkronizacija\promina-drnis-app\frontend>
