@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "rimraf dist && tsc",
+    "build": "tsc",
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "vercel-build": "npm run build",
     "postinstall": "prisma generate"
@@ -45,6 +45,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tsconfig": "^7.0.0",
+    "rimraf": "^5.0.5",
     "typescript": "^5.6.3"
   },
   "devDependencies": {
@@ -64,8 +65,5 @@
     "supertest": "^7.0.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0"
-  },
-  "optionalDependencies": {
-    "@promina-drnis-app/shared": "1.0.0"
   }
 }

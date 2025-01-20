@@ -98,6 +98,15 @@ app.get('/health', async (req: Request, res: Response) => {
     }
 });
 
+// Root route
+app.get('/', (req: Request, res: Response) => {
+    res.json({
+        message: 'Promina Drnis API',
+        documentation: '/api',
+        health: '/health'
+    });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/activities', authMiddleware, activityRoutes);
