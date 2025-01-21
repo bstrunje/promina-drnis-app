@@ -42,15 +42,32 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   'http://localhost:5173',
   'https://frontend-xi-six-19.vercel.app',  // Glavni frontend URL
-  'https://backend-sandy-pi-26.vercel.app'  // Glavni backend URL
+  'https://backend-sandy-pi-26.vercel.app',  // Glavni backend URL
+  'https://*.vercel.app'
 ];
 
+// CORS config
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Allow requests with no origin (like mobile apps, curl)
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+        
+        // Check if origin matches any allowed pattern
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed.includes('*')) {
+                const pattern = new RegExp(allowed.replace('*', '.*'));
+                return pattern.test(origin);
+            }
+            return allowed === origin;
+        });
+
+        if (isAllowed) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error('CORS not allowed'));
         }
     },
     credentials: true,
