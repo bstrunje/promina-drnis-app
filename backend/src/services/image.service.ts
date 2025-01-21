@@ -27,7 +27,9 @@ const imageService = {
 
             // Process image with sharp
             await sharp(file.path)
-                .resize(PROFILE_IMAGE_CONFIG.width, PROFILE_IMAGE_CONFIG.height, {
+                .resize({
+                    width: PROFILE_IMAGE_CONFIG.width,
+                    height: PROFILE_IMAGE_CONFIG.height,
                     fit: 'cover',
                     position: 'center'
                 })

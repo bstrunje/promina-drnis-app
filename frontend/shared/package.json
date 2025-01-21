@@ -1,13 +1,13 @@
 {
-  "name": "@promina-drnis-app/shared",
+  "name": "@promina-drnis-app-frontend/shared",
   "version": "1.0.0",
   "type": "module",
   "engines": {
     "node": "20.x"
   },
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
-    "build": "tsc -b --force --verbose",
+    "build": "tsc",
     "watch": "tsc -w",
     "typecheck": "tsc --noEmit"
   },

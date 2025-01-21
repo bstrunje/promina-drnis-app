@@ -11,6 +11,7 @@ import imageService from '../services/image.service.js';
 import stampService from '../services/stamp.service.js';
 import membershipService from '../services/membership.service.js';
 import { MembershipPeriod } from '../shared/types/membership.js';
+import multerConfig from '../config/upload.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;

@@ -1,8 +1,9 @@
 // backend/src/routes/members.ts
 import express from 'express';
-import memberController from '../controllers/member.controller.js'
+import type { RequestHandler } from 'express';
+import memberController from '../controllers/member.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
-import { uploadConfig } from '../config/upload.js';
+import multerConfig from '../config/upload.js';
 
 const router = express.Router();
 
@@ -31,7 +32,14 @@ router.put(
 router.post(
   '/:memberId/profile-image',
   authenticateToken,
-  uploadConfig.single('image'),
+  function(req: express.Request, res: express.Response, next: express.NextFunction) {
+    multerConfig.single('image')(req, res, function(err: any) {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      next();
+    });
+  },
   memberController.uploadProfileImage
 );
 

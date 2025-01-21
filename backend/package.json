@@ -6,9 +6,8 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node --experimental-specifier-resolution=node dist/server.js",
     "build": "tsc",
-    "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --esm src/server.ts",
     "vercel-build": "npm run build",
     "postinstall": "prisma generate"
   },
@@ -62,8 +61,6 @@
     "rimraf": "^5.0.5",
     "sinon": "^15.2.0",
     "sinon-chai": "^3.7.0",
-    "supertest": "^7.0.0",
-    "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0"
+    "supertest": "^7.0.0"
   }
 }

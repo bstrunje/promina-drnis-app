@@ -9,7 +9,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, './shared'),
       '@components': path.resolve(__dirname, './components')
-    }
+    },
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     proxy: {
@@ -19,6 +20,8 @@ export default defineConfig({
         secure: false,
       },
     },
+    port: 5173,
+    host: true
   },
   build: {
     outDir: 'dist',
@@ -28,6 +31,7 @@ export default defineConfig({
       output: {
         sourcemapExcludeSources: true
       },
+      external: ['@remix-run/router'],
     }
   }
 });

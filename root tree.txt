@@ -1,13 +1,9 @@
-PS C:\Users\bozos> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse | Where-Object { $_.FullName -notlike '*\node_modules*' } | ForEach-Object { $_.FullName.Substring("C:\sinkronizacija\promina-drnis-app\".Length) }
+PS C:\sinkronizacija\promina-drnis-app> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse | Where-Object { $_.FullName -notlike '*\node_modules*' } | ForEach-Object { $_.FullName.Substring("C:\sinkronizacija\promina-drnis-app\".Length) }
 .husky
 .vscode
 backend
 backup
 frontend
-.env.development
-.env.example
-.env.production
-.env.test
 .gitattributes
 .gitignore
 backup.sql
@@ -21,6 +17,7 @@ root tree.txt
 tailwind.config.js
 tsconfig.json
 tsconfig.tsbuildinfo
+vercel_podaci.txt
 .husky\_
 .husky\_\.gitignore
 .husky\_\husky.sh
@@ -34,8 +31,7 @@ backend\scripts
 backend\src
 backend\uploads
 backend\.env
-backend\.env.production
-backend\.env.test
+backend\.env.example
 backend\.gitignore
 backend\.mocharc.json
 backend\package-lock.json
@@ -240,7 +236,7 @@ frontend\public
 frontend\shared
 frontend\src
 frontend\.env
-frontend\.env.production
+frontend\.env.example
 frontend\.gitignore
 frontend\eslint.config.js
 frontend\index.html
@@ -383,4 +379,3 @@ frontend\src\features\settings\Settings.tsx
 frontend\src\lib\utils.ts
 frontend\src\utils\api.ts
 frontend\src\utils\config.ts
-PS C:\Users\bozos>
