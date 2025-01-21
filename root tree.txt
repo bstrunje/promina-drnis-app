@@ -4,7 +4,6 @@ PS C:\Users\bozos> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse 
 backend
 backup
 frontend
-packages
 .env.development
 .env.example
 .env.production
@@ -12,9 +11,8 @@ packages
 .gitattributes
 .gitignore
 backup.sql
-izvještaj.txt
+izvjestaj.txt
 jest.config.js
-Kopiran prošli razgovor.txt
 package-lock.json
 package.json
 Procfile
@@ -385,8 +383,4 @@ frontend\src\features\settings\Settings.tsx
 frontend\src\lib\utils.ts
 frontend\src\utils\api.ts
 frontend\src\utils\config.ts
-packages\shared
-packages\shared\src
-packages\shared\package.json
-packages\shared\src\index.ts
 PS C:\Users\bozos>

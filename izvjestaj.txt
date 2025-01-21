@@ -1,63 +1,41 @@
-PS C:\sinkronizacija\promina-drnis-app\backend> vercel ls
-Vercel CLI 39.2.4
-> Deployments for bozo-strunjes-projects/backend [265ms]
-
-  Age     Deployment                                                      Status      Environment     Duration     Username
-  1d      https://backend-b73wd5b3i-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  1d      https://backend-9o1putcx2-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
-  1d      https://backend-7mcbusxo7-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  1d      https://backend-107mt71rt-bozo-strunjes-projects.vercel.app     ● Error     Production      15s          bstrunje
-  1d      https://backend-omyvnizka-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  1d      https://backend-q0apyrm9x-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
-  1d      https://backend-31vyrlrlm-bozo-strunjes-projects.vercel.app     ● Error     Production      18s          bstrunje
-  1d      https://backend-4o5m4sd0g-bozo-strunjes-projects.vercel.app     ● Error     Production      18s          bstrunje
-  1d      https://backend-orm1pgq9d-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
-  1d      https://backend-m0q8vtawm-bozo-strunjes-projects.vercel.app     ● Ready     Production      3s           bstrunje
-  1d      https://backend-h10zwvakf-bozo-strunjes-projects.vercel.app     ● Error     Production      22s          bstrunje
-  1d      https://backend-go3nayui9-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  1d      https://backend-augt83d3c-bozo-strunjes-projects.vercel.app     ● Error     Production      15s          bstrunje
-  1d      https://backend-atjyutong-bozo-strunjes-projects.vercel.app     ● Error     Production      19s          bstrunje
-  1d      https://backend-kf6x24gbc-bozo-strunjes-projects.vercel.app     ● Error     Production      20s          bstrunje
-  1d      https://backend-76vx6fono-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  2d      https://backend-ip33kp86p-bozo-strunjes-projects.vercel.app     ● Error     Production      24s          bstrunje
-  2d      https://backend-hrqiw1in0-bozo-strunjes-projects.vercel.app     ● Ready     Production      4s           bstrunje
-  2d      https://backend-crs9u1efy-bozo-strunjes-projects.vercel.app     ● Error     Production      48s          bstrunje
-  2d      https://backend-4uejogrsk-bozo-strunjes-projects.vercel.app     ● Ready     Production      3s           bstrunje
-
-> To display the next page, run `vercel ls --next 1737164932244`
-PS C:\sinkronizacija\promina-drnis-app\backend> vercel status
-Vercel CLI 39.2.4
-Error: Could not find “C:\sinkronizacija\promina-drnis-app\backend\status”
-PS C:\sinkronizacija\promina-drnis-app\backend> cd..
-PS C:\sinkronizacija\promina-drnis-app> cd frontend
-PS C:\sinkronizacija\promina-drnis-app\frontend> vercel ls
-Vercel CLI 39.2.4
-> Deployments for bozo-strunjes-projects/frontend [274ms]
-
-  Age     Deployment                                                       Status      Environment     Duration     Username
-  23h     https://frontend-ovpl2be9k-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
-  23h     https://frontend-hiplfstx2-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
-  24h     https://frontend-o3mvqbolg-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
-  24h     https://frontend-qx3x8321t-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
-  24h     https://frontend-jj67ogtsr-bozo-strunjes-projects.vercel.app     ● Ready     Production      39s          bstrunje
-  2d      https://frontend-kveusfipr-bozo-strunjes-projects.vercel.app     ● Ready     Production      14s          bstrunje
-  2d      https://frontend-hmfeev46f-bozo-strunjes-projects.vercel.app     ● Ready     Production      14s          bstrunje
-  2d      https://frontend-ptx90v13n-bozo-strunjes-projects.vercel.app     ● Ready     Production      16s          bstrunje
-  2d      https://frontend-cfu1m46jv-bozo-strunjes-projects.vercel.app     ● Ready     Production      12s          bstrunje
-  2d      https://frontend-p8ds2j2kv-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
-  2d      https://frontend-k3afk5dog-bozo-strunjes-projects.vercel.app     ● Ready     Production      29s          bstrunje
-  2d      https://frontend-8lv3n859n-bozo-strunjes-projects.vercel.app     ● Ready     Production      16s          bstrunje
-  2d      https://frontend-1huiv0pbx-bozo-strunjes-projects.vercel.app     ● Ready     Production      15s          bstrunje
-  2d      https://frontend-kytrg95oo-bozo-strunjes-projects.vercel.app     ● Ready     Production      1m           bstrunje
-  15d     https://frontend-7jn8xjpjg-bozo-strunjes-projects.vercel.app     ● Ready     Production      13s          bstrunje
-  15d     https://frontend-bbh09ihuu-bozo-strunjes-projects.vercel.app     ● Ready     Production      37s          bstrunje
-  15d     https://frontend-m62zfv0po-bozo-strunjes-projects.vercel.app     ● Error     Production      36s          bstrunje
-  15d     https://frontend-hyorq70mu-bozo-strunjes-projects.vercel.app     ● Error     Production      41s          bstrunje
-  15d     https://frontend-m9y28zf1j-bozo-strunjes-projects.vercel.app     ● Error     Production      30s          bstrunje
-  15d     https://frontend-3596ofa1o-bozo-strunjes-projects.vercel.app     ● Error     Production      31s          bstrunje
-
-> To display the next page, run `vercel ls --next 1735997327207`
-PS C:\sinkronizacija\promina-drnis-app\frontend> vercel status
-Vercel CLI 39.2.4
-Error: Could not find “C:\sinkronizacija\promina-drnis-app\frontend\status”
-PS C:\sinkronizacija\promina-drnis-app\frontend>
+[01:22:39.641] Running build in Washington, D.C., USA (East) – iad1
+[01:22:41.231] Retrieving list of deployment files...
+[01:22:41.234] Skipping build cache, deployment was triggered without cache.
+[01:22:41.751] Downloading 165 deployment files...
+[01:22:42.678] Running "vercel build"
+[01:22:43.119] Vercel CLI 39.3.0
+[01:22:43.787] Running "install" command: `npm install`...
+[01:22:46.718] npm warn deprecated npmlog@5.0.1: This package is no longer supported.
+[01:22:46.898] npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+[01:22:47.064] npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+[01:22:47.174] npm warn deprecated are-we-there-yet@2.0.0: This package is no longer supported.
+[01:22:47.243] npm warn deprecated gauge@3.0.2: This package is no longer supported.
+[01:22:47.345] npm warn deprecated glob@7.1.6: Glob versions prior to v9 are no longer supported
+[01:22:47.355] npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+[01:22:53.026] 
+[01:22:53.026] > @promina-drnis-app/backend@1.0.0 postinstall
+[01:22:53.026] > prisma generate
+[01:22:53.026] 
+[01:22:53.664] Environment variables loaded from .env
+[01:22:53.666] Prisma schema loaded from prisma/schema.prisma
+[01:22:54.355] 
+[01:22:54.356] ✔ Generated Prisma Client (v6.2.1) to ./node_modules/@prisma/client in 196ms
+[01:22:54.356] 
+[01:22:54.356] Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+[01:22:54.356] 
+[01:22:54.356] Tip: Want to react to database changes in your app as they happen? Discover how with Pulse: https://pris.ly/tip-1-pulse
+[01:22:54.356] 
+[01:22:54.558] 
+[01:22:54.558] added 282 packages, and audited 283 packages in 11s
+[01:22:54.558] 
+[01:22:54.559] 27 packages are looking for funding
+[01:22:54.559]   run `npm fund` for details
+[01:22:54.560] 
+[01:22:54.560] found 0 vulnerabilities
+[01:22:54.829] 
+[01:22:54.830] > @promina-drnis-app/backend@1.0.0 build
+[01:22:54.830] > tsc
+[01:22:54.830] 
+[01:22:59.101] Error: No Output Directory named "dist" found after the Build completed. You can configure the Output Directory in your Project Settings.
+[01:22:59.102] Learn More: https://vercel.link/missing-public-directory
+[01:22:59.423] 
