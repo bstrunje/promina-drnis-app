@@ -1,4 +1,4 @@
-PS C:\sinkronizacija\promina-drnis-app> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse | Where-Object { $_.FullName -notlike '*\node_modules*' } | ForEach-Object { $_.FullName.Substring("C:\sinkronizacija\promina-drnis-app\".Length) }
+PS C:\Users\bozos> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse | Where-Object { $_.FullName -notlike '*\node_modules*' } | ForEach-Object { $_.FullName.Substring("C:\sinkronizacija\promina-drnis-app\".Length) }
 .husky
 .vscode
 backend
@@ -44,7 +44,9 @@ backend\vercel.json
 backend\.turbo\turbo-build.log
 backend\.vercel\project.json
 backend\.vercel\README.txt
+backend\backend\.vercel
 backend\backend\src
+backend\backend\.vercel\cache
 backend\backend\src\shared
 backend\backend\src\shared\types
 backend\dist\config
@@ -63,6 +65,7 @@ backend\dist\server.js
 backend\dist\setupDatabase.js
 backend\dist\test.js
 backend\dist\config\config.js
+backend\dist\config\jsdoc.json
 backend\dist\config\jwt.config.js
 backend\dist\config\swagger.js
 backend\dist\config\upload.js
@@ -109,6 +112,7 @@ backend\dist\services\membership.service.js
 backend\dist\services\message.service.js
 backend\dist\services\stamp.service.js
 backend\dist\shared\types
+backend\dist\shared\tsconfig.json
 backend\dist\shared\types\activity.js
 backend\dist\shared\types\activity.types.js
 backend\dist\shared\types\audit.js
@@ -206,6 +210,7 @@ backend\src\shared\types\index.ts
 backend\src\shared\types\member.ts
 backend\src\shared\types\member.types.ts
 backend\src\shared\types\membership.ts
+backend\src\shared\types\README.md
 backend\src\shared\types\settings.ts
 backend\src\shared\types\settings.types.ts
 backend\src\tests\repositories
@@ -237,6 +242,7 @@ frontend\shared
 frontend\src
 frontend\.env
 frontend\.env.example
+frontend\.env.production
 frontend\.gitignore
 frontend\eslint.config.js
 frontend\index.html
@@ -285,51 +291,14 @@ frontend\components\ui\use-toast.ts
 frontend\dist\assets
 frontend\dist\index.html
 frontend\dist\vite.svg
-frontend\dist\assets\index-CXZoCajk.js
-frontend\dist\assets\index-CXZoCajk.js.map
+frontend\dist\assets\index-CaTglKJb.js
+frontend\dist\assets\index-CaTglKJb.js.map
 frontend\dist\assets\index-DXQapvt6.css
 frontend\public\vite.svg
-frontend\shared\dist
 frontend\shared\types
 frontend\shared\package.json
 frontend\shared\tsconfig.json
 frontend\shared\tsconfig.tsbuildinfo
-frontend\shared\dist\activity.d.ts
-frontend\shared\dist\activity.d.ts.map
-frontend\shared\dist\activity.js
-frontend\shared\dist\activity.js.map
-frontend\shared\dist\audit.d.ts
-frontend\shared\dist\audit.d.ts.map
-frontend\shared\dist\audit.js
-frontend\shared\dist\audit.js.map
-frontend\shared\dist\auth.d.ts
-frontend\shared\dist\auth.d.ts.map
-frontend\shared\dist\auth.js
-frontend\shared\dist\auth.js.map
-frontend\shared\dist\common.d.ts
-frontend\shared\dist\common.d.ts.map
-frontend\shared\dist\common.js
-frontend\shared\dist\common.js.map
-frontend\shared\dist\index.d.ts
-frontend\shared\dist\index.d.ts.map
-frontend\shared\dist\index.js
-frontend\shared\dist\index.js.map
-frontend\shared\dist\member.d.ts
-frontend\shared\dist\member.d.ts.map
-frontend\shared\dist\member.js
-frontend\shared\dist\member.js.map
-frontend\shared\dist\membership.d.ts
-frontend\shared\dist\membership.d.ts.map
-frontend\shared\dist\membership.js
-frontend\shared\dist\membership.js.map
-frontend\shared\dist\settings.d.ts
-frontend\shared\dist\settings.d.ts.map
-frontend\shared\dist\settings.js
-frontend\shared\dist\settings.js.map
-frontend\shared\dist\settings.types.d.ts
-frontend\shared\dist\settings.types.d.ts.map
-frontend\shared\dist\settings.types.js
-frontend\shared\dist\settings.types.js.map
 frontend\shared\types\activity.ts
 frontend\shared\types\audit.ts
 frontend\shared\types\auth.ts
@@ -379,3 +348,4 @@ frontend\src\features\settings\Settings.tsx
 frontend\src\lib\utils.ts
 frontend\src\utils\api.ts
 frontend\src\utils\config.ts
+PS C:\Users\bozos>
