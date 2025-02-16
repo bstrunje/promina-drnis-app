@@ -1,5 +1,5 @@
-import app from '../backend/src/app.js';
-import { setupDatabase } from '../backend/src/setupDatabase.js';
+import app from './src/app.js';
+import { setupDatabase } from './src/setupDatabase.js';
 
 // Inicijalizacija baze podataka
 setupDatabase()
