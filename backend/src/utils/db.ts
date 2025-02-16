@@ -38,14 +38,23 @@ interface QueryOptions {
     timeout?: number;
 }
 
-const pool = new Pool({
-    database: process.env.POSTGRES_DB || 'promina_drnis_db',
-    user: process.env.POSTGRES_USER || 'bozos',
-    host: process.env.POSTGRES_HOST || 'localhost',
-    password: process.env.POSTGRES_PASSWORD || 'Listopad24$',
-    port: parseInt(process.env.POSTGRES_PORT || '5432'),
-    query_timeout: 10000
-});
+const pool = new Pool(
+    process.env.DATABASE_URL 
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    }
+    : {
+        database: process.env.POSTGRES_DB || 'promina_drnis_db',
+        user: process.env.POSTGRES_USER || 'bozos',
+        host: process.env.POSTGRES_HOST || 'localhost',
+        password: process.env.POSTGRES_PASSWORD || 'Listopad24$',
+        port: parseInt(process.env.POSTGRES_PORT || '5432'),
+        query_timeout: 10000
+    }
+);
 
 pool.on('connect', () => {
     console.log('📦 Database pool connected');
