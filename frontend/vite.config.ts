@@ -31,7 +31,6 @@ export default defineConfig({
       output: {
         sourcemapExcludeSources: true
       },
-      external: ['@remix-run/router'],
     }
   }
 });

@@ -41,8 +41,8 @@ app.use(express.urlencoded({ extended: true }));
 // Konfiguracija za CORS
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://frontend-xi-six-19.vercel.app',  // Glavni frontend URL
-  'https://backend-sandy-pi-26.vercel.app',  // Glavni backend URL
+  'https://promina-drnis-api.vercel.app',
+  'https://promina-drnis-app.vercel.app',
   'https://*.vercel.app'
 ];
 
