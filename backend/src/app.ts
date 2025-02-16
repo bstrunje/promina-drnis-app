@@ -90,7 +90,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Health check endpoint
-app.get('/health', async (req: Request, res: Response) => {
+app.get('/api/health', async (req: Request, res: Response) => {
     try {
         res.json({
             status: 'healthy',
