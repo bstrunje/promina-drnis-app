@@ -1,24 +1,29 @@
-PS C:\sinkronizacija\promina-drnis-app> cd frontend
-PS C:\sinkronizacija\promina-drnis-app\frontend> vercel logs promina-drnis-97swq6r9o-bozo-strunjes-projects.vercel.app
-Vercel CLI 41.0.3
-Error: Deployment not ready. Currently: ● Error.
-PS C:\sinkronizacija\promina-drnis-app\frontend> 
+PS C:\sinkronizacija\promina-drnis-app> git status
+On branch main
+Your branch is up to date with 'origin/main'.
 
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   izvjestaj.txt
+        modified:   package-lock.json
+        modified:   package.json
+        modified:   vercel.json
 
-[15:00:42.944] Running build in Washington, D.C., USA (East) – iad1
-[15:00:43.060] Retrieving list of deployment files...
-[15:00:43.526] Downloading 88 deployment files...
-[15:00:45.510] Skipping build cache since Node.js version changed from "22.x" to "20.x"
-[15:00:46.353] Running "vercel build"
-[15:00:46.730] Vercel CLI 41.1.3
-[15:00:47.445] Running "install" command: `npm install`...
-[15:01:06.039] npm error code E404
-[15:01:06.040] npm error 404 Not Found - GET https://registry.npmjs.org/@promina-drnis-app-frontend%2fshared - Not found
-[15:01:06.041] npm error 404
-[15:01:06.041] npm error 404  '@promina-drnis-app-frontend/shared@^1.0.0' is not in this registry.
-[15:01:06.042] npm error 404
-[15:01:06.042] npm error 404 Note that you can also install from a
-[15:01:06.042] npm error 404 tarball, folder, http url, or git url.
-[15:01:06.044] npm error A complete log of this run can be found in: /vercel/.npm/_logs/2025-02-16T14_00_47_629Z-debug-0.log
-[15:01:06.060] Error: Command "npm install" exited with 1
-[15:01:06.604] 
+no changes added to commit (use "git add" and/or "git commit -a")
+PS C:\sinkronizacija\promina-drnis-app> git add .
+warning: in the working copy of 'vercel.json', CRLF will be replaced by LF the next time Git touches it
+PS C:\sinkronizacija\promina-drnis-app> git commit -m "prilagođavanje backenda za vercel_drugi put"
+[main 8d784f1] prilagođavanje backenda za vercel_drugi put
+ 4 files changed, 62 insertions(+), 442 deletions(-)        
+PS C:\sinkronizacija\promina-drnis-app> git push origin main
+                                                           Enumerating objects: 11, done.
+Counting objects: 100% (11/11), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (6/6), done.
+Writing objects: 100% (6/6), 1.46 KiB | 1.46 MiB/s, done.   
+Total 6 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
+To https://github.com/bstrunje/promina-drnis-app.git        
+   babadb1..8d784f1  main -> main
+PS C:\sinkronizacija\promina-drnis-app> 
