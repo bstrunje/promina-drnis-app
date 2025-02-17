@@ -5,6 +5,8 @@ import compression from 'compression';
 import morgan from 'morgan';
 import path from 'path';
 import config from './config/config.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -20,6 +22,10 @@ import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.routes.js';
 
 const app: Express = express();
+
+// ES modules compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Test database connection
 sequelize.authenticate()
@@ -86,7 +92,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Serve static files from the React frontend app
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+    const distPath = path.resolve(__dirname, '../../frontend/dist');
+    app.use(express.static(distPath));
+    
+    // Catch-all route for React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(distPath, 'index.html'));
+    });
 }
 
 // Health check endpoint
@@ -149,13 +161,6 @@ app.get('/api', (req: Request, res: Response) => {
         }
     });
 });
-
-// Catch-all route za serviranje React app-a u produkciji
-if (process.env.NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
-    });
-}
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
