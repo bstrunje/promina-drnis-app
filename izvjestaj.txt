@@ -1,12 +1,12 @@
 ==> Cloning from https://github.com/bstrunje/promina-drnis-app
-==> Checking out commit 7c787011741b6c762d80b9b3c41e316e98f2306b in branch main
+==> Checking out commit 54e8b3ff3eff9b1ad16ad54235f051947888bb2c in branch main
 ==> Requesting Node.js version 20.x
 ==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Using Bun version 1.1.0 (default)
 ==> Docs on specifying a bun version: https://render.com/docs/bun-version
 ==> Running build command 'npm install && npm run build'...
-added 335 packages, and audited 337 packages in 8s
+added 335 packages, and audited 337 packages in 7s
 41 packages are looking for funding
   run `npm fund` for details
 found 0 vulnerabilities
@@ -22,16 +22,50 @@ found 0 vulnerabilities
 ==> Running 'npm start'
 > @promina-drnis-app/backend@1.0.0 start
 > node dist/server.js
-file:///opt/render/project/src/backend/dist/app.js:78
-    app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-                                     ^
-ReferenceError: __dirname is not defined in ES module scope
-This file is being treated as an ES module because it has a '.js' file extension and '/opt/render/project/src/backend/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
-    at file:///opt/render/project/src/backend/dist/app.js:78:38
-    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
-Node.js v20.18.3
+🏃 Current directory: /opt/render/project/src/backend/dist
+📁 Loading .env from: /opt/render/project/src/backend/dist/.env
+⚙️  Environment configuration: {
+  PORT: '10000 (Web Server)',
+  DATABASE_URL: 'Set (Hidden for security)',
+  JWT_SECRET: 'Set (Hidden for security)',
+  NODE_ENV: 'production'
+}
+Error: SequelizeConnectionRefusedError
+Error: SequelizeConnectionRefusedError
+Database query error: {
+  query: 'SELECT 1',
+  error: 'role "u5o0r2joqt548m" is not permitted to log in'
+}
+❌ Database connection error: error: role "u5o0r2joqt548m" is not permitted to log in
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (file:///opt/render/project/src/backend/dist/utils/db.js:47:28)
+    at async checkDatabaseConnection (file:///opt/render/project/src/backend/dist/server.js:47:9)
+    at async startServer (file:///opt/render/project/src/backend/dist/server.js:61:29) {
+  length: 119,
+  severity: 'FATAL',
+  code: '28000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'miscinit.c',
+  line: '1115',
+  routine: 'InitializeSessionUserId'
+}
+❌ Failed to start application: Error: Unable to connect to database
+    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+❌ Failed to start application: Error: Unable to connect to database
+    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
 npm error Lifecycle script `start` failed with error:
 npm error code 1
 npm error path /opt/render/project/src/backend
@@ -40,23 +74,57 @@ npm error location /opt/render/project/src/backend
 npm error command failed
 npm error command sh -c node dist/server.js
 ==> Requesting Node.js version 20.x
-==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Exited with status 1
-==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Running 'npm start'
 > @promina-drnis-app/backend@1.0.0 start
 > node dist/server.js
-file:///opt/render/project/src/backend/dist/app.js:78
-    app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-                                     ^
-ReferenceError: __dirname is not defined in ES module scope
-This file is being treated as an ES module because it has a '.js' file extension and '/opt/render/project/src/backend/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
-    at file:///opt/render/project/src/backend/dist/app.js:78:38
-    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)
-Node.js v20.18.3
+🏃 Current directory: /opt/render/project/src/backend/dist
+📁 Loading .env from: /opt/render/project/src/backend/dist/.env
+⚙️  Environment configuration: {
+  PORT: '10000 (Web Server)',
+  DATABASE_URL: 'Set (Hidden for security)',
+  JWT_SECRET: 'Set (Hidden for security)',
+  NODE_ENV: 'production'
+}
+Error: SequelizeConnectionRefusedError
+Error: SequelizeConnectionRefusedError
+Database query error: {
+  query: 'SELECT 1',
+  error: 'role "u5o0r2joqt548m" is not permitted to log in'
+}
+❌ Database connection error: error: role "u5o0r2joqt548m" is not permitted to log in
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (file:///opt/render/project/src/backend/dist/utils/db.js:47:28)
+    at async checkDatabaseConnection (file:///opt/render/project/src/backend/dist/server.js:47:9)
+    at async startServer (file:///opt/render/project/src/backend/dist/server.js:61:29) {
+  length: 119,
+  severity: 'FATAL',
+  code: '28000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'miscinit.c',
+  line: '1115',
+  routine: 'InitializeSessionUserId'
+}
+❌ Failed to start application: Error: Unable to connect to database
+    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+❌ Failed to start application: Error: Unable to connect to database
+    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
 npm error Lifecycle script `start` failed with error:
 npm error code 1
 npm error path /opt/render/project/src/backend
