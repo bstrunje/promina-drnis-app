@@ -42,9 +42,9 @@ const pool = new Pool(
     process.env.DATABASE_URL 
     ? {
         connectionString: process.env.DATABASE_URL,
-       // ssl: {
-       //     rejectUnauthorized: false
-       // }
+        ssl: process.env.NODE_ENV === 'production' ? {
+            rejectUnauthorized: false
+        } : undefined
     }
     : {
         database: process.env.DB_NAME || 'promina_drnis_db',
@@ -52,9 +52,6 @@ const pool = new Pool(
         host: process.env.DB_HOST || 'localhost',
         password: process.env.DB_PASSWORD || 'Listopad24$',
         port: parseInt(process.env.DB_PORT || '5432'),
-        // ssl: process.env.NODE_ENV === 'production' ? {
-        //     rejectUnauthorized: false
-        // } : undefined
     }
 );
 

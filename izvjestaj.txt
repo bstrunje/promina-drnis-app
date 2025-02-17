@@ -1,12 +1,12 @@
 ==> Cloning from https://github.com/bstrunje/promina-drnis-app
-==> Checking out commit 1a92df68bf8f7ebd24197b0d46b3538f69003853 in branch main
+==> Checking out commit 9c3f4937a22d4b03806877032b0f431649d9fea7 in branch main
 ==> Requesting Node.js version 20.x
 ==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Using Bun version 1.1.0 (default)
 ==> Docs on specifying a bun version: https://render.com/docs/bun-version
 ==> Running build command 'npm install && npm run build'...
-added 335 packages, and audited 337 packages in 9s
+added 335 packages, and audited 337 packages in 7s
 41 packages are looking for funding
   run `npm fund` for details
 found 0 vulnerabilities
@@ -40,9 +40,9 @@ npm error location /opt/render/project/src/backend
 npm error command failed
 npm error command sh -c node dist/server.js
 ==> Requesting Node.js version 20.x
+==> Exited with status 1
 ==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
-==> Exited with status 1
 ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
 ==> Running 'npm start'
 > @promina-drnis-app/backend@1.0.0 start
