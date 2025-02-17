@@ -42,17 +42,19 @@ const pool = new Pool(
     process.env.DATABASE_URL 
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
+       // ssl: {
+       //     rejectUnauthorized: false
+       // }
     }
     : {
-        database: process.env.POSTGRES_DB || 'promina_drnis_db',
-        user: process.env.POSTGRES_USER || 'bozos',
-        host: process.env.POSTGRES_HOST || 'localhost',
-        password: process.env.POSTGRES_PASSWORD || 'Listopad24$',
-        port: parseInt(process.env.POSTGRES_PORT || '5432'),
-        query_timeout: 10000
+        database: process.env.DB_NAME || 'promina_drnis_db',
+        user: process.env.DB_USER || 'bozos',
+        host: process.env.DB_HOST || 'localhost',
+        password: process.env.DB_PASSWORD || 'Listopad24$',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        // ssl: process.env.NODE_ENV === 'production' ? {
+        //     rejectUnauthorized: false
+        // } : undefined
     }
 );
 

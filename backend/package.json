@@ -26,7 +26,7 @@
     "@types/pg": "^8.10.9",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
-    "@vercel/node": "^5.1.7",
+    "@vercel/node": "^2.3.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -47,21 +47,5 @@
     "swagger-ui-express": "^5.0.1",
     "tsconfig": "^7.0.0",
     "typescript": "^5.6.3"
-  },
-  "devDependencies": {
-    "@types/chai": "^4.3.20",
-    "@types/mocha": "^10.0.10",
-    "@types/sinon": "^10.0.20",
-    "@types/sinon-chai": "^3.2.12",
-    "@types/supertest": "^6.0.2",
-    "chai": "^4.5.0",
-    "copyfiles": "^2.4.1",
-    "cross-env": "^7.0.3",
-    "mocha": "^10.8.2",
-    "prisma": "^6.2.1",
-    "rimraf": "^5.0.5",
-    "sinon": "^15.2.0",
-    "sinon-chai": "^3.7.0",
-    "supertest": "^7.0.0"
   }
 }

@@ -1,6 +1,7 @@
 // src/server.ts
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server } from 'http';
 import app from './app.js';
 import { setupDatabase } from './setupDatabase.js';
@@ -8,27 +9,23 @@ import db from './utils/db.js';
 import config from './config/config.js';
 
 // Windows-friendly path resolution
-const __dirname = path.resolve();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables - Windows path style
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Constants
 const DEFAULT_PORT = 3000;
 
 // Port configuration with validation
-let port = parseInt(process.env.PORT || '3000'); // Promijenili 'const' u 'let' i dodali parseInt
+let port = parseInt(process.env.PORT || '3000');
 
 // Validate port (avoid PostgreSQL default port)
 if (port === 5432) {
     console.warn('⚠️  Warning: Port 5432 is typically used by PostgreSQL. Using default port 3000 instead.');
     port = DEFAULT_PORT;
 }
-
-// Ukloni ovaj dio
-// app.listen(port, () => {
-//     console.log(`Server running on port ${port}`);
-// });
 
 // Windows-style environment logging
 console.log('🏃 Current directory:', path.resolve(__dirname));

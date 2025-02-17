@@ -1,5 +1,6 @@
 PS C:\Users\bozos> Get-ChildItem "C:\sinkronizacija\promina-drnis-app" -Recurse | Where-Object { $_.FullName -notlike '*\node_modules*' } | ForEach-Object { $_.FullName.Substring("C:\sinkronizacija\promina-drnis-app\".Length) }
 .husky
+.vercel
 .vscode
 backend
 backup
@@ -17,14 +18,16 @@ root tree.txt
 tailwind.config.js
 tsconfig.json
 tsconfig.tsbuildinfo
+vercel.json
 vercel_podaci.txt
 .husky\_
 .husky\_\.gitignore
 .husky\_\husky.sh
+.vercel\project.json
+.vercel\README.txt
 .vscode\settings.json
 backend\.turbo
 backend\.vercel
-backend\backend
 backend\dist
 backend\prisma
 backend\scripts
@@ -41,14 +44,14 @@ backend\tsconfig.build.json
 backend\tsconfig.json
 backend\tsconfig.tsbuildinfo
 backend\vercel.json
+backend\vercel.server.ts
 backend\.turbo\turbo-build.log
+backend\.vercel\output
+backend\.vercel\.env.development.local
 backend\.vercel\project.json
 backend\.vercel\README.txt
-backend\backend\.vercel
-backend\backend\src
-backend\backend\.vercel\cache
-backend\backend\src\shared
-backend\backend\src\shared\types
+backend\.vercel\output\builds.json
+backend\.vercel\output\config.json
 backend\dist\config
 backend\dist\controllers
 backend\dist\middleware
