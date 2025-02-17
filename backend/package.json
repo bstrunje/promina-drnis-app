@@ -6,7 +6,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node dist/server.js",
+    "start": "node dist/server.js",
     "build": "tsc",
     "vercel-build": "npm run build",
     "postinstall": "prisma generate"
