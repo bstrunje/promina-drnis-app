@@ -1,0 +1,7 @@
+{
+    "buildCommand": "npm install && npm run build",
+    "startCommand": "node dist/server.js",
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
