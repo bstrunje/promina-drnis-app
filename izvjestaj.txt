@@ -1,317 +1,247 @@
-==> Cloning from https://github.com/bstrunje/promina-drnis-app
-==> Checking out commit c3c5a78b00d33502e99e3c2c0b054d7be8dd97e4 in branch main
-==> Downloading cache...
-==> Transferred 160MB in 7s. Extraction took 3s.
-==> Requesting Node.js version 20.x
-==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
-==> Docs on specifying a Node.js version: https://render.com/docs/node-version
-==> Using Bun version 1.1.0 (default)
-==> Docs on specifying a bun version: https://render.com/docs/bun-version
-==> Running build command 'npm install && npm run build'...
-up to date, audited 337 packages in 2s
-41 packages are looking for funding
-  run `npm fund` for details
-found 0 vulnerabilities
-> @promina-drnis-app/backend@1.0.0 build
-> tsc
-==> Uploading build...
-==> Build uploaded in 8s
-==> Build successful 🎉
-==> Deploying...
-==> Requesting Node.js version 20.x
-==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
-==> Docs on specifying a Node.js version: https://render.com/docs/node-version
-==> Running 'npm start'
-> @promina-drnis-app/backend@1.0.0 start
-> node dist/server.js
-🏃 Current directory: /opt/render/project/src/backend/dist
-📁 Loading .env from: /opt/render/project/src/backend/dist/.env
-⚙️  Environment configuration: {
-  PORT: '10000 (Web Server)',
-  DATABASE_URL: 'Set (Hidden for security)',
-  JWT_SECRET: 'Set (Hidden for security)',
-  NODE_ENV: 'production'
-}
-Error: SequelizeConnectionRefusedError
-Error: SequelizeConnectionRefusedError
-📦 Database pool connected
-{ query: 'SELECT 1', duration: 2462, rows: 1 }
-✅ Database connection successful
 {
-  query: '\n' +
-    '            SELECT EXISTS (\n' +
-    '                SELECT FROM information_schema.tables \n' +
-    "                WHERE table_schema = 'public' \n" +
-    '                AND table_name = $1\n' +
-    '            )\n' +
-    '        ',
-  duration: 25,
-  rows: 1
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "pages": [
+      {
+        "startedDateTime": "2025-02-18T19:10:21.962Z",
+        "id": "page_5",
+        "title": "https://promina-drnis-api.onrender.com/api/health",
+        "pageTimings": {
+          "onContentLoad": 267.9689999931725,
+          "onLoad": 390.3310000023339
+        }
+      }
+    ],
+    "entries": [
+      {
+        "_connectionId": "97593",
+        "_initiator": {
+          "type": "other"
+        },
+        "_priority": "VeryHigh",
+        "_resourceType": "document",
+        "cache": {},
+        "connection": "443",
+        "pageref": "page_5",
+        "request": {
+          "method": "GET",
+          "url": "https://promina-drnis-api.onrender.com/api/health",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": ":authority",
+              "value": "promina-drnis-api.onrender.com"
+            },
+            {
+              "name": ":method",
+              "value": "GET"
+            },
+            {
+              "name": ":path",
+              "value": "/api/health"
+            },
+            {
+              "name": ":scheme",
+              "value": "https"
+            },
+            {
+              "name": "accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+            },
+            {
+              "name": "accept-encoding",
+              "value": "gzip, deflate, br, zstd"
+            },
+            {
+              "name": "accept-language",
+              "value": "hr-HR,hr;q=0.9,en-US;q=0.8,en;q=0.7,sr;q=0.6"
+            },
+            {
+              "name": "priority",
+              "value": "u=0, i"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Not A(Brand\";v=\"8\", \"Chromium\";v=\"132\", \"Google Chrome\";v=\"132\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Windows\""
+            },
+            {
+              "name": "sec-fetch-dest",
+              "value": "document"
+            },
+            {
+              "name": "sec-fetch-mode",
+              "value": "navigate"
+            },
+            {
+              "name": "sec-fetch-site",
+              "value": "none"
+            },
+            {
+              "name": "sec-fetch-user",
+              "value": "?1"
+            },
+            {
+              "name": "upgrade-insecure-requests",
+              "value": "1"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 500,
+          "statusText": "",
+          "httpVersion": "http/2.0",
+          "headers": [
+            {
+              "name": "access-control-allow-credentials",
+              "value": "true"
+            },
+            {
+              "name": "alt-svc",
+              "value": "h3=\":443\"; ma=86400"
+            },
+            {
+              "name": "cf-cache-status",
+              "value": "DYNAMIC"
+            },
+            {
+              "name": "cf-ray",
+              "value": "9140511f6f50ec1e-ZAG"
+            },
+            {
+              "name": "content-encoding",
+              "value": "br"
+            },
+            {
+              "name": "content-length",
+              "value": "79"
+            },
+            {
+              "name": "content-security-policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "name": "cross-origin-opener-policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "cross-origin-resource-policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "date",
+              "value": "Tue, 18 Feb 2025 19:10:22 GMT"
+            },
+            {
+              "name": "etag",
+              "value": "W/\"65-HPf6jBI2qrIEXMXj0NkpsYn9bqM\""
+            },
+            {
+              "name": "origin-agent-cluster",
+              "value": "?1"
+            },
+            {
+              "name": "referrer-policy",
+              "value": "no-referrer"
+            },
+            {
+              "name": "rndr-id",
+              "value": "e2a0a4ca-86d5-4f5b"
+            },
+            {
+              "name": "server",
+              "value": "cloudflare"
+            },
+            {
+              "name": "strict-transport-security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "name": "vary",
+              "value": "Origin, Accept-Encoding, Accept-Encoding"
+            },
+            {
+              "name": "x-content-type-options",
+              "value": "nosniff"
+            },
+            {
+              "name": "x-dns-prefetch-control",
+              "value": "off"
+            },
+            {
+              "name": "x-download-options",
+              "value": "noopen"
+            },
+            {
+              "name": "x-frame-options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "name": "x-permitted-cross-domain-policies",
+              "value": "none"
+            },
+            {
+              "name": "x-render-origin-server",
+              "value": "Render"
+            },
+            {
+              "name": "x-xss-protection",
+              "value": "0"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 101,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": -1,
+          "_transferSize": 1067,
+          "_error": null,
+          "_fetchedViaServiceWorker": false
+        },
+        "serverIPAddress": "216.24.57.4",
+        "startedDateTime": "2025-02-18T19:10:21.962Z",
+        "time": 250.0809999910416,
+        "timings": {
+          "blocked": 101.94699999300856,
+          "dns": -1,
+          "ssl": -1,
+          "connect": -1,
+          "send": 0.13700000000000045,
+          "wait": 147.07500000604523,
+          "receive": 0.9219999919878319,
+          "_blocked_queueing": 0.9679999930085614,
+          "_workerStart": -1,
+          "_workerReady": -1,
+          "_workerFetchStart": -1,
+          "_workerRespondWithSettled": -1
+        }
+      }
+    ]
+  }
 }
-{
-  query: '\n' +
-    '            SELECT EXISTS (\n' +
-    '                SELECT FROM information_schema.tables \n' +
-    "                WHERE table_schema = 'public' \n" +
-    '                AND table_name = $1\n' +
-    '            )\n' +
-    '        ',
-  duration: 15,
-  rows: 1
-}
-{
-  query: '\n' +
-    '            SELECT EXISTS (\n' +
-    '                SELECT FROM information_schema.tables \n' +
-    "                WHERE table_schema = 'public' \n" +
-    '                AND table_name = $1\n' +
-    '            )\n' +
-    '        ',
-  duration: 9,
-  rows: 1
-}
-{ query: 'BEGIN', duration: 4, rows: 0 }
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS members (\n' +
-    '        member_id SERIAL PRIMARY KEY,\n' +
-    "        status character varying(50) DEFAULT 'pending',\n" +
-    '        date_of_birth date,\n' +
-    '        oib character varying(11) NOT NULL,\n' +
-    '        cell_phone character varying(20) NOT NULL,\n' +
-    '        city character varying(100) NOT NULL,\n' +
-    '        street_address character varying(200) NOT NULL,\n' +
-    '        email character varying(255),\n' +
-    '        first_name character varying(100) NOT NULL,\n' +
-    '        last_name character varying(100) NOT NULL,\n' +
-    '        life_status character varying(25),\n' +
-    "        role character varying(20) DEFAULT 'member' NOT NULL,\n" +
-    '        total_hours numeric(10,2) DEFAULT 0,\n' +
-    "        full_name character varying(100) GENERATED ALWAYS AS ((((first_name)::text || ' '::text) || (last_name)::text)) STORED,\n" +
-    '        tshirt_size character varying(4),\n' +
-    '        shell_jacket_size character varying(4),\n' +
-    "        CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),\n" +
-    "        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))\n" +
-    '    );\n' +
-    '        ',
-  duration: 4,
-  rows: 0
-}
-✅ Members table created successfully
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS activity_types (\n' +
-    '                type_id serial NOT NULL,\n' +
-    '                name character varying(50) NOT NULL,\n' +
-    '                description text,\n' +
-    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
-    '                CONSTRAINT activity_types_pkey PRIMARY KEY (type_id),\n' +
-    '                CONSTRAINT activity_types_name_key UNIQUE (name)\n' +
-    '            );\n' +
-    '        ',
-  duration: 4,
-  rows: 0
-}
-✅ Activity types table created successfully
-{
-  query: '\n' +
-    '      DROP TABLE IF EXISTS stamp_inventory;\n' +
-    '      \n' +
-    '      CREATE TABLE stamp_inventory (\n' +
-    '          id SERIAL PRIMARY KEY,\n' +
-    '          stamp_type VARCHAR(20) NOT NULL,\n' +
-    '          initial_count INTEGER NOT NULL DEFAULT 0,\n' +
-    '          issued_count INTEGER DEFAULT 0,\n' +
-    '          remaining INTEGER GENERATED ALWAYS AS (initial_count - issued_count) STORED,\n' +
-    '          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
-    "          CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),\n" +
-    '          CONSTRAINT stamp_type_unique UNIQUE (stamp_type)\n' +
-    '      );\n' +
-    '\n' +
-    '      -- Ensure initial data exists\n' +
-    '      INSERT INTO stamp_inventory (stamp_type, initial_count, issued_count) \n' +
-    '      VALUES \n' +
-    "          ('employed', 0, 0),\n" +
-    "          ('student', 0, 0),\n" +
-    "          ('pensioner', 0, 0)\n" +
-    '      ON CONFLICT (stamp_type) DO NOTHING;\n' +
-    '  ',
-  duration: 19,
-  rows: 0
-}
-✅ Stamp inventory table created successfully
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS activities (\n' +
-    '                activity_id serial NOT NULL,\n' +
-    '                title character varying(100) NOT NULL,\n' +
-    '                description text,\n' +
-    '                start_date timestamp without time zone NOT NULL,\n' +
-    '                end_date timestamp without time zone NOT NULL,\n' +
-    '                location character varying(100),\n' +
-    '                difficulty_level character varying(20),\n' +
-    '                max_participants integer,\n' +
-    '                created_by integer,\n' +
-    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
-    '                activity_type_id integer,\n' +
-    '                CONSTRAINT activities_pkey PRIMARY KEY (activity_id),\n' +
-    '                CONSTRAINT activities_activity_type_id_fkey FOREIGN KEY (activity_type_id)\n' +
-    '                    REFERENCES activity_types (type_id)\n' +
-    '            );\n' +
-    '        ',
-  duration: 5,
-  rows: 0
-}
-✅ Activities table created successfully
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS activity_participants (\n' +
-    '                participant_id serial NOT NULL,\n' +
-    '                activity_id integer NOT NULL,\n' +
-    '                member_id integer NOT NULL,\n' +
-    '                joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
-    '                CONSTRAINT activity_participants_pkey PRIMARY KEY (participant_id),\n' +
-    '                CONSTRAINT activity_participants_activity_id_fkey FOREIGN KEY (activity_id)\n' +
-    '                    REFERENCES activities (activity_id),\n' +
-    '                CONSTRAINT activity_participants_member_id_fkey FOREIGN KEY (member_id)\n' +
-    '                    REFERENCES members (member_id)\n' +
-    '            );\n' +
-    '        ',
-  duration: 4,
-  rows: 0
-}
-✅ Activity participants table created successfully
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS audit_logs (\n' +
-    '                log_id SERIAL PRIMARY KEY,\n' +
-    '                action_type VARCHAR(50) NOT NULL,\n' +
-    '                performed_by INTEGER REFERENCES members(member_id),\n' +
-    '                action_details TEXT NOT NULL,\n' +
-    '                ip_address VARCHAR(45),\n' +
-    '                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
-    '                status VARCHAR(20),\n' +
-    '                affected_member INTEGER REFERENCES members(member_id)\n' +
-    '            );\n' +
-    '        ',
-  duration: 7,
-  rows: 0
-}
-✅ Audit logs table created successfully
-{
-  query: '\n' +
-    '            CREATE TABLE IF NOT EXISTS annual_statistics (\n' +
-    '                stat_id serial NOT NULL,\n' +
-    '                member_id integer,\n' +
-    '                year integer NOT NULL,\n' +
-    '                total_hours numeric(7,2) NOT NULL,\n' +
-    '                total_activities integer NOT NULL,\n' +
-    '                membership_status character varying(20) NOT NULL,\n' +
-    '                calculated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
-    '                CONSTRAINT annual_statistics_pkey PRIMARY KEY (stat_id),\n' +
-    '                CONSTRAINT unique_member_year UNIQUE (member_id, year),\n' +
-    '                CONSTRAINT annual_statistics_member_id_fkey FOREIGN KEY (member_id)\n' +
-    '                    REFERENCES members (member_id)\n' +
-    '            );\n' +
-    '        ',
-  duration: 3,
-  rows: 0
-}
-✅ Annual statistics table created successfully
-{
-  query: '\n' +
-    '      CREATE TABLE IF NOT EXISTS member_messages (\n' +
-    '          message_id SERIAL PRIMARY KEY,\n' +
-    '          member_id INTEGER REFERENCES members(member_id),\n' +
-    '          message_text TEXT NOT NULL,\n' +
-    '          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
-    '          read_at TIMESTAMP,\n' +
-    "          status VARCHAR(20) DEFAULT 'unread',\n" +
-    "          CONSTRAINT status_values CHECK (status IN ('unread', 'read', 'archived'))\n" +
-    '      );\n' +
-    '  ',
-  duration: 3,
-  rows: 0
-}
-✅ Member messages table created successfully
-{
-  query: '\n' +
-    '            CREATE INDEX IF NOT EXISTS idx_activities_type \n' +
-    '            ON activities(activity_type_id);\n' +
-    '            \n' +
-    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_activity \n' +
-    '            ON activity_participants(activity_id);\n' +
-    '            \n' +
-    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_member \n' +
-    '            ON activity_participants(member_id);\n' +
-    '        ',
-  duration: 3,
-  rows: 0
-}
-✅ Indexes created successfully
-{
-  query: '\n' +
-    '            INSERT INTO activity_types (name, description)\n' +
-    '            VALUES \n' +
-    "                ('hiking', 'Mountain hiking activities'),\n" +
-    "                ('climbing', 'Rock climbing activities'),\n" +
-    "                ('training', 'Training and educational activities'),\n" +
-    "                ('maintenance', 'Trail and equipment maintenance'),\n" +
-    "                ('social', 'Social gatherings and meetings')\n" +
-    '            ON CONFLICT (name) DO NOTHING;\n' +
-    '        ',
-  duration: 4,
-  rows: 0
-}
-✅ Default activity types created successfully
-{
-  query: '\n' +
-    '    ALTER TABLE members \n' +
-    '    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255);\n' +
-    '  ',
-  duration: 4,
-  rows: 0
-}
-{
-  query: '\n' +
-    '    ALTER TABLE members \n' +
-    '    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP;\n' +
-    '  ',
-  duration: 3,
-  rows: 0
-}
-{
-  query: '\n' +
-    '    ALTER TABLE members \n' +
-    "    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary'));\n" +
-    '  ',
-  duration: 17,
-  rows: 0
-}
-{
-  query: '\n' +
-    '    ALTER TABLE members \n' +
-    '    ADD COLUMN IF NOT EXISTS date_of_birth DATE;\n' +
-    '  ',
-  duration: 3,
-  rows: 0
-}
-{ query: 'COMMIT', duration: 11, rows: 0 }
-✅ Database setup completed successfully
-🚀 Server is running:
-   Local:            http://localhost:10000
-   Documentation:    http://localhost:10000/api-docs
-   Health Check:     http://localhost:10000/health
-   Environment:      production
-[2/18/2025, 13:59:52] HEAD /
-❌ Error occurred: [Error: ENOENT: no such file or directory, stat '/opt/render/project/src/frontend/dist/index.html'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'stat',
-  path: '/opt/render/project/src/frontend/dist/index.html',
-  expose: false,
-  statusCode: 404,
-  status: 404
-}
-HEAD / 500 21.051 ms - 101
-==> Your service is live 🎉
