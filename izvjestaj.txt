@@ -1,12 +1,14 @@
 ==> Cloning from https://github.com/bstrunje/promina-drnis-app
-==> Checking out commit a5cf7e09d8ddc12368304b0b6f00382fec5357f1 in branch main
+==> Checking out commit c3c5a78b00d33502e99e3c2c0b054d7be8dd97e4 in branch main
+==> Downloading cache...
+==> Transferred 160MB in 7s. Extraction took 3s.
 ==> Requesting Node.js version 20.x
 ==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Using Bun version 1.1.0 (default)
 ==> Docs on specifying a bun version: https://render.com/docs/bun-version
 ==> Running build command 'npm install && npm run build'...
-added 335 packages, and audited 337 packages in 8s
+up to date, audited 337 packages in 2s
 41 packages are looking for funding
   run `npm fund` for details
 found 0 vulnerabilities
@@ -33,7 +35,7 @@ found 0 vulnerabilities
 Error: SequelizeConnectionRefusedError
 Error: SequelizeConnectionRefusedError
 📦 Database pool connected
-{ query: 'SELECT 1', duration: 1610, rows: 1 }
+{ query: 'SELECT 1', duration: 2462, rows: 1 }
 ✅ Database connection successful
 {
   query: '\n' +
@@ -43,7 +45,29 @@ Error: SequelizeConnectionRefusedError
     '                AND table_name = $1\n' +
     '            )\n' +
     '        ',
-  duration: 13,
+  duration: 25,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 15,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 9,
   rows: 1
 }
 { query: 'BEGIN', duration: 4, rows: 0 }
@@ -70,7 +94,7 @@ Error: SequelizeConnectionRefusedError
     "        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))\n" +
     '    );\n' +
     '        ',
-  duration: 83,
+  duration: 4,
   rows: 0
 }
 ✅ Members table created successfully
@@ -85,7 +109,7 @@ Error: SequelizeConnectionRefusedError
     '                CONSTRAINT activity_types_name_key UNIQUE (name)\n' +
     '            );\n' +
     '        ',
-  duration: 19,
+  duration: 4,
   rows: 0
 }
 ✅ Activity types table created successfully
@@ -112,7 +136,7 @@ Error: SequelizeConnectionRefusedError
     "          ('pensioner', 0, 0)\n" +
     '      ON CONFLICT (stamp_type) DO NOTHING;\n' +
     '  ',
-  duration: 13,
+  duration: 19,
   rows: 0
 }
 ✅ Stamp inventory table created successfully
@@ -135,7 +159,7 @@ Error: SequelizeConnectionRefusedError
     '                    REFERENCES activity_types (type_id)\n' +
     '            );\n' +
     '        ',
-  duration: 56,
+  duration: 5,
   rows: 0
 }
 ✅ Activities table created successfully
@@ -153,7 +177,7 @@ Error: SequelizeConnectionRefusedError
     '                    REFERENCES members (member_id)\n' +
     '            );\n' +
     '        ',
-  duration: 13,
+  duration: 4,
   rows: 0
 }
 ✅ Activity participants table created successfully
@@ -170,7 +194,7 @@ Error: SequelizeConnectionRefusedError
     '                affected_member INTEGER REFERENCES members(member_id)\n' +
     '            );\n' +
     '        ',
-  duration: 13,
+  duration: 7,
   rows: 0
 }
 ✅ Audit logs table created successfully
@@ -190,7 +214,7 @@ Error: SequelizeConnectionRefusedError
     '                    REFERENCES members (member_id)\n' +
     '            );\n' +
     '        ',
-  duration: 71,
+  duration: 3,
   rows: 0
 }
 ✅ Annual statistics table created successfully
@@ -206,7 +230,7 @@ Error: SequelizeConnectionRefusedError
     "          CONSTRAINT status_values CHECK (status IN ('unread', 'read', 'archived'))\n" +
     '      );\n' +
     '  ',
-  duration: 17,
+  duration: 3,
   rows: 0
 }
 ✅ Member messages table created successfully
@@ -221,7 +245,7 @@ Error: SequelizeConnectionRefusedError
     '            CREATE INDEX IF NOT EXISTS idx_activity_participants_member \n' +
     '            ON activity_participants(member_id);\n' +
     '        ',
-  duration: 17,
+  duration: 3,
   rows: 0
 }
 ✅ Indexes created successfully
@@ -237,7 +261,7 @@ Error: SequelizeConnectionRefusedError
     '            ON CONFLICT (name) DO NOTHING;\n' +
     '        ',
   duration: 4,
-  rows: 5
+  rows: 0
 }
 ✅ Default activity types created successfully
 {
@@ -245,7 +269,7 @@ Error: SequelizeConnectionRefusedError
     '    ALTER TABLE members \n' +
     '    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255);\n' +
     '  ',
-  duration: 3,
+  duration: 4,
   rows: 0
 }
 {
@@ -261,7 +285,7 @@ Error: SequelizeConnectionRefusedError
     '    ALTER TABLE members \n' +
     "    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary'));\n" +
     '  ',
-  duration: 4,
+  duration: 17,
   rows: 0
 }
 {
@@ -272,15 +296,14 @@ Error: SequelizeConnectionRefusedError
   duration: 3,
   rows: 0
 }
-{ query: 'COMMIT', duration: 6, rows: 0 }
+{ query: 'COMMIT', duration: 11, rows: 0 }
 ✅ Database setup completed successfully
 🚀 Server is running:
    Local:            http://localhost:10000
    Documentation:    http://localhost:10000/api-docs
    Health Check:     http://localhost:10000/health
    Environment:      production
-==> Your service is live 🎉
-[2/18/2025, 13:46:41] HEAD /
+[2/18/2025, 13:59:52] HEAD /
 ❌ Error occurred: [Error: ENOENT: no such file or directory, stat '/opt/render/project/src/frontend/dist/index.html'] {
   errno: -2,
   code: 'ENOENT',
@@ -290,4 +313,5 @@ Error: SequelizeConnectionRefusedError
   statusCode: 404,
   status: 404
 }
-HEAD / 500 18.581 ms - 101
+HEAD / 500 21.051 ms - 101
+==> Your service is live 🎉

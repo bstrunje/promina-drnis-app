@@ -142,11 +142,18 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// Start the server
-startServer()
-    .catch(error => {
-        console.error('❌ Failed to start application:', error);
+// Initialize database and start server
+async function initialize() {
+    try {
+        await setupDatabase();
+        console.log('✅ Database setup completed');
+        await startServer();
+    } catch (error) {
+        console.error('❌ Application startup failed:', error);
         process.exit(1);
-    });
+    }
+}
+
+initialize();
 
 export { app, startServer, stopServer };
