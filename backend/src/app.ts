@@ -90,17 +90,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-// Serve static files from the React frontend app
-if (process.env.NODE_ENV === 'production') {
-    const distPath = path.resolve(__dirname, '../../frontend/dist');
-    app.use(express.static(distPath));
-    
-    // Catch-all route for React app
-    app.get('*', (req, res) => {
-        res.sendFile(path.resolve(distPath, 'index.html'));
-    });
-}
-
 // Health check endpoint
 app.get('/api/health', async (req: Request, res: Response) => {
     try {
