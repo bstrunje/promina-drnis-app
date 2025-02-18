@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "build": "tsc",
     "render-build": "npm install typescript && tsc",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+     "setup-db": "node dist/setupDatabase.js"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",

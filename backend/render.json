@@ -1,6 +1,6 @@
 {
     "buildCommand": "npm run render-build",
-    "startCommand": "node dist/server.js",
+    "startCommand": "npm run setup-db && npm start",
     "env": {
       "NODE_ENV": "production"
     }

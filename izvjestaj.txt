@@ -1,12 +1,12 @@
 ==> Cloning from https://github.com/bstrunje/promina-drnis-app
-==> Checking out commit 54e8b3ff3eff9b1ad16ad54235f051947888bb2c in branch main
+==> Checking out commit a5cf7e09d8ddc12368304b0b6f00382fec5357f1 in branch main
 ==> Requesting Node.js version 20.x
 ==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
 ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
 ==> Using Bun version 1.1.0 (default)
 ==> Docs on specifying a bun version: https://render.com/docs/bun-version
 ==> Running build command 'npm install && npm run build'...
-added 335 packages, and audited 337 packages in 7s
+added 335 packages, and audited 337 packages in 8s
 41 packages are looking for funding
   run `npm fund` for details
 found 0 vulnerabilities
@@ -32,103 +32,262 @@ found 0 vulnerabilities
 }
 Error: SequelizeConnectionRefusedError
 Error: SequelizeConnectionRefusedError
-Database query error: {
-  query: 'SELECT 1',
-  error: 'role "u5o0r2joqt548m" is not permitted to log in'
+📦 Database pool connected
+{ query: 'SELECT 1', duration: 1610, rows: 1 }
+✅ Database connection successful
+{
+  query: '\n' +
+    '            SELECT EXISTS (\n' +
+    '                SELECT FROM information_schema.tables \n' +
+    "                WHERE table_schema = 'public' \n" +
+    '                AND table_name = $1\n' +
+    '            )\n' +
+    '        ',
+  duration: 13,
+  rows: 1
 }
-❌ Database connection error: error: role "u5o0r2joqt548m" is not permitted to log in
-    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async Object.query (file:///opt/render/project/src/backend/dist/utils/db.js:47:28)
-    at async checkDatabaseConnection (file:///opt/render/project/src/backend/dist/server.js:47:9)
-    at async startServer (file:///opt/render/project/src/backend/dist/server.js:61:29) {
-  length: 119,
-  severity: 'FATAL',
-  code: '28000',
-  detail: undefined,
-  hint: undefined,
-  position: undefined,
-  internalPosition: undefined,
-  internalQuery: undefined,
-  where: undefined,
-  schema: undefined,
-  table: undefined,
-  column: undefined,
-  dataType: undefined,
-  constraint: undefined,
-  file: 'miscinit.c',
-  line: '1115',
-  routine: 'InitializeSessionUserId'
+{ query: 'BEGIN', duration: 4, rows: 0 }
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS members (\n' +
+    '        member_id SERIAL PRIMARY KEY,\n' +
+    "        status character varying(50) DEFAULT 'pending',\n" +
+    '        date_of_birth date,\n' +
+    '        oib character varying(11) NOT NULL,\n' +
+    '        cell_phone character varying(20) NOT NULL,\n' +
+    '        city character varying(100) NOT NULL,\n' +
+    '        street_address character varying(200) NOT NULL,\n' +
+    '        email character varying(255),\n' +
+    '        first_name character varying(100) NOT NULL,\n' +
+    '        last_name character varying(100) NOT NULL,\n' +
+    '        life_status character varying(25),\n' +
+    "        role character varying(20) DEFAULT 'member' NOT NULL,\n" +
+    '        total_hours numeric(10,2) DEFAULT 0,\n' +
+    "        full_name character varying(100) GENERATED ALWAYS AS ((((first_name)::text || ' '::text) || (last_name)::text)) STORED,\n" +
+    '        tshirt_size character varying(4),\n' +
+    '        shell_jacket_size character varying(4),\n' +
+    "        CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),\n" +
+    "        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))\n" +
+    '    );\n' +
+    '        ',
+  duration: 83,
+  rows: 0
 }
-❌ Failed to start application: Error: Unable to connect to database
-    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-❌ Failed to start application: Error: Unable to connect to database
-    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-npm error Lifecycle script `start` failed with error:
-npm error code 1
-npm error path /opt/render/project/src/backend
-npm error workspace @promina-drnis-app/backend@1.0.0
-npm error location /opt/render/project/src/backend
-npm error command failed
-npm error command sh -c node dist/server.js
-==> Requesting Node.js version 20.x
-==> Exited with status 1
-==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
-==> Using Node.js version 20.18.3 via /opt/render/project/src/backend/package.json
-==> Docs on specifying a Node.js version: https://render.com/docs/node-version
-==> Running 'npm start'
-> @promina-drnis-app/backend@1.0.0 start
-> node dist/server.js
-🏃 Current directory: /opt/render/project/src/backend/dist
-📁 Loading .env from: /opt/render/project/src/backend/dist/.env
-⚙️  Environment configuration: {
-  PORT: '10000 (Web Server)',
-  DATABASE_URL: 'Set (Hidden for security)',
-  JWT_SECRET: 'Set (Hidden for security)',
-  NODE_ENV: 'production'
+✅ Members table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activity_types (\n' +
+    '                type_id serial NOT NULL,\n' +
+    '                name character varying(50) NOT NULL,\n' +
+    '                description text,\n' +
+    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT activity_types_pkey PRIMARY KEY (type_id),\n' +
+    '                CONSTRAINT activity_types_name_key UNIQUE (name)\n' +
+    '            );\n' +
+    '        ',
+  duration: 19,
+  rows: 0
 }
-Error: SequelizeConnectionRefusedError
-Error: SequelizeConnectionRefusedError
-Database query error: {
-  query: 'SELECT 1',
-  error: 'role "u5o0r2joqt548m" is not permitted to log in'
+✅ Activity types table created successfully
+{
+  query: '\n' +
+    '      DROP TABLE IF EXISTS stamp_inventory;\n' +
+    '      \n' +
+    '      CREATE TABLE stamp_inventory (\n' +
+    '          id SERIAL PRIMARY KEY,\n' +
+    '          stamp_type VARCHAR(20) NOT NULL,\n' +
+    '          initial_count INTEGER NOT NULL DEFAULT 0,\n' +
+    '          issued_count INTEGER DEFAULT 0,\n' +
+    '          remaining INTEGER GENERATED ALWAYS AS (initial_count - issued_count) STORED,\n' +
+    '          last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    "          CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),\n" +
+    '          CONSTRAINT stamp_type_unique UNIQUE (stamp_type)\n' +
+    '      );\n' +
+    '\n' +
+    '      -- Ensure initial data exists\n' +
+    '      INSERT INTO stamp_inventory (stamp_type, initial_count, issued_count) \n' +
+    '      VALUES \n' +
+    "          ('employed', 0, 0),\n" +
+    "          ('student', 0, 0),\n" +
+    "          ('pensioner', 0, 0)\n" +
+    '      ON CONFLICT (stamp_type) DO NOTHING;\n' +
+    '  ',
+  duration: 13,
+  rows: 0
 }
-❌ Database connection error: error: role "u5o0r2joqt548m" is not permitted to log in
-    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async Object.query (file:///opt/render/project/src/backend/dist/utils/db.js:47:28)
-    at async checkDatabaseConnection (file:///opt/render/project/src/backend/dist/server.js:47:9)
-    at async startServer (file:///opt/render/project/src/backend/dist/server.js:61:29) {
-  length: 119,
-  severity: 'FATAL',
-  code: '28000',
-  detail: undefined,
-  hint: undefined,
-  position: undefined,
-  internalPosition: undefined,
-  internalQuery: undefined,
-  where: undefined,
-  schema: undefined,
-  table: undefined,
-  column: undefined,
-  dataType: undefined,
-  constraint: undefined,
-  file: 'miscinit.c',
-  line: '1115',
-  routine: 'InitializeSessionUserId'
+✅ Stamp inventory table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activities (\n' +
+    '                activity_id serial NOT NULL,\n' +
+    '                title character varying(100) NOT NULL,\n' +
+    '                description text,\n' +
+    '                start_date timestamp without time zone NOT NULL,\n' +
+    '                end_date timestamp without time zone NOT NULL,\n' +
+    '                location character varying(100),\n' +
+    '                difficulty_level character varying(20),\n' +
+    '                max_participants integer,\n' +
+    '                created_by integer,\n' +
+    '                created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                activity_type_id integer,\n' +
+    '                CONSTRAINT activities_pkey PRIMARY KEY (activity_id),\n' +
+    '                CONSTRAINT activities_activity_type_id_fkey FOREIGN KEY (activity_type_id)\n' +
+    '                    REFERENCES activity_types (type_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 56,
+  rows: 0
 }
-❌ Failed to start application: Error: Unable to connect to database
-    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-❌ Failed to start application: Error: Unable to connect to database
-    at startServer (file:///opt/render/project/src/backend/dist/server.js:63:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-npm error Lifecycle script `start` failed with error:
-npm error code 1
-npm error path /opt/render/project/src/backend
-npm error workspace @promina-drnis-app/backend@1.0.0
-npm error location /opt/render/project/src/backend
-npm error command failed
-npm error command sh -c node dist/server.js
+✅ Activities table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS activity_participants (\n' +
+    '                participant_id serial NOT NULL,\n' +
+    '                activity_id integer NOT NULL,\n' +
+    '                member_id integer NOT NULL,\n' +
+    '                joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT activity_participants_pkey PRIMARY KEY (participant_id),\n' +
+    '                CONSTRAINT activity_participants_activity_id_fkey FOREIGN KEY (activity_id)\n' +
+    '                    REFERENCES activities (activity_id),\n' +
+    '                CONSTRAINT activity_participants_member_id_fkey FOREIGN KEY (member_id)\n' +
+    '                    REFERENCES members (member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 13,
+  rows: 0
+}
+✅ Activity participants table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS audit_logs (\n' +
+    '                log_id SERIAL PRIMARY KEY,\n' +
+    '                action_type VARCHAR(50) NOT NULL,\n' +
+    '                performed_by INTEGER REFERENCES members(member_id),\n' +
+    '                action_details TEXT NOT NULL,\n' +
+    '                ip_address VARCHAR(45),\n' +
+    '                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                status VARCHAR(20),\n' +
+    '                affected_member INTEGER REFERENCES members(member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 13,
+  rows: 0
+}
+✅ Audit logs table created successfully
+{
+  query: '\n' +
+    '            CREATE TABLE IF NOT EXISTS annual_statistics (\n' +
+    '                stat_id serial NOT NULL,\n' +
+    '                member_id integer,\n' +
+    '                year integer NOT NULL,\n' +
+    '                total_hours numeric(7,2) NOT NULL,\n' +
+    '                total_activities integer NOT NULL,\n' +
+    '                membership_status character varying(20) NOT NULL,\n' +
+    '                calculated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,\n' +
+    '                CONSTRAINT annual_statistics_pkey PRIMARY KEY (stat_id),\n' +
+    '                CONSTRAINT unique_member_year UNIQUE (member_id, year),\n' +
+    '                CONSTRAINT annual_statistics_member_id_fkey FOREIGN KEY (member_id)\n' +
+    '                    REFERENCES members (member_id)\n' +
+    '            );\n' +
+    '        ',
+  duration: 71,
+  rows: 0
+}
+✅ Annual statistics table created successfully
+{
+  query: '\n' +
+    '      CREATE TABLE IF NOT EXISTS member_messages (\n' +
+    '          message_id SERIAL PRIMARY KEY,\n' +
+    '          member_id INTEGER REFERENCES members(member_id),\n' +
+    '          message_text TEXT NOT NULL,\n' +
+    '          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n' +
+    '          read_at TIMESTAMP,\n' +
+    "          status VARCHAR(20) DEFAULT 'unread',\n" +
+    "          CONSTRAINT status_values CHECK (status IN ('unread', 'read', 'archived'))\n" +
+    '      );\n' +
+    '  ',
+  duration: 17,
+  rows: 0
+}
+✅ Member messages table created successfully
+{
+  query: '\n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activities_type \n' +
+    '            ON activities(activity_type_id);\n' +
+    '            \n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_activity \n' +
+    '            ON activity_participants(activity_id);\n' +
+    '            \n' +
+    '            CREATE INDEX IF NOT EXISTS idx_activity_participants_member \n' +
+    '            ON activity_participants(member_id);\n' +
+    '        ',
+  duration: 17,
+  rows: 0
+}
+✅ Indexes created successfully
+{
+  query: '\n' +
+    '            INSERT INTO activity_types (name, description)\n' +
+    '            VALUES \n' +
+    "                ('hiking', 'Mountain hiking activities'),\n" +
+    "                ('climbing', 'Rock climbing activities'),\n" +
+    "                ('training', 'Training and educational activities'),\n" +
+    "                ('maintenance', 'Trail and equipment maintenance'),\n" +
+    "                ('social', 'Social gatherings and meetings')\n" +
+    '            ON CONFLICT (name) DO NOTHING;\n' +
+    '        ',
+  duration: 4,
+  rows: 5
+}
+✅ Default activity types created successfully
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255);\n' +
+    '  ',
+  duration: 3,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS profile_image_updated_at TIMESTAMP;\n' +
+    '  ',
+  duration: 3,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    "    ADD COLUMN IF NOT EXISTS membership_type VARCHAR(20) DEFAULT 'regular' CHECK (membership_type IN ('regular', 'supporting', 'honorary'));\n" +
+    '  ',
+  duration: 4,
+  rows: 0
+}
+{
+  query: '\n' +
+    '    ALTER TABLE members \n' +
+    '    ADD COLUMN IF NOT EXISTS date_of_birth DATE;\n' +
+    '  ',
+  duration: 3,
+  rows: 0
+}
+{ query: 'COMMIT', duration: 6, rows: 0 }
+✅ Database setup completed successfully
+🚀 Server is running:
+   Local:            http://localhost:10000
+   Documentation:    http://localhost:10000/api-docs
+   Health Check:     http://localhost:10000/health
+   Environment:      production
+==> Your service is live 🎉
+[2/18/2025, 13:46:41] HEAD /
+❌ Error occurred: [Error: ENOENT: no such file or directory, stat '/opt/render/project/src/frontend/dist/index.html'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/opt/render/project/src/frontend/dist/index.html',
+  expose: false,
+  statusCode: 404,
+  status: 404
+}
+HEAD / 500 18.581 ms - 101
