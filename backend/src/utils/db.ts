@@ -55,6 +55,11 @@ const pool = new Pool(
     }
 );
 
+// Postavite encoding na UTF8 za sve konekcije
+pool.on('connect', (client) => {
+    client.query('SET client_encoding TO UTF8');
+  });
+
 pool.on('connect', () => {
     console.log('📦 Database pool connected');
 });
