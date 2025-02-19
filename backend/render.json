@@ -2,6 +2,7 @@
     "buildCommand": "npm run render-build",
     "startCommand": "node dist/server.js",
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "PORT": "10000"
     }
   }
