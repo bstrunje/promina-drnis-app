@@ -1,4 +1,4 @@
-import pkg, { PoolClient } from 'pg';
+import pkg, { PoolClient, PoolConfig as PgPoolConfig } from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
 import path from 'path';
@@ -19,17 +19,10 @@ export class DatabaseError extends Error {
     }
 }
 
-interface PoolConfig {
-    user: string;
-    host: string;
-    database: string;
-    password: string;
-    port: number;
-    max?: number;
-    idleTimeoutMillis?: number;
-    connectionTimeoutMillis?: number;
-    client_encoding?: string;  // Dodano
-    query_timeout?: number;    // Dodano
+// Extend PostgreSQL's PoolConfig
+interface ExtendedPoolConfig extends PgPoolConfig {
+    client_encoding?: string;
+    query_timeout?: number;
 }
 
 interface QueryOptions {
@@ -38,13 +31,17 @@ interface QueryOptions {
     timeout?: number;
 }
 
-const pool = new Pool(
-    process.env.DATABASE_URL 
+const poolConfig: ExtendedPoolConfig = process.env.DATABASE_URL 
     ? {
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? {
             rejectUnauthorized: false
-        } : undefined
+        } : undefined,
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
+        query_timeout: 20000,
+        // Uklonjen client_encoding jer ga postavljamo nakon konekcije
+        max: process.env.NODE_ENV === 'production' ? 20 : 10
     }
     : {
         database: process.env.DB_NAME || 'promina_drnis_db',
@@ -52,21 +49,33 @@ const pool = new Pool(
         host: process.env.DB_HOST || 'localhost',
         password: process.env.DB_PASSWORD || 'Listopad24$',
         port: parseInt(process.env.DB_PORT || '5432'),
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
+        query_timeout: 20000,
+        max: process.env.NODE_ENV === 'production' ? 20 : 10
+    };
+
+const pool = new Pool(poolConfig);
+
+pool.on('connect', async (client) => {
+    try {
+        await client.query('SET client_encoding TO "UTF8"');
+        await client.query('SET NAMES "UTF8"');
+        if (process.env.NODE_ENV === 'production') {
+            console.log('📦 Production database pool connected with UTF-8 encoding');
+        } else {
+            console.log('📦 Development database pool connected with UTF-8 encoding');
+        }
+    } catch (err) {
+        console.error('Error setting character encoding:', err);
     }
-);
-
-// Postavite encoding na UTF8 za sve konekcije
-pool.on('connect', (client) => {
-    client.query('SET client_encoding TO UTF8');
-  });
-
-pool.on('connect', () => {
-    console.log('📦 Database pool connected');
 });
 
 pool.on('error', (err) => {
-    console.error('⚠️ Unexpected error on idle client', err);
-    process.exit(-1);
+    console.error('Unexpected error on idle client', err);
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(-1); // U produkciji želimo restart ako dođe do kritične greške
+    }
 });
 
 const db = {

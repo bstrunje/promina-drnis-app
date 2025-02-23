@@ -56,7 +56,9 @@ api.interceptors.response.use(
 
 // Centralized error handler
 const handleApiError = (error: unknown, defaultMessage: string): never => {
+  console.log('Full error object:', error);
   if (axios.isAxiosError(error)) {
+    console.log('Axios error response:', error.response?.data);
     const message = error.response?.data?.message || defaultMessage;
     throw new Error(message);
   }
@@ -106,11 +108,37 @@ export const updateMembership = async (memberId: number, data: {
   cardNumber?: string;
   stampIssued?: boolean;
 }) => {
+  console.log('updateMembership called with:', { memberId, data });
   try {
-    const response = await api.post(`/members/${memberId}/membership`, data);
+    const response = await api.post(
+      `/members/${memberId}/membership`,
+      data,
+      {
+        timeout: 30000, // Povećaj timeout na 30 sekundi
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        // Dodaj retry logiku
+        validateStatus: (status) => {
+          return status >= 200 && status < 300;
+        }
+      }
+    );
+    console.log('updateMembership success response:', response.data);
     return response.data;
   } catch (error) {
-    throw handleApiError(error, 'Failed to update membership');
+    console.error('updateMembership detailed error:', {
+      error,
+      request: error?.request,
+      response: error?.response,
+      config: error?.config
+    });
+    
+    if (axios.isAxiosError(error)) {
+      const message = error.response?.data?.message || error.message;
+      throw new Error(`Failed to update membership: ${message}`);
+    }
+    throw error;
   }
 };
 

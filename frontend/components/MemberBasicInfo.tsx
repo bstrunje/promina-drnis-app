@@ -1,20 +1,22 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { User } from 'lucide-react';
-import { Member } from '@shared/member';
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
+import { User } from "lucide-react";
+import { Member } from "@shared/member";
 
 interface MemberBasicInfoProps {
-    member: Member;
-    isEditing: boolean;
-    editedMember: Member | null | undefined;  // Update this line
-    handleChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  }
+  member: Member;
+  isEditing: boolean;
+  editedMember: Member | null | undefined; // Update this line
+  handleChange?: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
+}
 
 const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   member,
   isEditing,
   editedMember,
-  handleChange
+  handleChange,
 }) => {
   if (!isEditing) {
     return (
@@ -29,11 +31,17 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-500">Full Name</label>
-              <p>{member.first_name} {member.last_name}</p>
+              <p>
+                {member.first_name} {member.last_name}
+              </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Date of Birth</label>
-              <p>{member?.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : ""}</p>
+              <p>
+                {member?.date_of_birth
+                  ? new Date(member.date_of_birth).toLocaleDateString()
+                  : ""}
+              </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Gender</label>
@@ -59,6 +67,14 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <div>
               <label className="text-sm text-gray-500">Life Status</label>
               <p>{member.life_status}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">T-Shirt Size</label>
+              <p>{member?.tshirt_size || "Not set"}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Shell Jacket Size</label>
+              <p>{member?.shell_jacket_size || "Not set"}</p>
             </div>
           </div>
         </CardContent>
@@ -97,11 +113,17 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Date of Birth</label>
+            <label className="block text-sm font-medium mb-1">
+              Date of Birth
+            </label>
             <input
               type="date"
               name="date_of_birth"
-              value={editedMember?.date_of_birth ? editedMember.date_of_birth.split('T')[0] : ""}
+              value={
+                editedMember?.date_of_birth
+                  ? editedMember.date_of_birth.split("T")[0]
+                  : ""
+              }
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -151,7 +173,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Street Address</label>
+            <label className="block text-sm font-medium mb-1">
+              Street Address
+            </label>
             <input
               type="text"
               name="street_address"
@@ -171,7 +195,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Life Status</label>
+            <label className="block text-sm font-medium mb-1">
+              Life Status
+            </label>
             <select
               name="life_status"
               value={editedMember?.life_status || ""}
@@ -181,6 +207,45 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="employed/unemployed">Employed/Unemployed</option>
               <option value="child/pupil/student">Child/Pupil/Student</option>
               <option value="pensioner">Pensioner</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              T-Shirt Size
+            </label>
+            <select
+              name="tshirt_size"
+              value={editedMember?.tshirt_size || ""}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+              <option value="XXXL">XXXL</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Shell Jacket Size
+            </label>
+            <select
+              name="shell_jacket_size"
+              value={editedMember?.shell_jacket_size || ""}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+              <option value="XXXL">XXXL</option>
             </select>
           </div>
         </div>

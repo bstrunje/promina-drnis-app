@@ -21,57 +21,62 @@ const membershipRepository = {
         }
       ): Promise<void> {
         return await db.transaction(async (client) => {
-          // Check if member exists
-          const memberExists = await client.query(
-            'SELECT 1 FROM members WHERE member_id = $1',
-            [memberId]
-          );
-      
-          if (!memberExists.rows.length) {
-            throw new Error('Member not found');
-          }
-      
-          // Check for duplicate card number
-          if (details.card_number) {
-            const existingCard = await client.query(
-              'SELECT member_id FROM membership_details WHERE card_number = $1 AND member_id != $2',
-              [details.card_number, memberId]
+          try {
+            // Check if member exists
+            const memberExists = await db.query(
+              'SELECT 1 FROM members WHERE member_id = $1',
+              [memberId]
             );
-            
-            if (existingCard.rows.length) {
-              throw new Error(`Card number ${details.card_number} is already in use by another member`);
-            }
-          }
-      
-          const setClause = Object.entries(details)
-            .filter(([_, value]) => value !== undefined)
-            .map(([key], index) => `${key} = $${index + 2}`)
-            .join(', ');
-      
-          const values = Object.values(details)
-            .filter(value => value !== undefined)
-            .map(value => {
-              if (value instanceof Date) {
-                return value.toISOString();
-              }
-              return value;
-            });
-      
-          await client.query(
-            `UPDATE membership_details 
-             SET ${setClause} 
-             WHERE member_id = $1`,
-            [memberId, ...values]
-          );
-
-          await db.query(
-            `INSERT INTO membership_details (member_id, ${Object.keys(details).join(', ')})
-             VALUES ($1, ${values.map((_, i) => `$${i + 2}`).join(', ')})
-             ON CONFLICT (member_id) 
-             DO UPDATE SET ${setClause}`,
-            [memberId, ...values]
-        );
         
+            if (!memberExists.rows.length) {
+              throw new Error('Member not found');
+            }
+        
+            // Dodaj logging
+            console.log('Checking for duplicate card number...');
+            
+            // Check for duplicate card number if provided
+            if (details.card_number) {
+              const existingCard = await db.query(
+                'SELECT member_id FROM membership_details WHERE card_number = $1',
+                [details.card_number]
+              );
+              
+              console.log('Existing card check result:', existingCard.rows);
+              
+              if (existingCard.rows.length > 0) {
+                const existingMemberId = existingCard.rows[0].member_id;
+                if (existingMemberId !== memberId) {
+                  throw new Error(`Card number ${details.card_number} is already assigned to another member`);
+                }
+              }
+            }
+        
+            const setClause = Object.entries(details)
+              .filter(([_, value]) => value !== undefined)
+              .map(([key], index) => `${key} = $${index + 2}`)
+              .join(', ');
+        
+            const values = Object.values(details)
+              .filter(value => value !== undefined)
+              .map(value => {
+                if (value instanceof Date) {
+                  return value.toISOString();
+                }
+                return value;
+              });
+        
+            await client.query(
+              `INSERT INTO membership_details (member_id, ${Object.keys(details).join(', ')})
+               VALUES ($1, ${values.map((_, i) => `$${i + 2}`).join(', ')})
+               ON CONFLICT (member_id) 
+               DO UPDATE SET ${setClause}`,
+              [memberId, ...values]
+            );
+          } catch (error) {
+            console.error('Error in updateMembershipDetails:', error);
+            throw error;
+          }
         });
       },
 

@@ -10,29 +10,40 @@ import { Member } from "../shared/types/member.js";
 import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";
+import prisma from "../utils/prisma.js";
 
 const membershipService = {
   async processFeePayment(memberId: number, paymentDate: Date, req: Request): Promise<Member | null> {
     try {
+        // Get system settings
+        const settings = await prisma.systemSettings.findFirst({
+            where: { id: 'default' }
+        });
+
+        const renewalStartDay = settings?.renewalStartDay || 31;
+        
         const validPaymentDate = new Date(paymentDate);
         validPaymentDate.setHours(12, 0, 0, 0); // Standardize time
 
-        // Get member details first
         const member = await memberRepository.findById(memberId);
         if (!member) {
             throw new Error('Member not found');
         }
 
         const paymentYear = paymentDate.getFullYear();
+        const paymentMonth = paymentDate.getMonth();
+        const paymentDay = paymentDate.getDate();
+        
+        // Create cutoff date (October 31st of current year)
+        const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
         const startDate = new Date(paymentDate);
 
-        // Special handling for late-year payments
-        if (paymentDate.getMonth() >= 10) { // November or December
-            startDate.setFullYear(paymentYear + 1, 0, 1); // Start next year
+        // If payment is after cutoff date, membership starts next year
+        if (validPaymentDate > cutoffDate) {
+            startDate.setFullYear(paymentYear + 1, 0, 1); // January 1st of next year
         }
 
         await db.transaction(async (client) => {
-            // Update membership details
             await membershipRepository.updateMembershipDetails(memberId, {
                 fee_payment_year: paymentYear,
                 fee_payment_date: validPaymentDate
@@ -41,7 +52,7 @@ const membershipService = {
             // Check current period
             const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
 
-            // Handle period creation/update
+            // Handle period management
             if (!currentPeriod) {
                 await membershipRepository.createMembershipPeriod(memberId, startDate);
             } else if (currentPeriod.end_reason === 'non_payment') {
@@ -62,7 +73,6 @@ const membershipService = {
             'success'
         );
 
-        // Return the updated member data
         return await memberRepository.findById(memberId);
 
     } catch (error) {

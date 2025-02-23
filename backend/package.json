@@ -10,10 +10,10 @@
     "build": "tsc",
     "render-build": "npm install typescript && tsc",
     "postinstall": "prisma generate",
-     "setup-db": "node dist/setupDatabase.js"
+    "setup-db": "node dist/setupDatabase.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.2.1",
+    "@prisma/client": "^6.4.1",
     "@types/bcrypt": "^5.0.0",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
@@ -47,5 +47,8 @@
     "swagger-ui-express": "^5.0.1",
     "tsconfig": "^7.0.0",
     "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.1"
   }
 }

@@ -3,6 +3,7 @@ export interface SystemSettings {
   id: string;
   cardNumberLength: number;
   renewalStartDay: number;
-  updatedAt: Date;
+  renewalStartMonth: number;
+  updatedAt?: Date;
   updatedBy?: string;
 }

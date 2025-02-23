@@ -9,123 +9,186 @@ generator client {
 }
 
 model Member {
-  member_id       Int      @id @default(autoincrement())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
-  name           String    @db.VarChar(255)
-  full_name      String    @unique @db.VarChar(255)
-  email          String    @unique @db.VarChar(255)
-  password_hash String?
-  membership_details MembershipDetails?
-  activities ActivityParticipant[]
-  messages   MemberMessage[]
-  hours      Hours[]
-  performedAudits AuditLog[] @relation("AuditPerformer")
-  affectedAudits  AuditLog[] @relation("AuditAffected")
+  member_id               Int       @id @default(autoincrement())
+  first_name             String    @db.VarChar(100)
+  last_name              String    @db.VarChar(100)
+  full_name              String    @db.VarChar(100)
+  email                  String?   @db.VarChar(255)
+  password_hash          String?   @db.VarChar(255)
+  status                 String    @default("pending") @db.VarChar(50)
+  date_of_birth          DateTime? @db.Date
+  oib                    String    @db.VarChar(11)
+  cell_phone             String    @db.VarChar(20)
+  city                   String    @db.VarChar(100)
+  street_address         String    @db.VarChar(200)
+  role                   String    @default("member") @db.VarChar(20)
+  last_login             DateTime?
+  life_status           String?   @db.VarChar(25)
+  tshirt_size           String?   @db.VarChar(4)
+  shell_jacket_size     String?   @db.VarChar(4)
+  total_hours           Decimal?  @default(0)
+  gender                String?   @db.VarChar(6)
+  registration_completed Boolean?  @default(false)
+  profile_image_path    String?   @db.VarChar(255)
+  profile_image_updated_at DateTime?
+  membership_type       String?   @default("regular") @db.VarChar(20)
+  created_at            DateTime  @default(now()) @db.Timestamp(6)
+  updated_at            DateTime  @default(now()) @db.Timestamp(6)
+  
+  // Relations
+  membership_details    MembershipDetails?
+  activities           ActivityParticipant[]
+  messages             MemberMessage[]
+  hours               Hours[]
+  annual_statistics    AnnualStatistics[]
+  performed_audits     AuditLog[]          @relation("AuditPerformer")
+  affected_audits      AuditLog[]          @relation("AuditAffected")
 
   @@index([full_name])
   @@index([email])
-}
-
-model MembershipDetails {
-  id               String    @id @default(cuid())
-  memberId         Int       @unique @map("member_id")
-  cardNumber       String?   @map("card_number")
-  cardStampIssued  Boolean   @default(false) @map("card_stamp_issued")
-  member           Member    @relation(fields: [memberId], references: [member_id])
-  periods          MembershipPeriod[]
-
-  @@map("membership_details")
+  @@map("members")
 }
 
 model ActivityType {
-  id         String     @id @default(cuid())
-  name       String
-  activities Activity[]
+  type_id     Int       @id @default(autoincrement())
+  name        String    @db.VarChar(50)
+  description String?   @db.Text
+  created_at  DateTime  @default(now())
+  activities  Activity[]
 
   @@map("activity_types")
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  name        String
-  typeId      String   @map("type_id")
-  type        ActivityType @relation(fields: [typeId], references: [id])
-  participants ActivityParticipant[]
+  activity_id      Int       @id @default(autoincrement())
+  title            String    @db.VarChar(100)
+  description      String?   @db.Text
+  start_date       DateTime
+  end_date         DateTime
+  location         String?   @db.VarChar(100)
+  difficulty_level String?   @db.VarChar(20)
+  max_participants Int?
+  created_by       Int?
+  created_at       DateTime  @default(now())
+  activity_type_id Int?
+  activity_type    ActivityType? @relation(fields: [activity_type_id], references: [type_id])
+  participants     ActivityParticipant[]
 
   @@map("activities")
 }
 
 model ActivityParticipant {
-  activityId String   @map("activity_id")
-  memberId   Int      @map("member_id")
-  activity   Activity @relation(fields: [activityId], references: [id])
-  member     Member   @relation(fields: [memberId], references: [member_id])
+  participation_id      Int      @id @default(autoincrement())
+  activity_id          Int
+  member_id            Int
+  hours_spent          Decimal
+  role                 String?   @db.VarChar(50)
+  notes                String?   @db.Text
+  verified_by          Int?
+  verified_at          DateTime?
+  verified_by_member_id Int?
+  activity             Activity  @relation(fields: [activity_id], references: [activity_id])
+  member               Member    @relation(fields: [member_id], references: [member_id])
 
-  @@id([activityId, memberId])
   @@map("activity_participants")
 }
 
 model SystemSettings {
-  id                 String   @id @default("default")
-  cardNumberLength   Int      @map("card_number_length")
-  renewalStartDay    Int      @map("renewal_start_day")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-  updatedBy          String?  @default("system") @map("updated_by")
+  id                String    @id @default("default")
+  cardNumberLength  Int       @default(5) @map("card_number_length")
+  renewalStartDay   Int       @default(1) @map("renewal_start_day")
+  renewalStartMonth Int       @default(11) @map("renewal_start_month")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  updatedBy         String    @default("system") @map("updated_by")
 
   @@map("system_settings")
 }
 
-model MemberMessage {
-  id        String   @id @default(cuid())
-  memberId  Int      @map("member_id")
-  message   String
-  createdAt DateTime @default(now()) @map("created_at")
-  member    Member   @relation(fields: [memberId], references: [member_id])
+model MembershipDetails {
+  member_id         Int       @id
+  card_number       String?   @db.VarChar(50)
+  fee_payment_year  Int?
+  card_stamp_issued Boolean?  @default(false)
+  fee_payment_date  DateTime?
+  member            Member    @relation(fields: [member_id], references: [member_id])
+  periods           MembershipPeriod[]
 
-  @@map("member_messages")
-}
-
-model Hours {
-  id        String   @id @default(cuid())
-  memberId  Int      @map("member_id")
-  hours     Int
-  date      DateTime
-  member    Member   @relation(fields: [memberId], references: [member_id])
-
-  @@map("hours")
+  @@map("membership_details")
 }
 
 model MembershipPeriod {
-  id                String           @id @default(cuid())
-  membershipId      String           @map("membership_id")
-  startDate         DateTime         @map("start_date")
-  endDate           DateTime         @map("end_date")
-  membership        MembershipDetails @relation(fields: [membershipId], references: [id])
+  period_id   Int       @id @default(autoincrement())
+  member_id   Int
+  start_date  DateTime
+  end_date    DateTime?
+  end_reason  String?   @db.VarChar(20)
+  created_at  DateTime  @default(now())
+  membership  MembershipDetails @relation(fields: [member_id], references: [member_id])
 
   @@map("membership_periods")
 }
 
 model StampInventory {
-  id          String   @id @default(cuid())
-  stampType   String   @map("stamp_type")
-  quantity    Int
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            Int      @id @default(autoincrement())
+  stamp_type    String   @db.VarChar(20)
+  initial_count Int      @default(0)
+  issued_count  Int?     @default(0)
+  remaining     Int?
+  last_updated  DateTime @default(now())
 
   @@map("stamp_inventory")
 }
 
+model MemberMessage {
+  message_id  Int      @id @default(autoincrement())
+  member_id   Int
+  message_text String  @db.Text
+  created_at  DateTime @default(now())
+  read_at     DateTime?
+  status      String   @default("unread") @db.VarChar(20)
+  member      Member   @relation(fields: [member_id], references: [member_id])
+
+  @@map("member_messages")
+}
+
+model AnnualStatistics {
+  stat_id           Int      @id @default(autoincrement())
+  member_id         Int
+  year              Int
+  total_hours       Decimal
+  total_activities  Int
+  membership_status String   @db.VarChar(20)
+  calculated_at     DateTime @default(now())
+  member            Member   @relation(fields: [member_id], references: [member_id])
+
+  @@map("annual_statistics")
+}
+
 model AuditLog {
-  log_id          Int      @id @default(autoincrement()) @map("log_id")
-  action_type     String   @map("action_type")
-  performed_by    Int?     @map("performed_by")
-  action_details  String   @map("action_details")
-  ip_address      String   @map("ip_address")
-  created_at      DateTime @default(now()) @map("created_at")
-  status          String   @default("completed")
-  affected_member Int?     @map("affected_member")
-  performer       Member?  @relation("AuditPerformer", fields: [performed_by], references: [member_id], onDelete: SetNull)
-  affected        Member?  @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: SetNull)
+  log_id          Int      @id @default(autoincrement())
+  action_type     String   @db.VarChar(50)
+  performed_by    Int?
+  action_details  String   @db.Text
+  ip_address      String?  @db.VarChar(45)
+  created_at      DateTime @default(now())
+  status          String?  @db.VarChar(20)
+  affected_member Int?
+  performer       Member?  @relation("AuditPerformer", fields: [performed_by], references: [member_id])
+  affected        Member?  @relation("AuditAffected", fields: [affected_member], references: [member_id])
 
   @@map("audit_logs")
+}
+
+model Hours {
+  id        Int      @id @default(autoincrement())
+  activity_id Int
+  date      DateTime @db.Timestamp(6)
+  hours     Int
+  verified  Boolean  @default(false)
+  createdAt DateTime @db.Timestamp(6)
+  updatedAt DateTime @db.Timestamp(6)
+  member_id Int?
+  member    Member?  @relation(fields: [member_id], references: [member_id])
+
+  @@map("Hours")
 }

@@ -38,10 +38,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     }
   
     try {
-      // Fetch settings for renewal start day
-      const response = await fetch('/api/settings');
-      const settings: SystemSettings = await response.json();
-      
       const date = parseISO(dateString);
       
       if (!isValidDate(date)) {
@@ -56,23 +52,22 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         return false;
       }
   
-      // Check if date is within renewal period
+      // Provjeri je li datum u razdoblju obnove (studeni/prosinac)
       const month = date.getMonth();
-      const day = date.getDate();
       
-      const isValidPeriod = 
-        (month === 10 && day >= settings.renewalStartDay) || // November
-        (month === 11); // December (whole month)
-  
-      if (!isValidPeriod) {
-        setPaymentError(`Renewal period is from November ${settings.renewalStartDay} to December 31`);
-        setIsValidPayment(false);
-        return false;
+      // Dodaj informativnu poruku za period obnove, ali ne blokiraj unos
+      if (month === 10 || month === 11) { // Studeni (10) ili Prosinac (11)
+        toast({
+          title: "Info",
+          description: "This payment will be counted for next year's membership",
+          variant: "default"
+        });
       }
   
       setPaymentError(null);
       setIsValidPayment(true);
       return true;
+  
     } catch (error) {
       console.error("Error validating date:", error);
       setPaymentError("Failed to validate payment date");

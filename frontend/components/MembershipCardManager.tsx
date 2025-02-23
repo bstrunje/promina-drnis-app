@@ -61,12 +61,22 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     e.preventDefault();
     setIsSubmitting(true);
     
+    const data = {
+      paymentDate: new Date().toISOString(),
+      cardNumber,
+      stampIssued: true
+    };
+    
+    console.log('Attempting to assign card number:', data);
+    
     try {
-      await updateMembership(member.member_id, {
-        paymentDate: new Date().toISOString(),
-        cardNumber,
-        stampIssued: true
-      });
+      const response = await updateMembership(member.member_id, data);
+      console.log('Update membership API response:', response);
+      console.log('Card assignment response:', response);
+
+      if (!response) {
+        throw new Error('No response received from server');
+      }
 
       await onUpdate({ ...member });
       setCardNumber('');
@@ -77,10 +87,18 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         variant: "success"
       });
     } catch (error) {
-      console.error('Card assignment error:', error);
+      console.error('Card assignment error details:', {
+        error,
+        memberId: member.member_id,
+        cardNumber,
+        memberData: member
+      });
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to assign card number',
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

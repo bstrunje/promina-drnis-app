@@ -4,7 +4,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
 import { MembershipPeriod, MembershipHistory } from "@shared/membership";
 import { Member } from "@shared/member";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO } from "date-fns";
+import { useState, useEffect } from "react";
+import api from "../../utils/api"; 
 
 declare module "@shared/member" {
   interface Member {
@@ -14,10 +16,31 @@ declare module "@shared/member" {
 
 const MemberProfile = () => {
   const { user } = useAuth();
+  const [member, setMember] = useState<Member | null>(null);
+  const memberId = user?.member_id;
 
-  if (!user) {
-    return <div className="p-6">Loading...</div>;
+useEffect(() => {
+  if (memberId) {
+    const fetchMemberDetails = async () => {
+      try {
+        const response = await api.get(`/members/${memberId}`);
+        setMember(response.data);
+      } catch (error) {
+        console.error('Failed to fetch member details:', error);
+      }
+    };
+    
+    fetchMemberDetails();
   }
+}, [memberId]);
+
+if (!user) {
+  return <div className="p-6">Loading...</div>;
+}
+// Ako nismo još dohvatili detalje člana, prikazujemo loading
+if (!member && memberId) {
+  return <div className="p-6">Loading member details...</div>;
+}
 
   const getActivityStatus = () => {
     const hours = user.total_hours ?? 0;
@@ -98,7 +121,7 @@ const MemberProfile = () => {
               </div>
               <div>
                 <label className="text-sm text-gray-500">Date of Birth</label>
-                <p>{format(parseISO(user.date_of_birth), 'dd.MM.yyyy')}</p>
+                <p>{format(parseISO(user.date_of_birth), "dd.MM.yyyy")}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">OIB</label>
@@ -237,13 +260,13 @@ const MemberProfile = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">T-Shirt Size</label>
-                <p>{user.tshirt_size}</p>
+                <p>{member?.tshirt_size || "Not set"}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">
                   Shell Jacket Size
                 </label>
-                <p>{user.shell_jacket_size}</p>
+                <p>{member?.shell_jacket_size || "Not set"}</p>
               </div>
             </div>
           </CardContent>

@@ -1,57 +1,24 @@
-PS C:\sinkronizacija\promina-drnis-app> psql -h dpg-cuq7s9btq21c73a341l0-a.frankfurt-postgres.render.com -U promina_drnis_db_user promina_drnis_db
-psql (17.0, server 15.10)
-WARNING: Console code page (852) differs from Windows code page (1250)
-         8-bit characters might not work correctly. See psql reference
-         page "Notes for Windows users" for details.
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_128_GCM_SHA256, compression: off, ALPN: none)
-Type "help" for help.
+SELECT column_name, data_type, column_default 
+FROM information_schema.columns 
+WHERE table_name = 'system_settings';
 
-promina_drnis_db=> SHOW server_encoding;
- server_encoding
------------------
- UTF8
-(1 row)
+column_name,"data_type","column_default"
+id,"text","'default'::text"
+card_number_length,"integer","5"
+updated_at,"timestamp without time zone","CURRENT_TIMESTAMP"
+renewal_start_day,"integer","1"
+updated_by,"character varying","'system'::character varying"
+renewal_start_month,"integer","11"
 
-
-promina_drnis_db=> SHOW client_encoding;
- client_encoding
------------------
- WIN1250
-(1 row)
-
-
-promina_drnis_db=> SET client_encoding TO 'UTF8';
-SET
-promina_drnis_db=> \dt
-                       List of relations
- Schema |         Name          | Type  |         Owner
---------+-----------------------+-------+-----------------------
- public | Hours                 | table | promina_drnis_db_user
- public | activities            | table | promina_drnis_db_user
- public | activity_participants | table | promina_drnis_db_user
- public | activity_types        | table | promina_drnis_db_user
- public | annual_statistics     | table | promina_drnis_db_user
- public | audit_logs            | table | promina_drnis_db_user
- public | member_messages       | table | promina_drnis_db_user
- public | members               | table | promina_drnis_db_user
- public | members_backup        | table | promina_drnis_db_user
- public | membership_details    | table | promina_drnis_db_user
- public | membership_periods    | table | promina_drnis_db_user
- public | stamp_inventory       | table | promina_drnis_db_user
- public | system_settings       | table | promina_drnis_db_user
-(13 rows)
-
-
-promina_drnis_db=> SELECT last_name FROM members LIMIT 10;
- last_name
------------
- User
- User3
- User
- Peri??
- Mati??
- a
-(6 rows)
-
-
-promina_drnis_db=>
+konzola:
+Received settings update: { cardNumberLength: 5, renewalStartDay: 21, renewalStartMonth: 10 }
+Sanitized input: { cardNumberLength: 5, renewalStartDay: 21 }
+Updated settings: {
+  id: 'default',
+  cardNumberLength: 5,
+  renewalStartDay: 21,
+  renewalStartMonth: 11,
+  updatedAt: 2025-02-23T21:44:02.096Z,
+  updatedBy: '13'
+}
+PUT /api/settings 200 12.207 ms - 137

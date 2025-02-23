@@ -26,7 +26,8 @@ export const getSettings = async (req: Request, res: Response) => {
         data: {
           id: 'default',
           cardNumberLength: 5,
-          renewalStartDay: 1
+          renewalStartDay: 1,
+          renewalStartMonth: 11
         }
       });
       return res.json(defaultSettings);
@@ -42,9 +43,21 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = [
   createRateLimit({ windowMs: 15 * 60 * 1000, max: 5 }),
   async (req: Request, res: Response) => {
-    const { cardNumberLength = 5, renewalStartDay = 1 } = req.body;
+    const { 
+      cardNumberLength = 5, 
+      renewalStartDay = 1, 
+      renewalStartMonth = 11 
+    } = req.body;
+
+    console.log('Received settings update:', { cardNumberLength, renewalStartDay, renewalStartMonth });
     
-    const sanitizedInput = sanitizeInput({ cardNumberLength, renewalStartDay });
+    const sanitizedInput = sanitizeInput({ 
+      cardNumberLength, 
+      renewalStartDay, 
+      renewalStartMonth 
+    });
+
+    console.log('Sanitized input:', sanitizedInput);
 
     const validationError = validateSettings(sanitizedInput);
     if (validationError) {
@@ -66,14 +79,19 @@ export const updateSettings = [
           update: { 
             cardNumberLength: sanitizedInput.cardNumberLength!,
             renewalStartDay: sanitizedInput.renewalStartDay!,
-            updatedBy: req.user!.id.toString() // We know req.user is defined here
+            renewalStartMonth: sanitizedInput.renewalStartMonth!,
+            updatedBy: req.user!.id.toString()
           },
           create: {
             id: 'default',
             cardNumberLength: sanitizedInput.cardNumberLength!,
-            renewalStartDay: sanitizedInput.renewalStartDay!
+            renewalStartDay: sanitizedInput.renewalStartDay!,
+            renewalStartMonth: sanitizedInput.renewalStartMonth!,
+            updatedBy: req.user!.id.toString()
           }
         });
+
+        console.log('Updated settings:', settings);
 
         await createAuditLog({
           action: 'UPDATE_SETTINGS',

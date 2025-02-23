@@ -1,0 +1,67 @@
+
+Promina Drnis
+Profile
+Activities
+Admin
+Members
+Admin User
+Member Profile
+Profile Image
+No Image
+Upload New Image
+Membership Details
+Membership Type
+
+regular
+Role
+
+admin
+Personal Information
+Full Name
+
+Admin User
+Date of Birth
+
+12. 12. 1912.
+Gender
+
+female
+OIB
+
+85274196300
+Email
+
+admin@admin.com
+Phone
+
+0989876543
+Address
+
+Admin Street
+
+Admin Town
+Life Status
+
+employed/unemployed
+Activity Status
+Total Hours
+
+0.00
+
+Need 20 more hours to become active
+Status
+
+passive
+Membership Fee Status
+Membership History
+Total Duration: 27 years, 7 months, 10 days
+Last Fee Payment: No payment information available
+Membership Status: Inactive
+Membership Type: Unknown
+Period 1:
+Start: 07.07.1997
+Current Period: 07. 07. 1997. - Present
+Activity History
+No activities recorded yet
+Send Message to Admin
+

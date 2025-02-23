@@ -343,6 +343,7 @@ export const memberController = {
             }
     
             const { paymentDate, cardNumber, stampIssued } = req.body;
+            console.log('Updating membership for:', { memberId, paymentDate, cardNumber, stampIssued });
 
             // Validate payment date
             const parsedDate = new Date(paymentDate);
@@ -354,15 +355,19 @@ export const memberController = {
             // Set time to noon to avoid timezone issues
             parsedDate.setHours(12, 0, 0, 0);
 
+            console.log('Starting fee payment update');
             console.log('Processing payment date:', parsedDate.toISOString());
             await memberService.updateMembershipFee(memberId, new Date(paymentDate), req);
-            
+            console.log('Fee payment update completed');
+
             if (cardNumber || stampIssued !== undefined) {
+                console.log('Starting card number update');
                 await memberService.updateMembershipCard(
                     memberId,
                     cardNumber || '',
                     stampIssued || false
                 );
+                console.log('Card number update completed');
             }
     
             if (req.user?.id) {
