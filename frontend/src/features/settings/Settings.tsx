@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { SystemSettings } from "@shared/settings.types";
-import axios from "axios";
 import { Alert, AlertDescription } from "@components/ui/alert";
+import { useToast } from "@components/ui/use-toast";
+import axios from "axios";
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>({
@@ -14,24 +15,25 @@ const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${API_URL}/settings`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       setSettings(response.data);
     } catch (err) {
       const errorMessage = axios.isAxiosError(err)
         ? err.response?.data?.message || err.message
-        : "An unknown error occurred";
+        : 'An unknown error occurred';
       setError(`Failed to load settings: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -49,22 +51,31 @@ const Settings: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const response = await fetch("/api/settings", {
-        method: "PUT",
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API_URL}/settings`, settings, {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(settings),
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
-      if (!response.ok) throw new Error("Failed to update settings");
-
-      const updatedSettings = await response.json();
-      setSettings(updatedSettings);
-      setSuccessMessage("Settings updated successfully");
+      if (response.data) {
+        setSettings(response.data);
+        toast({
+          title: "Success",
+          description: "Settings updated successfully",
+          variant: "success",
+        });
+      }
     } catch (err) {
-      setError("Failed to update settings");
+      const errorMessage = axios.isAxiosError(err)
+        ? err.response?.data?.message || err.message
+        : 'An unknown error occurred';
+      toast({
+        title: "Error",
+        description: `Failed to update settings: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -74,15 +85,15 @@ const Settings: React.FC = () => {
     const { name, value } = e.target;
     const numValue = parseInt(value);
 
-    if (name === "renewalStartDay" && (numValue < 1 || numValue > 31)) {
-      setError("Renewal start day must be between 1 and 31");
+    if (name === 'renewalStartDay' && (numValue < 1 || numValue > 31)) {
+      setError('Renewal start day must be between 1 and 31');
       return;
     }
 
     setError(null);
-    setSettings((prev) => ({
+    setSettings(prev => ({
       ...prev,
-      [name]: numValue,
+      [name]: numValue
     }));
   };
 
@@ -133,12 +144,10 @@ const Settings: React.FC = () => {
               <select
                 name="renewalStartMonth"
                 value={settings.renewalStartMonth}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    renewalStartMonth: parseInt(e.target.value),
-                  }))
-                }
+                onChange={(e) => setSettings(prev => ({
+                  ...prev,
+                  renewalStartMonth: parseInt(e.target.value)
+                }))}
                 className="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-1/2"
               >
                 <option value={11}>December</option>
@@ -156,15 +165,13 @@ const Settings: React.FC = () => {
             </div>
             <div className="mt-2 space-y-2">
               <p className="text-sm text-gray-500">
-                Set the cutoff day in October for membership renewal processing.
+                Set the cutoff date for membership renewal processing.
               </p>
               <p className="text-sm text-blue-600">
-                If payment is received after this date, the membership will
-                start from January 1st of the next year.
+                If payment is received after this date, the membership will start from January 1st of the next year.
               </p>
               <p className="text-sm text-blue-600">
-                If payment is received before or on this date, the membership
-                starts immediately.
+                If payment is received before or on this date, the membership starts immediately.
               </p>
             </div>
           </div>
@@ -182,13 +189,10 @@ const Settings: React.FC = () => {
       </form>
 
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded p-4">
-        <h2 className="text-lg font-semibold text-yellow-800 mb-2">
-          Important Note
-        </h2>
+        <h2 className="text-lg font-semibold text-yellow-800 mb-2">Important Note</h2>
         <p className="text-sm text-yellow-700">
-          Changes to these settings will affect how new membership payments are
-          processed. Existing membership periods will not be affected by these
-          changes.
+          Changes to these settings will affect how new membership payments are processed. 
+          Existing membership periods will not be affected by these changes.
         </p>
       </div>
     </div>

@@ -45,40 +45,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Konfiguracija za CORS
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://promina-drnis-app.vercel.app',
-  'https://*.vercel.app'
-];
-
-// CORS config
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl)
-        if (!origin) {
-            callback(null, true);
-            return;
-        }
-        
-        // Check if origin matches any allowed pattern
-        const isAllowed = allowedOrigins.some(allowed => {
-            if (allowed.includes('*')) {
-                const pattern = new RegExp(allowed.replace('*', '.*'));
-                return pattern.test(origin);
-            }
-            return allowed === origin;
-        });
-
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS not allowed'));
-        }
-    },
+const corsOptions = {
+    origin: [
+      'https://promina-drnis-app.vercel.app',    // Production frontend
+      'http://localhost:5173',                    // Development frontend
+      'http://localhost:3000'                     // Development backend
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  };
+  
+  app.use(cors(corsOptions));
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
