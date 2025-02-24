@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../utils/prisma.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
+import { updateSettings } from '../controllers/settings.controller.js';
 
 const router = Router();
 
@@ -29,6 +30,9 @@ router.get('/', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
+
+// Add new PUT route for general settings
+router.put('/', authMiddleware, roles.requireSuperUser, updateSettings);
 
 // Postojeće rute
 router.get('/card-length', async (req, res) => {
