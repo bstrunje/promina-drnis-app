@@ -3,6 +3,7 @@ import { SystemSettings } from "@shared/settings.types";
 import { Alert, AlertDescription } from "@components/ui/alert";
 import { useToast } from "@components/ui/use-toast";
 import axios from "axios";
+import { API_BASE_URL } from "@/utils/config";
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>({
@@ -17,13 +18,11 @@ const Settings: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
   const loadSettings = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/settings`, {
+      const response = await axios.get(`${API_BASE_URL}/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -52,7 +51,7 @@ const Settings: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/settings`, settings, {
+      const response = await axios.put(`${API_BASE_URL}/settings`, settings, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
