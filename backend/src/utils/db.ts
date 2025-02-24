@@ -59,8 +59,8 @@ const pool = new Pool(poolConfig);
 
 pool.on('connect', async (client) => {
     try {
-        await client.query('SET client_encoding TO "UTF8"');
-        await client.query('SET NAMES "UTF8"');
+        await client.query("SET client_encoding = 'UTF8'");
+        await client.query("SET NAMES 'UTF8'");
         if (process.env.NODE_ENV === 'production') {
             console.log('📦 Production database pool connected with UTF-8 encoding');
         } else {

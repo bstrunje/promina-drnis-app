@@ -162,6 +162,24 @@ export async function setupDatabase(): Promise<void> {
         `);
     console.log("✅ Audit logs table created successfully");
 
+    //System settings table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+          id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+          card_number_length INTEGER DEFAULT 5,
+          renewal_start_day INTEGER DEFAULT 1,
+          renewal_start_month INTEGER DEFAULT 11,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_by VARCHAR(255) DEFAULT 'system'
+      );
+  
+      -- Insert default settings if they don't exist
+      INSERT INTO system_settings (id) 
+      VALUES ('default')
+      ON CONFLICT (id) DO NOTHING;
+  `);
+  console.log("✅ System settings table created successfully");
+
     // Annual statistics table
     await db.query(`
             CREATE TABLE IF NOT EXISTS annual_statistics (
