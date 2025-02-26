@@ -5,8 +5,8 @@ export type MembershipEndReason = 'withdrawal' | 'non_payment' | 'expulsion' | '
 export interface MembershipPeriod {
     period_id: number;
     member_id: number;
-    start_date: Date;
-    end_date?: Date;
+    start_date: string; // Changed from Date to string since we're working with ISO strings
+    end_date?: string; // Changed from Date to string
     end_reason?: MembershipEndReason;
 }
 

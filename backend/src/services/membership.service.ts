@@ -13,72 +13,87 @@ import { Request } from "express";
 import prisma from "../utils/prisma.js";
 
 const membershipService = {
-  async processFeePayment(memberId: number, paymentDate: Date, req: Request): Promise<Member | null> {
+  async processFeePayment(
+    memberId: number,
+    paymentDate: Date,
+    req: Request
+  ): Promise<Member | null> {
     try {
-        // Get system settings
-        const settings = await prisma.systemSettings.findFirst({
-            where: { id: 'default' }
+      // Get system settings
+      const settings = await prisma.systemSettings.findFirst({
+        where: { id: "default" },
+      });
+
+      const renewalStartDay = settings?.renewalStartDay || 31;
+
+      const validPaymentDate = new Date(paymentDate);
+      validPaymentDate.setHours(12, 0, 0, 0); // Standardize time
+
+      const member = await memberRepository.findById(memberId);
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
+      const paymentYear = paymentDate.getFullYear();
+      const paymentMonth = paymentDate.getMonth();
+      const paymentDay = paymentDate.getDate();
+
+      // Create cutoff date (October 31st of current year)
+      const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
+      const startDate = new Date(paymentDate);
+
+      // If payment is after cutoff date, membership starts next year
+      if (validPaymentDate > cutoffDate) {
+        startDate.setFullYear(paymentYear + 1, 0, 1); // January 1st of next year
+      }
+
+      await db.transaction(async (client) => {
+        await membershipRepository.updateMembershipDetails(memberId, {
+          fee_payment_year: paymentYear,
+          fee_payment_date: validPaymentDate,
         });
 
-        const renewalStartDay = settings?.renewalStartDay || 31;
-        
-        const validPaymentDate = new Date(paymentDate);
-        validPaymentDate.setHours(12, 0, 0, 0); // Standardize time
-
-        const member = await memberRepository.findById(memberId);
-        if (!member) {
-            throw new Error('Member not found');
-        }
-
-        const paymentYear = paymentDate.getFullYear();
-        const paymentMonth = paymentDate.getMonth();
-        const paymentDay = paymentDate.getDate();
-        
-        // Create cutoff date (October 31st of current year)
-        const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
-        const startDate = new Date(paymentDate);
-
-        // If payment is after cutoff date, membership starts next year
-        if (validPaymentDate > cutoffDate) {
-            startDate.setFullYear(paymentYear + 1, 0, 1); // January 1st of next year
-        }
-
-        await db.transaction(async (client) => {
-            await membershipRepository.updateMembershipDetails(memberId, {
-                fee_payment_year: paymentYear,
-                fee_payment_date: validPaymentDate
-            });
-
-            // Check current period
-            const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
-
-            // Handle period management
-            if (!currentPeriod) {
-                await membershipRepository.createMembershipPeriod(memberId, startDate);
-            } else if (currentPeriod.end_reason === 'non_payment') {
-                await membershipRepository.endMembershipPeriod(
-                    currentPeriod.period_id,
-                    new Date(),
-                    'non_payment'
-                );
-                await membershipRepository.createMembershipPeriod(memberId, startDate);
-            }
-        });
-
-        await auditService.logAction(
-            'MEMBERSHIP_FEE_PAYMENT',
-            memberId,
-            `Membership fee paid for ${paymentYear}`,
-            req,
-            'success'
+        // Check current period
+        const currentPeriod = await membershipRepository.getCurrentPeriod(
+          memberId
         );
 
-        return await memberRepository.findById(memberId);
+        // Handle period management
+        if (!currentPeriod) {
+          await membershipRepository.createMembershipPeriod(
+            memberId,
+            startDate
+          );
+        } else if (currentPeriod.end_reason === "non_payment") {
+          await membershipRepository.endMembershipPeriod(
+            currentPeriod.period_id,
+            new Date(),
+            "non_payment"
+          );
+          await membershipRepository.createMembershipPeriod(
+            memberId,
+            startDate
+          );
+        }
+      });
 
+      await auditService.logAction(
+        "MEMBERSHIP_FEE_PAYMENT",
+        memberId,
+        `Membership fee paid for ${paymentYear}`,
+        req,
+        "success"
+      );
+
+      return await memberRepository.findById(memberId);
     } catch (error) {
-        throw new Error(`Error processing fee payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Error processing fee payment: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
-},
+  },
 
   async getMembershipDetails(
     memberId: number
@@ -94,8 +109,8 @@ const membershipService = {
         card_number: details.card_number,
         fee_payment_year: Number(details.fee_payment_year),
         card_stamp_issued: Boolean(details.card_stamp_issued),
-        fee_payment_date: details.fee_payment_date
-    };
+        fee_payment_date: details.fee_payment_date,
+      };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -110,54 +125,64 @@ const membershipService = {
   ): Promise<void> {
     try {
       // Log the initial request
-      console.log('Processing card details update:', { memberId, cardNumber, stampIssued });
-    
+      console.log("Processing card details update:", {
+        memberId,
+        cardNumber,
+        stampIssued,
+      });
+
       // Validate inputs
       if (!memberId) {
-        throw new Error('Member ID is required');
+        throw new Error("Member ID is required");
       }
-  
+
       // Format validation - only check length
       if (cardNumber) {
         if (!/^\d{5}$/.test(cardNumber)) {
-          throw new Error('Card number must be exactly 5 digits');
+          throw new Error("Card number must be exactly 5 digits");
         }
       }
-  
+
       // Check if member exists first
       const member = await memberRepository.findById(memberId);
       if (!member) {
-        throw new Error('Member not found');
+        throw new Error("Member not found");
       }
-  
+
       // Verify stamp issuance logic
       if (stampIssued && !cardNumber) {
-        throw new Error('Cannot issue stamp without a card number');
+        throw new Error("Cannot issue stamp without a card number");
       }
-  
+
       // Attempt to update the details
       await membershipRepository.updateMembershipDetails(memberId, {
         card_number: cardNumber,
-        card_stamp_issued: stampIssued
+        card_stamp_issued: stampIssued,
       });
-  
+
       // Log successful update
-      console.log('Card details updated successfully:', { memberId, cardNumber, stampIssued });
+      console.log("Card details updated successfully:", {
+        memberId,
+        cardNumber,
+        stampIssued,
+      });
     } catch (error) {
-      console.error('Failed to update card details:', error);
-      
+      console.error("Failed to update card details:", error);
+
       // Specific error handling
       if (error instanceof Error) {
-        if (error.message.includes('duplicate')) {
-          throw new Error(`Card number ${cardNumber} is already assigned to another member`);
+        if (error.message.includes("duplicate")) {
+          throw new Error(
+            `Card number ${cardNumber} is already assigned to another member`
+          );
         }
-        if (error.message.includes('not found')) {
-          throw new Error('Member not found or inactive');
+        if (error.message.includes("not found")) {
+          throw new Error("Member not found or inactive");
         }
         throw error;
       }
-      
-      throw new Error('Failed to update card details');
+
+      throw new Error("Failed to update card details");
     }
   },
 
@@ -167,11 +192,11 @@ const membershipService = {
   ): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
-      if (!member) throw new Error('Member not found');
-  
+      if (!member) throw new Error("Member not found");
+
       await membershipRepository.updateMembershipPeriods(memberId, periods);
     } catch (error) {
-      console.error('Error updating membership history:', error);
+      console.error("Error updating membership history:", error);
       throw error;
     }
   },
@@ -202,7 +227,7 @@ const membershipService = {
     // Calculate total duration
     let totalDays = 0;
     periods.forEach((period) => {
-      const end = period.end_date || new Date();
+      const end = new Date(period.end_date || new Date());
       const start = new Date(period.start_date);
       totalDays += Math.floor(
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
@@ -221,8 +246,40 @@ const membershipService = {
   },
 
   async checkAutoTerminations(): Promise<void> {
-    const currentYear = new Date().getFullYear();
-    await membershipRepository.endExpiredMemberships(currentYear);
+    try {
+      const currentYear = new Date().getFullYear();
+      const currentDate = new Date();
+
+      // Dohvati postavke sustava
+      const settings = await prisma.systemSettings.findFirst({
+        where: { id: "default" },
+      });
+
+      // Koristi postavke ili zadane vrijednosti
+      const cutoffMonth = settings?.renewalStartMonth || 10; // Default je studeni (10)
+      const cutoffDay = settings?.renewalStartDay || 1;
+
+      // Kreiraj datum za provjeru (31.12. tekuće godine)
+      const yearEndDate = new Date(currentYear, 11, 31); // Mjesec 11 je prosinac
+
+      // Ako je trenutni datum nakon kraja godine, završi sva članstva koja nisu obnovljena
+      if (currentDate >= yearEndDate) {
+        console.log(
+          `Pokretanje automatske provjere isteklih članstava za ${currentYear}.`
+        );
+        await membershipRepository.endExpiredMemberships(currentYear);
+        console.log(`Automatska provjera isteklih članstava završena.`);
+      }
+
+      return;
+    } catch (error) {
+      console.error("Greška prilikom automatske provjere članstava:", error);
+      throw new Error(
+        `Greška prilikom automatske provjere članstava: ${
+          error instanceof Error ? error.message : "Nepoznata greška"
+        }`
+      );
+    }
   },
 };
 

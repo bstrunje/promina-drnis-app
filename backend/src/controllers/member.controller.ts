@@ -10,7 +10,7 @@ import { uploadConfig } from '../../src/config/upload.js';
 import imageService from '../services/image.service.js';
 import stampService from '../services/stamp.service.js';
 import membershipService from '../services/membership.service.js';
-import { MembershipPeriod } from '../shared/types/membership.js';
+import { MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 import multerConfig from '../config/upload.js';
 
 interface MembershipUpdateRequest {
@@ -133,6 +133,40 @@ export const memberController = {
             handleControllerError(error, res);
         }
     },
+
+    async updateMembershipEndReason(
+        req: Request<{ memberId: string, periodId: string }, {}, { endReason: MembershipEndReason }>,
+        res: Response
+      ): Promise<void> {
+        try {
+          const memberId = parseInt(req.params.memberId, 10);
+          const periodId = parseInt(req.params.periodId, 10);
+          const { endReason } = req.body;
+      
+          // Validate the end reason
+          if (!['withdrawal', 'non_payment', 'expulsion', 'death'].includes(endReason)) {
+            res.status(400).json({ message: 'Invalid termination reason' });
+            return;
+          }
+      
+          await memberService.updatePeriodEndReason(memberId, periodId, endReason);
+      
+          if (req.user?.id) {
+            await auditService.logAction(
+              'UPDATE_MEMBERSHIP_END_REASON',
+              req.user.id,
+              `Updated membership end reason for member ${memberId}, period ${periodId} to ${endReason}`,
+              req,
+              'success',
+              memberId
+            );
+          }
+      
+          res.json({ message: 'Membership end reason updated successfully' });
+        } catch (error) {
+          handleControllerError(error, res);
+        }
+      },
 
     async getMemberStats(req: Request<{ memberId: string }>, res: Response): Promise<void> {
         try {
@@ -417,7 +451,7 @@ export const memberController = {
         }
       },
 
-    async terminateMembership(
+      async terminateMembership(
         req: Request<{ memberId: string }, {}, MembershipTerminationRequest>,
         res: Response
     ): Promise<void> {
@@ -427,14 +461,33 @@ export const memberController = {
                 res.status(400).json({ message: 'Invalid member ID' });
                 return;
             }
-
+    
             const { reason, endDate } = req.body;
+            
+            // Validate the termination reason
+            if (!['withdrawal', 'non_payment', 'expulsion', 'death'].includes(reason)) {
+                res.status(400).json({ message: 'Invalid termination reason' });
+                return;
+            }
+            
             await memberService.terminateMembership(
                 memberId,
                 reason,
                 endDate ? new Date(endDate) : undefined
             );
-
+    
+            // Log the membership termination in audit log
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'TERMINATE_MEMBERSHIP',
+                    req.user.id,
+                    `Membership terminated for member ${memberId} with reason: ${reason}`,
+                    req,
+                    'success',
+                    memberId
+                );
+            }
+    
             res.json({ message: 'Membership terminated successfully' });
         } catch (error) {
             console.error('Controller error:', error);

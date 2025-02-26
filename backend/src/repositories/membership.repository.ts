@@ -144,6 +144,18 @@ const membershipRepository = {
         return result.rows;
     },
 
+    async updatePeriodEndReason(
+      periodId: number,
+      endReason: MembershipEndReason
+    ): Promise<void> {
+      await db.query(
+        `UPDATE membership_periods 
+         SET end_reason = $1
+         WHERE period_id = $2`,
+        [endReason, periodId]
+      );
+    },
+
     async assignCardNumber(memberId: number, cardNumber: string): Promise<void> {
         await db.query(
             `INSERT INTO membership_details (member_id, card_number) 

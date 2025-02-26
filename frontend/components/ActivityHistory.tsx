@@ -1,5 +1,5 @@
 // frontend/components/ActivityHistory.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { getMemberActivities } from '../src/utils/api';
 
@@ -14,25 +14,30 @@ interface MemberActivity {
   hours_spent: number;
 }
 
-const ActivityHistory: React.FC<Props> = ({ memberId }) => {
+export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
   const [activities, setActivities] = useState<MemberActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMemberActivities();
-  }, [memberId]);
-
-  const fetchMemberActivities = async () => {
+  // Dodaj useMemo za stabilnost reference
+  const fetchActivities = useCallback(async () => {
+    if (!memberId) return;
+    
     try {
       const data = await getMemberActivities(memberId);
       setActivities(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load activities');
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      setError(error instanceof Error ? error.message : 'Error fetching activities');
     } finally {
       setLoading(false);
     }
-  };
+  }, [memberId]);
+
+  // Koristi useEffect s dependency listom
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   if (loading) {
     return <div>Loading activities...</div>;

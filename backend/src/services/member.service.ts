@@ -5,6 +5,8 @@ import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } fro
 import { Member } from '../shared/types/member.js';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
+import membershipRepository from '../repositories/membership.repository.js';
+import { MembershipPeriod } from '../shared/types/membership.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -80,6 +82,31 @@ const memberService = {
             throw new Error('Error fetching member statistics: ' + errorMessage);
         }
     },
+
+    async updatePeriodEndReason(
+        memberId: number,
+        periodId: number,
+        endReason: 'withdrawal' | 'non_payment' | 'expulsion' | 'death'
+      ): Promise<void> {
+        try {
+          const member = await memberRepository.findById(memberId);
+          if (!member) throw new Error("Member not found");
+      
+          // Get the period to ensure it exists and belongs to this member
+          const periods = await membershipRepository.getMembershipPeriods(memberId);
+          const periodToUpdate = periods.find(p => p.period_id === periodId);
+          
+          if (!periodToUpdate) {
+            throw new Error("Membership period not found");
+          }
+          
+          // Update just the end reason
+          await membershipRepository.updatePeriodEndReason(periodId, endReason);
+        } catch (error) {
+          console.error("Error updating membership period end reason:", error);
+          throw error;
+        }
+      },
 
     async createMember(memberData: MemberCreateData): Promise<Member> {
         try {
@@ -233,7 +260,22 @@ const memberService = {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error terminating membership: ' + errorMessage);
         }
-    }
+    },
+
+    async updateMembershipHistory(
+        memberId: number,
+        periods: MembershipPeriod[]
+      ): Promise<void> {
+        try {
+          const member = await memberRepository.findById(memberId);
+          if (!member) throw new Error("Member not found");
+      
+          await membershipRepository.updateMembershipPeriods(memberId, periods);
+        } catch (error) {
+          console.error("Error updating membership history:", error);
+          throw error;
+        }
+      }
 };
 
 export default memberService;

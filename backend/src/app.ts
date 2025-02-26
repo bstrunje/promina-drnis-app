@@ -7,6 +7,7 @@ import path from 'path';
 import config from './config/config.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { initScheduledTasks } from './utils/scheduledTasks.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -140,5 +141,10 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
+
+if (process.env.NODE_ENV === 'production') {
+    initScheduledTasks();
+    console.log('Planirani zadaci inicijalizirani za produkcijsko okruženje.');
+  }
 
 export default app;

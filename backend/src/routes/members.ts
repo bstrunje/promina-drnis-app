@@ -1,9 +1,11 @@
 // backend/src/routes/members.ts
-import express from 'express';
+import express, { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import memberController from '../controllers/member.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import prisma from '../utils/prisma.js';
 import multerConfig from '../config/upload.js';
+import { MembershipEndReason } from '../shared/types/membership.js';
 
 const router = express.Router();
 
@@ -21,11 +23,50 @@ router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberC
 router.post('/assign-password', authenticateToken, roles.requireAdmin, memberController.assignPassword);
 router.post('/:memberId/card', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
 router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, memberController.updateMembership);
+router.post(
+  '/:memberId/membership/terminate', 
+  authenticateToken, 
+  roles.requireAdmin, 
+  memberController.terminateMembership
+);
 router.put(
   '/:memberId/membership-history', 
   authenticateToken, 
   roles.requireSuperUser, 
   memberController.updateMembershipHistory
+);
+
+router.put(
+  '/:memberId/membership-periods/:periodId/end-reason',
+  authenticateToken,
+  roles.requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const { memberId, periodId } = req.params;
+      const { endReason } = req.body;
+
+      // Add validation
+      if (!memberId || !periodId || !endReason) {
+        return res.status(400).json({ 
+          error: 'Missing required parameters' 
+        });
+      }
+
+      const updatedPeriod = await prisma.membershipPeriod.update({
+        where: {
+          period_id: parseInt(periodId)
+        },
+        data: {
+          end_reason: endReason
+        }
+      });
+
+      res.json(updatedPeriod);
+    } catch (error) {
+      console.error('Error updating end reason:', error);
+      res.status(500).json({ error: 'Failed to update end reason' });
+    }
+  }
 );
 
 // Profile image routes

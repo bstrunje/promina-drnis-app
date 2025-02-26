@@ -9,6 +9,7 @@ import { MembershipPeriod } from "@shared/membership";
 import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
+import { debounce } from 'lodash';
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -20,7 +21,6 @@ import MembershipHistoryComponent from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
-
 
 interface Props {
   memberId?: number;
@@ -56,66 +56,92 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     return lastPaymentDate.getFullYear() >= currentYear;
   }, [member?.membership_details?.fee_payment_date]);
 
+  // Debounce member fetch
+  const debouncedFetchMember = useMemo(
+    () => debounce(async () => {
+      try {
+        const response = await api.get(`/members/${memberId}`);
+        setMember(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 300),
+    [memberId]
+  );
+
   const fetchMemberDetails = async () => {
     setIsLoading(true);
     try {
       const response = await api.get(`/members/${memberId}`);
-      
+
       // Properly handle membership_history array
       const memberData = {
         ...response.data,
         membership_history: {
-          periods: Array.isArray(response.data.membership_history) 
+          periods: Array.isArray(response.data.membership_history)
             ? response.data.membership_history // Keep original array if it's an array
             : response.data.membership_history?.periods || [],
           total_duration: calculateTotalDuration(
-            Array.isArray(response.data.membership_history) 
-              ? response.data.membership_history 
+            Array.isArray(response.data.membership_history)
+              ? response.data.membership_history
               : response.data.membership_history?.periods || []
           ),
-          current_period: Array.isArray(response.data.membership_history) 
-          ? response.data.membership_history.find((period: MembershipPeriod) => !period.end_date)
-            : response.data.membership_history?.current_period
-        }
+          current_period: Array.isArray(response.data.membership_history)
+            ? response.data.membership_history.find(
+                (period: MembershipPeriod) => !period.end_date
+              )
+            : response.data.membership_history?.current_period,
+        },
       };
-  
+
       // Debug logs
       console.log("Raw member data:", response.data);
-      console.log("Membership history array:", response.data.membership_history);
+      console.log(
+        "Membership history array:",
+        response.data.membership_history
+      );
       console.log("Transformed data:", memberData);
-  
+
       // Validate transformed data
       if (!Array.isArray(memberData.membership_history.periods)) {
         console.warn("Invalid periods structure, resetting to empty array");
         memberData.membership_history.periods = [];
       }
-  
+
       setMember(memberData);
       setEditedMember(memberData);
     } catch (error) {
       console.error("Error fetching member details:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch member details"
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch member details"
       );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Helper function to calculate total duration
   const calculateTotalDuration = (periods: MembershipPeriod[]): string => {
-    if (!Array.isArray(periods) || periods.length === 0) return '';
-    
-    const totalDays = periods.reduce((total: number, period: MembershipPeriod) => {
-      const start = new Date(period.start_date);
-      const end = period.end_date ? new Date(period.end_date) : new Date();
-      return total + Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    }, 0);
-  
+    if (!Array.isArray(periods) || periods.length === 0) return "";
+
+    const totalDays = periods.reduce(
+      (total: number, period: MembershipPeriod) => {
+        const start = new Date(period.start_date);
+        const end = period.end_date ? new Date(period.end_date) : new Date();
+        return (
+          total +
+          Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        );
+      },
+      0
+    );
+
     const years = Math.floor(totalDays / 365);
     const months = Math.floor((totalDays % 365) / 30);
     const days = totalDays % 30;
-  
+
     return `${years} years, ${months} months, ${days} days`;
   };
 
@@ -147,17 +173,20 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
   const handleMembershipHistoryUpdate = async (updatedPeriods: MembershipPeriod[]) => {
     try {
-      await api.put(`/members/${memberId}/membership-history`, {
-        periods: updatedPeriods
-      });
-      
+      await api.put(
+        `/members/${memberId}/membership-history`,
+        { periods: updatedPeriods }
+      );
+
+      // Odmah dohvati nove podatke
       await fetchMemberDetails();
+
       toast({
         title: "Success",
         description: "Membership history updated successfully",
       });
     } catch (error) {
-      console.error('Failed to update membership history:', error);
+      console.error("Failed to update membership history:", error);
       toast({
         title: "Error",
         description: "Failed to update membership history",
@@ -301,20 +330,24 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           />
         )}
 
-{isLoading ? (
-    <div>Loading membership history...</div>
-  ) : (
-    <MembershipHistoryComponent
-      periods={member?.membership_history?.periods || []}
-      feePaymentYear={member?.membership_details?.fee_payment_year}
-      feePaymentDate={member?.membership_details?.fee_payment_date}
-      totalDuration={member?.membership_history?.total_duration}
-      currentPeriod={member?.membership_history?.current_period}
-      onUpdate={handleMembershipHistoryUpdate}
-    />
-  )}
+        {isLoading ? (
+          <div>Loading membership history...</div>
+        ) : (
+          <MembershipHistoryComponent
+            periods={member?.membership_history?.periods || []}
+            feePaymentYear={member?.membership_details?.fee_payment_year}
+            feePaymentDate={member?.membership_details?.fee_payment_date}
+            totalDuration={member?.membership_history?.total_duration}
+            currentPeriod={member?.membership_history?.current_period}
+            onUpdate={handleMembershipHistoryUpdate}
+            memberId={memberId} // Dodaj memberId ovdje
+          />
+        )}
 
-        <ActivityHistory memberId={member.member_id} />
+        <ActivityHistory 
+          memberId={member.member_id} 
+          key={`activities-${member.member_id}`} // Dodaj key da se osvježi samo kad se promijeni član
+        />
       </div>
 
       {/* Always visible sections */}
