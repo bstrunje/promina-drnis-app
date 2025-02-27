@@ -261,6 +261,17 @@ const memberRepository = {
             SET password_hash = $1
             WHERE member_id = $2
         `, [password, memberId]);
+    },
+
+    async findByRole(role: string): Promise<Member[]> {
+        const result = await db.query<Member>(
+            `SELECT * FROM members 
+             WHERE role = $1 
+             AND status = 'registered' 
+             ORDER BY full_name`,
+            [role]
+        );
+        return result.rows;
     }
 };
 

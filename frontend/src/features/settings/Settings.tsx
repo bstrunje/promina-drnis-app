@@ -4,8 +4,19 @@ import { Alert, AlertDescription } from "@components/ui/alert";
 import { useToast } from "@components/ui/use-toast";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/config";
+import { AdminPermissionsManager } from '../../../components/AdminPermissionsManager';
+import { Member } from '@shared/member';
+import { useAuth } from "../../context/AuthContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 
 const Settings: React.FC = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
     cardNumberLength: 5,
@@ -17,6 +28,8 @@ const Settings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { toast } = useToast();
+  const [admins, setAdmins] = useState<Member[]>([]);
+  const [selectedAdminId, setSelectedAdminId] = useState<string>("");
 
   const loadSettings = async () => {
     try {
@@ -42,6 +55,42 @@ const Settings: React.FC = () => {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      if (user?.role !== 'superuser') return;
+      
+      try {
+        console.log('Fetching admins...');
+        const response = await axios.get(`${API_BASE_URL}/members`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          params: {
+            role: 'admin',
+            status: 'registered'
+          }
+        });
+        
+        // Filtrirati samo korisnike koji imaju admin role
+        const adminUsers = response.data.filter(
+          (member: Member) => member.role === 'admin'
+        );
+        
+        console.log('Filtered admin users:', adminUsers);
+        setAdmins(adminUsers);
+      } catch (error) {
+        console.error('Failed to fetch admins:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch admin users",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchAdmins();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +243,42 @@ const Settings: React.FC = () => {
           Existing membership periods will not be affected by these changes.
         </p>
       </div>
+
+      {user?.role === 'superuser' && (
+        <div className="mt-8">
+          <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
+            <h2 className="text-xl font-bold">Admin Permissions</h2>
+            <p className="opacity-90">Manage permissions for admin users</p>
+          </div>
+          
+          <Select
+            value={selectedAdminId}
+            onValueChange={(value) => {
+              console.log('Selected admin ID:', value); // Debug log
+              setSelectedAdminId(value);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select an admin to manage" />
+            </SelectTrigger>
+            <SelectContent>
+              {admins.map(admin => (
+                <SelectItem key={admin.member_id} value={admin.member_id.toString()}>
+                  {admin.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {selectedAdminId && (
+            <div className="mt-4">
+              <AdminPermissionsManager 
+                admin={admins.find(a => a.member_id === parseInt(selectedAdminId))!} 
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

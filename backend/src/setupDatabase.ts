@@ -258,6 +258,29 @@ export async function setupDatabase(): Promise<void> {
     ADD COLUMN IF NOT EXISTS date_of_birth DATE;
   `);
 
+    // Add admin_permissions table right before the COMMIT
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS admin_permissions (
+        permission_id SERIAL PRIMARY KEY,
+        member_id INTEGER REFERENCES members(member_id),
+        can_manage_end_reasons BOOLEAN DEFAULT false,
+        granted_by INTEGER REFERENCES members(member_id),
+        granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(member_id)
+      );
+    `);
+    console.log("✅ Admin permissions table created successfully");
+
+    // Create indexes for admin_permissions
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_admin_permissions_member 
+      ON admin_permissions(member_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_admin_permissions_granted_by 
+      ON admin_permissions(granted_by);
+    `);
+    console.log("✅ Admin permissions indexes created successfully");
+
     // Create directory for image storage if it doesn't exist
     await fs.mkdir("uploads/profile_images", { recursive: true });
 

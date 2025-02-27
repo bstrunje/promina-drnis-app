@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import membershipService from '../services/membership.service.js';
 import auditService from '../services/audit.service.js';
+import permissionsService from '../services/permissions.service.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -31,6 +32,24 @@ const membershipController = {
             res.status(500).json({ 
                 message: error instanceof Error ? error.message : 'Unknown error' 
             });
+        }
+    },
+
+    async updateEndReason(req: Request, res: Response) {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            const periodId = parseInt(req.params.periodId);
+            
+            // Provjeri ima li korisnik dozvolu
+            const permissions = await permissionsService.getAdminPermissions(req.user?.id || 0);
+            
+            if (!permissions?.can_manage_end_reasons && req.user?.role_name !== 'superuser') {
+                return res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
+            }
+
+            // ...rest of the update logic...
+        } catch (error) {
+            // ...error handling...
         }
     }
 };

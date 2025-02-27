@@ -32,7 +32,7 @@ router.post(
 router.put(
   '/:memberId/membership-history', 
   authenticateToken, 
-  roles.requireSuperUser, 
+  roles.requireAdmin, 
   memberController.updateMembershipHistory
 );
 

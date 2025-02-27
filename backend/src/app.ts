@@ -21,6 +21,7 @@ import sequelize from './types/database.js';  // dodaj .js ekstenziju
 import hoursRoutes from './routes/hours.js';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 const app: Express = express();
 
@@ -113,6 +114,7 @@ app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
+app.use('/api/admin', adminRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

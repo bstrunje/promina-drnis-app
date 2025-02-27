@@ -15,6 +15,7 @@ import {
   isValid,
 } from "date-fns";
 import { API_BASE_URL } from "@/utils/config";
+import { AdminPermissions } from '../shared/types/permissions';
 
 interface MembershipHistoryProps {
   periods: MembershipPeriod[];
@@ -41,8 +42,12 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>(periods || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
+  const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
 
   const canEdit = user?.role === "superuser" || user?.role === "admin";
+  const canManageEndReasons = 
+    user?.role === 'superuser' || 
+    (user?.role === 'admin' && adminPermissions?.can_manage_end_reasons);
 
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
     const totalDays = periods.reduce((total, period) => {
@@ -110,6 +115,36 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   useEffect(() => {
     setEditedPeriods(periods);
   }, [periods]);
+
+  useEffect(() => {
+    const fetchAdminPermissions = async () => {
+      if (user?.role === 'admin') {
+        try {
+          const token = localStorage.getItem('token');
+          console.log('Fetching permissions with token:', token);  // Debug log
+          const response = await fetch(
+            `${API_BASE_URL}/admin/permissions/${user.member_id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          const permissions = await response.json();
+          console.log('Received permissions:', permissions);  // Debug log
+          setAdminPermissions(permissions);
+        } catch (error) {
+          console.error('Failed to fetch admin permissions:', error);
+        }
+      }
+    };
+
+    fetchAdminPermissions();
+  }, [user]);
+
+  const canSeeEndReason = 
+    user?.role === 'superuser' || 
+    (user?.role === 'admin' && adminPermissions?.can_manage_end_reasons);
 
   const handleEdit = () => {
     setEditedPeriods(periods);
@@ -448,18 +483,16 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                               parseISO(period.end_date.toString()),
                               "dd.MM.yyyy"
                             )}
-                            {period.end_reason && (
-                              <>
-                                <span className="text-gray-600 ml-2">
-                                  ({period.end_reason})
-                                </span>
-                              </>
+                            {period.end_reason && canSeeEndReason && (
+                              <span className="text-gray-600 ml-2">
+                                ({period.end_reason})
+                              </span>
                             )}
                           </>
                         )}
                       </div>
                     )}
-                    {period.end_date && hasAdminPrivileges && (
+                    {period.end_date && canManageEndReasons && (
                       <div className="mt-2">
                         <select
                           className="p-1 text-sm border rounded"

@@ -10,11 +10,9 @@ interface JWTPayload {
 
 export interface DatabaseUser {
     id: number;
-    user_id: number;
-    full_name: string;
-    email: string;
-    role_name: string;
-    is_active: boolean;
+    role: string;        // Dodano
+    role_name: string;   // Postojeće
+    member_id?: number;
 }
 
 // Extend Express Request type to include user
@@ -27,7 +25,7 @@ declare global {
 }
 
 // Main authentication middleware
-const authMiddleware = async (
+const authenticateToken = async (
     req: Request, 
     res: Response, 
     next: NextFunction
@@ -43,38 +41,43 @@ const authMiddleware = async (
         }
 
         // Verify token
-const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
-// Get member from database
-const result = await db.query<DatabaseUser>(
-    `SELECT 
-        m.member_id as id, 
-        m.member_id as user_id,
-        m.first_name || ' ' || m.last_name as full_name,
-        m.email,
-        CASE 
-            WHEN m.role = 'admin' THEN 'admin'
-            WHEN m.role = 'superuser' THEN 'superuser'
-            ELSE 'member'
-        END as role_name,
-        m.status = 'registered' as is_active
-     FROM members m
-     WHERE m.member_id = $1 AND m.status = 'registered'`,
-    [decoded.id]
-);
+        // Get member from database
+        const result = await db.query<DatabaseUser>(
+            `SELECT 
+                m.member_id as id, 
+                m.member_id as user_id,
+                m.first_name || ' ' || m.last_name as full_name,
+                m.email,
+                CASE 
+                    WHEN m.role = 'admin' THEN 'admin'
+                    WHEN m.role = 'superuser' THEN 'superuser'
+                    ELSE 'member'
+                END as role_name,
+                m.status = 'registered' as is_active
+             FROM members m
+             WHERE m.member_id = $1 AND m.status = 'registered'`,
+            [decoded.id]
+        );
 
-if (result.rows.length === 0) {
-    res.status(401).json({ message: 'Member not found or inactive' });
-    return;
-}
+        if (result.rows.length === 0) {
+            res.status(401).json({ message: 'Member not found or inactive' });
+            return;
+        }
 
-// Attach member to request object
-req.user = result.rows[0];
-next();
-} catch (error) {
-    console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Token is not valid' });
-}
+        // Attach member to request object
+        req.user = {
+            id: decoded.id,
+            role: result.rows[0].role_name,  // dodaj ovo
+            role_name: result.rows[0].role_name,  // već imamo role_name iz querya
+            member_id: decoded.id
+        };
+        next();
+    } catch (error) {
+        console.error('Authentication error:', error);
+        res.status(401).json({ message: 'Token is not valid' });
+    }
 };
 
 // Role checking middleware
@@ -141,4 +144,9 @@ const roles = {
     requireSuperUser: requireSuperUser
 };
 
-export { authMiddleware, checkRole, requireSuperUser, roles };
+export { 
+    authenticateToken as authMiddleware,  // Izvozimo kao authMiddleware
+    checkRole, 
+    requireSuperUser, 
+    roles 
+};

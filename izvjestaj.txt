@@ -1,0 +1,60 @@
+GET /api/members/19/activities 200 33.708 ms - 956
+[2/27/2025, 22:02:02] GET /api/admin/permissions/11
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc0MDYxNzMzMywiZXhwIjoxNzQwNzAzNzMzfQ.d24mloIXJkyKEzPtOA9AFOpRvlgXW7Zg2pWazFzdRy8
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+  duration: 1,
+  rows: 1
+}
+Getting permissions for member: 11
+Getting permissions for: 11
+{
+  query: 'SELECT can_manage_end_reasons FROM admin_permissions WHERE member_id = $1',
+  duration: 1,
+  rows: 1
+}
+DB result: Result {
+  command: 'SELECT',
+  rowCount: 1,
+  oid: null,
+  rows: [ { can_manage_end_reasons: true } ],
+  fields: [
+    Field {
+      name: 'can_manage_end_reasons',
+      tableID: 19186,
+      columnID: 3,
+      dataTypeID: 16,
+      dataTypeSize: 1,
+      dataTypeModifier: -1,
+      format: 'text'
+    }
+  ],
+  _parsers: [ [Function: parseBool] ],
+  _types: TypeOverrides {
+    _types: {
+      getTypeParser: [Function: getTypeParser],
+      setTypeParser: [Function: setTypeParser],
+      arrayParser: [Object],
+      builtins: [Object]
+    },
+    text: {},
+    binary: {}
+  },
+  RowCtor: null,
+  rowAsArray: false,
+  _prebuiltEmptyResultObject: { can_manage_end_reasons: null }
+}
+Found permissions: { can_manage_end_reasons: true }
+GET /api/admin/permissions/11 304 14.914 ms - -
