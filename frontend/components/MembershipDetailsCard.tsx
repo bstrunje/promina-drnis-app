@@ -1,12 +1,14 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { Member } from '@shared/member';
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
+import { Member } from "@shared/member";
 
 interface MembershipDetailsCardProps {
   member: Member;
 }
 
-const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({ member }) => {
+const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
+  member,
+}) => {
   const getStatusColor = (status: Member["life_status"]) => {
     switch (status) {
       case "employed/unemployed":
@@ -27,14 +29,16 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({ member })
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {member.membership_details?.card_number && (
-            <div>
-              <label className="text-sm text-gray-500">Card Number</label>
-              <p className={`px-3 py-1 rounded-lg font-mono ${getStatusColor(member.life_status)}`}>
-                {member.membership_details.card_number}
-              </p>
-            </div>
-          )}
+          <label className="text-sm text-gray-500">Card Number: </label>
+          <p
+            className={`inline-block w-fit px-3 py-1 rounded-lg font-mono ml-2 ${
+              member.card_number
+                ? getStatusColor(member.life_status)
+                : "bg-gray-200 text-gray-600"
+            }`}
+          >
+            {member.card_number || "No card number assigned"}
+          </p>
           <div>
             <label className="text-sm text-gray-500">Membership Type</label>
             <p>{member.membership_type}</p>

@@ -31,6 +31,10 @@ export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
  * Main Member interface representing a society member
  */
 export interface Member {
+    fee_payment_year: number | undefined;
+    fee_payment_date: string | undefined;
+    card_stamp_issued: boolean | undefined;
+    card_number: string | undefined;
     // Identification
     member_id: number;
     first_name: string;

@@ -195,9 +195,9 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const handleMemberUpdate = async (updatedMember: Member) => {
+  const handleMemberUpdate = async () => {
     try {
-      setMember(updatedMember);
+      // Fetch fresh data from server
       await fetchMemberDetails();
     } catch (error) {
       setError("Failed to update member");
@@ -326,7 +326,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         {isEditing && (
           <MembershipCardManager
             member={member}
-            onUpdate={handleMemberUpdate}
+            onUpdate={fetchMemberDetails}
           />
         )}
 

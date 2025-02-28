@@ -70,6 +70,8 @@ const LoginPage = () => {
     registration_completed: true,
     membership_type: "regular" as const,
     role: "member",
+    card_stamp_issued: false,  // Add this
+    card_number: "",          // Add this
   });
 
   type MessageType = "success" | "error";
@@ -138,6 +140,8 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
         role: data.member.role,
         tshirt_size: "M",
         shell_jacket_size: "M",
+        card_stamp_issued: false,  // Add this
+        card_number: "",          // Add this
       };
       authLogin(member, data.token);
       navigate("/profile");
@@ -191,6 +195,8 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
         life_status: registerData.life_status,
         tshirt_size: registerData.tshirt_size,
         shell_jacket_size: registerData.shell_jacket_size,
+        card_stamp_issued: false,  // Add this explicitly
+        card_number: "",          // Add this explicitly
       };
 
       const response = await register(memberData);
@@ -676,8 +682,12 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
 
                   {/* Search Results Dropdown */}
                   {showResults && searchResults.length > 0 && (
-                    <div className="absolute w-full bg-white shadow-lg rounded-b border mt-1 z-10">
-                      {searchResults.map((result, index) => (
+                    <div className="absolute max-w-[calc(100%+2rem)] relative left-[-1rem] bg-white shadow-lg rounded-b border mt-1 z-10">
+                      {searchResults
+                        .filter(result => 
+                          result.full_name.toLowerCase().split(' ')[0].startsWith(loginData.full_name.toLowerCase())
+                        )
+                        .map((result, index) => (
                         <button
                           key={result.member_id}
                           className="search-result w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"

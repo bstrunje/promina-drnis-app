@@ -194,10 +194,10 @@ const memberService = {
                 gender: member.gender,
                 life_status: member.life_status, // Keep life_status at the member level
                 membership_details: membershipDetails ? {
-                    card_number: membershipDetails.card_number,
-                    fee_payment_year: membershipDetails.fee_payment_year,
-                    card_stamp_issued: membershipDetails.card_stamp_issued,
-                    fee_payment_date: membershipDetails.fee_payment_date 
+                    card_number: member.card_number || membershipDetails?.card_number,
+                fee_payment_year: member.fee_payment_year || membershipDetails?.fee_payment_year,
+                card_stamp_issued: member.card_stamp_issued || membershipDetails?.card_stamp_issued,
+                fee_payment_date: membershipDetails?.fee_payment_date
                         ? new Date(membershipDetails.fee_payment_date).toISOString() 
                         : ''  // Provide an empty string as default
                 } : undefined,
