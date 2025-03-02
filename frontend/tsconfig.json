@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "composite": true
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["shared/types/*"],
+      "@components/*": ["components/*"]
+    }
   },
   "files": [],
   "references": [

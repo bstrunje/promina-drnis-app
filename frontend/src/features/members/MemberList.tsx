@@ -162,22 +162,6 @@ export default function MemberList(): JSX.Element {
     return "bg-green-100 text-green-800"; // completed
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -190,7 +174,6 @@ export default function MemberList(): JSX.Element {
           Add Member
         </button>
       </div>
-
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -253,7 +236,9 @@ export default function MemberList(): JSX.Element {
                       {member.registration_completed ? "Registered" : "Pending"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{member.total_hours || 0}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {member.total_hours || 0}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {member.date_of_birth
                       ? new Date(member.date_of_birth).toLocaleDateString()
@@ -322,7 +307,6 @@ export default function MemberList(): JSX.Element {
           onAdd={handleAdd}
         />
       )}
-
       {editingMember && (
         <EditMemberForm
           member={editingMember}
@@ -337,7 +321,6 @@ export default function MemberList(): JSX.Element {
           }}
         />
       )}
-
       {assigningPasswordMember && (
         <AssignPasswordForm
           member={assigningPasswordMember}
@@ -352,7 +335,6 @@ export default function MemberList(): JSX.Element {
           }}
         />
       )}
-
       {deletingMember && (
         <ConfirmationModal
           message={`Are you sure you want to delete ${deletingMember.first_name} ${deletingMember.last_name}?`}
@@ -360,7 +342,6 @@ export default function MemberList(): JSX.Element {
           onCancel={() => setDeletingMember(null)}
         />
       )}
-
       {roleAssignmentMember && (
         <RoleAssignmentModal
           member={roleAssignmentMember}

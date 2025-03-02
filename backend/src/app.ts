@@ -46,6 +46,11 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Add this static file middleware to serve uploaded profile images
+const uploadsDir = path.resolve(__dirname, '..', 'uploads');
+console.log(`Serving static files from: ${uploadsDir}`);
+app.use('/uploads', express.static(uploadsDir));
+
 // Konfiguracija za CORS
 const corsOptions = {
     origin: [

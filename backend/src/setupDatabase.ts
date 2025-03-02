@@ -74,6 +74,10 @@ export async function setupDatabase(): Promise<void> {
         `);
     console.log("✅ Members table created successfully");
 
+    // Note: The 'card_number' column in members table is deprecated.
+    // All card numbers should be stored in and read from membership_details.card_number.
+    // This column is maintained only for backward compatibility and should be removed in a future migration.
+
     // Activity types table
     await db.query(`
             CREATE TABLE IF NOT EXISTS activity_types (
@@ -280,6 +284,54 @@ export async function setupDatabase(): Promise<void> {
       ON admin_permissions(granted_by);
     `);
     console.log("✅ Admin permissions indexes created successfully");
+
+    // Password sync trigger system
+    console.log("Setting up password-card number synchronization...");
+    await db.query(`
+      -- Create notification table for password updates
+      CREATE TABLE IF NOT EXISTS password_update_queue (
+          queue_id SERIAL PRIMARY KEY,
+          member_id INT NOT NULL,
+          card_number VARCHAR(20) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          processed BOOLEAN DEFAULT FALSE,
+          FOREIGN KEY (member_id) REFERENCES members(member_id)
+      );
+
+      -- Create trigger function
+      CREATE OR REPLACE FUNCTION notify_card_number_change()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          -- If card_number was changed
+          IF (TG_OP = 'UPDATE' AND OLD.card_number IS DISTINCT FROM NEW.card_number) OR 
+             (TG_OP = 'INSERT' AND NEW.card_number IS NOT NULL) THEN
+              
+              -- Insert into queue for password update
+              INSERT INTO password_update_queue (member_id, card_number) 
+              VALUES (NEW.member_id, NEW.card_number);
+              
+              -- Add a log to the audit_logs table if it exists
+              BEGIN
+                  INSERT INTO audit_logs (action_type, performed_by, action_details, ip_address, status, affected_member)
+                  VALUES ('CARD_NUMBER_UPDATED', NULL, format('Card number updated for member ID %s, needs password update', NEW.member_id), 
+                         'Trigger', 'notification', NEW.member_id);
+              EXCEPTION WHEN OTHERS THEN
+                  -- If audit table doesn't exist or insertion fails, continue anyway
+              END;
+          END IF;
+          
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      -- Attach the trigger to the membership_details table
+      DROP TRIGGER IF EXISTS trigger_card_number_change ON membership_details;
+      CREATE TRIGGER trigger_card_number_change
+      AFTER INSERT OR UPDATE ON membership_details
+      FOR EACH ROW
+      EXECUTE FUNCTION notify_card_number_change();
+    `);
+    console.log("✅ Password synchronization trigger system created");
 
     // Create directory for image storage if it doesn't exist
     await fs.mkdir("uploads/profile_images", { recursive: true });

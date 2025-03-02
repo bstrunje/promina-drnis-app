@@ -1,26 +1,33 @@
 // backend/src/services/audit.service.ts
-import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
 import { Request } from 'express';
+import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
+import { DatabaseUser } from '../middleware/authMiddleware.js';
 
 const auditService = {
     async logAction(
-        actionType: string,
-        performedBy: number,
-        details: string,
+        action_type: string,
+        performed_by: number | null,
+        action_details: string,
         req: Request,
         status: string = 'success',
-        affectedMember?: number
+        affected_member?: number
     ): Promise<void> {
-        const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
-        
-        await auditRepository.create({
-            action_type: actionType,
-            performed_by: performedBy,
-            action_details: details,
-            ip_address: ipAddress,
-            status,
-            affected_member: affectedMember
-        });
+        try {
+            const ip_address = req.ip || req.socket.remoteAddress || 'unknown';
+            
+            // Fix: Pass individual arguments instead of an object
+            await auditRepository.create(
+                action_type,
+                performed_by,
+                action_details,
+                ip_address,
+                status,
+                affected_member
+            );
+        } catch (error) {
+            console.error('Error logging audit action:', error);
+            // Don't throw the error - just log it and continue
+        }
     },
 
     async getAllLogs(): Promise<AuditLog[]> {

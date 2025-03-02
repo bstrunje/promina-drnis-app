@@ -68,8 +68,8 @@ const authService = {
         return await authRepository.findUserById(memberId);
     },
 
-    async assignPassword(memberId: number, hashedPassword: string): Promise<void> {
-        await authRepository.updatePassword(memberId, hashedPassword);
+    async assignPassword(memberId: number, hashedPassword: string, cardNumber: string): Promise<void> {
+        await authRepository.updatePassword(memberId, hashedPassword, cardNumber);
     }
 };
 

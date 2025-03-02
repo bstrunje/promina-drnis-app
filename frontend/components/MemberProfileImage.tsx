@@ -24,7 +24,7 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch(`/api/members/${member.member_id}/profile-image`, {
+      const response = await fetch(`http://localhost:3000/api/members/${member.member_id}/profile-image`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -70,7 +70,9 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
               />
             ) : member.profile_image ? (
               <img
-                src={member.profile_image}
+                src={member.profile_image.startsWith('/uploads') 
+                  ? `http://localhost:3000${member.profile_image}` 
+                  : member.profile_image}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />

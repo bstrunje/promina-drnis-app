@@ -170,6 +170,20 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
               </option>
             ))}
           </select>
+          
+          {/* Keep this membership_type dropdown */}
+          <select
+            name="membership_type"
+            value={editedMember.membership_type}
+            onChange={handleChange}
+            className="mt-2 p-2 w-full border rounded"
+            required
+          >
+            <option value="regular">Regular</option>
+            <option value="supporting">Supporting</option>
+            <option value="honorary">Honorary</option>
+          </select>
+          
           <select
             name="tshirt_size"
             value={editedMember.tshirt_size}
@@ -183,6 +197,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
               </option>
             ))}
           </select>
+          
           <select
             name="shell_jacket_size"
             value={editedMember.shell_jacket_size}
@@ -196,18 +211,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
               </option>
             ))}
           </select>
-          <select
-            name="membership_type"
-            value={editedMember.membership_type}
-            onChange={handleChange}
-            className="mt-2 p-2 w-full border rounded"
-            required
-          >
-            <option value="regular">Regular</option>
-            <option value="supporting">Supporting</option>
-            <option value="honorary">Honorary</option>
-          </select>
-
+          
           <div className="mt-4">
             <button 
               type="submit" 

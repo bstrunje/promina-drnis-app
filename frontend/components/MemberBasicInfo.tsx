@@ -209,6 +209,24 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="pensioner">Pensioner</option>
             </select>
           </div>
+
+          {/* Add membership type dropdown */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Membership Type
+            </label>
+            <select
+              name="membership_type"
+              value={editedMember?.membership_type || "regular"}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="regular">Regular Member</option>
+              <option value="supporting">Supporting Member</option>
+              <option value="honorary">Honorary Member</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">
               T-Shirt Size

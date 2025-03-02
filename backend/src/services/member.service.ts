@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 import { Request } from 'express';
 import membershipRepository from '../repositories/membership.repository.js';
 import { MembershipPeriod } from '../shared/types/membership.js';
+import authRepository from '../repositories/auth.repository.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -142,10 +143,10 @@ const memberService = {
         });
     },
 
-    async assignPassword(memberId: number, password: string): Promise<void> {
+    async assignPassword(memberId: number, password: string, cardNumber: string): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
-            await memberRepository.updatePassword(memberId, hashedPassword);
+            await authRepository.updatePassword(memberId, hashedPassword, cardNumber);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error assigning password: ' + errorMessage);

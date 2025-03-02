@@ -4,6 +4,11 @@ import path from 'path';
 import { PROFILE_IMAGE_CONFIG } from '../config/upload.js';
 import memberRepository from '../repositories/member.repository.js';
 import { Express } from 'express';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface MulterFile {
     path: string;
@@ -22,31 +27,37 @@ const imageService = {
         memberId: number
     ): Promise<string> {
         try {
-            const processedFileName = `processed-${file.filename}`;
-            const processedFilePath = path.join(PROFILE_IMAGE_CONFIG.path, processedFileName);
+            // Create a unique filename for the processed image
+            const filename = `member_${memberId}_${Date.now()}.jpg`;
+            const uploadDir = path.resolve(__dirname, '..', '..', 'uploads');
+            const outputPath = path.join(uploadDir, filename);
 
-            // Process image with sharp
+            // Process the image with sharp - resize and optimize it
             await sharp(file.path)
-                .resize({
-                    width: PROFILE_IMAGE_CONFIG.width,
-                    height: PROFILE_IMAGE_CONFIG.height,
+                .resize(PROFILE_IMAGE_CONFIG.width, PROFILE_IMAGE_CONFIG.height, {
                     fit: 'cover',
                     position: 'center'
                 })
-                .toFile(processedFilePath);
+                .jpeg({ quality: 80 })
+                .toFile(outputPath);
 
-            // Delete original file
-            await fs.unlink(file.path);
-
-            // Update database
-            await memberRepository.updateProfileImage(memberId, processedFileName);
-
-            return processedFileName;
-        } catch (error) {
-            // Clean up on error
-            if (file.path) {
-                await fs.unlink(file.path).catch(() => {});
+            // Try to delete the original temporary file, but don't fail if it errors
+            try {
+                await fs.unlink(file.path);
+            } catch (unlinkError) {
+                // Log the error but continue processing
+                console.warn(`Could not delete temporary file ${file.path}: ${unlinkError}`);
             }
+
+            // Generate the URL path for the image
+            const imagePath = `/uploads/${filename}`;
+
+            // Update member profile in database
+            await memberRepository.updateProfileImage(memberId, imagePath);
+
+            return imagePath;
+        } catch (error) {
+            console.error('Error processing profile image:', error);
             throw error;
         }
     },
@@ -54,11 +65,27 @@ const imageService = {
     async deleteProfileImage(
         memberId: number
     ): Promise<void> {
-        const imagePath = await memberRepository.getProfileImage(memberId);
-        if (imagePath) {
-            const fullPath = path.join(PROFILE_IMAGE_CONFIG.path, imagePath);
-            await fs.unlink(fullPath).catch(() => {});
+        try {
+            // First get the current image path
+            const imagePath = await memberRepository.getProfileImage(memberId);
+
+            if (imagePath) {
+                const fullPath = path.join(__dirname, '..', '..', 'public', imagePath);
+
+                // Try to delete the file, but don't fail if it doesn't exist
+                try {
+                    await fs.unlink(fullPath);
+                } catch (unlinkError) {
+                    // Just log the error if the file doesn't exist
+                    console.warn(`Could not delete image file ${fullPath}: ${unlinkError}`);
+                }
+            }
+
+            // Update the database regardless of whether file deletion worked
             await memberRepository.updateProfileImage(memberId, '');
+        } catch (error) {
+            console.error('Error deleting profile image:', error);
+            throw error;
         }
     }
 };

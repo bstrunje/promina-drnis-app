@@ -118,71 +118,36 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(
-    memberId: number,
-    cardNumber: string,
-    stampIssued: boolean
-  ): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean): Promise<void> {
     try {
-      // Log the initial request
-      console.log("Processing card details update:", {
-        memberId,
-        cardNumber,
-        stampIssued,
-      });
+      // Check if membership details exist for the member
+      const existingDetails = await db.query(
+        'SELECT * FROM membership_details WHERE member_id = $1',
+        [memberId]
+      );
 
-      // Validate inputs
-      if (!memberId) {
-        throw new Error("Member ID is required");
+      if (existingDetails.rows.length > 0) {
+        // Update existing membership details
+        await db.query(
+          'UPDATE membership_details SET card_number = $1, card_stamp_issued = $2 WHERE member_id = $3',
+          [cardNumber, stampIssued, memberId]
+        );
+      } else {
+        // Insert new membership details
+        await db.query(
+          'INSERT INTO membership_details (member_id, card_number, card_stamp_issued) VALUES ($1, $2, $3)',
+          [memberId, cardNumber, stampIssued]
+        );
       }
 
-      // Format validation - only check length
-      if (cardNumber) {
-        if (!/^\d{5}$/.test(cardNumber)) {
-          throw new Error("Card number must be exactly 5 digits");
-        }
-      }
-
-      // Check if member exists first
-      const member = await memberRepository.findById(memberId);
-      if (!member) {
-        throw new Error("Member not found");
-      }
-
-      // Verify stamp issuance logic
-      if (stampIssued && !cardNumber) {
-        throw new Error("Cannot issue stamp without a card number");
-      }
-
-      // Attempt to update the details
-      await membershipRepository.updateMembershipDetails(memberId, {
-        card_number: cardNumber,
-        card_stamp_issued: stampIssued,
-      });
-
-      // Log successful update
-      console.log("Card details updated successfully:", {
-        memberId,
-        cardNumber,
-        stampIssued,
-      });
+      // Also update the card_number in the members table to keep them in sync
+      await db.query(
+        'UPDATE members SET card_number = $1 WHERE member_id = $2',
+        [cardNumber, memberId]
+      );
     } catch (error) {
-      console.error("Failed to update card details:", error);
-
-      // Specific error handling
-      if (error instanceof Error) {
-        if (error.message.includes("duplicate")) {
-          throw new Error(
-            `Card number ${cardNumber} is already assigned to another member`
-          );
-        }
-        if (error.message.includes("not found")) {
-          throw new Error("Member not found or inactive");
-        }
-        throw error;
-      }
-
-      throw new Error("Failed to update card details");
+      console.error('Error updating card details:', error);
+      throw new Error('Failed to update card details');
     }
   },
 

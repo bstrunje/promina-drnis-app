@@ -22,6 +22,9 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
     }
   };
 
+  // Get card number from membership_details first (source of truth), fall back to direct property
+  const cardNumber = member.membership_details?.card_number || member.card_number;
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -32,12 +35,12 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
           <label className="text-sm text-gray-500">Card Number: </label>
           <p
             className={`inline-block w-fit px-3 py-1 rounded-lg font-mono ml-2 ${
-              member.card_number
+              cardNumber
                 ? getStatusColor(member.life_status)
                 : "bg-gray-200 text-gray-600"
             }`}
           >
-            {member.card_number || "No card number assigned"}
+            {cardNumber || "No card number assigned"}
           </p>
           <div>
             <label className="text-sm text-gray-500">Membership Type</label>

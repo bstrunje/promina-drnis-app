@@ -1,7 +1,7 @@
 // backend/src/controllers/member.controller.ts
 import { Request, Response } from 'express';
 import memberService from '../services/member.service.js';
-import { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
+import memberRepository, { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import bcrypt from 'bcrypt';
 import authRepository from '../repositories/auth.repository.js';
@@ -12,6 +12,7 @@ import stampService from '../services/stamp.service.js';
 import membershipService from '../services/membership.service.js';
 import { MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 import multerConfig from '../config/upload.js';
+import db from '../utils/db.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -51,12 +52,12 @@ function handleControllerError(error: unknown, res: Response): void {
 }
 
 export const memberController = {
-    async getAllMembers(req: Request, res: Response): Promise<void> {
+    async getAllMembers(req: Request, res: Response) {
         try {
-            const members = await memberService.getAllMembers();
+            const members = await memberRepository.findAll();
             res.json(members);
         } catch (error) {
-            handleControllerError(error, res);
+            // Error handling
         }
     },
 
@@ -323,29 +324,24 @@ export const memberController = {
         }
     },
 
-    async assignPassword(req: Request<{}, {}, { memberId: number; password: string }>, res: Response): Promise<void> {
+    async assignPassword(
+        req: Request<{}, {}, { memberId: number; password: string; cardNumber?: string }>,
+        res: Response
+      ): Promise<void> {
         try {
-            const { memberId, password } = req.body;
-            console.log('Starting password assignment in member.controller');
-            const hashedPassword = await bcrypt.hash(password, 10);
-            await authRepository.updatePassword(memberId, hashedPassword);
-            if (req.user?.id) {
-                await auditService.logAction(
-                    'ASSIGN_PASSWORD',
-                    req.user.id,
-                    `Password assigned for member ${memberId}`,
-                    req,
-                    'success',
-                    memberId
-                );
-            }
-            console.log('Password assignment completed');
-            res.json({ message: 'Password assigned successfully' });
+          const { memberId, password, cardNumber } = req.body;
+          console.log("Received password assignment request for member:", memberId);
+          const hashedPassword = await bcrypt.hash(password, 10);
+          await authRepository.updatePassword(memberId, hashedPassword, cardNumber || ''); // Pass cardNumber to the repository
+    
+          await db.query("COMMIT");
+          res.json({ message: "Password assigned successfully" });
         } catch (error) {
-            console.error('Password assignment error:', error);
-            res.status(500).json({ message: 'Failed to assign password' });
+          await db.query("ROLLBACK");
+          console.error("Password assignment error:", error);
+          res.status(500).json({ message: "Failed to assign password" });
         }
-    },
+      },
 
     async getMemberWithActivities(req: Request<{ memberId: string }>, res: Response): Promise<void> {
         try {
@@ -415,7 +411,10 @@ export const memberController = {
                 );
             }
     
-            res.json({ message: 'Membership updated successfully' });
+            // Fetch the updated member details
+            const updatedMember = await memberService.getMemberById(memberId);
+
+            res.json({ message: 'Membership updated successfully', member: updatedMember });
         } catch (error) {
             console.error('Controller error:', error);
             res.status(500).json({ 
@@ -431,7 +430,7 @@ export const memberController = {
         try {
           const memberId = parseInt(req.params.memberId, 10);
           const { periods } = req.body;
-      
+            
           await membershipService.updateMembershipHistory(memberId, periods);
       
           if (req.user?.id) {
@@ -469,7 +468,7 @@ export const memberController = {
                 res.status(400).json({ message: 'Invalid termination reason' });
                 return;
             }
-            
+                    
             await memberService.terminateMembership(
                 memberId,
                 reason,

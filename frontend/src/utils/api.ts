@@ -94,9 +94,9 @@ export const searchMembers = async (searchTerm: string): Promise<MemberSearchRes
   }
 };
 
-export const assignPassword = async (memberId: number, password: string): Promise<void> => {
+export const assignPassword = async (memberId: number, password: string, cardNumber: string): Promise<void> => {
   try {
-    await api.post('/members/assign-password', { memberId, password });
+    await api.post('/members/assign-password', { memberId, password, cardNumber });
   } catch (error) {
     throw handleApiError(error, 'Failed to assign password');
   }

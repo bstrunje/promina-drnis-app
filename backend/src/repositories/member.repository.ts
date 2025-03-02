@@ -247,14 +247,6 @@ const memberRepository = {
         return result.rows[0];
     },
 
-    async assignPassword(memberId: number, password: string): Promise<void> {
-        await db.query(`
-            UPDATE members
-            SET password_hash = $1, status = 'registered'
-            WHERE member_id = $2
-        `, [password, memberId]);
-    },
-
     async updatePassword(memberId: number, password: string): Promise<void> {
         await db.query(`
             UPDATE members

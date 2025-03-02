@@ -21,6 +21,7 @@ import MembershipHistoryComponent from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
+import AssignPasswordForm from "../../../components/AssignPasswordForm";
 
 interface Props {
   memberId?: number;
@@ -43,6 +44,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAssigningPassword, setIsAssigningPassword] = useState(false);
 
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   const isOwnProfile = user?.member_id === memberId;
@@ -198,7 +200,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const handleMemberUpdate = async () => {
     try {
       // Fetch fresh data from server
-      await fetchMemberDetails();
+      const response = await api.get(`/members/${memberId}`);
+      setMember(response.data);
     } catch (error) {
       setError("Failed to update member");
     }
@@ -221,6 +224,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         if (onUpdate) {
           onUpdate(response.data);
         }
+        fetchMemberDetails(); // Fetch member details after saving
       }
     } catch (error) {
       setError("Failed to save member details");
@@ -246,6 +250,19 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     setEditedMember(member);
     setIsEditing(false);
     setError(null);
+  };
+
+  const handleAssign = (updatedMember: Member) => {
+    setMember(updatedMember);
+    fetchMemberDetails(); // Fetch member details after assigning password
+  };
+
+  const openAssignPasswordModal = () => {
+    setIsAssigningPassword(true);
+  };
+
+  const closeModal = () => {
+    setIsAssigningPassword(false);
   };
 
   if (isLoading) {
@@ -323,11 +340,20 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           userRole={user?.role}
         />
 
-        {isEditing && (
-          <MembershipCardManager
+        {canEdit && !member.password_hash && (
+          <Button onClick={openAssignPasswordModal}>Assign Password</Button>
+        )}
+
+        {isAssigningPassword && (
+          <AssignPasswordForm
             member={member}
-            onUpdate={fetchMemberDetails}
+            onClose={closeModal}
+            onAssign={handleAssign}
           />
+        )}
+
+        {canEdit && (
+          <MembershipCardManager member={member} onUpdate={handleMemberUpdate} />
         )}
 
         {isLoading ? (

@@ -24,6 +24,7 @@ interface SetPasswordRequest {
   suffix_numbers: string;
 }
 
+// 1. Fix the validatePassword function to maintain proper format with hyphen:
 function validatePassword(
   password: string,
   suffixNumbers?: string
@@ -49,7 +50,7 @@ function validatePassword(
     }
     return {
       isValid: true,
-      formattedPassword: `${password}-isk-${suffixNumbers}`,
+      formattedPassword: `${password}-isk-${suffixNumbers}`, // Add hyphen for consistency
     };
   }
 
@@ -57,12 +58,39 @@ function validatePassword(
 }
 
 const authController = {
+  // 2. Add more detailed logging to the login function to see exact format:
   async login(
     req: Request<{}, {}, MemberLoginData>,
     res: Response
   ): Promise<void> {
     try {
       const { full_name, password } = req.body;
+      console.log("LOGIN ATTEMPT FOR:", full_name);
+      console.log("WITH PASSWORD:", password);
+      
+      // First check if this member exists and is fully registered
+      const verifyMemberQuery = await db.query(`
+        SELECT member_id, status, registration_completed 
+        FROM members 
+        WHERE full_name = $1
+      `, [full_name]);
+      
+      if (verifyMemberQuery.rowCount === 0) {
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
+      }
+      
+      const memberCheck = verifyMemberQuery.rows[0];
+      console.log("Member status check:", JSON.stringify(memberCheck));
+      
+      if (memberCheck.status !== 'registered' || !memberCheck.registration_completed) {
+        // The member exists but isn't fully registered
+        res.status(401).json({ 
+          message: "Account setup incomplete. Please contact an administrator." 
+        });
+        return;
+      }
+
       const result = await db.query<Member>(
         "SELECT * FROM members WHERE full_name = $1",
         [full_name]
@@ -82,7 +110,29 @@ const authController = {
 
       const member = result.rows[0];
       
-      const validPassword = await bcrypt.compare(password, member.password_hash ?? '');
+      // Add these lines right before the password verification to debug:
+      console.log(`Password from request: ${password}`);
+      console.log(`Stored hash length: ${member.password_hash?.length || 0}`);
+      console.log(`Stored hash first 10 chars: ${member.password_hash?.substring(0, 10) || 'none'}`);
+
+      // In the login method, add this code after retrieving the member:
+      console.log("Detailed member data for login:", {
+        id: member.member_id,
+        fullName: member.full_name,
+        passwordHashExists: !!member.password_hash,
+        passwordHashLength: member.password_hash?.length,
+        firstFewChars: member.password_hash?.substring(0, 10)
+      });
+
+      // In the login method, add this before password verification:
+      if (full_name === "Pero Perić") {
+        console.log("Debugging special case:");
+        console.log(`Input password: "${password}"`);
+        console.log(`Expected format: "${member.first_name} ${member.last_name}-isk-XXXXX"`);
+      }
+
+      const validPassword = member.password_hash ? await bcrypt.compare(password, member.password_hash) : false;
+      console.log(`Password verification result: ${validPassword}`);
 
       if (!validPassword) {
         await auditService.logAction(
@@ -101,7 +151,7 @@ const authController = {
         { id: member.member_id, role: member.role },
         JWT_SECRET,
         { expiresIn: '24h' }
-    );
+      );
 
       await auditService.logAction(
         "LOGIN_SUCCESS",
@@ -116,9 +166,9 @@ const authController = {
         member: {
           id: member.member_id,
           full_name: member.full_name,
-          role: member.role,
+          role: member.role
         },
-        token,
+        token
       });
     } catch (error) {
       await auditService.logAction(
@@ -134,6 +184,7 @@ const authController = {
     }
   },
 
+  // Other methods remain unchanged...
   async registerInitial(
     req: Request<
       {},
@@ -269,7 +320,8 @@ const authController = {
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : "Registration failed",
+        message:
+          error instanceof Error ? error.message : "Registration failed",
       });
     }
   },
@@ -320,8 +372,10 @@ const authController = {
       }
 
       const password = `${member.first_name} ${member.last_name}-isk-${suffix_numbers}`;
+      console.log(`Setting password: "${password}" for member ${member_id}`);
       const hashedPassword = await bcrypt.hash(password, 10);
-      await authRepository.updatePassword(member_id, hashedPassword);
+      
+      await authRepository.updatePassword(member_id, hashedPassword, "");
 
       res.json({
         message: "Password set successfully",
@@ -342,7 +396,7 @@ const authController = {
       const { memberId, password } = req.body;
       console.log("Received password assignment request for member:", memberId);
       const hashedPassword = await bcrypt.hash(password, 10);
-      await authRepository.updatePassword(memberId, hashedPassword);
+      await authRepository.updatePassword(memberId, hashedPassword, "");
 
       await db.query("COMMIT");
       res.json({ message: "Password assigned successfully" });
@@ -352,6 +406,44 @@ const authController = {
       res.status(500).json({ message: "Failed to assign password" });
     }
   },
+
+  // Debug method for member information
+  async debugMember(req: Request, res: Response): Promise<void> {
+    try {
+      const memberId = parseInt(req.params.id);
+      console.log(`Debug request for member ${memberId}`);
+      
+      const query = `
+        SELECT 
+          member_id, 
+          first_name, 
+          last_name, 
+          full_name, 
+          email, 
+          status,
+          registration_completed,
+          CASE WHEN password_hash IS NULL THEN false ELSE true END as has_password
+        FROM members
+        WHERE member_id = $1
+      `;
+      
+      const result = await db.query(query, [memberId]);
+      
+      if (result.rowCount === 0) {
+        console.log(`No member found with ID: ${memberId}`);
+        res.status(404).json({ message: 'Member not found' });
+        return;
+      }
+      
+      res.json({ 
+        member: result.rows[0],
+        debug_note: "This endpoint is for development only"
+      });
+    } catch (error) {
+      console.error('Debug error:', error);
+      res.status(500).json({ message: 'Error retrieving member debug info', error: String(error) });
+    }
+  }
 };
 
 export default authController;

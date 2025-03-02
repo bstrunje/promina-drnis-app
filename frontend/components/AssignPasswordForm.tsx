@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Member } from '@shared/member';
 import { assignPassword } from '@/utils/api';
 
@@ -11,6 +11,12 @@ interface Props {
 const AssignPasswordForm = ({ member, onClose, onAssign }: Props) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [cardNumberPart, setCardNumberPart] = useState('');
+    const [baseCardNumber, setBaseCardNumber] = useState(''); // Store the base card number
+
+    useEffect(() => {
+        setBaseCardNumber(`${member.full_name}-isk-`);
+    }, [member.full_name]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,12 +24,18 @@ const AssignPasswordForm = ({ member, onClose, onAssign }: Props) => {
         setError(null);
         
         try {
-            await assignPassword(member.member_id, password);
+            await assignPassword(member.member_id, password, cardNumberPart);
             console.log('Password assignment response received');
-            onAssign({
+            const updatedMember = {
                 ...member,
-                registration_completed: true
-            });
+                registration_completed: true,
+                card_number: cardNumberPart,
+                membership_details: {
+                    ...member.membership_details,
+                    card_number: cardNumberPart
+                }
+            };
+            onAssign(updatedMember);
             onClose();
         } catch (error: unknown) {
             console.error('Error assigning password:', error);
@@ -43,14 +55,24 @@ const AssignPasswordForm = ({ member, onClose, onAssign }: Props) => {
                 </h3>
                 {error && <p className="text-red-500 mb-4">{error}</p>}
                 <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter new password"
-                        className="w-full p-2 mb-4 border rounded"
-                        required
-                    />
+                    <div className="flex items-center mb-4">
+                        <input
+                            type="text"
+                            value={baseCardNumber}
+                            readOnly
+                            className="w-auto p-2 border rounded mr-2 bg-gray-100"
+                        />
+                        <input
+                            type="text"
+                            placeholder="xxxxx"
+                            value={cardNumberPart}
+                            onChange={(e) => setCardNumberPart(e.target.value)}
+                            className="w-24 p-2 border rounded"
+                            pattern="[0-9]{5}"
+                            maxLength={5}
+                            required
+                        />
+                    </div>
                     <div className="flex justify-end">
                         <button
                             type="button"

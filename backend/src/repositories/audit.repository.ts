@@ -25,28 +25,47 @@ interface RawAuditLogResult {
 }
 
 const auditRepository = {
-    async create(data: Omit<AuditLog, 'log_id' | 'created_at'>) {
-        const result = await prisma.$queryRaw<RawAuditLogResult[]>`
-            INSERT INTO audit_logs (
-                action_type, 
-                performed_by, 
-                action_details, 
-                ip_address, 
-                status, 
-                affected_member
-            ) VALUES (
-                ${data.action_type},
-                ${data.performed_by},
-                ${data.action_details},
-                ${data.ip_address},
-                ${data.status || 'completed'},
-                ${data.affected_member}
-            ) RETURNING *;
-        `;
-        
-        return mapPrismaToAuditLog(result[0]);
+    async create(
+        action_type: string,
+        performed_by: number | null,
+        action_details: string,
+        ip_address: string,
+        status: string = 'success',
+        affected_member?: number
+    ): Promise<void> {
+        try {
+            // If performed_by is null, there's no need to check if user exists
+            if (performed_by === null) {
+                // Use Prisma's properly formatted executeRaw with parameters
+                await prisma.$executeRaw`
+                    INSERT INTO audit_logs 
+                    (action_type, performed_by, action_details, ip_address, status, affected_member) 
+                    VALUES (${action_type}, NULL, ${action_details}, ${ip_address}, ${status}, ${affected_member || null})
+                `;
+                return;
+            }
+
+            // Use Prisma's proper method to check if the user exists
+            const userCount = await prisma.$queryRaw<[{count: number}]>`
+                SELECT COUNT(*) as count FROM members WHERE member_id = ${performed_by}
+            `;
+            
+            // If user doesn't exist, use NULL for performed_by
+            const userExists = userCount[0]?.count > 0;
+            
+            // Insert the audit log record using proper syntax
+            await prisma.$executeRaw`
+                INSERT INTO audit_logs 
+                (action_type, performed_by, action_details, ip_address, status, affected_member) 
+                VALUES (${action_type}, ${userExists ? performed_by : null}, ${action_details}, ${ip_address}, ${status}, ${affected_member || null})
+            `;
+        } catch (error) {
+            console.error('Error creating audit log:', error);
+            // Don't throw the error - just log it and continue
+        }
     },
 
+    // Rest of the methods remain unchanged
     async getAll(): Promise<AuditLog[]> {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*, 

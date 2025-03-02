@@ -6,6 +6,8 @@ import { Stamp } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
 import { updateMembership } from "../src/utils/api";
+import { Input } from "@components/ui/input";
+import { Label } from "@components/ui/label";
 
 interface Props {
   member: Member;
@@ -14,7 +16,11 @@ interface Props {
 
 const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
-  const [cardNumber, setCardNumber] = useState("");
+  // Initialize from membership_details first (source of truth), fall back to direct property
+  const [cardNumber, setCardNumber] = useState(member?.membership_details?.card_number || member?.card_number || "");
+  const [stampIssued, setStampIssued] = useState(
+    member?.membership_details?.card_stamp_issued || member?.card_stamp_issued || false
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIssuingStamp, setIsIssuingStamp] = useState(false);
   const [inventoryStatus, setInventoryStatus] = useState<{
@@ -62,7 +68,15 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     };
 
     checkInventory();
-  }, [member.life_status]);
+  }, [member.life_status, member]);
+
+  // When member data changes, update from the correct source
+  useEffect(() => {
+    if (member) {
+      setCardNumber(member.membership_details?.card_number || member.card_number || '');
+      setStampIssued(member.membership_details?.card_stamp_issued || member.card_stamp_issued || false);
+    }
+  }, [member]);
 
   const handleCardNumberAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +99,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         throw new Error("No response received from server");
       }
 
+      // Update local state with priority on membership_details
       await onUpdate({
         ...member,
         membership_details: {
@@ -92,6 +107,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
           card_number: cardNumber,
           card_stamp_issued: true,
         },
+        // Still set these for backward compatibility, but membership_details is source of truth
+        card_number: cardNumber,
+        card_stamp_issued: true,
       });
       setCardNumber("");
 
@@ -100,7 +118,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         description: "Card number assigned successfully",
         variant: "success",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Card assignment error details:", {
         error,
         memberId: member.member_id,
@@ -161,7 +179,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
       );
 
       await onUpdate({ ...member });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description:
@@ -198,7 +216,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
           <div className="space-y-2">
             <div>
               <span className="text-sm text-gray-500">Card Number:</span>
-              {/* First define the variables at the top of the component */}
               {(() => {
                 const cardNumber =
                   member.membership_details?.card_number || member.card_number;
@@ -233,32 +250,34 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
 
         {/* Card Number Assignment Form */}
         {!member.membership_details?.card_number && (
-          <form onSubmit={handleCardNumberAssign} className="mt-4">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  pattern="[0-9]{5}"
-                  title="Card number must be exactly 5 digits"
-                  maxLength={5}
-                  className="w-full p-2 border rounded"
-                  required
-                />
+          
+            <form onSubmit={handleCardNumberAssign} className="mt-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Card Number
+                  </label>
+                  <Input
+                    type="text"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    pattern="[0-9]{5}"
+                    title="Card number must be exactly 5 digits"
+                    maxLength={5}
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={cn("w-full", isSubmitting && "opacity-50")}
+                >
+                  {isSubmitting ? "Assigning..." : "Assign Card Number"}
+                </Button>
               </div>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className={cn("w-full", isSubmitting && "opacity-50")}
-              >
-                {isSubmitting ? "Assigning..." : "Assign Card Number"}
-              </Button>
-            </div>
-          </form>
+            </form>
+          
         )}
 
         {/* Stamp Issuance */}

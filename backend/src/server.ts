@@ -7,6 +7,8 @@ import app from './app.js';
 import { setupDatabase } from './setupDatabase.js';
 import db from './utils/db.js';
 import config from './config/config.js';
+import { prepareDirectories } from './init/prepareDirectories.js';
+import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -106,6 +108,8 @@ async function startServer(): Promise<void> {
     }
 }
 
+startPasswordUpdateJob();
+
 async function stopServer(): Promise<void> {
     return new Promise((resolve) => {
         if (server) {
@@ -145,6 +149,7 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
 // Initialize database and start server
 async function initialize() {
     try {
+        prepareDirectories();
         await setupDatabase();
         console.log('✅ Database setup completed');
         await startServer();
