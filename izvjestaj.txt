@@ -1,10 +1,859 @@
-DROP TRIGGER IF EXISTS trigger_card_number_change ON membership_details;
-CREATE TRIGGER trigger_card_number_change
-AFTER INSERT OR UPDATE ON membership_details
-FOR EACH ROW
-EXECUTE FUNCTION notify_card_number_change();
-
-NOTICE:  trigger "trigger_card_number_change" for relation "membership_details" does not exist, skipping
-CREATE TRIGGER
-
-Query returned successfully in 58 msec.
+GET /api/members/15/activities 304 19.038 ms - -
+{
+  query: '\n' +
+    '      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name\n' +
+    '      FROM password_update_queue q\n' +
+    '      JOIN members m ON q.member_id = m.member_id\n' +
+    '      WHERE q.processed = false\n' +
+    '      ORDER BY q.created_at ASC\n' +
+    '      LIMIT 10 -- Process in batches\n' +
+    '    ',
+  duration: 2,
+  rows: 0
+}
+OPTIONS /api/members/15/membership 204 0.152 ms - 0
+[3/2/2025, 03:12:49] POST /api/members/15/membership
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 85,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+📦 Development database pool connected with UTF-8 encoding
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Updating membership for: {
+  memberId: 15,
+  paymentDate: '2025-03-02T02:12:49.806Z',
+  cardNumber: '14563',
+  stampIssued: true
+}
+Starting fee payment update
+Processing payment date: 2025-03-02T11:00:00.000Z
+Received date in service: 2025-03-02T02:12:49.806Z
+Processed date: 2025-03-02T12:00:00.000Z
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 2,
+  rows: 1
+}
+📦 Development database pool connected with UTF-8 encoding
+{
+  query: 'SELECT 1 FROM members WHERE member_id = $1',
+  duration: 72,
+  rows: 1
+}
+Checking for duplicate card number...
+📦 Development database pool connected with UTF-8 encoding
+{
+  query: 'SELECT * FROM membership_periods WHERE member_id = $1 AND end_date IS NULL',
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 2,
+  rows: 1
+}
+Fee payment update completed
+Starting card number update
+{
+  query: 'SELECT * FROM membership_details WHERE member_id = $1',
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'UPDATE membership_details SET card_number = $1, card_stamp_issued = $2 WHERE member_id = $3',
+  duration: 8,
+  rows: 1
+}
+Database query error: {
+  query: 'UPDATE members SET card_number = $1 WHERE member_id = $2',
+  error: 'column "card_number" of relation "members" does not exist'
+}
+Error updating card details: error: column "card_number" of relation "members" does not exist
+    at C:\sinkronizacija\promina-drnis-app\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/utils/db.js:71:28)
+    at async Object.updateCardDetails (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/services/membership.service.js:85:13)
+    at async Object.updateMembershipCard (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/services/member.service.js:213:13)
+    at async updateMembership (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/controllers/member.controller.js:279:17) {
+  length: 133,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '20',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'analyze.c',
+  line: '2536',
+  routine: 'transformUpdateTargetList'
+}
+Controller error: Error: Error updating card details: Failed to update card details
+    at Object.updateMembershipCard (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/services/member.service.js:217:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async updateMembership (file:///C:/sinkronizacija/promina-drnis-app/backend/dist/controllers/member.controller.js:279:17)
+POST /api/members/15/membership 500 294.143 ms - 72
+{
+  query: '\n' +
+    '      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name\n' +
+    '      FROM password_update_queue q\n' +
+    '      JOIN members m ON q.member_id = m.member_id\n' +
+    '      WHERE q.processed = false\n' +
+    '      ORDER BY q.created_at ASC\n' +
+    '      LIMIT 10 -- Process in batches\n' +
+    '    ',
+  duration: 9,
+  rows: 1
+}
+{
+  query: '\n' +
+    '          UPDATE members \n' +
+    '          SET password_hash = $1\n' +
+    '          WHERE member_id = $2\n' +
+    '        ',
+  duration: 3,
+  rows: 1
+}
+{
+  query: '\n' +
+    '          UPDATE password_update_queue\n' +
+    '          SET processed = true\n' +
+    '          WHERE queue_id = $1\n' +
+    '        ',
+  duration: 1,
+  rows: 1
+}
+Updated password for member 15 based on new card number
+OPTIONS /api/members 204 0.142 ms - 0
+OPTIONS /api/members 204 0.144 ms - 0
+[3/2/2025, 03:13:16] GET /api/members
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 22,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours\n' +
+    '            FROM members m\n' +
+    '            LEFT JOIN (\n' +
+    '                SELECT member_id, SUM(hours_spent) as total_hours\n' +   
+    '                FROM activity_participants\n' +
+    '                WHERE verified_at IS NOT NULL\n' +
+    '                GROUP BY member_id\n' +
+    '            ) stats ON m.member_id = stats.member_id\n' +
+    '            ORDER BY m.last_name, m.first_name\n' +
+    '        ',
+  duration: 3,
+  rows: 6
+}
+GET /api/members 200 40.309 ms - -
+[3/2/2025, 03:13:16] GET /api/members
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 0,
+  rows: 1
+}
+{
+  query: '\n' +
+    '            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours\n' +
+    '            FROM members m\n' +
+    '            LEFT JOIN (\n' +
+    '                SELECT member_id, SUM(hours_spent) as total_hours\n' +   
+    '                FROM activity_participants\n' +
+    '                WHERE verified_at IS NOT NULL\n' +
+    '                GROUP BY member_id\n' +
+    '            ) stats ON m.member_id = stats.member_id\n' +
+    '            ORDER BY m.last_name, m.first_name\n' +
+    '        ',
+  duration: 1,
+  rows: 6
+}
+GET /api/members 304 12.672 ms - -
+OPTIONS /api/members/assign-password 204 0.187 ms - 0
+[3/2/2025, 03:13:39] POST /api/members/assign-password
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 2,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDA4ODE0NjYsImV4cCI6MTc0MDk2Nzg2Nn0.x0Gnbh3wnLb1E0oxg_M3Dr_FxHCUV-S-3ePSYCZuM78
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Received password assignment request for member: 18
+==== PASSWORD UPDATE DETAILS ====
+Member ID: 18
+Password hash length: 60
+Card number provided: "00000"
+Member after update: {
+  member_id: 18,
+  full_name: 'Novi User3',
+  status: 'registered',
+  registration_completed: true
+}
+Updating card number to "00000"
+Card number updated successfully
+Password update completed successfully
+{ query: 'COMMIT', duration: 0, rows: 0 }
+POST /api/members/assign-password 200 81.794 ms - 44
+[3/2/2025, 03:14:00] GET /api/auth/search-members
+{
+  query: '\n' +
+    '            SELECT \n' +
+    '            member_id,\n' +
+    '            full_name\n' +
+    '        FROM members \n' +
+    '        WHERE \n' +
+    '            LOWER(full_name) LIKE LOWER($1)\n' +
+    '            AND registration_completed = true\n' +
+    '        ORDER BY first_name, last_name \n' +
+    '        LIMIT 10',
+  duration: 1,
+  rows: 1
+}
+GET /api/auth/search-members?searchTerm=no 200 2.312 ms - 43
+{
+  query: '\n' +
+    '      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name\n' +
+    '      FROM password_update_queue q\n' +
+    '      JOIN members m ON q.member_id = m.member_id\n' +
+    '      WHERE q.processed = false\n' +
+    '      ORDER BY q.created_at ASC\n' +
+    '      LIMIT 10 -- Process in batches\n' +
+    '    ',
+  duration: 1,
+  rows: 1
+}
+{
+  query: '\n' +
+    '          UPDATE members \n' +
+    '          SET password_hash = $1\n' +
+    '          WHERE member_id = $2\n' +
+    '        ',
+  duration: 3,
+  rows: 1
+}
+{
+  query: '\n' +
+    '          UPDATE password_update_queue\n' +
+    '          SET processed = true\n' +
+    '          WHERE queue_id = $1\n' +
+    '        ',
+  duration: 1,
+  rows: 1
+}
+Updated password for member 18 based on new card number
+OPTIONS /api/auth/login 204 0.264 ms - 0
+[3/2/2025, 03:14:21] POST /api/auth/login
+LOGIN ATTEMPT FOR: Novi User3
+WITH PASSWORD: Novi User3-isk-00000
+{
+  query: '\n' +
+    '        SELECT member_id, status, registration_completed \n' +
+    '        FROM members \n' +
+    '        WHERE full_name = $1\n' +
+    '      ',
+  duration: 1,
+  rows: 1
+}
+Member status check: {"member_id":18,"status":"registered","registration_completed":true}
+{
+  query: 'SELECT * FROM members WHERE full_name = $1',
+  duration: 1,
+  rows: 1
+}
+Password from request: Novi User3-isk-00000
+Stored hash length: 60
+Stored hash first 10 chars: $2b$10$Zjw
+Detailed member data for login: {
+  id: 18,
+  fullName: 'Novi User3',
+  passwordHashExists: true,
+  passwordHashLength: 60,
+  firstFewChars: '$2b$10$Zjw'
+}
+Password verification result: true
+POST /api/auth/login 200 95.980 ms - 232
+OPTIONS /api/members/18 204 0.163 ms - 0
+[3/2/2025, 03:14:21] GET /api/members/18
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 2,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 2,
+  rows: 1
+}
+GET /api/members/18 200 21.091 ms - 844
+[3/2/2025, 03:14:21] GET /api/members/18
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 1,
+  rows: 1
+}
+GET /api/members/18 304 16.621 ms - -
+OPTIONS /api/members/18/activities 204 0.184 ms - 0
+OPTIONS /api/members/18/activities 204 0.276 ms - 0
+[3/2/2025, 03:14:21] GET /api/members/18/activities
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 2,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 2,
+  rows: 1
+}
+{
+  query: '\n' +
+    '                SELECT \n' +
+    '                    a.activity_id,\n' +
+    '                    a.title,\n' +
+    '                    a.start_date as date,\n' +
+    '                    ap.hours_spent\n' +
+    '                FROM activities a\n' +
+    '                JOIN activity_participants ap ON a.activity_id = ap.activity_id\n' +
+    '                WHERE ap.member_id = $1\n' +
+    '                ORDER BY a.start_date DESC\n' +
+    '            ',
+  duration: 3,
+  rows: 0
+}
+GET /api/members/18/activities 200 17.037 ms - 860
+[3/2/2025, 03:14:21] GET /api/members/18/activities
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTgsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDA4ODE2NjEsImV4cCI6MTc0MDk2ODA2MX0.vs5P81pZvlZv11UPUhrnsWG8jTju7iA4GpA2hLt0JL4
+{
+  query: 'SELECT \n' +
+    '                m.member_id as id, \n' +
+    '                m.member_id as user_id,\n' +
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
+    '                m.email,\n' +
+    '                CASE \n' +
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
+    "                    ELSE 'member'\n" +
+    '                END as role_name,\n' +
+    "                m.status = 'registered' as is_active\n" +
+    '             FROM members m\n' +
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
+  duration: 1,
+  rows: 1
+}
+{
+  query: 'SELECT \n' +
+    '            m.*,\n' +
+    '            md.card_number,\n' +
+    '            md.fee_payment_year,\n' +
+    '            md.card_stamp_issued,\n' +
+    '            md.fee_payment_date,\n' +
+    '            (SELECT json_agg(\n' +
+    '                json_build_object(\n' +
+    "                    'period_id', mp.period_id,\n" +
+    "                    'start_date', mp.start_date,\n" +
+    "                    'end_date', mp.end_date,\n" +
+    "                    'end_reason', mp.end_reason\n" +
+    '                )\n' +
+    '            )\n' +
+    '            FROM membership_periods mp\n' +
+    '            WHERE mp.member_id = m.member_id) as membership_history\n' + 
+    '        FROM members m\n' +
+    '        LEFT JOIN membership_details md ON m.member_id = md.member_id\n' +
+    '        WHERE m.member_id = $1',
+  duration: 2,
+  rows: 1
+}
+{
+  query: '\n' +
+    '                SELECT \n' +
+    '                    a.activity_id,\n' +
+    '                    a.title,\n' +
+    '                    a.start_date as date,\n' +
+    '                    ap.hours_spent\n' +
+    '                FROM activities a\n' +
+    '                JOIN activity_participants ap ON a.activity_id = ap.activity_id\n' +
+    '                WHERE ap.member_id = $1\n' +
+    '                ORDER BY a.start_date DESC\n' +
+    '            ',
+  duration: 1,
+  rows: 0
+}
+GET /api/members/18/activities 304 12.311 ms - -

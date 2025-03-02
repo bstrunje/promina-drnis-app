@@ -118,33 +118,34 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean): Promise<void> {
+  // Fix the updateCardDetails method with proper null handling
+  async updateCardDetails(memberId: number, cardNumber: string, cardStampIssued: boolean = false): Promise<void> {
     try {
-      // Check if membership details exist for the member
+      console.log(`Updating card details for member ${memberId}: card number ${cardNumber}, stamp issued: ${cardStampIssued}`);
+      
+      // Check if membership details entry exists
       const existingDetails = await db.query(
         'SELECT * FROM membership_details WHERE member_id = $1',
         [memberId]
       );
-
-      if (existingDetails.rows.length > 0) {
-        // Update existing membership details
+      
+      // Fix the TypeScript error by using optional chaining and nullish coalescing
+      if ((existingDetails?.rowCount ?? 0) > 0) {
+        // Update existing entry
         await db.query(
           'UPDATE membership_details SET card_number = $1, card_stamp_issued = $2 WHERE member_id = $3',
-          [cardNumber, stampIssued, memberId]
+          [cardNumber, cardStampIssued, memberId]
         );
+        console.log(`Updated existing membership details for member ${memberId}`);
       } else {
-        // Insert new membership details
+        // Insert new entry
         await db.query(
           'INSERT INTO membership_details (member_id, card_number, card_stamp_issued) VALUES ($1, $2, $3)',
-          [memberId, cardNumber, stampIssued]
+          [memberId, cardNumber, cardStampIssued]
         );
+        console.log(`Created new membership details for member ${memberId}`);
       }
-
-      // Also update the card_number in the members table to keep them in sync
-      await db.query(
-        'UPDATE members SET card_number = $1 WHERE member_id = $2',
-        [cardNumber, memberId]
-      );
+      
     } catch (error) {
       console.error('Error updating card details:', error);
       throw new Error('Failed to update card details');
