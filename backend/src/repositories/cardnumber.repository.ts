@@ -122,6 +122,124 @@ const cardNumberRepository = {
       throw error;
     }
   },
+
+  // Modify the getAllCardNumbers method to check all tables for card assignment information
+  async getAllCardNumbers(): Promise<{
+    card_number: string;
+    status: 'available' | 'assigned' | 'retired';
+    member_id?: number;
+    member_name?: string;
+  }[]> {
+    // Deep debug logging to diagnose issues
+    console.log("Fetching all card numbers including assigned ones");
+    
+    try {
+      // First, check if card 55559 exists at all
+      const checkCard = await db.query(`
+        SELECT * FROM card_numbers WHERE card_number = '55559'
+      `);
+      console.log("Card 55559 lookup:", checkCard.rows);
+
+      // Also check membership_details for this card
+      const checkMembership = await db.query(`
+        SELECT m.member_id, m.full_name, md.* 
+        FROM membership_details md
+        JOIN members m ON md.member_id = m.member_id
+        WHERE md.card_number = '55559'
+      `);
+      console.log("Membership details for 55559:", checkMembership.rows);
+
+      // Main query - expand to check membership_details table as well
+      const result = await db.query(`
+        WITH assigned_cards AS (
+          SELECT 
+            md.card_number,
+            md.member_id,
+            m.full_name as member_name,
+            'assigned' as source
+          FROM 
+            membership_details md
+          JOIN 
+            members m ON md.member_id = m.member_id
+          WHERE 
+            md.card_number IS NOT NULL AND md.card_number != ''
+        )
+        
+        SELECT 
+          cn.card_number, 
+          CASE
+            WHEN ac.card_number IS NOT NULL THEN 'assigned'
+            WHEN cn.status = 'assigned' THEN 'assigned'
+            ELSE cn.status
+          END as status,
+          COALESCE(ac.member_id, cn.member_id) as member_id,
+          ac.member_name
+        FROM 
+          card_numbers cn
+        LEFT JOIN 
+          assigned_cards ac ON cn.card_number = ac.card_number
+        
+        UNION
+        
+        -- Include cards from membership_details that might not be in card_numbers
+        SELECT 
+          ac.card_number, 
+          'assigned' as status,
+          ac.member_id,
+          ac.member_name
+        FROM 
+          assigned_cards ac
+        LEFT JOIN 
+          card_numbers cn ON ac.card_number = cn.card_number
+        WHERE 
+          cn.card_number IS NULL
+        
+        ORDER BY 
+          status, card_number ASC
+      `);
+      
+      // Log details about the results
+      console.log(`Found ${result.rows.length} total card numbers`);
+      console.log(`Available: ${result.rows.filter(c => c.status === 'available').length}`);
+      console.log(`Assigned: ${result.rows.filter(c => c.status === 'assigned').length}`);
+      
+      if (result.rows.filter(c => c.status === 'assigned').length > 0) {
+        console.log("Assigned card details:", 
+          result.rows.filter(c => c.status === 'assigned').map(c => ({
+            card_number: c.card_number, 
+            member_id: c.member_id,
+            member_name: c.member_name
+          }))
+        );
+      }
+      
+      return result.rows;
+    } catch (error) {
+      console.error("Error in getAllCardNumbers:", error);
+      throw error;
+    }
+  },
+
+  // Add this method to find member by card number
+  async findMemberByCardNumber(cardNumber: string) {
+    const result = await db.query(`
+      SELECT 
+        m.member_id,
+        m.full_name,
+        m.email,
+        m.status,
+        md.card_number,
+        md.card_stamp_issued
+      FROM 
+        members m
+      JOIN 
+        membership_details md ON m.member_id = md.member_id
+      WHERE 
+        md.card_number = $1
+    `, [cardNumber]);
+    
+    return result.rows[0] || null;
+  },
 };
 
 export default cardNumberRepository;

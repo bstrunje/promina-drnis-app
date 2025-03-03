@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { useToast } from "../../../components/ui/use-toast";
 import { API_BASE_URL } from "@/utils/config";
-import { Trash2 } from "lucide-react";
-import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange } from "../../utils/api";
+import { Trash2, RefreshCw } from "lucide-react";
+import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange, getAllCardNumbers } from "../../utils/api";
 
 export default function CardNumberManagement() {
   const { toast } = useToast(); // Move this inside the component
@@ -23,24 +23,50 @@ export default function CardNumberManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [cardStats, setCardStats] = useState<{
+    total: number;
+    available: number;
+    assigned: number;
+  }>({ total: 0, available: 0, assigned: 0 });
+  
+  const [allCardNumbers, setAllCardNumbers] = useState<Array<{
+    card_number: string;
+    status: 'available' | 'assigned' | 'retired';
+    member_id?: number;
+    member_name?: string;
+  }>>([]);
+
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'assigned'>('all');
 
   // Fetch available card number count
   useEffect(() => {
-    async function fetchAvailableCardNumberCount() {
+    async function fetchCardNumbers() {
       setIsLoadingCount(true);
       try {
-        const numbers = await getAvailableCardNumbers();
-        console.log("Available card numbers:", numbers);
-        setAvailableCount(numbers.length);
-        setExistingCardNumbers(numbers); // Store the actual numbers too
+        const data = await getAllCardNumbers();
+        setCardStats(data.stats);
+        setAllCardNumbers(data.cards);
+        
+        // Keep this for existing code compatibility
+        setAvailableCount(data.stats.available);
+        setExistingCardNumbers(
+          data.cards
+            .filter(card => card.status === 'available')
+            .map(card => card.card_number)
+        );
       } catch (error) {
-        console.error('Error fetching card numbers count:', error);
+        console.error('Error fetching card numbers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load card numbers",
+          variant: "destructive",
+        });
       } finally {
         setIsLoadingCount(false);
       }
     }
-
-    fetchAvailableCardNumberCount();
+  
+    fetchCardNumbers();
   }, []);
 
   const handleAddSingle = async (e: React.FormEvent) => {
@@ -188,8 +214,13 @@ export default function CardNumberManagement() {
   };
 
   // Add utility functions to handle pagination and filtering
-  const filteredCardNumbers = existingCardNumbers.filter(number => 
-    number.includes(searchTerm)
+  const filteredByStatus = allCardNumbers.filter(card => {
+    if (statusFilter === 'all') return true;
+    return card.status === statusFilter;
+  });
+
+  const filteredCardNumbers = filteredByStatus.filter(card => 
+    card.card_number.includes(searchTerm)
   );
 
   const totalPages = Math.ceil(filteredCardNumbers.length / itemsPerPage);
@@ -208,16 +239,59 @@ export default function CardNumberManagement() {
     }
   };
 
+  const refreshCardNumbers = async () => {
+    setIsLoadingCount(true);
+    try {
+      const data = await getAllCardNumbers();
+      console.log("Refreshed all card numbers:", data);
+      setCardStats(data.stats);
+      setAllCardNumbers(data.cards);
+      setAvailableCount(data.stats.available);
+      setExistingCardNumbers(
+        data.cards
+          .filter(card => card.status === 'available')
+          .map(card => card.card_number)
+      );
+    } catch (error) {
+      console.error("Error refreshing card numbers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh card numbers",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCount(false);
+    }
+  };
+
   return (
     <Card className="my-6">
       <CardHeader>
         <CardTitle>Card Number Management</CardTitle>
         <CardDescription>
           Add and manage membership card numbers
-          {availableCount !== null && (
-            <div className="mt-2 text-sm font-medium">
-              Available card numbers: {availableCount}
-              {isLoadingCount && <span className="ml-2 text-muted-foreground">(refreshing...)</span>}
+          {cardStats && (
+            <div className="mt-2 text-sm font-medium flex flex-col space-y-1">
+              <div className="flex items-center justify-between">
+                <span>
+                  Total card numbers: {cardStats.total}
+                  {isLoadingCount && <span className="ml-2">(refreshing...)</span>}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0" 
+                  title="Refresh card statistics"
+                  onClick={refreshCardNumbers}
+                  disabled={isLoadingCount}
+                >
+                  <RefreshCw className={`h-3 w-3 ${isLoadingCount ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              <div className="flex space-x-4">
+                <span className="text-green-600">Available: {cardStats.available}</span>
+                <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
+              </div>
             </div>
           )}
         </CardDescription>
@@ -288,10 +362,10 @@ export default function CardNumberManagement() {
 
           <TabsContent value="manage" className="mt-4">
             <div>
-              <h3 className="text-sm font-medium mb-2">Available Card Numbers</h3>
+              <h3 className="text-sm font-medium mb-2">Card Numbers</h3>
               
-              {/* Search input */}
-              <div className="mb-4">
+              {/* Filter and view options */}
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
                 <Input
                   type="text"
                   placeholder="Search card numbers..."
@@ -302,42 +376,92 @@ export default function CardNumberManagement() {
                   }}
                   className="max-w-md"
                 />
+                
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground">
+                    Use filters below to view different card statuses
+                  </span>
+                </div>
+              </div>
+              
+              {/* Status filters */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <Button 
+                  variant={statusFilter === 'all' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                >
+                  All ({filteredCardNumbers.length})
+                </Button>
+                <Button 
+                  variant={statusFilter === 'available' ? 'default' : 'outline'}
+                  size="sm" 
+                  onClick={() => setStatusFilter('available')}
+                  className="text-green-600"
+                >
+                  Available ({availableCount})
+                </Button>
+                <Button 
+                  variant={statusFilter === 'assigned' ? 'default' : 'outline'}
+                  size="sm" 
+                  onClick={() => setStatusFilter('assigned')}
+                  className="text-blue-600"
+                >
+                  Assigned ({cardStats.assigned})
+                </Button>
               </div>
               
               {isLoadingCount ? (
                 <p className="text-sm text-muted-foreground">Loading card numbers...</p>
-              ) : existingCardNumbers.length > 0 ? (
+              ) : filteredCardNumbers.length > 0 ? (
                 <>
                   {/* Stats */}
                   <div className="mb-2 text-sm text-muted-foreground">
                     Showing {paginatedCardNumbers.length} of {filteredCardNumbers.length} 
-                    {searchTerm && ` (filtered from ${existingCardNumbers.length})`} numbers
+                    {searchTerm && ` (filtered from ${filteredByStatus.length})`} numbers
                   </div>
                   
                   {/* Dropdown style list */}
                   <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
-                    {paginatedCardNumbers.map(number => (
+                    {paginatedCardNumbers.map(card => (
                       <div 
-                        key={number} 
-                        className="flex items-center justify-between p-3 hover:bg-gray-50"
+                        key={card.card_number} 
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 ${
+                          card.status === 'assigned' ? 'bg-blue-50' : ''
+                        }`}
                       >
-                        <span className="font-medium select-all cursor-pointer" 
-                              onClick={() => navigator.clipboard.writeText(number)}
-                              title="Click to copy"
-                        >{number}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteCard(number)}
-                          disabled={isDeletingCard === number}
-                        >
-                          {isDeletingCard === number ? (
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
+                        <div className="flex items-center space-x-2">
+                          <span 
+                            className={`font-medium select-all cursor-pointer ${
+                              card.status === 'assigned' ? 'text-blue-600' : ''
+                            }`}
+                            onClick={() => navigator.clipboard.writeText(card.card_number)}
+                            title="Click to copy"
+                          >
+                            {card.card_number}
+                          </span>
+                          {card.status === 'assigned' && card.member_name && (
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                              Assigned to: {card.member_name}
+                            </span>
                           )}
-                        </Button>
+                        </div>
+                        
+                        {card.status === 'available' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteCard(card.card_number)}
+                            disabled={isDeletingCard === card.card_number}
+                          >
+                            {isDeletingCard === card.card_number ? (
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -368,12 +492,12 @@ export default function CardNumberManagement() {
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">No card numbers available</p>
+                <p className="text-sm text-muted-foreground">No card numbers found</p>
               )}
               
               <div className="mt-4 text-sm text-muted-foreground">
                 <p>Note: Only unused card numbers can be deleted. Click on a number to copy it.</p>
-                <p>Card numbers already assigned to members cannot be removed.</p>
+                <p>Cards already assigned to members are shown in blue.</p>
               </div>
             </div>
           </TabsContent>

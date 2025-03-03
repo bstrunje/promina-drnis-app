@@ -141,6 +141,36 @@ const cardNumberController = {
       console.error('Error deleting card number:', error);
       res.status(500).json({ message: 'Failed to delete card number' });
     }
+  },
+
+  // Add this method to the controller
+  async getAllCardNumbers(req: Request, res: Response): Promise<void> {
+    console.log("Fetching all card numbers - user role:", req.user?.role);
+    try {
+      const allCardNumbers = await cardNumberRepository.getAllCardNumbers();
+      
+      // Count statistics
+      const available = allCardNumbers.filter(card => card.status === 'available').length;
+      const assigned = allCardNumbers.filter(card => card.status === 'assigned').length;
+      const total = allCardNumbers.length;
+      
+      console.log(`Found ${total} card numbers (${available} available, ${assigned} assigned)`);
+      
+      res.json({
+        cards: allCardNumbers,
+        stats: { 
+          total,
+          available,
+          assigned
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching all card numbers:', error);
+      res.status(500).json({
+        message: 'Failed to fetch card numbers',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 };
 

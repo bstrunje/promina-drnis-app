@@ -1,22 +1,89 @@
 [{
-	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/src/features/settings/CardNumberManagement.tsx",
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
 	"owner": "typescript",
-	"code": "2322",
+	"code": "17002",
 	"severity": 8,
-	"message": "Type '\"icon\"' is not assignable to type '\"default\" | \"sm\" | \"lg\"'.",
+	"message": "Expected corresponding JSX closing tag for 'div'.",
 	"source": "ts",
-	"startLineNumber": 282,
-	"startColumn": 27,
-	"endLineNumber": 282,
-	"endColumn": 31,
-	"relatedInformation": [
-		{
-			"startLineNumber": 22,
-			"startColumn": 7,
-			"endLineNumber": 26,
-			"endColumn": 8,
-			"message": "The expected type comes from property 'size' which is declared here on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'",
-			"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/ui/button.tsx"
-		}
-	]
+	"startLineNumber": 457,
+	"startColumn": 17,
+	"endLineNumber": 457,
+	"endColumn": 23
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "1005",
+	"severity": 8,
+	"message": "')' expected.",
+	"source": "ts",
+	"startLineNumber": 458,
+	"startColumn": 13,
+	"endLineNumber": 458,
+	"endColumn": 15
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "17002",
+	"severity": 8,
+	"message": "Expected corresponding JSX closing tag for 'CardContent'.",
+	"source": "ts",
+	"startLineNumber": 458,
+	"startColumn": 15,
+	"endLineNumber": 458,
+	"endColumn": 18
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "1381",
+	"severity": 8,
+	"message": "Unexpected token. Did you mean `{'}'}` or `&rbrace;`?",
+	"source": "ts",
+	"startLineNumber": 459,
+	"startColumn": 12,
+	"endLineNumber": 459,
+	"endColumn": 13
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "17002",
+	"severity": 8,
+	"message": "Expected corresponding JSX closing tag for 'Card'.",
+	"source": "ts",
+	"startLineNumber": 460,
+	"startColumn": 9,
+	"endLineNumber": 460,
+	"endColumn": 20
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "1005",
+	"severity": 8,
+	"message": "')' expected.",
+	"source": "ts",
+	"startLineNumber": 461,
+	"startColumn": 5,
+	"endLineNumber": 461,
+	"endColumn": 7
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "1109",
+	"severity": 8,
+	"message": "Expression expected.",
+	"source": "ts",
+	"startLineNumber": 462,
+	"startColumn": 3,
+	"endLineNumber": 462,
+	"endColumn": 4
+},{
+	"resource": "/c:/sinkronizacija/promina-drnis-app/frontend/components/MembershipCardManager.tsx",
+	"owner": "typescript",
+	"code": "1128",
+	"severity": 8,
+	"message": "Declaration or statement expected.",
+	"source": "ts",
+	"startLineNumber": 463,
+	"startColumn": 1,
+	"endLineNumber": 463,
+	"endColumn": 2
 }]

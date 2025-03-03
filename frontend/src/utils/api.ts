@@ -295,4 +295,29 @@ export const deleteCardNumber = async (cardNumber: string): Promise<void> => {
   }
 };
 
+// Add this function to get all card numbers
+export const getAllCardNumbers = async (): Promise<{ 
+  cards: Array<{ 
+    card_number: string; 
+    status: 'available' | 'assigned' | 'retired';
+    member_id?: number;
+    member_name?: string;
+  }>,
+  stats: {
+    total: number;
+    available: number;
+    assigned: number;
+  }
+}> => {
+  console.log("API: Getting all card numbers (available and assigned)");
+  try {
+    const response = await api.get('/card-numbers/all');
+    console.log("API: Received card data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("API: Error fetching card numbers:", error);
+    throw handleApiError(error, 'Failed to fetch card numbers');
+  }
+};
+
 export default api;

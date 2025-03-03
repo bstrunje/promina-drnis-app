@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { Stamp } from "lucide-react";
+import { Stamp, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
-import { updateMembership, getAvailableCardNumbers } from "../src/utils/api";
+import { updateMembership, getAvailableCardNumbers, getAllCardNumbers } from "../src/utils/api";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import {
@@ -36,6 +36,12 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   } | null>(null);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
   const [isLoadingCardNumbers, setIsLoadingCardNumbers] = useState(false);
+  const [cardStats, setCardStats] = useState<{
+    total: number;
+    available: number;
+    assigned: number;
+  } | null>(null);
+  const [isLoadingCardStats, setIsLoadingCardStats] = useState(false);
 
   useEffect(() => {
     const checkInventory = async () => {
@@ -45,7 +51,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
+        
         if (!response.ok) throw new Error("Failed to fetch inventory");
+        
         const data = await response.json();
 
         const stampType =
@@ -60,6 +68,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         const relevantInventory = data.find(
           (item: { stamp_type: string }) => item.stamp_type === stampType
         );
+        
         if (relevantInventory) {
           setInventoryStatus({
             type: stampType,
@@ -112,6 +121,32 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     fetchCardNumbers();
   }, [member.membership_details?.card_number]);
 
+  const refreshCardStats = async () => {
+    setIsLoadingCardStats(true);
+    try {
+      const data = await getAllCardNumbers();
+      console.log("Refreshed card statistics:", data);
+      setCardStats(data.stats);
+      
+      // If we need to refresh available card numbers as well
+      if (!member.membership_details?.card_number) {
+        setAvailableCardNumbers(
+          data.cards
+            .filter(card => card.status === 'available')
+            .map(card => card.card_number)
+        );
+      }
+    } catch (error) {
+      console.error("Failed to refresh card statistics:", error);
+    } finally {
+      setIsLoadingCardStats(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshCardStats();
+  }, []);
+
   const handleCardNumberAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -145,6 +180,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         card_number: cardNumber,
         card_stamp_issued: true,
       });
+      
       setCardNumber("");
 
       toast({
@@ -284,84 +320,111 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
 
         {/* Card Number Assignment Form */}
         {!member.membership_details?.card_number && (
-          <form onSubmit={handleCardNumberAssign} className="mt-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="cardNumber" className="block text-sm font-medium mb-1">
-                  Card Number
-                </Label>
-                
-                {availableCardNumbers.length > 0 ? (
-                  <Select
-                    value={cardNumber}
-                    onValueChange={setCardNumber}
-                    disabled={isSubmitting || isLoadingCardNumbers}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue 
-                        placeholder={
-                          isLoadingCardNumbers 
-                            ? "Loading card numbers..." 
-                            : `Select from ${availableCardNumbers.length} available numbers`
-                        } 
-                      />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[200px] overflow-y-auto">
-                      {/* Use the member's existing card number instead of undefined currentCardNumber */}
-                      {member.membership_details?.card_number && (
-                        <SelectItem 
-                          value={member.membership_details.card_number} 
-                          className="font-semibold text-blue-600 border-b"
-                        >
-                          {member.membership_details.card_number} (Current)
-                        </SelectItem>
-                      )}
-                      
-                      {availableCardNumbers.map(number => (
-                        <SelectItem key={number} value={number}>
-                          {number}
-                        </SelectItem>
-                      ))}
-                      
-                      {availableCardNumbers.length === 0 && !isLoadingCardNumbers && (
-                        <div className="py-2 px-2 text-sm text-gray-500">
-                          No card numbers available
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div>
-                    {isLoadingCardNumbers ? (
-                      <p className="text-sm text-gray-500">Loading card numbers...</p>
-                    ) : (
-                      <p className="text-sm text-amber-500">
-                        No card numbers available. Please add some in Settings.
-                      </p>
-                    )}
-                    <Input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      pattern="[0-9]{5}"
-                      title="Card number must be exactly 5 digits"
-                      maxLength={5}
-                      className="w-full p-2 border rounded mt-1"
-                      required
-                      disabled={isSubmitting}
-                    />
+          <>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                {isLoadingCardStats ? (
+                  <span>Loading card statistics...</span>
+                ) : cardStats ? (
+                  <div className="flex space-x-4">
+                    <span>Total card numbers: {cardStats.total}</span>
+                    <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
+                    <span>Available: {cardStats.available}</span>
                   </div>
+                ) : (
+                  <span>No card statistics available</span>
                 )}
               </div>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !cardNumber}
-                className={cn("w-full", isSubmitting && "opacity-50")}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0" 
+                title="Refresh card statistics"
+                onClick={refreshCardStats}
+                disabled={isLoadingCardStats}
               >
-                {isSubmitting ? "Assigning..." : "Assign Card Number"}
+                <RefreshCw className={`h-3 w-3 ${isLoadingCardStats ? 'animate-spin' : ''}`} />
               </Button>
             </div>
-          </form>
+            <form onSubmit={handleCardNumberAssign} className="mt-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="cardNumber" className="block text-sm font-medium mb-1">
+                    Card Number
+                  </Label>
+                  
+                  {availableCardNumbers.length > 0 ? (
+                    <Select
+                      value={cardNumber}
+                      onValueChange={setCardNumber}
+                      disabled={isSubmitting || isLoadingCardNumbers}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue 
+                          placeholder={
+                            isLoadingCardNumbers 
+                              ? "Loading card numbers..." 
+                              : `Select from ${availableCardNumbers.length} available numbers`
+                          } 
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px] overflow-y-auto">
+                        {/* Use the member's existing card number instead of undefined currentCardNumber */}
+                        {member.membership_details?.card_number && (
+                          <SelectItem 
+                            value={member.membership_details.card_number} 
+                            className="font-semibold text-blue-600 border-b"
+                          >
+                            {member.membership_details.card_number} (Current)
+                          </SelectItem>
+                        )}
+                        
+                        {availableCardNumbers.map(number => (
+                          <SelectItem key={number} value={number}>
+                            {number}
+                          </SelectItem>
+                        ))}
+                        
+                        {availableCardNumbers.length === 0 && !isLoadingCardNumbers && (
+                          <div className="py-2 px-2 text-sm text-gray-500">
+                            No card numbers available
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div>
+                      {isLoadingCardNumbers ? (
+                        <p className="text-sm text-gray-500">Loading card numbers...</p>
+                      ) : (
+                        <p className="text-sm text-amber-500">
+                          No card numbers available. Please add some in Settings.
+                        </p>
+                      )}
+                      <Input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        pattern="[0-9]{5}"
+                        title="Card number must be exactly 5 digits"
+                        maxLength={5}
+                        className="w-full p-2 border rounded mt-1"
+                        required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !cardNumber}
+                  className={cn("w-full", isSubmitting && "opacity-50")}
+                >
+                  {isSubmitting ? "Assigning..." : "Assign Card Number"}
+                </Button>
+              </div>
+            </form>
+          </>
         )}
 
         {/* Stamp Issuance */}

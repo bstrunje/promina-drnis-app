@@ -276,7 +276,24 @@ const memberService = {
           console.error("Error updating membership history:", error);
           throw error;
         }
-      }
+      },
+
+    async getMemberWithCardDetails(memberId: number) {
+        // Always get card info from membership_details, not the members table
+        return await db.query(`
+            SELECT 
+              m.*,
+              md.card_number,
+              md.card_stamp_issued,
+              md.fee_payment_date
+            FROM 
+              members m
+            LEFT JOIN 
+              membership_details md ON m.member_id = md.member_id
+            WHERE 
+              m.member_id = $1
+          `, [memberId]);
+    }
 };
 
 export default memberService;

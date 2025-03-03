@@ -35,7 +35,6 @@ model Member {
   created_at               DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at               DateTime?          @default(now()) @db.Timestamptz(6)
   hours                    Hours[]
-  card_number              String?            @unique @db.VarChar(50)
   grantedPermissions       AdminPermissions[] @relation("grantedByPermissions")
   permissions              AdminPermissions?  @relation("memberPermissions")
   annual_statistics        AnnualStatistics[]

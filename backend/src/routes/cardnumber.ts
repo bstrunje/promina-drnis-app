@@ -35,4 +35,11 @@ router.delete(
   cardNumberController.deleteCardNumber
 );
 
+// Add this route
+router.get(
+  '/all', 
+  authMiddleware, 
+  cardNumberController.getAllCardNumbers
+);
+
 export default router;
