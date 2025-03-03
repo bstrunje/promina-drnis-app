@@ -333,6 +333,25 @@ export async function setupDatabase(): Promise<void> {
     `);
     console.log("✅ Password synchronization trigger system created");
 
+    // Add card_numbers table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS card_numbers (
+        id SERIAL PRIMARY KEY,
+        card_number VARCHAR(20) NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'available',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        assigned_at TIMESTAMP WITH TIME ZONE,
+        member_id INTEGER,
+        CONSTRAINT card_number_unique UNIQUE (card_number),
+        CONSTRAINT status_check CHECK (status IN ('available', 'assigned', 'retired')),
+        CONSTRAINT member_fk FOREIGN KEY (member_id) REFERENCES members(member_id) ON DELETE SET NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_card_numbers_status ON card_numbers(status);
+      CREATE INDEX IF NOT EXISTS idx_card_numbers_member_id ON card_numbers(member_id);
+    `);
+    console.log("✅ Card numbers table created successfully");
+
     // Create directory for image storage if it doesn't exist
     await fs.mkdir("uploads/profile_images", { recursive: true });
 

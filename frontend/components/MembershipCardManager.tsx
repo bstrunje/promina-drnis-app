@@ -5,9 +5,16 @@ import { useToast } from "@components/ui/use-toast";
 import { Stamp } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
-import { updateMembership } from "../src/utils/api";
+import { updateMembership, getAvailableCardNumbers } from "../src/utils/api";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@components/ui/select";
 
 interface Props {
   member: Member;
@@ -27,6 +34,8 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     type: string;
     remaining: number;
   } | null>(null);
+  const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
+  const [isLoadingCardNumbers, setIsLoadingCardNumbers] = useState(false);
 
   useEffect(() => {
     const checkInventory = async () => {
@@ -77,6 +86,31 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
       setStampIssued(member.membership_details?.card_stamp_issued || member.card_stamp_issued || false);
     }
   }, [member]);
+
+  // Add a function to fetch available card numbers
+  useEffect(() => {
+    const fetchCardNumbers = async () => {
+      if (member.membership_details?.card_number) return; // Skip if card number already assigned
+      
+      setIsLoadingCardNumbers(true);
+      try {
+        const numbers = await getAvailableCardNumbers();
+        console.log("Available card numbers for dropdown:", numbers);
+        setAvailableCardNumbers(numbers || []);
+      } catch (error) {
+        console.error("Failed to load available card numbers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load available card numbers",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingCardNumbers(false);
+      }
+    };
+    
+    fetchCardNumbers();
+  }, [member.membership_details?.card_number]);
 
   const handleCardNumberAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,34 +284,84 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
 
         {/* Card Number Assignment Form */}
         {!member.membership_details?.card_number && (
-          
-            <form onSubmit={handleCardNumberAssign} className="mt-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Card Number
-                  </label>
-                  <Input
-                    type="text"
+          <form onSubmit={handleCardNumberAssign} className="mt-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="cardNumber" className="block text-sm font-medium mb-1">
+                  Card Number
+                </Label>
+                
+                {availableCardNumbers.length > 0 ? (
+                  <Select
                     value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    pattern="[0-9]{5}"
-                    title="Card number must be exactly 5 digits"
-                    maxLength={5}
-                    className="w-full p-2 border rounded"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={cn("w-full", isSubmitting && "opacity-50")}
-                >
-                  {isSubmitting ? "Assigning..." : "Assign Card Number"}
-                </Button>
+                    onValueChange={setCardNumber}
+                    disabled={isSubmitting || isLoadingCardNumbers}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue 
+                        placeholder={
+                          isLoadingCardNumbers 
+                            ? "Loading card numbers..." 
+                            : `Select from ${availableCardNumbers.length} available numbers`
+                        } 
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px] overflow-y-auto">
+                      {/* Use the member's existing card number instead of undefined currentCardNumber */}
+                      {member.membership_details?.card_number && (
+                        <SelectItem 
+                          value={member.membership_details.card_number} 
+                          className="font-semibold text-blue-600 border-b"
+                        >
+                          {member.membership_details.card_number} (Current)
+                        </SelectItem>
+                      )}
+                      
+                      {availableCardNumbers.map(number => (
+                        <SelectItem key={number} value={number}>
+                          {number}
+                        </SelectItem>
+                      ))}
+                      
+                      {availableCardNumbers.length === 0 && !isLoadingCardNumbers && (
+                        <div className="py-2 px-2 text-sm text-gray-500">
+                          No card numbers available
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div>
+                    {isLoadingCardNumbers ? (
+                      <p className="text-sm text-gray-500">Loading card numbers...</p>
+                    ) : (
+                      <p className="text-sm text-amber-500">
+                        No card numbers available. Please add some in Settings.
+                      </p>
+                    )}
+                    <Input
+                      type="text"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      pattern="[0-9]{5}"
+                      title="Card number must be exactly 5 digits"
+                      maxLength={5}
+                      className="w-full p-2 border rounded mt-1"
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
               </div>
-            </form>
-          
+              <Button
+                type="submit"
+                disabled={isSubmitting || !cardNumber}
+                className={cn("w-full", isSubmitting && "opacity-50")}
+              >
+                {isSubmitting ? "Assigning..." : "Assign Card Number"}
+              </Button>
+            </div>
+          </form>
         )}
 
         {/* Stamp Issuance */}
@@ -306,7 +390,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                 disabled={isIssuingStamp || !inventoryStatus?.remaining}
               >
                 <Stamp className="w-4 h-4 mr-2" />
-                {isIssuingStamp ? "Issuing Stamp..." : "Issue Stamp"}
+                {isIssuingStamp ? "Issuing..." : "Issue Stamp"}
               </Button>
             </div>
           )}

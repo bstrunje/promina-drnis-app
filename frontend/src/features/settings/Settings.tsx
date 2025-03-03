@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
+import CardNumberManagement from './CardNumberManagement';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -277,6 +278,12 @@ const Settings: React.FC = () => {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {user?.role === 'superuser' && (
+        <div className="mt-8">
+          <CardNumberManagement />
         </div>
       )}
     </div>

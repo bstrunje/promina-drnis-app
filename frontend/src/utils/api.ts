@@ -257,4 +257,42 @@ export const updateCardNumberLength = async (length: number): Promise<void> => {
   }
 };
 
+// Card Number APIs
+export const getAvailableCardNumbers = async (): Promise<string[]> => {
+  console.log("API: Getting available card numbers");
+  try {
+    const response = await api.get('/card-numbers/available');
+    console.log("API: Received card numbers:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("API: Error fetching card numbers:", error);
+    throw handleApiError(error, 'Failed to fetch available card numbers');
+  }
+};
+
+export const addCardNumber = async (cardNumber: string): Promise<void> => {
+  try {
+    await api.post('/card-numbers/add', { cardNumber });
+  } catch (error) {
+    throw handleApiError(error, 'Failed to add card number');
+  }
+};
+
+export const addCardNumberRange = async (start: number, end: number): Promise<void> => {
+  try {
+    await api.post('/card-numbers/add-range', { start, end });
+  } catch (error) {
+    throw handleApiError(error, 'Failed to add card number range');
+  }
+};
+
+// Add this function for deleting card numbers
+export const deleteCardNumber = async (cardNumber: string): Promise<void> => {
+  try {
+    await api.delete(`/card-numbers/${cardNumber}`);
+  } catch (error) {
+    throw handleApiError(error, 'Failed to delete card number');
+  }
+};
+
 export default api;

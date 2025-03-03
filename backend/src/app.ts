@@ -22,6 +22,7 @@ import hoursRoutes from './routes/hours.js';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import cardNumberRoutes from './routes/cardnumber.js';
 
 const app: Express = express();
 
@@ -120,6 +121,7 @@ app.use('/api/stamps', stampRoutes);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
+app.use('/api/card-numbers', cardNumberRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
