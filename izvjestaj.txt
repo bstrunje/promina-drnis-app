@@ -1,46 +1,31 @@
-Božo Strunje
-možeš li locirati problem?
-
-AI
-Analyzing network data
-Okay, let's analyze this network request to identify the problem.
-
-Purpose of the Request:
-
-URL: https://promina-drnis-app.vercel.app/profile suggests the user is trying to access their profile page on the "promina-drnis-app" application, which is hosted on Vercel.
-Method: While the method is redacted, based on the context, likely the request uses the GET method. It is a common way to retrieve the user's profile information.
-Headers:
-accept: text/html... indicates the client (browser) expects an HTML response, typical for loading a webpage.
-accept-encoding: gzip, deflate, br, zstd indicates the browser can handle compressed responses, which is good for performance.
-user-agent provides browser information, which is normal.
-The browser includes multiple headers with the sec- prefix, that provide various security information.
-cache-control: max-age=0 shows the browser is not using cached data for this request.
-Timing Analysis:
-
-Queuing: 1.09 ms - This is a very short time, suggesting no significant delay before the request started.
-Connection start (stalled): 1.56 ms - This is also quite fast.
-Request sent: 0.34 ms - Extremely quick, indicating the request was prepared and sent rapidly.
-Waiting for server response: 80.99 ms - This is the longest part of the request, although not necessarily slow. It means the server took 80.99ms to send the response.
-Content download: 1.13 ms - Very fast, suggesting the response was small, which is consistent with a simple error page.
-Duration: 85.12 ms - The total time for the request. Not bad, but the waiting time could be investigated.
-Status Code Analysis:
-
-404 Not Found: This is the key indicator of the problem. The server could not find a resource at the /profile path. It could also indicate that user is not logged in and that this page is hidden for unauthenticated users.
-Response headers x-vercel-error and x-vercel-id are custom headers related to the Vercel hosting platform. These can be helpful for Vercel to debug the issue.
-Problem Identification:
-
-The primary problem is the 404 Not Found status code. The server is indicating that it doesn't have anything to serve at the /profile URL.
-
-Potential causes:
-
-Incorrect URL/Path: There might be a typo in the URL in the application. The path /profile might be incorrect.
-Missing Route: The application's backend might not have a defined route or handler for the /profile path.
-Deployment Issue: The route definition might have failed to deploy correctly to the Vercel server.
-Authentication/Authorization: The profile page might require authentication, and the user might not be logged in. If that is the case, the server could respond with a 401 (Unauthorized) or 403 (Forbidden), or serve a login page. Because 404 is present, we can assume that this is not the issue.
-Recommendations:
-
-Verify the URL: Double-check if /profile is indeed the correct URL for the user profile.
-Check Server-Side Routing: Inspect the application's backend code or configuration to confirm that a route or handler exists for /profile.
-Review Deployment: If the route is confirmed to be correct, check the Vercel deployment logs for any errors or warnings during deployment.
-Implement client-side validation: Check if client-side app is sending correct urls.
-In summary, the server couldn't find the resource at /profile, leading to a 404 error. The fast timing generally indicates the network isn't the issue, and the problem lies on the server-side or application-level configuration.
+fetch("https://promina-drnis-app.vercel.app/profile", {
+  "headers": {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-language": "hr-HR,hr;q=0.9,en-US;q=0.8,en;q=0.7,sr;q=0.6",
+    "cache-control": "max-age=0",
+    "priority": "u=0, i",
+    "sec-ch-ua": "\"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1"
+  },
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("chrome-extension://hehijbfgiekmjfkfjpbkbammjbdenadd/js/ietabapi_wp.js", {
+  "referrer": "",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": null,
+  "method": "GET"
+}); ;
+fetch("chrome-extension://fchhipkldmfpfiocdoehmnnkcclmhbpg/js/wagd-inject.js", {
+  "referrer": "",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": null,
+  "method": "GET"
+});
