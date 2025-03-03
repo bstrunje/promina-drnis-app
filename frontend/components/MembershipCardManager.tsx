@@ -151,9 +151,13 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Ensure cardNumber is a clean string without any additional formatting
+    const cleanCardNumber = String(cardNumber).trim();
+    console.log("Submitting card number:", cleanCardNumber);
+
     const data = {
       paymentDate: new Date().toISOString(),
-      cardNumber,
+      cardNumber: cleanCardNumber, // Use the clean version
       stampIssued: true,
     };
 
@@ -356,7 +360,12 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                   {availableCardNumbers.length > 0 ? (
                     <Select
                       value={cardNumber}
-                      onValueChange={setCardNumber}
+                      onValueChange={(value) => {
+                        // Ensure we're using the exact string value from the dropdown 
+                        // without any transformations
+                        console.log("Selected raw card number:", value);
+                        setCardNumber(String(value));
+                      }}
                       disabled={isSubmitting || isLoadingCardNumbers}
                     >
                       <SelectTrigger className="w-full">

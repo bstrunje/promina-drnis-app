@@ -118,37 +118,26 @@ const membershipService = {
     }
   },
 
-  // Fix the updateCardDetails method with proper null handling
-  async updateCardDetails(memberId: number, cardNumber: string, cardStampIssued: boolean = false): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean): Promise<void> {
     try {
-      console.log(`Updating card details for member ${memberId}: card number ${cardNumber}, stamp issued: ${cardStampIssued}`);
+      // Ensure cardNumber is a clean string without unintended prefixes
+      const cleanCardNumber = String(cardNumber).trim();
+      console.log(`Updating card details for member ${memberId}: ${cleanCardNumber}, stampIssued: ${stampIssued}`);
       
-      // Check if membership details entry exists
-      const existingDetails = await db.query(
-        'SELECT * FROM membership_details WHERE member_id = $1',
-        [memberId]
+      // Use the clean card number in the database update
+      await db.query(
+        `INSERT INTO membership_details (member_id, card_number, card_stamp_issued)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (member_id) 
+         DO UPDATE SET card_number = $2, card_stamp_issued = $3`,
+        [memberId, cleanCardNumber, stampIssued]
       );
       
-      // Fix the TypeScript error by using optional chaining and nullish coalescing
-      if ((existingDetails?.rowCount ?? 0) > 0) {
-        // Update existing entry
-        await db.query(
-          'UPDATE membership_details SET card_number = $1, card_stamp_issued = $2 WHERE member_id = $3',
-          [cardNumber, cardStampIssued, memberId]
-        );
-        console.log(`Updated existing membership details for member ${memberId}`);
-      } else {
-        // Insert new entry
-        await db.query(
-          'INSERT INTO membership_details (member_id, card_number, card_stamp_issued) VALUES ($1, $2, $3)',
-          [memberId, cardNumber, cardStampIssued]
-        );
-        console.log(`Created new membership details for member ${memberId}`);
-      }
-      
+      // Log the action
+      console.log(`Updated membership details for member ${memberId} with card number ${cleanCardNumber}`);
     } catch (error) {
       console.error('Error updating card details:', error);
-      throw new Error('Failed to update card details');
+      throw new Error(`Failed to update card details: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
