@@ -286,15 +286,6 @@ export const addCardNumberRange = async (start: number, end: number): Promise<vo
   }
 };
 
-// Add this function for deleting card numbers
-export const deleteCardNumber = async (cardNumber: string): Promise<void> => {
-  try {
-    await api.delete(`/card-numbers/${cardNumber}`);
-  } catch (error) {
-    throw handleApiError(error, 'Failed to delete card number');
-  }
-};
-
 // Add this function to get all card numbers
 export const getAllCardNumbers = async (): Promise<{ 
   cards: Array<{ 
@@ -319,5 +310,29 @@ export const getAllCardNumbers = async (): Promise<{
     throw handleApiError(error, 'Failed to fetch card numbers');
   }
 };
+
+// Make sure the deleteCardNumber function returns properly and doesn't cause navigation issues
+export async function deleteCardNumber(cardNumber: string): Promise<{ message: string, cardNumber: string }> {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/card-numbers/${cardNumber}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete card number');
+    }
+
+    const data = await response.json();
+    return data; // Should contain { message: "Card number deleted successfully", cardNumber: "12345" }
+  } catch (error) {
+    console.error('API error deleting card number:', error);
+    throw error;
+  }
+}
 
 export default api;

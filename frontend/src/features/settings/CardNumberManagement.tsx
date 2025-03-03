@@ -192,9 +192,15 @@ export default function CardNumberManagement() {
     try {
       await deleteCardNumber(cardNumber);
       
-      // Update local state
+      // Update ALL relevant state variables correctly
+      setAllCardNumbers(prev => prev.filter(card => card.card_number !== cardNumber));
       setExistingCardNumbers(prev => prev.filter(num => num !== cardNumber));
       setAvailableCount(prev => prev !== null ? prev - 1 : null);
+      setCardStats(prev => ({
+        ...prev,
+        total: prev.total - 1,
+        available: prev.available - 1
+      }));
       
       toast({
         title: "Success",
@@ -452,7 +458,10 @@ export default function CardNumberManagement() {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDeleteCard(card.card_number)}
+                            onClick={(e) => {
+                              e.preventDefault(); // Prevent any default behavior
+                              handleDeleteCard(card.card_number);
+                            }}
                             disabled={isDeletingCard === card.card_number}
                           >
                             {isDeletingCard === card.card_number ? (
