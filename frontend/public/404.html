@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script>
+      // Redirect all 404s to the index page
+      sessionStorage.setItem('redirectPath', window.location.pathname);
+      window.location.href = '/';
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>

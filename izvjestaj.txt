@@ -1,12 +1,4 @@
-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDEwNDM0MzQsImV4cCI6MTc0MTEyOTgzNH0.EmHCyr5flQJVp4M9GYv1mr9WlCWFsgV758LG-B8xt_g
-MemberDetailsPage.tsx:100 Raw member data: Object
-MemberDetailsPage.tsx:101 Membership history array: Array(2)
-MemberDetailsPage.tsx:105 Transformed data: Object
-MemberDetailsPage.tsx:158 Membership history: Object
-api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDEwNDM0MzQsImV4cCI6MTc0MTEyOTgzNH0.EmHCyr5flQJVp4M9GYv1mr9WlCWFsgV758LG-B8xt_g
-api.ts:31 Token: null
-api.ts:31 Token: null
-api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEwNDcyNTEsImV4cCI6MTc0MTEzMzY1MX0.1UihGpL8PdjGmAjx3wE97QrvtPVWpKRTQ2UiIWuQWuo
+Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEwNDcyNTEsImV4cCI6MTc0MTEzMzY1MX0.1UihGpL8PdjGmAjx3wE97QrvtPVWpKRTQ2UiIWuQWuo
 MemberDetailsPage.tsx:100 Raw member data: Object
 MemberDetailsPage.tsx:101 Membership history array: Array(1)
 MemberDetailsPage.tsx:105 Transformed data: Object
@@ -14,20 +6,11 @@ api.ts:262 API: Getting available card numbers
 api.ts:303 API: Getting all card numbers (available and assigned)
 MemberDetailsPage.tsx:158 Membership history: Object
 3api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEwNDcyNTEsImV4cCI6MTc0MTEzMzY1MX0.1UihGpL8PdjGmAjx3wE97QrvtPVWpKRTQ2UiIWuQWuo
-api/stamps/inventory:1 
-            
-            
-           Failed to load resource: the server responded with a status of 404 ()Understand this errorAI
-MembershipCardManager.tsx:79 Error checking inventory: Error: Failed to fetch inventory
-    at Object.<anonymous> (MembershipCardManager.tsx:55:33)
-    at Generator.next (<anonymous>)
-    at u (index-C07QaCjJ.js:1:730)
-(anonymous) @ MembershipCardManager.tsx:79Understand this errorAI
-api.ts:265 API: Received card numbers: Array(12)
-MembershipCardManager.tsx:107 Available card numbers for dropdown: Array(12)
 api.ts:306 API: Received card data: Object
-MembershipCardManager.tsx:128 Refreshed card statistics: Object
+MembershipCardManager.tsx:130 Refreshed card statistics: Object
+api.ts:265 API: Received card numbers: Array(12)
+MembershipCardManager.tsx:109 Available card numbers for dropdown: Array(12)
 profile:1 
             
             
-           Failed to load resource: the server responded with a status of 404 ()Understand this errorAI
+           Failed to load resource: the server responded with a status of 404 ()Understand this errorA
