@@ -304,10 +304,10 @@ export default function CardNumberManagement() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="single" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="single">Add Single</TabsTrigger>
-            <TabsTrigger value="range">Add Range</TabsTrigger>
-            <TabsTrigger value="manage">Manage Numbers</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <TabsTrigger value="single" className="px-2 py-1.5 text-sm">Add Single</TabsTrigger>
+            <TabsTrigger value="range" className="px-2 py-1.5 text-sm">Add Range</TabsTrigger>
+            <TabsTrigger value="manage" className="px-2 py-1.5 text-sm">Manage Numbers</TabsTrigger>
           </TabsList>
           
           <TabsContent value="single" className="mt-4">
