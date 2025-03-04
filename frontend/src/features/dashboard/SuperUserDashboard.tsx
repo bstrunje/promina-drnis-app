@@ -1,13 +1,10 @@
 // frontend/src/features/dashboard/SuperUserDashboard.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Users,
-  Activity,
-  Shield,
-  ChevronRight,
-} from "lucide-react";
+import { Users, Activity, Shield, ChevronRight, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
+import axios from "axios";
+import { API_BASE_URL } from "@/utils/config";
 
 interface Props {
   member: Member;
@@ -15,6 +12,7 @@ interface Props {
 
 interface DashboardStats {
   totalMembers: number;
+  registeredMembers: number; // New field
   activeMembers: number;
   pendingApprovals: number;
   recentActivities: number;
@@ -25,21 +23,59 @@ interface DashboardStats {
 const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
-  const [] = useState(true);
-  const [error] = useState<string | null>(null);
-  
-  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalMembers: 0,
+    registeredMembers: 0, // New field
+    activeMembers: 0,
+    pendingApprovals: 0,
+    recentActivities: 0,
+    systemHealth: "Unknown",
+    lastBackup: "Never",
+  });
 
-
-
-  const stats: DashboardStats = {
-    totalMembers: 156,
-    activeMembers: 124,
-    pendingApprovals: 8,
-    recentActivities: 12,
-    systemHealth: "Optimal",
-    lastBackup: "2024-03-07 15:30",
+  const fetchDashboardStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch membership stats
+      const memberResponse = await axios.get(`${API_BASE_URL}/admin/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // If you have separate endpoints for different stats, you could use Promise.all
+      // const [memberData, activityData, systemData] = await Promise.all([
+      //   axios.get(`${API_BASE_URL}/admin/member-stats`),
+      //   axios.get(`${API_BASE_URL}/admin/activity-stats`),
+      //   axios.get(`${API_BASE_URL}/admin/system-stats`)
+      // ]);
+      
+      // Update with real data
+      setStats({
+        totalMembers: memberResponse.data.totalMembers || 0,
+        registeredMembers: memberResponse.data.registeredMembers || 0, // New field
+        activeMembers: memberResponse.data.activeMembers || 0,
+        pendingApprovals: memberResponse.data.pendingRegistrations || 0,
+        recentActivities: memberResponse.data.recentActivities || 0,
+        systemHealth: memberResponse.data.systemHealth || "Unknown",
+        lastBackup: memberResponse.data.lastBackup || "Never",
+      });
+    } catch (err) {
+      console.error("Error fetching dashboard stats:", err);
+      setError("Failed to load dashboard data. Please try again later.");
+      
+      // Keep the default stats if there's an error
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
   return (
     <div className="p-6">
@@ -48,7 +84,20 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         <p className="opacity-90">Super User Dashboard</p>
       </div>
 
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">{error}</div>}
+
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Dashboard Overview</h2>
+        
+        <button 
+          onClick={fetchDashboardStats} 
+          disabled={loading}
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+        >
+          <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Refreshing...' : 'Refresh Data'}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <div
@@ -60,11 +109,19 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             <Users className="h-6 w-6 text-blue-600" />
           </div>
           <div className="space-y-2">
-            <p className="text-2xl font-bold">{stats.totalMembers}</p>
-            <p className="text-sm text-gray-500">
-              {stats.activeMembers} active (
-              {((stats.activeMembers / stats.totalMembers) * 100).toFixed(1)}%)
-            </p>
+            {loading ? (
+              <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+            ) : (
+              <>
+                <p className="text-2xl font-bold">{stats.totalMembers}</p>
+                <p className="text-sm text-gray-500">
+                  {stats.registeredMembers} registered, {stats.activeMembers} active 
+                  {stats.registeredMembers > 0 ? 
+                    ` (${((stats.activeMembers / stats.registeredMembers) * 100).toFixed(1)}% active)` : 
+                    ''}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -77,19 +134,34 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             <Activity className="h-6 w-6 text-green-600" />
           </div>
           <div className="space-y-2">
-            <p className="text-2xl font-bold">{stats.recentActivities}</p>
-            <p className="text-sm text-gray-500">In the last 24 hours</p>
+            {loading ? (
+              <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+            ) : (
+              <>
+                <p className="text-2xl font-bold">{stats.recentActivities}</p>
+                <p className="text-sm text-gray-500">In the last 24 hours</p>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div
+          onClick={() => navigate("/members?filter=pending")}
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">Pending Registrations</h3>
             <Shield className="h-6 w-6 text-orange-600" />
           </div>
           <div className="space-y-2">
-            <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-            <p className="text-sm text-gray-500">Await password assignment</p>
+            {loading ? (
+              <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+            ) : (
+              <>
+                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+                <p className="text-sm text-gray-500">Await password assignment</p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -131,24 +203,36 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium mb-4">System Status</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b">
-              <span className="text-gray-600">System Health</span>
-              <span className="text-green-600 font-medium">
-                {stats.systemHealth}
-              </span>
+          {loading ? (
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
+              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
+              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
             </div>
-            <div className="flex items-center justify-between pb-2 border-b">
-              <span className="text-gray-600">Last Backup</span>
-              <span className="text-gray-900">{stats.lastBackup}</span>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b">
+                <span className="text-gray-600">System Health</span>
+                <span className={`font-medium ${
+                  stats.systemHealth === "Optimal" ? "text-green-600" : 
+                  stats.systemHealth === "Warning" ? "text-yellow-600" : 
+                  "text-gray-600"
+                }`}>
+                  {stats.systemHealth}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pb-2 border-b">
+                <span className="text-gray-600">Last Backup</span>
+                <span className="text-gray-900">{stats.lastBackup}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Database Status</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Database Status</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Connected
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
