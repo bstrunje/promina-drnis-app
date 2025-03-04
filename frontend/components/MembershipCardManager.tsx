@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { updateMembership, getAvailableCardNumbers, getAllCardNumbers } from "../src/utils/api";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
+import { API_BASE_URL } from "../src/utils/config";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,8 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   useEffect(() => {
     const checkInventory = async () => {
       try {
-        const response = await fetch("/api/stamps/inventory", {
+        // Fix this line to use API_BASE_URL instead of relative path
+        const response = await fetch(`${API_BASE_URL}/stamps/inventory`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },

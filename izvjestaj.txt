@@ -1,14 +1,33 @@
-Token: null
-promina-drnis-2h0kdkbsg-bozo-strunjes-projects.vercel.app/:1 Access to XMLHttpRequest at 'https://promina-drnis-api.onrender.com/api/auth/search-members?searchTerm=su' from origin 'https://promina-drnis-2h0kdkbsg-bozo-strunjes-projects.vercel.app' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this errorAI
-api.ts:59 Full error object: g
-api.ts:61 Axios error response: undefined
-LoginPage.tsx:673 Search error: Error: Member search failed
-    at Kt (api.ts:63:11)
-    at Object.<anonymous> (api.ts:93:11)
-    at Generator.throw (<anonymous>)
-    at g (index-C07QaCjJ.js:1:774)
-(anonymous) @ LoginPage.tsx:673Understand this errorAI
-promina-drnis-api.onrender.com/api/auth/search-members?searchTerm=su:1 
+Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDEwNDM0MzQsImV4cCI6MTc0MTEyOTgzNH0.EmHCyr5flQJVp4M9GYv1mr9WlCWFsgV758LG-B8xt_g
+MemberDetailsPage.tsx:100 Raw member data: Object
+MemberDetailsPage.tsx:101 Membership history array: Array(2)
+MemberDetailsPage.tsx:105 Transformed data: Object
+MemberDetailsPage.tsx:158 Membership history: Object
+api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsInJvbGUiOiJtZW1iZXIiLCJpYXQiOjE3NDEwNDM0MzQsImV4cCI6MTc0MTEyOTgzNH0.EmHCyr5flQJVp4M9GYv1mr9WlCWFsgV758LG-B8xt_g
+api.ts:31 Token: null
+api.ts:31 Token: null
+api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEwNDcyNTEsImV4cCI6MTc0MTEzMzY1MX0.1UihGpL8PdjGmAjx3wE97QrvtPVWpKRTQ2UiIWuQWuo
+MemberDetailsPage.tsx:100 Raw member data: Object
+MemberDetailsPage.tsx:101 Membership history array: Array(1)
+MemberDetailsPage.tsx:105 Transformed data: Object
+api.ts:262 API: Getting available card numbers
+api.ts:303 API: Getting all card numbers (available and assigned)
+MemberDetailsPage.tsx:158 Membership history: Object
+3api.ts:31 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEwNDcyNTEsImV4cCI6MTc0MTEzMzY1MX0.1UihGpL8PdjGmAjx3wE97QrvtPVWpKRTQ2UiIWuQWuo
+api/stamps/inventory:1 
             
             
-           Failed to load resource: net::ERR_FAILEDUnderstand this errorAI
+           Failed to load resource: the server responded with a status of 404 ()Understand this errorAI
+MembershipCardManager.tsx:79 Error checking inventory: Error: Failed to fetch inventory
+    at Object.<anonymous> (MembershipCardManager.tsx:55:33)
+    at Generator.next (<anonymous>)
+    at u (index-C07QaCjJ.js:1:730)
+(anonymous) @ MembershipCardManager.tsx:79Understand this errorAI
+api.ts:265 API: Received card numbers: Array(12)
+MembershipCardManager.tsx:107 Available card numbers for dropdown: Array(12)
+api.ts:306 API: Received card data: Object
+MembershipCardManager.tsx:128 Refreshed card statistics: Object
+profile:1 
+            
+            
+           Failed to load resource: the server responded with a status of 404 ()Understand this errorAI
