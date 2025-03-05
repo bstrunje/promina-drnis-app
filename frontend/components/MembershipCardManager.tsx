@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { updateMembership, getAvailableCardNumbers, getAllCardNumbers } from "../src/utils/api";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
-import { API_BASE_URL } from "../src/utils/config";
 import {
   Select,
   SelectContent,
@@ -47,8 +46,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   useEffect(() => {
     const checkInventory = async () => {
       try {
-        // Fix this line to use API_BASE_URL instead of relative path
-        const response = await fetch(`${API_BASE_URL}/stamps/inventory`, {
+        const response = await fetch("/api/stamps/inventory", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -153,13 +151,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Ensure cardNumber is a clean string without any additional formatting
-    const cleanCardNumber = String(cardNumber).trim();
-    console.log("Submitting card number:", cleanCardNumber);
-
     const data = {
       paymentDate: new Date().toISOString(),
-      cardNumber: cleanCardNumber, // Use the clean version
+      cardNumber,
       stampIssued: true,
     };
 
@@ -362,12 +356,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                   {availableCardNumbers.length > 0 ? (
                     <Select
                       value={cardNumber}
-                      onValueChange={(value) => {
-                        // Ensure we're using the exact string value from the dropdown 
-                        // without any transformations
-                        console.log("Selected raw card number:", value);
-                        setCardNumber(String(value));
-                      }}
+                      onValueChange={setCardNumber}
                       disabled={isSubmitting || isLoadingCardNumbers}
                     >
                       <SelectTrigger className="w-full">

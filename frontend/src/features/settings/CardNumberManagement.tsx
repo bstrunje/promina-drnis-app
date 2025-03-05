@@ -37,7 +37,6 @@ export default function CardNumberManagement() {
   }>>([]);
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'assigned'>('all');
-  const [activeSection, setActiveSection] = useState<"single" | "range" | "manage" | null>(null);
 
   // Fetch available card number count
   useEffect(() => {
@@ -193,15 +192,9 @@ export default function CardNumberManagement() {
     try {
       await deleteCardNumber(cardNumber);
       
-      // Update ALL relevant state variables correctly
-      setAllCardNumbers(prev => prev.filter(card => card.card_number !== cardNumber));
+      // Update local state
       setExistingCardNumbers(prev => prev.filter(num => num !== cardNumber));
       setAvailableCount(prev => prev !== null ? prev - 1 : null);
-      setCardStats(prev => ({
-        ...prev,
-        total: prev.total - 1,
-        available: prev.available - 1
-      }));
       
       toast({
         title: "Success",
@@ -304,315 +297,211 @@ export default function CardNumberManagement() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* New accordion-style UI */}
-        <div className="space-y-6">
-          {/* Initial view showing all action buttons */}
-          {!activeSection && (
-            <div className="grid grid-cols-1 gap-4">
-              <Button 
-                onClick={() => setActiveSection("single")} 
-                className="h-auto py-6 flex flex-col items-center justify-center"
-                variant="outline"
-              >
-                <span className="text-lg font-medium">Add Single Number</span>
-                <span className="text-xs text-gray-500 mt-1">Add an individual card number to the system</span>
-              </Button>
-              
-              <Button 
-                onClick={() => setActiveSection("range")} 
-                className="h-auto py-6 flex flex-col items-center justify-center"
-                variant="outline"
-              >
-                <span className="text-lg font-medium">Add Number Range</span>
-                <span className="text-xs text-gray-500 mt-1">Add a sequential range of card numbers</span>
-              </Button>
-              
-              <Button 
-                onClick={() => setActiveSection("manage")} 
-                className="h-auto py-6 flex flex-col items-center justify-center"
-                variant="outline"
-              >
-                <span className="text-lg font-medium">Manage Numbers</span>
-                <span className="text-xs text-gray-500 mt-1">View, search and delete existing card numbers</span>
-              </Button>
-            </div>
-          )}
+        <Tabs defaultValue="single" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="single">Add Single</TabsTrigger>
+            <TabsTrigger value="range">Add Range</TabsTrigger>
+            <TabsTrigger value="manage">Manage Numbers</TabsTrigger>
+          </TabsList>
           
-          {/* Single Number Form */}
-          {activeSection === "single" && (
-            <div className="space-y-4">
-              <div className="flex items-center mb-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setActiveSection(null)} 
-                  className="mr-2"
-                  size="sm"
-                >
-                  ← Back
-                </Button>
-                <h3 className="text-lg font-semibold">Add Single Card Number</h3>
+          <TabsContent value="single" className="mt-4">
+            <form onSubmit={handleAddSingle} className="space-y-4">
+              <div className="space-y-2">
+                <Input
+                  id="singleCardNumber"
+                  placeholder="Enter card number (e.g., 00123)"
+                  value={singleCardNumber}
+                  onChange={(e) => setSingleCardNumber(e.target.value)}
+                  disabled={isLoadingSingle}
+                />
               </div>
               
-              <div className="bg-white p-6 rounded-lg border">
-                <form onSubmit={handleAddSingle} className="space-y-4">
+              <Button type="submit" disabled={isLoadingSingle || !singleCardNumber}>
+                {isLoadingSingle ? "Adding..." : "Add Card Number"}
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="range" className="mt-4">
+            <form onSubmit={handleAddRange} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Input
-                    id="singleCardNumber"
-                    placeholder="Enter new card number (e.g., 00123)"
-                    value={singleCardNumber}
-                    onChange={(e) => setSingleCardNumber(e.target.value)}
-                    disabled={isLoadingSingle}
-                    autoFocus
+                    id="rangeStart"
+                    placeholder="Start (e.g., 100)"
+                    type="number"
+                    value={rangeStart !== null ? rangeStart : ''}
+                    onChange={(e) => setRangeStart(e.target.value ? parseInt(e.target.value) : null)}
+                    disabled={isLoadingRange}
                   />
-                  <div className="flex space-x-3 pt-2">
-                    <Button 
-                      type="submit" 
-                      disabled={isLoadingSingle || !singleCardNumber}
-                    >
-                      {isLoadingSingle ? "Adding..." : "Add Card Number"}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setActiveSection(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-          
-          {/* Range Form */}
-          {activeSection === "range" && (
-            <div className="space-y-4">
-              <div className="flex items-center mb-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setActiveSection(null)} 
-                  className="mr-2"
-                  size="sm"
-                >
-                  ← Back
-                </Button>
-                <h3 className="text-lg font-semibold">Add Card Number Range</h3>
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    id="rangeEnd"
+                    placeholder="End (e.g., 200)"
+                    type="number"
+                    value={rangeEnd !== null ? rangeEnd : ''}
+                    onChange={(e) => setRangeEnd(e.target.value ? parseInt(e.target.value) : null)}
+                    disabled={isLoadingRange}
+                  />
+                </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border">
-                <form onSubmit={handleAddRange} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="rangeStart" className="text-sm text-gray-500 mb-1 block">
-                        Start Number
-                      </label>
-                      <Input
-                        id="rangeStart"
-                        placeholder="e.g., 100"
-                        type="number"
-                        value={rangeStart !== null ? rangeStart : ''}
-                        onChange={(e) => setRangeStart(e.target.value ? parseInt(e.target.value) : null)}
-                        disabled={isLoadingRange}
-                        autoFocus
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="rangeEnd" className="text-sm text-gray-500 mb-1 block">
-                        End Number
-                      </label>
-                      <Input
-                        id="rangeEnd"
-                        placeholder="e.g., 200"
-                        type="number"
-                        value={rangeEnd !== null ? rangeEnd : ''}
-                        onChange={(e) => setRangeEnd(e.target.value ? parseInt(e.target.value) : null)}
-                        disabled={isLoadingRange}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex space-x-3 pt-2">
-                    <Button 
-                      type="submit" 
-                      disabled={isLoadingRange || rangeStart === null || rangeEnd === null}
-                    >
-                      {isLoadingRange ? "Adding..." : "Add Card Number Range"}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setActiveSection(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Numbers will be padded with leading zeros based on your system settings.
-                  </p>
-                </form>
-              </div>
-            </div>
-          )}
+              <Button 
+                type="submit" 
+                disabled={isLoadingRange || rangeStart === null || rangeEnd === null}
+              >
+                {isLoadingRange ? "Adding..." : "Add Card Number Range"}
+              </Button>
+              
+              <p className="text-sm text-muted-foreground">
+                Numbers will be padded with leading zeros based on your system settings.
+              </p>
+            </form>
+          </TabsContent>
 
-          {/* Manage Numbers Section */}
-          {activeSection === "manage" && (
+          <TabsContent value="manage" className="mt-4">
             <div>
-              <div className="flex items-center mb-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setActiveSection(null)} 
-                  className="mr-2"
-                  size="sm"
-                >
-                  ← Back
-                </Button>
-                <h3 className="text-lg font-semibold">Manage Card Numbers</h3>
+              <h3 className="text-sm font-medium mb-2">Card Numbers</h3>
+              
+              {/* Filter and view options */}
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
+                <Input
+                  type="text"
+                  placeholder="Search card numbers..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1); // Reset to first page on search
+                  }}
+                  className="max-w-md"
+                />
+                
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground">
+                    Use filters below to view different card statuses
+                  </span>
+                </div>
               </div>
               
-              {/* Keep the rest of your existing "manage" tab content here */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Card Numbers</h3>
-                
-                {/* Filter and view options */}
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
-                  <Input
-                    type="text"
-                    placeholder="Search card numbers..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1); // Reset to first page on search
-                    }}
-                    className="max-w-md"
-                  />
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Use filters below to view different card statuses
-                    </span>
+              {/* Status filters */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <Button 
+                  variant={statusFilter === 'all' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                >
+                  All ({filteredCardNumbers.length})
+                </Button>
+                <Button 
+                  variant={statusFilter === 'available' ? 'default' : 'outline'}
+                  size="sm" 
+                  onClick={() => setStatusFilter('available')}
+                  className="text-green-600"
+                >
+                  Available ({availableCount})
+                </Button>
+                <Button 
+                  variant={statusFilter === 'assigned' ? 'default' : 'outline'}
+                  size="sm" 
+                  onClick={() => setStatusFilter('assigned')}
+                  className="text-blue-600"
+                >
+                  Assigned ({cardStats.assigned})
+                </Button>
+              </div>
+              
+              {isLoadingCount ? (
+                <p className="text-sm text-muted-foreground">Loading card numbers...</p>
+              ) : filteredCardNumbers.length > 0 ? (
+                <>
+                  {/* Stats */}
+                  <div className="mb-2 text-sm text-muted-foreground">
+                    Showing {paginatedCardNumbers.length} of {filteredCardNumbers.length} 
+                    {searchTerm && ` (filtered from ${filteredByStatus.length})`} numbers
                   </div>
-                </div>
-                
-                {/* Status filters */}
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <Button 
-                    variant={statusFilter === 'all' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setStatusFilter('all')}
-                  >
-                    All ({filteredCardNumbers.length})
-                  </Button>
-                  <Button 
-                    variant={statusFilter === 'available' ? 'default' : 'outline'}
-                    size="sm" 
-                    onClick={() => setStatusFilter('available')}
-                    className="text-green-600"
-                  >
-                    Available ({availableCount})
-                  </Button>
-                  <Button 
-                    variant={statusFilter === 'assigned' ? 'default' : 'outline'}
-                    size="sm" 
-                    onClick={() => setStatusFilter('assigned')}
-                    className="text-blue-600"
-                  >
-                    Assigned ({cardStats.assigned})
-                  </Button>
-                </div>
-                
-                {isLoadingCount ? (
-                  <p className="text-sm text-muted-foreground">Loading card numbers...</p>
-                ) : filteredCardNumbers.length > 0 ? (
-                  <>
-                    {/* Stats */}
-                    <div className="mb-2 text-sm text-muted-foreground">
-                      Showing {paginatedCardNumbers.length} of {filteredCardNumbers.length} 
-                      {searchTerm && ` (filtered from ${filteredByStatus.length})`} numbers
-                    </div>
-                    
-                    {/* Dropdown style list */}
-                    <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
-                      {paginatedCardNumbers.map(card => (
-                        <div 
-                          key={card.card_number} 
-                          className={`flex items-center justify-between p-3 hover:bg-gray-50 ${
-                            card.status === 'assigned' ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <span 
-                              className={`font-medium select-all cursor-pointer ${
-                                card.status === 'assigned' ? 'text-blue-600' : ''
-                              }`}
-                              onClick={() => navigator.clipboard.writeText(card.card_number)}
-                              title="Click to copy"
-                            >
-                              {card.card_number}
+                  
+                  {/* Dropdown style list */}
+                  <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
+                    {paginatedCardNumbers.map(card => (
+                      <div 
+                        key={card.card_number} 
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 ${
+                          card.status === 'assigned' ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span 
+                            className={`font-medium select-all cursor-pointer ${
+                              card.status === 'assigned' ? 'text-blue-600' : ''
+                            }`}
+                            onClick={() => navigator.clipboard.writeText(card.card_number)}
+                            title="Click to copy"
+                          >
+                            {card.card_number}
+                          </span>
+                          {card.status === 'assigned' && card.member_name && (
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                              Assigned to: {card.member_name}
                             </span>
-                            {card.status === 'assigned' && card.member_name && (
-                              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                                Assigned to: {card.member_name}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {card.status === 'available' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.preventDefault(); // Prevent any default behavior
-                                handleDeleteCard(card.card_number);
-                              }}
-                              disabled={isDeletingCard === card.card_number}
-                            >
-                              {isDeletingCard === card.card_number ? (
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
                           )}
                         </div>
-                      ))}
-                    </div>
-                    
-                    {/* Pagination controls */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center space-x-2 mt-4">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={prevPage} 
-                          disabled={currentPage === 1}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={nextPage} 
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
+                        
+                        {card.status === 'available' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteCard(card.card_number)}
+                            disabled={isDeletingCard === card.card_number}
+                          >
+                            {isDeletingCard === card.card_number ? (
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No card numbers found</p>
-                )}
-                
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p>Note: Only unused card numbers can be deleted. Click on a number to copy it.</p>
-                  <p>Cards already assigned to members are shown in blue.</p>
-                </div>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center space-x-2 mt-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevPage} 
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextPage} 
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No card numbers found</p>
+              )}
+              
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p>Note: Only unused card numbers can be deleted. Click on a number to copy it.</p>
+                <p>Cards already assigned to members are shown in blue.</p>
               </div>
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

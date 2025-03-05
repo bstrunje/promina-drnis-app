@@ -31,10 +31,6 @@ export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
  * Main Member interface representing a society member
  */
 export interface Member {
-    card_stamp_issued: boolean;
-    // DEPRECATED: Use membership_details.card_number instead
-    card_number: string;
-    // Identification
     member_id: number;
     first_name: string;
     last_name: string;
@@ -48,26 +44,32 @@ export interface Member {
     oib: string;
     cell_phone: string;
     email: string;
-    life_status: LifeStatus;
-    profile_image?: string;
+    life_status?: LifeStatus;
+    profile_image?: string; // Legacy field
+    profile_image_path?: string; // New field used by Prisma schema
+    profile_image_updated_at?: string; // Timestamp of last profile image update
     
     // System Fields
-    role: MemberRole;
-    registration_completed: boolean;
+    role?: MemberRole;
+    registration_completed?: boolean;
     password_hash?: string;
     last_login?: Date;
 
     // Profile Information (UI/Display only)
     total_hours?: number;
     activity_status?: ActivityStatus;  // Calculated from total_hours
-    membership_type: MembershipType;
-    tshirt_size: ClothingSize;
-    shell_jacket_size: ClothingSize;
+    membership_type?: MembershipType;
+    tshirt_size?: ClothingSize;
+    shell_jacket_size?: ClothingSize;
+
+    // Card-related fields (legacy, use membership_details instead)
+    card_number?: string;
+    card_stamp_issued?: boolean;
+    fee_payment_year?: number;
 
     // Membership Information
     membership_details?: {
-        fee_payment_date: string;
-        // Primary source of truth for card number
+        fee_payment_date?: string;
         card_number?: string;
         fee_payment_year?: number;
         card_stamp_issued?: boolean;

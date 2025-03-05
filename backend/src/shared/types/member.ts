@@ -32,9 +32,9 @@ export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
  */
 export interface Member {
     fee_payment_year: number | undefined;
-    fee_payment_date: string | undefined;
-    card_stamp_issued: boolean | undefined;
-    card_number: string | undefined;
+    card_stamp_issued: boolean;
+    // DEPRECATED: Use membership_details.card_number instead
+    card_number: string;
     // Identification
     member_id: number;
     first_name: string;
@@ -51,6 +51,8 @@ export interface Member {
     email: string;
     life_status: LifeStatus;
     profile_image?: string;
+    profile_image_path?: string;
+    profile_image_updated_at?: string;
     
     // System Fields
     role: MemberRole;
@@ -68,6 +70,7 @@ export interface Member {
     // Membership Information
     membership_details?: {
         fee_payment_date: string;
+        // Primary source of truth for card number
         card_number?: string;
         fee_payment_year?: number;
         card_stamp_issued?: boolean;

@@ -1,70 +1,24 @@
-OPTIONS /api/admin/dashboard/stats 204 0.390 ms - 0
-[3/5/2025, 24:34:17] GET /api/admin/dashboard/stats
-Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDExMjU0OTEsImV4cCI6MTc0MTIxMTg5MX0.nx6iZUV_gkNwPk2D612uuI04EgxFGLWCbbLLwYVyaWw
-{
-  query: 'SELECT \n' +
-    '                m.member_id as id, \n' +
-    '                m.member_id as user_id,\n' +
-    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
-    '                m.email,\n' +
-    '                CASE \n' +
-    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
-    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
-    "                    ELSE 'member'\n" +
-    '                END as role_name,\n' +
-    "                m.status = 'registered' as is_active\n" +
-    '             FROM members m\n' +
-    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
-  duration: 3,
-  rows: 1
-}
-Error getting backup info: Error: ENOENT: no such file or directory, scandir 'C:\sinkronizacija\promina-drnis-app\backend\backups'
-    at async Object.readdir (node:internal/fs/promises:948:18)
-    at async file:///C:/sinkronizacija/promina-drnis-app/backend/dist/routes/admin.routes.js:73:27 {
-  errno: -4058,
-  code: 'ENOENT',
-  syscall: 'scandir',
-  path: 'C:\\sinkronizacija\\promina-drnis-app\\backend\\backups'
-}
-GET /api/admin/dashboard/stats 200 157.782 ms - 150
-[3/5/2025, 24:34:17] GET /api/admin/dashboard/stats
-Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDExMjU0OTEsImV4cCI6MTc0MTIxMTg5MX0.nx6iZUV_gkNwPk2D612uuI04EgxFGLWCbbLLwYVyaWw
-{
-  query: 'SELECT \n' +
-    '                m.member_id as id, \n' +
-    '                m.member_id as user_id,\n' +
-    "                m.first_name || ' ' || m.last_name as full_name,\n" +    
-    '                m.email,\n' +
-    '                CASE \n' +
-    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
-    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +      
-    "                    ELSE 'member'\n" +
-    '                END as role_name,\n' +
-    "                m.status = 'registered' as is_active\n" +
-    '             FROM members m\n' +
-    "             WHERE m.member_id = $1 AND m.status = 'registered'",        
-  duration: 5,
-  rows: 1
-}
-Error getting backup info: Error: ENOENT: no such file or directory, scandir 'C:\sinkronizacija\promina-drnis-app\backend\backups'
-    at async Object.readdir (node:internal/fs/promises:948:18)
-    at async file:///C:/sinkronizacija/promina-drnis-app/backend/dist/routes/admin.routes.js:73:27 {
-  errno: -4058,
-  code: 'ENOENT',
-  syscall: 'scandir',
-  path: 'C:\\sinkronizacija\\promina-drnis-app\\backend\\backups'
-}
-GET /api/admin/dashboard/stats 200 19.933 ms - 150
-{
-  query: '\n' +
-    '      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name\n' +
-    '      FROM password_update_queue q\n' +
-    '      JOIN members m ON q.member_id = m.member_id\n' +
-    '      WHERE q.processed = false\n' +
-    '      ORDER BY q.created_at ASC\n' +
-    '      LIMIT 10 -- Process in batches\n' +
-    '    ',
-  duration: 120,
-  rows: 0
-}
-📦 Development database pool connected with UTF-8 encoding
+MemberProfileImage.tsx:61 
+ HEAD http://localhost:3000/uploads/profile_images/member_13_1741178978546.jpg?t=1741181252421 net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 200 (OK)
+(anonymous)	@	MemberProfileImage.tsx:61
+MemberProfileImage.tsx:71 Error checking image: TypeError: Failed to fetch
+    at MemberProfileImage.tsx:61:9
+(anonymous)	@	MemberProfileImage.tsx:71
+Promise.catch		
+(anonymous)	@	MemberProfileImage.tsx:70
+MemberProfileImage.tsx:61 
+ HEAD http://localhost:3000/uploads/profile_images/member_13_1741178978546.jpg?t=1741181252421 net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 200 (OK)
+(anonymous)	@	MemberProfileImage.tsx:61
+MemberProfileImage.tsx:71 Error checking image: TypeError: Failed to fetch
+    at MemberProfileImage.tsx:61:9
+(anonymous)	@	MemberProfileImage.tsx:71
+Promise.catch		
+(anonymous)	@	MemberProfileImage.tsx:70
+MemberProfileImage.tsx:61 
+ HEAD http://localhost:3000/uploads/profile_images/member_13_1741178978546.jpg?t=1741181252484 net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin 200 (OK)
+(anonymous)	@	MemberProfileImage.tsx:61
+MemberProfileImage.tsx:71 Error checking image: TypeError: Failed to fetch
+    at MemberProfileImage.tsx:61:9
+(anonymous)	@	MemberProfileImage.tsx:71
+Promise.catch		
+(anonymous)	@	MemberProfileImage.tsx:70

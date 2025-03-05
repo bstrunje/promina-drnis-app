@@ -30,10 +30,13 @@ const storage = multer.diskStorage({
 const multerConfig = multer({
   storage: storage,
   fileFilter: (_req: any, file: Express.Multer.File, cb: FileFilterCallback) => {
+    console.log("Received file upload:", file.mimetype);
+    
     if (PROFILE_IMAGE_CONFIG.allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type.'));
+      console.error(`Rejected file upload with MIME type: ${file.mimetype}`);
+      cb(new Error(`Invalid file type. Supported formats: ${PROFILE_IMAGE_CONFIG.allowedTypes.join(', ')}`));
     }
   },
   limits: {

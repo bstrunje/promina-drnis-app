@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { useToast } from '@components/ui/use-toast';
-import { Member } from '@shared/member';
+import { Member } from '../shared/types/member';
+import { API_BASE_URL } from '@/utils/config';
+import { User, Info } from 'lucide-react';
 
 interface MemberProfileImageProps {
   member: Member;
@@ -12,19 +14,73 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imgKey, setImgKey] = useState(Date.now());
+  const [imageFailed, setImageFailed] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
+  // Determine which property to use from the Member type
+  const imagePath = member.profile_image_path || member.profile_image;
+
+  // Reset image failure state when member or path changes
+  useEffect(() => {
+    if (imagePath) {
+      console.log('Member image path updated:', imagePath);
+      setPreviewUrl(null);
+      setImageFailed(false);
+      setImgKey(Date.now());
+    }
+  }, [member, imagePath]);
+
+  // Generate image URL with cache-busting
+  const getImageUrl = (path: string | undefined): string | null => {
+    if (!path) return null;
+    
+    if (path.startsWith('/uploads')) {
+      // Get base URL without /api suffix if present
+      let baseUrl = API_BASE_URL;
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.substring(0, baseUrl.length - 4);
+      }
+      
+      // Construct URL with cache busting
+      return `${baseUrl}${path}?t=${imgKey}`;
+    }
+    return path;
+  };
+
+  // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     
     const file = e.target.files[0];
+    console.log('Selected file:', file.name, file.type, file.size);
+    
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Only JPG, PNG and GIF formats are supported",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setImageFile(file);
+    
+    // Create preview URL for immediate feedback
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    
     setIsUploading(true);
     
     try {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch(`http://localhost:3000/api/members/${member.member_id}/profile-image`, {
+      console.log(`Uploading image for member ${member.member_id}`);
+      
+      const response = await fetch(`${API_BASE_URL}/members/${member.member_id}/profile-image`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -33,10 +89,19 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
       });
   
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        const errorText = await response.text();
+        console.error('Upload response error:', response.status, errorText);
+        throw new Error(`Image upload failed: ${response.statusText}`);
       }
-  
+      
+      const result = await response.json();
+      console.log('Upload successful, server response:', result);
+      
+      // Force refresh member data from server
       await onUpdate();
+      
+      // Update UI state
+      setImgKey(Date.now());
       
       toast({
         title: "Success",
@@ -44,9 +109,10 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
         variant: "success",
       });
     } catch (error) {
+      console.error('Image upload error:', error);
       toast({
         title: "Error",
-        description: "Failed to upload image",
+        description: error instanceof Error ? error.message : "Failed to upload image",
         variant: "destructive",
       });
     } finally {
@@ -54,50 +120,81 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
     }
   };
 
+  // Clean up object URLs
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  // Determine which image to show
+  const displayImageSrc = !imageFailed && (imagePath ? getImageUrl(imagePath) : previewUrl);
+
+  // Handle image error with fallback
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error('Image failed to load:', (e.target as HTMLImageElement).src);
+    setImageFailed(true);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Profile Image</CardTitle>
+        <button 
+          onClick={() => setDebugMode(!debugMode)} 
+          className="p-1 rounded-full hover:bg-gray-200 text-gray-500"
+          title="Toggle debug info"
+        >
+          <Info size={16} />
+        </button>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center">
-          <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden">
-            {imageFile ? (
+          <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden flex items-center justify-center">
+            {displayImageSrc && !imageFailed ? (
               <img
-                src={URL.createObjectURL(imageFile)}
-                alt="Profile preview"
-                className="w-full h-full object-cover"
-              />
-            ) : member.profile_image ? (
-              <img
-                src={member.profile_image.startsWith('/uploads') 
-                  ? `http://localhost:3000${member.profile_image}` 
-                  : member.profile_image}
+                key={imgKey}
+                src={displayImageSrc}
                 alt="Profile"
                 className="w-full h-full object-cover"
+                onError={handleImageError}
+                crossOrigin="anonymous"
+                loading="eager" // Prioritize loading
+                referrerPolicy="no-referrer" // Don't send referrer for security
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-500">
-                No Image
-              </div>
+              <User className="h-16 w-16 text-gray-400" strokeWidth={1.5} />
             )}
           </div>
+          
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif"
             onChange={handleImageUpload}
             className="hidden"
             id="image-upload"
             disabled={isUploading}
           />
+          
           <label
             htmlFor="image-upload"
-            className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 ${
+            className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 transition-colors ${
               isUploading ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {isUploading ? "Uploading..." : "Upload New Image"}
           </label>
+          
+          {debugMode && (
+            <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">
+              <p>Image path: {imagePath || 'none'}</p>
+              <p>Image URL: {displayImageSrc || 'none'}</p>
+              <p>Failed to load: {imageFailed ? 'Yes' : 'No'}</p>
+              <p>Last updated: {new Date(imgKey).toLocaleTimeString()}</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
