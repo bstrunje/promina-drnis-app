@@ -4,6 +4,7 @@ import { Users, Activity, Mail } from "lucide-react";
 import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
+import { getAdminMessages } from "@/utils/api";
 
 interface Props {
   member: Member;
@@ -89,15 +90,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
   const checkUnreadMessages = async () => {
     try {
-      const response = await fetch('/api/messages/admin', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      const data = await response.json();
-      setUnreadMessages(data.some((message: any) => message.status === 'unread'));
+      const data = await getAdminMessages();
+      console.log('Messages data:', data); // For debugging
+      setUnreadMessages(data.some((message) => message.status === 'unread'));
     } catch (error) {
+      console.error('Error checking messages:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to fetch messages',

@@ -9,3 +9,5 @@ member_id,"profile_image_path"
 15,"/uploads/member_15_1740869696268.jpg" - kako ću izbrisati ovu liniju iz baze, ta slika je izbrisana u tom folderu
 
 
+https://promina-drnis-api.onrender.com/api/debug/fs/image-paths rezultat:
+{"paths":[{"name":"Base uploads","path":"/app/uploads","exists":true,"isDirectory":true,"permissions":"total 12","canWrite":true,"writeTest":"success"},{"name":"Profile images","path":"/app/uploads/profile_images","exists":true,"isDirectory":true,"permissions":"total 112","canWrite":true,"writeTest":"success"}],"summary":{"allPathsExist":true,"allPathsWritable":true}}
