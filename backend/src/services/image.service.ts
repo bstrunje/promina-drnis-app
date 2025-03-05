@@ -49,7 +49,8 @@ const imageService = {
             await fs.unlink(file.path);
 
             // Update database
-            await memberRepository.updateProfileImage(memberId, processedFileName);
+            const profileImagePath = `/uploads/profile_images/${processedFileName}`;
+            await memberRepository.updateProfileImage(memberId, profileImagePath);
 
             return processedFileName;
         } catch (error) {
