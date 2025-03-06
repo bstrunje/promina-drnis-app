@@ -12,11 +12,11 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   const getStatusColor = (status: Member["life_status"]) => {
     switch (status) {
       case "employed/unemployed":
-        return "bg-blue-600 text-white";
+        return "bg-blue-200 text-bg-blue-800";
       case "child/pupil/student":
-        return "bg-green-600 text-white";
+        return "bg-green-200 text-bg-green-800";
       case "pensioner":
-        return "bg-red-600 text-white";
+        return "bg-red-200 text-bg-red-800";
       default:
         return "bg-gray-600 text-white";
     }

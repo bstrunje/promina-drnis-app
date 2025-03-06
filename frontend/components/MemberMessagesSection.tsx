@@ -46,7 +46,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
             rows={4}
             placeholder="Type your message here..."
           />
-          <Button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <Button type="submit" className="px-4 py-2 bg-black text-white rounded hover:bg-blue-700">
             Send Message
           </Button>
         </form>

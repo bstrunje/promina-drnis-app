@@ -5,7 +5,11 @@ import { useToast } from "@components/ui/use-toast";
 import { Stamp, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
-import { updateMembership, getAvailableCardNumbers, getAllCardNumbers } from "../src/utils/api";
+import {
+  updateMembership,
+  getAvailableCardNumbers,
+  getAllCardNumbers,
+} from "../src/utils/api";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import {
@@ -24,9 +28,13 @@ interface Props {
 const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   // Initialize from membership_details first (source of truth), fall back to direct property
-  const [cardNumber, setCardNumber] = useState(member?.membership_details?.card_number || member?.card_number || "");
+  const [cardNumber, setCardNumber] = useState(
+    member?.membership_details?.card_number || member?.card_number || ""
+  );
   const [stampIssued, setStampIssued] = useState(
-    member?.membership_details?.card_stamp_issued || member?.card_stamp_issued || false
+    member?.membership_details?.card_stamp_issued ||
+      member?.card_stamp_issued ||
+      false
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIssuingStamp, setIsIssuingStamp] = useState(false);
@@ -34,7 +42,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     type: string;
     remaining: number;
   } | null>(null);
-  const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
+  const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>(
+    []
+  );
   const [isLoadingCardNumbers, setIsLoadingCardNumbers] = useState(false);
   const [cardStats, setCardStats] = useState<{
     total: number;
@@ -51,9 +61,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        
+
         if (!response.ok) throw new Error("Failed to fetch inventory");
-        
+
         const data = await response.json();
 
         const stampType =
@@ -68,7 +78,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         const relevantInventory = data.find(
           (item: { stamp_type: string }) => item.stamp_type === stampType
         );
-        
+
         if (relevantInventory) {
           setInventoryStatus({
             type: stampType,
@@ -91,8 +101,14 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   // When member data changes, update from the correct source
   useEffect(() => {
     if (member) {
-      setCardNumber(member.membership_details?.card_number || member.card_number || '');
-      setStampIssued(member.membership_details?.card_stamp_issued || member.card_stamp_issued || false);
+      setCardNumber(
+        member.membership_details?.card_number || member.card_number || ""
+      );
+      setStampIssued(
+        member.membership_details?.card_stamp_issued ||
+          member.card_stamp_issued ||
+          false
+      );
     }
   }, [member]);
 
@@ -100,7 +116,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   useEffect(() => {
     const fetchCardNumbers = async () => {
       if (member.membership_details?.card_number) return; // Skip if card number already assigned
-      
+
       setIsLoadingCardNumbers(true);
       try {
         const numbers = await getAvailableCardNumbers();
@@ -117,7 +133,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         setIsLoadingCardNumbers(false);
       }
     };
-    
+
     fetchCardNumbers();
   }, [member.membership_details?.card_number]);
 
@@ -127,13 +143,13 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
       const data = await getAllCardNumbers();
       console.log("Refreshed card statistics:", data);
       setCardStats(data.stats);
-      
+
       // If we need to refresh available card numbers as well
       if (!member.membership_details?.card_number) {
         setAvailableCardNumbers(
           data.cards
-            .filter(card => card.status === 'available')
-            .map(card => card.card_number)
+            .filter((card) => card.status === "available")
+            .map((card) => card.card_number)
         );
       }
     } catch (error) {
@@ -154,7 +170,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     const data = {
       paymentDate: new Date().toISOString(),
       cardNumber,
-      stampIssued: true,
+      stampIssued: false,
     };
 
     console.log("Attempting to assign card number:", data);
@@ -174,13 +190,13 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
         membership_details: {
           ...member.membership_details,
           card_number: cardNumber,
-          card_stamp_issued: true,
+          card_stamp_issued: false,
         },
         // Still set these for backward compatibility, but membership_details is source of truth
         card_number: cardNumber,
-        card_stamp_issued: true,
+        card_stamp_issued: false,
       });
-      
+
       setCardNumber("");
 
       toast({
@@ -300,6 +316,94 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                 );
               })()}
             </div>
+
+            {/* Stamp Status Toggle Section */}
+            {member.membership_details?.card_number && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-2">Stamp Status</h4>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="stampIssued"
+                    checked={stampIssued}
+                    onChange={async (e) => {
+                      setStampIssued(e.target.checked);
+
+                      try {
+                        setIsIssuingStamp(true);
+                        await updateMembership(member.member_id, {
+                          paymentDate: new Date().toISOString(),
+                          cardNumber:
+                            member.membership_details?.card_number ||
+                            member.card_number,
+                          stampIssued: e.target.checked,
+                        });
+
+                        // Update the member object
+                        await onUpdate({
+                          ...member,
+                          membership_details: {
+                            ...member.membership_details,
+                            card_stamp_issued: e.target.checked,
+                          },
+                          card_stamp_issued: e.target.checked,
+                        });
+
+                        toast({
+                          title: "Success",
+                          description: e.target.checked
+                            ? "Stamp marked as issued"
+                            : "Stamp marked as not issued",
+                          variant: "success",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : "Failed to update stamp status",
+                          variant: "destructive",
+                        });
+                        // Revert the local state if the API call fails
+                        setStampIssued(!e.target.checked);
+                      } finally {
+                        setIsIssuingStamp(false);
+                      }
+                    }}
+                    className="mr-2 h-4 w-4"
+                    disabled={isIssuingStamp}
+                  />
+                  <label htmlFor="stampIssued" className="text-sm">
+                    {stampIssued
+                      ? "Stamp has been issued"
+                      : "Stamp has not been issued"}
+                  </label>
+                  {isIssuingStamp && (
+                    <svg
+                      className="animate-spin ml-2 h-4 w-4 text-blue-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                  )}
+                </div>
+              </div>
+            )}
             <div>
               <span className="text-sm text-gray-500">Stamp Status:</span>
               <span className="ml-2">
@@ -328,31 +432,40 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                 ) : cardStats ? (
                   <div className="flex space-x-4">
                     <span>Total card numbers: {cardStats.total}</span>
-                    <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
+                    <span className="text-blue-600">
+                      Assigned: {cardStats.assigned}
+                    </span>
                     <span>Available: {cardStats.available}</span>
                   </div>
                 ) : (
                   <span>No card statistics available</span>
                 )}
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 w-6 p-0" 
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
                 title="Refresh card statistics"
                 onClick={refreshCardStats}
                 disabled={isLoadingCardStats}
               >
-                <RefreshCw className={`h-3 w-3 ${isLoadingCardStats ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-3 w-3 ${
+                    isLoadingCardStats ? "animate-spin" : ""
+                  }`}
+                />
               </Button>
             </div>
             <form onSubmit={handleCardNumberAssign} className="mt-4">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="cardNumber" className="block text-sm font-medium mb-1">
+                  <Label
+                    htmlFor="cardNumber"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Card Number
                   </Label>
-                  
+
                   {availableCardNumbers.length > 0 ? (
                     <Select
                       value={cardNumber}
@@ -360,45 +473,49 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                       disabled={isSubmitting || isLoadingCardNumbers}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue 
+                        <SelectValue
                           placeholder={
-                            isLoadingCardNumbers 
-                              ? "Loading card numbers..." 
+                            isLoadingCardNumbers
+                              ? "Loading card numbers..."
                               : `Select from ${availableCardNumbers.length} available numbers`
-                          } 
+                          }
                         />
                       </SelectTrigger>
                       <SelectContent className="max-h-[200px] overflow-y-auto">
                         {/* Use the member's existing card number instead of undefined currentCardNumber */}
                         {member.membership_details?.card_number && (
-                          <SelectItem 
-                            value={member.membership_details.card_number} 
+                          <SelectItem
+                            value={member.membership_details.card_number}
                             className="font-semibold text-blue-600 border-b"
                           >
                             {member.membership_details.card_number} (Current)
                           </SelectItem>
                         )}
-                        
-                        {availableCardNumbers.map(number => (
+
+                        {availableCardNumbers.map((number) => (
                           <SelectItem key={number} value={number}>
                             {number}
                           </SelectItem>
                         ))}
-                        
-                        {availableCardNumbers.length === 0 && !isLoadingCardNumbers && (
-                          <div className="py-2 px-2 text-sm text-gray-500">
-                            No card numbers available
-                          </div>
-                        )}
+
+                        {availableCardNumbers.length === 0 &&
+                          !isLoadingCardNumbers && (
+                            <div className="py-2 px-2 text-sm text-gray-500">
+                              No card numbers available
+                            </div>
+                          )}
                       </SelectContent>
                     </Select>
                   ) : (
                     <div>
                       {isLoadingCardNumbers ? (
-                        <p className="text-sm text-gray-500">Loading card numbers...</p>
+                        <p className="text-sm text-gray-500">
+                          Loading card numbers...
+                        </p>
                       ) : (
                         <p className="text-sm text-amber-500">
-                          No card numbers available. Please add some in Settings.
+                          No card numbers available. Please add some in
+                          Settings.
                         </p>
                       )}
                       <Input
@@ -418,7 +535,10 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !cardNumber}
-                  className={cn("w-full", isSubmitting && "opacity-50")}
+                  className={cn(
+                    "w-full bg-black hover:bg-blue-500 transition-colors",
+                    isSubmitting && "opacity-50"
+                  )}
                 >
                   {isSubmitting ? "Assigning..." : "Assign Card Number"}
                 </Button>

@@ -196,7 +196,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   variant={isValidPayment ? "default" : "outline"}
                   className={cn(
                     "w-full",
-                    isValidPayment ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-200",
+                    isValidPayment ? "bg-black hover:bg-blue-500" : "bg-gray-200",
                     isSubmitting && "opacity-50"
                   )}
                 >

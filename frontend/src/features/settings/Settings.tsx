@@ -230,7 +230,7 @@ const Settings: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-black hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Saving..." : "Save Settings"}
           </button>

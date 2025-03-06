@@ -385,10 +385,13 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
             Membership History
           </CardTitle>
           {canEdit && !isEditing && (
-            <Button onClick={handleEdit}>
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
+            <Button 
+            onClick={handleEdit}
+            className="bg-black hover:bg-blue-500 transition-colors"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
           )}
         </div>
       </CardHeader>
