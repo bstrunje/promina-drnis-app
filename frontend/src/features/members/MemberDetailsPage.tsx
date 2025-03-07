@@ -10,7 +10,6 @@ import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
 import { debounce } from "lodash";
-import axios from "axios";
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -84,18 +83,15 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
 
-      // Use axios directly instead of api utility to add cache control headers
-      const response = await axios.get(
-        `/api/members/${memberId}?t=${timestamp}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
+      // Use your configured API client instead of direct axios
+      // This will use the correct base URL from your api.ts configuration
+      const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
 
       console.log("Fresh member data received:", response.data);
       

@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@components/ui/select";
+import api from "../src/utils/api";
 
 // Update the Props interface to include userRole
 interface Props {
@@ -58,15 +59,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) 
   useEffect(() => {
     const checkInventory = async () => {
       try {
-        const response = await fetch("/api/stamps/inventory", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+        const response = await api.get("/stamps/inventory");
 
-        if (!response.ok) throw new Error("Failed to fetch inventory");
-
-        const data = await response.json();
+        const data = response.data;
 
         const stampType =
           member.life_status === "employed/unemployed"
@@ -261,26 +256,12 @@ useEffect(() => {
     try {
       setIsIssuingStamp(true);
       
-      // Use a more direct variable to track API success
       let apiSuccess = false;
       let updatedMember = null;
   
       if (newState) {
-        // If issuing a stamp
-        const response = await fetch(
-          `/api/members/${member.member_id}/stamp`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-  
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to issue stamp");
-        }
+        // Replace fetch with api call
+        const response = await api.post(`/members/${member.member_id}/stamp`);
         apiSuccess = true;
   
         // Update inventory display if shown
@@ -288,31 +269,12 @@ useEffect(() => {
           prev ? { ...prev, remaining: prev.remaining - 1 } : null
         );
       } else {
-        // If removing stamp status
-        const response = await fetch(
-          `/api/members/${member.member_id}/stamp/return`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-  
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to return stamp to inventory");
-        }
+        // Replace fetch with api call
+        const response = await api.post(`/members/${member.member_id}/stamp/return`);
         
         // Try to get the updated member from the response
-        try {
-          const responseData = await response.json();
-          if (responseData.member) {
-            updatedMember = responseData.member;
-          }
-        } catch (e) {
-          // If parsing fails, just log it but continue
-          console.warn("Could not parse member data from response", e);
+        if (response.data && response.data.member) {
+          updatedMember = response.data.member;
         }
         
         apiSuccess = true;
@@ -370,17 +332,7 @@ useEffect(() => {
 
     setIsIssuingStamp(true);
     try {
-      const response = await fetch(`/api/members/${member.member_id}/stamp`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to issue stamp");
-      }
+      const response = await api.post(`/members/${member.member_id}/stamp`);
 
       toast({
         title: "Success",
