@@ -20,12 +20,14 @@ import {
   SelectValue,
 } from "@components/ui/select";
 
+// Update the Props interface to include userRole
 interface Props {
   member: Member;
   onUpdate: (member: Member) => Promise<void>;
+  userRole?: string; // Add this line
 }
 
-const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
+const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) => {
   const { toast } = useToast();
   // Initialize from membership_details first (source of truth), fall back to direct property
   const [cardNumber, setCardNumber] = useState(
@@ -99,18 +101,29 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   }, [member.life_status, member]);
 
   // When member data changes, update from the correct source
-  useEffect(() => {
-    if (member) {
-      setCardNumber(
-        member.membership_details?.card_number || member.card_number || ""
-      );
-      setStampIssued(
-        member.membership_details?.card_stamp_issued ||
-          member.card_stamp_issued ||
-          false
-      );
-    }
-  }, [member]);
+useEffect(() => {
+  if (member) {
+    console.log("Member data changed:", {
+      memberID: member.member_id,
+      membershipDetails: member.membership_details,
+      directStampIssued: member.card_stamp_issued,
+      detailsStampIssued: member.membership_details?.card_stamp_issued,
+      finalStampState: member.membership_details?.card_stamp_issued || member.card_stamp_issued || false
+    });
+    
+    setCardNumber(
+      member.membership_details?.card_number || member.card_number || ""
+    );
+    
+    // Explicitly log the stamp status we're setting
+    const newStampState = member.membership_details?.card_stamp_issued || 
+      member.card_stamp_issued || 
+      false;
+    console.log(`Setting stampIssued state to: ${newStampState}`);
+    
+    setStampIssued(newStampState);
+  }
+}, [member]);
 
   // Add a function to fetch available card numbers
   useEffect(() => {
@@ -225,6 +238,126 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
     }
   };
 
+  // Add a function to check if user can return stamps (only superusers)
+  const canReturnStamp = userRole === "superuser";
+  
+  // Modify handleStampToggle to check permissions
+  const handleStampToggle = async (newState: boolean) => {
+    console.log("Toggling stamp state to:", newState);
+    
+    // If user is trying to uncheck (return stamp) but doesn't have permission
+    if (!newState && !canReturnStamp) {
+      toast({
+        title: "Permission Denied",
+        description: "Only superusers can return stamps to inventory",
+        variant: "destructive",
+      });
+      return; // Stop the function here
+    }
+    
+    // Save the current UI state to avoid flickering
+    setStampIssued(newState);
+    
+    try {
+      setIsIssuingStamp(true);
+      
+      // Use a more direct variable to track API success
+      let apiSuccess = false;
+      let updatedMember = null;
+  
+      if (newState) {
+        // If issuing a stamp
+        const response = await fetch(
+          `/api/members/${member.member_id}/stamp`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+  
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to issue stamp");
+        }
+        apiSuccess = true;
+  
+        // Update inventory display if shown
+        setInventoryStatus((prev) =>
+          prev ? { ...prev, remaining: prev.remaining - 1 } : null
+        );
+      } else {
+        // If removing stamp status
+        const response = await fetch(
+          `/api/members/${member.member_id}/stamp/return`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+  
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to return stamp to inventory");
+        }
+        
+        // Try to get the updated member from the response
+        try {
+          const responseData = await response.json();
+          if (responseData.member) {
+            updatedMember = responseData.member;
+          }
+        } catch (e) {
+          // If parsing fails, just log it but continue
+          console.warn("Could not parse member data from response", e);
+        }
+        
+        apiSuccess = true;
+  
+        // Update inventory display if shown
+        setInventoryStatus((prev) =>
+          prev ? { ...prev, remaining: prev.remaining + 1 } : null
+        );
+      }
+  
+      if (apiSuccess) {      
+        // Create a partial update object to avoid full page refresh
+        const updatedData = {
+          card_stamp_issued: newState,
+          membership_details: {
+            ...(member.membership_details || {}),
+            card_stamp_issued: newState,
+          }
+        };
+        
+        // Pass the specific update data to the parent component
+        await onUpdate(updatedMember || {
+          ...member,
+          ...updatedData
+        });
+        
+        toast({
+          title: "Success",
+          description: newState ? "Stamp marked as issued" : "Stamp marked as not issued",
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update stamp status",
+        variant: "destructive",
+      });
+      // Revert the UI state if API call fails
+      setStampIssued(!newState);
+    } finally {
+      setIsIssuingStamp(false);
+    }
+  };
+
   const handleStampIssue = async () => {
     if (!inventoryStatus?.remaining) {
       toast({
@@ -280,11 +413,11 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
   const getStatusColor = () => {
     switch (member.life_status) {
       case "employed/unemployed":
-        return "bg-blue-600";
+        return "bg-blue-300";
       case "child/pupil/student":
-        return "bg-green-600";
+        return "bg-green-300";
       case "pensioner":
-        return "bg-red-600";
+        return "bg-red-300";
       default:
         return "bg-gray-600";
     }
@@ -307,7 +440,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                   member.membership_details?.card_number || member.card_number;
                 return cardNumber ? (
                   <span
-                    className={`ml-2 px-3 py-1 rounded text-white ${getStatusColor()}`}
+                    className={`ml-2 px-3 py-1 rounded text-black ${getStatusColor()}`}
                   >
                     {cardNumber}
                   </span>
@@ -318,7 +451,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
             </div>
 
             {/* Stamp Status Toggle Section */}
-            {member.membership_details?.card_number && (
+            {(member.membership_details?.card_number || member.card_number) && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium mb-2">Stamp Status</h4>
                 <div className="flex items-center">
@@ -326,53 +459,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                     type="checkbox"
                     id="stampIssued"
                     checked={stampIssued}
-                    onChange={async (e) => {
-                      setStampIssued(e.target.checked);
-
-                      try {
-                        setIsIssuingStamp(true);
-                        await updateMembership(member.member_id, {
-                          paymentDate: new Date().toISOString(),
-                          cardNumber:
-                            member.membership_details?.card_number ||
-                            member.card_number,
-                          stampIssued: e.target.checked,
-                        });
-
-                        // Update the member object
-                        await onUpdate({
-                          ...member,
-                          membership_details: {
-                            ...member.membership_details,
-                            card_stamp_issued: e.target.checked,
-                          },
-                          card_stamp_issued: e.target.checked,
-                        });
-
-                        toast({
-                          title: "Success",
-                          description: e.target.checked
-                            ? "Stamp marked as issued"
-                            : "Stamp marked as not issued",
-                          variant: "success",
-                        });
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description:
-                            error instanceof Error
-                              ? error.message
-                              : "Failed to update stamp status",
-                          variant: "destructive",
-                        });
-                        // Revert the local state if the API call fails
-                        setStampIssued(!e.target.checked);
-                      } finally {
-                        setIsIssuingStamp(false);
-                      }
-                    }}
+                    onChange={(e) => handleStampToggle(e.target.checked)}
                     className="mr-2 h-4 w-4"
-                    disabled={isIssuingStamp}
+                    disabled={isIssuingStamp || (stampIssued && !canReturnStamp)} // Disable if checked & not superuser
                   />
                   <label htmlFor="stampIssued" className="text-sm">
                     {stampIssued
@@ -402,6 +491,13 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate }) => {
                     </svg>
                   )}
                 </div>
+                
+                {/* Add permission note for admins */}
+                {stampIssued && !canReturnStamp && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Note: Only superusers can return stamps to inventory
+                  </p>
+                )}
               </div>
             )}
             <div>

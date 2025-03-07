@@ -35,7 +35,17 @@ const stampRepository = {
              WHERE stamp_type = $1`,
             [stamp_type]
         );
-    }
+    },
+
+    async decrementIssuedCount(stamp_type: string): Promise<void> {
+        await db.query(
+          `UPDATE stamp_inventory 
+           SET issued_count = GREATEST(issued_count - 1, 0),
+               last_updated = CURRENT_TIMESTAMP
+           WHERE stamp_type = $1`,
+          [stamp_type]
+        );
+      }
 };
 
 export default stampRepository;

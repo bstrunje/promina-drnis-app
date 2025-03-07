@@ -9,7 +9,8 @@ import { MembershipPeriod } from "@shared/membership";
 import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
-import { debounce } from 'lodash';
+import { debounce } from "lodash";
+import axios from "axios";
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -45,6 +46,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigningPassword, setIsAssigningPassword] = useState(false);
+  const [savedScrollPosition, setSavedScrollPosition] = useState(0);
 
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   const isOwnProfile = user?.member_id === memberId;
@@ -60,22 +62,43 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
   // Debounce member fetch
   const debouncedFetchMember = useMemo(
-    () => debounce(async () => {
-      try {
-        const response = await api.get(`/members/${memberId}`);
-        setMember(response.data);
-      } catch (error) {
-        console.error(error);
-      }
-    }, 300),
+    () =>
+      debounce(async () => {
+        try {
+          const response = await api.get(`/members/${memberId}`);
+          setMember(response.data);
+        } catch (error) {
+          console.error(error);
+        }
+      }, 300),
     [memberId]
   );
 
-  const fetchMemberDetails = async () => {
+  const fetchMemberDetails = async (preserveScroll = true) => {
+    if (preserveScroll) {
+      setSavedScrollPosition(window.scrollY);
+    }
+
     setIsLoading(true);
     try {
-      const response = await api.get(`/members/${memberId}`);
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
 
+      // Use axios directly instead of api utility to add cache control headers
+      const response = await axios.get(
+        `/api/members/${memberId}?t=${timestamp}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
+
+      console.log("Fresh member data received:", response.data);
+      
       // Properly handle membership_history array
       const memberData = {
         ...response.data,
@@ -96,14 +119,11 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         },
       };
 
-      // Debug logs
+      // Debug logs to identify data issues
       console.log("Raw member data:", response.data);
-      console.log(
-        "Membership history array:",
-        response.data.membership_history
-      );
-      console.log("Transformed data:", memberData);
-
+      console.log("Card stamp status from API:", response.data.card_stamp_issued);
+      console.log("Membership details from API:", response.data.membership_details);
+      
       // Validate transformed data
       if (!Array.isArray(memberData.membership_history.periods)) {
         console.warn("Invalid periods structure, resetting to empty array");
@@ -121,6 +141,11 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       );
     } finally {
       setIsLoading(false);
+      if (preserveScroll) {
+        setTimeout(() => {
+          window.scrollTo(0, savedScrollPosition);
+        }, 100);
+      }
     }
   };
 
@@ -149,7 +174,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
   useEffect(() => {
     if (memberId) {
-      fetchMemberDetails();
+      fetchMemberDetails(false);
     }
   }, [memberId]);
 
@@ -173,12 +198,13 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     );
   };
 
-  const handleMembershipHistoryUpdate = async (updatedPeriods: MembershipPeriod[]) => {
+  const handleMembershipHistoryUpdate = async (
+    updatedPeriods: MembershipPeriod[]
+  ) => {
     try {
-      await api.put(
-        `/members/${memberId}/membership-history`,
-        { periods: updatedPeriods }
-      );
+      await api.put(`/members/${memberId}/membership-history`, {
+        periods: updatedPeriods,
+      });
 
       // Odmah dohvati nove podatke
       await fetchMemberDetails();
@@ -197,13 +223,35 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const handleMemberUpdate = async () => {
+  const handleMemberUpdate = async (updatedData?: Partial<Member>) => {
     try {
-      // Fetch fresh data from server
-      const response = await api.get(`/members/${memberId}`);
-      setMember(response.data);
+      if (updatedData && Object.keys(updatedData).length) {
+        setMember((currentMember) => 
+          currentMember ? { ...currentMember, ...updatedData } : null
+        );
+        
+        toast({
+          title: "Success",
+          description: "Member updated successfully",
+          variant: "success",
+        });
+      } else {
+        await fetchMemberDetails(true);
+        
+        toast({
+          title: "Success",
+          description: "Member updated successfully",
+          variant: "success",
+        });
+      }
     } catch (error) {
+      console.error("Failed to update member:", error);
       setError("Failed to update member");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update member",
+        variant: "destructive",
+      });
     }
   };
 
@@ -353,7 +401,11 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         )}
 
         {canEdit && (
-          <MembershipCardManager member={member} onUpdate={handleMemberUpdate} />
+          <MembershipCardManager
+            member={member}
+            onUpdate={handleMemberUpdate}
+            userRole={user?.role} // Add this line to pass user role
+          />
         )}
 
         {isLoading ? (
@@ -370,8 +422,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           />
         )}
 
-        <ActivityHistory 
-          memberId={member.member_id} 
+        <ActivityHistory
+          memberId={member.member_id}
           key={`activities-${member.member_id}`} // Dodaj key da se osvježi samo kad se promijeni član
         />
       </div>

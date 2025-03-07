@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Activity, Mail } from "lucide-react";
+import { Users, Activity, Mail, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 interface InventoryData {
-  stamp_type: 'employed' | 'student' | 'pensioner';
+  stamp_type: "employed" | "student" | "pensioner";
   initial_count: number;
   issued_count: number;
   remaining: number;
@@ -48,42 +48,85 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const [unreadMessages, setUnreadMessages] = useState(false);
 
   useEffect(() => {
+    // Fetch immediately
     fetchInventory();
     checkUnreadMessages();
+
+    // Refresh every 15 seconds
+    const intervalId = setInterval(() => {
+      fetchInventory();
+      checkUnreadMessages();
+    }, 15000);
+
+    // Refresh when tab regains focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchInventory();
+        checkUnreadMessages();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const fetchInventory = async () => {
     try {
-      const response = await fetch('/api/stamps/inventory', {
+      const response = await fetch("/api/stamps/inventory", {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch inventory');
-      
-      const data = await response.json() as InventoryData[];
+      if (!response.ok) throw new Error("Failed to fetch inventory");
+
+      const data = (await response.json()) as InventoryData[];
+      const employedData = data.find(
+        (i: InventoryData) => i.stamp_type === "employed"
+      ) || {
+        initial_count: 0,
+        issued_count: 0,
+      };
+      const studentData = data.find(
+        (i: InventoryData) => i.stamp_type === "student"
+      ) || {
+        initial_count: 0,
+        issued_count: 0,
+      };
+      const pensionerData = data.find(
+        (i: InventoryData) => i.stamp_type === "pensioner"
+      ) || {
+        initial_count: 0,
+        issued_count: 0,
+      };
+
       setInventory({
         employedStamps: {
-          initial: data.find((i: InventoryData) => i.stamp_type === 'employed')?.initial_count || 0,
-          issued: data.find((i: InventoryData) => i.stamp_type === 'employed')?.issued_count || 0,
-          remaining: data.find((i: InventoryData) => i.stamp_type === 'employed')?.remaining || 0
+          initial: employedData.initial_count,
+          issued: employedData.issued_count,
+          remaining: employedData.initial_count - employedData.issued_count,
         },
         studentStamps: {
-          initial: data.find((i: InventoryData) => i.stamp_type === 'student')?.initial_count || 0,
-          issued: data.find((i: InventoryData) => i.stamp_type === 'student')?.issued_count || 0,
-          remaining: data.find((i: InventoryData) => i.stamp_type === 'student')?.remaining || 0
+          initial: studentData.initial_count,
+          issued: studentData.issued_count,
+          remaining: studentData.initial_count - studentData.issued_count,
         },
         pensionerStamps: {
-          initial: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.initial_count || 0,
-          issued: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.issued_count || 0,
-          remaining: data.find((i: InventoryData) => i.stamp_type === 'pensioner')?.remaining || 0
-        }
+          initial: pensionerData.initial_count,
+          issued: pensionerData.issued_count,
+          remaining: pensionerData.initial_count - pensionerData.issued_count,
+        },
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to fetch inventory',
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to fetch inventory",
+        variant: "destructive",
       });
     }
   };
@@ -91,14 +134,15 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const checkUnreadMessages = async () => {
     try {
       const data = await getAdminMessages();
-      console.log('Messages data:', data); // For debugging
-      setUnreadMessages(data.some((message) => message.status === 'unread'));
+      console.log("Messages data:", data); // For debugging
+      setUnreadMessages(data.some((message) => message.status === "unread"));
     } catch (error) {
-      console.error('Error checking messages:', error);
+      console.error("Error checking messages:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to fetch messages',
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to fetch messages",
+        variant: "destructive",
       });
     }
   };
@@ -127,9 +171,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
           pensioner: editValues.pensionerStamps.initial,
         }),
       });
-  
+
       if (!response.ok) throw new Error("Failed to update inventory");
-  
+
       setInventory(editValues);
       setIsEditing(false);
       toast({
@@ -140,7 +184,8 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update inventory",
+        description:
+          error instanceof Error ? error.message : "Failed to update inventory",
         variant: "destructive",
       });
     }
@@ -148,14 +193,14 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
   const handleInputChange = (type: keyof StampInventory, value: number) => {
     if (isNaN(value)) return;
-  
-    setEditValues(prev => ({
+
+    setEditValues((prev) => ({
       ...prev,
       [type]: {
         ...prev[type],
         initial: value,
-        remaining: value - prev[type].issued
-      }
+        remaining: value - prev[type].issued,
+      },
     }));
   };
 
@@ -211,18 +256,29 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-medium">Stamp Inventory</h3>
-            {!isEditing ? (
-              <Button variant="outline" onClick={handleEdit}>
-                Edit Inventory
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchInventory}
+                className="p-1 h-8 w-8"
+                title="Refresh inventory data"
+              >
+                <RefreshCw className="h-4 w-4" />
               </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancel
+              {!isEditing ? (
+                <Button variant="outline" onClick={handleEdit}>
+                  Edit Inventory
                 </Button>
-                <Button onClick={handleSave}>Save Changes</Button>
-              </div>
-            )}
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleCancel}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave}>Save Changes</Button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-4">
             {/* Employed/Unemployed Stamps */}
@@ -235,11 +291,16 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-blue-600">Initial</label>
                   {isEditing ? (
                     <input
-                    type="number"
-                    min={inventory.employedStamps.issued}
-                    value={editValues.employedStamps.initial}
-                    onChange={(e) => handleInputChange("employedStamps", e.target.valueAsNumber)}
-                    className="w-full mt-1 p-1 border rounded"
+                      type="number"
+                      min={inventory.employedStamps.issued}
+                      value={editValues.employedStamps.initial}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "employedStamps",
+                          e.target.valueAsNumber
+                        )
+                      }
+                      className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-blue-700">
@@ -272,11 +333,16 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-green-600">Initial</label>
                   {isEditing ? (
                     <input
-                    type="number"
-                    min={inventory.studentStamps.issued}
-                    value={editValues.studentStamps.initial}
-                    onChange={(e) => handleInputChange("studentStamps", e.target.valueAsNumber)}
-                    className="w-full mt-1 p-1 border rounded"
+                      type="number"
+                      min={inventory.studentStamps.issued}
+                      value={editValues.studentStamps.initial}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "studentStamps",
+                          e.target.valueAsNumber
+                        )
+                      }
+                      className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-green-700">
@@ -307,11 +373,16 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   <label className="text-sm text-red-600">Initial</label>
                   {isEditing ? (
                     <input
-                    type="number"
-                    min={inventory.pensionerStamps.issued}
-                    value={editValues.pensionerStamps.initial}
-                    onChange={(e) => handleInputChange("pensionerStamps", e.target.valueAsNumber)}
-                    className="w-full mt-1 p-1 border rounded"
+                      type="number"
+                      min={inventory.pensionerStamps.issued}
+                      value={editValues.pensionerStamps.initial}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "pensionerStamps",
+                          e.target.valueAsNumber
+                        )
+                      }
+                      className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-red-700">
