@@ -7,6 +7,7 @@ import { Member } from "@shared/member";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import api from "../../utils/api"; 
+import { IMAGE_BASE_URL } from "../../utils/config";
 
 declare module "@shared/member" {
   interface Member {
@@ -18,6 +19,18 @@ const MemberProfile = () => {
   const { user } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const memberId = user?.member_id;
+
+  // Placeholder SVG as data URI - a simple user icon
+  const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXVzZXIiPjxwYXRoIGQ9Ik0xOSAyMXYtMmE0IDQgMCAwIDAtNC00SDlhNCA0IDAgMCAwLTQgNHYyIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+';
+
+  const getImageUrl = (path: string | null | undefined): string => {
+    if (!path) return PLACEHOLDER_IMAGE;
+    
+    if (path.startsWith('http')) return path;
+    
+    // Use the IMAGE_BASE_URL constant from config
+    return `${IMAGE_BASE_URL}/${path}`;
+  };
 
 useEffect(() => {
   if (memberId) {

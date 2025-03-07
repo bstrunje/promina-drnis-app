@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { useToast } from '@components/ui/use-toast';
-import { Member } from '../shared/types/member';
-import { API_BASE_URL } from '@/utils/config';
+import { Member } from '@shared/member';
+import { API_BASE_URL, IMAGE_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
 
-interface MemberProfileImageProps {
+interface Props {
   member: Member;
-  onUpdate: () => Promise<void>;
+  onUpdate?: () => Promise<void>;
 }
 
-const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdate }) => {
+const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -98,7 +98,7 @@ const MemberProfileImage: React.FC<MemberProfileImageProps> = ({ member, onUpdat
       console.log('Upload successful, server response:', result);
       
       // Force refresh member data from server
-      await onUpdate();
+      if (onUpdate) await onUpdate();
       
       // Update UI state
       setImgKey(Date.now());
