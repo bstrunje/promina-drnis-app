@@ -5,6 +5,7 @@ import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 import { getAdminMessages } from "@/utils/api";
+import api from "../../utils/api";
 
 interface Props {
   member: Member;
@@ -77,14 +78,10 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
   const fetchInventory = async () => {
     try {
-      const response = await fetch("/api/stamps/inventory", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch inventory");
+      const response = await api.get("/stamps/inventory");
+      if (!response.data) throw new Error("Failed to fetch inventory");
 
-      const data = (await response.json()) as InventoryData[];
+      const data = response.data;
       const employedData = data.find(
         (i: InventoryData) => i.stamp_type === "employed"
       ) || {
@@ -159,20 +156,13 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
   const handleSave = async () => {
     try {
-      const response = await fetch("/api/stamps/inventory", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          employed: editValues.employedStamps.initial,
-          student: editValues.studentStamps.initial,
-          pensioner: editValues.pensionerStamps.initial,
-        }),
+      const response = await api.put("/stamps/inventory", {
+        employed: editValues.employedStamps.initial,
+        student: editValues.studentStamps.initial,
+        pensioner: editValues.pensionerStamps.initial,
       });
 
-      if (!response.ok) throw new Error("Failed to update inventory");
+      if (!response.data) throw new Error("Failed to update inventory");
 
       setInventory(editValues);
       setIsEditing(false);

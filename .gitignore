@@ -15,3 +15,13 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Syncronization shared files
+shared/types/sync.ffs_db
+
+# FFS Sync database files
+**/sync.ffs_db
+
+# Log and report files
+izvjestaj.txt
+root_tree.txt

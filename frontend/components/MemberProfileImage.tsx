@@ -132,7 +132,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   // Determine which image to show
   const displayImageSrc = !imageFailed && (imagePath ? getImageUrl(imagePath) : previewUrl);
 
-  // Handle image error with fallback
+  // Handle image error with fallback - now we just set imageFailed=true without changing src
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error('Image failed to load:', (e.target as HTMLImageElement).src);
     setImageFailed(true);
@@ -165,7 +165,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
                 referrerPolicy="no-referrer" // Don't send referrer for security
               />
             ) : (
-              <User className="h-16 w-16 text-gray-400" strokeWidth={1.5} />
+              // Empty container - no icon
+              <div className="w-full h-full bg-gray-200"></div>
             )}
           </div>
           
