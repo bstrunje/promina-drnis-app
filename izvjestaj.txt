@@ -1,11 +1,29 @@
-fetch("https://promina-drnis-app.vercel.app/api/members/15?t=1741310871539", {
+/profile:1 Access to XMLHttpRequest at 'https://promina-drnis-api.onrender.com/api/members/13?t=1741311783841' from origin 'https://promina-drnis-app.vercel.app' has been blocked by CORS policy: Request header field cache-control is not allowed by Access-Control-Allow-Headers in preflight response.Understand this errorAI
+MemberDetailsPage.tsx:132 Error fetching member details: g {message: 'Network Error', name: 'AxiosError', code: 'ERR_NETWORK', config: {…}, request: XMLHttpRequest, …}
+(anonymous) @ MemberDetailsPage.tsx:132
+g @ index-C7HnbJaw.js:1
+Promise.then
+f @ index-C7HnbJaw.js:1
+(anonymous) @ index-C7HnbJaw.js:1
+Z @ index-C7HnbJaw.js:1
+ee @ MemberDetailsPage.tsx:76
+(anonymous) @ MemberDetailsPage.tsx:173
+wl @ react-dom.production.min.js:243
+en @ react-dom.production.min.js:285
+(anonymous) @ react-dom.production.min.js:281
+k @ scheduler.production.min.js:13
+hn @ scheduler.production.min.js:14Understand this errorAI
+vendor-utils-WKzjDExs.js:1 
+            
+            
+           GET https://promina-drnis-api.onrender.com/api/members/13?t=1741311783841 net::ERR_FAILED
+
+           također i ovo:
+           fetch("https://promina-drnis-app.vercel.app/api/stamps/inventory", {
   "headers": {
-    "accept": "application/json, text/plain, */*",
+    "accept": "*/*",
     "accept-language": "hr-HR,hr;q=0.9,en-US;q=0.8,en;q=0.7,sr;q=0.6",
     "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4",
-    "cache-control": "no-cache, no-store, must-revalidate",
-    "expires": "0",
-    "pragma": "no-cache",
     "priority": "u=1, i",
     "sec-ch-ua": "\"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"",
     "sec-ch-ua-mobile": "?0",
@@ -13,32 +31,798 @@ fetch("https://promina-drnis-app.vercel.app/api/members/15?t=1741310871539", {
     "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin",
-    "Referer": "https://promina-drnis-app.vercel.app/members/15/edit",
+    "Referer": "https://promina-drnis-app.vercel.app/admin",
     "Referrer-Policy": "strict-origin-when-cross-origin"
   },
   "body": null,
   "method": "GET"
 });
 
-GET https://promina-drnis-app.vercel.app/api/members/15?t=1741310871539 404 (Not Found)
-(anonymous) @ xhr.js:195
-xhr @ xhr.js:15
-Qe @ dispatchRequest.js:49
-_request @ Axios.js:178
-(anonymous) @ Axios.js:40
-(anonymous) @ vendor-utils-WKzjDExs.js:1
-B @ vendor-utils-WKzjDExs.js:1
-request @ Axios.js:38
-v.<computed> @ Axios.js:204
-(anonymous) @ bind.js:5
-(anonymous) @ MemberDetailsPage.tsx:88
-(anonymous) @ index-C4yr-h_F.js:1
-Z @ index-C4yr-h_F.js:1
-ee @ MemberDetailsPage.tsx:77
-(anonymous) @ MemberDetailsPage.tsx:177
-wl @ react-dom.production.min.js:243
-en @ react-dom.production.min.js:285
-(anonymous) @ react-dom.production.min.js:281
-k @ scheduler.production.min.js:13
-hn @ scheduler.production.min.js:14Understand this errorAI
-MemberDetailsPage.tsx:136 Error fetching member details: g {message: 'Request failed with status code 404', name: 'AxiosError', code: 'ERR_BAD_REQUEST', config: {…}, request: XMLHttpRequest, …}
+            i ovo:
+fetch("https://promina-drnis-api.onrender.com/api/members/13?t=1741311783841", {
+  "headers": {
+    "accept": "application/json, text/plain, */*",
+    "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTE3ODQsImV4cCI6MTc0MTM5ODE4NH0.ujXLS4Vq3H-lGUjtY9xs3BmZ2zysxHUu0R-WRg2LJdI",
+    "cache-control": "no-cache, no-store, must-revalidate",
+    "expires": "0",
+    "pragma": "no-cache",
+    "sec-ch-ua": "\"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "Referer": "https://promina-drnis-app.vercel.app/",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
+  "body": null,
+  "method": "GET"
+});
+
+Sa Rendera:
+📦 Production database pool connected with UTF-8 encoding
+info
+OPTIONS /api/messages/admin 204 0.142 ms - 0
+info
+[3/7/2025, 02:27:22] GET /api/messages/admin
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 659,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+📦 Production database pool connected with UTF-8 encoding
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+{
+info
+  query: '\n' +
+info
+    '            SELECT mm.*, \n' +
+info
+    "                   m.first_name || ' ' || m.last_name as sender_name\n" +
+info
+    '            FROM member_messages mm\n' +
+info
+    '            JOIN members m ON mm.member_id = m.member_id\n' +
+info
+    '            ORDER BY mm.created_at DESC\n' +
+info
+    '        ',
+info
+  duration: 3,
+info
+  rows: 4
+info
+}
+info
+Fetched admin messages: [
+info
+  {
+info
+    message_id: 24,
+info
+    member_id: 13,
+info
+    message_text: 'proba',
+info
+    created_at: 2025-03-05T20:27:36.172Z,
+info
+    read_at: null,
+info
+    status: 'unread',
+info
+    sender_name: 'Super User'
+info
+  },
+info
+  {
+info
+    message_id: 23,
+info
+    member_id: 13,
+info
+    message_text: 'test',
+info
+    created_at: 2025-02-19T11:32:46.837Z,
+info
+    read_at: null,
+info
+    status: 'unread',
+info
+    sender_name: 'Super User'
+info
+  },
+info
+  {
+info
+    message_id: 22,
+info
+    member_id: 15,
+info
+    message_text: 'Pozdrav od Pere',
+info
+    created_at: 2025-02-19T09:45:02.365Z,
+info
+    read_at: null,
+info
+    status: 'unread',
+info
+    sender_name: 'Pero Perić'
+info
+  },
+info
+  {
+info
+    message_id: 21,
+info
+    member_id: 13,
+info
+    message_text: 'Proba slanja poruke',
+info
+    created_at: 2025-02-19T09:18:21.948Z,
+info
+    read_at: null,
+info
+    status: 'unread',
+info
+    sender_name: 'Super User'
+info
+  }
+info
+]
+info
+GET /api/messages/admin 200 667.859 ms - 649
+info
+OPTIONS /api/members 204 0.159 ms - 0
+info
+[3/7/2025, 02:27:23] GET /api/members
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+{
+info
+  query: '\n' +
+info
+    '            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours\n' +
+info
+    '            FROM members m\n' +
+info
+    '            LEFT JOIN (\n' +
+info
+    '                SELECT member_id, SUM(hours_spent) as total_hours\n' +
+info
+    '                FROM activity_participants\n' +
+info
+    '                WHERE verified_at IS NOT NULL\n' +
+info
+    '                GROUP BY member_id\n' +
+info
+    '            ) stats ON m.member_id = stats.member_id\n' +
+info
+    '            ORDER BY m.last_name, m.first_name\n' +
+info
+    '        ',
+info
+  duration: 6,
+info
+  rows: 7
+info
+}
+info
+GET /api/members 304 19.081 ms - -
+info
+OPTIONS /api/admin/dashboard/stats 204 0.145 ms - 0
+info
+[3/7/2025, 02:27:24] GET /api/admin/dashboard/stats
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+error
+Error getting backup info: Error: ENOENT: no such file or directory, scandir '/opt/render/project/src/backend/backups'
+info
+    at async Object.readdir (node:internal/fs/promises:952:18)
+info
+    at async file:///opt/render/project/src/backend/dist/routes/admin.routes.js:73:27 {
+info
+  errno: -2,
+info
+  code: 'ENOENT',
+info
+  syscall: 'scandir',
+info
+  path: '/opt/render/project/src/backend/backups'
+info
+}
+info
+GET /api/admin/dashboard/stats 200 35.000 ms - 151
+info
+OPTIONS /api/audit/logs 204 0.129 ms - 0
+info
+[3/7/2025, 02:27:26] GET /api/audit/logs
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEzMTA1NjAsImV4cCI6MTc0MTM5Njk2MH0.MTpd3Ju_JMzjB6fMr9xROGrWuog2_CxCL4dglXM4onk
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 2,
+info
+  rows: 1
+info
+}
+info
+GET /api/audit/logs 200 19.417 ms - -
+info
+{
+info
+  query: '\n' +
+info
+    '      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name\n' +
+info
+    '      FROM password_update_queue q\n' +
+info
+    '      JOIN members m ON q.member_id = m.member_id\n' +
+info
+    '      WHERE q.processed = false\n' +
+info
+    '      ORDER BY q.created_at ASC\n' +
+info
+    '      LIMIT 10 -- Process in batches\n' +
+info
+    '    ',
+info
+  duration: 3,
+info
+  rows: 0
+info
+}
+info
+OPTIONS /api/members 204 0.114 ms - 0
+info
+[3/7/2025, 02:27:44] GET /api/members
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 19,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 2,
+info
+  rows: 1
+info
+}
+info
+{
+info
+  query: '\n' +
+info
+    '            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours\n' +
+info
+    '            FROM members m\n' +
+info
+    '            LEFT JOIN (\n' +
+info
+    '                SELECT member_id, SUM(hours_spent) as total_hours\n' +
+info
+    '                FROM activity_participants\n' +
+info
+    '                WHERE verified_at IS NOT NULL\n' +
+info
+    '                GROUP BY member_id\n' +
+info
+    '            ) stats ON m.member_id = stats.member_id\n' +
+info
+    '            ORDER BY m.last_name, m.first_name\n' +
+info
+    '        ',
+info
+  duration: 3,
+info
+  rows: 7
+info
+}
+info
+GET /api/members 304 31.398 ms - -
+info
+[3/7/2025, 02:27:47] GET /api/members
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 2,
+info
+  rows: 1
+info
+}
+info
+Auth headers: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsInJvbGUiOiJzdXBlcnVzZXIiLCJpYXQiOjE3NDEyNDc1ODQsImV4cCI6MTc0MTMzMzk4NH0.FF0zElc8806kCMMTsj4ZQwH9zQqY-tvQ-efTdn_b5_4
+info
+{
+info
+  query: 'SELECT \n' +
+info
+    '                m.member_id as id, \n' +
+info
+    '                m.member_id as user_id,\n' +
+info
+    "                m.first_name || ' ' || m.last_name as full_name,\n" +
+info
+    '                m.email,\n' +
+info
+    '                CASE \n' +
+info
+    "                    WHEN m.role = 'admin' THEN 'admin'\n" +
+info
+    "                    WHEN m.role = 'superuser' THEN 'superuser'\n" +
+info
+    "                    ELSE 'member'\n" +
+info
+    '                END as role_name,\n' +
+info
+    "                m.status = 'registered' as is_active\n" +
+info
+    '             FROM members m\n' +
+info
+    "             WHERE m.member_id = $1 AND m.status = 'registered'",
+info
+  duration: 3,
+info
+  rows: 1
+info
+}
+info
+{
+info
+  query: '\n' +
+info
+    '            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours\n' +
+info
+    '            FROM members m\n' +
+info
+    '            LEFT JOIN (\n' +
+info
+    '                SELECT member_id, SUM(hours_spent) as total_hours\n' +
+info
+    '                FROM activity_participants\n' +
+info
+    '                WHERE verified_at IS NOT NULL\n' +
+info
+    '                GROUP BY member_id\n' +
+info
+    '            ) stats ON m.member_id = stats.member_id\n' +
+info
+    '            ORDER BY m.last_name, m.first_name\n' +
+info
+    '        ',
+info
+  duration: 3,
+info
+  rows: 7
+info
+}
+info
+GET /api/members 304 15.268 ms - -
