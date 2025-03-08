@@ -9,6 +9,7 @@ import db from './utils/db.js';
 import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
+import debugRoutes from './routes/debug.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -109,6 +110,9 @@ async function startServer(): Promise<void> {
 }
 
 startPasswordUpdateJob();
+
+// Register routes
+app.use('/api/debug', debugRoutes);
 
 async function stopServer(): Promise<void> {
     return new Promise((resolve) => {

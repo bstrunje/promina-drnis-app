@@ -29,6 +29,22 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
+  
+  // Debug data on mount with proper type checking
+  useEffect(() => {
+    console.log("Member object structure:", JSON.stringify(member, null, 2));
+    console.log("Membership details structure:", member?.membership_details ? 
+      JSON.stringify(member.membership_details, null, 2) : "undefined");
+      
+    // Check if data is available in membership_details
+    if (member?.membership_details) {
+      console.log("Fee payment date:", member.membership_details.fee_payment_date);
+      console.log("Fee payment year:", member.membership_details.fee_payment_year);
+    }
+    
+    // Also check legacy property
+    console.log("Legacy fee payment year:", member?.fee_payment_year);
+  }, [member]);
 
   const validatePaymentDate = async (dateString: string): Promise<boolean> => {
     if (!dateString) {
@@ -145,18 +161,39 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {member.membership_details?.fee_payment_date && (
+          {member.membership_details?.fee_payment_date ? (
             <>
               <div>
                 <span className="text-sm text-gray-500">Last Payment Date:</span>
-                <p>{format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}</p>
+                <p>
+                  {format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}
+                </p>
               </div>
+              {(member.membership_details?.fee_payment_year || member.fee_payment_year) && (
+                <div>
+                  <span className="text-sm text-gray-500">Payment Year:</span>
+                  <p>{member.membership_details?.fee_payment_year || member.fee_payment_year}</p>
+                </div>
+              )}
               <div>
                 <span className="text-sm text-gray-500">Status:</span>
                 <span className={`px-2 py-1 rounded-full text-sm ${
                   isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
                   {isFeeCurrent ? 'Current' : 'Payment Required'}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <span className="text-sm text-gray-500">Last Payment Date:</span>
+                <p>No payment recorded</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Status:</span>
+                <span className="px-2 py-1 rounded-full text-sm bg-red-100 text-red-800">
+                  Payment Required
                 </span>
               </div>
             </>

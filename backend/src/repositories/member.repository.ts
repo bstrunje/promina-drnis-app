@@ -61,30 +61,62 @@ const memberRepository = {
     },
 
     async findById(id: number): Promise<Member | null> {
-    const result = await db.query<Member>(
-        `SELECT 
-            m.*,
-            md.card_number,
-            md.fee_payment_year,
-            md.card_stamp_issued,
-            md.fee_payment_date,
-            (SELECT json_agg(
-                json_build_object(
-                    'period_id', mp.period_id,
-                    'start_date', mp.start_date,
-                    'end_date', mp.end_date,
-                    'end_reason', mp.end_reason
+        const result = await db.query<any>( // Change type to 'any' to avoid TypeScript errors with raw DB results
+            `SELECT 
+                m.*,
+                md.card_number,
+                md.fee_payment_year,
+                md.card_stamp_issued,
+                md.fee_payment_date,
+                (SELECT json_agg(
+                    json_build_object(
+                        'period_id', mp.period_id,
+                        'start_date', mp.start_date,
+                        'end_date', mp.end_date,
+                        'end_reason', mp.end_reason
+                    )
                 )
-            )
-            FROM membership_periods mp
-            WHERE mp.member_id = m.member_id) as membership_history
-        FROM members m
-        LEFT JOIN membership_details md ON m.member_id = md.member_id
-        WHERE m.member_id = $1`,
-        [id]
-    );
-    return result.rows[0] || null;
-},
+                FROM membership_periods mp
+                WHERE mp.member_id = m.member_id) as membership_history
+            FROM members m
+            LEFT JOIN membership_details md ON m.member_id = md.member_id
+            WHERE m.member_id = $1`,
+            [id]
+        );
+        
+        // Process the date fields to ensure they're properly formatted
+        if (result.rows.length > 0) {
+            const member = result.rows[0] as Member;
+            
+            // Create membership_details if it doesn't exist
+            if (!member.membership_details) {
+                member.membership_details = {};
+            }
+            
+            // Transfer the fee_payment_date from the raw DB result to the typed member object
+            if (result.rows[0].fee_payment_date) {
+                member.membership_details.fee_payment_date = 
+                    new Date(result.rows[0].fee_payment_date).toISOString();
+            }
+            
+            // Also transfer other membership details fields if needed
+            if (result.rows[0].fee_payment_year) {
+                member.membership_details.fee_payment_year = result.rows[0].fee_payment_year;
+            }
+            
+            if (result.rows[0].card_number) {
+                member.membership_details.card_number = result.rows[0].card_number;
+            }
+            
+            if (result.rows[0].card_stamp_issued !== undefined) {
+                member.membership_details.card_stamp_issued = result.rows[0].card_stamp_issued;
+            }
+            
+            return member;
+        }
+        
+        return null;
+    },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
         const result = await db.query<Member>(`

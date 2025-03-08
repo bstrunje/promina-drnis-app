@@ -87,6 +87,23 @@ export const memberController = {
       if (member === null) {
         res.status(404).json({ message: "Member not found" });
       } else {
+        // Add this debugging to see what's happening with the data
+        console.log('Member details being sent to client:', {
+          membership_details: member.membership_details,
+          fee_payment_date: member.membership_details?.fee_payment_date,
+          fee_payment_year: member.membership_details?.fee_payment_year
+        });
+
+        // Ensure date is properly formatted in ISO string format if it exists
+        if (member.membership_details?.fee_payment_date) {
+          // Use typeof check instead of instanceof to avoid TypeScript error
+          if (typeof member.membership_details.fee_payment_date === 'object') {
+            // Safely convert to ISO string (works for Date objects)
+            member.membership_details.fee_payment_date = 
+              new Date(member.membership_details.fee_payment_date).toISOString();
+          }
+        }
+
         res.json(member);
       }
     } catch (error) {
