@@ -93,9 +93,7 @@ export async function setupDatabase(): Promise<void> {
 
     // Stamp inventory management table
     await db.query(`
-      DROP TABLE IF EXISTS stamp_inventory;
-      
-      CREATE TABLE stamp_inventory (
+      CREATE TABLE IF NOT EXISTS stamp_inventory (
           id SERIAL PRIMARY KEY,
           stamp_type VARCHAR(20) NOT NULL,
           initial_count INTEGER NOT NULL DEFAULT 0,
