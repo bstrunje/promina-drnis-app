@@ -185,7 +185,7 @@ export default function MessageList() {
                         className="flex items-center space-x-2"
                       >
                         <CheckCircle className="h-4 w-4" />
-                        <span>Mark as Read</span>
+                        <span className="hidden sm:inline">Mark as Read</span>
                       </Button>
                     )}
                     {message.status !== 'archived' && (
@@ -195,7 +195,7 @@ export default function MessageList() {
                         className="flex items-center space-x-2"
                       >
                         <Archive className="h-4 w-4" />
-                        <span>Archive</span>
+                        <span className="hidden sm:inline">Archive</span>
                       </Button>
                     )}
                     <Button
@@ -204,7 +204,7 @@ export default function MessageList() {
                       className="flex items-center space-x-2"
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span>Delete</span>
+                      <span className="hidden sm:inline">Delete</span>
                     </Button>
                   </div>
                 </CardContent>
