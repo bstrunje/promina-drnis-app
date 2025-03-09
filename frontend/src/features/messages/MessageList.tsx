@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { getAdminMessages } from '../../utils/api';
+import { 
+  getAdminMessages, 
+  markMessageAsRead, 
+  archiveMessage, 
+  deleteMessage, 
+  deleteAllMessages 
+} from '../../utils/api';
 import { useToast } from "@components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
@@ -37,12 +43,8 @@ export default function MessageList() {
 
   const onMarkAsRead = async (messageId: number) => {
     try {
-      await fetch(`/api/messages/${messageId}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // Replace direct fetch call with API function
+      await markMessageAsRead(messageId);
       await fetchMessages();
       toast({
         title: "Success",
@@ -52,7 +54,7 @@ export default function MessageList() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to mark message as read",
+        description: error instanceof Error ? error.message : "Failed to mark message as read",
         variant: "destructive"
       });
     }
@@ -60,12 +62,8 @@ export default function MessageList() {
 
   const onArchive = async (messageId: number) => {
     try {
-      await fetch(`/api/messages/${messageId}/archive`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // Replace direct fetch call with API function
+      await archiveMessage(messageId);
       await fetchMessages();
       toast({
         title: "Success",
@@ -75,7 +73,7 @@ export default function MessageList() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to archive message",
+        description: error instanceof Error ? error.message : "Failed to archive message",
         variant: "destructive"
       });
     }
@@ -83,12 +81,8 @@ export default function MessageList() {
 
   const onDelete = async (messageId: number) => {
     try {
-      await fetch(`/api/messages/${messageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // Replace direct fetch call with API function
+      await deleteMessage(messageId);
       setMessages(prevMessages => prevMessages.filter(m => m.message_id !== messageId));
       toast({
         title: "Success",
@@ -98,7 +92,7 @@ export default function MessageList() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete message",
+        description: error instanceof Error ? error.message : "Failed to delete message",
         variant: "destructive"
       });
     }
@@ -106,12 +100,8 @@ export default function MessageList() {
 
   const onDeleteAll = async () => {
     try {
-      await fetch('/api/messages', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // Replace direct fetch call with API function
+      await deleteAllMessages();
       setMessages([]);
       toast({
         title: "Success",
@@ -121,7 +111,7 @@ export default function MessageList() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete all messages",
+        description: error instanceof Error ? error.message : "Failed to delete all messages",
         variant: "destructive"
       });
     }
