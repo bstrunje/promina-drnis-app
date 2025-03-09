@@ -330,48 +330,6 @@ useEffect(() => {
     }
   };
 
-  const handleStampIssue = async () => {
-    if (!inventoryStatus?.remaining) {
-      toast({
-        title: "Error",
-        description: "No stamps available in inventory",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsIssuingStamp(true);
-    try {
-      const response = await api.post(`/members/${member.member_id}/stamp`);
-
-      toast({
-        title: "Success",
-        description: "Stamp issued successfully",
-        variant: "success",
-      });
-
-      setInventoryStatus((prev) =>
-        prev
-          ? {
-              ...prev,
-              remaining: prev.remaining - 1,
-            }
-          : null
-      );
-
-      await onUpdate({ ...member });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to issue stamp",
-        variant: "destructive",
-      });
-    } finally {
-      setIsIssuingStamp(false);
-    }
-  };
-
   const getStatusColor = () => {
     switch (member.life_status) {
       case "employed/unemployed":
@@ -610,36 +568,6 @@ useEffect(() => {
             </form>
           </>
         )}
-        {/* Stamp Issuance */}
-        {member.membership_details?.card_number &&
-          !member.membership_details?.card_stamp_issued && (
-            <div className="mt-4">
-              <div className="mb-2 text-sm">
-                {inventoryStatus && (
-                  <span
-                    className={`${
-                      inventoryStatus.remaining > 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {inventoryStatus.remaining > 0
-                      ? `${inventoryStatus.remaining} stamps available`
-                      : "No stamps available"}
-                  </span>
-                )}
-              </div>
-              <Button
-                onClick={handleStampIssue}
-                className="w-full"
-                variant="outline"
-                disabled={isIssuingStamp || !inventoryStatus?.remaining}
-              >
-                <Stamp className="w-4 h-4 mr-2" />
-                {isIssuingStamp ? "Issuing..." : "Issue Stamp"}
-              </Button>
-            </div>
-          )}
       </CardContent>
     </Card>
   );
