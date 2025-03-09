@@ -68,11 +68,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         return false;
       }
   
-      // Provjeri je li datum u razdoblju obnove (studeni/prosinac)
-      const month = date.getMonth();
+      // Check if date is in renewal period (November/December)
+      const month = date.getMonth(); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
       
-      // Dodaj informativnu poruku za period obnove, ali ne blokiraj unos
-      if (month === 10 || month === 11) { // Studeni (10) ili Prosinac (11)
+      // Add informative message for renewal period
+      if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
         toast({
           title: "Info",
           description: "This payment will be counted for next year's membership",
@@ -116,10 +116,32 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
+      
+      const currentYear = new Date().getFullYear();
+      const paymentMonth = parsedDate.getMonth();
+      
+      // Determine if this is a renewal payment in November/December
+      // for a member who already has paid for the current year
+      const isRenewalPayment = 
+        isFeeCurrent && // Already has current payment
+        (paymentMonth === 10 || paymentMonth === 11) && // 10=Nov, 11=Dec in JS Date
+        member?.membership_details?.fee_payment_year === currentYear; // Paid for current year
+  
+      console.log("Payment context:", {
+        paymentDate: parsedDate.toISOString(),
+        paymentMonth,
+        currentYear,
+        memberFeeYear: member?.membership_details?.fee_payment_year,
+        isFeeCurrent,
+        isRenewalPayment
+      });
   
       const response = await axios.post(
         `/api/members/${member.member_id}/membership`,
-        { paymentDate: parsedDate.toISOString() },
+        { 
+          paymentDate: parsedDate.toISOString(),
+          isRenewalPayment // Send this flag to the server
+        },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -182,6 +204,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 }`}>
                   {isFeeCurrent ? 'Current' : 'Payment Required'}
                 </span>
+                {member.membership_details?.fee_payment_year && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paid for year: {member.membership_details.fee_payment_year}
+                  </p>
+                )}
               </div>
             </>
           ) : (

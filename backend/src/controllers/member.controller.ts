@@ -24,6 +24,7 @@ interface MembershipUpdateRequest {
   paymentDate: string;
   cardNumber?: string;
   stampIssued?: boolean;
+  isRenewalPayment?: boolean; // Add this field
 }
 
 interface MembershipTerminationRequest {
@@ -483,12 +484,13 @@ export const memberController = {
         return;
       }
 
-      const { paymentDate, cardNumber, stampIssued } = req.body;
+      const { paymentDate, cardNumber, stampIssued, isRenewalPayment } = req.body;
       console.log("Updating membership for:", {
         memberId,
         paymentDate,
         cardNumber,
         stampIssued,
+        isRenewalPayment, // Log this new parameter
       });
 
       // Validate payment date
@@ -503,11 +505,15 @@ export const memberController = {
 
       console.log("Starting fee payment update");
       console.log("Processing payment date:", parsedDate.toISOString());
+      
+      // Pass the isRenewalPayment flag to the updateMembershipFee function
       await memberService.updateMembershipFee(
         memberId,
         new Date(paymentDate),
-        req
+        req,
+        isRenewalPayment
       );
+      
       console.log("Fee payment update completed");
 
       if (cardNumber || stampIssued !== undefined) {

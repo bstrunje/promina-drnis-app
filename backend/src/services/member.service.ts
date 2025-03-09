@@ -8,6 +8,8 @@ import { Request } from 'express';
 import membershipRepository from '../repositories/membership.repository.js';
 import { MembershipPeriod } from '../shared/types/membership.js';
 import authRepository from '../repositories/auth.repository.js';
+// Add missing import for auditService
+import auditService from './audit.service.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -211,29 +213,98 @@ const memberService = {
     },
 
     // Add to existing member service methods
-    async updateMembershipFee(memberId: number, paymentDate: Date, req: Request): Promise<void> {
+    async updateMembershipFee(
+        memberId: number,
+        paymentDate: Date,
+        req: Request,
+        isRenewalPayment?: boolean
+    ): Promise<void> {
         try {
-            console.log('Received date in service:', paymentDate);
-            
-            // Convert string to Date if needed
-            const dateObject = typeof paymentDate === 'string' 
-                ? new Date(paymentDate)
-                : paymentDate;
-    
-            // Validate date
-            if (isNaN(dateObject.getTime())) {
-                console.error('Invalid date object:', dateObject);
-                throw new Error('Invalid payment date format');
+            const member = await this.getMemberById(memberId);
+            if (!member) {
+                throw new Error("Member not found");
             }
     
-            // Standardize time to noon UTC
-            dateObject.setUTCHours(12, 0, 0, 0);
+            const paymentMonth = paymentDate.getMonth(); // 0-11 where 10=Nov, 11=Dec
+            const currentYear = new Date().getFullYear();
             
-            console.log('Processed date:', dateObject.toISOString());
-            await membershipService.processFeePayment(memberId, dateObject, req);
+            // Determine which year to assign the payment to
+            let paymentYear = currentYear;
+            
+            // Logic for determining payment year:
+            // 1. If isRenewalPayment is explicitly true, use next year (for Nov/Dec renewals)
+            // 2. If payment month is Nov (10) or Dec (11), and there's no existing payment
+            //    for this year, use current year (new memberships)
+            // 3. If payment month is Nov (10) or Dec (11), and there is an existing
+            //    current year payment, use next year (implicit renewal)
+            
+            if (isRenewalPayment) {
+              // Explicit renewal flag - use next year
+              paymentYear = currentYear + 1;
+              console.log(`Using explicit renewal: setting payment year to ${paymentYear}`);
+            } else if (paymentMonth === 10 || paymentMonth === 11) { // Nov or Dec
+              const existingYear = member?.membership_details?.fee_payment_year;
+              
+              // Check if this is potentially a renewal
+              if (existingYear && existingYear >= currentYear) {
+                // This is likely a renewal - assign to next year
+                paymentYear = currentYear + 1;
+                console.log(`Late year payment with existing current payment: setting to ${paymentYear}`);
+              } else {
+                // This is likely a new member or late payment for current year
+                paymentYear = currentYear;
+                console.log(`Late year payment for new/lapsed member: setting to ${paymentYear}`);
+              }
+            } else {
+              // Regular payment during the year - use current year
+              paymentYear = currentYear;
+              console.log(`Regular payment during year: setting to ${paymentYear}`);
+            }
+            
+            // Fix type issue - Convert the Date to ISO string for storage
+            const details = {
+              fee_payment_year: paymentYear,
+              fee_payment_date: paymentDate, // Pass the Date object directly, not a string
+            };
+    
+            await membershipRepository.updateMembershipDetails(memberId, details);
+            
+            // Call the newly added method
+            await this.updateMembershipPeriodIfNeeded(memberId, paymentDate);
+    
+            if (req.user?.id) {
+              await auditService.logAction(
+                "UPDATE_MEMBERSHIP_FEE",
+                req.user.id,
+                `Updated membership fee for member ${memberId} to year ${paymentYear}`,
+                req,
+                "success",
+                memberId
+              );
+            }
         } catch (error) {
-            console.error('Service error:', error);
+            console.error("Service error:", error);
             throw error instanceof Error ? error : new Error(String(error));
+        }
+    },
+
+    // Add the missing method
+    async updateMembershipPeriodIfNeeded(memberId: number, paymentDate: Date): Promise<void> {
+        try {
+            // Get the latest membership period for this member
+            const periods = await membershipRepository.getMembershipPeriods(memberId);
+            const currentPeriod = periods.find(p => !p.end_date);
+            
+            // If no active period exists, create a new one starting from the payment date
+            if (!currentPeriod) {
+                await membershipRepository.createMembershipPeriod(memberId, paymentDate);
+                console.log(`Created new membership period for member ${memberId}`);
+            } else {
+                console.log(`Active membership period exists for member ${memberId}, no need to create new one`);
+            }
+        } catch (error) {
+            console.error("Error updating membership period:", error);
+            throw error;
         }
     },
 

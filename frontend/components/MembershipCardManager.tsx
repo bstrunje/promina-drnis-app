@@ -236,7 +236,7 @@ useEffect(() => {
   // Add a function to check if user can return stamps (only superusers)
   const canReturnStamp = userRole === "superuser";
   
-  // Modify handleStampToggle to check permissions
+  // Modify handleStampToggle to ensure proper inventory update
   const handleStampToggle = async (newState: boolean) => {
     console.log("Toggling stamp state to:", newState);
     
@@ -250,6 +250,16 @@ useEffect(() => {
       return; // Stop the function here
     }
     
+    // Check inventory before issuing
+    if (newState && inventoryStatus && inventoryStatus.remaining <= 0) {
+      toast({
+        title: "Error",
+        description: "No stamps available in inventory",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Save the current UI state to avoid flickering
     setStampIssued(newState);
     
@@ -260,7 +270,7 @@ useEffect(() => {
       let updatedMember = null;
   
       if (newState) {
-        // Replace fetch with api call
+        // Issue stamp API call
         const response = await api.post(`/members/${member.member_id}/stamp`);
         apiSuccess = true;
   
@@ -269,7 +279,7 @@ useEffect(() => {
           prev ? { ...prev, remaining: prev.remaining - 1 } : null
         );
       } else {
-        // Replace fetch with api call
+        // Return stamp API call
         const response = await api.post(`/members/${member.member_id}/stamp/return`);
         
         // Try to get the updated member from the response
@@ -444,7 +454,20 @@ useEffect(() => {
                   )}
                 </div>
                 
-                {/* Add permission note for admins */}
+                {/* Add inventory info */}
+                {inventoryStatus && (
+                  <div className="mt-2 text-xs">
+                    <span className={`${
+                      inventoryStatus.remaining > 0
+                        ? "text-green-600"
+                        : "text-amber-600"
+                    }`}>
+                      {inventoryStatus.remaining} {inventoryStatus.type} stamps available in inventory
+                    </span>
+                  </div>
+                )}
+                
+                {/* Permission note for admins */}
                 {stampIssued && !canReturnStamp && (
                   <p className="text-xs text-amber-600 mt-1">
                     Note: Only superusers can return stamps to inventory
@@ -545,13 +568,6 @@ useEffect(() => {
                             {number}
                           </SelectItem>
                         ))}
-
-                        {availableCardNumbers.length === 0 &&
-                          !isLoadingCardNumbers && (
-                            <div className="py-2 px-2 text-sm text-gray-500">
-                              No card numbers available
-                            </div>
-                          )}
                       </SelectContent>
                     </Select>
                   ) : (
@@ -594,7 +610,6 @@ useEffect(() => {
             </form>
           </>
         )}
-
         {/* Stamp Issuance */}
         {member.membership_details?.card_number &&
           !member.membership_details?.card_stamp_issued && (

@@ -3,7 +3,7 @@ import { getAdminMessages } from '../../utils/api';
 import { useToast } from "@components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { Bell, CheckCircle, Archive, Trash2 } from "lucide-react";
+import { Bell, CheckCircle, Archive, Trash2, Inbox } from "lucide-react";
 
 interface Message {
   message_id: number;
@@ -18,6 +18,7 @@ export default function MessageList() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'unread' | 'read' | 'archived'>('unread');
 
   const fetchMessages = async () => {
     try {
@@ -134,7 +135,13 @@ export default function MessageList() {
     return <div className="p-6">Loading...</div>;
   }
 
+  const filteredMessages = messages.filter(message => {
+    return message.status === filter;
+  });
+
   const unreadCount = messages.filter(m => m.status === 'unread').length;
+  const archivedCount = messages.filter(m => m.status === 'archived').length;
+  const readCount = messages.filter(m => m.status === 'read').length;
 
   return (
     <div className="p-6">
@@ -151,8 +158,40 @@ export default function MessageList() {
         </div>
       </div>
 
+      <div className="mb-4 border-b pb-2">
+        <div className="flex space-x-2">
+          <Button 
+            variant={filter === 'unread' ? "default" : "outline"}
+            onClick={() => setFilter('unread')}
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <Bell className="h-4 w-4" />
+            <span>Unread ({unreadCount})</span>
+          </Button>
+          <Button 
+            variant={filter === 'read' ? "default" : "outline"}
+            onClick={() => setFilter('read')}
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <Inbox className="h-4 w-4" />
+            <span>Read ({readCount})</span>
+          </Button>
+          <Button 
+            variant={filter === 'archived' ? "default" : "outline"}
+            onClick={() => setFilter('archived')}
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <Archive className="h-4 w-4" />
+            <span>Archived ({archivedCount})</span>
+          </Button>
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {messages.length > 0 ? (
+        {filteredMessages.length > 0 ? (
           <>
             <div className="flex justify-end mb-4">
               <Button
@@ -165,7 +204,7 @@ export default function MessageList() {
               </Button>
             </div>
 
-            {messages.map((message) => (
+            {filteredMessages.map((message) => (
               <Card key={message.message_id} className={message.status === 'unread' ? 'border-blue-500' : ''}>
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
@@ -213,8 +252,22 @@ export default function MessageList() {
           </>
         ) : (
           <div className="text-center py-10 bg-gray-50 rounded-lg">
-            <Bell className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            <p className="text-gray-500">No messages to display</p>
+            {filter === 'unread' ? (
+              <>
+                <Bell className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <p className="text-gray-500">No unread messages</p>
+              </>
+            ) : filter === 'archived' ? (
+              <>
+                <Archive className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <p className="text-gray-500">No archived messages</p>
+              </>
+            ) : (
+              <>
+                <Inbox className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <p className="text-gray-500">No read messages</p>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -51,13 +51,14 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const isOwnProfile = user?.member_id === memberId;
 
   const isFeeCurrent = useMemo(() => {
-    if (!member?.membership_details?.fee_payment_date) return false;
-    const lastPaymentDate = new Date(
-      member.membership_details.fee_payment_date
-    );
+    if (!member?.membership_details?.fee_payment_year) return false;
+    
     const currentYear = new Date().getFullYear();
-    return lastPaymentDate.getFullYear() >= currentYear;
-  }, [member?.membership_details?.fee_payment_date]);
+    const paymentYear = member.membership_details.fee_payment_year;
+    
+    // Check if payment is for current or next year
+    return paymentYear >= currentYear;
+  }, [member?.membership_details?.fee_payment_year]);
 
   // Debounce member fetch
   const debouncedFetchMember = useMemo(
