@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { Stamp, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
 import {
@@ -56,6 +56,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) 
   } | null>(null);
   const [isLoadingCardStats, setIsLoadingCardStats] = useState(false);
 
+  // Effect to check stamp inventory
   useEffect(() => {
     const checkInventory = async () => {
       try {
@@ -96,35 +97,33 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) 
   }, [member.life_status, member]);
 
   // When member data changes, update from the correct source
-useEffect(() => {
-  if (member) {
-    console.log("Member data changed:", {
-      memberID: member.member_id,
-      membershipDetails: member.membership_details,
-      directStampIssued: member.card_stamp_issued,
-      detailsStampIssued: member.membership_details?.card_stamp_issued,
-      finalStampState: member.membership_details?.card_stamp_issued || member.card_stamp_issued || false
-    });
-    
-    setCardNumber(
-      member.membership_details?.card_number || member.card_number || ""
-    );
-    
-    // Explicitly log the stamp status we're setting
-    const newStampState = member.membership_details?.card_stamp_issued || 
-      member.card_stamp_issued || 
-      false;
-    console.log(`Setting stampIssued state to: ${newStampState}`);
-    
-    setStampIssued(newStampState);
-  }
-}, [member]);
+  useEffect(() => {
+    if (member) {
+      console.log("Member data changed:", {
+        memberID: member.member_id,
+        membershipDetails: member.membership_details,
+        directStampIssued: member.card_stamp_issued,
+        detailsStampIssued: member.membership_details?.card_stamp_issued,
+        finalStampState: member.membership_details?.card_stamp_issued || member.card_stamp_issued || false
+      });
+      
+      setCardNumber(
+        member.membership_details?.card_number || member.card_number || ""
+      );
+      
+      // Explicitly log the stamp status we're setting
+      const newStampState = member.membership_details?.card_stamp_issued || 
+        member.card_stamp_issued || 
+        false;
+      console.log(`Setting stampIssued state to: ${newStampState}`);
+      
+      setStampIssued(newStampState);
+    }
+  }, [member]);
 
   // Add a function to fetch available card numbers
   useEffect(() => {
     const fetchCardNumbers = async () => {
-      if (member.membership_details?.card_number) return; // Skip if card number already assigned
-
       setIsLoadingCardNumbers(true);
       try {
         const numbers = await getAvailableCardNumbers();
@@ -143,7 +142,7 @@ useEffect(() => {
     };
 
     fetchCardNumbers();
-  }, [member.membership_details?.card_number]);
+  }, []);
 
   const refreshCardStats = async () => {
     setIsLoadingCardStats(true);
@@ -153,13 +152,11 @@ useEffect(() => {
       setCardStats(data.stats);
 
       // If we need to refresh available card numbers as well
-      if (!member.membership_details?.card_number) {
-        setAvailableCardNumbers(
-          data.cards
-            .filter((card) => card.status === "available")
-            .map((card) => card.card_number)
-        );
-      }
+      setAvailableCardNumbers(
+        data.cards
+          .filter((card) => card.status === "available")
+          .map((card) => card.card_number)
+      );
     } catch (error) {
       console.error("Failed to refresh card statistics:", error);
     } finally {
@@ -451,123 +448,119 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Card Number Assignment Form */}
-        {!member.membership_details?.card_number && (
-          <>
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs text-gray-500">
-                {isLoadingCardStats ? (
-                  <span>Loading card statistics...</span>
-                ) : cardStats ? (
-                  <div className="flex space-x-4">
-                    <span>Total card numbers: {cardStats.total}</span>
-                    <span className="text-blue-600">
-                      Assigned: {cardStats.assigned}
-                    </span>
-                    <span>Available: {cardStats.available}</span>
-                  </div>
-                ) : (
-                  <span>No card statistics available</span>
-                )}
+        {/* Card Number Assignment Form - Always show regardless of existing card number */}
+        <div className="mb-2 flex items-center justify-between mt-4">
+          <div className="text-xs text-gray-500">
+            {isLoadingCardStats ? (
+              <span>Loading card statistics...</span>
+            ) : cardStats ? (
+              <div className="flex space-x-4">
+                <span>Total card numbers: {cardStats.total}</span>
+                <span className="text-blue-600">
+                  Assigned: {cardStats.assigned}
+                </span>
+                <span>Available: {cardStats.available}</span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                title="Refresh card statistics"
-                onClick={refreshCardStats}
-                disabled={isLoadingCardStats}
+            ) : (
+              <span>No card statistics available</span>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            title="Refresh card statistics"
+            onClick={refreshCardStats}
+            disabled={isLoadingCardStats}
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${
+                isLoadingCardStats ? "animate-spin" : ""
+              }`}
+            />
+          </Button>
+        </div>
+        <form onSubmit={handleCardNumberAssign} className="mt-4">
+          <div className="space-y-4">
+            <div>
+              <Label
+                htmlFor="cardNumber"
+                className="block text-sm font-medium mb-1"
               >
-                <RefreshCw
-                  className={`h-3 w-3 ${
-                    isLoadingCardStats ? "animate-spin" : ""
-                  }`}
-                />
-              </Button>
-            </div>
-            <form onSubmit={handleCardNumberAssign} className="mt-4">
-              <div className="space-y-4">
-                <div>
-                  <Label
-                    htmlFor="cardNumber"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Card Number
-                  </Label>
+                Card Number
+              </Label>
 
-                  {availableCardNumbers.length > 0 ? (
-                    <Select
-                      value={cardNumber}
-                      onValueChange={setCardNumber}
-                      disabled={isSubmitting || isLoadingCardNumbers}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={
-                            isLoadingCardNumbers
-                              ? "Loading card numbers..."
-                              : `Select from ${availableCardNumbers.length} available numbers`
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px] overflow-y-auto">
-                        {/* Use the member's existing card number instead of undefined currentCardNumber */}
-                        {member.membership_details?.card_number && (
-                          <SelectItem
-                            value={member.membership_details.card_number}
-                            className="font-semibold text-blue-600 border-b"
-                          >
-                            {member.membership_details.card_number} (Current)
-                          </SelectItem>
-                        )}
-
-                        {availableCardNumbers.map((number) => (
-                          <SelectItem key={number} value={number}>
-                            {number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div>
-                      {isLoadingCardNumbers ? (
-                        <p className="text-sm text-gray-500">
-                          Loading card numbers...
-                        </p>
-                      ) : (
-                        <p className="text-sm text-amber-500">
-                          No card numbers available. Please add some in
-                          Settings.
-                        </p>
-                      )}
-                      <Input
-                        type="text"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        pattern="[0-9]{5}"
-                        title="Card number must be exactly 5 digits"
-                        maxLength={5}
-                        className="w-full p-2 border rounded mt-1"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !cardNumber}
-                  className={cn(
-                    "w-full bg-black hover:bg-blue-500 transition-colors",
-                    isSubmitting && "opacity-50"
-                  )}
+              {availableCardNumbers.length > 0 ? (
+                <Select
+                  value={cardNumber}
+                  onValueChange={setCardNumber}
+                  disabled={isSubmitting || isLoadingCardNumbers}
                 >
-                  {isSubmitting ? "Assigning..." : "Assign Card Number"}
-                </Button>
-              </div>
-            </form>
-          </>
-        )}
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        isLoadingCardNumbers
+                          ? "Loading card numbers..."
+                          : `Select from ${availableCardNumbers.length} available numbers`
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                    {/* Use the member's existing card number instead of undefined currentCardNumber */}
+                    {member.membership_details?.card_number && (
+                      <SelectItem
+                        value={member.membership_details.card_number}
+                        className="font-semibold text-blue-600 border-b"
+                      >
+                        {member.membership_details.card_number} (Current)
+                      </SelectItem>
+                    )}
+
+                    {availableCardNumbers.map((number) => (
+                      <SelectItem key={number} value={number}>
+                        {number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div>
+                  {isLoadingCardNumbers ? (
+                    <p className="text-sm text-gray-500">
+                      Loading card numbers...
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-500">
+                      No card numbers available. Please add some in
+                      Settings.
+                    </p>
+                  )}
+                  <Input
+                    type="text"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    pattern="[0-9]{5}"
+                    title="Card number must be exactly 5 digits"
+                    maxLength={5}
+                    className="w-full p-2 border rounded mt-1"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+              )}
+            </div>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !cardNumber}
+              className={cn(
+                "w-full bg-black hover:bg-blue-500 transition-colors",
+                isSubmitting && "opacity-50"
+              )}
+            >
+              {isSubmitting ? "Assigning..." : "Assign Card Number"}
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );

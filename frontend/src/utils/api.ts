@@ -103,27 +103,37 @@ export const assignPassword = async (memberId: number, password: string, cardNum
 };
 
 // Membership APIs
-export const updateMembership = async (memberId: number, data: {
-  paymentDate: string;
+
+// Update the interface for the membership update parameters
+interface MembershipUpdateParams {
+  paymentDate?: string;
   cardNumber?: string;
   stampIssued?: boolean;
-}) => {
-  console.log('updateMembership called with:', { memberId, data });
+  isRenewalPayment?: boolean; // Add this property to fix the type error
+}
+
+export const updateMembership = async (
+  memberId: number, 
+  data: MembershipUpdateParams
+): Promise<any> => {
   try {
+    console.log('updateMembership called with:', { memberId, data });
+    
     const response = await api.post(
       `/members/${memberId}/membership`,
       data,
       {
-        timeout: 30000, // Povećaj timeout na 30 sekundi
+        timeout: 30000, // Increase timeout to 30 seconds
         headers: {
           'Content-Type': 'application/json'
         },
-        // Dodaj retry logiku
+        // Add retry logic
         validateStatus: (status) => {
           return status >= 200 && status < 300;
         }
       }
     );
+    
     console.log('updateMembership success response:', response.data);
     return response.data;
   } catch (error) {
@@ -144,9 +154,9 @@ export const updateMembership = async (memberId: number, data: {
 
 export const terminateMembership = async (memberId: number, reason: string) => {
   try {
-    const response = await api.post(`/members/${memberId}/membership/terminate`, {
-      reason,
-      endDate: new Date().toISOString()
+    const response = await api.post(`/members/${memberId}/membership/terminate`, { 
+      reason, 
+      endDate: new Date().toISOString(), 
     });
     return response.data;
   } catch (error) {
@@ -262,7 +272,6 @@ export const getAvailableCardNumbers = async (): Promise<string[]> => {
   console.log("API: Getting available card numbers");
   try {
     const response = await api.get('/card-numbers/available');
-    console.log("API: Received card numbers:", response.data);
     return response.data;
   } catch (error) {
     console.error("API: Error fetching card numbers:", error);
@@ -288,7 +297,7 @@ export const addCardNumberRange = async (start: number, end: number): Promise<vo
 
 // Add this function to get all card numbers
 export const getAllCardNumbers = async (): Promise<{ 
-  cards: Array<{ 
+  cards: Array<{
     card_number: string; 
     status: 'available' | 'assigned' | 'retired';
     member_id?: number;
@@ -311,28 +320,15 @@ export const getAllCardNumbers = async (): Promise<{
   }
 };
 
-// Make sure the deleteCardNumber function returns properly and doesn't cause navigation issues
-export async function deleteCardNumber(cardNumber: string): Promise<{ message: string, cardNumber: string }> {
+// Make sure the deleteCardNumber function returns properly
+export const deleteCardNumber = async (cardNumber: string): Promise<{ message: string, cardNumber: string }> => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/card-numbers/${cardNumber}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete card number');
-    }
-
-    const data = await response.json();
-    return data; // Should contain { message: "Card number deleted successfully", cardNumber: "12345" }
+    const response = await api.delete(`/card-numbers/${cardNumber}`);
+    return response.data;
   } catch (error) {
     console.error('API error deleting card number:', error);
-    throw error;
+    throw handleApiError(error, 'Failed to delete card number');
   }
-}
+};
 
 export default api;

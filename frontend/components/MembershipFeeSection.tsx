@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
-import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
 import { SystemSettings } from '@shared/settings.types';
+import { updateMembership } from '../src/utils/api'; // Use API client instead of direct axios
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -109,11 +109,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     setIsSubmitting(true);
   
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-  
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
       
@@ -136,19 +131,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         isRenewalPayment
       });
   
-      const response = await axios.post(
-        `/api/members/${member.member_id}/membership`,
-        { 
-          paymentDate: parsedDate.toISOString(),
-          isRenewalPayment // Send this flag to the server
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Use the API client function instead of direct axios call
+      const response = await updateMembership(member.member_id, {
+        paymentDate: parsedDate.toISOString(),
+        isRenewalPayment
+      });
   
       toast({
         title: "Success",
@@ -160,15 +147,31 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setShowPaymentConfirm(false);
       setPaymentError(null);
   
-      if (onUpdate && response.data) {
-        onUpdate(response.data);
+      if (onUpdate && response && response.member) {
+        // Make sure to use the updated member data from the response
+        onUpdate(response.member);
+        
+        // Update local UI state immediately to reflect the payment
+        // This will show updated status without needing a full page refresh
+        const paymentYear = isRenewalPayment ? currentYear + 1 : currentYear;
+        const locallyUpdatedMember = {
+          ...member,
+          membership_details: {
+            ...(member.membership_details || {}),
+            fee_payment_date: parsedDate.toISOString(),
+            fee_payment_year: paymentYear
+          }
+        };
+        
+        // Force re-render with updated data
+        onUpdate(locallyUpdatedMember);
       }
   
     } catch (error) {
       console.error("Error updating membership:", error);
       toast({
         title: "Error",
-        description: "Failed to process membership fee payment",
+        description: error instanceof Error ? error.message : "Failed to process membership fee payment",
         variant: "destructive"
       });
     } finally {
