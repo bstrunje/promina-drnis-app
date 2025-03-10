@@ -180,39 +180,19 @@ export default function MemberList(): JSX.Element {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gender
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
                 </th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hours
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Birth Date
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Membership Type
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {members.map((member: Member) => (
                 <tr key={member.member_id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                      {member.gender
-                        ? member.gender.charAt(0).toUpperCase() +
-                          member.gender.slice(1)
-                        : "N/A"}
-                    </span>
-                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div>
@@ -235,14 +215,6 @@ export default function MemberList(): JSX.Element {
                       )}
                       {member.registration_completed ? "Registered" : "Pending"}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {member.total_hours || 0}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {member.date_of_birth
-                      ? new Date(member.date_of_birth).toLocaleDateString()
-                      : "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm font-medium">
                     <div className="flex items-center gap-2">
@@ -278,21 +250,6 @@ export default function MemberList(): JSX.Element {
                         </button>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${
-                        member.membership_type === "regular"
-                          ? "bg-blue-100 text-blue-800"
-                          : member.membership_type === "supporting"
-                          ? "bg-green-100 text-green-800"
-                          : member.membership_type === "honorary"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {member.membership_type}
-                    </span>
                   </td>
                 </tr>
               ))}
