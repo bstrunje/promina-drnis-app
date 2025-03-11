@@ -26,9 +26,10 @@ interface Props {
   member: Member;
   onUpdate: (member: Member) => Promise<void>;
   userRole?: string; // Add this line
+  isFeeCurrent?: boolean; // Add this new prop
 }
 
-const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) => {
+const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, isFeeCurrent = true }) => {
   const { toast } = useToast();
   // Initialize from membership_details first (source of truth), fall back to direct property
   const [cardNumber, setCardNumber] = useState(
@@ -367,8 +368,8 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) 
               })()}
             </div>
 
-            {/* Stamp Status Toggle Section */}
-            {(member.membership_details?.card_number || member.card_number) && (
+            {/* Stamp Status Toggle Section - Only show when fee is current */}
+            {isFeeCurrent && (member.membership_details?.card_number || member.card_number) && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium mb-2">Stamp Status</h4>
                 <div className="flex items-center">
@@ -430,10 +431,17 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole }) 
                 )}
               </div>
             )}
+            
+            {/* Always show stamp status display section, but with appropriate message */}
             <div>
               <span className="text-sm text-gray-500">Stamp Status:</span>
               <span className="ml-2">
                 {(() => {
+                  // If fee is not current, show payment required message
+                  if (!isFeeCurrent) {
+                    return <span className="text-red-600">Payment required before stamp</span>;
+                  }
+                  
                   const stampIssued =
                     member.membership_details?.card_stamp_issued ||
                     member.card_stamp_issued;

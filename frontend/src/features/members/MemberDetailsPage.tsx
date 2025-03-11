@@ -402,6 +402,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
             member={member}
             onUpdate={handleMemberUpdate}
             userRole={user?.role} // Add this line to pass user role
+            isFeeCurrent={isFeeCurrent} // Pass the isFeeCurrent value 
           />
         )}
 
