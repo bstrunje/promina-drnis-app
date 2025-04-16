@@ -122,7 +122,6 @@ const membershipService = {
     try {
       // Ensure cardNumber is a clean string without unintended prefixes
       const cleanCardNumber = String(cardNumber).trim();
-      console.log(`Updating card details for member ${memberId}: ${cleanCardNumber}, stampIssued: ${stampIssued}`);
       
       // Use the clean card number in the database update
       await db.query(
@@ -134,7 +133,6 @@ const membershipService = {
       );
       
       // Log the action
-      console.log(`Updated membership details for member ${memberId} with card number ${cleanCardNumber}`);
     } catch (error) {
       console.error('Error updating card details:', error);
       throw new Error(`Failed to update card details: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -219,11 +217,7 @@ const membershipService = {
 
       // Ako je trenutni datum nakon kraja godine, završi sva članstva koja nisu obnovljena
       if (currentDate >= yearEndDate) {
-        console.log(
-          `Pokretanje automatske provjere isteklih članstava za ${currentYear}.`
-        );
         await membershipRepository.endExpiredMemberships(currentYear);
-        console.log(`Automatska provjera isteklih članstava završena.`);
       }
 
       return;

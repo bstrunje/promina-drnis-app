@@ -30,20 +30,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
   
-  // Debug data on mount with proper type checking
   useEffect(() => {
-    console.log("Member object structure:", JSON.stringify(member, null, 2));
-    console.log("Membership details structure:", member?.membership_details ? 
-      JSON.stringify(member.membership_details, null, 2) : "undefined");
-      
-    // Check if data is available in membership_details
     if (member?.membership_details) {
-      console.log("Fee payment date:", member.membership_details.fee_payment_date);
-      console.log("Fee payment year:", member.membership_details.fee_payment_year);
+      // Uklonjen sav debugging kod
+      // Popravak dupliranih if uvjeta
     }
-    
-    // Also check legacy property
-    console.log("Legacy fee payment year:", member?.fee_payment_year);
   }, [member]);
 
   const validatePaymentDate = async (dateString: string): Promise<boolean> => {
@@ -68,10 +59,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         return false;
       }
   
-      // Check if date is in renewal period (November/December)
       const month = date.getMonth(); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
       
-      // Add informative message for renewal period
       if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
         toast({
           title: "Info",
@@ -115,23 +104,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const currentYear = new Date().getFullYear();
       const paymentMonth = parsedDate.getMonth();
       
-      // Determine if this is a renewal payment in November/December
-      // for a member who already has paid for the current year
       const isRenewalPayment = 
         isFeeCurrent && // Already has current payment
         (paymentMonth === 10 || paymentMonth === 11) && // 10=Nov, 11=Dec in JS Date
         member?.membership_details?.fee_payment_year === currentYear; // Paid for current year
   
-      console.log("Payment context:", {
-        paymentDate: parsedDate.toISOString(),
-        paymentMonth,
-        currentYear,
-        memberFeeYear: member?.membership_details?.fee_payment_year,
-        isFeeCurrent,
-        isRenewalPayment
-      });
-  
-      // Use the API client function instead of direct axios call
       const response = await updateMembership(member.member_id, {
         paymentDate: parsedDate.toISOString(),
         isRenewalPayment
@@ -148,11 +125,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setPaymentError(null);
   
       if (onUpdate && response && response.member) {
-        // Make sure to use the updated member data from the response
         onUpdate(response.member);
         
-        // Update local UI state immediately to reflect the payment
-        // This will show updated status without needing a full page refresh
         const paymentYear = isRenewalPayment ? currentYear + 1 : currentYear;
         const locallyUpdatedMember = {
           ...member,
@@ -163,7 +137,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
           }
         };
         
-        // Force re-render with updated data
         onUpdate(locallyUpdatedMember);
       }
   

@@ -88,13 +88,16 @@ router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (re
       member.life_status === "child/pupil/student" ? "student" :
       member.life_status === "pensioner" ? "pensioner" : "employed";
     
-    // Issue stamp
+    // Issue stamp - this already updates both the inventory and the member's stamp status
     await stampService.issueStamp(memberId, stampType || null);
     
-    // Update member's stamp status
-    await memberService.updateMember(memberId, { card_stamp_issued: true });
+    // Fetch the updated member to return in the response
+    const updatedMember = await memberService.getMemberById(memberId);
     
-    res.json({ message: "Stamp issued successfully" });
+    res.json({ 
+      message: "Stamp issued successfully",
+      member: updatedMember
+    });
   } catch (error) {
     console.error("Error issuing stamp:", error);
     res.status(500).json({ 

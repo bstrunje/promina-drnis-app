@@ -1,5 +1,5 @@
 import { useAuth } from "../../context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   RefreshCw,
   UserPlus,
@@ -7,6 +7,12 @@ import {
   Trash2,
   CheckCircle,
   Key,
+  UserCog,
+  SortAsc,
+  SortDesc,
+  Filter,
+  Printer,
+  Search,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
 import { Member } from "@shared/member";
@@ -14,42 +20,112 @@ import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "../../../components/EditMemberForm";
 import ConfirmationModal from "../../../components/ConfirmationModal";
 import AssignPasswordForm from "@components/AssignPasswordForm";
-import { UserCog } from "lucide-react";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { useToast } from "@components/ui/use-toast";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/../components/ui/select";
+import { Input } from "@/../components/ui/input";
+import { Button } from "@/../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/../components/ui/tabs";
+import { Badge } from "@/../components/ui/badge";
+
+// New interface for member's card and stamp details
+interface MemberCardDetails {
+  card_number?: string;
+  stamp_type?: "employed" | "student" | "pensioner";
+  fee_payment_year?: number;
+  has_stamp?: boolean;
+  card_stamp_issued?: boolean;
+}
+
+interface MemberWithDetails extends Member {
+  cardDetails?: MemberCardDetails;
+  isActive?: boolean;
+}
 
 export default function MemberList(): JSX.Element {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithDetails[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<MemberWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
-  const [assigningPasswordMember, setAssigningPasswordMember] =
-    useState<Member | null>(null);
-  const [roleAssignmentMember, setRoleAssignmentMember] =
-    useState<Member | null>(null);
+  const [assigningPasswordMember, setAssigningPasswordMember] = useState<Member | null>(null);
+  const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
   const navigate = useNavigate();
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  // State for sorting and filtering
+  const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive">("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [groupByType, setGroupByType] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchMembers = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await api.get<Member[]>("/members");
-        const data = response.data;
+        const membersData = response.data;
 
-        // Calculate status for each member
-        const updatedMembers = data.map((member: Member) => ({
-          ...member,
-          status: calculateStatus(member),
-        }));
+        // Koristi podatke koji su već dostupni u osnovnim podacima o članu
+        const membersWithDetails = membersData.map(member => {
+          const isActive = Number(member.total_hours) >= 20;
+          
+          return {
+            ...member,
+            cardDetails: {
+              card_number: member.card_number || member.membership_details?.card_number,
+              stamp_type: member.life_status as any, // Koristi life_status kao tip markice
+              card_stamp_issued: false, // Default value, will be updated later
+              fee_payment_year: member.fee_payment_year || member.membership_details?.fee_payment_year
+            },
+            isActive
+          };
+        });
 
-        setMembers(updatedMembers);
+        setMembers(membersWithDetails);
+        setFilteredMembers(membersWithDetails);
         setError(null);
+        
+        // Now fetch detailed membership information for each member
+        const fetchMembershipDetails = async () => {
+          const detailedMembers = [...membersWithDetails];
+          
+          for (const member of detailedMembers) {
+            try {
+              // Use the standard member endpoint instead of the details endpoint
+              const response = await api.get(`/members/${member.member_id}`);
+              const details = response.data;
+              
+              // Update the member with detailed info
+              if (details && details.membership_details) {
+                member.cardDetails.card_stamp_issued = details.membership_details.card_stamp_issued === true;
+                member.cardDetails.card_number = details.membership_details.card_number || member.cardDetails.card_number;
+                member.cardDetails.fee_payment_year = details.membership_details.fee_payment_year || member.cardDetails.fee_payment_year;
+              }
+            } catch (error) {
+              console.error(`Error fetching details for member ${member.member_id}:`, error);
+            }
+          }
+          
+          // Update state with detailed info
+          setMembers([...detailedMembers]);
+          setFilteredMembers([...detailedMembers]);
+        };
+        
+        fetchMembershipDetails();
       } catch (error) {
         console.error("Error fetching members:", error);
         setError(
@@ -63,13 +139,86 @@ export default function MemberList(): JSX.Element {
     fetchMembers();
   }, []);
 
-  // Helper function to calculate status
-  const calculateStatus = (member: Member): boolean => {
-    if (!member.registration_completed) return false;
-    return true;
+  // Apply filters and sorting
+  useEffect(() => {
+    let result = [...members];
+    
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(member => 
+        member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.oib?.includes(searchTerm)
+      );
+    }
+    
+    // Apply active/passive filter
+    if (activeFilter !== "all") {
+      const isActive = activeFilter === "active";
+      result = result.filter(member => member.isActive === isActive);
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      if (sortCriteria === "name") {
+        return sortOrder === "asc"
+          ? (a.full_name || "").localeCompare(b.full_name || "")
+          : (b.full_name || "").localeCompare(a.full_name || "");
+      } else {
+        // Sort by hours
+        const aHours = Number(a.total_hours) || 0;
+        const bHours = Number(b.total_hours) || 0;
+        return sortOrder === "asc" ? aHours - bHours : bHours - aHours;
+      }
+    });
+    
+    setFilteredMembers(result);
+  }, [members, sortCriteria, sortOrder, activeFilter, searchTerm]);
+
+  const getLifeStatusColor = (member: MemberWithDetails) => {
+    // Provjeri prvo je li markica izdana
+    const stampIssued = member.cardDetails?.card_stamp_issued;
+    
+    // Ako markica nije izdana, samo hover efekt bez bojanja
+    if (!stampIssued) {
+      return "hover:bg-gray-50";
+    }
+    
+    // Inače, oboji ovisno o life_status
+    const lifeStatus = member.life_status;
+    
+    switch (lifeStatus) {
+      case "employed/unemployed":
+        return "bg-blue-50 hover:bg-blue-100";
+      case "child/pupil/student":
+        return "bg-green-50 hover:bg-green-100";
+      case "pensioner":
+        return "bg-red-50 hover:bg-red-100";
+      default:
+        return "hover:bg-gray-50";
+    }
   };
 
-  const handleAssignPassword = (member: Member) => {
+  const getRegistrationStatusColor = (isRegistered: boolean) => {
+    if (!isRegistered) return "bg-yellow-100 text-yellow-800"; // pending
+    return "bg-green-100 text-green-800"; // completed
+  };
+
+  const getActivityStatusBadge = (isActive: boolean | undefined) => {
+    if (isActive === undefined) return null;
+    
+    return isActive ? (
+      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+        Active
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+        Passive
+      </Badge>
+    );
+  };
+
+  const handleAssignPassword = (member: Member, e: React.MouseEvent) => {
+    e.stopPropagation();
     setAssigningPasswordMember(member);
   };
 
@@ -79,6 +228,7 @@ export default function MemberList(): JSX.Element {
       const memberWithDefaults = {
         ...response.data,
         total_hours: response.data.total_hours || 0,
+        isActive: false
       };
       setMembers([...members, memberWithDefaults]);
       setShowAddForm(false);
@@ -101,9 +251,10 @@ export default function MemberList(): JSX.Element {
     navigate(`/members/${member.member_id}/edit`);
   };
 
-  const handleDelete = async (memberId: number): Promise<void> => {
+  const handleDelete = async (memberId: number, e?: React.MouseEvent): Promise<void> => {
+    if (e) e.stopPropagation();
+    
     try {
-      console.log("Attempting to delete member:", memberId);
       await api.delete(`/members/${memberId}`);
 
       setMembers((prev) => prev.filter((m) => m.member_id !== memberId));
@@ -129,8 +280,11 @@ export default function MemberList(): JSX.Element {
 
   const handleRoleAssignment = async (
     memberId: number,
-    newRole: "member" | "admin" | "superuser"
+    newRole: "member" | "admin" | "superuser",
+    e?: React.MouseEvent
   ) => {
+    if (e) e.stopPropagation();
+    
     try {
       await api.put(`/members/${memberId}/role`, { role: newRole });
 
@@ -157,104 +311,334 @@ export default function MemberList(): JSX.Element {
     }
   };
 
-  const getRegistrationStatusColor = (isRegistered: boolean) => {
-    if (!isRegistered) return "bg-yellow-100 text-yellow-800"; // pending
-    return "bg-green-100 text-green-800"; // completed
+  const handleOpenRoleAssignment = (member: Member, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRoleAssignmentMember(member);
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Error",
+        description: "Could not open print window. Please check your popup settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const printContent = document.createElement('div');
+    if (printRef.current) {
+      printContent.innerHTML = `
+        <html>
+          <head>
+            <title>Member List - Promina Drnis</title>
+            <style>
+              body { font-family: Arial, sans-serif; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .employed { background-color: #e6f0ff; }
+              .student { background-color: #e6ffe6; }
+              .pensioner { background-color: #ffe6e6; }
+              .active { color: #047857; }
+              .passive { color: #b45309; }
+              h1 { text-align: center; }
+              .print-date { text-align: right; font-size: 12px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <h1>Member List - Promina Drnis</h1>
+            <p class="print-date">Printed on: ${new Date().toLocaleDateString()}</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Hours</th>
+                  <th>Activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredMembers.map(member => {
+                  const stampType = member.cardDetails?.stamp_type || member.life_status;
+                  let statusClass = '';
+                  if (stampType === 'employed' || stampType === 'employed/unemployed') statusClass = 'employed';
+                  else if (stampType === 'student' || stampType === 'child/pupil/student') statusClass = 'student';
+                  else if (stampType === 'pensioner') statusClass = 'pensioner';
+                  
+                  const activityClass = member.isActive ? 'active' : 'passive';
+                  
+                  return `
+                    <tr class="${statusClass}">
+                      <td>${member.full_name || `${member.first_name} ${member.last_name}`}</td>
+                      <td>${member.registration_completed ? 'Registered' : 'Pending'}</td>
+                      <td>${member.total_hours || 0}</td>
+                      <td class="${activityClass}">${member.isActive ? 'Active' : 'Passive'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `;
+    }
+    
+    printWindow.document.open();
+    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
+  // Group members by life status / stamp type
+  const groupedMembers = () => {
+    if (!groupByType) return { all: filteredMembers };
+    
+    return filteredMembers.reduce((acc, member) => {
+      const type = member.cardDetails?.stamp_type || member.life_status || 'unknown';
+      let groupKey = 'unknown';
+      
+      if (type === 'employed' || type === 'employed/unemployed') groupKey = 'employed';
+      else if (type === 'student' || type === 'child/pupil/student') groupKey = 'student';
+      else if (type === 'pensioner') groupKey = 'pensioner';
+      
+      if (!acc[groupKey]) acc[groupKey] = [];
+      acc[groupKey].push(member);
+      return acc;
+    }, {} as Record<string, MemberWithDetails[]>);
+  };
+
+  // Convert grouped members to array for rendering
+  const groupsToRender = () => {
+    const groups = groupedMembers();
+    if (!groupByType) return [{ key: 'all', title: 'All Members', members: groups.all }];
+    
+    return [
+      { key: 'employed', title: 'Employed/Unemployed', members: groups.employed || [] },
+      { key: 'student', title: 'Students', members: groups.student || [] },
+      { key: 'pensioner', title: 'Pensioners', members: groups.pensioner || [] },
+      { key: 'unknown', title: 'Others', members: groups.unknown || [] }
+    ].filter(group => group.members.length > 0);
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
-        <button
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
-          onClick={() => setShowAddForm(true)}
-        >
-          <UserPlus className="w-4 h-4" />
-          Add Member
-        </button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="flex items-center gap-1"
+          >
+            <Printer className="w-4 h-4" />
+            Print List
+          </Button>
+          {(user?.role === 'admin' || user?.role === 'superuser') && (
+            <Button
+              className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+              onClick={() => setShowAddForm(true)}
+            >
+              <UserPlus className="w-4 h-4" />
+              Add Member
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {members.map((member: Member) => (
-                <tr key={member.member_id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {member.first_name} {member.last_name}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(
-                        member.registration_completed
-                      )}`}
+      
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+        <div className="p-4 border-b">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search by name or OIB..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              <Select value={activeFilter} onValueChange={(value: any) => setActiveFilter(value)}>
+                <SelectTrigger className="w-[130px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Members</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="passive">Passive</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortCriteria} onValueChange={(value: any) => setSortCriteria(value)}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="hours">Hours</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+              >
+                {sortOrder === "asc" ? (
+                  <SortAsc className="h-4 w-4" />
+                ) : (
+                  <SortDesc className="h-4 w-4" />
+                )}
+              </Button>
+              
+              <Button
+                variant={groupByType ? "default" : "outline"}
+                size="sm"
+                onClick={() => setGroupByType(!groupByType)}
+                title={groupByType ? "Disable grouping" : "Group by member type"}
+              >
+                Group by Type
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <div ref={printRef} className="overflow-x-auto">
+          {groupsToRender().map(group => (
+            <div key={group.key} className="mb-4">
+              {groupByType && (
+                <div className="px-6 py-3 bg-gray-100 font-medium">
+                  {group.title} ({group.members.length})
+                </div>
+              )}
+              
+              <table className="w-full text-left">
+                {(!groupByType || group.key === groupsToRender()[0].key) && (
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hours
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Activity
+                      </th>
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                )}
+                <tbody className="divide-y divide-gray-200">
+                  {group.members.map((member: MemberWithDetails) => (
+                    <tr 
+                      key={member.member_id} 
+                      className={`${getLifeStatusColor(member)} cursor-pointer transition-colors`}
+                      onClick={() => handleEdit(member)}
                     >
-                      {member.registration_completed ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4" />
-                      )}
-                      {member.registration_completed ? "Registered" : "Pending"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(member)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {user?.role === "superuser" && (
-                        <button
-                          onClick={() => setRoleAssignmentMember(member)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Assign Role"
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {member.first_name} {member.last_name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(
+                            member.registration_completed
+                          )}`}
                         >
-                          <UserCog className="w-4 h-4" />
-                        </button>
-                      )}
-                      {user?.role === "superuser" && (
-                        <button
-                          onClick={() => setDeletingMember(member)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                      {!member.registration_completed && (
-                        <button
-                          onClick={() => handleAssignPassword(member)}
-                          className="text-yellow-600 hover:text-yellow-900"
-                        >
-                          <Key className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                          {member.registration_completed ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                          {member.registration_completed ? "Registered" : "Pending"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {member.total_hours || 0}
+                      </td>
+                      <td className="px-6 py-4">
+                        {getActivityStatusBadge(member.isActive)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(member);
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          {user?.role === "superuser" && (
+                            <button
+                              onClick={(e) => handleOpenRoleAssignment(member, e)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Assign Role"
+                            >
+                              <UserCog className="w-4 h-4" />
+                            </button>
+                          )}
+                          {user?.role === "superuser" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingMember(member);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {!member.registration_completed && (
+                            <button
+                              onClick={(e) => handleAssignPassword(member, e)}
+                              className="text-yellow-600 hover:text-yellow-900"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {group.members.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No members found in this group
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {filteredMembers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No members found matching your criteria
+            </div>
+          )}
         </div>
       </div>
 
@@ -271,7 +655,7 @@ export default function MemberList(): JSX.Element {
           onEdit={(updatedMember: Member) => {
             setMembers(
               members.map((m) =>
-                m.member_id === updatedMember.member_id ? updatedMember : m
+                m.member_id === updatedMember.member_id ? {...updatedMember, isActive: Number(updatedMember.total_hours) >= 20} : m
               )
             );
             setEditingMember(null);
@@ -285,7 +669,7 @@ export default function MemberList(): JSX.Element {
           onAssign={(updatedMember: Member) => {
             setMembers(
               members.map((m) =>
-                m.member_id === updatedMember.member_id ? updatedMember : m
+                m.member_id === updatedMember.member_id ? {...updatedMember, isActive: Number(updatedMember.total_hours) >= 20} : m
               )
             );
             setAssigningPasswordMember(null);

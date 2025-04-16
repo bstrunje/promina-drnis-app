@@ -28,7 +28,6 @@ const api = axios.create({
 // Request interceptor for API calls
 api.interceptors.request.use(
   (config) => {
-    console.log('Token:', localStorage.getItem('token'));
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -56,9 +55,7 @@ api.interceptors.response.use(
 
 // Centralized error handler
 const handleApiError = (error: unknown, defaultMessage: string): never => {
-  console.log('Full error object:', error);
   if (axios.isAxiosError(error)) {
-    console.log('Axios error response:', error.response?.data);
     const message = error.response?.data?.message || defaultMessage;
     throw new Error(message);
   }
@@ -117,8 +114,6 @@ export const updateMembership = async (
   data: MembershipUpdateParams
 ): Promise<any> => {
   try {
-    console.log('updateMembership called with:', { memberId, data });
-    
     const response = await api.post(
       `/members/${memberId}/membership`,
       data,
@@ -133,8 +128,6 @@ export const updateMembership = async (
         }
       }
     );
-    
-    console.log('updateMembership success response:', response.data);
     return response.data;
   } catch (error) {
     console.error('updateMembership detailed error:', {
@@ -269,7 +262,6 @@ export const updateCardNumberLength = async (length: number): Promise<void> => {
 
 // Card Number APIs
 export const getAvailableCardNumbers = async (): Promise<string[]> => {
-  console.log("API: Getting available card numbers");
   try {
     const response = await api.get('/card-numbers/available');
     return response.data;
@@ -309,10 +301,8 @@ export const getAllCardNumbers = async (): Promise<{
     assigned: number;
   }
 }> => {
-  console.log("API: Getting all card numbers (available and assigned)");
   try {
     const response = await api.get('/card-numbers/all');
-    console.log("API: Received card data:", response.data);
     return response.data;
   } catch (error) {
     console.error("API: Error fetching card numbers:", error);

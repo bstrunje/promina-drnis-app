@@ -41,8 +41,6 @@ const stampService = {
 
   // Helper function to safely map life status to stamp type
   getStampTypeFromLifeStatus(lifeStatus: string): string {
-    console.log("Life status received:", lifeStatus); // For debugging
-
     if (!lifeStatus) {
       return "employed"; // Default if missing
     }
@@ -55,9 +53,6 @@ const stampService = {
       case "pensioner":
         return "pensioner";
       default:
-        console.log(
-          `Warning: Unknown life status "${lifeStatus}", defaulting to "employed"`
-        );
         return "employed"; // Default for unknown values
     }
   },
@@ -72,7 +67,6 @@ const stampService = {
       // Determine stamp type based on life status
       const stampType =
         givenStampType || this.getStampTypeFromLifeStatus(member.life_status || "");
-      console.log(`Using stamp type: ${stampType} for member ID ${memberId}`);
 
       // Check if stamp is available in inventory
       const inventory = await stampRepository.getInventory();
@@ -96,7 +90,6 @@ const stampService = {
 
       return { success: true };
     } catch (error) {
-      console.error("Error in issueStamp:", error);
       throw new DatabaseError(
         "Error issuing stamp: " +
           (error instanceof Error ? error.message : "Unknown error")
@@ -104,7 +97,7 @@ const stampService = {
     }
   },
 
-  async returnStamp(type: string) {
+  async returnStamp(type: string, memberId?: number) {
     try {
       // If type is actually a life status string, convert it
       let stampType = type;
@@ -125,10 +118,18 @@ const stampService = {
         throw new Error(`No inventory record found for type: ${stampType}`);
       }
 
+      // Update inventory
       await stampRepository.decrementIssuedCount(stampType);
+      
+      // If memberId is provided, also update the member's stamp status
+      if (memberId) {
+        await membershipRepository.updateMembershipDetails(memberId, {
+          card_stamp_issued: false,
+        });
+      }
+      
       return true;
     } catch (error) {
-      console.error("Error returning stamp:", error);
       throw error instanceof Error
         ? error
         : new Error("Error returning stamp to inventory");

@@ -8,7 +8,7 @@ export default function CardDebugger() {
   useEffect(() => {
     async function testCardApi() {
       try {
-        console.log("Direct fetch test starting...");
+        // Uklanjam console.log
         const token = localStorage.getItem('token');
         const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/card-numbers/available`, {
           headers: {
@@ -16,14 +16,13 @@ export default function CardDebugger() {
           }
         });
         
-        console.log("API Response status:", response.status);
-        
+        // Uklanjam console.log
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
         }
         
         const responseData = await response.json();
-        console.log("API Response data:", responseData);
+        // Uklanjam console.log
         setData(responseData);
       } catch (err) {
         console.error("API test error:", err);

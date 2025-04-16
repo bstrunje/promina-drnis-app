@@ -94,8 +94,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         },
       });
 
-      console.log("Fresh member data received:", response.data);
-      
       // Properly handle membership_history array
       const memberData = {
         ...response.data,
@@ -116,17 +114,12 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         },
       };
 
-      // Debug logs to identify data issues
-      console.log("Raw member data:", response.data);
-      console.log("Card stamp status from API:", response.data.card_stamp_issued);
-      console.log("Membership details from API:", response.data.membership_details);
-      
-      // Validate transformed data
+      // Validacija transformiranih podataka
       if (!Array.isArray(memberData.membership_history.periods)) {
-        console.warn("Invalid periods structure, resetting to empty array");
         memberData.membership_history.periods = [];
       }
 
+      // Umjesto console.error naredbi, samo učitavamo podatke
       setMember(memberData);
       setEditedMember(memberData);
     } catch (error) {
@@ -177,7 +170,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
   useEffect(() => {
     if (member && member.membership_history) {
-      console.log("Membership history:", member.membership_history);
+      // Uklanjam console.error log 
     }
   }, [member]);
 

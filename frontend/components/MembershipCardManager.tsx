@@ -100,14 +100,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
   // When member data changes, update from the correct source
   useEffect(() => {
     if (member) {
-      console.log("Member data changed:", {
-        memberID: member.member_id,
-        membershipDetails: member.membership_details,
-        directStampIssued: member.card_stamp_issued,
-        detailsStampIssued: member.membership_details?.card_stamp_issued,
-        finalStampState: member.membership_details?.card_stamp_issued || member.card_stamp_issued || false
-      });
-      
       setCardNumber(
         member.membership_details?.card_number || member.card_number || ""
       );
@@ -116,7 +108,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
       const newStampState = member.membership_details?.card_stamp_issued || 
         member.card_stamp_issued || 
         false;
-      console.log(`Setting stampIssued state to: ${newStampState}`);
       
       setStampIssued(newStampState);
     }
@@ -128,7 +119,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
       setIsLoadingCardNumbers(true);
       try {
         const numbers = await getAvailableCardNumbers();
-        console.log("Available card numbers for dropdown:", numbers);
         setAvailableCardNumbers(numbers || []);
       } catch (error) {
         console.error("Failed to load available card numbers:", error);
@@ -149,7 +139,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
     setIsLoadingCardStats(true);
     try {
       const data = await getAllCardNumbers();
-      console.log("Refreshed card statistics:", data);
       setCardStats(data.stats);
 
       // If we need to refresh available card numbers as well
@@ -179,12 +168,8 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
       stampIssued: false,
     };
 
-    console.log("Attempting to assign card number:", data);
-
     try {
       const response = await updateMembership(member.member_id, data);
-      console.log("Update membership API response:", response);
-      console.log("Card assignment response:", response);
 
       if (!response) {
         throw new Error("No response received from server");
@@ -236,8 +221,6 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
   
   // Modify handleStampToggle to ensure proper inventory update
   const handleStampToggle = async (newState: boolean) => {
-    console.log("Toggling stamp state to:", newState);
-    
     // If user is trying to uncheck (return stamp) but doesn't have permission
     if (!newState && !canReturnStamp) {
       toast({

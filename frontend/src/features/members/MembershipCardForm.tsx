@@ -42,7 +42,6 @@ export default function MembershipCardForm({
       setErrorMessage(null);
       
       try {
-        console.log("DIRECT FETCH: Fetching card numbers...");
         const token = localStorage.getItem('token');
         
         if (!token) {
@@ -59,14 +58,11 @@ export default function MembershipCardForm({
           }
         });
         
-        console.log("Response status:", response.status);
-        
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}`);
         }
         
         const data = await response.json();
-        console.log("Available card numbers:", data);
         
         // Ensure we have an array
         if (Array.isArray(data)) {
@@ -99,13 +95,6 @@ export default function MembershipCardForm({
     try {
       const today = new Date().toISOString();
       
-      console.log("Submitting membership update:", {
-        memberId,
-        cardNumber,
-        stampIssued,
-        date: today
-      });
-      
       await updateMembership(memberId, {
         paymentDate: today,
         cardNumber,
@@ -130,14 +119,6 @@ export default function MembershipCardForm({
       setIsLoading(false);
     }
   };
-
-  // Debug info
-  console.log("Rendering with:", {
-    currentCardNumber,
-    availableCardNumbers: availableCardNumbers.length,
-    isLoading: isLoadingCardNumbers, 
-    errorMessage
-  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

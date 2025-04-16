@@ -121,7 +121,6 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
       if (user?.role === 'admin') {
         try {
           const token = localStorage.getItem('token');
-          console.log('Fetching permissions with token:', token);  // Debug log
           const response = await fetch(
             `${API_BASE_URL}/admin/permissions/${user.member_id}`,
             {
@@ -131,7 +130,6 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
             }
           );
           const permissions = await response.json();
-          console.log('Received permissions:', permissions);  // Debug log
           setAdminPermissions(permissions);
         } catch (error) {
           console.error('Failed to fetch admin permissions:', error);
@@ -176,21 +174,9 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   ) => {
     const updatedPeriods = [...editedPeriods];
     
-    console.log('handlePeriodChange called with:', {
-      index,
-      field,
-      value,
-      currentPeriods: updatedPeriods
-    });
-    
     const periodToUpdate = updatedPeriods.find(
       p => p.period_id === editedPeriods[index].period_id
     );
-    
-    console.log('Found period to update:', {
-      periodToUpdate,
-      periodId: editedPeriods[index].period_id
-    });
 
     if (!periodToUpdate) {
       console.error('Period not found');
@@ -228,25 +214,11 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
     const periodIndex = updatedPeriods.findIndex(
       p => p.period_id === periodToUpdate.period_id
     );
-    
-    console.log('Before update:', {
-      periodIndex,
-      oldValue: updatedPeriods[periodIndex],
-      newValue: {
-        ...periodToUpdate,
-        [field]: value,
-      }
-    });
 
     updatedPeriods[periodIndex] = {
       ...periodToUpdate,
       [field]: value,
     };
-
-    console.log('After update:', {
-      updatedPeriods,
-      changedPeriod: updatedPeriods[periodIndex]
-    });
 
     setEditedPeriods(updatedPeriods);
   };
