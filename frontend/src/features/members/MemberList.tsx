@@ -69,6 +69,7 @@ export default function MemberList(): JSX.Element {
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive">("all");
+  const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [groupByType, setGroupByType] = useState<boolean>(false);
 
@@ -157,6 +158,30 @@ export default function MemberList(): JSX.Element {
       result = result.filter(member => member.isActive === isActive);
     }
     
+    // Apply age filter - samo punoljetni (18+)
+    if (ageFilter === "adults") {
+      const today = new Date();
+      result = result.filter(member => {
+        // Provjeri da li datum rođenja postoji
+        if (!member.date_of_birth) return false;
+        
+        // Pretvori string datuma u Date objekt
+        const birthDate = new Date(member.date_of_birth);
+        
+        // Izračunaj dob u godinama
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        // Prilagodi dob ako rođendan još nije prošao ove godine
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        // Vrati true za punoljetne (18 ili više godina)
+        return age >= 18;
+      });
+    }
+    
     // Apply sorting
     result.sort((a, b) => {
       if (sortCriteria === "name") {
@@ -172,7 +197,7 @@ export default function MemberList(): JSX.Element {
     });
     
     setFilteredMembers(result);
-  }, [members, sortCriteria, sortOrder, activeFilter, searchTerm]);
+  }, [members, sortCriteria, sortOrder, activeFilter, ageFilter, searchTerm]);
 
   const getLifeStatusColor = (member: MemberWithDetails) => {
     // Provjeri prvo je li markica izdana
@@ -475,6 +500,17 @@ export default function MemberList(): JSX.Element {
                   <SelectItem value="all">All Members</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="passive">Passive</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={ageFilter} onValueChange={(value: any) => setAgeFilter(value)}>
+                <SelectTrigger className="w-[130px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Age Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Ages</SelectItem>
+                  <SelectItem value="adults">Adults Only (18+)</SelectItem>
                 </SelectContent>
               </Select>
               

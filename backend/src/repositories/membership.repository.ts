@@ -176,6 +176,7 @@ const membershipRepository = {
     },
 
     async endExpiredMemberships(year: number): Promise<void> {
+        // 1. Prvo završimo razdoblja članstva
         await db.query(
             `UPDATE membership_periods 
              SET end_date = $1, end_reason = 'non_payment'
@@ -188,6 +189,23 @@ const membershipRepository = {
              )`,
             [new Date(year, 11, 31), year]
         );
+        
+        // 2. Zatim resetiramo oznake izdanih markica za iste članove
+        // VAŽNO: Ovdje samo poništavamo oznaku card_stamp_issued, ali NE vraćamo markice u inventar
+        // jer nakon isteka članstva markice su već iskorištene i fizički se ne vraćaju
+        await db.query(
+            `UPDATE membership_details 
+             SET card_stamp_issued = false
+             WHERE member_id IN (
+                SELECT m.member_id 
+                FROM members m
+                JOIN membership_details md ON m.member_id = md.member_id
+                WHERE md.fee_payment_year < $1
+             )`,
+            [year]
+        );
+        
+        console.log(`Završena članstva i poništene markice za godinu ${year} (${new Date().toISOString()})`);
     }
 };
 

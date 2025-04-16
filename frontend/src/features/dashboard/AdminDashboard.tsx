@@ -131,7 +131,6 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const checkUnreadMessages = async () => {
     try {
       const data = await getAdminMessages();
-      console.log("Messages data:", data); // For debugging
       setUnreadMessages(data.some((message) => message.status === "unread"));
     } catch (error) {
       console.error("Error checking messages:", error);
