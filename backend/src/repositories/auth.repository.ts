@@ -98,17 +98,25 @@ const authRepository = {
     },
 
     async searchMembers(searchTerm: string): Promise<MemberSearchResult[]> {
+        // Osigurajmo da pretraživanje zahtijeva minimalno 3 znaka
+        if (searchTerm.length < 3) {
+            return [];
+        }
+        
         const result = await db.query<MemberSearchResult>(`
             SELECT 
-            member_id,
-            full_name
-        FROM members 
-        WHERE 
-            LOWER(full_name) LIKE LOWER($1)
-            AND registration_completed = true
-        ORDER BY first_name, last_name 
-        LIMIT 10`,
-        [`%${searchTerm}%`]
+                member_id,
+                -- Vraća samo puno ime, bez drugih osobnih podataka
+                full_name
+            FROM members 
+            WHERE 
+                LOWER(full_name) LIKE LOWER($1)
+                AND registration_completed = true
+                AND status = 'registered'
+            ORDER BY first_name, last_name 
+            -- Ograničavamo na maksimalno 5 rezultata da se spriječi preglašavanje svih članova
+            LIMIT 5`,
+            [`%${searchTerm}%`]
         );
         return result.rows;
     },

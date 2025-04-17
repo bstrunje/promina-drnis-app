@@ -1,5 +1,5 @@
-// frontend/src/features/auth/LogiPage.tsx
-import { FormEvent, useState, useEffect } from "react";
+// frontend/src/features/auth/LoginPage.tsx
+import { FormEvent, useState, useEffect, useCallback } from "react";
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { login, register, searchMembers } from "../../utils/api";
@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../../../components/ErrorMessage";
 import { Member, MemberSearchResult } from "@shared/member";
 import { MemberLoginData } from "@shared/member";
+import debounce from "lodash.debounce";
 
 interface SizeOptions {
   value: string;
@@ -115,7 +116,47 @@ const LoginPage = () => {
     }
   }, [step]);
 
-const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+  const handleNameSearch = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.trim();
+    setLoginData({ ...loginData, full_name: value });
+    
+    // Ne pretražujemo ako je upit prekratak (backend zahtijeva minimalno 3 znaka)
+    if (value.length < 3) {
+      setSearchResults([]);
+      setShowResults(value.length > 0);
+      return;
+    }
+    
+    try {
+      const results = await searchMembers(value);
+      setSearchResults(results);
+      setShowResults(true);
+    } catch (error) {
+      console.error("Search error:", error);
+      // Ne prikazujemo grešku korisniku - jednostavno nemamo rezultata
+      setSearchResults([]);
+    }
+  };
+
+  const debouncedSearch = useCallback(
+    debounce((event: React.ChangeEvent<HTMLInputElement>) => {
+      handleNameSearch(event);
+    }, 300),
+    []
+  );
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    
+    if (name === "full_name") {
+      setLoginData({ ...loginData, full_name: value });
+      debouncedSearch(event);
+    } else if (name === "password") {
+      setLoginData({ ...loginData, password: value });
+    }
+  };
+
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -633,6 +674,7 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
                   <div className="relative">
                     <input
                       type="text"
+                      name="full_name"
                       required
                       placeholder="Enter your full name"
                       className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
@@ -661,22 +703,7 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
                           }
                         }
                       }}
-                      onChange={async (e) => {
-                        const value = e.target.value;
-                        setLoginData({ ...loginData, full_name: value });
-                        if (value.length >= 2) {
-                          try {
-                            const results = await searchMembers(value);
-                            setSearchResults(results);
-                            setShowResults(true);
-                          } catch (error) {
-                            console.error("Search error:", error);
-                          }
-                        } else {
-                          setSearchResults([]);
-                          setShowResults(false);
-                        }
-                      }}
+                      onChange={handleInputChange}
                     />
                   </div>
 
@@ -761,16 +788,12 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
                     <div className="mt-1 relative">
                       <input
                         type={showPassword ? "text" : "password"}
+                        name="password"
                         required
                         placeholder="Enter your password"
                         className="block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
                         value={loginData.password}
-                        onChange={(e) =>
-                          setLoginData({
-                            ...loginData,
-                            password: e.target.value,
-                          })
-                        }
+                        onChange={handleInputChange}
                       />
                       <button
                         type="button"

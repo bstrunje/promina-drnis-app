@@ -329,11 +329,35 @@ const authController = {
   async searchMembers(req: Request, res: Response): Promise<void> {
     try {
       const { searchTerm } = req.query;
+      const userIP = req.ip || req.socket.remoteAddress || 'unknown';
+      
+      // Provjera važećeg upita
       if (typeof searchTerm !== "string" || !searchTerm) {
         res.status(400).json({ message: "Valid search term is required" });
         return;
       }
+      
+      // Dodatna provjera duljine (minimalno 3 znaka)
+      if (searchTerm.length < 3) {
+        res.status(400).json({ message: "Search term must be at least 3 characters long" });
+        return;
+      }
+      
+      // Zapisivanje pretrage u log za potrebe sigurnosne analize
+      console.log(`Member search request from IP ${userIP}: "${searchTerm}"`);
+      
+      // Sprečavanje jednostavnih SQL injection pokušaja
+      if (searchTerm.includes("'") || searchTerm.includes(";") || searchTerm.includes("--")) {
+        console.warn(`Potential SQL injection attempt from IP ${userIP}: "${searchTerm}"`);
+        res.status(400).json({ message: "Invalid search term" });
+        return;
+      }
+      
       const results = await authRepository.searchMembers(searchTerm);
+      
+      // Dodatno logirajmo broj rezultata za sigurnosnu analizu
+      console.log(`Search for "${searchTerm}" returned ${results.length} results`);
+      
       res.json(results);
     } catch (error) {
       console.error("Search error:", error);
