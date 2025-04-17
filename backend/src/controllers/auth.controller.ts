@@ -368,17 +368,16 @@ const authController = {
     }
   },
 
-  async setMemberPassword(
-    req: Request<{}, {}, SetPasswordRequest>,
+  async assignCardNumber(
+    req: Request<{}, {}, { member_id: number, card_number: string }>,
     res: Response
   ): Promise<void> {
     try {
-      const { member_id, suffix_numbers } = req.body;
+      const { member_id, card_number } = req.body;
 
-      if (!/^\d{5}$/.test(suffix_numbers)) {
-        res
-          .status(400)
-          .json({ message: "Password suffix must be exactly 5 digits" });
+      // Validiramo format broja članske iskaznice
+      if (!/^\d{5}$/.test(card_number)) {
+        res.status(400).json({ message: "Card number must be exactly 5 digits" });
         return;
       }
 
@@ -388,27 +387,33 @@ const authController = {
         return;
       }
 
+      // Provjeri je li član već registriran
       if (member.registration_completed) {
-        res
-          .status(400)
-          .json({ message: "Can only set password for pending members" });
+        res.status(400).json({ message: "Can only assign card number for pending members" });
         return;
       }
 
-      const password = `${member.first_name} ${member.last_name}-isk-${suffix_numbers}`;
-      console.log(`Setting password: "${password}" for member ${member_id}`);
+      // Generiraj lozinku prema fiksnom formatu
+      const password = `${member.full_name}-isk-${card_number}`;
+      console.log(`Generating password: "${password}" for member ${member_id}`);
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      await authRepository.updatePassword(member_id, hashedPassword, "");
+      // Ažuriraj podatke člana - lozinku, status, broj iskaznice
+      await authRepository.updateMemberWithCardAndPassword(
+        member_id, 
+        hashedPassword, 
+        card_number
+      );
 
       res.json({
-        message: "Password set successfully",
+        message: "Card number assigned and password generated successfully",
         member_id,
         status: "registered",
+        card_number
       });
     } catch (error) {
-      console.error("Set password error:", error);
-      res.status(500).json({ message: "Error setting password" });
+      console.error("Card number assignment error:", error);
+      res.status(500).json({ message: "Error assigning card number" });
     }
   },
 
@@ -420,12 +425,10 @@ const authController = {
       const { memberId, password } = req.body;
       console.log("Received password assignment request for member:", memberId);
       const hashedPassword = await bcrypt.hash(password, 10);
-      await authRepository.updatePassword(memberId, hashedPassword, "");
+      await authRepository.updateMemberWithCardAndPassword(memberId, hashedPassword, "");
 
-      await db.query("COMMIT");
       res.json({ message: "Password assigned successfully" });
     } catch (error) {
-      await db.query("ROLLBACK");
       console.error("Password assignment error:", error);
       res.status(500).json({ message: "Failed to assign password" });
     }

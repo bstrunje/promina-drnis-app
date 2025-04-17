@@ -321,4 +321,18 @@ export const deleteCardNumber = async (cardNumber: string): Promise<{ message: s
   }
 };
 
+export const assignCardNumber = async (memberId: number, cardNumber: string): Promise<{
+  message: string;
+  card_number: string;
+  status: string;
+  generatedPassword?: string;
+}> => {
+  try {
+    const response = await api.post(`/members/${memberId}/card`, { cardNumber });
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to assign card number');
+  }
+};
+
 export default api;

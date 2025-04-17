@@ -308,26 +308,88 @@ export const memberController = {
       console.log("Token:", req.headers.authorization);
       console.log("Assigning card number:", { memberId, cardNumber });
 
-      await membershipService.updateCardDetails(
-        parseInt(memberId),
-        cardNumber,
-        true
-      );
+      // Validacija broja iskaznice
+      if (!/^\d{5}$/.test(cardNumber)) {
+        res.status(400).json({ message: "Card number must be exactly 5 digits" });
+        return;
+      }
+
+      // Dohvati podatke o članu
+      const member = await memberRepository.findById(parseInt(memberId));
+      if (!member) {
+        res.status(404).json({ message: "Member not found" });
+        return;
+      }
+
+      // Provjeri je li broj iskaznice već dodijeljen drugom članu
+      const existingCardCheck = await db.query(`
+        SELECT m.member_id, m.full_name
+        FROM membership_details md
+        JOIN members m ON md.member_id = m.member_id
+        WHERE md.card_number = $1 AND md.member_id != $2
+      `, [cardNumber, memberId]);
+
+      if (existingCardCheck && existingCardCheck.rowCount && existingCardCheck.rowCount > 0) {
+        const existingMember = existingCardCheck.rows[0];
+        res.status(400).json({ 
+          message: `Card number ${cardNumber} is already assigned to member: ${existingMember.full_name}`,
+          existingMember: {
+            member_id: existingMember.member_id,
+            full_name: existingMember.full_name
+          }
+        });
+        return;
+      }
+
+      // Provjeri je li član već registriran
+      if (member.registration_completed) {
+        res.status(400).json({ message: "Can only assign card number for pending members" });
+        return;
+      }
+
+      // Automatski generiraj lozinku prema dogovorenom formatu
+      const password = `${member.full_name}-isk-${cardNumber}`;
+      console.log(`Generating password: "${password}" for member ${memberId}`);
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Pokreni transakciju za ažuriranje člana
+      await db.transaction(async (client) => {
+        // Ažuriraj podatke o članu - dodaj broj iskaznice
+        await membershipService.updateCardDetails(
+          parseInt(memberId),
+          cardNumber,
+          true
+        );
+
+        // Ažuriraj status i lozinku
+        await client.query(`
+          UPDATE members
+          SET password_hash = $1, 
+              status = 'registered', 
+              registration_completed = true
+          WHERE member_id = $2
+        `, [hashedPassword, memberId]);
+      });
 
       if (req.user?.id) {
         await auditService.logAction(
           "ASSIGN_CARD_NUMBER",
           req.user.id,
-          `Card number ${cardNumber} assigned to member ${memberId}`,
+          `Card number ${cardNumber} assigned to member ${memberId}, activation completed`,
           req,
           "success",
           parseInt(memberId)
         );
       }
 
-      res.json({ message: "Card number assigned successfully" });
+      res.json({ 
+        message: "Card number assigned and member activated successfully",
+        card_number: cardNumber,
+        status: "registered",
+        generatedPassword: password
+      });
     } catch (error) {
-      console.error("Controller error:", error);
+      console.error("Card assignment error:", error);
       handleControllerError(error, res);
     }
   },
@@ -435,7 +497,7 @@ export const memberController = {
       const { memberId, password, cardNumber } = req.body;
       console.log("Received password assignment request for member:", memberId);
       const hashedPassword = await bcrypt.hash(password, 10);
-      await authRepository.updatePassword(
+      await authRepository.updateMemberWithCardAndPassword(
         memberId,
         hashedPassword,
         cardNumber || ""

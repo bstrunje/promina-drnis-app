@@ -21,7 +21,7 @@ import MembershipHistoryComponent from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
-import AssignPasswordForm from "../../../components/AssignPasswordForm";
+import AssignCardNumberForm from "../../../components/AssignCardNumberForm";
 
 interface Props {
   memberId?: number;
@@ -383,7 +383,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         )}
 
         {isAssigningPassword && (
-          <AssignPasswordForm
+          <AssignCardNumberForm
             member={member}
             onClose={closeModal}
             onAssign={handleAssign}

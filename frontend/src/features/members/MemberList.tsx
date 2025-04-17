@@ -19,7 +19,7 @@ import { Member } from "@shared/member";
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "../../../components/EditMemberForm";
 import ConfirmationModal from "../../../components/ConfirmationModal";
-import AssignPasswordForm from "@components/AssignPasswordForm";
+import AssignCardNumberForm from "@components/AssignCardNumberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
@@ -699,7 +699,7 @@ export default function MemberList(): JSX.Element {
         />
       )}
       {assigningPasswordMember && (
-        <AssignPasswordForm
+        <AssignCardNumberForm
           member={assigningPasswordMember}
           onClose={() => setAssigningPasswordMember(null)}
           onAssign={(updatedMember: Member) => {

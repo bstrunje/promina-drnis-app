@@ -148,7 +148,7 @@ const memberService = {
     async assignPassword(memberId: number, password: string, cardNumber: string): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
-            await authRepository.updatePassword(memberId, hashedPassword, cardNumber);
+            await authRepository.updateMemberWithCardAndPassword(memberId, hashedPassword, cardNumber);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error assigning password: ' + errorMessage);

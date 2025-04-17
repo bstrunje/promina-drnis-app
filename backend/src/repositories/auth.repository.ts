@@ -47,25 +47,28 @@ const authRepository = {
         return result.rows[0];
     },
 
-    // Fix the updatePassword method to commit the transaction properly:
-    async updatePassword(memberId: number, password: string, cardNumber: string): Promise<void> {
+    async updateMemberWithCardAndPassword(
+        memberId: number, 
+        passwordHash: string, 
+        cardNumber: string
+    ): Promise<void> {
         try {
-            console.log('==== PASSWORD UPDATE DETAILS ====');
+            console.log('==== MEMBER UPDATE DETAILS ====');
             console.log(`Member ID: ${memberId}`);
-            console.log(`Password hash length: ${password.length}`);
-            console.log(`Card number provided: "${cardNumber}"`);
+            console.log(`Password hash length: ${passwordHash.length}`);
+            console.log(`Card number assigned: "${cardNumber}"`);
             
             await db.transaction(async (client) => {
-                // First ensure the member is fully registered
+                // Prvo ažuriramo status člana i lozinku
                 await client.query(`
                     UPDATE members
                     SET password_hash = $1, 
                         status = 'registered', 
                         registration_completed = true
                     WHERE member_id = $2
-                `, [password, memberId]);
+                `, [passwordHash, memberId]);
                 
-                // Get the updated member info to confirm
+                // Dohvatimo ažurirane podatke o članu za potvrdu
                 const memberAfterUpdate = await client.query(
                     'SELECT member_id, full_name, status, registration_completed FROM members WHERE member_id = $1',
                     [memberId]
@@ -73,26 +76,24 @@ const authRepository = {
                 
                 console.log('Member after update:', memberAfterUpdate.rows[0]);
                 
-                // Then update card number if provided
-                if (cardNumber && cardNumber.trim() !== '') {
-                    console.log(`Updating card number to "${cardNumber}"`);
-                    try {
-                        await client.query(`
-                            INSERT INTO membership_details (member_id, card_number)
-                            VALUES ($1, $2)
-                            ON CONFLICT (member_id) 
-                            DO UPDATE SET card_number = $2
-                        `, [memberId, cardNumber]);
-                        
-                        console.log('Card number updated successfully');
-                    } catch (cardError) {
-                        console.error('Failed to update card number:', cardError);
-                    }
+                // Zatim ažuriramo broj članske iskaznice
+                try {
+                    await client.query(`
+                        INSERT INTO membership_details (member_id, card_number)
+                        VALUES ($1, $2)
+                        ON CONFLICT (member_id) 
+                        DO UPDATE SET card_number = $2
+                    `, [memberId, cardNumber]);
+                    
+                    console.log('Card number updated successfully');
+                } catch (cardError) {
+                    console.error('Failed to update card number:', cardError);
+                    throw cardError; // Propagiramo grešku da bismo poništili cijelu transakciju
                 }
             });
-            console.log('Password update completed successfully');
+            console.log('Member update completed successfully');
         } catch (error) {
-            console.error("Error updating password:", error);
+            console.error("Error updating member with card and password:", error);
             throw error;
         }
     },
