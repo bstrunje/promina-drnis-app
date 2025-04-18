@@ -43,21 +43,38 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    // Posebna obrada za login zahtjeve
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    
+    // Ako je greška 401 ali NIJE login zahtjev (dakle izgubljena sesija negdje drugdje)
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
       return Promise.reject(new Error('Session expired. Please login again.'));
     }
+    
+    // Za sve ostale greške (uključujući greške s login stranice) vraćamo originalnu grešku
     return Promise.reject(error);
   }
 );
 
 // Centralized error handler
 const handleApiError = (error: unknown, defaultMessage: string): never => {
+  console.error("API Error:", error);
+  
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message || defaultMessage;
-    throw new Error(message);
+    // Detaljnije logiranje odgovora servera za debugging
+    console.log("Server response:", error.response?.data);
+    
+    // Izdvajamo poruku iz odgovora servera, ako postoji
+    const serverMessage = error.response?.data?.message;
+    
+    if (serverMessage) {
+      throw new Error(serverMessage);
+    } else {
+      throw new Error(defaultMessage);
+    }
   }
   throw new Error(defaultMessage);
 };

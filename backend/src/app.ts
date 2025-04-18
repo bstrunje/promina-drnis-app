@@ -21,7 +21,7 @@ import adminMessagesRouter from './routes/admin.messages.js';
 import sequelize from './types/database.js';
 import hoursRoutes from './routes/hours.js';
 import stampRoutes from './routes/stamp.js';
-import settingsRouter from './routes/settings.routes.js';
+import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';

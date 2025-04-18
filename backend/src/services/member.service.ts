@@ -132,7 +132,14 @@ const memberService = {
                 if (!member) {
                     throw new Error('Member not found');
                 }
-    
+                
+                // Prvo brisanje povezanih zapisa iz password_update_queue
+                await client.query(
+                    `DELETE FROM password_update_queue WHERE member_id = $1`,
+                    [memberId]
+                );
+                
+                // Nastavak s brisanjem člana
                 const deletedMember = await memberRepository.delete(memberId, client);
                 if (!deletedMember) {
                     throw new Error('Failed to delete member');
@@ -140,7 +147,9 @@ const memberService = {
     
                 return deletedMember;
             } catch (error) {
-                throw new Error(`Failed to delete member: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                console.error('Failed to delete member:', error);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                throw new DatabaseError(`Failed to delete member: ${errorMessage}`, 500);
             }
         });
     },

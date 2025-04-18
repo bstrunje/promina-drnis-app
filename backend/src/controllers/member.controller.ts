@@ -19,6 +19,7 @@ import {
 } from "../shared/types/membership.js";
 import multerConfig from "../config/upload.js";
 import db from "../utils/db.js";
+import prisma from "../utils/prisma.js";
 
 interface MembershipUpdateRequest {
   paymentDate: string;
@@ -308,9 +309,16 @@ export const memberController = {
       console.log("Token:", req.headers.authorization);
       console.log("Assigning card number:", { memberId, cardNumber });
 
-      // Validacija broja iskaznice
-      if (!/^\d{5}$/.test(cardNumber)) {
-        res.status(400).json({ message: "Card number must be exactly 5 digits" });
+      // Dohvati postavke sustava za validaciju duljine broja kartice
+      const settings = await prisma.systemSettings.findFirst({
+        where: { id: 'default' }
+      });
+      const cardNumberLength = settings?.cardNumberLength || 5;
+
+      // Dinamička validacija broja iskaznice prema postavkama
+      const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+      if (!cardNumberRegex.test(cardNumber)) {
+        res.status(400).json({ message: `Card number must be exactly ${cardNumberLength} digits` });
         return;
       }
 
@@ -347,8 +355,14 @@ export const memberController = {
         return;
       }
 
-      // Automatski generiraj lozinku prema dogovorenom formatu
-      const password = `${member.full_name}-isk-${cardNumber}`;
+      // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
+      const settingsForPassword = settings || await prisma.systemSettings.findFirst({
+        where: { id: 'default' }
+      });
+      const passwordCardNumberLength = settingsForPassword?.cardNumberLength || 5;
+
+      // Automatski generiraj lozinku prema dogovorenom formatu s dinamičkom duljinom kartice
+      const password = `${member.full_name}-isk-${cardNumber.padStart(passwordCardNumberLength, '0')}`;
       console.log(`Generating password: "${password}" for member ${memberId}`);
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -555,44 +569,60 @@ export const memberController = {
         isRenewalPayment, // Log this new parameter
       });
 
-      // Validate payment date
-      const parsedDate = new Date(paymentDate);
-      if (!paymentDate || isNaN(parsedDate.getTime())) {
-        res.status(400).json({ message: "Invalid payment date format" });
-        return;
+      // Procesuiramo plaćanje članarine samo ako je datum plaćanja proslijeđen
+      if (paymentDate) {
+        // Validate payment date
+        const parsedDate = new Date(paymentDate);
+        if (isNaN(parsedDate.getTime())) {
+          res.status(400).json({ message: "Invalid payment date format" });
+          return;
+        }
+
+        // Set time to noon to avoid timezone issues
+        parsedDate.setHours(12, 0, 0, 0);
+
+        console.log("Starting fee payment update");
+        console.log("Processing payment date:", parsedDate.toISOString());
+        
+        // Pass the isRenewalPayment flag to the updateMembershipFee function
+        await memberService.updateMembershipFee(
+          memberId,
+          new Date(paymentDate),
+          req,
+          isRenewalPayment
+        );
+        
+        console.log("Fee payment update completed");
       }
 
-      // Set time to noon to avoid timezone issues
-      parsedDate.setHours(12, 0, 0, 0);
-
-      console.log("Starting fee payment update");
-      console.log("Processing payment date:", parsedDate.toISOString());
-      
-      // Pass the isRenewalPayment flag to the updateMembershipFee function
-      await memberService.updateMembershipFee(
-        memberId,
-        new Date(paymentDate),
-        req,
-        isRenewalPayment
-      );
-      
-      console.log("Fee payment update completed");
-
-      if (cardNumber || stampIssued !== undefined) {
+      // Procesuiramo broj iskaznice i status markice samo ako su izričito proslijeđeni
+      // Sada su ove operacije odvojene od plaćanja članarine
+      if (cardNumber !== undefined) {
         console.log("Starting card number update");
         await memberService.updateMembershipCard(
           memberId,
-          cardNumber || "",
-          stampIssued || false
+          cardNumber,
+          false // Ne mijenjamo automatski status markice kad ažuriramo broj iskaznice
         );
         console.log("Card number update completed");
+      }
+      
+      // Odvojeni blok samo za status markice
+      if (stampIssued !== undefined) {
+        console.log("Updating stamp issued status");
+        await memberService.updateMembershipCard(
+          memberId,
+          "", // Ne dirati broj iskaznice
+          stampIssued
+        );
+        console.log("Stamp status update completed");
       }
 
       if (req.user?.id) {
         await auditService.logAction(
           "UPDATE_MEMBERSHIP",
           req.user.id,
-          `Membership fee payment updated for member ${memberId}`,
+          `Membership details updated for member ${memberId}`,
           req,
           "success",
           memberId

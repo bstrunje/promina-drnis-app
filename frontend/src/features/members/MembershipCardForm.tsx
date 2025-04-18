@@ -12,6 +12,7 @@ import {
 } from "../../../components/ui/select";
 import { updateMembership } from "../../utils/api";
 import { useToast } from "../../../components/ui/use-toast";
+import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 // Add direct reference to API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -28,6 +29,7 @@ export default function MembershipCardForm({
   currentCardNumber 
 }: MembershipCardFormProps) {
   const { toast } = useToast();
+  const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
   const [cardNumber, setCardNumber] = useState<string>(currentCardNumber || "");
   const [stampIssued, setStampIssued] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,8 +90,20 @@ export default function MembershipCardForm({
     fetchAvailableCardNumbers();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    // Validacija broja kartice prema dinamičkoj duljini
+    const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+    if (cardNumber && !cardNumberRegex.test(cardNumber)) {
+      toast({
+        title: "Validation Error",
+        description: `Card number must be exactly ${cardNumberLength} digits`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -120,18 +134,27 @@ export default function MembershipCardForm({
     }
   };
 
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Dopustiti samo unos brojeva
+    if (value === '' || /^\d+$/.test(value)) {
+      setCardNumber(value);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="cardNumber">Card Number</Label>
         
-        {/* Temporarily use an input field for debugging */}
+        {/* Ažurirano polje za unos broja kartice */}
         <Input
           id="cardNumber"
           value={cardNumber}
-          onChange={(e) => setCardNumber(e.target.value)}
-          placeholder={isLoadingCardNumbers ? "Loading..." : "Enter card number"}
+          onChange={handleCardNumberChange}
+          placeholder={isLoadingCardNumbers ? "Loading..." : `Enter ${cardNumberLength}-digit card number`}
           disabled={isLoading}
+          maxLength={cardNumberLength}
         />
         
         {/* Debug info */}

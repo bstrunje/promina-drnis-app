@@ -9,6 +9,7 @@ import { DatabaseError } from "../utils/db.js";
 import authRepository from "../repositories/auth.repository.js";
 import auditService from "../services/audit.service.js";
 import { JWT_SECRET } from '../config/jwt.config.js';
+import prisma from "../utils/prisma.js";
 
 // Extend Express Request to include user
 declare global {
@@ -24,15 +25,23 @@ interface SetPasswordRequest {
   suffix_numbers: string;
 }
 
-// 1. Fix the validatePassword function to maintain proper format with hyphen:
-function validatePassword(
+// Pomoćna funkcija za dohvat duljine broja kartice
+async function getCardNumberLength(): Promise<number> {
+  const settings = await prisma.systemSettings.findFirst({
+    where: { id: 'default' }
+  });
+  return settings?.cardNumberLength ?? 5; // Koristi 5 kao fallback ako je null ili undefined
+}
+
+// Ažurirana funkcija za validaciju lozinke
+async function validatePassword(
   password: string,
   suffixNumbers?: string
-): {
+): Promise<{
   isValid: boolean;
   message?: string;
   formattedPassword?: string;
-} {
+}> {
   if (password.length < 6) {
     return {
       isValid: false,
@@ -42,10 +51,14 @@ function validatePassword(
   }
 
   if (suffixNumbers) {
-    if (!/^\d{5}$/.test(suffixNumbers)) {
+    // Dohvati duljinu broja kartice iz postavki
+    const cardNumberLength = await getCardNumberLength();
+    const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+    
+    if (!cardNumberRegex.test(suffixNumbers)) {
       return {
         isValid: false,
-        message: "Suffix must be exactly 5 digits",
+        message: `Suffix must be exactly ${cardNumberLength} digits`,
       };
     }
     return {
@@ -65,122 +78,114 @@ const authController = {
   ): Promise<void> {
     try {
       const { full_name, password } = req.body;
-      console.log("LOGIN ATTEMPT FOR:", full_name);
-      console.log("WITH PASSWORD:", password);
+      const userIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+      // Osnovna validacija ulaznih podataka
+      if (!full_name || !password) {
+        console.warn(`Login attempt without credentials from IP ${userIP}`);
+        res.status(400).json({ message: "Username and password are required" });
+        return;
+      }
+
+      // Sanitizacija ulaznih podataka
+      const sanitizedFullName = full_name.trim();
       
-      // First check if this member exists and is fully registered
-      const verifyMemberQuery = await db.query(`
-        SELECT member_id, status, registration_completed 
-        FROM members 
-        WHERE full_name = $1
-      `, [full_name]);
+      console.log(`Login attempt for user "${sanitizedFullName}" from IP ${userIP}`);
+
+      // 1. Dohvatimo člana prema punom imenu
+      const member = await authRepository.findUserByFullName(sanitizedFullName);
       
-      if (verifyMemberQuery.rowCount === 0) {
+      // Ako član ne postoji, logiramo pokušaj i vraćamo generičku poruku
+      if (!member) {
+        console.warn(`Failed login: user "${sanitizedFullName}" not found (IP: ${userIP})`);
+        // Koristimo konstantno vrijeme odziva kako bi se spriječili timing napadi
+        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
         res.status(401).json({ message: "Invalid credentials" });
         return;
       }
+
+      // Ako član nema lozinku, ne može se prijaviti
+      if (!member.password_hash) {
+        console.warn(`Failed login: user "${sanitizedFullName}" has no password set (IP: ${userIP})`);
+        res.status(401).json({ message: "Password not set. Please contact administrator." });
+        return;
+      }
+
+      // 2. Provjera statusa člana - dohvaćamo iz tablice jer member možda nema property status
+      const statusQuery = await db.query('SELECT status, registration_completed FROM members WHERE member_id = $1', [member.member_id]);
+      const memberStatus = statusQuery.rows[0];
       
-      const memberCheck = verifyMemberQuery.rows[0];
-      console.log("Member status check:", JSON.stringify(memberCheck));
-      
-      if (memberCheck.status !== 'registered' || !memberCheck.registration_completed) {
-        // The member exists but isn't fully registered
+      if (memberStatus.status !== 'registered' || !memberStatus.registration_completed) {
+        console.warn(`Failed login: user "${sanitizedFullName}" is not fully registered (IP: ${userIP})`);
+        res.status(401).json({ message: "Account setup incomplete. Please contact an administrator." });
+        return;
+      }
+
+      // 3. Dodatno provjeri je li članarina plaćena
+      const membershipQuery = await db.query(`
+        SELECT fee_payment_date, fee_payment_year
+        FROM membership_details
+        WHERE member_id = $1
+      `, [member.member_id]);
+
+      // Ako nema detalja o članstvu ili članarina nije plaćena
+      if (membershipQuery.rowCount === 0 || !membershipQuery.rows[0].fee_payment_date) {
+        console.warn(`Failed login: user "${sanitizedFullName}" has not paid membership fee (IP: ${userIP})`);
         res.status(401).json({ 
-          message: "Account setup incomplete. Please contact an administrator." 
+          message: "Membership fee not paid. Please contact an administrator to complete your membership."
         });
         return;
       }
 
-      const result = await db.query<Member>(
-        "SELECT * FROM members WHERE full_name = $1",
-        [full_name]
-      );
-
-      if (result.rowCount === 0) {
-        await auditService.logAction(
-          "LOGIN_FAILED",
-          0, // No user ID for failed login
-          `Failed login attempt for user: ${full_name} - User not found`,
-          req,
-          "error"
-        );
-        res.status(401).json({ message: "Invalid credentials" });
-        return;
-      }
-
-      const member = result.rows[0];
+      // 4. Usporedimo lozinku s hashom
+      const passwordMatch = await bcrypt.compare(password, member.password_hash);
       
-      // Add these lines right before the password verification to debug:
-      console.log(`Password from request: ${password}`);
-      console.log(`Stored hash length: ${member.password_hash?.length || 0}`);
-      console.log(`Stored hash first 10 chars: ${member.password_hash?.substring(0, 10) || 'none'}`);
-
-      // In the login method, add this code after retrieving the member:
-      console.log("Detailed member data for login:", {
-        id: member.member_id,
-        fullName: member.full_name,
-        passwordHashExists: !!member.password_hash,
-        passwordHashLength: member.password_hash?.length,
-        firstFewChars: member.password_hash?.substring(0, 10)
-      });
-
-      // In the login method, add this before password verification:
-      if (full_name === "Pero Perić") {
-        console.log("Debugging special case:");
-        console.log(`Input password: "${password}"`);
-        console.log(`Expected format: "${member.first_name} ${member.last_name}-isk-XXXXX"`);
-      }
-
-      const validPassword = member.password_hash ? await bcrypt.compare(password, member.password_hash) : false;
-      console.log(`Password verification result: ${validPassword}`);
-
-      if (!validPassword) {
-        await auditService.logAction(
-          "LOGIN_FAILED",
-          0,
-          `Failed login attempt for user: ${full_name} - Invalid password`,
-          req,
-          "error",
-          member.member_id
-        );
+      // Ako lozinka ne odgovara, logiramo pokušaj i vraćamo generičku poruku
+      if (!passwordMatch) {
+        console.warn(`Failed login: incorrect password for user "${sanitizedFullName}" (IP: ${userIP})`);
         res.status(401).json({ message: "Invalid credentials" });
         return;
       }
 
+      // 5. Uspješna prijava - generirajmo JWT token
       const token = jwt.sign(
         { id: member.member_id, role: member.role },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: "24h" }
       );
 
+      // Ažuriramo podatak o zadnjoj prijavi u bazi
+      await db.query(
+        "UPDATE members SET last_login = NOW() WHERE member_id = $1",
+        [member.member_id]
+      );
+
+      // 6. Logiramo uspješnu prijavu
+      console.log(`Successful login: user "${sanitizedFullName}" (ID: ${member.member_id}, Role: ${member.role}) from IP ${userIP}`);
+
+      // 7. Bilježimo prijavu u audit log
       await auditService.logAction(
         "LOGIN_SUCCESS",
         member.member_id,
-        `Successful login: ${member.full_name}`,
+        `User ${sanitizedFullName} logged in`,
         req,
-        "success",
-        member.member_id
+        "success"
       );
 
+      // 8. Vratimo JWT token i osnovne podatke o korisniku
       res.json({
         member: {
           id: member.member_id,
           full_name: member.full_name,
-          role: member.role
+          role: member.role,
         },
-        token
+        token,
       });
     } catch (error) {
-      await auditService.logAction(
-        "LOGIN_ERROR",
-        0,
-        `System error during login attempt: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-        req,
-        "error"
-      );
-      res.status(500).json({ message: "Error logging in" });
+      console.error("Login error:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Login failed",
+      });
     }
   },
 
@@ -375,9 +380,16 @@ const authController = {
     try {
       const { member_id, card_number } = req.body;
 
-      // Validiramo format broja članske iskaznice
-      if (!/^\d{5}$/.test(card_number)) {
-        res.status(400).json({ message: "Card number must be exactly 5 digits" });
+      // Dohvati postavke sustava za validaciju duljine broja kartice
+      const settings = await prisma.systemSettings.findFirst({
+        where: { id: 'default' }
+      });
+      const cardNumberLength = settings?.cardNumberLength || 5;
+
+      // Dinamička validacija broja iskaznice prema postavkama
+      const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+      if (!cardNumberRegex.test(card_number)) {
+        res.status(400).json({ message: `Card number must be exactly ${cardNumberLength} digits` });
         return;
       }
 
@@ -393,8 +405,8 @@ const authController = {
         return;
       }
 
-      // Generiraj lozinku prema fiksnom formatu
-      const password = `${member.full_name}-isk-${card_number}`;
+      // Generiraj lozinku prema dinamičkom formatu
+      const password = `${member.full_name}-isk-${card_number.padStart(cardNumberLength, '0')}`;
       console.log(`Generating password: "${password}" for member ${member_id}`);
       const hashedPassword = await bcrypt.hash(password, 10);
       

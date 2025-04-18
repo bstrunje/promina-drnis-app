@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
@@ -6,9 +6,13 @@ import { useToast } from "../../../components/ui/use-toast";
 import { API_BASE_URL } from "@/utils/config";
 import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange, getAllCardNumbers } from "../../utils/api";
+import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {
   const { toast } = useToast(); 
+  
+  // Dohvati duljinu broja kartice iz postavki
+  const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
   
   // Form states
   const [singleCardNumber, setSingleCardNumber] = useState("");
@@ -78,6 +82,18 @@ export default function CardNumberManagement() {
 
   const handleAddSingle = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validacija broja kartice prema dinamičkoj duljini
+    const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+    if (!cardNumberRegex.test(singleCardNumber)) {
+      toast({
+        title: "Validation Error",
+        description: `Card number must be exactly ${cardNumberLength} digits`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoadingSingle(true);
 
     try {
@@ -102,6 +118,14 @@ export default function CardNumberManagement() {
       });
     } finally {
       setIsLoadingSingle(false);
+    }
+  };
+
+  const handleSingleCardNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Dopustiti samo unos brojeva
+    if (value === '' || /^\d+$/.test(value)) {
+      setSingleCardNumber(value);
     }
   };
 
@@ -312,16 +336,16 @@ export default function CardNumberManagement() {
                 <form onSubmit={handleAddSingle} className="space-y-4">
                   <Input
                     id="singleCardNumber"
-                    placeholder="Enter new card number (e.g., 00123)"
+                    placeholder={`Enter new card number (${cardNumberLength} digits)`}
                     value={singleCardNumber}
-                    onChange={(e) => setSingleCardNumber(e.target.value)}
+                    onChange={handleSingleCardNumberChange}
                     disabled={isLoadingSingle}
                     autoFocus
                   />
                   <div className="flex space-x-3 pt-2">
                     <Button 
                       type="submit" 
-                      disabled={isLoadingSingle || !singleCardNumber}
+                      disabled={isLoadingSingle || singleCardNumber.length !== cardNumberLength}
                     >
                       {isLoadingSingle ? "Adding..." : "Add Card Number"}
                     </Button>
@@ -362,7 +386,7 @@ export default function CardNumberManagement() {
                       </label>
                       <Input
                         id="rangeStart"
-                        placeholder="e.g., 100"
+                        placeholder={`e.g., ${'1'.padStart(cardNumberLength, '0')}`}
                         type="number"
                         value={rangeStart !== null ? rangeStart : ''}
                         onChange={(e) => setRangeStart(e.target.value ? parseInt(e.target.value) : null)}
@@ -376,7 +400,7 @@ export default function CardNumberManagement() {
                       </label>
                       <Input
                         id="rangeEnd"
-                        placeholder="e.g., 200"
+                        placeholder={`e.g., ${'100'.padStart(cardNumberLength, '0')}`}
                         type="number"
                         value={rangeEnd !== null ? rangeEnd : ''}
                         onChange={(e) => setRangeEnd(e.target.value ? parseInt(e.target.value) : null)}

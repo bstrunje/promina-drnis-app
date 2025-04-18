@@ -187,7 +187,15 @@ const LoginPage = () => {
       authLogin(member, data.token);
       navigate("/profile");
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to login');
+      console.error("Login error:", error);
+      // Poboljšani prikaz poruke greške - očuvajmo sve informacije od servera
+      if (error instanceof Error) {
+        setError(error.message);
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
+        setError((error as { message: string }).message);
+      } else {
+        setError('Failed to login. Please contact an administrator.');
+      }
     } finally {
       setLoading(false);
     }
@@ -278,20 +286,6 @@ const LoginPage = () => {
         <div className="p-6 bg-blue-600 text-white text-center">
           {/* ... existing header content ... */}
         </div>
-
-        {message && (
-          <div
-            className={`p-4 rounded-md mx-6 mt-4 ${
-              message.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : "bg-red-50 text-red-800 border border-red-200"
-            }`}
-          >
-            {message.content}
-          </div>
-        )}
-
-        {error && <ErrorMessage message={error} />}
 
         <div className="px-6 py-4 bg-gray-50 border-b">
           <div className="flex justify-between items-center">
@@ -784,6 +778,12 @@ const LoginPage = () => {
 
               {step === 2 && (
                 <form onSubmit={handleLogin} className="space-y-4">
+                  {error && (
+                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                      <p className="font-bold">Login Failed</p>
+                      <p>{error}</p>
+                    </div>
+                  )}
                   <div>
                     <div className="mt-1 relative">
                       <input

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@components/ui/select";
 import api from "../src/utils/api";
+import { useCardNumberLength } from "../src/hooks/useCardNumberLength";
 
 // Update the Props interface to include userRole
 interface Props {
@@ -56,6 +57,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
     assigned: number;
   } | null>(null);
   const [isLoadingCardStats, setIsLoadingCardStats] = useState(false);
+
+  // Dohvati dinamičku duljinu broja kartice
+  const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
 
   // Effect to check stamp inventory
   useEffect(() => {
@@ -530,9 +534,9 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
                     type="text"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    pattern="[0-9]{5}"
-                    title="Card number must be exactly 5 digits"
-                    maxLength={5}
+                    pattern={`[0-9]{${cardNumberLength}}`}
+                    title={`Card number must be exactly ${cardNumberLength} digits`}
+                    maxLength={cardNumberLength}
                     className="w-full p-2 border rounded mt-1"
                     required
                     disabled={isSubmitting}
