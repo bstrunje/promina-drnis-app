@@ -4,7 +4,7 @@ import { Users, Activity, Mail, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { getAdminMessages } from "@/utils/api";
+import { getAdminMessages, getStampHistory, resetStampInventory } from "@/utils/api";
 import api from "../../utils/api";
 
 interface Props {
@@ -47,6 +47,12 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   });
   const [editValues, setEditValues] = useState(inventory);
   const [unreadMessages, setUnreadMessages] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetYear, setResetYear] = useState(new Date().getFullYear());
+  const [resetNotes, setResetNotes] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [stampHistory, setStampHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     // Fetch immediately
@@ -75,6 +81,12 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (showHistory) {
+      fetchStampHistory();
+    }
+  }, [showHistory]);
 
   const fetchInventory = async () => {
     try {
@@ -140,6 +152,53 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
           error instanceof Error ? error.message : "Failed to fetch messages",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchStampHistory = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getStampHistory();
+      setStampHistory(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to fetch stamp history",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetInventory = async () => {
+    try {
+      setIsLoading(true);
+      const result = await resetStampInventory(resetYear, resetNotes);
+      
+      toast({
+        title: "Success",
+        description: result.message || "Inventory reset successfully",
+      });
+      
+      // Osvježi popis povijesti i inventar
+      fetchInventory();
+      if (showHistory) {
+        fetchStampHistory();
+      }
+      
+      // Zatvori dijalog
+      setShowResetDialog(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to reset inventory",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -256,9 +315,25 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                 <RefreshCw className="h-4 w-4" />
               </Button>
               {!isEditing ? (
-                <Button variant="outline" onClick={handleEdit}>
-                  Edit Inventory
-                </Button>
+                <>
+                  <Button variant="outline" onClick={handleEdit}>
+                    Edit Inventory
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowHistory(!showHistory)}
+                  >
+                    {showHistory ? "Hide History" : "Show History"}
+                  </Button>
+                  {member.role === "superuser" && (
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => setShowResetDialog(true)}
+                    >
+                      Reset Year
+                    </Button>
+                  )}
+                </>
               ) : (
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={handleCancel}>
@@ -395,7 +470,139 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             </div>
           </div>
         </div>
+
+        {showHistory && (
+          <div className="col-span-2 mt-6 bg-white shadow rounded-lg overflow-hidden">
+            <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
+              <h2 className="text-lg font-medium text-gray-900">
+                Stamp Inventory History
+              </h2>
+            </div>
+            <div className="p-4">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-24">
+                  <p>Loading history...</p>
+                </div>
+              ) : stampHistory.length === 0 ? (
+                <div className="text-center p-4 text-gray-500">
+                  No history records found. History is created when inventory is reset for a new year.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Year
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Stamp Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Initial Count
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Issued Count
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Reset Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Reset By
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Notes
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {stampHistory.map((record) => (
+                        <tr key={record.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.year}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.stamp_type.charAt(0).toUpperCase() + record.stamp_type.slice(1)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.initial_count}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.issued_count}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(record.reset_date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {record.reset_by_name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {record.notes || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+      {showResetDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-medium mb-4">Reset Stamp Inventory</h3>
+            <p className="text-gray-600 mb-4">
+              This will archive the current stamp inventory data and reset the issued counts 
+              to zero for the new year. This action cannot be undone!
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Year to Archive
+              </label>
+              <input
+                type="number"
+                value={resetYear}
+                onChange={(e) => setResetYear(parseInt(e.target.value))}
+                className="w-full p-2 border rounded"
+                min="2020"
+                max="2050"
+              />
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes (optional)
+              </label>
+              <textarea
+                value={resetNotes}
+                onChange={(e) => setResetNotes(e.target.value)}
+                className="w-full p-2 border rounded"
+                rows={3}
+                placeholder="Add notes about this reset (e.g., reason, number of new stamps added)"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowResetDialog(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleResetInventory}
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Reset Inventory"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

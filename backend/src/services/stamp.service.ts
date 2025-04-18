@@ -135,6 +135,52 @@ const stampService = {
         : new Error("Error returning stamp to inventory");
     }
   },
+
+  async getStampHistory() {
+    try {
+      return await stampRepository.getStampHistory();
+    } catch (error) {
+      console.error("Error fetching stamp history:", error);
+      throw new DatabaseError(
+        "Error fetching stamp history: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
+
+  async getStampHistoryByYear(year: number) {
+    try {
+      return await stampRepository.getStampHistoryByYear(year);
+    } catch (error) {
+      console.error(`Error fetching stamp history for year ${year}:`, error);
+      throw new DatabaseError(
+        `Error fetching stamp history for year ${year}: ` +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
+
+  async archiveAndResetInventory(year: number, memberId: number, notes: string = '') {
+    try {
+      // Provjera je li godina već arhivirana
+      const existingHistory = await stampRepository.getStampHistoryByYear(year);
+      if (existingHistory.length > 0) {
+        throw new Error(`Stamp inventory for year ${year} has already been archived`);
+      }
+
+      await stampRepository.archiveAndResetInventory(year, memberId, notes);
+      return { 
+        success: true, 
+        message: `Successfully archived stamp inventory for year ${year} and reset for the new season` 
+      };
+    } catch (error) {
+      console.error("Error during stamp inventory reset:", error);
+      throw new DatabaseError(
+        "Error resetting stamp inventory: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
 };
 
 export default stampService;

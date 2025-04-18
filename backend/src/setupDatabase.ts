@@ -283,6 +283,21 @@ export async function setupDatabase(): Promise<void> {
     `);
     console.log("✅ Admin permissions indexes created successfully");
 
+    // Kreiranje tablice stamp_history za arhiviranje podataka o markicama po godinama
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS stamp_history (
+        id SERIAL PRIMARY KEY,
+        year INT NOT NULL,
+        stamp_type VARCHAR(50) NOT NULL,
+        initial_count INT NOT NULL,
+        issued_count INT NOT NULL,
+        reset_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        reset_by INT REFERENCES members(member_id),
+        notes TEXT
+      );
+    `);
+    console.log('✅ Tablica stamp_history kreirana ili već postoji');
+
     // Password sync trigger system
     console.log("Setting up password-card number synchronization...");
     await db.query(`

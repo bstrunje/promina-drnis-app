@@ -352,4 +352,32 @@ export const assignCardNumber = async (memberId: number, cardNumber: string): Pr
   }
 };
 
+// Stamp Inventory History APIs
+export const getStampHistory = async (): Promise<any[]> => {
+  try {
+    const response = await api.get('/stamps/history');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch stamp history');
+  }
+};
+
+export const getStampHistoryByYear = async (year: number): Promise<any[]> => {
+  try {
+    const response = await api.get(`/stamps/history/${year}`);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, `Failed to fetch stamp history for year ${year}`);
+  }
+};
+
+export const resetStampInventory = async (year: number, notes: string = ''): Promise<any> => {
+  try {
+    const response = await api.post('/stamps/reset-year', { year, notes });
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to reset stamp inventory');
+  }
+};
+
 export default api;
