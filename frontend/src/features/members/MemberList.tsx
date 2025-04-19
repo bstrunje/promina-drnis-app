@@ -352,69 +352,160 @@ export default function MemberList(): JSX.Element {
       return;
     }
     
-    const printContent = document.createElement('div');
-    if (printRef.current) {
-      printContent.innerHTML = `
-        <html>
-          <head>
-            <title>Member List - Promina Drnis</title>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
-              .employed { background-color: #e6f0ff; }
-              .student { background-color: #e6ffe6; }
-              .pensioner { background-color: #ffe6e6; }
-              .active { color: #047857; }
-              .passive { color: #b45309; }
-              h1 { text-align: center; }
-              .print-date { text-align: right; font-size: 12px; margin-bottom: 20px; }
-            </style>
-          </head>
-          <body>
-            <h1>Member List - Promina Drnis</h1>
-            <p class="print-date">Printed on: ${new Date().toLocaleDateString()}</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Hours</th>
-                  <th>Activity</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filteredMembers.map(member => {
-                  const stampType = member.cardDetails?.stamp_type || member.life_status;
-                  let statusClass = '';
-                  if (stampType === 'employed' || stampType === 'employed/unemployed') statusClass = 'employed';
-                  else if (stampType === 'student' || stampType === 'child/pupil/student') statusClass = 'student';
-                  else if (stampType === 'pensioner') statusClass = 'pensioner';
-                  
-                  const activityClass = member.isActive ? 'active' : 'passive';
-                  
-                  return `
-                    <tr class="${statusClass}">
-                      <td>${member.full_name || `${member.first_name} ${member.last_name}`}</td>
-                      <td>${member.registration_completed ? 'Registered' : 'Pending'}</td>
-                      <td>${member.total_hours || 0}</td>
-                      <td class="${activityClass}">${member.isActive ? 'Active' : 'Passive'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `;
+    // Pripremi sadržaj za printanje
+    const membersToDisplay = filteredMembers;
+    const totalMembers = membersToDisplay.length;
+    
+    // Generiraj opis filtera koji su primijenjeni
+    let filterDescription = '';
+    
+    if (searchTerm) {
+      filterDescription += `Search: "${searchTerm}" `;
     }
     
+    if (activeFilter !== 'all') {
+      filterDescription += `Status: ${activeFilter} `;
+    }
+    
+    if (ageFilter !== 'all') {
+      filterDescription += `Age: ${ageFilter === 'adults' ? 'Assembly members' : ageFilter} `;
+    }
+    
+    if (sortCriteria) {
+      filterDescription += `Sorted by: ${sortCriteria} (${sortOrder}) `;
+    }
+    
+    // Ako je prikaz grupiran, dodaj i tu informaciju
+    if (groupByType) {
+      filterDescription += `Grouped by type `;
+    }
+    
+    // Pripremi naslov za ispis
+    const titleText = filterDescription 
+      ? `Member List (${filterDescription.trim()})` 
+      : 'Complete Member List';
+    
+    // Pripremi tekst o ukupnom broju članova
+    const totalText = filterDescription 
+      ? `Filtered members: ${totalMembers}` 
+      : `Total members: ${totalMembers}`;
+    
+    const printContent = `
+      <html>
+        <head>
+          <title>Member List - Promina Drnis</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .member-count { 
+              background-color: #dbeafe; 
+              border: 3px solid #3b82f6; 
+              padding: 10px 20px;
+              font-size: 18px;
+              font-weight: bold;
+              display: inline-block;
+              margin: 20px auto;
+              border-radius: 6px;
+            }
+            .filter-info {
+              font-size: 14px;
+              color: #4b5563;
+              margin: 10px 0;
+              font-style: italic;
+            }
+            .date { text-align: right; margin-bottom: 20px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { 
+              background-color: #f3f4f6; 
+              padding: 10px; 
+              text-align: left; 
+              font-weight: bold;
+              border-bottom: 2px solid #d1d5db;
+            }
+            td { 
+              padding: 10px; 
+              border-bottom: 1px solid #e5e7eb; 
+            }
+            tr:nth-child(even) { background-color: #f9fafb; }
+            .employed { background-color: #e6f0ff; }
+            .student { background-color: #e6ffe6; }
+            .pensioner { background-color: #ffe6e6; }
+            .active { color: #047857; font-weight: bold; }
+            .passive { color: #b45309; }
+            @media print {
+              .member-count { 
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              body { margin: 0; padding: 20px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Member List - Promina Drnis</h1>
+            
+            <div class="member-count">
+              ${totalText}
+            </div>
+            
+            ${filterDescription ? `<div class="filter-info">Filters applied: ${filterDescription}</div>` : ''}
+            
+            <div class="date">Generated on: ${new Date().toLocaleString()}</div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Hours</th>
+                <th>Activity</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${membersToDisplay.map(member => {
+                const stampType = member.cardDetails?.stamp_type || member.life_status;
+                let statusClass = '';
+                if (stampType === 'employed' || stampType === 'employed/unemployed') statusClass = 'employed';
+                else if (stampType === 'student' || stampType === 'child/pupil/student') statusClass = 'student';
+                else if (stampType === 'pensioner') statusClass = 'pensioner';
+                
+                const activityClass = member.isActive ? 'active' : 'passive';
+                
+                return `
+                  <tr class="${statusClass}">
+                    <td>${member.full_name || `${member.first_name} ${member.last_name}`}</td>
+                    <td>${member.registration_completed ? 'Registered' : 'Pending'}</td>
+                    <td>${member.total_hours || 0}</td>
+                    <td class="${activityClass}">${member.isActive ? 'Active' : 'Passive'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          
+          <div class="no-print" style="margin-top: 30px; text-align: center;">
+            <button onclick="window.print(); return false;" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              Print this page
+            </button>
+          </div>
+        </body>
+      </html>
+    `;
+
     printWindow.document.open();
-    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.write(printContent);
     printWindow.document.close();
+    
+    // Automatski fokusiraj i pokreni ispis kada se stranica učita
     printWindow.onload = () => {
-      printWindow.print();
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
     };
   };
 
@@ -451,6 +542,16 @@ export default function MemberList(): JSX.Element {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Print-only header */}
+      <div className="hidden print:block print:!block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{display: 'none', pageBreakInside: 'avoid'}} id="print-header">
+        <h1 className="text-2xl font-bold mb-2">Member List - Promina Drnis</h1>
+        <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
+          Total members: <span className="text-xl">{filteredMembers.length}</span>
+        </div>
+        <div className="text-sm text-gray-500 mt-2">
+          Generated: {new Date().toLocaleString()}
+        </div>
+      </div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
         <div className="flex gap-2">
@@ -491,6 +592,9 @@ export default function MemberList(): JSX.Element {
             </div>
             
             <div className="flex flex-wrap gap-2">
+              <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-md text-base text-blue-800 mr-2 font-medium shadow-sm">
+                {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
+              </div>
               <Select value={activeFilter} onValueChange={(value: any) => setActiveFilter(value)}>
                 <SelectTrigger className="w-[130px]">
                   <Filter className="w-4 h-4 mr-2" />
@@ -510,7 +614,7 @@ export default function MemberList(): JSX.Element {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Ages</SelectItem>
-                  <SelectItem value="adults">Adults Only (18+)</SelectItem>
+                  <SelectItem value="adults">Assembly members</SelectItem>
                 </SelectContent>
               </Select>
               

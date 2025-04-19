@@ -379,16 +379,6 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
             {formatFeePaymentInfo(feePaymentYear, feePaymentDate)}
           </div>
 
-          <div className="text-sm">
-            <span className="font-medium">Membership Status: </span>
-            {isCurrentMembershipActive() ? "Active" : "Inactive"}
-          </div>
-
-          <div className="text-sm">
-            <span className="font-medium">Membership Type: </span>
-            {getMembershipType()}
-          </div>
-
           <div className="space-y-2">
             {[...(isEditing ? editedPeriods : periods)]
               .sort((a, b) =>

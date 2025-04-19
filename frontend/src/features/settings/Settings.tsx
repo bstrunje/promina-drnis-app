@@ -110,11 +110,26 @@ const Settings: React.FC = () => {
 
       if (response.data) {
         setSettings(response.data);
+        
+        // Postaviti poruku uspjeha koja će se prikazati u komponenti
+        setSuccessMessage("Settings updated successfully! Card Number Length: " + 
+                          response.data.cardNumberLength + 
+                          " | Membership Renewal Date: " + 
+                          (response.data.renewalStartMonth === 10 ? "November" : "December") + 
+                          " " + response.data.renewalStartDay);
+        
+        // Također prikazati toast notifikaciju
         toast({
-          title: "Success",
-          description: "Settings updated successfully",
-          variant: "success",
+          title: "Settings Saved",
+          description: "Your system settings have been updated successfully",
+          variant: "default",
+          duration: 5000, // Prikazati 5 sekundi
         });
+        
+        // Automatski sakriti poruku uspjeha nakon 8 sekundi
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 8000);
       }
     } catch (err) {
       const errorMessage = axios.isAxiosError(err)

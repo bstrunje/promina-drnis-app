@@ -304,7 +304,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-medium">Stamp Inventory</h3>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
               <Button
                 variant="ghost"
                 size="sm"
@@ -315,7 +315,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                 <RefreshCw className="h-4 w-4" />
               </Button>
               {!isEditing ? (
-                <>
+                <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={handleEdit}>
                     Edit Inventory
                   </Button>
@@ -333,9 +333,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       Reset Year
                     </Button>
                   )}
-                </>
+                </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={handleCancel}>
                     Cancel
                   </Button>
@@ -350,7 +350,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
               <h3 className="font-medium text-blue-800">
                 Employed/Unemployed Stamps
               </h3>
-              <div className="grid grid-cols-3 gap-4 mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
                   <label className="text-sm text-blue-600">Initial</label>
                   {isEditing ? (
@@ -392,7 +392,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
               <h3 className="font-medium text-green-800">
                 Student/Pupil Stamps
               </h3>
-              <div className="grid grid-cols-3 gap-4 mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
                   <label className="text-sm text-green-600">Initial</label>
                   {isEditing ? (
@@ -432,7 +432,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             {/* Pensioner Stamps */}
             <div className="bg-red-50 p-4 rounded-lg">
               <h3 className="font-medium text-red-800">Pensioner Stamps</h3>
-              <div className="grid grid-cols-3 gap-4 mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
                   <label className="text-sm text-red-600">Initial</label>
                   {isEditing ? (
@@ -488,61 +488,68 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   No history records found. History is created when inventory is reset for a new year.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Year
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Stamp Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Initial Count
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Issued Count
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Reset Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Reset By
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Notes
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {stampHistory.map((record) => (
-                        <tr key={record.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.year}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.stamp_type.charAt(0).toUpperCase() + record.stamp_type.slice(1)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.initial_count}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.issued_count}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(record.reset_date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {record.reset_by_name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {record.notes || "-"}
-                          </td>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Year
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Initial
+                          </th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Issued
+                          </th>
+                          <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            By
+                          </th>
+                          <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Notes
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {stampHistory.map((record) => (
+                          <tr key={record.id}>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {record.year}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {record.stamp_type.charAt(0).toUpperCase() + record.stamp_type.slice(1)}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {record.initial_count}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {record.issued_count}
+                            </td>
+                            <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(record.reset_date).toLocaleDateString()}
+                            </td>
+                            <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {record.reset_by_name}
+                            </td>
+                            <td className="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
+                              {record.notes || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Mobile view for hidden columns */}
+                  <div className="sm:hidden mt-4">
+                    <p className="text-xs text-gray-500 italic">Swipe horizontally to see more details or rotate device to landscape mode.</p>
+                  </div>
                 </div>
               )}
             </div>

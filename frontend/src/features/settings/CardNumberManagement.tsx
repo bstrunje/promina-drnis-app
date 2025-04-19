@@ -413,7 +413,7 @@ export default function CardNumberManagement() {
                       type="submit" 
                       disabled={isLoadingRange || rangeStart === null || rangeEnd === null}
                     >
-                      {isLoadingRange ? "Adding..." : "Add Card Number Range"}
+                      {isLoadingRange ? "Adding..." : "Add Range"}
                     </Button>
                     <Button 
                       type="button" 
