@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import { User } from "lucide-react";
+import { User, ChevronDown, ChevronRight } from "lucide-react";
 import { Member } from "@shared/member";
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
+import { useAuth } from "../src/context/AuthContext";
 
 interface MemberBasicInfoProps {
   member: Member;
@@ -19,63 +20,95 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   editedMember,
   handleChange,
 }) => {
+  const { user } = useAuth();
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Determine if the user can view details
+  // Admins, superusers, and the member viewing their own profile should always see details
+  const isOwnProfile = user?.member_id === member.member_id;
+  const isAdminOrSuperuser = user?.role === "admin" || user?.role === "superuser";
+  const canViewDetails = isOwnProfile || isAdminOrSuperuser;
+
+  // Automatically show details if user has edit permission
+  useEffect(() => {
+    if (isEditing) {
+      setShowDetails(true);
+    }
+  }, [isEditing]);
+
   if (!isEditing) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>
-            <User className="h-5 w-5" />
-            Personal Information
+        <CardHeader 
+          className={canViewDetails ? "cursor-pointer hover:bg-gray-50" : ""} 
+          onClick={() => canViewDetails && setShowDetails(!showDetails)}
+        >
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <User className="h-5 w-5 mr-2" />
+              Personal Information
+            </div>
+            {canViewDetails && (
+              showDetails ? 
+                <ChevronDown className="h-5 w-5" /> : 
+                <ChevronRight className="h-5 w-5" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm text-gray-500">Full Name</label>
-              <p>
-                {member.first_name} {member.last_name}
-              </p>
+          {canViewDetails && showDetails ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-500">Full Name</label>
+                <p>
+                  {member.first_name} {member.last_name}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Date of Birth</label>
+                <p>
+                  {formatDate(member?.date_of_birth)}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Gender</label>
+                <p className="capitalize">{member?.gender}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">OIB</label>
+                <p>{member?.oib}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Email</label>
+                <p>{member.email}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Phone</label>
+                <p>{member.cell_phone}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Address</label>
+                <p>{member.street_address}</p>
+                <p>{member.city}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Life Status</label>
+                <p>{member.life_status}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">T-Shirt Size</label>
+                <p>{member?.tshirt_size || "Not set"}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Shell Jacket Size</label>
+                <p>{member?.shell_jacket_size || "Not set"}</p>
+              </div>
             </div>
-            <div>
-              <label className="text-sm text-gray-500">Date of Birth</label>
-              <p>
-                {formatDate(member?.date_of_birth)}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Gender</label>
-              <p className="capitalize">{member?.gender}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">OIB</label>
-              <p>{member?.oib}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Email</label>
-              <p>{member.email}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Phone</label>
-              <p>{member.cell_phone}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Address</label>
-              <p>{member.street_address}</p>
-              <p>{member.city}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Life Status</label>
-              <p>{member.life_status}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">T-Shirt Size</label>
-              <p>{member?.tshirt_size || "Not set"}</p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500">Shell Jacket Size</label>
-              <p>{member?.shell_jacket_size || "Not set"}</p>
-            </div>
-          </div>
+          ) : canViewDetails ? (
+            <p className="text-sm text-gray-500 italic">Click the header to view personal information</p>
+          ) : (
+            <p className="text-sm text-gray-500 italic">Personal information is private</p>
+          )}
         </CardContent>
       </Card>
     );

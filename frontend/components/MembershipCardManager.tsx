@@ -512,11 +512,15 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
                       </SelectItem>
                     )}
 
-                    {availableCardNumbers.map((number) => (
-                      <SelectItem key={number} value={number}>
-                        {number}
-                      </SelectItem>
-                    ))}
+                    {/* Filter out current card number from available numbers to avoid duplicate keys */}
+                    {availableCardNumbers
+                      .filter(number => number !== member.membership_details?.card_number)
+                      .map((number) => (
+                        <SelectItem key={number} value={number}>
+                          {number}
+                        </SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               ) : (

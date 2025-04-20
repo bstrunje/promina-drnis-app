@@ -66,6 +66,9 @@ export default function MemberList(): JSX.Element {
   const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Check if user has admin privileges (for editing, deleting, adding members)
+  const isAdmin = user?.role === "admin" || user?.role === "superuser";
   
   // State for sorting and filtering
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
@@ -275,7 +278,14 @@ export default function MemberList(): JSX.Element {
   };
 
   const handleEdit = (member: Member) => {
-    navigate(`/members/${member.member_id}/edit`);
+    // Koristi različite rute ovisno o ulozi korisnika
+    if (isAdmin) {
+      // Za admine i superusere, omogući uređivanje
+      navigate(`/members/${member.member_id}/edit`);
+    } else {
+      // Za obične članove, samo pregled
+      navigate(`/members/${member.member_id}`);
+    }
   };
 
   const handleDelete = async (memberId: number, e?: React.MouseEvent): Promise<void> => {
@@ -566,7 +576,7 @@ export default function MemberList(): JSX.Element {
             <Printer className="w-4 h-4" />
             Print List
           </Button>
-          {(user?.role === 'admin' || user?.role === 'superuser') && (
+          {isAdmin && (
             <Button
               className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
               onClick={() => setShowAddForm(true)}
@@ -680,9 +690,11 @@ export default function MemberList(): JSX.Element {
                       <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Activity
                       </th>
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      {isAdmin && (
+                        <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                 )}
@@ -722,27 +734,25 @@ export default function MemberList(): JSX.Element {
                       <td className="px-6 py-4">
                         {getActivityStatusBadge(member.isActive)}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(member);
-                            }}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          {user?.role === "superuser" && (
+                      {isAdmin && (
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(member);
+                              }}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={(e) => handleOpenRoleAssignment(member, e)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-blue-600 hover:text-blue-800"
                               title="Assign Role"
                             >
                               <UserCog className="w-4 h-4" />
                             </button>
-                          )}
-                          {user?.role === "superuser" && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -752,17 +762,17 @@ export default function MemberList(): JSX.Element {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                          {!member.registration_completed && (
-                            <button
-                              onClick={(e) => handleAssignPassword(member, e)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                            >
-                              <Key className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                            {!member.registration_completed && (
+                              <button
+                                onClick={(e) => handleAssignPassword(member, e)}
+                                className="text-yellow-600 hover:text-yellow-900"
+                              >
+                                <Key className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

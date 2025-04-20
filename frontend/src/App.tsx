@@ -40,10 +40,14 @@ function AppContent() {
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/messages" element={<MessageList />} />
+          {/* Omogućavanje pristupa listi članova svim korisnicima, ne samo adminu i superuser-u */}
+          <Route path="/members" element={<MemberList />} />
+          <Route path="/members/:id" element={<MemberDetailsPage />} />
+          
           {(user?.role === 'admin' || user?.role === 'superuser') && (
             <>
               <Route path="/admin" element={<AdminDashboard member={user} />} />
-              <Route path="/members" element={<MemberList />} />
+              {/* Putanja /members je sad već definirana iznad za sve korisnike */}
               <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
               <Route path="/assign-password" element={<AssignPassword />} />
               <Route path="/settings" element={<Settings />} />

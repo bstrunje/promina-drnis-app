@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { useToast } from '@components/ui/use-toast';
+import { useToast } from '@components/ui/toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
 import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
 import { SystemSettings } from '@shared/settings.types';
 import { updateMembership } from '../src/utils/api'; // Use API client instead of direct axios
 import { getCurrentYear, getCurrentDate, formatInputDate, getMonth } from '../src/utils/dateUtils';
+import { ChevronDown, ChevronRight, Calendar, Edit, Save, X } from 'lucide-react';
+import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
+import { API_BASE_URL } from '@/utils/config';
+import { useAuth } from "../src/context/AuthContext";
+import { Input } from "@components/ui/input";
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -15,6 +20,13 @@ interface MembershipFeeSectionProps {
   isFeeCurrent: boolean;
   onUpdate: (member: Member) => void;
   userRole: string | undefined;
+  membershipHistory?: {
+    periods: MembershipPeriod[];
+    totalDuration?: string;
+    currentPeriod?: MembershipPeriod;
+  };
+  memberId?: number;
+  onMembershipHistoryUpdate?: (periods: MembershipPeriod[]) => Promise<void>;
 }
 
 const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
@@ -22,15 +34,35 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   isEditing,
   isFeeCurrent,
   onUpdate,
-  userRole
+  userRole,
+  membershipHistory,
+  memberId,
+  onMembershipHistoryUpdate
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   
+  // States for membership history editing
+  const [isEditingHistory, setIsEditingHistory] = useState(false);
+  const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>([]);
+  const [isSubmittingHistory, setIsSubmittingHistory] = useState(false);
+  const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
+  
+  const hasAdminPrivileges = user?.role === "admin" || user?.role === "superuser";
+  const canEdit = hasAdminPrivileges;
+
+  useEffect(() => {
+    if (membershipHistory?.periods) {
+      setEditedPeriods(membershipHistory.periods);
+    }
+  }, [membershipHistory]);
+
   useEffect(() => {
     if (member?.membership_details) {
       // Uklonjen sav debugging kod
@@ -44,24 +76,24 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setIsValidPayment(false);
       return false;
     }
-  
+
     try {
       const date = parseISO(dateString);
-      
+
       if (!isValidDate(date)) {
         setPaymentError("Invalid date format");
         setIsValidPayment(false);
         return false;
       }
-  
+
       if (isFuture(date)) {
         setPaymentError("Payment date cannot be in the future");
         setIsValidPayment(false);
         return false;
       }
-  
+
       const month = getMonth(date); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
-      
+
       if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
         toast({
           title: "Info",
@@ -69,11 +101,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
           variant: "default"
         });
       }
-  
+
       setPaymentError(null);
       setIsValidPayment(true);
       return true;
-  
+
     } catch (error) {
       console.error("Error validating date:", error);
       setPaymentError("Failed to validate payment date");
@@ -97,37 +129,37 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const handleFeePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-  
+
     try {
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
-      
+
       const currentYear = getCurrentYear();
       const paymentMonth = getMonth(parsedDate);
-      
-      const isRenewalPayment = 
+
+      const isRenewalPayment =
         isFeeCurrent && // Already has current payment
         (paymentMonth === 10 || paymentMonth === 11) && // 10=Nov, 11=Dec in JS Date
         member?.membership_details?.fee_payment_year === currentYear; // Paid for current year
-  
+
       const response = await updateMembership(member.member_id, {
         paymentDate: parsedDate.toISOString(),
         isRenewalPayment
       });
-  
+
       toast({
         title: "Success",
         description: "Membership fee payment processed successfully",
         variant: "success"
       });
-  
+
       setPaymentDate('');
       setShowPaymentConfirm(false);
       setPaymentError(null);
-  
+
       if (onUpdate && response && response.member) {
         onUpdate(response.member);
-        
+
         const paymentYear = isRenewalPayment ? currentYear + 1 : currentYear;
         const locallyUpdatedMember = {
           ...member,
@@ -137,10 +169,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             fee_payment_year: paymentYear
           }
         };
-        
+
         onUpdate(locallyUpdatedMember);
       }
-  
+
     } catch (error) {
       console.error("Error updating membership:", error);
       toast({
@@ -153,12 +185,69 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     }
   };
 
+  // Handle save for membership history
+  const handleHistorySave = async () => {
+    if (!onMembershipHistoryUpdate) return;
+    
+    setIsSubmittingHistory(true);
+    try {
+      await onMembershipHistoryUpdate(editedPeriods);
+      setIsEditingHistory(false);
+      toast({
+        title: "Success",
+        description: "Membership history updated successfully",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update membership history",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingHistory(false);
+    }
+  };
+
+  // Handle edit for a specific period
+  const handlePeriodChange = (index: number, field: keyof MembershipPeriod, value: any) => {
+    const updatedPeriods = [...editedPeriods];
+    updatedPeriods[index] = {
+      ...updatedPeriods[index],
+      [field]: value
+    };
+    setEditedPeriods(updatedPeriods);
+  };
+
+  // Add new period
+  const handleAddPeriod = () => {
+    if (!newPeriod?.start_date) return;
+    
+    const period: MembershipPeriod = {
+      period_id: Date.now(), // Koristimo period_id umjesto id (privremeni ID)
+      member_id: memberId || 0,
+      start_date: newPeriod.start_date,
+      end_date: newPeriod.end_date,
+      end_reason: newPeriod.end_reason as MembershipEndReason
+    };
+    
+    setEditedPeriods([...editedPeriods, period]);
+    setNewPeriod(null);
+  };
+
+  // Delete period
+  const handleDeletePeriod = (index: number) => {
+    const updatedPeriods = [...editedPeriods];
+    updatedPeriods.splice(index, 1);
+    setEditedPeriods(updatedPeriods);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Membership Fee Status</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="space-y-4">
           {member.membership_details?.fee_payment_date ? (
             <>
@@ -269,6 +358,180 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 </div>
               )}
             </form>
+          )}
+        </div>
+
+        {/* Membership History Section - Collapsible */}
+        <div className="mt-8 pt-4 border-t border-gray-200">
+          <button 
+            className="flex items-center justify-between w-full text-left font-medium text-lg hover:text-blue-600 transition-colors"
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            <span>Membership History</span>
+            {showHistory ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+          </button>
+          
+          {showHistory && (
+            <div className="mt-4 space-y-4">
+              {/* Display membership history */}
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium">Membership Periods</h4>
+                {canEdit && !isEditingHistory && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setIsEditingHistory(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit History
+                  </Button>
+                )}
+                {canEdit && isEditingHistory && (
+                  <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="default"
+                      onClick={handleHistorySave}
+                      disabled={isSubmittingHistory}
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditingHistory(false);
+                        setEditedPeriods(membershipHistory?.periods || []);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {membershipHistory?.periods && membershipHistory.periods.length > 0 ? (
+                <div>
+                  {isEditingHistory ? (
+                    <div className="space-y-4">
+                      {/* Editing interface */}
+                      {editedPeriods.map((period, index) => (
+                        <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-500">Start Date</label>
+                              <Input 
+                                type="date" 
+                                value={period.start_date ? period.start_date.toString().split('T')[0] : ''}
+                                onChange={(e) => handlePeriodChange(index, 'start_date', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500">End Date</label>
+                              <Input 
+                                type="date" 
+                                value={period.end_date ? period.end_date.toString().split('T')[0] : ''}
+                                onChange={(e) => handlePeriodChange(index, 'end_date', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-xs text-gray-500">End Reason</label>
+                              <Input 
+                                type="text" 
+                                value={period.end_reason || ''}
+                                onChange={(e) => handlePeriodChange(index, 'end_reason', e.target.value as MembershipEndReason)}
+                              />
+                            </div>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleDeletePeriod(index)}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Add new period */}
+                      <div className="p-3 border rounded-md bg-gray-50 border-dashed">
+                        <h5 className="text-sm font-medium mb-2">Add New Period</h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-gray-500">Start Date</label>
+                            <Input 
+                              type="date" 
+                              value={newPeriod?.start_date?.toString().split('T')[0] || ''}
+                              onChange={(e) => setNewPeriod({...newPeriod || {}, start_date: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">End Date</label>
+                            <Input 
+                              type="date" 
+                              value={newPeriod?.end_date?.toString().split('T')[0] || ''}
+                              onChange={(e) => setNewPeriod({...newPeriod || {}, end_date: e.target.value})}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-xs text-gray-500">End Reason</label>
+                            <Input 
+                              type="text" 
+                              value={newPeriod?.end_reason || ''}
+                              onChange={(e) => setNewPeriod({...newPeriod || {}, end_reason: e.target.value as MembershipEndReason})}
+                            />
+                          </div>
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={handleAddPeriod}
+                            disabled={!newPeriod?.start_date}
+                          >
+                            Add Period
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* View only interface */}
+                      {membershipHistory.periods.map((period, index) => (
+                        <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-gray-500">Start Date</p>
+                              <p>{format(new Date(period.start_date), 'dd.MM.yyyy')}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">End Date</p>
+                              <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Active'}</p>
+                            </div>
+                            {period.end_reason && (
+                              <div className="col-span-2">
+                                <p className="text-xs text-gray-500">End Reason</p>
+                                <p>{period.end_reason}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">No membership history available</p>
+              )}
+              
+              {membershipHistory?.totalDuration && (
+                <div>
+                  <p className="text-sm text-gray-500">Total Membership Duration</p>
+                  <p className="font-medium">{membershipHistory.totalDuration}</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </CardContent>

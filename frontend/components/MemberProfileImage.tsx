@@ -5,6 +5,7 @@ import { Member } from '@shared/member';
 import { API_BASE_URL, IMAGE_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
 import { getCurrentDate, formatDate } from '../src/utils/dateUtils';
+import { useAuth } from '../src/context/AuthContext';
 
 interface Props {
   member: Member;
@@ -13,12 +14,22 @@ interface Props {
 
 const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imgKey, setImgKey] = useState(Date.now());
   const [imageFailed, setImageFailed] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  // Provjera može li korisnik uređivati sliku
+  const canEditImage = user?.role === 'admin' || user?.role === 'superuser' || user?.member_id === member.member_id;
+
+  // Provjera je li korisnik admin ili superuser za prikaz naslova
+  const isAdminOrSuperuser = user?.role === 'admin' || user?.role === 'superuser';
+
+  // Puno ime člana
+  const memberFullName = `${member.first_name} ${member.last_name}`;
 
   // Determine which property to use from the Member type
   const imagePath = member.profile_image_path || member.profile_image;
@@ -141,22 +152,41 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Profile Image</CardTitle>
+      <CardHeader>
+        {/* Naslov kartice se prikazuje samo admin i superuser korisnicima */}
+        {isAdminOrSuperuser ? (
+          <CardTitle>
+            <User className="h-5 w-5 inline-block mr-2" />
+            Profile Image
+          </CardTitle>
+        ) : null}
         <button
           onClick={() => setDebugMode(!debugMode)}
-          className="p-1 rounded-full hover:bg-gray-200 text-gray-500"
-          title="Toggle debug info"
+          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+          title="Toggle debug mode"
+          aria-label="Toggle debug mode"
+          style={{ opacity: 0 }}
         >
-          <Info size={16} />
+          <Info className="h-4 w-4" />
         </button>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center">
-          <div className="w-32 h-32 rounded-full bg-gray-200 mb-4 overflow-hidden flex items-center justify-center">
-            {displayImageSrc && !imageFailed ? (
+        <div className="flex flex-col items-center space-y-4">
+          {/* Prikaži ime člana iznad slike */}
+          <h3 className="text-xl font-semibold mb-2">{memberFullName}</h3>
+          
+          <div
+            className="w-[200px] h-[200px] overflow-hidden border-4 border-blue-500 rounded-full flex items-center justify-center"
+            onClick={() => debugMode ? setDebugMode(false) : null}
+          >
+            {previewUrl ? (
               <img
-                key={imgKey}
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+            ) : displayImageSrc ? (
+              <img
                 src={displayImageSrc}
                 alt="Profile"
                 className="w-full h-full object-cover"
@@ -171,22 +201,27 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
             )}
           </div>
 
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/gif"
-            onChange={handleImageUpload}
-            className="hidden"
-            id="image-upload"
-            disabled={isUploading}
-          />
+          {/* Prikaži kontrole za upload samo ako korisnik ima dozvolu */}
+          {canEditImage && (
+            <>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="image-upload"
+                disabled={isUploading}
+              />
 
-          <label
-            htmlFor="image-upload"
-            className={`px-4 py-2 bg-black text-white rounded cursor-pointer hover:bg-blue-700 transition-colors ${isUploading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-          >
-            {isUploading ? "Uploading..." : "Upload New Image"}
-          </label>
+              <label
+                htmlFor="image-upload"
+                className={`px-4 py-2 bg-black text-white rounded cursor-pointer hover:bg-blue-700 transition-colors ${isUploading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+              >
+                {isUploading ? "Uploading..." : "Upload New Image"}
+              </label>
+            </>
+          )}
 
           {debugMode && (
             <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">

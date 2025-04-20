@@ -15,11 +15,9 @@ import { parseISO, format } from "date-fns";
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
-import MemberActivityStatus from "../../../components/MemberActivityStatus";
 import MembershipFeeSection from "../../../components/MembershipFeeSection";
 import MembershipCardManager from "../../../components/MembershipCardManager";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
-import MembershipHistoryComponent from "../../../components/MembershipHistory";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
@@ -41,16 +39,19 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const memberId = parseInt(id || String(user?.member_id) || "0");
 
   const [member, setMember] = useState<Member | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedMember, setEditedMember] = useState<Member | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAssigningPassword, setIsAssigningPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAssigningPassword, setIsAssigningPassword] = useState<boolean>(false);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
 
+  // Check if user can edit - only admins and superusers can
   const canEdit = user?.role === "admin" || user?.role === "superuser";
-  const isOwnProfile = user?.member_id === memberId;
+  
+  // Check if this is user's own profile
+  const isOwnProfile = user?.member_id === Number(memberId);
 
   const isFeeCurrent = useMemo(() => {
     if (!member?.membership_details?.fee_payment_year) return false;
@@ -356,9 +357,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold mb-2">Member Profile</h1>
-          {(canEdit ||
-            (isOwnProfile &&
-              (user?.role === "admin" || user?.role === "superuser"))) && (
+          {/* Show edit button only for admins and superusers, not for regular members */}
+          {canEdit && (
             <div>
               {isEditing ? (
                 <div className="space-x-2">
@@ -402,19 +402,24 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
         <MemberBasicInfo
           member={member}
-          isEditing={isEditing}
+          isEditing={isEditing && canEdit}
           editedMember={editedMember}
           handleChange={handleChange}
         />
 
-        <MemberActivityStatus member={member} />
-
         <MembershipFeeSection
           member={member}
-          isEditing={isEditing}
+          isEditing={isEditing && canEdit}
           isFeeCurrent={isFeeCurrent}
           onUpdate={handleMemberUpdate}
           userRole={user?.role}
+          membershipHistory={{
+            periods: member?.membership_history?.periods || [],
+            totalDuration: member?.membership_history?.total_duration,
+            currentPeriod: member?.membership_history?.current_period
+          }}
+          memberId={memberId}
+          onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
         />
 
         {canEdit && !member.password_hash && (
@@ -433,22 +438,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           <MembershipCardManager
             member={member}
             onUpdate={handleMemberUpdate}
-            userRole={user?.role} // Add this line to pass user role
-            isFeeCurrent={isFeeCurrent} // Pass the isFeeCurrent value 
-          />
-        )}
-
-        {isLoading ? (
-          <div>Loading membership history...</div>
-        ) : (
-          <MembershipHistoryComponent
-            periods={member?.membership_history?.periods || []}
-            feePaymentYear={member?.membership_details?.fee_payment_year}
-            feePaymentDate={member?.membership_details?.fee_payment_date}
-            totalDuration={member?.membership_history?.total_duration}
-            currentPeriod={member?.membership_history?.current_period}
-            onUpdate={handleMembershipHistoryUpdate}
-            memberId={memberId} // Dodaj memberId ovdje
+            userRole={user?.role} 
+            isFeeCurrent={isFeeCurrent} 
           />
         )}
 

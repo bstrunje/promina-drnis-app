@@ -4,6 +4,7 @@ import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { sendMemberMessage } from '../src/utils/api';
+import { useAuth } from '../src/context/AuthContext';
 
 interface MemberMessagesSectionProps {
   member: Member;
@@ -12,6 +13,10 @@ interface MemberMessagesSectionProps {
 const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member }) => {
   const [comment, setComment] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Provjera je li ovo profil trenutnog korisnika
+  const isOwnProfile = user?.member_id === member.member_id;
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +36,11 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
       });
     }
   };
+
+  // Ako nije vlastiti profil, ne prikazujemo komponentu za slanje poruka
+  if (!isOwnProfile) {
+    return null;
+  }
 
   return (
     <Card>

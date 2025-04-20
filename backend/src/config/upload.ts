@@ -18,7 +18,8 @@ export const PROFILE_IMAGE_CONFIG = {
 
 const storage = multer.diskStorage({
   destination: (_req: any, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, path.resolve(__dirname, '..', '..', 'uploads'));
+    // Koristi relativnu putanju umjesto __dirname
+    cb(null, './uploads');
   },
   
   filename: (_req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {

@@ -27,13 +27,14 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             <Link to="/activities" className="text-gray-700 hover:text-blue-600">
               Activities
             </Link>
+            {/* Omogući svim članovima pristup listi članova */}
+            <Link to="/members" className="text-gray-700 hover:text-blue-600">
+              Members
+            </Link>
             {(user.role === 'admin' || user.role === 'superuser') && (
               <>
                 <Link to="/admin" className="text-gray-700 hover:text-blue-600">
                   Admin
-                </Link>
-                <Link to="/members" className="text-gray-700 hover:text-blue-600">
-                  Members
                 </Link>
                 {!user.registration_completed && (
                   <Link to="/assign-password" className="text-gray-700 hover:text-blue-600">
