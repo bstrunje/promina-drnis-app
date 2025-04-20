@@ -21,6 +21,7 @@ import {
 } from "@components/ui/select";
 import api from "../src/utils/api";
 import { useCardNumberLength } from "../src/hooks/useCardNumberLength";
+import { getCurrentDate } from "../src/utils/dateUtils";
 
 // Update the Props interface to include userRole
 interface Props {
@@ -167,7 +168,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
     setIsSubmitting(true);
 
     const data = {
-      paymentDate: new Date().toISOString(),
+      paymentDate: getCurrentDate().toISOString(),
       cardNumber,
       stampIssued: false,
     };

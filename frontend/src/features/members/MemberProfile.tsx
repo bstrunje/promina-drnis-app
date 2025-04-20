@@ -8,6 +8,7 @@ import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import api from "../../utils/api"; 
 import { IMAGE_BASE_URL } from "../../utils/config";
+import { formatDate } from "../../utils/dateUtils";
 
 declare module "@shared/member" {
   interface Member {
@@ -211,13 +212,13 @@ if (!member && memberId) {
                   >
                     <div className="text-sm">
                       <span className="font-medium">Start: </span>
-                      {new Date(period.start_date).toLocaleDateString()}
+                      {formatDate(period.start_date)}
                     </div>
                     {period.end_date && (
                       <>
                         <div className="text-sm">
                           <span className="font-medium">End: </span>
-                          {new Date(period.end_date).toLocaleDateString()}
+                          {formatDate(period.end_date)}
                         </div>
                         {period.end_reason && (
                           <div className="text-sm text-gray-600">

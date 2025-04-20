@@ -2,11 +2,12 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User } from "lucide-react";
 import { Member } from "@shared/member";
+import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 
 interface MemberBasicInfoProps {
   member: Member;
   isEditing: boolean;
-  editedMember: Member | null | undefined; // Update this line
+  editedMember: Member | null | undefined;
   handleChange?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
@@ -38,9 +39,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <div>
               <label className="text-sm text-gray-500">Date of Birth</label>
               <p>
-                {member?.date_of_birth
-                  ? new Date(member.date_of_birth).toLocaleDateString()
-                  : ""}
+                {formatDate(member?.date_of_birth)}
               </p>
             </div>
             <div>
@@ -121,7 +120,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               name="date_of_birth"
               value={
                 editedMember?.date_of_birth
-                  ? editedMember.date_of_birth.split("T")[0]
+                  ? formatInputDate(editedMember.date_of_birth)
                   : ""
               }
               onChange={handleChange}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Member } from '@shared/member';
+import { formatInputDate } from '../../utils/dateUtils';
 
 interface AddMemberFormProps {
   onClose: () => void;
@@ -54,10 +55,19 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setMember(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'date_of_birth') {
+      try {
+        // Osiguravamo da je format datuma za input fields yyyy-mm-dd
+        const formattedDate = formatInputDate(value);
+        setMember(prev => ({ ...prev, [name]: formattedDate }));
+      } catch (error) {
+        console.error("Invalid date format:", value);
+        setMember(prev => ({ ...prev, [name]: value }));
+      }
+    } else {
+      setMember(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,6 +104,8 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             value={member.date_of_birth}
             onChange={handleChange}
             className="mt-2 p-2 w-full border rounded"
+            placeholder="yyyy-mm-dd"
+            pattern="\d{4}-\d{2}-\d{2}"
             required
           />
           {/* Add gender select after date of birth */}

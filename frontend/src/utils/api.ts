@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '../../shared/types/member.js';
 import { AuditLog } from '../../shared/types/audit.js';
 import { API_BASE_URL } from './config';
+import { getCurrentDate } from './dateUtils';
 
 export interface LoginResponse {
   member: {
@@ -166,7 +167,7 @@ export const terminateMembership = async (memberId: number, reason: string) => {
   try {
     const response = await api.post(`/members/${memberId}/membership/terminate`, { 
       reason, 
-      endDate: new Date().toISOString(), 
+      endDate: getCurrentDate().toISOString(), 
     });
     return response.data;
   } catch (error) {

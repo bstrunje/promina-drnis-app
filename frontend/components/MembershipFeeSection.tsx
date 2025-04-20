@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
 import { SystemSettings } from '@shared/settings.types';
 import { updateMembership } from '../src/utils/api'; // Use API client instead of direct axios
+import { getCurrentYear, getCurrentDate, formatInputDate, getMonth } from '../src/utils/dateUtils';
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -59,7 +60,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         return false;
       }
   
-      const month = date.getMonth(); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
+      const month = getMonth(date); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
       
       if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
         toast({
@@ -101,8 +102,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
       
-      const currentYear = new Date().getFullYear();
-      const paymentMonth = parsedDate.getMonth();
+      const currentYear = getCurrentYear();
+      const paymentMonth = getMonth(parsedDate);
       
       const isRenewalPayment = 
         isFeeCurrent && // Already has current payment
@@ -214,14 +215,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   value={paymentDate}
                   onChange={handleDateChange}
                   required
-                  max={format(new Date(), 'yyyy-MM-dd')}
+                  max={formatInputDate(getCurrentDate())}
                 />
                 {paymentError && (
                   <p className="mt-1 text-sm text-red-600">
                     {paymentError}
                   </p>
                 )}
-                {paymentDate && parseISO(paymentDate).getMonth() >= 10 && (
+                {paymentDate && getMonth(parseISO(paymentDate)) >= 10 && (
                   <p className="mt-1 text-sm text-blue-600">
                     Payment will be counted for next year's membership
                   </p>

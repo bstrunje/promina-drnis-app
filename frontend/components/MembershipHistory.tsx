@@ -16,6 +16,7 @@ import {
 } from "date-fns";
 import { API_BASE_URL } from "@/utils/config";
 import { AdminPermissions } from '../shared/types/permissions';
+import { getCurrentDate, getCurrentYear, formatDate, getMonth } from '../src/utils/dateUtils';
 
 interface MembershipHistoryProps {
   periods: MembershipPeriod[];
@@ -52,7 +53,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
     const totalDays = periods.reduce((total, period) => {
       const start = parseISO(period.start_date);
-      const end = period.end_date ? parseISO(period.end_date) : new Date();
+      const end = period.end_date ? parseISO(period.end_date) : getCurrentDate();
       return (
         total +
         Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
@@ -191,7 +192,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
       }
 
       if (field === "start_date") {
-        if (isAfter(dateValue, new Date())) {
+        if (isAfter(dateValue, getCurrentDate())) {
           console.error('Start date cannot be in the future');
           return;
         }
@@ -204,7 +205,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
           console.error('End date must be after start date');
           return;
         }
-        if (isAfter(dateValue, addYears(new Date(), 100))) {
+        if (isAfter(dateValue, addYears(getCurrentDate(), 100))) {
           console.error('End date too far in the future');
           return;
         }
@@ -225,7 +226,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
 
   const handleAddPeriod = () => {
     setNewPeriod({
-      start_date: new Date().toISOString().split("T")[0],
+      start_date: getCurrentDate().toISOString().split("T")[0],
       end_date: "",
     });
   };
@@ -288,23 +289,22 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   const formatFeePaymentInfo = (year?: number, date?: string): string => {
     if (!year || !date) return "No payment information available";
 
-    const paymentDate = new Date(date);
-    const paymentMonth = paymentDate.getMonth();
+    const paymentDate = parseISO(date);
+    const paymentMonth = getMonth(paymentDate);
 
     if (paymentMonth >= 10) {
-      return `Payment for ${year} (next year) - paid on ${paymentDate.toLocaleDateString()}`;
+      return `Payment for ${year} (next year) - paid on ${formatDate(paymentDate)}`;
     } else {
-      return `Payment for ${year} (current year) - paid on ${paymentDate.toLocaleDateString()}`;
+      return `Payment for ${year} (current year) - paid on ${formatDate(paymentDate)}`;
     }
   };
 
   const isCurrentMembershipActive = (): boolean => {
     if (!feePaymentYear || !feePaymentDate) return false;
 
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const paymentDate = new Date(feePaymentDate);
-    const paymentMonth = paymentDate.getMonth();
+    const currentYear = getCurrentYear();
+    const paymentDate = parseISO(feePaymentDate);
+    const paymentMonth = getMonth(paymentDate);
 
     return (
       feePaymentYear === currentYear ||
@@ -317,10 +317,9 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
   const getMembershipType = (): string => {
     if (!feePaymentYear || !feePaymentDate) return "Unknown";
 
-    const paymentDate = new Date(feePaymentDate);
-    const paymentMonth = paymentDate.getMonth();
-    const now = new Date();
-    const currentYear = now.getFullYear();
+    const paymentDate = parseISO(feePaymentDate);
+    const paymentMonth = getMonth(paymentDate);
+    const currentYear = getCurrentYear();
 
     if (paymentMonth >= 10 && feePaymentYear === currentYear + 1) {
       return "Renewed membership";
@@ -382,7 +381,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
           <div className="space-y-2">
             {[...(isEditing ? editedPeriods : periods)]
               .sort((a, b) =>
-                new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+                parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime()
               )
               .map((period, index) => {
                 const originalIndex = editedPeriods.findIndex(
@@ -403,7 +402,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                           <Input
                             type="date"
                             value={
-                              new Date(period.start_date)
+                              parseISO(period.start_date)
                                 .toISOString()
                                 .split("T")[0]
                             }
@@ -419,7 +418,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                             type="date"
                             value={
                               period.end_date
-                                ? new Date(period.end_date)
+                                ? parseISO(period.end_date)
                                     .toISOString()
                                     .split("T")[0]
                                 : ""
@@ -437,17 +436,11 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                     ) : (
                       <div className="text-sm flex gap-2 items-center">
                         <span className="font-medium">Start:</span>
-                        {format(
-                          parseISO(period.start_date.toString()),
-                          "dd.MM.yyyy"
-                        )}
+                        {formatDate(parseISO(period.start_date.toString()))}
                         {period.end_date && (
                           <>
                             <span className="font-medium ml-2">End:</span>
-                            {format(
-                              parseISO(period.end_date.toString()),
-                              "dd.MM.yyyy"
-                            )}
+                            {formatDate(parseISO(period.end_date.toString()))}
                             {period.end_reason && canSeeEndReason && (
                               <span className="text-gray-600 ml-2">
                                 ({period.end_reason})
@@ -494,7 +487,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
             <div className="mt-4 pt-4 border-t">
               <span className="text-sm font-medium">Current Period: </span>
               <span className="text-sm">
-                {new Date(currentPeriod.start_date).toLocaleDateString()} -
+                {formatDate(parseISO(currentPeriod.start_date))} -
                 Present
               </span>
             </div>

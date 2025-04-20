@@ -13,6 +13,7 @@ import {
 import { updateMembership } from "../../utils/api";
 import { useToast } from "../../../components/ui/use-toast";
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
+import { getCurrentDate } from "../../utils/dateUtils";
 
 // Add direct reference to API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -107,7 +108,7 @@ export default function MembershipCardForm({
     setIsLoading(true);
 
     try {
-      const today = new Date().toISOString();
+      const today = getCurrentDate().toISOString();
       
       await updateMembership(memberId, {
         paymentDate: today,

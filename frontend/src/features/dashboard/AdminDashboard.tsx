@@ -6,6 +6,7 @@ import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 import { getAdminMessages, getStampHistory, resetStampInventory } from "@/utils/api";
 import api from "../../utils/api";
+import { getCurrentDate, getCurrentYear, formatDate } from "../../utils/dateUtils";
 
 interface Props {
   member: Member;
@@ -48,7 +49,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const [editValues, setEditValues] = useState(inventory);
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const [resetYear, setResetYear] = useState(new Date().getFullYear());
+  const [resetYear, setResetYear] = useState(getCurrentYear());
   const [resetNotes, setResetNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [stampHistory, setStampHistory] = useState<any[]>([]);
@@ -532,7 +533,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                               {record.issued_count}
                             </td>
                             <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(record.reset_date).toLocaleDateString()}
+                              {formatDate(record.reset_date)}
                             </td>
                             <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {record.reset_by_name}

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { getMemberActivities } from '../src/utils/api';
+import { getCurrentDate, formatDate, getCurrentYear, parseDate } from "../src/utils/dateUtils";
 
 interface Props {
   memberId: number;
@@ -62,7 +63,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
               >
                 <div className="font-medium">{activity.title}</div>
                 <div className="text-sm text-gray-600">
-                  {new Date(activity.date).toLocaleDateString()}
+                {formatDate(activity.date)}
                 </div>
                 <div className="text-sm text-gray-600">
                   Hours: {activity.hours_spent}

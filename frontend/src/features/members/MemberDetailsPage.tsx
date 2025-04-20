@@ -10,6 +10,8 @@ import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
 import { debounce } from "lodash";
+import { getCurrentDate, getCurrentYear, parseDate, formatInputDate } from "../../utils/dateUtils";
+import { parseISO, format } from "date-fns";
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -53,7 +55,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const isFeeCurrent = useMemo(() => {
     if (!member?.membership_details?.fee_payment_year) return false;
     
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentYear();
     const paymentYear = member.membership_details.fee_payment_year;
     
     // Check if payment is for current or next year
@@ -82,7 +84,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     setIsLoading(true);
     try {
       // Add timestamp to prevent caching
-      const timestamp = new Date().getTime();
+      const timestamp = getCurrentDate().getTime();
 
       // Use your configured API client instead of direct axios
       // This will use the correct base URL from your api.ts configuration
@@ -145,8 +147,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
     const totalDays = periods.reduce(
       (total: number, period: MembershipPeriod) => {
-        const start = new Date(period.start_date);
-        const end = period.end_date ? new Date(period.end_date) : new Date();
+        const start = parseISO(period.start_date.toString());
+        const end = period.end_date ? parseISO(period.end_date.toString()) : getCurrentDate();
         return (
           total +
           Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
@@ -178,14 +180,42 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setEditedMember((prev) =>
-      prev
-        ? {
-            ...prev,
-            [name]: value,
-          }
-        : null
-    );
+    
+    // Posebna obrada za datumska polja
+    if (name === 'date_of_birth') {
+      try {
+        // Osiguravamo da je format datuma za input fields yyyy-mm-dd
+        const formattedDate = formatInputDate(value);
+        
+        setEditedMember((prev) =>
+          prev
+            ? {
+                ...prev,
+                [name]: formattedDate,
+              }
+            : null
+        );
+      } catch (error) {
+        console.error("Invalid date format:", value);
+        setEditedMember((prev) =>
+          prev
+            ? {
+                ...prev,
+                [name]: value,
+              }
+            : null
+        );
+      }
+    } else {
+      setEditedMember((prev) =>
+        prev
+          ? {
+              ...prev,
+              [name]: value,
+            }
+          : null
+      );
+    }
   };
 
   const handleMembershipHistoryUpdate = async (
@@ -249,7 +279,16 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     if (!editedMember) return;
     setIsSubmitting(true);
     try {
-      const response = await api.put(`/members/${memberId}`, editedMember);
+      // Priprema podataka za slanje - osiguravanje formatiranja datuma u ISO formatu
+      const formattedMember = { ...editedMember };
+      
+      // Ako je date_of_birth u formatu godine-mjesec-dan (input format), 
+      // dodaj 'T00:00:00Z' da bismo dobili ISO string
+      if (formattedMember.date_of_birth && !formattedMember.date_of_birth.includes('T')) {
+        formattedMember.date_of_birth = `${formattedMember.date_of_birth}T00:00:00Z`;
+      }
+      
+      const response = await api.put(`/members/${memberId}`, formattedMember);
 
       if (response.data) {
         setMember(response.data);

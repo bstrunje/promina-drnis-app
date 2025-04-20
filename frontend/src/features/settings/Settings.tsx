@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@components/ui/alert";
 import { useToast } from "@components/ui/use-toast";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/config";
+import { getCurrentDate } from "../../utils/dateUtils";
 import { AdminPermissionsManager } from '../../../components/AdminPermissionsManager';
 import { Member } from '@shared/member';
 import { useAuth } from "../../context/AuthContext";
@@ -23,7 +24,7 @@ const Settings: React.FC = () => {
     cardNumberLength: 5,
     renewalStartMonth: 11, // December by default
     renewalStartDay: 31,
-    updatedAt: new Date(),
+    updatedAt: getCurrentDate(),
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

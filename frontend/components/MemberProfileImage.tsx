@@ -4,6 +4,7 @@ import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { API_BASE_URL, IMAGE_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
+import { getCurrentDate, formatDate } from '../src/utils/dateUtils';
 
 interface Props {
   member: Member;
@@ -192,7 +193,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
               <p>Image path: {imagePath || 'none'}</p>
               <p>Image URL: {displayImageSrc || 'none'}</p>
               <p>Failed to load: {imageFailed ? 'Yes' : 'No'}</p>
-              <p>Last updated: {new Date(imgKey).toLocaleTimeString()}</p>
+              <p>Last updated: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
             </div>
           )}
         </div>

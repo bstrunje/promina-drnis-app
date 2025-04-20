@@ -35,6 +35,8 @@ import { Input } from "@/../components/ui/input";
 import { Button } from "@/../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/../components/ui/tabs";
 import { Badge } from "@/../components/ui/badge";
+import { formatDate, getCurrentDate, getCurrentYear, getMonth, getDate } from "../../utils/dateUtils";
+import { parseISO } from "date-fns";
 
 // New interface for member's card and stamp details
 interface MemberCardDetails {
@@ -160,20 +162,20 @@ export default function MemberList(): JSX.Element {
     
     // Apply age filter - samo punoljetni (18+)
     if (ageFilter === "adults") {
-      const today = new Date();
+      const today = getCurrentDate();
       result = result.filter(member => {
         // Provjeri da li datum rođenja postoji
         if (!member.date_of_birth) return false;
         
         // Pretvori string datuma u Date objekt
-        const birthDate = new Date(member.date_of_birth);
+        const birthDate = parseISO(member.date_of_birth);
         
         // Izračunaj dob u godinama
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
+        let age = getCurrentYear() - birthDate.getFullYear();
+        const monthDiff = getMonth(today) - getMonth(birthDate);
         
         // Prilagodi dob ako rođendan još nije prošao ove godine
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        if (monthDiff < 0 || (monthDiff === 0 && getDate(today) < getDate(birthDate))) {
           age--;
         }
         
@@ -453,7 +455,7 @@ export default function MemberList(): JSX.Element {
             
             ${filterDescription ? `<div class="filter-info">Filters applied: ${filterDescription}</div>` : ''}
             
-            <div class="date">Generated on: ${new Date().toLocaleString()}</div>
+            <div class="date">Generated on: ${formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}</div>
           </div>
           
           <table>
@@ -549,7 +551,7 @@ export default function MemberList(): JSX.Element {
           Total members: <span className="text-xl">{filteredMembers.length}</span>
         </div>
         <div className="text-sm text-gray-500 mt-2">
-          Generated: {new Date().toLocaleString()}
+          Generated: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
         </div>
       </div>
       <div className="flex justify-between items-center mb-6">

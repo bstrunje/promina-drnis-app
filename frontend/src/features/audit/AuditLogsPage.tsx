@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui
 import { AuditLog } from '@shared/audit';
 import { getAuditLogs } from '../../utils/api';
 import { format, parseISO } from 'date-fns';
+import { formatDate, parseDate } from "../../utils/dateUtils";
 
 const AuditLogsPage: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -40,10 +41,6 @@ const AuditLogsPage: React.FC = () => {
     }
   };
 
-  const formatDate = (date: string) => {
-    return format(parseISO(date), 'dd.MM.yyyy HH:mm:ss');
-};
-
   const handleSort = (field: keyof AuditLog) => {
     setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
     setSortField(field);
@@ -70,13 +67,13 @@ const AuditLogsPage: React.FC = () => {
 
     if (filters.startDate) {
       filtered = filtered.filter(log => 
-        new Date(log.created_at) >= new Date(filters.startDate)
+        parseISO(log.created_at) >= parseISO(filters.startDate)
       );
     }
 
     if (filters.endDate) {
       filtered = filtered.filter(log => 
-        new Date(log.created_at) <= new Date(filters.endDate)
+        parseISO(log.created_at) <= parseISO(filters.endDate)
       );
     }
 
@@ -210,7 +207,7 @@ const AuditLogsPage: React.FC = () => {
               <tbody>
                 {filteredLogs.map((log) => (
                   <tr key={log.log_id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-4">{formatDate(log.created_at)}</td>
+                    <td className="py-2 px-4">{formatDate(log.created_at, "dd.MM.yyyy HH:mm:ss")}</td>
                     <td className="py-2 px-4">{log.action_type}</td>
                     <td className="py-2 px-4">{log.performer_name}</td>
                     <td className="py-2 px-4">{log.action_details}</td>
