@@ -69,6 +69,7 @@ export default function MemberList(): JSX.Element {
 
   // Check if user has admin privileges (for editing, deleting, adding members)
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
+  const isSuperuser = user?.role === "superuser";
   
   // State for sorting and filtering
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
@@ -746,22 +747,26 @@ export default function MemberList(): JSX.Element {
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={(e) => handleOpenRoleAssignment(member, e)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="Assign Role"
-                            >
-                              <UserCog className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingMember(member);
-                              }}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {isSuperuser && (
+                              <>
+                                <button
+                                  onClick={(e) => handleOpenRoleAssignment(member, e)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                  title="Assign Role"
+                                >
+                                  <UserCog className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingMember(member);
+                                  }}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                             {!member.registration_completed && (
                               <button
                                 onClick={(e) => handleAssignPassword(member, e)}
