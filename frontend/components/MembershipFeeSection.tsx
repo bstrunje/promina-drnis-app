@@ -47,13 +47,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  
+
   // States for membership history editing
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>([]);
   const [isSubmittingHistory, setIsSubmittingHistory] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
-  
+
   const hasAdminPrivileges = user?.role === "admin" || user?.role === "superuser";
   const canEdit = hasAdminPrivileges;
 
@@ -86,7 +86,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         return false;
       }
 
-      if (isFuture(date)) {
+      // Koristimo getCurrentDate umjesto direktnog uspoređivanja s isFuture
+      // kako bismo podržali simulirani datum
+      const currentDate = getCurrentDate();
+      if (date > currentDate) {
         setPaymentError("Payment date cannot be in the future");
         setIsValidPayment(false);
         return false;
@@ -95,11 +98,24 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const month = getMonth(date); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
 
       if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
-        toast({
-          title: "Info",
-          description: "This payment will be counted for next year's membership",
-          variant: "default"
-        });
+        // Provjeri je li ovo novi član (check postoji li fee_payment_date)
+        const isNewMember = !member.membership_details?.fee_payment_date;
+
+        // Prikaži poruku samo za postojeće članove
+        if (!isNewMember) {
+          toast({
+            title: "Info",
+            description: "Payment will be counted for next year's membership",
+            variant: "default"
+          });
+        } else {
+          // Za nove članove prikazujemo drugačiju poruku
+          toast({
+            title: "Info",
+            description: "For new members, payment is counted for current year membership",
+            variant: "default"
+          });
+        }
       }
 
       setPaymentError(null);
@@ -188,7 +204,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   // Handle save for membership history
   const handleHistorySave = async () => {
     if (!onMembershipHistoryUpdate) return;
-    
+
     setIsSubmittingHistory(true);
     try {
       await onMembershipHistoryUpdate(editedPeriods);
@@ -222,7 +238,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   // Add new period
   const handleAddPeriod = () => {
     if (!newPeriod?.start_date) return;
-    
+
     const period: MembershipPeriod = {
       period_id: Date.now(), // Koristimo period_id umjesto id (privremeni ID)
       member_id: memberId || 0,
@@ -230,7 +246,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       end_date: newPeriod.end_date,
       end_reason: newPeriod.end_reason as MembershipEndReason
     };
-    
+
     setEditedPeriods([...editedPeriods, period]);
     setNewPeriod(null);
   };
@@ -240,6 +256,21 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     const updatedPeriods = [...editedPeriods];
     updatedPeriods.splice(index, 1);
     setEditedPeriods(updatedPeriods);
+  };
+
+  const translateEndReason = (reason: MembershipEndReason): string => {
+    switch (reason) {
+      case 'withdrawal':
+        return 'Istupanje';
+      case 'non_payment':
+        return 'Neplaćanje članarine';
+      case 'expulsion':
+        return 'Isključenje';
+      case 'death':
+        return 'Smrt';
+      default:
+        return 'Nepoznat razlog';
+    }
   };
 
   return (
@@ -265,9 +296,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               )}
               <div>
                 <span className="text-sm text-gray-500">Status:</span>
-                <span className={`px-2 py-1 rounded-full text-sm ${
-                  isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <span className={`px-2 py-1 rounded-full text-sm ${isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
                   {isFeeCurrent ? 'Current' : 'Payment Required'}
                 </span>
                 {member.membership_details?.fee_payment_year && (
@@ -276,6 +306,43 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   </p>
                 )}
               </div>
+              {/* Prikaz statusa članstva (active/inactive) */}
+              {member.status && (
+                <div className="mt-3">
+                  <span className="text-sm text-gray-500">Member Status:</span>
+                  <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
+                    member.status === 'registered' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {member.status === 'registered' ? 'Active' : 'Inactive'}
+                  </span>
+                  
+                  {member.status === 'inactive' && membershipHistory?.periods && membershipHistory.periods.length > 0 && (
+                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
+                      <p className="text-red-700 font-medium">Membership Ended</p>
+                      {(() => {
+                        // Pronađi zadnji period koji ima end_date i end_reason
+                        const lastEndedPeriod = [...membershipHistory.periods]
+                          .sort((a, b) => new Date(b.end_date || '').getTime() - new Date(a.end_date || '').getTime())
+                          .find(p => p.end_date && p.end_reason);
+                          
+                        if (lastEndedPeriod) {
+                          return (
+                            <>
+                              <p className="text-sm text-red-600">
+                                End date: {format(parseISO(lastEndedPeriod.end_date!), 'dd.MM.yyyy')}
+                              </p>
+                              <p className="text-sm text-red-600">
+                                Reason: {translateEndReason(lastEndedPeriod.end_reason!)}
+                              </p>
+                            </>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -313,7 +380,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 )}
                 {paymentDate && getMonth(parseISO(paymentDate)) >= 10 && (
                   <p className="mt-1 text-sm text-blue-600">
-                    Payment will be counted for next year's membership
+                    {!member.membership_details?.fee_payment_date ?
+                      "For new members, payment is counted for current year membership" :
+                      "Payment will be counted for next year's membership"
+                    }
                   </p>
                 )}
               </div>
@@ -363,22 +433,22 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
         {/* Membership History Section - Collapsible */}
         <div className="mt-8 pt-4 border-t border-gray-200">
-          <button 
+          <button
             className="flex items-center justify-between w-full text-left font-medium text-lg hover:text-blue-600 transition-colors"
             onClick={() => setShowHistory(!showHistory)}
           >
             <span>Membership History</span>
             {showHistory ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
-          
+
           {showHistory && (
             <div className="mt-4 space-y-4">
               {/* Display membership history */}
               <div className="flex justify-between items-center">
                 <h4 className="text-sm font-medium">Membership Periods</h4>
                 {canEdit && !isEditingHistory && (
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => setIsEditingHistory(true)}
                   >
@@ -388,8 +458,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 )}
                 {canEdit && isEditingHistory && (
                   <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="default"
                       onClick={handleHistorySave}
                       disabled={isSubmittingHistory}
@@ -397,8 +467,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       <Save className="h-4 w-4 mr-1" />
                       Save
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => {
                         setIsEditingHistory(false);
@@ -411,7 +481,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {membershipHistory?.periods && membershipHistory.periods.length > 0 ? (
                 <div>
                   {isEditingHistory ? (
@@ -422,30 +492,36 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="text-xs text-gray-500">Start Date</label>
-                              <Input 
-                                type="date" 
+                              <Input
+                                type="date"
                                 value={period.start_date ? period.start_date.toString().split('T')[0] : ''}
                                 onChange={(e) => handlePeriodChange(index, 'start_date', e.target.value)}
                               />
                             </div>
                             <div>
                               <label className="text-xs text-gray-500">End Date</label>
-                              <Input 
-                                type="date" 
+                              <Input
+                                type="date"
                                 value={period.end_date ? period.end_date.toString().split('T')[0] : ''}
                                 onChange={(e) => handlePeriodChange(index, 'end_date', e.target.value)}
                               />
                             </div>
                             <div className="col-span-2">
                               <label className="text-xs text-gray-500">End Reason</label>
-                              <Input 
-                                type="text" 
-                                value={period.end_reason || ''}
-                                onChange={(e) => handlePeriodChange(index, 'end_reason', e.target.value as MembershipEndReason)}
-                              />
+                              <select
+                                className="w-full p-2 border rounded"
+                                value={period.end_reason || ""}
+                                onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value as MembershipEndReason)}
+                              >
+                                <option value="">Odaberite razlog</option>
+                                <option value="withdrawal">Istupanje</option>
+                                <option value="non_payment">Neplaćanje članarine</option>
+                                <option value="expulsion">Isključenje</option>
+                                <option value="death">Smrt</option>
+                              </select>
                             </div>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               onClick={() => handleDeletePeriod(index)}
                             >
@@ -455,37 +531,37 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           </div>
                         </div>
                       ))}
-                      
+
                       {/* Add new period */}
                       <div className="p-3 border rounded-md bg-gray-50 border-dashed">
                         <h5 className="text-sm font-medium mb-2">Add New Period</h5>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-xs text-gray-500">Start Date</label>
-                            <Input 
-                              type="date" 
+                            <Input
+                              type="date"
                               value={newPeriod?.start_date?.toString().split('T')[0] || ''}
-                              onChange={(e) => setNewPeriod({...newPeriod || {}, start_date: e.target.value})}
+                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, start_date: e.target.value })}
                             />
                           </div>
                           <div>
                             <label className="text-xs text-gray-500">End Date</label>
-                            <Input 
-                              type="date" 
+                            <Input
+                              type="date"
                               value={newPeriod?.end_date?.toString().split('T')[0] || ''}
-                              onChange={(e) => setNewPeriod({...newPeriod || {}, end_date: e.target.value})}
+                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_date: e.target.value })}
                             />
                           </div>
                           <div className="col-span-2">
                             <label className="text-xs text-gray-500">End Reason</label>
-                            <Input 
-                              type="text" 
+                            <Input
+                              type="text"
                               value={newPeriod?.end_reason || ''}
-                              onChange={(e) => setNewPeriod({...newPeriod || {}, end_reason: e.target.value as MembershipEndReason})}
+                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_reason: e.target.value as MembershipEndReason })}
                             />
                           </div>
-                          <Button 
-                            variant="default" 
+                          <Button
+                            variant="default"
                             size="sm"
                             onClick={handleAddPeriod}
                             disabled={!newPeriod?.start_date}
@@ -512,7 +588,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             {period.end_reason && (
                               <div className="col-span-2">
                                 <p className="text-xs text-gray-500">End Reason</p>
-                                <p>{period.end_reason}</p>
+                                <p>{translateEndReason(period.end_reason)}</p>
                               </div>
                             )}
                           </div>
@@ -524,7 +600,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               ) : (
                 <p className="text-gray-500 italic">No membership history available</p>
               )}
-              
+
               {membershipHistory?.totalDuration && (
                 <div>
                   <p className="text-sm text-gray-500">Total Membership Duration</p>

@@ -70,31 +70,65 @@ router.put(
   }
 );
 
-// For issuing stamps - admin can do this
+// Issue stamp - add parameter for next year
 router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (req, res) => {
   try {
     const memberId = parseInt(req.params.memberId);
+    const { forNextYear = false } = req.body; // Get parameter from request body
     
-    // Get member details to determine stamp type
+    // Get member to determine stamp type
     const member = await memberService.getMemberById(memberId);
     if (!member) {
       return res.status(404).json({ message: "Member not found" });
     }
     
-    // Map life status to stamp type
+    // Determine stamp type based on life status
     const stampType = 
       member.life_status === "employed/unemployed" ? "employed" :
       member.life_status === "child/pupil/student" ? "student" :
       member.life_status === "pensioner" ? "pensioner" : "employed";
     
-    // Issue stamp - this already updates both the inventory and the member's stamp status
-    await stampService.issueStamp(memberId, stampType || null);
+    // Issue stamp with the new parameter
+    await stampService.issueStamp(memberId, stampType, forNextYear);
     
-    // Fetch the updated member to return in the response
+    // Update member record for current year stamps only (prisma limitation)
+    if (!forNextYear) {
+      // Update in members table
+      await memberService.updateMember(memberId, { card_stamp_issued: true });
+      
+      // Update/create in membership_details table
+      await prisma.membershipDetails.upsert({
+        where: { member_id: memberId },
+        update: { card_stamp_issued: true },
+        create: { 
+          member_id: memberId, 
+          card_stamp_issued: true
+        }
+      });
+    } else {
+      // Za markice za sljedeću godinu, spremi u membership_details tablicu
+      await prisma.membershipDetails.upsert({
+        where: { member_id: memberId },
+        update: { next_year_stamp_issued: true },
+        create: { 
+          member_id: memberId, 
+          next_year_stamp_issued: true
+        }
+      });
+      console.log(`Issuing next year stamp for member ${memberId} - Stored in database`);
+    }
+    
+    // Get updated member to return
     const updatedMember = await memberService.getMemberById(memberId);
     
+    // Manually inject the next_year_stamp field into response if needed
+    if (forNextYear && updatedMember) {
+      // Fake it in the response
+      updatedMember.next_year_stamp_issued = true;
+    }
+    
     res.json({ 
-      message: "Stamp issued successfully",
+      message: forNextYear ? "Stamp for next year issued successfully" : "Stamp issued successfully",
       member: updatedMember
     });
   } catch (error) {
@@ -109,6 +143,7 @@ router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (re
 router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser, async (req, res) => {
   try {
     const memberId = parseInt(req.params.memberId);
+    const { forNextYear = false } = req.body; // Get parameter from request body
     
     // Get member details to determine stamp type
     const member = await memberService.getMemberById(memberId);
@@ -122,43 +157,39 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
       member.life_status === "child/pupil/student" ? "student" :
       member.life_status === "pensioner" ? "pensioner" : "employed";
     
-    // Return stamp to inventory
-    await stampService.returnStamp(stampType);
+    // Return stamp to inventory with the new parameter
+    await stampService.returnStamp(stampType, memberId, forNextYear);
     
-    // Update member's stamp status in both tables
-    await memberService.updateMember(memberId, { card_stamp_issued: false });
-    
-    // Update directly in membership_details table to ensure it's updated
-    await prisma.membershipDetails.update({
-      where: { member_id: memberId },
-      data: { card_stamp_issued: false }
-    }).catch(err => {
-      console.log("Could not update membership_details directly:", err);
-      // Try inserting if update fails (in case no record exists)
-      return prisma.membershipDetails.upsert({
+    // Update only for current year stamps (prisma limitation)
+    if (!forNextYear) {
+      // Update member's stamp status in both tables
+      await memberService.updateMember(memberId, { card_stamp_issued: false });
+      
+      // Update directly in membership_details table to ensure it's updated
+      await prisma.membershipDetails.update({
         where: { member_id: memberId },
-        update: { card_stamp_issued: false },
-        create: { member_id: memberId, card_stamp_issued: false }
+        data: { card_stamp_issued: false }
       });
-    });
+    } else {
+      // Za markice za sljedeću godinu, ažuriraj membership_details tablicu
+      await prisma.membershipDetails.update({
+        where: { member_id: memberId },
+        data: { next_year_stamp_issued: false }
+      });
+      console.log(`Returning next year stamp for member ${memberId} - Updated in database`);
+    }
     
     // Get updated member to return in response
     const updatedMember = await memberService.getMemberById(memberId);
     
-    console.log("Stamp return completed, updated member:", {
-      memberId,
-      card_stamp_issued: false,
-      membership_details: updatedMember?.membership_details
-    });
-    
     res.json({ 
-      message: "Stamp returned to inventory successfully", 
-      member: updatedMember 
+      message: forNextYear ? "Stamp for next year returned successfully" : "Stamp returned successfully",
+      member: updatedMember
     });
   } catch (error) {
     console.error("Error returning stamp:", error);
     res.status(500).json({ 
-      message: error instanceof Error ? error.message : "Failed to return stamp to inventory" 
+      message: error instanceof Error ? error.message : "Failed to return stamp" 
     });
   }
 });

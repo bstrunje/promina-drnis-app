@@ -55,14 +55,52 @@ export function formatDate(date: Date | string | null = null, dateFormat: string
 }
 
 /**
- * Formatira datum za input[type="date"] polja (YYYY-MM-DD)
- * @param date - Datum ili string
+ * Pretvara datum iz ISO formata u hrvatski format za prikaz u input poljima
+ * @param isoDate - ISO datum (YYYY-MM-DD)
+ * @returns Date string u formatu DD.MM.YYYY
  */
-export function formatInputDate(date: Date | string | null): string {
+export function isoToHrFormat(isoDate: string): string {
+  if (!isoDate) return '';
+  
+  try {
+    const date = parseISO(isoDate);
+    return format(date, 'dd.MM.yyyy', { locale: hr });
+  } catch (error) {
+    console.error('Error converting ISO to HR format:', error);
+    return '';
+  }
+}
+
+/**
+ * Pretvara datum iz hrvatskog formata u ISO format za spremanje u bazu
+ * @param hrDate - Hrvatski datum (DD.MM.YYYY)
+ * @returns Date string u ISO formatu (YYYY-MM-DD)
+ */
+export function hrToIsoFormat(hrDate: string): string {
+  if (!hrDate) return '';
+  
+  try {
+    // Parse dd.MM.yyyy format to Date object
+    const date = parse(hrDate, 'dd.MM.yyyy', new Date());
+    
+    // Format to ISO date format (YYYY-MM-DD)
+    return format(date, 'yyyy-MM-dd');
+  } catch (error) {
+    console.error('Error converting HR to ISO format:', error);
+    return '';
+  }
+}
+
+/**
+ * Formatira input polje date za prikaz u obrascu
+ * @param date - Date object ili string
+ * @returns Date string u formatu koji koristi input[type="date"] (YYYY-MM-DD)
+ */
+export function formatInputDate(date: Date | string | null = null): string {
   if (!date) return '';
   
   try {
-    const d = typeof date === 'string' ? new Date(date) : date;
+    const d = typeof date === 'string' ? parseISO(date) : date;
     return format(d, 'yyyy-MM-dd');
   } catch (error) {
     console.error('Error formatting input date:', error);

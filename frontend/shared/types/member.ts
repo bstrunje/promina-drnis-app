@@ -54,6 +54,7 @@ export interface Member {
     registration_completed?: boolean;
     password_hash?: string;
     last_login?: Date;
+    status?: 'registered' | 'inactive' | 'pending';  // Added status field
 
     // Profile Information (UI/Display only)
     total_hours?: number;
@@ -73,6 +74,7 @@ export interface Member {
         card_number?: string;
         fee_payment_year?: number;
         card_stamp_issued?: boolean;
+        next_year_stamp_issued?: boolean;
     };
     membership_history?: MembershipHistory;
 }

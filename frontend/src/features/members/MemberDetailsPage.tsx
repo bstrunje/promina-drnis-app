@@ -337,6 +337,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
   const openAssignPasswordModal = () => {
     setIsAssigningPassword(true);
+    // Osvježimo dostupne brojeve iskaznica pri svakom otvaranju modala
+    console.log("Opening card number assignment modal with fresh data");
   };
 
   const closeModal = () => {
@@ -431,6 +433,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
             member={member}
             onClose={closeModal}
             onAssign={handleAssign}
+            key={`assign-card-${new Date().getTime()}`}
           />
         )}
 

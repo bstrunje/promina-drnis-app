@@ -18,6 +18,7 @@ const membershipRepository = {
           fee_payment_date?: Date;
           card_number?: string;
           card_stamp_issued?: boolean;
+          next_year_stamp_issued?: boolean;
         }
       ): Promise<void> {
         return await db.transaction(async (client) => {
@@ -105,6 +106,61 @@ const membershipRepository = {
               ]
             );
           }
+        
+          // Provjeri ima li član aktivnih perioda (bez end_date)
+          const activePeriodsResult = await client.query(
+            `SELECT COUNT(*) as active_count 
+             FROM membership_periods 
+             WHERE member_id = $1 AND end_date IS NULL`,
+            [memberId]
+          );
+          
+          console.log(`DEBUG: Active periods count for member ${memberId}:`, activePeriodsResult.rows[0].active_count);
+          console.log(`DEBUG: Type of active_count:`, typeof activePeriodsResult.rows[0].active_count);
+        
+          // Provjeri ima li barem jedan zatvoren period s razlogom
+          const hasEndedPeriods = periods.some(p => p.end_date && p.end_reason);
+          console.log(`DEBUG: Has ended periods for member ${memberId}: ${hasEndedPeriods}, periods:`, 
+            periods.map(p => ({ 
+              start: p.start_date, 
+              end: p.end_date || "null", 
+              reason: p.end_reason || "null" 
+            }))
+          );
+        
+          // Preciznija obrada rezultata COUNT - može doći u različitim formatima ovisno o PostgreSQL driveru
+          let activeCount = 0;
+          
+          if (typeof activePeriodsResult.rows[0].active_count === 'string') {
+            activeCount = parseInt(activePeriodsResult.rows[0].active_count);
+          } else {
+            activeCount = Number(activePeriodsResult.rows[0].active_count);
+          }
+          
+          console.log(`DEBUG: Processed activeCount (after conversion):`, activeCount);
+        
+          if (activeCount === 0 && hasEndedPeriods) {
+            console.log(`Deactivating member ${memberId} - no active membership periods`);
+            await client.query(
+              'UPDATE members SET status = $1 WHERE member_id = $2',
+              ['inactive', memberId]
+            );
+            
+            // Dodatno logirajmo status nakon promjene
+            const statusCheck = await client.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
+            console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
+          } else {
+            // Osiguraj da je član aktivan ako ima aktivnih perioda
+            console.log(`Ensuring member ${memberId} is active - has active membership periods: ${activeCount}`);
+            await client.query(
+              'UPDATE members SET status = $1 WHERE member_id = $2',
+              ['registered', memberId]
+            );
+            
+            // Dodatno logirajmo status nakon promjene
+            const statusCheck = await client.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
+            console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
+          }
         });
       },
 
@@ -128,12 +184,58 @@ const membershipRepository = {
         endDate: Date,
         endReason: MembershipEndReason
     ): Promise<void> {
+        // Prvo dohvati member_id iz period_id
+        const periodResult = await db.query(
+            'SELECT member_id FROM membership_periods WHERE period_id = $1',
+            [periodId]
+        );
+        
+        // Ažuriraj period članstva
         await db.query(
             `UPDATE membership_periods 
              SET end_date = $1, end_reason = $2 
              WHERE period_id = $3`,
             [endDate, endReason, periodId]
         );
+        
+        // Ako je pronađen član, ažuriraj status člana na 'inactive'
+        if (periodResult.rows.length > 0) {
+            const memberId = periodResult.rows[0].member_id;
+            
+            // Provjeri ima li član aktivnih perioda članstva
+            const activePeriodsResult = await db.query(
+                `SELECT COUNT(*) as active_count 
+                 FROM membership_periods 
+                 WHERE member_id = $1 AND end_date IS NULL`,
+                [memberId]
+            );
+            
+            console.log(`DEBUG [endMembershipPeriod]: Active periods count for member ${memberId}:`, activePeriodsResult.rows[0].active_count);
+            
+            // Preciznija obrada rezultata COUNT - može doći u različitim formatima ovisno o PostgreSQL driveru
+            let activeCount = 0;
+            
+            if (typeof activePeriodsResult.rows[0].active_count === 'string') {
+              activeCount = parseInt(activePeriodsResult.rows[0].active_count);
+            } else {
+              activeCount = Number(activePeriodsResult.rows[0].active_count);
+            }
+            
+            console.log(`DEBUG [endMembershipPeriod]: Processed activeCount (after conversion):`, activeCount);
+            
+            // Ako nema drugih aktivnih perioda, postavi status na 'inactive'
+            if (activeCount === 0) {
+                console.log(`Deactivating member ${memberId} in endMembershipPeriod - no active membership periods`);
+                await db.query(
+                    'UPDATE members SET status = $1 WHERE member_id = $2',
+                    ['inactive', memberId]
+                );
+                
+                // Dodatno logirajmo status nakon promjene
+                const statusCheck = await db.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
+                console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
+            }
+        }
     },
 
     async getMembershipPeriods(memberId: number): Promise<MembershipPeriod[]> {
@@ -176,7 +278,7 @@ const membershipRepository = {
     },
 
     async endExpiredMemberships(year: number): Promise<void> {
-        // 1. Prvo završimo razdoblja članstva
+        // 1. Završimo razdoblja članstva
         await db.query(
             `UPDATE membership_periods 
              SET end_date = $1, end_reason = 'non_payment'
@@ -190,22 +292,9 @@ const membershipRepository = {
             [new Date(year, 11, 31), year]
         );
         
-        // 2. Zatim resetiramo oznake izdanih markica za iste članove
-        // VAŽNO: Ovdje samo poništavamo oznaku card_stamp_issued, ali NE vraćamo markice u inventar
-        // jer nakon isteka članstva markice su već iskorištene i fizički se ne vraćaju
-        await db.query(
-            `UPDATE membership_details 
-             SET card_stamp_issued = false
-             WHERE member_id IN (
-                SELECT m.member_id 
-                FROM members m
-                JOIN membership_details md ON m.member_id = md.member_id
-                WHERE md.fee_payment_year < $1
-             )`,
-            [year]
-        );
+        // Markice su nepovratne, više ne resetiramo oznake izdanih markica
         
-        console.log(`Završena članstva i poništene markice za godinu ${year} (${new Date().toISOString()})`);
+        console.log(`Završena članstva za godinu ${year} (${new Date().toISOString()})`);
     }
 };
 

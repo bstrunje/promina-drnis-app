@@ -20,6 +20,7 @@ import {
 import multerConfig from "../config/upload.js";
 import db from "../utils/db.js";
 import prisma from "../utils/prisma.js";
+import cardNumberRepository from "../repositories/cardnumber.repository.js";
 
 interface MembershipUpdateRequest {
   paymentDate: string;
@@ -372,7 +373,7 @@ export const memberController = {
         await membershipService.updateCardDetails(
           parseInt(memberId),
           cardNumber,
-          true
+          false // Promijenjen s true na false - markica NE treba biti automatski izdana
         );
 
         // Ažuriraj status i lozinku
@@ -396,6 +397,16 @@ export const memberController = {
         );
       }
 
+      // Automatski sinkroniziraj statuse brojeva iskaznica nakon dodjele
+      try {
+        console.log("Automatically synchronizing card number statuses after assignment...");
+        await cardNumberRepository.syncCardNumberStatus();
+        console.log("Automatic synchronization completed successfully");
+      } catch (syncError) {
+        console.error("Automatic card number synchronization failed:", syncError);
+        // Ne prekidamo izvršavanje ako sinkronizacija ne uspije
+      }
+
       res.json({ 
         message: "Card number assigned and member activated successfully",
         card_number: cardNumber,
@@ -414,6 +425,7 @@ export const memberController = {
   ): Promise<void> {
     try {
       const { memberId } = req.params;
+      const { forNextYear = false } = req.body; // Dodano za označavanje je li za sljedeću godinu
 
       const member = await memberService.getMemberById(parseInt(memberId));
       if (!member) {
@@ -432,11 +444,17 @@ export const memberController = {
 
       const result = await stampService.issueStamp(
         parseInt(memberId),
-        stampType || null
+        stampType || null,
+        forNextYear // Prosljeđujemo novi parametar
       );
 
       if (result.success) {
-        res.json({ message: "Stamp issued successfully" });
+        res.json({ 
+          message: forNextYear 
+            ? "Stamp for next year issued successfully" 
+            : "Stamp issued successfully",
+          member: await memberService.getMemberById(parseInt(memberId)) // Vraćamo ažuriranog člana
+        });
       }
     } catch (error) {
       handleControllerError(error, res);
@@ -595,6 +613,9 @@ export const memberController = {
         console.log("Fee payment update completed");
       }
 
+      // Varijabla za praćenje je li broj iskaznice promijenjen (potrebno za automatsku sinkronizaciju)
+      let cardNumberChanged = false;
+
       // Procesuiramo broj iskaznice i status markice samo ako su izričito proslijeđeni
       // Sada su ove operacije odvojene od plaćanja članarine
       if (cardNumber !== undefined) {
@@ -605,6 +626,7 @@ export const memberController = {
           false // Ne mijenjamo automatski status markice kad ažuriramo broj iskaznice
         );
         console.log("Card number update completed");
+        cardNumberChanged = true;
       }
       
       // Odvojeni blok samo za status markice
@@ -627,6 +649,18 @@ export const memberController = {
           "success",
           memberId
         );
+      }
+
+      // Automatski sinkroniziraj statuse brojeva iskaznica ako je broj iskaznice promijenjen
+      if (cardNumberChanged) {
+        try {
+          console.log("Automatically synchronizing card number statuses after update...");
+          await cardNumberRepository.syncCardNumberStatus();
+          console.log("Automatic synchronization completed successfully");
+        } catch (syncError) {
+          console.error("Automatic card number synchronization failed:", syncError);
+          // Ne prekidamo izvršavanje ako sinkronizacija ne uspije
+        }
       }
 
       // Fetch the updated member details

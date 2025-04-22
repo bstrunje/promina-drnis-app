@@ -67,6 +67,7 @@ const memberRepository = {
                 md.card_number,
                 md.fee_payment_year,
                 md.card_stamp_issued,
+                md.next_year_stamp_issued,
                 md.fee_payment_date,
                 (SELECT json_agg(
                     json_build_object(
@@ -110,6 +111,10 @@ const memberRepository = {
             
             if (result.rows[0].card_stamp_issued !== undefined) {
                 member.membership_details.card_stamp_issued = result.rows[0].card_stamp_issued;
+            }
+            
+            if (result.rows[0].next_year_stamp_issued !== undefined) {
+                member.membership_details.next_year_stamp_issued = result.rows[0].next_year_stamp_issued;
             }
             
             return member;

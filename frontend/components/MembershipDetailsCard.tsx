@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
 import { Clock } from 'lucide-react';
+import { useAuth } from "../src/context/AuthContext";
 
 interface MembershipDetailsCardProps {
   member: Member;
@@ -10,6 +11,8 @@ interface MembershipDetailsCardProps {
 const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   member,
 }) => {
+  const { user } = useAuth();
+  
   const getStatusColor = (status: Member["life_status"]) => {
     switch (status) {
       case "employed/unemployed":
@@ -25,6 +28,9 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
 
   // Get card number from membership_details first (source of truth), fall back to direct property
   const cardNumber = member.membership_details?.card_number || member.card_number;
+  
+  // Provjeri je li korisnik admin ili superuser
+  const canViewCardNumber = user?.role === "admin" || user?.role === "superuser";
 
   // Activity status calculation (moved from MemberActivityStatus)
   const getActivityStatus = (totalHours: number) => {
@@ -38,16 +44,31 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <label className="text-sm text-gray-500">Card Number: </label>
-          <p
-            className={`inline-block w-fit px-3 py-1 rounded-lg font-mono ml-2 ${
-              cardNumber
-                ? getStatusColor(member.life_status)
-                : "bg-gray-200 text-gray-600"
-            }`}
-          >
-            {cardNumber || "No card number assigned"}
-          </p>
+          <div>
+            <label className="text-sm text-gray-500">Card Number: </label>
+            {cardNumber ? (
+              canViewCardNumber ? (
+                <p
+                  className={`inline-block w-fit px-3 py-1 rounded-lg font-mono ml-2 ${
+                    getStatusColor(member.life_status)
+                  }`}
+                >
+                  {cardNumber}
+                </p>
+              ) : (
+                <p className="text-gray-500">
+                  <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
+                    *** Skriveno ***
+                  </span>
+                  <span className="text-xs ml-2 text-gray-400">
+                    (Vidljivo samo administratorima)
+                  </span>
+                </p>
+              )
+            ) : (
+              <p className="text-gray-400 ml-2">No card number assigned</p>
+            )}
+          </div>
           <div>
             <label className="text-sm text-gray-500">Membership Type</label>
             <p>{member.membership_type}</p>

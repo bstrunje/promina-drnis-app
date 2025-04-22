@@ -6,9 +6,10 @@ interface Props {
     member: Member;
     onClose: () => void;
     onAssign: (updatedMember: Member) => void;
+    key?: string;
 }
 
-const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
+const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
     const [cardNumber, setCardNumber] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -24,8 +25,28 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
         const fetchCardNumbers = async () => {
             try {
                 setLoading(true);
+                
+                // Resetiraj izbor broja iskaznice
+                setCardNumber('');
+                
+                // Eksplicitno osvježi podatke bez korištenja keša
+                const timestamp = new Date().getTime();
+                console.log(`Fetching fresh available card numbers at ${timestamp}`);
+                
                 const numbers = await getAvailableCardNumbers();
-                setAvailableCardNumbers(numbers);
+                
+                // Dodatno logiranje za debugging
+                console.log("Fetched card numbers:", numbers);
+                console.log("Card numbers type:", typeof numbers, Array.isArray(numbers));
+                
+                // Osiguraj da je rezultat uistinu array
+                if (Array.isArray(numbers)) {
+                    setAvailableCardNumbers(numbers);
+                } else {
+                    console.error("getAvailableCardNumbers did not return an array:", numbers);
+                    setAvailableCardNumbers([]);
+                }
+                
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching available card numbers:', error);
@@ -35,7 +56,10 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
         };
 
         fetchCardNumbers();
-    }, []);
+        // Reset state kad se komponenta učita
+        setError(null);
+        setSuccessMessage(null);
+    }, [key]);
 
     // Ažuriraj preview lozinke kad se promijeni broj iskaznice
     useEffect(() => {
@@ -61,7 +85,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
             const updatedMember = {
                 ...member,
                 registration_completed: true,
-                status: 'registered',
+                status: 'registered' as const,
                 membership_details: {
                     ...member.membership_details,
                     card_number: cardNumber

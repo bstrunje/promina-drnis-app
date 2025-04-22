@@ -13,19 +13,72 @@ router.get('/inventory', authenticateToken, roles.requireAdmin, async (req, res)
     }
 });
 
+// Dohvat inventara za konkretnu godinu
+router.get('/inventory/:year', authenticateToken, roles.requireAdmin, async (req, res) => {
+    try {
+        const year = parseInt(req.params.year);
+        if (isNaN(year)) {
+            return res.status(400).json({ message: 'Invalid year parameter' });
+        }
+        
+        const inventory = await stampService.getInventoryStatusByYear(year);
+        res.json(inventory);
+    } catch (error) {
+        res.status(500).json({ 
+            message: error instanceof Error ? error.message : 'Failed to fetch inventory for year' 
+        });
+    }
+});
+
 router.put('/inventory', 
     authenticateToken, 
     roles.requireAdmin, 
     async (req, res) => {
         try {
-            const { employed, student, pensioner } = req.body;
+            const { employed, student, pensioner, year } = req.body;
+            
+            // Validacija da imamo godinu
+            if (!year || isNaN(parseInt(year))) {
+                return res.status(400).json({ message: 'Valid year parameter is required' });
+            }
+            
+            const yearValue = parseInt(year);
+            
+            // Dodana provjera je li podatak broj
+            if (isNaN(employed) || isNaN(student) || isNaN(pensioner)) {
+                return res.status(400).json({ message: 'All inventory values must be numbers' });
+            }
+            
+            const employedValue = parseInt(employed) || 0;
+            const studentValue = parseInt(student) || 0;
+            const pensionerValue = parseInt(pensioner) || 0;
+            
+            // Dodatna sigurnosna provjera protiv negativnih vrijednosti
+            if (employedValue < 0 || studentValue < 0 || pensionerValue < 0) {
+                return res.status(400).json({ message: 'Inventory values cannot be negative' });
+            }
+            
+            console.log(`Updating inventory for year ${yearValue}:`, {
+                employed: employedValue,
+                student: studentValue,
+                pensioner: pensionerValue
+            });
+            
             await Promise.all([
-                stampService.updateInitialCount('employed', employed),
-                stampService.updateInitialCount('student', student),
-                stampService.updateInitialCount('pensioner', pensioner)
+                stampService.updateInitialCount('employed', employedValue, yearValue),
+                stampService.updateInitialCount('student', studentValue, yearValue),
+                stampService.updateInitialCount('pensioner', pensionerValue, yearValue)
             ]);
-            res.json({ message: 'Inventory updated successfully' });
+            
+            // Vraćamo ažurirani inventar za tu godinu
+            const updatedInventory = await stampService.getInventoryStatusByYear(yearValue);
+            
+            res.json({ 
+                message: `Inventory for year ${yearValue} updated successfully`,
+                inventory: updatedInventory
+            });
         } catch (error) {
+            console.error('Error updating inventory:', error);
             res.status(500).json({ 
                 message: error instanceof Error ? error.message : 'Failed to update inventory' 
             });

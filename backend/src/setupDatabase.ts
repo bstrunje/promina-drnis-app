@@ -96,21 +96,22 @@ export async function setupDatabase(): Promise<void> {
       CREATE TABLE IF NOT EXISTS stamp_inventory (
           id SERIAL PRIMARY KEY,
           stamp_type VARCHAR(20) NOT NULL,
+          stamp_year INTEGER NOT NULL DEFAULT EXTRACT(YEAR FROM CURRENT_DATE),
           initial_count INTEGER NOT NULL DEFAULT 0,
           issued_count INTEGER DEFAULT 0,
           remaining INTEGER GENERATED ALWAYS AS (initial_count - issued_count) STORED,
           last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),
-          CONSTRAINT stamp_type_unique UNIQUE (stamp_type)
+          CONSTRAINT stamp_type_year_unique UNIQUE (stamp_type, stamp_year)
       );
 
-      -- Ensure initial data exists
-      INSERT INTO stamp_inventory (stamp_type, initial_count, issued_count) 
+      -- Ensure initial data exists for current year
+      INSERT INTO stamp_inventory (stamp_type, stamp_year, initial_count, issued_count) 
       VALUES 
-          ('employed', 0, 0),
-          ('student', 0, 0),
-          ('pensioner', 0, 0)
-      ON CONFLICT (stamp_type) DO NOTHING;
+          ('employed', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
+          ('student', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
+          ('pensioner', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0)
+      ON CONFLICT (stamp_type, stamp_year) DO NOTHING;
   `);
     console.log("✅ Stamp inventory table created successfully");
     await db.query(`

@@ -171,6 +171,42 @@ const cardNumberController = {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
+  },
+
+  // Nova metoda za sinkronizaciju statusa brojeva iskaznica
+  async syncCardNumberStatus(req: Request, res: Response): Promise<void> {
+    try {
+      // Potrebna je admin/superuser razina pristupa
+      if (req.user?.role !== 'admin' && req.user?.role !== 'superuser') {
+        res.status(403).json({ message: 'Unauthorized. Only admins and superusers can sync card number status.' });
+        return;
+      }
+
+      console.log("Starting card number status synchronization...");
+      
+      // Pozovi metodu u repozitoriju koja će sinkronizirati statuse
+      const result = await cardNumberRepository.syncCardNumberStatus();
+      
+      // Logiraj operaciju
+      await auditService.logAction(
+        'SYNC_CARD_NUMBER_STATUS',
+        req.user?.id || null,
+        `Synchronized card number status. Updated ${result.updated} records.`,
+        req,
+        'success'
+      );
+      
+      res.status(200).json({ 
+        message: 'Card number status synchronized successfully',
+        updated: result.updated
+      });
+    } catch (error) {
+      console.error('Error syncing card number status:', error);
+      res.status(500).json({ 
+        message: 'Failed to sync card number status',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 };
 

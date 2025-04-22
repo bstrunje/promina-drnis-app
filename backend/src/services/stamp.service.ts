@@ -5,6 +5,7 @@ import { DatabaseError } from "../utils/errors.js";
 const stampService = {
   async getInventoryStatus() {
     try {
+      // Dohvati inventar za sve godine
       const inventory = await stampRepository.getInventory();
       return inventory.map((item) => ({
         ...item,
@@ -15,22 +16,34 @@ const stampService = {
     }
   },
 
-  async updateInitialCount(type: string, count: number) {
+  async getInventoryStatusByYear(year: number) {
+    try {
+      const inventory = await stampRepository.getInventoryByYear(year);
+      return inventory.map((item) => ({
+        ...item,
+        remaining: item.initial_count - item.issued_count,
+      }));
+    } catch (error) {
+      throw new DatabaseError(`Error fetching stamp inventory for year ${year}`);
+    }
+  },
+
+  async updateInitialCount(type: string, count: number, year: number) {
     try {
       if (count < 0) {
         throw new Error("Initial count cannot be negative");
       }
 
-      const inventory = await stampRepository.getInventory();
+      const inventory = await stampRepository.getInventoryByYear(year);
       const currentInventory = inventory.find(
-        (item) => item.stamp_type === type
+        (item) => item.stamp_type === type && item.stamp_year === year
       );
 
       if (currentInventory && count < currentInventory.issued_count) {
         throw new Error("New count cannot be less than already issued stamps");
       }
 
-      await stampRepository.updateInventory(type, count);
+      await stampRepository.updateInventory(type, count, year);
     } catch (error) {
       throw new DatabaseError(
         "Error updating stamp inventory: " +
@@ -53,40 +66,41 @@ const stampService = {
       case "pensioner":
         return "pensioner";
       default:
-        return "employed"; // Default for unknown values
+        return "employed"; // Default fallback
     }
   },
 
-  async issueStamp(memberId: number, givenStampType: string | null = null) {
+  async issueStamp(memberId: number, type: string, forNextYear: boolean = false) {
     try {
-      const member = await membershipRepository.getMembershipDetails(memberId);
-      if (!member) {
-        throw new Error("Member not found");
+      // Validate stamp type
+      if (!type) {
+        throw new Error("Stamp type is required");
       }
 
-      // Determine stamp type based on life status
-      const stampType =
-        givenStampType || this.getStampTypeFromLifeStatus(member.life_status || "");
+      // Determine which year stamp to use
+      const currentYear = new Date().getFullYear();
+      const stampYear = forNextYear ? currentYear + 1 : currentYear;
 
       // Check if stamp is available in inventory
-      const inventory = await stampRepository.getInventory();
+      const inventory = await stampRepository.getInventoryByYear(stampYear);
       const stampInventory = inventory.find(
-        (item) => item.stamp_type === stampType
+        (item) => item.stamp_type === type && item.stamp_year === stampYear
       );
 
       if (!stampInventory) {
-        throw new Error(`No inventory found for ${stampType} stamps`);
+        throw new Error(`No inventory found for ${type} stamps for year ${stampYear}`);
       }
 
+      // Check if there are enough stamps
       if (stampInventory.initial_count <= stampInventory.issued_count) {
-        throw new Error(`No ${stampType} stamps available in inventory`);
+        throw new Error(`No ${type} stamps available in inventory for year ${stampYear}`);
       }
 
-      // Issue stamp and update inventory
-      await stampRepository.incrementIssuedCount(stampType);
-      await membershipRepository.updateMembershipDetails(memberId, {
-        card_stamp_issued: true,
-      });
+      // Issue stamp and update inventory - za odgovarajuću godinu
+      await stampRepository.incrementIssuedCount(type, stampYear);
+      
+      // We'll handle the membership details update in the controller
+      console.log(`Stamp issued successfully for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
 
       return { success: true };
     } catch (error) {
@@ -97,42 +111,26 @@ const stampService = {
     }
   },
 
-  async returnStamp(type: string, memberId?: number) {
+  async returnStamp(type: string, memberId?: number, forNextYear: boolean = false) {
     try {
-      // If type is actually a life status string, convert it
-      let stampType = type;
-      if (
-        type &&
-        (type.includes("/") ||
-          type === "employed/unemployed" ||
-          type === "child/pupil/student" ||
-          type === "pensioner")
-      ) {
-        stampType = this.getStampTypeFromLifeStatus(type);
-      }
-
-      const inventory = await stampRepository.getInventory();
-      const stamp = inventory.find((item) => item.stamp_type === stampType);
-
-      if (!stamp) {
-        throw new Error(`No inventory record found for type: ${stampType}`);
-      }
-
-      // Update inventory
-      await stampRepository.decrementIssuedCount(stampType);
+      // Determine which year stamp to return
+      const currentYear = new Date().getFullYear();
+      const stampYear = forNextYear ? currentYear + 1 : currentYear;
       
-      // If memberId is provided, also update the member's stamp status
+      // Update inventory (decrement issued count)
+      await stampRepository.decrementIssuedCount(type, stampYear);
+      
+      // We'll handle the membership details update in the controller
       if (memberId) {
-        await membershipRepository.updateMembershipDetails(memberId, {
-          card_stamp_issued: false,
-        });
+        console.log(`Stamp returned for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
       }
-      
-      return true;
+
+      return { success: true };
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : new Error("Error returning stamp to inventory");
+      throw new DatabaseError(
+        "Error returning stamp: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
     }
   },
 

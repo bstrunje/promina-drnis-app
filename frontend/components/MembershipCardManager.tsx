@@ -21,7 +21,7 @@ import {
 } from "@components/ui/select";
 import api from "../src/utils/api";
 import { useCardNumberLength } from "../src/hooks/useCardNumberLength";
-import { getCurrentDate } from "../src/utils/dateUtils";
+import { getCurrentDate, getCurrentYear } from "../src/utils/dateUtils";
 
 // Update the Props interface to include userRole
 interface Props {
@@ -42,11 +42,21 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
       member?.card_stamp_issued ||
       false
   );
+  const [nextYearStampIssued, setNextYearStampIssued] = useState(
+    member?.membership_details?.next_year_stamp_issued || false
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIssuingStamp, setIsIssuingStamp] = useState(false);
+  const [isIssuingNextYearStamp, setIsIssuingNextYearStamp] = useState(false);
   const [inventoryStatus, setInventoryStatus] = useState<{
     type: string;
     remaining: number;
+    year: number;
+  } | null>(null);
+  const [nextYearInventoryStatus, setNextYearInventoryStatus] = useState<{
+    type: string;
+    remaining: number;
+    year: number;
   } | null>(null);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>(
     []
@@ -79,14 +89,31 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
             ? "pensioner"
             : "employed";
 
-        const relevantInventory = data.find(
-          (item: { stamp_type: string }) => item.stamp_type === stampType
+        // Pronađi zalihu markica za tekuću godinu
+        const currentYearInventory = data.find(
+          (item: { stamp_type: string, stamp_year: number }) => 
+            item.stamp_type === stampType && item.stamp_year === getCurrentYear()
         );
 
-        if (relevantInventory) {
+        // Pronađi zalihu markica za sljedeću godinu
+        const nextYearInventory = data.find(
+          (item: { stamp_type: string, stamp_year: number }) => 
+            item.stamp_type === stampType && item.stamp_year === getCurrentYear() + 1
+        );
+
+        if (currentYearInventory) {
           setInventoryStatus({
             type: stampType,
-            remaining: relevantInventory.remaining,
+            remaining: currentYearInventory.remaining,
+            year: getCurrentYear(),
+          });
+        }
+
+        if (nextYearInventory) {
+          setNextYearInventoryStatus({
+            type: stampType,
+            remaining: nextYearInventory.remaining,
+            year: getCurrentYear() + 1,
           });
         }
       } catch (error) {
@@ -224,6 +251,20 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
   // Add a function to check if user can return stamps (only superusers)
   const canReturnStamp = userRole === "superuser";
   
+  // Funkcija za određivanje tipa markice prema statusu člana
+  const getMemberStampType = (member: any): string => {
+    // Logika slična onoj u backend controller-u
+    if (member.life_status === "employed/unemployed") {
+      return "employed";
+    } else if (member.life_status === "child/pupil/student") {
+      return "student";
+    } else if (member.life_status === "pensioner") {
+      return "pensioner";
+    }
+    // Zadani tip ako nema status
+    return "employed";
+  };
+
   // Modify handleStampToggle to ensure proper inventory update
   const handleStampToggle = async (newState: boolean) => {
     // If user is trying to uncheck (return stamp) but doesn't have permission
@@ -257,7 +298,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
   
       if (newState) {
         // Issue stamp API call
-        const response = await api.post(`/members/${member.member_id}/stamp`);
+        const response = await api.post(`/members/${member.member_id}/stamp`, { forNextYear: false });
         apiSuccess = true;
   
         // Update inventory display if shown
@@ -266,7 +307,7 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
         );
       } else {
         // Return stamp API call
-        const response = await api.post(`/members/${member.member_id}/stamp/return`);
+        const response = await api.post(`/members/${member.member_id}/stamp/return`, { forNextYear: false });
         
         // Try to get the updated member from the response
         if (response.data && response.data.member) {
@@ -316,6 +357,111 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
     }
   };
 
+  // Dodana nova funkcija za rukovanje izdavanjem markice za sljedeću godinu
+  const handleNextYearStampToggle = async (newState: boolean) => {
+    // If user is trying to uncheck (return stamp) but doesn't have permission
+    if (!newState && !canReturnStamp) {
+      toast({
+        title: "Permission Denied",
+        description: "Only superusers can return stamps to inventory",
+        variant: "destructive",
+      });
+      return; // Stop the function here
+    }
+    
+    // Fetch next year's inventory status
+    const nextYear = getCurrentYear() + 1;
+    
+    try {
+      // Dohvati status inventara za sljedeću godinu (odvojeno od tekuće godine)
+      let nextYearInventory = null;
+      if (newState) {
+        const response = await api.get(`/stamps/inventory/${nextYear}`);
+        const stampType = getMemberStampType(member);
+        
+        nextYearInventory = response.data.find(
+          (item: any) => item.stamp_type === stampType && item.stamp_year === nextYear
+        );
+        
+        // Provjeri ima li dostupnih markica za sljedeću godinu
+        if (!nextYearInventory || nextYearInventory.remaining <= 0) {
+          toast({
+            title: "Nedovoljan inventar",
+            description: `Nema dostupnih markica za ${nextYear}. godinu. Molimo dodajte markice kroz Admin Dashboard.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    
+      // Save the current UI state to avoid flickering
+      setNextYearStampIssued(newState);
+      
+      setIsIssuingNextYearStamp(true);
+      
+      let apiSuccess = false;
+      let updatedMember = null;
+  
+      if (newState) {
+        // Issue stamp API call for next year
+        const response = await api.post(`/members/${member.member_id}/stamp`, { forNextYear: true });
+        apiSuccess = true;
+        
+        // Ne ažuriramo lokalni UI za trenutnu godinu jer to nije ono što se mijenja
+        // U stvarnosti se mijenja inventar za sljedeću godinu
+      } else {
+        // Return stamp API call for next year
+        const response = await api.post(`/members/${member.member_id}/stamp/return`, { forNextYear: true });
+        
+        // Try to get the updated member from the response
+        if (response.data && response.data.member) {
+          updatedMember = response.data.member;
+        }
+        
+        apiSuccess = true;
+        
+        // Ne ažuriramo lokalni UI za trenutnu godinu
+      }
+  
+      if (apiSuccess) {      
+        // Create a partial update object to avoid full page refresh
+        const updatedData = {
+          membership_details: {
+            ...(member.membership_details || {}),
+            next_year_stamp_issued: newState,
+          }
+        };
+        
+        // Pass the specific update data to the parent component
+        await onUpdate(updatedMember || {
+          ...member,
+          ...updatedData
+        });
+        
+        // Jasna poruka koja uključuje informaciju o godini
+        toast({
+          title: "Uspjeh!",
+          description: newState 
+            ? `Markica za ${nextYear}. godinu je izdana` 
+            : `Markica za ${nextYear}. godinu je vraćena`,
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Greška",
+        description: error instanceof Error 
+          ? error.message 
+          : `Neuspješno ${newState ? "izdavanje" : "vraćanje"} markice za sljedeću godinu`,
+        variant: "destructive",
+      });
+      // Revert the UI state if API call fails
+      setNextYearStampIssued(!newState);
+    } finally {
+      setIsIssuingNextYearStamp(false);
+    }
+  };
+
   const getStatusColor = () => {
     switch (member.life_status) {
       case "employed/unemployed":
@@ -356,90 +502,107 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
               })()}
             </div>
 
-            {/* Stamp Status Toggle Section - Only show when fee is current */}
-            {isFeeCurrent && (member.membership_details?.card_number || member.card_number) && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Stamp Status</h4>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="stampIssued"
-                    checked={stampIssued}
-                    onChange={(e) => handleStampToggle(e.target.checked)}
-                    className="mr-2 h-4 w-4"
-                    disabled={isIssuingStamp || (stampIssued && !canReturnStamp)} // Disable if checked & not superuser
-                  />
-                  <label htmlFor="stampIssued" className="text-sm">
-                    {stampIssued
-                      ? "Stamp has been issued"
-                      : "Stamp has not been issued"}
-                  </label>
-                  {isIssuingStamp && (
-                    <svg
-                      className="animate-spin ml-2 h-4 w-4 text-blue-500"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
+            {/* Stamp Status */}
+            <div className="mt-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Stamp Status:</span>
+              </div>
+              
+              {/* Current Year Stamp Section */}
+              <div className="bg-white border rounded-md p-3 mb-3">
+                <div className="flex justify-between mb-2">
+                  <h5 className="font-medium text-sm">{getCurrentYear()} (Tekuća godina)</h5>
+                  
+                  {/* Current Year Inventory Status */}
+                  {inventoryStatus && (
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      Dostupno markica:{" "}
+                      <span
+                        className={`font-bold ${
+                          inventoryStatus.remaining > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {inventoryStatus.remaining}
+                      </span>
+                    </span>
                   )}
                 </div>
                 
-                {/* Add inventory info */}
-                {inventoryStatus && (
-                  <div className="mt-2 text-xs">
-                    <span className={`${
-                      inventoryStatus.remaining > 0
-                        ? "text-green-600"
-                        : "text-amber-600"
-                    }`}>
-                      {inventoryStatus.remaining} {inventoryStatus.type} stamps available in inventory
-                    </span>
+                {/* Provjera je li članarina plaćena za tekuću godinu - poboljšana logika */}
+                {(member?.membership_details?.fee_payment_year === getCurrentYear() || 
+                  member?.membership_details?.card_stamp_issued === true) ? (
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="stamp-toggle"
+                      checked={stampIssued}
+                      onChange={(e) => handleStampToggle(e.target.checked)}
+                      disabled={isIssuingStamp || isSubmitting || (!stampIssued && inventoryStatus?.remaining === 0)}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="stamp-toggle" className="text-sm font-medium cursor-pointer">
+                      Markica izdana
+                      {isIssuingStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
+                    </Label>
+                  </div>
+                ) : (
+                  <div className="text-sm text-amber-600 italic">
+                    Članarina za {getCurrentYear()} nije plaćena. Nije moguće upravljati markicom.
                   </div>
                 )}
-                
-                {/* Permission note for admins */}
-                {stampIssued && !canReturnStamp && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Note: Only superusers can return stamps to inventory
-                  </p>
-                )}
               </div>
-            )}
-            
-            {/* Always show stamp status display section, but with appropriate message */}
-            <div>
-              <span className="text-sm text-gray-500">Stamp Status:</span>
-              <span className="ml-2">
-                {(() => {
-                  // If fee is not current, show payment required message
-                  if (!isFeeCurrent) {
-                    return <span className="text-red-600">Payment required before stamp</span>;
-                  }
+              
+              {/* Next Year Stamp Section - Enabled for renewal payments, near year end, or if next year fee is already paid */}
+              {(new Date().getMonth() >= 10 || 
+                member?.membership_details?.fee_payment_year === getCurrentYear() + 1 ||
+                member?.membership_details?.next_year_stamp_issued === true) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                  <div className="flex justify-between mb-2">
+                    <h5 className="font-medium text-sm">{getCurrentYear() + 1} (Sljedeća godina)</h5>
+                    
+                    {/* Next Year Inventory Status */}
+                    {nextYearInventoryStatus && (
+                      <span className="text-xs bg-yellow-100 px-2 py-1 rounded">
+                        Dostupno markica:{" "}
+                        <span
+                          className={`font-bold ${
+                            nextYearInventoryStatus.remaining > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {nextYearInventoryStatus.remaining}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                   
-                  const stampIssued =
-                    member.membership_details?.card_stamp_issued ||
-                    member.card_stamp_issued;
-                  return stampIssued ? (
-                    <span className="text-green-600">Issued</span>
+                  {/* Provjera je li članarina plaćena unaprijed za sljedeću godinu - poboljšana logika */}
+                  {(member?.membership_details?.fee_payment_year === getCurrentYear() + 1 || 
+                    member?.membership_details?.next_year_stamp_issued === true) ? (
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="next-year-stamp-toggle"
+                        checked={nextYearStampIssued}
+                        onChange={(e) => handleNextYearStampToggle(e.target.checked)}
+                        disabled={isIssuingNextYearStamp || isSubmitting || (!nextYearStampIssued && nextYearInventoryStatus?.remaining === 0)}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor="next-year-stamp-toggle" className="text-sm font-medium cursor-pointer">
+                        Markica izdana
+                        {isIssuingNextYearStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
+                      </Label>
+                    </div>
                   ) : (
-                    <span className="text-yellow-600">Not issued</span>
-                  );
-                })()}
-              </span>
+                    <div className="text-sm text-amber-600 italic">
+                      Članarina za {getCurrentYear() + 1} nije plaćena. Nije moguće upravljati markicom.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ export interface MembershipDetails {
     card_number?: string;
     fee_payment_year?: number;
     card_stamp_issued?: boolean;
+    next_year_stamp_issued?: boolean;
     fee_payment_date?: string;
     life_status?: string;
 }

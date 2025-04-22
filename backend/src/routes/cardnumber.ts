@@ -42,4 +42,12 @@ router.get(
   cardNumberController.getAllCardNumbers
 );
 
+// Add this route for syncing card number status
+// Important: Use POST method as specified in the frontend
+router.post(
+  '/sync-status',
+  authMiddleware,
+  cardNumberController.syncCardNumberStatus
+);
+
 export default router;

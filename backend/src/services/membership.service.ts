@@ -16,7 +16,8 @@ const membershipService = {
   async processFeePayment(
     memberId: number,
     paymentDate: Date,
-    req: Request
+    req: Request,
+    isRenewalPayment?: boolean
   ): Promise<Member | null> {
     try {
       // Get system settings
@@ -42,9 +43,26 @@ const membershipService = {
       const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
       const startDate = new Date(paymentDate);
 
-      // If payment is after cutoff date, membership starts next year
-      if (validPaymentDate > cutoffDate) {
+      // Provjeri je li ovo novi član (koji nikad nije platio članarinu)
+      // ili postojeći član koji obnavlja članstvo
+      const isNewMember = !member.membership_details?.fee_payment_date;
+
+      // Ispiši važne informacije za dijagnostiku
+      console.log(`Processing payment for member ${memberId}:`, {
+        isNewMember,
+        paymentDate: validPaymentDate,
+        cutoffDate,
+        isAfterCutoff: validPaymentDate > cutoffDate,
+      });
+
+      // Samo za postojeće članove koji produljuju članstvo:
+      // Ako je plaćanje nakon cutoff datuma, članstvo počinje sljedeće godine
+      if (validPaymentDate > cutoffDate && !isNewMember) {
+        console.log(`Payment after cutoff date for EXISTING member - counting for next year`);
         startDate.setFullYear(paymentYear + 1, 0, 1); // January 1st of next year
+      } else if (validPaymentDate > cutoffDate && isNewMember) {
+        console.log(`Payment after cutoff date for NEW member - still counting for current year`);
+        // Za nove članove ne mijenjamo godinu, čak i ako je kasno u godini
       }
 
       await db.transaction(async (client) => {
@@ -125,17 +143,20 @@ const membershipService = {
         `SELECT member_id FROM membership_details WHERE member_id = $1`,
         [memberId]
       );
-      
-      const memberExists = existingCheck.rowCount && existingCheck.rowCount > 0;
-      
+
+      // Sigurna provjera za rowCount (može biti null)
+      const memberExists = (existingCheck?.rowCount ?? 0) > 0;
+
       if (!memberExists) {
         // Ako zapis ne postoji, kreiramo novi sa svim vrijednostima
+        // VAŽNO: Eksplicitno postavljamo card_stamp_issued na FALSE
+        console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
         await db.query(
           `INSERT INTO membership_details (member_id, card_number, card_stamp_issued)
-           VALUES ($1, $2, $3)`,
-          [memberId, cardNumber || "", stampIssued === null ? false : stampIssued]
+           VALUES ($1, $2, FALSE)`,
+          [memberId, cardNumber || ""]
         );
-        
+
         // Ako dodajemo novi broj kartice, brišemo sve stare zapise iz password_update_queue
         if (cardNumber !== undefined && cardNumber !== null && cardNumber !== "") {
           await db.query(
@@ -143,19 +164,20 @@ const membershipService = {
             [memberId, cardNumber.trim()]
           );
         }
-        
+
         return;
       }
-      
+
       // Ako zapis postoji, ažuriramo samo ono što je potrebno
-      
+
       // Ako je proslijeđen broj kartice, ažuriramo ga
       if (cardNumber !== undefined && cardNumber !== null && cardNumber !== "") {
+        console.log(`Updating card number for member ${memberId} to: ${cardNumber}`);
         await db.query(
           `UPDATE membership_details SET card_number = $2 WHERE member_id = $1`,
           [memberId, cardNumber.trim()]
         );
-        
+
         // Brišemo sve stare zapise iz password_update_queue za ovog člana
         // i ostavljamo samo trenutni broj kartice (ako postoji u queue)
         await db.query(
@@ -163,9 +185,11 @@ const membershipService = {
           [memberId, cardNumber.trim()]
         );
       }
-      
+
       // Ako je proslijeđen status markice, ažuriramo ga u odvojenoj operaciji
+      // SAMO ako je stampIssued eksplicitno postavljen
       if (stampIssued !== null && stampIssued !== undefined) {
+        console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
         await db.query(
           `UPDATE membership_details SET card_stamp_issued = $2 WHERE member_id = $1`,
           [memberId, stampIssued]

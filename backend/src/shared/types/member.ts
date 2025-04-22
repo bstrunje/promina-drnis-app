@@ -65,6 +65,7 @@ export interface Member {
     // Card-related fields (legacy, use membership_details instead)
     card_number?: string;
     card_stamp_issued?: boolean;
+    next_year_stamp_issued?: boolean; 
     fee_payment_year?: number;
 
     // Membership Information
@@ -73,6 +74,7 @@ export interface Member {
         card_number?: string;
         fee_payment_year?: number;
         card_stamp_issued?: boolean;
+        next_year_stamp_issued?: boolean; 
     };
     membership_history?: MembershipHistory;
 }

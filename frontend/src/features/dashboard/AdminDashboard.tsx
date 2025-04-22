@@ -14,39 +14,39 @@ interface Props {
 
 interface InventoryData {
   stamp_type: "employed" | "student" | "pensioner";
+  stamp_year: number;
   initial_count: number;
   issued_count: number;
   remaining: number;
 }
 
+interface StampTypeData {
+  initial: number;
+  issued: number;
+  remaining: number;
+}
+
+interface YearlyInventory {
+  employedStamps: StampTypeData;
+  studentStamps: StampTypeData;
+  pensionerStamps: StampTypeData;
+}
+
 interface StampInventory {
-  employedStamps: {
-    initial: number;
-    issued: number;
-    remaining: number;
-  };
-  studentStamps: {
-    initial: number;
-    issued: number;
-    remaining: number;
-  };
-  pensionerStamps: {
-    initial: number;
-    issued: number;
-    remaining: number;
-  };
+  [year: number]: YearlyInventory;
 }
 
 const AdminDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [inventory, setInventory] = useState<StampInventory>({
+  const [selectedYear, setSelectedYear] = useState(getCurrentYear());
+  const [inventory, setInventory] = useState<StampInventory>({});
+  const [editValues, setEditValues] = useState<YearlyInventory>({
     employedStamps: { initial: 0, issued: 0, remaining: 0 },
     studentStamps: { initial: 0, issued: 0, remaining: 0 },
     pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
   });
-  const [editValues, setEditValues] = useState(inventory);
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetYear, setResetYear] = useState(getCurrentYear());
@@ -54,34 +54,40 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [stampHistory, setStampHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [availableYears, setAvailableYears] = useState<number[]>([getCurrentYear(), getCurrentYear() + 1]);
 
   useEffect(() => {
     // Fetch immediately
     fetchInventory();
     checkUnreadMessages();
 
-    // Refresh every 15 seconds
-    const intervalId = setInterval(() => {
-      fetchInventory();
-      checkUnreadMessages();
-    }, 15000);
-
-    // Refresh when tab regains focus
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
+    // Ne osvježavaj automatski ako je korisnik u načinu uređivanja
+    if (!isEditing) {
+      // Refresh every 15 seconds
+      const intervalId = setInterval(() => {
         fetchInventory();
         checkUnreadMessages();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Cleanup
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
+      }, 15000);
+    
+      // Refresh when tab regains focus
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          fetchInventory();
+          checkUnreadMessages();
+        }
+      };
+    
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+      // Cleanup
+      return () => {
+        clearInterval(intervalId);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
+    }
+    
+    return () => {}; // Prazan return ako smo u načinu uređivanja
+  }, [isEditing]); // Pokreni efekt ponovno kad se način uređivanja promijeni
 
   useEffect(() => {
     if (showHistory) {
@@ -89,48 +95,91 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     }
   }, [showHistory]);
 
+  useEffect(() => {
+    // Kada se promijeni odabrana godina, inicijaliziraj početne vrijednosti za uređivanje
+    if (inventory[selectedYear]) {
+      setEditValues(inventory[selectedYear]);
+    } else {
+      setEditValues({
+        employedStamps: { initial: 0, issued: 0, remaining: 0 },
+        studentStamps: { initial: 0, issued: 0, remaining: 0 },
+        pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
+      });
+    }
+  }, [selectedYear, inventory]);
+
   const fetchInventory = async () => {
     try {
       const response = await api.get("/stamps/inventory");
       if (!response.data) throw new Error("Failed to fetch inventory");
 
       const data = response.data;
-      const employedData = data.find(
-        (i: InventoryData) => i.stamp_type === "employed"
-      ) || {
-        initial_count: 0,
-        issued_count: 0,
-      };
-      const studentData = data.find(
-        (i: InventoryData) => i.stamp_type === "student"
-      ) || {
-        initial_count: 0,
-        issued_count: 0,
-      };
-      const pensionerData = data.find(
-        (i: InventoryData) => i.stamp_type === "pensioner"
-      ) || {
-        initial_count: 0,
-        issued_count: 0,
-      };
-
-      setInventory({
-        employedStamps: {
-          initial: employedData.initial_count,
-          issued: employedData.issued_count,
-          remaining: employedData.initial_count - employedData.issued_count,
-        },
-        studentStamps: {
-          initial: studentData.initial_count,
-          issued: studentData.issued_count,
-          remaining: studentData.initial_count - studentData.issued_count,
-        },
-        pensionerStamps: {
-          initial: pensionerData.initial_count,
-          issued: pensionerData.issued_count,
-          remaining: pensionerData.initial_count - pensionerData.issued_count,
-        },
+      const newInventory: StampInventory = {};
+      const years = new Set<number>();
+      
+      // Grupiraj podatke po godinama
+      data.forEach((item: InventoryData) => {
+        const year = item.stamp_year;
+        years.add(year);
+        
+        if (!newInventory[year]) {
+          newInventory[year] = {
+            employedStamps: { initial: 0, issued: 0, remaining: 0 },
+            studentStamps: { initial: 0, issued: 0, remaining: 0 },
+            pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
+          };
+        }
+        
+        if (item.stamp_type === "employed") {
+          newInventory[year].employedStamps = {
+            initial: item.initial_count,
+            issued: item.issued_count,
+            remaining: item.remaining,
+          };
+        } else if (item.stamp_type === "student") {
+          newInventory[year].studentStamps = {
+            initial: item.initial_count,
+            issued: item.issued_count,
+            remaining: item.remaining,
+          };
+        } else if (item.stamp_type === "pensioner") {
+          newInventory[year].pensionerStamps = {
+            initial: item.initial_count,
+            issued: item.issued_count,
+            remaining: item.remaining,
+          };
+        }
       });
+      
+      // Osiguraj da postoje podaci za trenutnu i sljedeću godinu
+      const currentYear = getCurrentYear();
+      const nextYear = currentYear + 1;
+      
+      if (!newInventory[currentYear]) {
+        newInventory[currentYear] = {
+          employedStamps: { initial: 0, issued: 0, remaining: 0 },
+          studentStamps: { initial: 0, issued: 0, remaining: 0 },
+          pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
+        };
+        years.add(currentYear);
+      }
+      
+      if (!newInventory[nextYear]) {
+        newInventory[nextYear] = {
+          employedStamps: { initial: 0, issued: 0, remaining: 0 },
+          studentStamps: { initial: 0, issued: 0, remaining: 0 },
+          pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
+        };
+        years.add(nextYear);
+      }
+      
+      setAvailableYears(Array.from(years).sort());
+      setInventory(newInventory);
+      
+      // Inicijaliziraj vrijednosti za odabranu godinu
+      if (newInventory[selectedYear]) {
+        setEditValues(newInventory[selectedYear]);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -204,53 +253,110 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   };
 
   const handleEdit = () => {
-    setEditValues(inventory);
+    setEditValues(inventory[selectedYear]);
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    setEditValues(inventory);
+    setEditValues(inventory[selectedYear]);
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     try {
-      const response = await api.put("/stamps/inventory", {
-        employed: editValues.employedStamps.initial,
-        student: editValues.studentStamps.initial,
-        pensioner: editValues.pensionerStamps.initial,
+      // Duboke kopije editValues za sigurnost
+      const valuesToSave = JSON.parse(JSON.stringify(editValues));
+      
+      console.log("Spremam inventar za godinu:", selectedYear, valuesToSave);
+      
+      // Prikaži povratnu informaciju da je spremanje u tijeku
+      toast({
+        title: "Spremanje",
+        description: "Ažuriranje inventara markica u tijeku...",
+        duration: 2000,
       });
+      
+      // Pripremi payload s eksplicitnim numeričkim vrijednostima
+      const payload = {
+        year: selectedYear,
+        employed: Number(valuesToSave.employedStamps.initial),
+        student: Number(valuesToSave.studentStamps.initial),
+        pensioner: Number(valuesToSave.pensionerStamps.initial),
+      };
+      
+      console.log("Šaljem podatke:", payload);
+      
+      const response = await api.put("/stamps/inventory", payload);
+
+      console.log("Odgovor sa servera:", response.data);
 
       if (!response.data) throw new Error("Failed to update inventory");
 
-      setInventory(editValues);
+      // Ažuriraj lokalno stanje s novim vrijednostima i napravimo ponovno dohvaćanje
       setIsEditing(false);
+      
+      // Prikaži jasnu povratnu informaciju o uspjehu
       toast({
-        title: "Success",
-        description: "Stamp inventory updated successfully",
+        title: "Uspjeh!",
+        description: `Inventar markica za godinu ${selectedYear} uspješno ažuriran`,
         variant: "success",
+        duration: 3000,
       });
+      
+      // Ponovno dohvati inventar da osiguramo sinkronizaciju s bazom
+      await fetchInventory();
     } catch (error) {
+      console.error("Greška pri spremanju:", error);
+      
+      // Prikaži detaljnu povratnu informaciju o grešci
       toast({
-        title: "Error",
+        title: "Greška",
         description:
-          error instanceof Error ? error.message : "Failed to update inventory",
+          error instanceof Error ? error.message : "Neuspješno ažuriranje inventara",
         variant: "destructive",
+        duration: 5000,
       });
     }
   };
 
-  const handleInputChange = (type: keyof StampInventory, value: number) => {
-    if (isNaN(value)) return;
+  // Čuvaj posljednju vrijednost za input field
+  const lastInputValue = React.useRef({
+    employedStamps: 0,
+    studentStamps: 0,
+    pensionerStamps: 0
+  });
 
-    setEditValues((prev) => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        initial: value,
-        remaining: value - prev[type].issued,
-      },
-    }));
+  const handleInputChange = (type: keyof YearlyInventory, value: number) => {
+    console.log(`Changing ${type} to:`, value);
+    if (isNaN(value)) return;
+    
+    // Zapamti vrijednost u ref
+    lastInputValue.current[type] = value;
+
+    setEditValues((prev) => {
+      // Duboka kopija objekta kako bi se izbjeglo neočekivano ponašanje
+      const newState = JSON.parse(JSON.stringify(prev));
+      
+      // Ažuriraj konkretno polje
+      newState[type].initial = value;
+      newState[type].remaining = value - newState[type].issued;
+      
+      console.log("New state:", newState);
+      return newState;
+    });
+  };
+  
+  // Funkcija za fokus/blur hendlanje
+  const handleInputFocus = (type: keyof YearlyInventory) => {
+    console.log(`Focus on ${type}`);
+  };
+  
+  const handleInputBlur = (type: keyof YearlyInventory, value: number) => {
+    console.log(`Blur on ${type}, value: ${value}`);
+    // Osiguraj da vrijednost ostane ista i nakon blur eventa
+    if (value !== lastInputValue.current[type]) {
+      handleInputChange(type, lastInputValue.current[type]);
+    }
   };
 
   return (
@@ -346,10 +452,40 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             </div>
           </div>
           <div className="space-y-4">
+            <div className="flex justify-between mb-4">
+              <h3 className="font-medium">Select Year:</h3>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="w-full p-2 border rounded"
+                disabled={isEditing} // Onemogući promjenu godine tijekom uređivanja
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status trake za način uređivanja */}
+            {isEditing && (
+              <div className="bg-amber-100 border border-amber-300 text-amber-800 p-3 rounded-lg mb-4 shadow-sm">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Način uređivanja aktivan</span>
+                </div>
+                <p className="text-sm mt-1">
+                  Unesite željene količine markica i kliknite "Spremi" za potvrdu promjena. Automatsko osvježavanje je privremeno zaustavljeno.
+                </p>
+              </div>
+            )}
             {/* Employed/Unemployed Stamps */}
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-medium text-blue-800">
-                Employed/Unemployed Stamps
+                Employed/Unemployed Members Stamps
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
@@ -357,7 +493,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   {isEditing ? (
                     <input
                       type="number"
-                      min={inventory.employedStamps.issued}
+                      min={editValues.employedStamps.issued}
                       value={editValues.employedStamps.initial}
                       onChange={(e) =>
                         handleInputChange(
@@ -365,24 +501,26 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                           e.target.valueAsNumber
                         )
                       }
+                      onBlur={(e) => handleInputBlur("employedStamps", e.target.valueAsNumber)}
+                      onFocus={handleInputFocus.bind(null, "employedStamps")}
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-blue-700">
-                      {inventory.employedStamps.initial}
+                      {inventory[selectedYear]?.employedStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="text-sm text-blue-600">Issued</label>
                   <p className="font-bold text-blue-700">
-                    {inventory.employedStamps.issued}
+                    {inventory[selectedYear]?.employedStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm text-blue-600">Remaining</label>
                   <p className="font-bold text-blue-700">
-                    {inventory.employedStamps.remaining}
+                    {inventory[selectedYear]?.employedStamps?.remaining || 0}
                   </p>
                 </div>
               </div>
@@ -390,16 +528,14 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
             {/* Student/Pupil Stamps */}
             <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-medium text-green-800">
-                Student/Pupil Stamps
-              </h3>
+              <h3 className="font-medium text-green-800">Student/Pupil Stamps</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
                   <label className="text-sm text-green-600">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
-                      min={inventory.studentStamps.issued}
+                      min={editValues.studentStamps.issued}
                       value={editValues.studentStamps.initial}
                       onChange={(e) =>
                         handleInputChange(
@@ -407,24 +543,26 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                           e.target.valueAsNumber
                         )
                       }
+                      onBlur={(e) => handleInputBlur("studentStamps", e.target.valueAsNumber)}
+                      onFocus={handleInputFocus.bind(null, "studentStamps")}
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-green-700">
-                      {inventory.studentStamps.initial}
+                      {inventory[selectedYear]?.studentStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="text-sm text-green-600">Issued</label>
                   <p className="font-bold text-green-700">
-                    {inventory.studentStamps.issued}
+                    {inventory[selectedYear]?.studentStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm text-green-600">Remaining</label>
                   <p className="font-bold text-green-700">
-                    {inventory.studentStamps.remaining}
+                    {inventory[selectedYear]?.studentStamps?.remaining || 0}
                   </p>
                 </div>
               </div>
@@ -439,7 +577,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   {isEditing ? (
                     <input
                       type="number"
-                      min={inventory.pensionerStamps.issued}
+                      min={editValues.pensionerStamps.issued}
                       value={editValues.pensionerStamps.initial}
                       onChange={(e) =>
                         handleInputChange(
@@ -447,24 +585,26 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                           e.target.valueAsNumber
                         )
                       }
+                      onBlur={(e) => handleInputBlur("pensionerStamps", e.target.valueAsNumber)}
+                      onFocus={handleInputFocus.bind(null, "pensionerStamps")}
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
                     <p className="font-bold text-red-700">
-                      {inventory.pensionerStamps.initial}
+                      {inventory[selectedYear]?.pensionerStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="text-sm text-red-600">Issued</label>
                   <p className="font-bold text-red-700">
-                    {inventory.pensionerStamps.issued}
+                    {inventory[selectedYear]?.pensionerStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm text-red-600">Remaining</label>
                   <p className="font-bold text-red-700">
-                    {inventory.pensionerStamps.remaining}
+                    {inventory[selectedYear]?.pensionerStamps?.remaining || 0}
                   </p>
                 </div>
               </div>

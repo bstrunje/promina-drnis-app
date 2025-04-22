@@ -1,22 +1,27 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import { Calendar, Edit, Save, X } from "lucide-react";
-import { MembershipEndReason, MembershipPeriod } from "@shared/membership";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
-import { useAuth } from "../src/context/AuthContext";
-import { useToast } from "../components/ui/toast";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@components/ui/select";
+import { useToast } from "@components/ui/toast";
+import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
+import { Calendar, Edit, Save, X, Trash } from "lucide-react";
 import {
   format,
   parseISO,
-  addYears,
-  isAfter,
-  isBefore,
   isValid,
+  formatDistanceStrict,
+  isBefore,
+  isAfter,
+  addYears,
+  parse,
+  getMonth,
 } from "date-fns";
+import { hr } from "date-fns/locale";
 import { API_BASE_URL } from "@/utils/config";
+import { getCurrentDate, getCurrentYear, formatDate, isoToHrFormat, hrToIsoFormat } from '../src/utils/dateUtils';
 import { AdminPermissions } from '../shared/types/permissions';
-import { getCurrentDate, getCurrentYear, formatDate, getMonth } from '../src/utils/dateUtils';
+import { useAuth } from "../src/context/AuthContext";
 
 interface MembershipHistoryProps {
   periods: MembershipPeriod[];
@@ -50,7 +55,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
     user?.role === 'superuser' || 
     (user?.role === 'admin' && adminPermissions?.can_manage_end_reasons);
 
-  const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
+  const calculateTotalDuration = React.useCallback((periods: MembershipPeriod[]): string => {
     const totalDays = periods.reduce((total, period) => {
       const start = parseISO(period.start_date);
       const end = period.end_date ? parseISO(period.end_date) : getCurrentDate();
@@ -67,7 +72,7 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
     return `${years} years, ${months} months, ${days} days`;
   }, []);
 
-  const handleEndReasonChange = useCallback(async (periodId: number, newReason: string) => {
+  const handleEndReasonChange = React.useCallback(async (periodId: number, newReason: string) => {
     try {
       await fetch(
         `${API_BASE_URL}/members/${memberId}/membership-periods/${periodId}/end-reason`,
@@ -98,26 +103,27 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
       }
 
       toast({
-        title: "Success", 
-        description: "End reason updated successfully"
+        title: "Uspjeh",
+        description: "End reason updated successfully",
+        variant: "success"
       });
 
     } catch (error) {
       console.error(error);
       toast({
-        title: "Error",
+        title: "Greška",
         description: "Failed to update end reason",
-        variant: "destructive"  
+        variant: "destructive"
       });
     }
   }, [memberId, onUpdate, editedPeriods]);
 
   // Effect za sinkronizaciju periods prop-a sa lokalnim stanjem
-  useEffect(() => {
+  React.useEffect(() => {
     setEditedPeriods(periods);
   }, [periods]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchAdminPermissions = async () => {
       if (user?.role === 'admin') {
         try {
@@ -185,50 +191,74 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
     }
 
     if (field === "start_date" || field === "end_date") {
-      const dateValue = parseISO(value);
-      if (!isValid(dateValue)) {
-        console.error('Invalid date:', value);
+      // Za datume u hrvatskom formatu (DD.MM.YYYY)
+      const date = parse(value, "dd.MM.yyyy", new Date());
+      
+      if (!isValid(date)) {
+        console.error('Invalid date format. Please use DD.MM.YYYY');
         return;
       }
 
       if (field === "start_date") {
-        if (isAfter(dateValue, getCurrentDate())) {
-          console.error('Start date cannot be in the future');
+        if (isAfter(date, getCurrentDate())) {
+          toast({
+            title: "Greška",
+            description: "Datum početka ne može biti u budućnosti",
+            variant: "destructive"
+          });
           return;
         }
-        if (periodToUpdate.end_date && isAfter(dateValue, parseISO(periodToUpdate.end_date))) {
-          console.error('Start date must be before end date');
+        if (periodToUpdate.end_date && isAfter(date, parse(periodToUpdate.end_date, "dd.MM.yyyy", new Date()))) {
+          toast({
+            title: "Greška",
+            description: "Datum početka mora biti prije datuma završetka",
+            variant: "destructive"
+          });
           return;
         }
       } else if (field === "end_date") {
-        if (isBefore(dateValue, parseISO(periodToUpdate.start_date))) {
-          console.error('End date must be after start date');
+        if (isBefore(date, parse(periodToUpdate.start_date, "dd.MM.yyyy", new Date()))) {
+          toast({
+            title: "Greška", 
+            description: "Datum završetka mora biti nakon datuma početka",
+            variant: "destructive"
+          });
           return;
         }
-        if (isAfter(dateValue, addYears(getCurrentDate(), 100))) {
-          console.error('End date too far in the future');
+        if (isAfter(date, addYears(getCurrentDate(), 100))) {
+          toast({
+            title: "Greška",
+            description: "Datum završetka je predaleko u budućnosti",
+            variant: "destructive"
+          });
           return;
         }
       }
+      
+      // Konvertiraj u ISO format za spremanje u bazi, ali prikaži u HR formatu
+      const isoDate = format(date, "yyyy-MM-dd");
+      
+      const periodIndex = updatedPeriods.findIndex(
+        p => p.period_id === periodToUpdate.period_id
+      );
+
+      updatedPeriods[periodIndex] = {
+        ...periodToUpdate,
+        [field]: isoDate, // Spremamo u ISO formatu za backend
+      };
+    } else {
+      // Za ostala polja
+      const periodIndex = updatedPeriods.findIndex(
+        p => p.period_id === periodToUpdate.period_id
+      );
+
+      updatedPeriods[periodIndex] = {
+        ...periodToUpdate,
+        [field]: value,
+      };
     }
 
-    const periodIndex = updatedPeriods.findIndex(
-      p => p.period_id === periodToUpdate.period_id
-    );
-
-    updatedPeriods[periodIndex] = {
-      ...periodToUpdate,
-      [field]: value,
-    };
-
     setEditedPeriods(updatedPeriods);
-  };
-
-  const handleAddPeriod = () => {
-    setNewPeriod({
-      start_date: getCurrentDate().toISOString().split("T")[0],
-      end_date: "",
-    });
   };
 
   const handleNewPeriodChange = (
@@ -238,52 +268,92 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
     if (!newPeriod) return;
 
     if (field === "start_date" || field === "end_date") {
-      const dateValue = parseISO(value);
-      if (!isValid(dateValue)) {
-        console.error("Invalid date:", value);
-        return;
+      // Za datume u hrvatskom formatu
+      if (value) {
+        const date = parse(value, "dd.MM.yyyy", new Date());
+        if (!isValid(date)) {
+          toast({
+            title: "Greška",
+            description: "Neispravan format datuma. Koristite DD.MM.YYYY",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Konvertiraj u ISO format za spremanje
+        const isoDate = format(date, "yyyy-MM-dd");
+        
+        setNewPeriod(prev => prev ? {
+          ...prev,
+          [field]: isoDate,
+        } : null);
+      } else {
+        // Prazno polje je prihvatljivo za end_date
+        setNewPeriod(prev => prev ? {
+          ...prev,
+          [field]: '',
+        } : null);
       }
+    } else {
+      // Za ostala polja
+      setNewPeriod(prev => prev ? {
+        ...prev,
+        [field]: value,
+      } : null);
     }
+  };
 
-    setNewPeriod((prev) =>
-      prev
-        ? {
-            ...prev,
-            [field]: value,
-          }
-        : null
-    );
+  const handleAddPeriod = () => {
+    setNewPeriod({
+      start_date: getCurrentDate().toISOString().split("T")[0],
+      end_date: "",
+    });
   };
 
   const handleSaveNewPeriod = () => {
     if (!newPeriod?.start_date) return;
 
-    const startDate = parseISO(newPeriod.start_date);
-    if (newPeriod.end_date) {
-      const endDate = parseISO(newPeriod.end_date);
-      if (
-        !isValid(startDate) ||
-        !isValid(endDate) ||
-        isAfter(startDate, endDate)
-      ) {
-        console.error("Invalid date range");
-        return;
+    // Validacija datuma
+    try {
+      // Za startDate već imamo ISO format iz handleNewPeriodChange
+      const startDate = parseISO(newPeriod.start_date);
+      
+      let endDate = null;
+      if (newPeriod.end_date) {
+        // Za endDate također već imamo ISO format
+        endDate = parseISO(newPeriod.end_date);
+        
+        if (!isValid(startDate) || !isValid(endDate) || isAfter(startDate, endDate)) {
+          toast({
+            title: "Greška",
+            description: "Neispravan raspon datuma", 
+            variant: "destructive"
+          });
+          return;
+        }
       }
+
+      const updatedPeriods = [
+        ...editedPeriods,
+        {
+          period_id: Math.floor(Math.random() * -1000),
+          member_id: periods[0]?.member_id || 0,
+          start_date: newPeriod.start_date, // Već je u ISO formatu
+          end_date: newPeriod.end_date || undefined,
+          end_reason: newPeriod.end_reason,
+        } as MembershipPeriod,
+      ];
+
+      setEditedPeriods(updatedPeriods);
+      setNewPeriod(null);
+    } catch (error) {
+      console.error("Error saving new period:", error);
+      toast({
+        title: "Greška",
+        description: "Došlo je do greške prilikom dodavanja perioda",
+        variant: "destructive"
+      });
     }
-
-    const updatedPeriods = [
-      ...editedPeriods,
-      {
-        period_id: Math.floor(Math.random() * -1000),
-        member_id: periods[0]?.member_id || 0,
-        start_date: newPeriod.start_date,
-        end_date: newPeriod.end_date || undefined,
-        end_reason: newPeriod.end_reason,
-      } as MembershipPeriod,
-    ];
-
-    setEditedPeriods(updatedPeriods);
-    setNewPeriod(null);
   };
 
   const formatFeePaymentInfo = (year?: number, date?: string): string => {
@@ -399,47 +469,61 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                     {isEditing ? (
                       <>
                         <div className="space-y-2">
-                          <Input
-                            type="date"
-                            value={
-                              parseISO(period.start_date)
-                                .toISOString()
-                                .split("T")[0]
-                            }
-                            onChange={(e) =>
-                              handlePeriodChange(
-                                index,
-                                "start_date",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <Input
-                            type="date"
-                            value={
-                              period.end_date
-                                ? parseISO(period.end_date)
-                                    .toISOString()
-                                    .split("T")[0]
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handlePeriodChange(
-                                index,
-                                "end_date",
-                                e.target.value
-                              )
-                            }
-                          />
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Datum početka (DD.MM.YYYY)</label>
+                            <Input
+                              type="text"
+                              value={isoToHrFormat(period.start_date)}
+                              onChange={(e) =>
+                                handlePeriodChange(
+                                  index,
+                                  "start_date",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="31.12.2025"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Datum završetka (DD.MM.YYYY)</label>
+                            <Input
+                              type="text"
+                              value={period.end_date ? isoToHrFormat(period.end_date) : ""}
+                              onChange={(e) =>
+                                handlePeriodChange(
+                                  index,
+                                  "end_date",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="31.12.2025"
+                            />
+                          </div>
+                          {canManageEndReasons && typeof period.end_date === 'string' && period.end_date.trim() !== '' && (
+                            <div className="mt-2">
+                              <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
+                              <select
+                                className="w-full p-2 text-sm border rounded"
+                                value={period.end_reason || ""}
+                                onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value)}
+                              >
+                                <option value="">Odaberite razlog</option>
+                                <option value="withdrawal">Istupanje</option>
+                                <option value="non_payment">Neplaćanje članarine</option>
+                                <option value="expulsion">Isključenje</option>
+                                <option value="death">Smrt</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </>
                     ) : (
                       <div className="text-sm flex gap-2 items-center">
-                        <span className="font-medium">Start:</span>
+                        <span className="font-medium">Početak:</span>
                         {formatDate(parseISO(period.start_date.toString()))}
                         {period.end_date && (
                           <>
-                            <span className="font-medium ml-2">End:</span>
+                            <span className="font-medium ml-2">Kraj:</span>
                             {formatDate(parseISO(period.end_date.toString()))}
                             {period.end_reason && canSeeEndReason && (
                               <span className="text-gray-600 ml-2">
@@ -448,21 +532,6 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                             )}
                           </>
                         )}
-                      </div>
-                    )}
-                    {period.end_date && canManageEndReasons && (
-                      <div className="mt-2">
-                        <select
-                          className="p-1 text-sm border rounded"
-                          value={period.end_reason || ""}
-                          onChange={(e) => handleEndReasonChange(period.period_id, e.target.value)}
-                        >
-                          <option value="">Select reason</option>
-                          <option value="withdrawal">Withdrawal</option>
-                          <option value="non_payment">Non-payment</option>
-                          <option value="expulsion">Expulsion</option>
-                          <option value="death">Death</option>
-                        </select>
                       </div>
                     )}
                   </div>
@@ -507,27 +576,33 @@ const MembershipHistory: React.FC<MembershipHistoryProps> = ({
                 <div className="border-l-2 border-purple-500 pl-4 py-2 mt-4">
                   <div className="text-sm font-medium">New Period:</div>
                   <div className="space-y-2 mt-2">
-                    <label className="block text-sm">Start Date</label>
+                    <label className="block text-sm">Datum početka (DD.MM.YYYY)</label>
                     <Input
-                      type="date"
-                      value={newPeriod.start_date || ""}
+                      type="text"
+                      value={newPeriod.start_date ? isoToHrFormat(newPeriod.start_date) : ""}
                       onChange={(e) =>
                         handleNewPeriodChange("start_date", e.target.value)
                       }
+                      placeholder="31.12.2025"
                     />
-
                     <label className="block text-sm">
-                      End Date (leave empty for current period)
+                      Datum završetka (DD.MM.YYYY, ostavite prazno za trenutni period)
                     </label>
                     <Input
-                      type="date"
-                      value={newPeriod.end_date || ""}
-                      onChange={(e) =>
-                        handleNewPeriodChange("end_date", e.target.value)
-                      }
+                      type="text"
+                      value={newPeriod.end_date ? isoToHrFormat(newPeriod.end_date) : ""}
+                      onChange={(e) => {
+                        handleNewPeriodChange("end_date", e.target.value);
+                        // DEBUG: log value to check what's in state
+                        console.log('newPeriod.end_date:', e.target.value, newPeriod);
+                      }}
+                      placeholder="31.12.2025"
                     />
-
-                    {newPeriod.end_date && (
+                    {/* DEBUG: prikaz vrijednosti za dijagnostiku */}
+                    <div style={{fontSize: '10px', color: 'red'}}>
+                      DEBUG: end_date = '{String(newPeriod.end_date)}'
+                    </div>
+                    {newPeriod && typeof newPeriod.end_date === 'string' && newPeriod.end_date.trim() !== '' && (
                       <>
                         <label className="block text-sm">End Reason</label>
                         <select

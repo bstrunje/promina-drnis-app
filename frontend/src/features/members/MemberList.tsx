@@ -50,6 +50,8 @@ interface MemberCardDetails {
 interface MemberWithDetails extends Member {
   cardDetails?: MemberCardDetails;
   isActive?: boolean;
+  // Dodajemo property za prikaz statusa članstva
+  membershipStatus?: 'registered' | 'inactive' | 'pending';
 }
 
 export default function MemberList(): JSX.Element {
@@ -98,7 +100,8 @@ export default function MemberList(): JSX.Element {
               card_stamp_issued: false, // Default value, will be updated later
               fee_payment_year: member.fee_payment_year || member.membership_details?.fee_payment_year
             },
-            isActive
+            isActive,
+            membershipStatus: 'registered' as 'registered' | 'inactive' | 'pending'
           };
         });
 
@@ -108,7 +111,7 @@ export default function MemberList(): JSX.Element {
         
         // Now fetch detailed membership information for each member
         const fetchMembershipDetails = async () => {
-          const detailedMembers = [...membersWithDetails];
+          const detailedMembers = [...membersWithDetails] as MemberWithDetails[];
           
           for (const member of detailedMembers) {
             try {
@@ -121,6 +124,12 @@ export default function MemberList(): JSX.Element {
                 member.cardDetails.card_stamp_issued = details.membership_details.card_stamp_issued === true;
                 member.cardDetails.card_number = details.membership_details.card_number || member.cardDetails.card_number;
                 member.cardDetails.fee_payment_year = details.membership_details.fee_payment_year || member.cardDetails.fee_payment_year;
+                
+                // Dodaj status članstva iz detalja člana
+                member.membershipStatus = (details.status || 'registered') as 'registered' | 'inactive' | 'pending';
+                
+                // Log za dijagnostiku
+                console.log(`Member ${member.member_id} (${member.full_name}) - Status: ${member.membershipStatus}`);
               }
             } catch (error) {
               console.error(`Error fetching details for member ${member.member_id}:`, error);
@@ -128,8 +137,8 @@ export default function MemberList(): JSX.Element {
           }
           
           // Update state with detailed info
-          setMembers([...detailedMembers]);
-          setFilteredMembers([...detailedMembers]);
+          setMembers([...detailedMembers] as MemberWithDetails[]);
+          setFilteredMembers([...detailedMembers] as MemberWithDetails[]);
         };
         
         fetchMembershipDetails();
@@ -232,6 +241,18 @@ export default function MemberList(): JSX.Element {
   const getRegistrationStatusColor = (isRegistered: boolean) => {
     if (!isRegistered) return "bg-yellow-100 text-yellow-800"; // pending
     return "bg-green-100 text-green-800"; // completed
+  };
+
+  const getMembershipStatusColor = (status?: string) => {
+    switch (status) {
+      case 'inactive':
+        return "bg-red-100 text-red-800";
+      case 'pending':
+        return "bg-yellow-100 text-yellow-800";
+      case 'registered':
+      default:
+        return "bg-green-100 text-green-800";
+    }
   };
 
   const getActivityStatusBadge = (isActive: boolean | undefined) => {
@@ -717,16 +738,14 @@ export default function MemberList(): JSX.Element {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getRegistrationStatusColor(
-                            member.registration_completed
-                          )}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getMembershipStatusColor(member.membershipStatus)}`}
                         >
-                          {member.registration_completed ? (
+                          {member.membershipStatus === 'registered' ? (
                             <CheckCircle className="w-4 h-4" />
                           ) : (
                             <RefreshCw className="w-4 h-4" />
                           )}
-                          {member.registration_completed ? "Registered" : "Pending"}
+                          {member.membershipStatus === 'registered' ? "Registered" : member.membershipStatus === 'inactive' ? 'Inactive' : 'Pending'}
                         </span>
                       </td>
                       <td className="px-6 py-4">

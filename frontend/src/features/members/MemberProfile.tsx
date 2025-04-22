@@ -117,14 +117,26 @@ if (!member && memberId) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Card Number</label>
+                {/* Sakrij broj kartice od običnih članova zbog sigurnosti */}
                 {user.membership_details?.card_number ? (
-                  <p
-                    className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
-                      user.life_status
-                    )}`}
-                  >
-                    {user.membership_details.card_number}
-                  </p>
+                  user.role === "admin" || user.role === "superuser" ? (
+                    <p
+                      className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
+                        user.life_status
+                      )}`}
+                    >
+                      {user.membership_details.card_number}
+                    </p>
+                  ) : (
+                    <p className="text-gray-500">
+                      <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
+                        *** Skriveno ***
+                      </span>
+                      <span className="text-xs ml-2 text-gray-400">
+                        (Vidljivo samo administratorima)
+                      </span>
+                    </p>
+                  )
                 ) : (
                   <p className="text-gray-400">Not assigned</p>
                 )}

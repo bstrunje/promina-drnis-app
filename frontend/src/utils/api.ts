@@ -281,8 +281,23 @@ export const updateCardNumberLength = async (length: number): Promise<void> => {
 // Card Number APIs
 export const getAvailableCardNumbers = async (): Promise<string[]> => {
   try {
+    // Dodana eksplicitna provjera statusa
     const response = await api.get('/card-numbers/available');
-    return response.data;
+    console.log("Available card numbers received:", response.data);
+    
+    // Osiguraj da je response.data array, a ako nije, vrati prazan array
+    if (!Array.isArray(response.data)) {
+      console.warn("API returned invalid data format for available card numbers", response.data);
+      return [];
+    }
+    
+    // Dodatna provjera i filtriranje
+    const availableNumbers = response.data;
+    
+    // Logiraj za debug
+    console.log(`Returning ${availableNumbers.length} available card numbers`);
+    
+    return availableNumbers;
   } catch (error) {
     console.error("API: Error fetching card numbers:", error);
     throw handleApiError(error, 'Failed to fetch available card numbers');
@@ -305,7 +320,6 @@ export const addCardNumberRange = async (start: number, end: number): Promise<vo
   }
 };
 
-// Add this function to get all card numbers
 export const getAllCardNumbers = async (): Promise<{ 
   cards: Array<{
     card_number: string; 
@@ -336,6 +350,16 @@ export const deleteCardNumber = async (cardNumber: string): Promise<{ message: s
   } catch (error) {
     console.error('API error deleting card number:', error);
     throw handleApiError(error, 'Failed to delete card number');
+  }
+};
+
+// Nova funkcija za sinkronizaciju statusa brojeva iskaznica
+export const syncCardNumberStatus = async (): Promise<{ updated: number; message: string }> => {
+  try {
+    const response = await api.post('/card-numbers/sync-status');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to synchronize card number status');
   }
 };
 
