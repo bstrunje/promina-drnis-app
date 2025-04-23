@@ -104,16 +104,26 @@ export async function setupDatabase(): Promise<void> {
           CONSTRAINT stamp_type_check CHECK (stamp_type IN ('employed', 'student', 'pensioner')),
           CONSTRAINT stamp_type_year_unique UNIQUE (stamp_type, stamp_year)
       );
-
-      -- Ensure initial data exists for current year
-      INSERT INTO stamp_inventory (stamp_type, stamp_year, initial_count, issued_count) 
-      VALUES 
-          ('employed', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
-          ('student', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
-          ('pensioner', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0)
-      ON CONFLICT (stamp_type, stamp_year) DO NOTHING;
   `);
     console.log("✅ Stamp inventory table created successfully");
+    
+    // Insert initial stamp inventory data as a separate operation
+    try {
+      await db.query(`
+        INSERT INTO stamp_inventory (stamp_type, stamp_year, initial_count, issued_count) 
+        VALUES 
+            ('employed', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
+            ('student', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0),
+            ('pensioner', EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0, 0)
+        ON CONFLICT (stamp_type, stamp_year) DO NOTHING;
+      `);
+      console.log("✅ Initial stamp inventory data created");
+    } catch (error: unknown) {
+      console.log("⚠️ Could not insert initial stamp inventory data:", 
+        error instanceof Error ? error.message : String(error));
+      // Continue with setup even if this fails
+    }
+
     await db.query(`
             CREATE TABLE IF NOT EXISTS activities (
                 activity_id serial NOT NULL,
