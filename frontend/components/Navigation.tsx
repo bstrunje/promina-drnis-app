@@ -12,7 +12,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   if (!user) return null;
   
   return (
-    <nav className="bg-white shadow-md p-4 mb-4">
+    <nav className="bg-white shadow-md p-4 mb-4 sticky top-0 z-50">
       <div className="container mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center space-x-4 mb-4 sm:mb-0">
