@@ -10,6 +10,7 @@ import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
+import { runAllMigrations } from './runMigrations.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -156,6 +157,16 @@ async function initialize() {
         prepareDirectories();
         await setupDatabase();
         console.log('✅ Database setup completed');
+        
+        // Pokreni migracije nakon setupDatabase
+        console.log('🔄 Pokretanje migracija...');
+        const migrationsSuccess = await runAllMigrations();
+        if (migrationsSuccess) {
+            console.log('✅ Migracije uspješno izvršene');
+        } else {
+            console.warn('⚠️ Neke migracije nisu uspješno izvršene, ali nastavljamo s pokretanjem');
+        }
+        
         await startServer();
     } catch (error) {
         console.error('❌ Application startup failed:', error);
