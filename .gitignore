@@ -25,3 +25,6 @@ shared/types/sync.ffs_db
 # Log and report files
 izvjestaj.txt
 root_tree.txt
+
+# Backup files
+backend/backups/

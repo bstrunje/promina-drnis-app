@@ -7,6 +7,10 @@ import { hr } from 'date-fns/locale';
 // Spremnik za mock datum koji će se koristiti umjesto stvarnog datuma
 let mockDate: Date | null = null;
 
+// Spremnik za originalne mock datume prije resetiranja
+let originalMockDate: Date | null = null;
+let hasOriginalBeenStored: boolean = false;
+
 /**
  * Vraća trenutni datum - ako je postavljen mock datum, vraća njega, inače stvarni datum
  */
@@ -19,7 +23,33 @@ export function getCurrentDate(): Date {
  * @param date - Datum koji će se koristiti umjesto stvarnog
  */
 export function setMockDate(date: Date | null): void {
+  // Spremi originalnu vrijednost ako još nije spremljena
+  if (!hasOriginalBeenStored) {
+    originalMockDate = mockDate;
+    hasOriginalBeenStored = true;
+  }
   mockDate = date;
+}
+
+/**
+ * Resetira mock datum na null (vraća korištenje stvarnog sistemskog datuma)
+ */
+export function resetMockDate(): void {
+  mockDate = null;
+  hasOriginalBeenStored = false;
+}
+
+/**
+ * Vraća mock datum na prethodnu vrijednost koja je bila prije mockanja
+ * @returns true ako je uspješno vraćeno na originalnu vrijednost, false ako nema spremljenog originala
+ */
+export function restoreOriginalMock(): boolean {
+  if (hasOriginalBeenStored) {
+    mockDate = originalMockDate;
+    hasOriginalBeenStored = false;
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -151,13 +181,6 @@ export function areDatesEqual(date1: Date | string | null, date2: Date | string 
     console.error('Error comparing dates:', error);
     return false;
   }
-}
-
-/**
- * Resetira mock datum na null (vraća korištenje stvarnog sistemskog datuma)
- */
-export function resetMockDate(): void {
-  mockDate = null;
 }
 
 /**
