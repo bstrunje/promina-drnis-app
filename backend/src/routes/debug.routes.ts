@@ -10,6 +10,9 @@ import { promises as fsPromises } from 'fs';
 // Import the database client
 import db from '../utils/db.js';
 
+// Import membership service
+import membershipService from '../services/membership.service.js';
+
 const execPromise = util.promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -433,6 +436,30 @@ router.post('/reset-test-database', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Greška prilikom resetiranja baze:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+      timestamp: new Date()
+    });
+  }
+});
+
+// Endpoint za rekalkulaciju statusa članstva nakon promjene datuma
+router.post('/recalculate-membership', async (req, res) => {
+  try {
+    console.log('🔄 Rekalkulacija statusa članstva na temelju trenutnog datuma...');
+    
+    // Koristi centraliziranu funkciju iz membership servisa
+    const result = await membershipService.updateAllMembershipStatuses();
+    
+    res.json({ 
+      success: true, 
+      message: 'Status članstva uspješno rekalkuliran',
+      updatedCount: result.updatedCount,
+      errors: result.errors,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('❌ Greška prilikom rekalkulacije statusa članstva:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
       timestamp: new Date()

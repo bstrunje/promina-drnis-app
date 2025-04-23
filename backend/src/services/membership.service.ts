@@ -113,6 +113,27 @@ const membershipService = {
     }
   },
 
+  async isMembershipActive(memberId: number): Promise<boolean> {
+    try {
+      const result = await db.query(`
+        SELECT 
+          fee_payment_year, 
+          fee_payment_date,
+          EXTRACT(YEAR FROM CURRENT_DATE) as current_year
+        FROM membership_details
+        WHERE member_id = $1
+      `, [memberId]);
+      
+      if (result.rowCount === 0) return false;
+      
+      const { fee_payment_year, current_year } = result.rows[0];
+      return fee_payment_year >= current_year;
+    } catch (error) {
+      console.error('Error checking membership status:', error);
+      return false; // Sigurnosno - ako ne možemo provjeriti, tretiramo kao neaktivno
+    }
+  },
+
   async getMembershipDetails(
     memberId: number
   ): Promise<MembershipDetails | undefined> {
@@ -291,6 +312,61 @@ const membershipService = {
         }`
       );
     }
+  },
+
+  async updateAllMembershipStatuses(): Promise<{
+    updatedCount: number;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let updatedCount = 0;
+    
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      // Dohvati sve članove s detaljima članstva
+      const result = await db.query<{
+        member_id: number;
+        full_name: string;
+        fee_payment_year: number | null;
+      }>(`
+        SELECT m.member_id, m.full_name, md.fee_payment_year 
+        FROM members m
+        JOIN membership_details md ON m.member_id = md.member_id
+      `);
+      
+      // Ažuriraj active_until za sve članove
+      const updateResult = await db.query(`
+        UPDATE membership_details
+        SET active_until = CASE 
+          WHEN fee_payment_year IS NULL THEN NULL
+          WHEN fee_payment_year >= $1 THEN MAKE_DATE(fee_payment_year, 12, 31)
+          ELSE MAKE_DATE(fee_payment_year, 12, 31)
+        END
+        WHERE member_id IN (
+          SELECT member_id FROM membership_details
+        )
+        RETURNING member_id
+      `, [currentYear]);
+      
+      updatedCount = updateResult.rowCount ?? 0; // Koristi nullish coalescing da osiguramo broj
+      
+      console.log(`✅ Ažurirano ${updatedCount} članstava`);
+      
+      // Logiraj status svakog člana
+      for (const member of result.rows) {
+        const memberFeeYear = typeof member.fee_payment_year === 'number' ? member.fee_payment_year : 0;
+        const isActive = memberFeeYear >= currentYear;
+        console.log(`Član ${member.full_name} (ID: ${member.member_id}): ${isActive ? 'aktivno' : 'isteklo'} članstvo (plaćeno za ${member.fee_payment_year || 'nije plaćeno'}, trenutna godina: ${currentYear})`);
+      }
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('❌ Greška prilikom ažuriranja članstava:', errorMessage);
+      errors.push(errorMessage);
+    }
+    
+    return { updatedCount, errors };
   },
 };
 

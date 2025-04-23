@@ -51,8 +51,13 @@ const imageService = {
                 })
                 .toFile(processedFilePath);
 
-            // Delete original file
-            await fs.unlink(file.path);
+            // Try to delete original file but continue if it fails
+            try {
+                await fs.unlink(file.path);
+            } catch (unlinkError: unknown) {
+                console.warn(`Could not delete original file: ${file.path}. Error: ${unlinkError instanceof Error ? unlinkError.message : String(unlinkError)}`);
+                // Continue execution - we don't want to fail the upload just because we couldn't clean up
+            }
 
             // Update database
             const profileImagePath = `/uploads/profile_images/${processedFileName}`;
@@ -71,7 +76,10 @@ const imageService = {
     ): Promise<void> {
         try {
             const member = await memberRepository.findById(memberId);
-            if (!member?.profile_image_path) return;
+            if (!member?.profile_image_path) {
+                console.log(`Member ${memberId} has no profile image to delete`);
+                return;
+            }
 
             // Extract filename from path
             const filename = path.basename(member.profile_image_path);
@@ -87,15 +95,22 @@ const imageService = {
             // Check if file exists before trying to delete
             try {
                 await fs.access(filePath);
-                await fs.unlink(filePath);
+                try {
+                    await fs.unlink(filePath);
+                    console.log(`Successfully deleted profile image at ${filePath}`);
+                } catch (unlinkError: unknown) {
+                    console.warn(`Could not delete file: ${filePath}. Error: ${unlinkError instanceof Error ? unlinkError.message : String(unlinkError)}`);
+                    // Continue execution - we'll still update the database
+                }
             } catch (e) {
-                console.warn(`File not found: ${filePath}`);
+                console.warn(`File not found: ${filePath}, continuing with database update`);
             }
 
-            // Update database to remove reference
+            // Update database to remove reference regardless of file operation success
             await memberRepository.updateProfileImage(memberId, '');
+            console.log(`Successfully cleared profile_image_path in database for member ${memberId}`);
         } catch (error) {
-            console.error('Error deleting image:', error);
+            console.error('Error in deleteProfileImage:', error);
             throw new Error(`Failed to delete image: ${error instanceof Error ? error.message : String(error)}`);
         }
     }

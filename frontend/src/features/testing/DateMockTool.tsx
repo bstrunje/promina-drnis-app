@@ -81,6 +81,9 @@ const DateMockTool = () => {
     setCurrentApplicationDate(date);
     setIsMockActive(true);
     
+    // Pozovi backend endpoint za rekalkulaciju statusa članstva
+    refreshMembershipStatus();
+    
     alert(`Simulirani datum je postavljen na: ${formatDate(date)}`);
   };
 
@@ -93,6 +96,9 @@ const DateMockTool = () => {
     setDate(realDate);
     setCurrentApplicationDate(realDate);
     setIsMockActive(false);
+    
+    // Pozovi backend endpoint za rekalkulaciju statusa članstva
+    refreshMembershipStatus();
     
     alert('Simulacija datuma je isključena. Koristi se stvarni sustavni datum.');
   };
@@ -198,6 +204,17 @@ const DateMockTool = () => {
         y: event.clientY - rect.top
       });
       setIsDragging(true);
+    }
+  };
+
+  // Nova funkcija za rekalkulaciju statusa članstva
+  const refreshMembershipStatus = async () => {
+    try {
+      // Pozovi backend endpoint bez /api/ prefiksa jer axios klijent već dodaje taj prefiks
+      await api.post('debug/recalculate-membership');
+      console.log('Refreshed membership status based on new date');
+    } catch (error) {
+      console.error('Error refreshing membership status:', error);
     }
   };
 

@@ -128,11 +128,24 @@ const authController = {
         WHERE member_id = $1
       `, [member.member_id]);
 
-      // Ako nema detalja o članstvu ili članarina nije plaćena
-      if (membershipQuery.rowCount === 0 || !membershipQuery.rows[0].fee_payment_date) {
-        console.warn(`Failed login: user "${sanitizedFullName}" has not paid membership fee (IP: ${userIP})`);
+      // Provjeri postoji li zapis o članstvu
+      if (membershipQuery.rowCount === 0) {
+        console.warn(`Failed login: user "${sanitizedFullName}" has no membership record (IP: ${userIP})`);
         res.status(401).json({ 
-          message: "Membership fee not paid. Please contact an administrator to complete your membership."
+          message: "Membership information not found. Please contact an administrator."
+        });
+        return;
+      }
+      
+      // Dohvati detalje o članstvu
+      const membershipDetails = membershipQuery.rows[0];
+      const currentYear = new Date().getFullYear();
+      
+      // Provjeri jesu li plaćeni detalji za tekuću godinu
+      if (membershipDetails.fee_payment_year < currentYear) {
+        console.warn(`Failed login: user "${sanitizedFullName}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
+        res.status(401).json({ 
+          message: "Your membership has expired. Please contact an administrator to renew your membership."
         });
         return;
       }

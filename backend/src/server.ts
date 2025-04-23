@@ -11,6 +11,7 @@ import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
 import { runAllMigrations } from './runMigrations.js';
+import scheduledService from './services/scheduled.service.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -81,6 +82,15 @@ async function startServer(): Promise<void> {
         }
 
         await setupDatabase();
+
+        // Provjeri i arhiviraj stanje markica ako je zadnji dan u godini
+        await scheduledService.checkAndArchiveStamps();
+        
+        // Periodička provjera za arhiviranje markica (svakih 12 sati)
+        // Ovo osigurava da će se arhiviranje izvršiti čak i ako server nije radio točno na kraju godine
+        setInterval(async () => {
+            await scheduledService.checkAndArchiveStamps();
+        }, 12 * 60 * 60 * 1000); // 12 sati u milisekundama
 
         return new Promise((resolve, reject) => {
             server = app.listen(port, () => {
@@ -155,18 +165,17 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
 async function initialize() {
     try {
         prepareDirectories();
+        
+        // Prvo pokreni bazu podataka
         await setupDatabase();
         console.log('✅ Database setup completed');
         
         // Pokreni migracije nakon setupDatabase
         console.log('🔄 Pokretanje migracija...');
-        const migrationsSuccess = await runAllMigrations();
-        if (migrationsSuccess) {
-            console.log('✅ Migracije uspješno izvršene');
-        } else {
-            console.warn('⚠️ Neke migracije nisu uspješno izvršene, ali nastavljamo s pokretanjem');
-        }
+        await runAllMigrations();
+        console.log('✅ Migracije uspješno izvršene');
         
+        // Pokreni server
         await startServer();
     } catch (error) {
         console.error('❌ Application startup failed:', error);
