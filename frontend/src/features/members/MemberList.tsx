@@ -461,9 +461,9 @@ export default function MemberList(): JSX.Element {
               border-bottom: 1px solid #e5e7eb; 
             }
             tr:nth-child(even) { background-color: #f9fafb; }
-            .employed { background-color: #e6f0ff; }
-            .student { background-color: #e6ffe6; }
-            .pensioner { background-color: #ffe6e6; }
+            .employed { background-color: #cce2ff; }
+            .student { background-color: #ccffcc; }
+            .pensioner { background-color: #ffcccc; }
             .active { color: #047857; font-weight: bold; }
             .passive { color: #b45309; }
             @media print {

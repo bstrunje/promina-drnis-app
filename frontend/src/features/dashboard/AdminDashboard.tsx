@@ -483,13 +483,13 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
               </div>
             )}
             {/* Employed/Unemployed Stamps */}
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-blue-100 p-4 rounded-lg">
               <h3 className="font-medium text-blue-800">
                 Employed/Unemployed Members Stamps
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-blue-600">Initial</label>
+                  <label className="text-sm text-blue-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -506,20 +506,20 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
-                    <p className="font-bold text-blue-700">
+                    <p className="font-bold text-blue-800">
                       {inventory[selectedYear]?.employedStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-blue-600">Issued</label>
-                  <p className="font-bold text-blue-700">
+                  <label className="text-sm text-blue-700">Issued</label>
+                  <p className="font-bold text-blue-800">
                     {inventory[selectedYear]?.employedStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-blue-600">Remaining</label>
-                  <p className="font-bold text-blue-700">
+                  <label className="text-sm text-blue-700">Remaining</label>
+                  <p className="font-bold text-blue-800">
                     {inventory[selectedYear]?.employedStamps?.remaining || 0}
                   </p>
                 </div>
@@ -527,11 +527,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             </div>
 
             {/* Student/Pupil Stamps */}
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-100 p-4 rounded-lg">
               <h3 className="font-medium text-green-800">Student/Pupil Stamps</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-green-600">Initial</label>
+                  <label className="text-sm text-green-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -548,20 +548,20 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
-                    <p className="font-bold text-green-700">
+                    <p className="font-bold text-green-800">
                       {inventory[selectedYear]?.studentStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-green-600">Issued</label>
-                  <p className="font-bold text-green-700">
+                  <label className="text-sm text-green-700">Issued</label>
+                  <p className="font-bold text-green-800">
                     {inventory[selectedYear]?.studentStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-green-600">Remaining</label>
-                  <p className="font-bold text-green-700">
+                  <label className="text-sm text-green-700">Remaining</label>
+                  <p className="font-bold text-green-800">
                     {inventory[selectedYear]?.studentStamps?.remaining || 0}
                   </p>
                 </div>
@@ -569,11 +569,11 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             </div>
 
             {/* Pensioner Stamps */}
-            <div className="bg-red-50 p-4 rounded-lg">
+            <div className="bg-red-100 p-4 rounded-lg">
               <h3 className="font-medium text-red-800">Pensioner Stamps</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-red-600">Initial</label>
+                  <label className="text-sm text-red-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -590,20 +590,20 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       className="w-full mt-1 p-1 border rounded"
                     />
                   ) : (
-                    <p className="font-bold text-red-700">
+                    <p className="font-bold text-red-800">
                       {inventory[selectedYear]?.pensionerStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-red-600">Issued</label>
-                  <p className="font-bold text-red-700">
+                  <label className="text-sm text-red-700">Issued</label>
+                  <p className="font-bold text-red-800">
                     {inventory[selectedYear]?.pensionerStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-red-600">Remaining</label>
-                  <p className="font-bold text-red-700">
+                  <label className="text-sm text-red-700">Remaining</label>
+                  <p className="font-bold text-red-800">
                     {inventory[selectedYear]?.pensionerStamps?.remaining || 0}
                   </p>
                 </div>
