@@ -314,7 +314,12 @@ const membershipService = {
     }
   },
 
-  async updateAllMembershipStatuses(): Promise<{
+  /**
+   * Ažurira status svih članstava na temelju trenutnog datuma
+   * Postavlja active_until datum i automatski prekida članstvo za članove s neplaćenom članarinom
+   * @param mockDate - Opcionalni simulirani datum za testiranje
+   */
+  async updateAllMembershipStatuses(mockDate?: Date): Promise<{
     updatedCount: number;
     errors: string[];
   }> {
@@ -322,43 +327,207 @@ const membershipService = {
     let updatedCount = 0;
     
     try {
-      const currentYear = new Date().getFullYear();
+      // Dodajemo više dijagnostičkih ispisa
+      console.log('\n\n===== POČETAK IZVRŠAVANJA updateAllMembershipStatuses =====');
       
-      // Dohvati sve članove s detaljima članstva
-      const result = await db.query<{
-        member_id: number;
-        full_name: string;
-        fee_payment_year: number | null;
-      }>(`
-        SELECT m.member_id, m.full_name, md.fee_payment_year 
-        FROM members m
-        JOIN membership_details md ON m.member_id = md.member_id
-      `);
+      // Koristi mock datum ako je proslijeđen, inače koristi stvarni datum
+      const currentDate = mockDate || new Date();
+      const currentYear = currentDate.getFullYear();
       
-      // Ažuriraj active_until za sve članove
-      const updateResult = await db.query(`
-        UPDATE membership_details
-        SET active_until = CASE 
-          WHEN fee_payment_year IS NULL THEN NULL
-          WHEN fee_payment_year >= $1 THEN MAKE_DATE(fee_payment_year, 12, 31)
-          ELSE MAKE_DATE(fee_payment_year, 12, 31)
-        END
-        WHERE member_id IN (
-          SELECT member_id FROM membership_details
-        )
-        RETURNING member_id
-      `, [currentYear]);
+      console.log(`🔄 Ažuriranje statusa članstva na temelju datuma: ${currentDate.toISOString()}${mockDate ? ' (SIMULIRANI DATUM)' : ''}`);
+      console.log(`Trenutna godina: ${currentYear}${mockDate ? ' (SIMULIRANA GODINA)' : ''}`);
       
-      updatedCount = updateResult.rowCount ?? 0; // Koristi nullish coalescing da osiguramo broj
+      // 0. DODATNA PROVJERA: Članovi bez aktivnog perioda trebaju biti označeni kao 'inactive'
+      console.log('Provjera članova bez aktivnog perioda članstva...');
       
-      console.log(`✅ Ažurirano ${updatedCount} članstava`);
+      const membersWithoutActivePeriod = await prisma.member.findMany({
+        where: {
+          status: {
+            not: 'inactive'
+          },
+          periods: {
+            none: {
+              end_date: null
+            }
+          }
+        },
+        include: {
+          periods: true
+        }
+      });
       
-      // Logiraj status svakog člana
-      for (const member of result.rows) {
-        const memberFeeYear = typeof member.fee_payment_year === 'number' ? member.fee_payment_year : 0;
-        const isActive = memberFeeYear >= currentYear;
-        console.log(`Član ${member.full_name} (ID: ${member.member_id}): ${isActive ? 'aktivno' : 'isteklo'} članstvo (plaćeno za ${member.fee_payment_year || 'nije plaćeno'}, trenutna godina: ${currentYear})`);
+      console.log(`Pronađeno ${membersWithoutActivePeriod.length} članova bez aktivnog perioda članstva koji nisu označeni kao 'inactive'`);
+      
+      for (const member of membersWithoutActivePeriod) {
+        console.log(`🔄 Ažuriranje statusa člana ${member.full_name} (ID: ${member.member_id}) u 'inactive' jer nema aktivnih perioda članstva.`);
+        console.log(`   Trenutni status: ${member.status}`);
+        console.log(`   Periodi članstva:`, JSON.stringify(member.periods.map(p => ({
+          period_id: p.period_id,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          end_reason: p.end_reason
+        })), null, 2));
+        
+        try {
+          const memberUpdateResult = await prisma.member.update({
+            where: {
+              member_id: member.member_id
+            },
+            data: {
+              status: 'inactive'
+            }
+          });
+          
+          console.log(`✅ Status člana ${member.full_name} uspješno ažuriran na inactive. Prethodni status: ${member.status}, novi status: ${memberUpdateResult.status}`);
+          updatedCount++;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`❌ Greška prilikom ažuriranja statusa člana ${member.full_name}:`, errorMessage);
+          errors.push(`Greška za člana ID ${member.member_id}: ${errorMessage}`);
+        }
       }
+      
+      // 1. Dohvati sve članove s njihovim detaljima članstva koristeći Prisma
+      console.log('Dohvaćanje članova s detaljima članstva i aktivnim periodima...');
+      
+      const membersWithDetails = await prisma.member.findMany({
+        where: {
+          // Dohvati samo članove koji imaju status koji nije inactive
+          status: {
+            not: 'inactive'
+          },
+          membership_details: {
+            isNot: null
+          }
+        },
+        include: {
+          membership_details: true,
+          periods: {
+            where: {
+              end_date: null  // Aktivni periodi
+            }
+          }
+        }
+      });
+      
+      console.log(`Pronađeno ${membersWithDetails.length} članova za provjeru statusa članstva`);
+      
+      if (membersWithDetails.length === 0) {
+        console.log('❌ Nema članova za provjeru! Je li Prisma pravilno inicijalizirana?');
+      } else {
+        console.log('✅ Prvi član iz pronađenih:', membersWithDetails[0].full_name, 'ID:', membersWithDetails[0].member_id);
+        console.log('✅ Status prvog člana:', membersWithDetails[0].status);
+        console.log('✅ Detalji članstva prvog člana:', JSON.stringify(membersWithDetails[0].membership_details, null, 2));
+        console.log('✅ Aktivni periodi prvog člana:', JSON.stringify(membersWithDetails[0].periods, null, 2));
+      }
+      
+      // 2. Ažuriraj status članstva za sve članove
+      const updatePromises = membersWithDetails.map(async (member) => {
+        if (!member.membership_details) {
+          console.log(`❌ Član ${member.full_name} (ID: ${member.member_id}) nema detalje članstva!`);
+          return null;
+        }
+        
+        const feeYear = member.membership_details.fee_payment_year;
+        let activeUntilDate = null;
+        
+        if (feeYear) {
+          // Postavi datum do kojeg je članstvo aktivno (31.12. godine plaćanja članarine)
+          activeUntilDate = new Date(Date.UTC(feeYear, 11, 31));
+          
+          console.log(`🔄 Ažuriranje active_until datuma za člana ${member.full_name} (ID: ${member.member_id}), godina plaćanja: ${feeYear}, active_until: ${activeUntilDate.toISOString()}`);
+          
+          // Izbjegavamo izravno postavljanje active_until polja kroz Prisma klijent
+          // jer je polje dodano naknadno u shemu, pa ćemo to napraviti kroz SQL upit
+          try {
+            const updateResult = await db.query(`
+              UPDATE membership_details
+              SET active_until = $1
+              WHERE member_id = $2
+              RETURNING member_id, active_until
+            `, [activeUntilDate, member.member_id]);
+            
+            console.log(`✅ Rezultat ažuriranja active_until za člana ${member.member_id}:`, JSON.stringify(updateResult.rows, null, 2));
+            
+            if (updateResult.rowCount === 0) {
+              console.log(`❌ Ažuriranje active_until nije uspjelo za člana ${member.member_id}! Nije pronađen zapis u tablici membership_details.`);
+            } else {
+              updatedCount++;
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`❌ Greška prilikom ažuriranja active_until datuma za člana ${member.full_name}:`, errorMessage);
+            errors.push(`Greška za člana ID ${member.member_id}: ${errorMessage}`);
+          }
+          
+          // Provjeri je li članarina plaćena za tekuću godinu
+          const isActive = feeYear >= currentYear;
+          
+          // Dijagnostika
+          console.log(`Član ${member.full_name} (ID: ${member.member_id}): članarina plaćena za ${feeYear}, aktivno do ${activeUntilDate.toISOString().split('T')[0]}, status člana: ${member.status}, članstvo ${isActive ? 'aktivno' : 'isteklo'}`);
+          
+          // 3. Provjeri treba li automatski prekinuti članstvo - proširujemo uvjet da obuhvati "registered" i "regular" statuse
+          // Ispravljamo uvjet da prekidamo članstvo svim aktivnim članovima čija je članarina istekla
+          if (!isActive && (member.status === 'registered' || member.status === 'active') && member.periods.length > 0) {
+            const activePeriod = member.periods[0]; // Trenutno aktivni period
+            
+            // Postavi datum kraja perioda na 31.12. prethodne godine
+            const endDate = new Date(Date.UTC(currentYear - 1, 11, 31));
+            
+            console.log(`🔄 Automatski prekidam članstvo za člana ${member.full_name} (ID: ${member.member_id}) zbog neplaćanja članarine.`);
+            console.log(`Member status prije prekida: ${member.status}`);
+            
+            try {
+              // Ažuriraj period članstva
+              const periodUpdateResult = await prisma.membershipPeriod.update({
+                where: {
+                  period_id: activePeriod.period_id
+                },
+                data: {
+                  end_date: endDate,
+                  end_reason: 'non_payment'
+                }
+              });
+              
+              console.log(`✅ Period članstva uspješno ažuriran:`, JSON.stringify(periodUpdateResult, null, 2));
+              
+              // Ažuriraj status člana na 'inactive'
+              const memberUpdateResult = await prisma.member.update({
+                where: {
+                  member_id: member.member_id
+                },
+                data: {
+                  status: 'inactive'
+                }
+              });
+              
+              console.log(`✅ Status člana uspješno ažuriran na inactive. Prethodni status: ${member.status}, novi status: ${memberUpdateResult.status}`);
+              
+              console.log(`✅ Članstvo uspješno prekinuto za člana ${member.full_name} s datumom ${endDate.toISOString().split('T')[0]}`);
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              console.error(`❌ Greška prilikom automatskog prekidanja članstva za člana ${member.full_name}:`, errorMessage);
+              errors.push(`Greška za člana ID ${member.member_id}: ${errorMessage}`);
+            }
+          } else {
+            if (isActive) {
+              console.log(`ℹ️ Član ${member.full_name} ima plaćenu članarinu za tekuću godinu - neće biti prekinuto članstvo.`);
+            } else if (!(member.status === 'registered' || member.status === 'active')) {
+              console.log(`ℹ️ Član ${member.full_name} nema odgovarajući status (${member.status}) - neće biti prekinuto članstvo.`);
+            } else if (member.periods.length === 0) {
+              console.log(`ℹ️ Član ${member.full_name} nema aktivnih perioda članstva - neće biti prekinuto članstvo.`);
+            }
+          }
+        } else {
+          console.log(`Član ${member.full_name} (ID: ${member.member_id}): nema plaćenu članarinu`);
+        }
+        
+        return member.member_id;
+      });
+      
+      await Promise.all(updatePromises.filter(Boolean));
+      
+      console.log(`===== ZAVRŠETAK IZVRŠAVANJA updateAllMembershipStatuses =====\n\n`);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

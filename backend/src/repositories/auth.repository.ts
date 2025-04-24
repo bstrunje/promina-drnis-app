@@ -113,7 +113,7 @@ const authRepository = {
             WHERE 
                 LOWER(full_name) LIKE LOWER($1)
                 AND registration_completed = true
-                AND status = 'registered'
+                AND (role = 'superuser' OR status = 'registered')
             ORDER BY first_name, last_name 
             -- Ograničavamo na maksimalno 5 rezultata da se spriječi preglašavanje svih članova
             LIMIT 5`,

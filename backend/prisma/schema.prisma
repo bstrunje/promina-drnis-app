@@ -9,40 +9,43 @@ datasource db {
 }
 
 model Member {
-  status                   String?            @default("pending") @db.VarChar(50)
-  date_of_birth            DateTime?          @db.Date
-  oib                      String             @unique @db.VarChar(11)
-  cell_phone               String             @db.VarChar(20)
-  city                     String             @db.VarChar(100)
-  street_address           String             @db.VarChar(200)
-  email                    String?            @db.VarChar(255)
-  first_name               String             @db.VarChar(100)
-  last_name                String             @db.VarChar(100)
-  member_id                Int                @id @default(autoincrement())
-  password_hash            String?            @db.VarChar(255)
-  role                     String             @default("member") @db.VarChar(20)
-  last_login               DateTime?          @db.Timestamp(6)
-  full_name                String             @default("") @db.VarChar(100)
-  life_status              String?            @db.VarChar(25)
-  tshirt_size              String?            @db.VarChar(4)
-  shell_jacket_size        String?            @db.VarChar(4)
-  total_hours              Decimal?           @default(0) @db.Decimal(10, 2)
-  gender                   String?            @db.VarChar(6)
-  registration_completed   Boolean?           @default(false)
-  profile_image_path       String?            @db.VarChar(255)
-  profile_image_updated_at DateTime?          @db.Timestamp(6)
-  membership_type          String?            @default("regular") @db.VarChar(20)
-  created_at               DateTime?          @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime?          @default(now()) @db.Timestamptz(6)
+  status                   String?                 @default("pending") @db.VarChar(50)
+  date_of_birth            DateTime?               @db.Date
+  oib                      String                  @unique @db.VarChar(11)
+  cell_phone               String                  @db.VarChar(20)
+  city                     String                  @db.VarChar(100)
+  street_address           String                  @db.VarChar(200)
+  email                    String?                 @db.VarChar(255)
+  first_name               String                  @db.VarChar(100)
+  last_name                String                  @db.VarChar(100)
+  member_id                Int                     @id @default(autoincrement())
+  password_hash            String?                 @db.VarChar(255)
+  role                     String                  @default("member") @db.VarChar(20)
+  last_login               DateTime?               @db.Timestamp(6)
+  full_name                String                  @default(dbgenerated("(((first_name)::text || ' '::text) || (last_name)::text)")) @db.VarChar(100)
+  life_status              String?                 @db.VarChar(25)
+  tshirt_size              String?                 @db.VarChar(4)
+  shell_jacket_size        String?                 @db.VarChar(4)
+  total_hours              Decimal?                @default(0) @db.Decimal(10, 2)
+  gender                   String?                 @db.VarChar(6)
+  registration_completed   Boolean?                @default(false)
+  profile_image_path       String?                 @db.VarChar(255)
+  profile_image_updated_at DateTime?               @db.Timestamp(6)
+  membership_type          String?                 @default("regular") @db.VarChar(20)
+  created_at               DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime?               @default(now()) @db.Timestamptz(6)
   hours                    Hours[]
-  grantedPermissions       AdminPermissions[] @relation("grantedByPermissions")
-  permissions              AdminPermissions?  @relation("memberPermissions")
+  grantedPermissions       AdminPermissions[]      @relation("grantedByPermissions")
+  permissions              AdminPermissions?       @relation("memberPermissions")
   annual_statistics        AnnualStatistics[]
-  affected_audits          AuditLog[]         @relation("AuditAffected")
-  performed_audits         AuditLog[]         @relation("AuditPerformer")
+  affected_audits          AuditLog[]              @relation("AuditAffected")
+  performed_audits         AuditLog[]              @relation("AuditPerformer")
+  card_numbers             CardNumber[]
   messages                 MemberMessage[]
   membership_details       MembershipDetails?
   periods                  MembershipPeriod[]
+  password_update_queue    password_update_queue[]
+  stamp_history            stamp_history[]
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -110,13 +113,15 @@ model SystemSettings {
 }
 
 model MembershipDetails {
-  member_id         Int       @id
-  card_number       String?   @unique @db.VarChar(50)
-  fee_payment_year  Int?
-  card_stamp_issued Boolean?  @default(false)
-  next_year_stamp_issued Boolean? @default(false)
-  fee_payment_date  DateTime? @db.Timestamp(6)
-  member            Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  member_id              Int       @id
+  card_number            String?   @unique @db.VarChar(50)
+  fee_payment_year       Int?
+  card_stamp_issued      Boolean?  @default(false)
+  fee_payment_date       DateTime? @db.Timestamp(6)
+  next_year_stamp_issued Boolean?  @default(false)
+  status                 String?   @default("active") @db.VarChar(20)
+  active_until           DateTime? @db.Timestamp(6)
+  member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("membership_details")
 }
@@ -136,13 +141,13 @@ model MembershipPeriod {
 model StampInventory {
   id            Int       @id @default(autoincrement())
   stamp_type    String    @db.VarChar(20)
-  stamp_year    Int
   initial_count Int       @default(0)
   issued_count  Int?      @default(0)
-  remaining     Int?      @default(0)
+  remaining     Int?      @default(dbgenerated("(initial_count - issued_count)"))
   last_updated  DateTime? @default(now()) @db.Timestamp(6)
+  stamp_year    Int?      @default(dbgenerated("EXTRACT(year FROM CURRENT_DATE)"))
 
-  @@unique([stamp_type, stamp_year], name: "stamp_type_year_unique")
+  @@unique([stamp_type, stamp_year], name: "stamp_type_year_unique", map: "stamp_type_year_unique")
   @@map("stamp_inventory")
 }
 
@@ -212,12 +217,26 @@ model AdminPermissions {
   member                 Member?   @relation("memberPermissions", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([granted_by], map: "idx_admin_permissions_granted_by")
-  @@index([member_id], map: "idx_admin_permissions_member_id")
+  @@index([member_id], map: "idx_admin_permissions_member")
   @@map("admin_permissions")
 }
 
+model CardNumber {
+  id          Int       @id @default(autoincrement())
+  card_number String    @unique(map: "card_number_unique") @db.VarChar(20)
+  status      String    @default("available") @db.VarChar(20)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  assigned_at DateTime? @db.Timestamptz(6)
+  member_id   Int?
+  members     Member?   @relation(fields: [member_id], references: [member_id], onUpdate: NoAction, map: "member_fk")
+
+  @@index([member_id], map: "idx_card_numbers_member_id")
+  @@index([status], map: "idx_card_numbers_status")
+  @@map("card_numbers")
+}
+
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model members_backup_archive {
+model members_backup {
   id             Int?
   name           String?   @db.VarChar(255)
   status         String?   @db.VarChar(50)
@@ -232,4 +251,25 @@ model members_backup_archive {
   member_id      String?   @db.VarChar(1000)
 
   @@ignore
+}
+
+model password_update_queue {
+  queue_id    Int       @id @default(autoincrement())
+  member_id   Int
+  card_number String    @db.VarChar(20)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  processed   Boolean?  @default(false)
+  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model stamp_history {
+  id            Int      @id @default(autoincrement())
+  year          Int
+  stamp_type    String   @db.VarChar(50)
+  initial_count Int
+  issued_count  Int
+  reset_date    DateTime @default(now()) @db.Timestamp(6)
+  reset_by      Int?
+  notes         String?
+  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 }

@@ -55,9 +55,11 @@ const authenticateToken = async (
                     WHEN m.role = 'superuser' THEN 'superuser'
                     ELSE 'member'
                 END as role_name,
-                m.status = 'registered' as is_active
+                m.status = 'registered' as is_active,
+                m.role,
+                m.status
              FROM members m
-             WHERE m.member_id = $1 AND m.status = 'registered'`,
+             WHERE m.member_id = $1 AND (m.role = 'superuser' OR m.status = 'registered')`,
             [decoded.id]
         );
 
@@ -68,10 +70,10 @@ const authenticateToken = async (
 
         // Attach member to request object
         req.user = {
-            id: decoded.id,
-            role: result.rows[0].role_name,  // dodaj ovo
-            role_name: result.rows[0].role_name,  // već imamo role_name iz querya
-            member_id: decoded.id
+            id: result.rows[0].id,
+            role: result.rows[0].role,  
+            role_name: result.rows[0].role_name,  
+            member_id: result.rows[0].id
         };
         next();
     } catch (error) {
@@ -145,7 +147,7 @@ const roles = {
 };
 
 export { 
-    authenticateToken as authMiddleware,  // Izvozimo kao authMiddleware
+    authenticateToken as authMiddleware,  
     checkRole, 
     requireSuperUser, 
     roles 

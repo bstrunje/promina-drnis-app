@@ -16,7 +16,6 @@ import { parseISO, format } from "date-fns";
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
 import MembershipFeeSection from "../../../components/MembershipFeeSection";
-import MembershipCardManager from "../../../components/MembershipCardManager";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
@@ -422,6 +421,13 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           }}
           memberId={memberId}
           onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
+          cardManagerProps={canEdit ? {
+            member,
+            onUpdate: handleMemberUpdate,
+            userRole: user?.role,
+            isFeeCurrent,
+            hideTitle: true  // Dodajem hideTitle prop da sakrijem naslov u MembershipCardManager komponenti
+          } : undefined}
         />
 
         {canEdit && !member.password_hash && (
@@ -434,15 +440,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
             onClose={closeModal}
             onAssign={handleAssign}
             key={`assign-card-${new Date().getTime()}`}
-          />
-        )}
-
-        {canEdit && (
-          <MembershipCardManager
-            member={member}
-            onUpdate={handleMemberUpdate}
-            userRole={user?.role} 
-            isFeeCurrent={isFeeCurrent} 
           />
         )}
 

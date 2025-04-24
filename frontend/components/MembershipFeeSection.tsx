@@ -13,6 +13,7 @@ import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
 import { API_BASE_URL } from '@/utils/config';
 import { useAuth } from "../src/context/AuthContext";
 import { Input } from "@components/ui/input";
+import MembershipCardManager from './MembershipCardManager';
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -27,6 +28,13 @@ interface MembershipFeeSectionProps {
   };
   memberId?: number;
   onMembershipHistoryUpdate?: (periods: MembershipPeriod[]) => Promise<void>;
+  cardManagerProps?: {
+    member: Member;
+    onUpdate: (member: Member) => Promise<void>;
+    userRole?: string;
+    isFeeCurrent?: boolean;
+    hideTitle?: boolean;
+  };
 }
 
 const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
@@ -37,7 +45,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   userRole,
   membershipHistory,
   memberId,
-  onMembershipHistoryUpdate
+  onMembershipHistoryUpdate,
+  cardManagerProps
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -274,30 +283,39 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Membership Fee Status</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-4">
-          {member.membership_details?.fee_payment_date ? (
-            <>
-              <div>
-                <span className="text-sm text-gray-500">Last Payment Date:</span>
-                <p>
-                  {format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}
-                </p>
-              </div>
+    <div>
+      {/* Membership Status Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Membership Fee Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Status Display */}
+          <div className="space-y-6">
+            {/* Display Fee Payment Information */}
+            <div>
+              {member.membership_details?.fee_payment_date && (
+                <div className="mb-3">
+                  <span className="text-sm text-gray-500">Last Payment Date:</span>
+                  <p>
+                    {format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}
+                  </p>
+                </div>
+              )}
+              
               {(member.membership_details?.fee_payment_year || member.fee_payment_year) && (
-                <div>
+                <div className="mb-3">
                   <span className="text-sm text-gray-500">Payment Year:</span>
                   <p>{member.membership_details?.fee_payment_year || member.fee_payment_year}</p>
                 </div>
               )}
-              <div>
+              
+              <div className="mb-3">
                 <span className="text-sm text-gray-500">Status:</span>
-                <span className={`px-2 py-1 rounded-full text-sm ${isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
+                <span className={`ml-2 px-2 py-1 rounded-full text-sm ${isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {isFeeCurrent ? 'Current' : 'Payment Required'}
                 </span>
                 {member.membership_details?.fee_payment_year && (
@@ -306,9 +324,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   </p>
                 )}
               </div>
+              
               {/* Prikaz statusa članstva (active/inactive) */}
               {member.status && (
-                <div className="mt-3">
+                <div className="mb-3">
                   <span className="text-sm text-gray-500">Member Status:</span>
                   <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
                     member.status === 'registered' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -343,275 +362,284 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   )}
                 </div>
               )}
-            </>
-          ) : (
-            <>
-              <div>
-                <span className="text-sm text-gray-500">Last Payment Date:</span>
-                <p>No payment recorded</p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500">Status:</span>
-                <span className="px-2 py-1 rounded-full text-sm bg-red-100 text-red-800">
-                  Payment Required
-                </span>
-              </div>
-            </>
-          )}
+            </div>
 
-          {isEditing && (userRole === 'admin' || userRole === 'superuser') && (
-            <form onSubmit={handleFeePayment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Payment Date
-                </label>
-                <input
-                  type="date"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  value={paymentDate}
-                  onChange={handleDateChange}
-                  required
-                  max={formatInputDate(getCurrentDate())}
-                />
-                {paymentError && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {paymentError}
-                  </p>
-                )}
-                {paymentDate && getMonth(parseISO(paymentDate)) >= 10 && (
-                  <p className="mt-1 text-sm text-blue-600">
-                    {!member.membership_details?.fee_payment_date ?
-                      "For new members, payment is counted for current year membership" :
-                      "Payment will be counted for next year's membership"
-                    }
-                  </p>
-                )}
+            {/* Membership Card Management - visible only if fee is current */}
+            {isEditing && isFeeCurrent && cardManagerProps && (
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-3">Membership Card Management</h3>
+                <MembershipCardManager {...cardManagerProps} />
               </div>
-
-              {!showPaymentConfirm ? (
-                <Button
-                  type="button"
-                  onClick={() => setShowPaymentConfirm(true)}
-                  disabled={!isValidPayment || isSubmitting}
-                  variant={isValidPayment ? "default" : "outline"}
-                  className={cn(
-                    "w-full",
-                    isValidPayment ? "bg-black hover:bg-blue-500" : "bg-gray-200",
-                    isSubmitting && "opacity-50"
-                  )}
-                >
-                  Process Payment
-                </Button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">
-                    Confirm payment for {member.first_name} {member.last_name}?
-                  </p>
-                  <div className="flex space-x-2">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      variant="default"
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      {isSubmitting ? "Processing..." : "Confirm"}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => setShowPaymentConfirm(false)}
-                      variant="outline"
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+            )}
+            
+            {isEditing && !isFeeCurrent && cardManagerProps && (
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-3 text-amber-700">Membership Card Management</h3>
+                <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
+                  <p>Upravljanje članskom karticom bit će dostupno nakon plaćanja godišnje članarine.</p>
                 </div>
-              )}
-            </form>
+              </div>
+            )}
+
+            {/* Payment Form - visible only for admins */}
+            {canEdit && isEditing && (
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-3">Process Payment</h3>
+                <form onSubmit={handleFeePayment}>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="paymentDate" className="block text-sm font-medium text-gray-700">
+                        Payment Date
+                      </label>
+                      <div className="mt-1 relative">
+                        <Input
+                          type="date"
+                          id="paymentDate"
+                          value={paymentDate}
+                          onChange={(e) => {
+                            setPaymentDate(e.target.value);
+                            validatePaymentDate(e.target.value);
+                          }}
+                          className={`${paymentError ? 'border-red-300' : ''}`}
+                          required
+                        />
+                      </div>
+                      {paymentError && (
+                        <p className="mt-1 text-sm text-red-600">{paymentError}</p>
+                      )}
+                    </div>
+
+                    {!showPaymentConfirm ? (
+                      <Button
+                        type="button"
+                        onClick={() => setShowPaymentConfirm(true)}
+                        disabled={!isValidPayment || isSubmitting}
+                        className={cn(
+                          "w-full",
+                          isValidPayment ? "bg-black hover:bg-blue-500" : "bg-gray-200",
+                          isSubmitting && "opacity-50"
+                        )}
+                      >
+                        Process Payment
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          Confirm payment for {member.first_name} {member.last_name}?
+                        </p>
+                        <div className="flex space-x-2">
+                          <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            variant="default"
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                          >
+                            {isSubmitting ? "Processing..." : "Confirm"}
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setShowPaymentConfirm(false)}
+                            variant="outline"
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Membership History Section - Collapsible */}
+      <div className="mt-8 pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={() => setShowHistory(!showHistory)}
+          className="flex items-center text-lg font-medium text-gray-900 hover:text-blue-600 focus:outline-none"
+        >
+          {showHistory ? (
+            <ChevronDown className="w-5 h-5 mr-2" />
+          ) : (
+            <ChevronRight className="w-5 h-5 mr-2" />
           )}
-        </div>
+          Membership History
+        </button>
 
-        {/* Membership History Section - Collapsible */}
-        <div className="mt-8 pt-4 border-t border-gray-200">
-          <button
-            className="flex items-center justify-between w-full text-left font-medium text-lg hover:text-blue-600 transition-colors"
-            onClick={() => setShowHistory(!showHistory)}
-          >
-            <span>Membership History</span>
-            {showHistory ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-
-          {showHistory && (
-            <div className="mt-4 space-y-4">
-              {/* Display membership history */}
-              <div className="flex justify-between items-center">
-                <h4 className="text-sm font-medium">Membership Periods</h4>
-                {canEdit && !isEditingHistory && (
+        {showHistory && (
+          <div className="mt-4 space-y-4">
+            {/* Display membership history */}
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-medium">Membership Periods</h4>
+              {canEdit && !isEditingHistory && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditingHistory(true)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit History
+                </Button>
+              )}
+              {canEdit && isEditingHistory && (
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={handleHistorySave}
+                    disabled={isSubmittingHistory}
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Save
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setIsEditingHistory(true)}
+                    onClick={() => {
+                      setIsEditingHistory(false);
+                      setEditedPeriods(membershipHistory?.periods || []);
+                    }}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit History
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
                   </Button>
-                )}
-                {canEdit && isEditingHistory && (
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleHistorySave}
-                      disabled={isSubmittingHistory}
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsEditingHistory(false);
-                        setEditedPeriods(membershipHistory?.periods || []);
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              {membershipHistory?.periods && membershipHistory.periods.length > 0 ? (
-                <div>
-                  {isEditingHistory ? (
-                    <div className="space-y-4">
-                      {/* Editing interface */}
-                      {editedPeriods.map((period, index) => (
-                        <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-gray-500">Start Date</label>
-                              <Input
-                                type="date"
-                                value={period.start_date ? period.start_date.toString().split('T')[0] : ''}
-                                onChange={(e) => handlePeriodChange(index, 'start_date', e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-500">End Date</label>
-                              <Input
-                                type="date"
-                                value={period.end_date ? period.end_date.toString().split('T')[0] : ''}
-                                onChange={(e) => handlePeriodChange(index, 'end_date', e.target.value)}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="text-xs text-gray-500">End Reason</label>
-                              <select
-                                className="w-full p-2 border rounded"
-                                value={period.end_reason || ""}
-                                onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value as MembershipEndReason)}
-                              >
-                                <option value="">Odaberite razlog</option>
-                                <option value="withdrawal">Istupanje</option>
-                                <option value="non_payment">Neplaćanje članarine</option>
-                                <option value="expulsion">Isključenje</option>
-                                <option value="death">Smrt</option>
-                              </select>
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeletePeriod(index)}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add new period */}
-                      <div className="p-3 border rounded-md bg-gray-50 border-dashed">
-                        <h5 className="text-sm font-medium mb-2">Add New Period</h5>
+            {membershipHistory?.periods && membershipHistory.periods.length > 0 ? (
+              <div>
+                {isEditingHistory ? (
+                  <div className="space-y-4">
+                    {/* Editing interface */}
+                    {editedPeriods.map((period, index) => (
+                      <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-xs text-gray-500">Start Date</label>
                             <Input
                               type="date"
-                              value={newPeriod?.start_date?.toString().split('T')[0] || ''}
-                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, start_date: e.target.value })}
+                              value={period.start_date ? period.start_date.toString().split('T')[0] : ''}
+                              onChange={(e) => handlePeriodChange(index, 'start_date', e.target.value)}
                             />
                           </div>
                           <div>
                             <label className="text-xs text-gray-500">End Date</label>
                             <Input
                               type="date"
-                              value={newPeriod?.end_date?.toString().split('T')[0] || ''}
-                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_date: e.target.value })}
+                              value={period.end_date ? period.end_date.toString().split('T')[0] : ''}
+                              onChange={(e) => handlePeriodChange(index, 'end_date', e.target.value)}
                             />
                           </div>
                           <div className="col-span-2">
                             <label className="text-xs text-gray-500">End Reason</label>
-                            <Input
-                              type="text"
-                              value={newPeriod?.end_reason || ''}
-                              onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_reason: e.target.value as MembershipEndReason })}
-                            />
+                            <select
+                              className="w-full p-2 border rounded"
+                              value={period.end_reason || ""}
+                              onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value as MembershipEndReason)}
+                            >
+                              <option value="">Odaberite razlog</option>
+                              <option value="withdrawal">Istupanje</option>
+                              <option value="non_payment">Neplaćanje članarine</option>
+                              <option value="expulsion">Isključenje</option>
+                              <option value="death">Smrt</option>
+                            </select>
                           </div>
                           <Button
-                            variant="default"
+                            variant="destructive"
                             size="sm"
-                            onClick={handleAddPeriod}
-                            disabled={!newPeriod?.start_date}
+                            onClick={() => handleDeletePeriod(index)}
                           >
-                            Add Period
+                            <X className="h-4 w-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* View only interface */}
-                      {membershipHistory.periods.map((period, index) => (
-                        <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-xs text-gray-500">Start Date</p>
-                              <p>{format(new Date(period.start_date), 'dd.MM.yyyy')}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">End Date</p>
-                              <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Active'}</p>
-                            </div>
-                            {period.end_reason && (
-                              <div className="col-span-2">
-                                <p className="text-xs text-gray-500">End Reason</p>
-                                <p>{translateEndReason(period.end_reason)}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-500 italic">No membership history available</p>
-              )}
+                    ))}
 
-              {membershipHistory?.totalDuration && (
-                <div>
-                  <p className="text-sm text-gray-500">Total Membership Duration</p>
-                  <p className="font-medium">{membershipHistory.totalDuration}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                    {/* Add new period */}
+                    <div className="p-3 border rounded-md bg-gray-50 border-dashed">
+                      <h5 className="text-sm font-medium mb-2">Add New Period</h5>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Start Date</label>
+                          <Input
+                            type="date"
+                            value={newPeriod?.start_date?.toString().split('T')[0] || ''}
+                            onChange={(e) => setNewPeriod({ ...newPeriod || {}, start_date: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">End Date</label>
+                          <Input
+                            type="date"
+                            value={newPeriod?.end_date?.toString().split('T')[0] || ''}
+                            onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs text-gray-500">End Reason</label>
+                          <Input
+                            type="text"
+                            value={newPeriod?.end_reason || ''}
+                            onChange={(e) => setNewPeriod({ ...newPeriod || {}, end_reason: e.target.value as MembershipEndReason })}
+                          />
+                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleAddPeriod}
+                          disabled={!newPeriod?.start_date}
+                        >
+                          Add Period
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* View only interface */}
+                    {membershipHistory.periods.map((period, index) => (
+                      <div key={period.period_id || index} className="p-3 border rounded-md bg-gray-50">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-xs text-gray-500">Start Date</p>
+                            <p>{format(new Date(period.start_date), 'dd.MM.yyyy')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">End Date</p>
+                            <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Active'}</p>
+                          </div>
+                          {period.end_reason && (
+                            <div className="col-span-2">
+                              <p className="text-xs text-gray-500">End Reason</p>
+                              <p>{translateEndReason(period.end_reason)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No membership history available</p>
+            )}
+
+            {membershipHistory?.totalDuration && (
+              <div>
+                <p className="text-sm text-gray-500">Total Membership Duration</p>
+                <p className="font-medium">{membershipHistory.totalDuration}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

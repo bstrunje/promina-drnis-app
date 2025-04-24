@@ -446,14 +446,18 @@ router.post('/reset-test-database', async (req, res) => {
 // Endpoint za rekalkulaciju statusa članstva nakon promjene datuma
 router.post('/recalculate-membership', async (req, res) => {
   try {
-    console.log('🔄 Rekalkulacija statusa članstva na temelju trenutnog datuma...');
+    // Provjeri ima li poslani mockDate u tijelu zahtjeva
+    const { mockDate } = req.body;
+    console.log(`🔄 Rekalkulacija statusa članstva${mockDate ? ` s mock datumom: ${mockDate}` : ' na temelju trenutnog datuma'}...`);
     
-    // Koristi centraliziranu funkciju iz membership servisa
-    const result = await membershipService.updateAllMembershipStatuses();
+    // Koristi centraliziranu funkciju iz membership servisa i proslijedi mock datum ako postoji
+    const result = await membershipService.updateAllMembershipStatuses(mockDate ? new Date(mockDate) : undefined);
     
     res.json({ 
       success: true, 
       message: 'Status članstva uspješno rekalkuliran',
+      mockDateUsed: !!mockDate,
+      mockDate: mockDate || null,
       updatedCount: result.updatedCount,
       errors: result.errors,
       timestamp: new Date()

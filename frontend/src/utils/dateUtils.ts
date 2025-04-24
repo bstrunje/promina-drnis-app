@@ -4,6 +4,11 @@
 import { format, parseISO, isValid, parse } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
+// Ključevi za localStorage
+const MOCK_DATE_KEY = 'promina_mock_date';
+const ORIGINAL_MOCK_DATE_KEY = 'promina_original_mock_date';
+const HAS_ORIGINAL_STORED_KEY = 'promina_has_original_stored';
+
 // Spremnik za mock datum koji će se koristiti umjesto stvarnog datuma
 let mockDate: Date | null = null;
 
@@ -11,11 +16,57 @@ let mockDate: Date | null = null;
 let originalMockDate: Date | null = null;
 let hasOriginalBeenStored: boolean = false;
 
+// Inicijalizacija i učitavanje mock datuma iz localStorage ako postoji
+function initMockDate(): void {
+  const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
+  if (storedMockDate) {
+    try {
+      mockDate = new Date(storedMockDate);
+      console.log(`📅 Mock datum učitan iz localStorage: ${mockDate.toISOString()}`);
+    } catch (e) {
+      console.error('Greška prilikom učitavanja mock datuma iz localStorage:', e);
+      mockDate = null;
+      localStorage.removeItem(MOCK_DATE_KEY);
+    }
+  }
+
+  const storedOriginalMockDate = localStorage.getItem(ORIGINAL_MOCK_DATE_KEY);
+  if (storedOriginalMockDate) {
+    try {
+      originalMockDate = new Date(storedOriginalMockDate);
+    } catch (e) {
+      originalMockDate = null;
+      localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
+    }
+  }
+
+  const storedHasOriginal = localStorage.getItem(HAS_ORIGINAL_STORED_KEY);
+  if (storedHasOriginal) {
+    hasOriginalBeenStored = storedHasOriginal === 'true';
+  }
+}
+
+// Pozovi inicijalizaciju odmah
+initMockDate();
+
 /**
  * Vraća trenutni datum - ako je postavljen mock datum, vraća njega, inače stvarni datum
  */
 export function getCurrentDate(): Date {
-  return mockDate || new Date();
+  if (mockDate) {
+    // Svakih 30 minuta osvježi podatak da sustav koristi mock datum (za dijagnostiku)
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+    const now = new Date().getTime();
+    const lastLog = parseInt(localStorage.getItem('promina_last_mock_date_log') || '0', 10);
+    
+    if (now - lastLog > thirtyMinutesInMs) {
+      console.log(`📅 Koristi se simulirani datum: ${mockDate.toISOString()}`);
+      localStorage.setItem('promina_last_mock_date_log', now.toString());
+    }
+    
+    return mockDate;
+  }
+  return new Date();
 }
 
 /**
@@ -27,8 +78,26 @@ export function setMockDate(date: Date | null): void {
   if (!hasOriginalBeenStored) {
     originalMockDate = mockDate;
     hasOriginalBeenStored = true;
+    
+    // Spremi u localStorage
+    if (originalMockDate) {
+      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, originalMockDate.toISOString());
+    } else {
+      localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
+    }
+    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'true');
   }
+  
   mockDate = date;
+  
+  // Spremi u localStorage za trajnost
+  if (mockDate) {
+    localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
+    console.log(`📅 Mock datum postavljen i spremljen u localStorage: ${mockDate.toISOString()}`);
+  } else {
+    localStorage.removeItem(MOCK_DATE_KEY);
+    console.log('📅 Mock datum resetiran i uklonjen iz localStorage');
+  }
 }
 
 /**
@@ -37,6 +106,13 @@ export function setMockDate(date: Date | null): void {
 export function resetMockDate(): void {
   mockDate = null;
   hasOriginalBeenStored = false;
+  
+  // Očisti localStorage
+  localStorage.removeItem(MOCK_DATE_KEY);
+  localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
+  localStorage.removeItem(HAS_ORIGINAL_STORED_KEY);
+  
+  console.log('📅 Mock datum resetiran i uklonjeni svi podaci iz localStorage');
 }
 
 /**
@@ -47,6 +123,17 @@ export function restoreOriginalMock(): boolean {
   if (hasOriginalBeenStored) {
     mockDate = originalMockDate;
     hasOriginalBeenStored = false;
+    
+    // Ažuriraj localStorage
+    if (mockDate) {
+      localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
+    } else {
+      localStorage.removeItem(MOCK_DATE_KEY);
+    }
+    localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
+    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'false');
+    
+    console.log(`📅 Mock datum vraćen na originalnu vrijednost: ${mockDate ? mockDate.toISOString() : 'null'}`);
     return true;
   }
   return false;

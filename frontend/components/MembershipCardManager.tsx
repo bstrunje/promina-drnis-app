@@ -29,12 +29,22 @@ interface Props {
   onUpdate: (member: Member) => Promise<void>;
   userRole?: string; // Add this line
   isFeeCurrent?: boolean; // Add this new prop
+  hideTitle?: boolean; // Added to control title visibility
 }
 
-const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, isFeeCurrent = true }) => {
+const MembershipCardManager: React.FC<Props> = ({ 
+  member, 
+  onUpdate, 
+  userRole, 
+  isFeeCurrent = true,
+  hideTitle = false
+}) => {
   const { toast } = useToast();
   // Initialize from membership_details first (source of truth), fall back to direct property
   const [cardNumber, setCardNumber] = useState(
+    member?.membership_details?.card_number || member?.card_number || ""
+  );
+  const [originalCardNumber, setOriginalCardNumber] = useState(
     member?.membership_details?.card_number || member?.card_number || ""
   );
   const [stampIssued, setStampIssued] = useState(
@@ -477,9 +487,11 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Membership Card Management</CardTitle>
-      </CardHeader>
+      {hideTitle ? null : (
+        <CardHeader>
+          <CardTitle>Membership Card Management</CardTitle>
+        </CardHeader>
+      )}
       <CardContent>
         {/* Current Card Status */}
         <div className="p-4 bg-gray-50 rounded-lg">
@@ -714,13 +726,15 @@ const MembershipCardManager: React.FC<Props> = ({ member, onUpdate, userRole, is
             </div>
             <Button
               type="submit"
-              disabled={isSubmitting || !cardNumber}
+              disabled={isSubmitting || !cardNumber || cardNumber === originalCardNumber}
               className={cn(
                 "w-full bg-black hover:bg-blue-500 transition-colors",
-                isSubmitting && "opacity-50"
+                isSubmitting && "opacity-50",
+                // Dodaj poseban stil kada je gumb deaktiviran zbog istog broja kartice
+                cardNumber === originalCardNumber && !isSubmitting && cardNumber && "bg-gray-300 hover:bg-gray-300 cursor-not-allowed"
               )}
             >
-              {isSubmitting ? "Assigning..." : "Assign Card Number"}
+              {isSubmitting ? "Assigning..." : "Change Card Number"}
             </Button>
           </div>
         </form>

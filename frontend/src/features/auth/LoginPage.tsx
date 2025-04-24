@@ -673,6 +673,7 @@ const LoginPage = () => {
                       placeholder="Enter your full name"
                       className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
                       value={loginData.full_name}
+                      autoComplete="off"
                       onKeyDown={async (e) => {
                         if (e.key === "Enter" && searchResults.length > 0) {
                           e.preventDefault();
@@ -793,6 +794,7 @@ const LoginPage = () => {
                         placeholder="Enter your password"
                         className="block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
                         value={loginData.password}
+                        autoComplete="new-password"
                         onChange={handleInputChange}
                       />
                       <button

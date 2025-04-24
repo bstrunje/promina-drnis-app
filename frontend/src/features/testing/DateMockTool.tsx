@@ -210,9 +210,16 @@ const DateMockTool = () => {
   // Nova funkcija za rekalkulaciju statusa članstva
   const refreshMembershipStatus = async () => {
     try {
+      // Dohvati trenutni datum (pravi ili mock) za slanje na backend
+      const currentDate = getCurrentDate();
+      
       // Pozovi backend endpoint bez /api/ prefiksa jer axios klijent već dodaje taj prefiks
-      await api.post('debug/recalculate-membership');
-      console.log('Refreshed membership status based on new date');
+      // Dodajemo simulirani datum kao parametar
+      await api.post('debug/recalculate-membership', {
+        mockDate: currentDate.toISOString()
+      });
+      
+      console.log(`Refreshed membership status based on date: ${currentDate.toISOString()}`);
     } catch (error) {
       console.error('Error refreshing membership status:', error);
     }
