@@ -5,6 +5,7 @@ import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { sendMemberMessage } from '../src/utils/api';
 import { useAuth } from '../src/context/AuthContext';
+import { MessageSquare } from 'lucide-react';
 
 interface MemberMessagesSectionProps {
   member: Member;
@@ -45,7 +46,12 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Send Message to Admin</CardTitle>
+        <CardTitle>
+          <div className="flex items-center">
+            <MessageSquare className="w-5 h-5 mr-2" />
+            Send Message to Admin
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleCommentSubmit}>

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { getMemberActivities } from '../src/utils/api';
 import { getCurrentDate, formatDate, getCurrentYear, parseDate } from "../src/utils/dateUtils";
+import { History } from 'lucide-react';
 
 interface Props {
   memberId: number;
@@ -51,7 +52,12 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity History</CardTitle>
+        <CardTitle>
+          <div className="flex items-center">
+            <History className="w-5 h-5 mr-2" />
+            Activity History
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {activities.length > 0 ? (

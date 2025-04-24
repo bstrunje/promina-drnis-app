@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
-import { Clock } from 'lucide-react';
+import { Clock, CreditCard } from 'lucide-react';
 import { useAuth } from "../src/context/AuthContext";
 
 interface MembershipDetailsCardProps {
@@ -40,7 +40,12 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Membership Details</CardTitle>
+        <CardTitle>
+          <div className="flex items-center">
+            <CreditCard className="w-5 h-5 mr-2" />
+            Membership Details
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

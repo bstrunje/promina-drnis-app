@@ -8,7 +8,7 @@ import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
 import { SystemSettings } from '@shared/settings.types';
 import { updateMembership } from '../src/utils/api'; // Use API client instead of direct axios
 import { getCurrentYear, getCurrentDate, formatInputDate, getMonth } from '../src/utils/dateUtils';
-import { ChevronDown, ChevronRight, Calendar, Edit, Save, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, Edit, Save, X, Receipt, Clock } from 'lucide-react';
 import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
 import { API_BASE_URL } from '@/utils/config';
 import { useAuth } from "../src/context/AuthContext";
@@ -288,7 +288,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <Receipt className="w-5 h-5 mr-2" />
             Membership Fee Status
           </CardTitle>
         </CardHeader>
@@ -465,6 +465,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               ) : (
                 <ChevronRight className="w-5 h-5 mr-2" />
               )}
+              <Clock className="w-5 h-5 mr-2" />
               Membership History
             </button>
 
