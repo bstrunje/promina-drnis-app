@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Edit, X, Save } from "lucide-react";
 import { Member } from "@shared/member";
 import { cn } from "@/lib/utils";
 import {
@@ -22,14 +22,26 @@ import {
 import api from "../src/utils/api";
 import { useCardNumberLength } from "../src/hooks/useCardNumberLength";
 import { getCurrentDate, getCurrentYear } from "../src/utils/dateUtils";
+import { format } from "date-fns";
 
-// Update the Props interface to include userRole
+// Type for Membership Period
+interface MembershipPeriod {
+  period_id?: number;
+  member_id?: number;
+  start_date: string | Date;
+  end_date?: string | Date | null;
+  end_reason?: "withdrawal" | "non_payment" | "expulsion" | "death" | string | null;
+}
+
+type MembershipEndReason = "withdrawal" | "non_payment" | "expulsion" | "death" | "";
+
+// Update the Props interface to include userRole and membership history
 interface Props {
   member: Member;
   onUpdate: (member: Member) => Promise<void>;
-  userRole?: string; // Add this line
-  isFeeCurrent?: boolean; // Add this new prop
-  hideTitle?: boolean; // Added to control title visibility
+  userRole?: string; 
+  isFeeCurrent?: boolean;
+  hideTitle?: boolean;
 }
 
 const MembershipCardManager: React.FC<Props> = ({ 
@@ -37,9 +49,10 @@ const MembershipCardManager: React.FC<Props> = ({
   onUpdate, 
   userRole, 
   isFeeCurrent = true,
-  hideTitle = false
+  hideTitle = false,
 }) => {
   const { toast } = useToast();
+  // Existing states for Card Manager
   // Initialize from membership_details first (source of truth), fall back to direct property
   const [cardNumber, setCardNumber] = useState(
     member?.membership_details?.card_number || member?.card_number || ""
@@ -485,11 +498,14 @@ const MembershipCardManager: React.FC<Props> = ({
     }
   };
 
+  // Možemo li uređivati podatke? Dopušteno samo za admin i superuser
+  const canEdit = userRole === 'admin' || userRole === 'superuser';
+
   return (
     <Card>
-      {hideTitle ? null : (
+      {!hideTitle && (
         <CardHeader>
-          <CardTitle>Membership Card Management</CardTitle>
+          <CardTitle className="text-lg">Membership Card Management</CardTitle>
         </CardHeader>
       )}
       <CardContent>
