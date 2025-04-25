@@ -1,22 +1,27 @@
 import express from 'express';
-import fs from 'fs/promises';
-import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { exec } from 'child_process';
-import util from 'util';
+import path from 'path';
+import fs from 'fs';
 import { promises as fsPromises } from 'fs';
+import util from 'util';
+import { exec } from 'child_process';
+import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
-// Import the database client
+// Import db
 import db from '../utils/db.js';
+
+// Import member service
+import memberService from '../services/member.service.js';
 
 // Import membership service
 import membershipService from '../services/membership.service.js';
 
+import { getCurrentDate, setMockDate, resetMockDate } from '../utils/dateUtils.js';
+
 const execPromise = util.promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Debug endpoint to check if file exists
@@ -28,7 +33,7 @@ router.get('/file-exists/:subdirectory/:filename', async (req, res) => {
     console.log('Checking if file exists:', filePath);
     
     try {
-      const stats = await fs.stat(filePath);
+      const stats = await fsPromises.stat(filePath);
       res.json({
         exists: true,
         size: stats.size,
@@ -627,5 +632,99 @@ router.get('/list-backups', async (req, res) => {
     });
   }
 });
+
+// Endpoint za postavljanje simuliranog datuma
+router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req, res) => {
+  try {
+    const { date, reset } = req.body;
+    
+    if (reset) {
+      // Ako je reset=true, resetiraj simulirani datum na trenutni stvarni datum
+      resetMockDate();
+      console.log('📅 Simulirani datum resetiran, koristi se stvarni datum');
+      
+      res.json({
+        success: true,
+        message: 'Simulirani datum je resetiran',
+        currentDate: new Date(),
+        isMockDate: false
+      });
+    } else if (date) {
+      // Postavi simulirani datum
+      const mockDate = new Date(date);
+      
+      if (isNaN(mockDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Neispravan format datuma'
+        });
+      }
+      
+      setMockDate(mockDate);
+      console.log(`📅 Simulirani datum postavljen na: ${mockDate.toISOString()}`);
+      
+      res.json({
+        success: true,
+        message: 'Simulirani datum je postavljen',
+        currentDate: mockDate,
+        isMockDate: true
+      });
+    } else {
+      // Ako nema datuma ni reseta, vrati trenutno stanje
+      const currentDate = getCurrentDate();
+      const isMockDate = getCurrentDate().getTime() !== new Date().getTime();
+      
+      res.json({
+        success: true,
+        message: 'Trenutni datum sustava',
+        currentDate,
+        isMockDate
+      });
+    }
+  } catch (error) {
+    console.error('❌ Greška prilikom postavljanja simuliranog datuma:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error instanceof Error ? error.message : 'Nepoznata greška',
+      timestamp: new Date()
+    });
+  }
+});
+
+// Funkcija za brisanje svih datoteka iz direktorija
+async function cleanDirectory(directory: string): Promise<void> {
+  try {
+    // Provjeri postoji li direktorij
+    await fsPromises.access(directory);
+    
+    // Pročitaj sadržaj direktorija
+    const files = await fsPromises.readdir(directory);
+    
+    // Obriši svaku datoteku
+    for (const file of files) {
+      const filePath = path.join(directory, file);
+      const stats = await fsPromises.stat(filePath);
+      
+      if (stats.isDirectory()) {
+        // Rekurzivno obriši poddirektorije
+        await cleanDirectory(filePath);
+        await fsPromises.rmdir(filePath);
+      } else {
+        // Obriši datoteku
+        await fsPromises.unlink(filePath);
+      }
+    }
+  } catch (error: any) {
+    // Ako direktorij ne postoji, to je OK
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+// Funkcija za sortiranje datoteka po vremenu promjene (od najnovije do najstarije)
+function sortFilesByDate(a: { mtime: Date }, b: { mtime: Date }): number {
+  return b.mtime.getTime() - a.mtime.getTime();
+}
 
 export default router;

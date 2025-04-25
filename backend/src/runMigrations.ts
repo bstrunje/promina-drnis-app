@@ -2,6 +2,7 @@
 import { runMigration as addMissingColumns } from './migrations/add_missing_columns.js';
 import { runMigration as addActiveUntilColumn } from './migrations/add_active_until_column.js';
 import { runMigration as fixStampInventoryConstraint } from './migrations/fix_stamp_inventory_constraint.js';
+import { runMigration as addStampYearToHistory } from './migrations/add_stamp_year_to_history.js';
 
 /**
  * Pokreće sve migracije koje su potrebne za aplikaciju
@@ -14,6 +15,7 @@ export async function runAllMigrations(): Promise<void> {
     await addMissingColumns();
     await addActiveUntilColumn(); 
     await fixStampInventoryConstraint(); // Dodana nova migracija za popravak ograničenja
+    await addStampYearToHistory(); // Dodana migracija za dodavanje stamp_year kolone u stamp_history tablicu
     
     console.log('✅ Migracije uspješno izvršene');
   } catch (error) {

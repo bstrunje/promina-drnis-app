@@ -405,4 +405,13 @@ export const resetStampInventory = async (year: number, notes: string = ''): Pro
   }
 };
 
+export const archiveStampInventory = async (year: number, notes: string = '', force: boolean = false): Promise<any> => {
+  try {
+    const response = await api.post('/stamps/archive-year', { year, notes, force });
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to archive stamp inventory');
+  }
+};
+
 export default api;

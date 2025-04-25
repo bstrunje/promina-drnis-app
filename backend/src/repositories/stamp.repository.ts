@@ -1,4 +1,5 @@
 import db from '../utils/db.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 interface StampInventory {
     stamp_type: 'employed' | 'student' | 'pensioner';
@@ -252,33 +253,62 @@ const stampRepository = {
         return result.rows;
     },
 
-    async archiveAndResetInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
+    /**
+     * Arhivira trenutno stanje markica za određenu godinu bez resetiranja inventara.
+     * @param year Godina za koju se arhiviraju markice
+     * @param memberId ID člana koji vrši arhiviranje
+     * @param notes Bilješke o arhiviranju
+     */
+    async archiveStampInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
         try {
+            // Koristimo simulirani datum iz getCurrentDate funkcije
+            const currentDate = getCurrentDate();
+            const formattedDate = currentDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+            
             await db.transaction(async (client) => {
-              const currentInventory = await client.query(
-                'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory'
-              );
-
-              for (const item of currentInventory.rows) {
-                await client.query(
-                  `INSERT INTO stamp_history
-                    (year, stamp_type, stamp_year, initial_count, issued_count, reset_by, notes)
-                  VALUES
-                    ($1, $2, $3, $4, $5, $6, $7)`,
-                  [year, item.stamp_type, item.stamp_year, item.initial_count, item.issued_count, memberId, notes]
+                // Filtriramo markice samo za zadanu godinu
+                const currentInventory = await client.query(
+                    'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory WHERE stamp_year = $1',
+                    [year]
                 );
-              }
 
-              await client.query(
-                `UPDATE stamp_inventory 
-                 SET issued_count = 0,
-                     last_updated = CURRENT_TIMESTAMP`
-              );
+                if (currentInventory.rows.length === 0) {
+                    throw new Error(`No stamp inventory found for year ${year}`);
+                }
+
+                for (const item of currentInventory.rows) {
+                    await client.query(
+                        `INSERT INTO stamp_history
+                            (year, stamp_type, stamp_year, initial_count, issued_count, reset_date, reset_by, notes)
+                        VALUES
+                            ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                        [
+                            year, 
+                            item.stamp_type, 
+                            item.stamp_year, 
+                            item.initial_count, 
+                            item.issued_count, 
+                            formattedDate,  // Koristimo simulirani datum iz dateUtils
+                            memberId, 
+                            notes
+                        ]
+                    );
+                }
+
+                // Nema resetiranja markica, samo arhiviramo stanje
             });
         } catch (error: unknown) {
-            console.error('❌ Greška prilikom arhiviranja i resetiranja inventara markica:', error);
+            console.error('❌ Greška prilikom arhiviranja inventara markica:', error);
             throw error;
         }
+    },
+
+    /**
+     * @deprecated Ova metoda je zastarjela, koristite archiveStampInventory umjesto nje
+     */
+    async archiveAndResetInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
+        console.warn('archiveAndResetInventory je zastarjela metoda, koristite archiveStampInventory umjesto nje');
+        return this.archiveStampInventory(year, memberId, notes);
     }
 };
 

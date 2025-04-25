@@ -12,6 +12,7 @@ import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
 import { runAllMigrations } from './runMigrations.js';
 import scheduledService from './services/scheduled.service.js';
+import { initScheduledTasks } from './utils/scheduledTasks.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -92,6 +93,9 @@ async function startServer(): Promise<void> {
             await scheduledService.checkAndArchiveStamps();
         }, 12 * 60 * 60 * 1000); // 12 sati u milisekundama
 
+        // Inicijaliziraj periodičke zadatke (uključujući ažuriranje statusa članstva)
+        initScheduledTasks();
+        
         return new Promise((resolve, reject) => {
             server = app.listen(port, () => {
                 console.log('\n🚀 Server is running:');

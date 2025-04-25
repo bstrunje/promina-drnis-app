@@ -1,17 +1,6 @@
 import db from "../utils/db.js";
 import stampRepository from "../repositories/stamp.repository.js";
-
-/**
- * Pomoćni modul za rad s datumima koji ne ovisi o vanjskom modulu
- */
-const dateUtils = {
-  /**
-   * Vraća trenutni datum (može se kasnije proširiti za mock datume u testiranju)
-   */
-  getCurrentDate(): Date {
-    return new Date();
-  }
-};
+import { getCurrentDate } from "../utils/dateUtils.js";
 
 /**
  * Servis za zakazane zadatke koji se izvršavaju automatski
@@ -22,7 +11,7 @@ const scheduledService = {
    * @returns boolean
    */
   isLastDayOfYear(): boolean {
-    const today = dateUtils.getCurrentDate();
+    const today = getCurrentDate();
     const day = today.getDate();
     const month = today.getMonth(); // 0-11: 0=Jan, 11=Dec
     
@@ -35,7 +24,7 @@ const scheduledService = {
    * @returns boolean
    */
   isFirstDayOfYear(): boolean {
-    const today = dateUtils.getCurrentDate();
+    const today = getCurrentDate();
     const day = today.getDate();
     const month = today.getMonth(); // 0-11: 0=Jan, 11=Dec
     
@@ -75,7 +64,7 @@ const scheduledService = {
         return;
       }
       
-      const currentYear = dateUtils.getCurrentDate().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       
       // Provjeri je li arhiviranje već izvršeno za ovu godinu
       const isDone = await this.isArchivingDoneForYear(currentYear);
@@ -90,7 +79,7 @@ const scheduledService = {
       const systemAdminId = 1; 
       const notes = `Automatsko arhiviranje na kraju godine ${currentYear}`;
       
-      await stampRepository.archiveAndResetInventory(currentYear, systemAdminId, notes);
+      await stampRepository.archiveStampInventory(currentYear, systemAdminId, notes);
       
       console.log(`✅ Uspješno arhivirano stanje markica za godinu ${currentYear}`);
     } catch (error) {

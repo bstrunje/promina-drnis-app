@@ -123,7 +123,39 @@ router.get('/history/:year',
     }
 );
 
-// Nova ruta za arhiviranje trenutnog stanja i resetiranje za novu godinu
+// Nova ruta za arhiviranje stanja inventara markica za određenu godinu (bez resetiranja)
+router.post('/archive-year', 
+    authenticateToken, 
+    roles.requireSuperUser, // Samo superuser može arhivirati inventar
+    async (req, res) => {
+        try {
+            const { year, notes, force = false } = req.body;
+            
+            if (!year || isNaN(parseInt(year))) {
+                return res.status(400).json({ message: 'Valid year parameter is required' });
+            }
+            
+            // Dohvati ID člana iz tokena
+            const memberId = req.user!.id;
+            
+            const result = await stampService.archiveStampInventory(
+                parseInt(year), 
+                memberId, 
+                notes || '',
+                force // Dodajemo force parametar
+            );
+            
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Failed to archive inventory' 
+            });
+        }
+    }
+);
+
+// Stara ruta za arhiviranje trenutnog stanja i resetiranje za novu godinu 
+// Ostavljena za kompatibilnost, ali preporučuje se koristiti /archive-year umjesto ove
 router.post('/reset-year', 
     authenticateToken, 
     roles.requireSuperUser, // Samo superuser može resetirati inventar
@@ -138,16 +170,20 @@ router.post('/reset-year',
             // Dohvati ID člana iz tokena
             const memberId = req.user!.id;
             
-            const result = await stampService.archiveAndResetInventory(
+            // Koristimo novu funkciju za arhiviranje bez resetiranja
+            const result = await stampService.archiveStampInventory(
                 parseInt(year), 
                 memberId, 
                 notes || ''
             );
             
-            res.json(result);
+            res.json({
+                ...result,
+                message: 'Inventory successfully archived. Reset functionality is deprecated, please use /archive-year endpoint instead.'
+            });
         } catch (error) {
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to reset inventory' 
+                message: error instanceof Error ? error.message : 'Failed to archive inventory' 
             });
         }
     }

@@ -158,19 +158,39 @@ const stampService = {
     }
   },
 
-  async archiveAndResetInventory(year: number, memberId: number, notes: string = '') {
+  /**
+   * Nova metoda koja samo arhivira stanje markica za određenu godinu bez resetiranja.
+   * Ovo omogućuje arhiviranje stanja markica na kraju godine bez njihovog resetiranja.
+   */
+  async archiveStampInventory(year: number, memberId: number, notes: string = '', force: boolean = false) {
     try {
-      // Provjera je li godina već arhivirana
-      const existingHistory = await stampRepository.getStampHistoryByYear(year);
-      if (existingHistory.length > 0) {
-        throw new Error(`Stamp inventory for year ${year} has already been archived`);
+      // Provjera je li godina već arhivirana - preskačemo ovu provjeru ako je force=true
+      if (!force) {
+        const existingHistory = await stampRepository.getStampHistoryByYear(year);
+        if (existingHistory.length > 0) {
+          throw new Error(`Stamp inventory for year ${year} has already been archived`);
+        }
       }
 
-      await stampRepository.archiveAndResetInventory(year, memberId, notes);
+      await stampRepository.archiveStampInventory(year, memberId, notes);
       return { 
         success: true, 
-        message: `Successfully archived stamp inventory for year ${year} and reset for the new season` 
+        message: `Successfully archived stamp inventory for year ${year}` 
       };
+    } catch (error) {
+      console.error("Error during stamp inventory archiving:", error);
+      throw new DatabaseError(
+        "Error archiving stamp inventory: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
+
+  async archiveAndResetInventory(year: number, memberId: number, notes: string = '') {
+    try {
+      // Ova metoda je zastarjela, samo poziva novu metodu za arhiviranje bez resetiranja
+      console.warn("archiveAndResetInventory is deprecated, use archiveStampInventory instead");
+      return await this.archiveStampInventory(year, memberId, notes);
     } catch (error) {
       console.error("Error during stamp inventory reset:", error);
       throw new DatabaseError(

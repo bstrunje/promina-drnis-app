@@ -4,7 +4,7 @@ import { Users, Activity, Mail, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { getAdminMessages, getStampHistory, resetStampInventory } from "@/utils/api";
+import { getAdminMessages, getStampHistory, archiveStampInventory } from "@/utils/api";
 import api from "../../utils/api";
 import { getCurrentDate, getCurrentYear, formatDate } from "../../utils/dateUtils";
 
@@ -48,9 +48,10 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     pensionerStamps: { initial: 0, issued: 0, remaining: 0 },
   });
   const [unreadMessages, setUnreadMessages] = useState(false);
-  const [showResetDialog, setShowResetDialog] = useState(false);
-  const [resetYear, setResetYear] = useState(getCurrentYear());
-  const [resetNotes, setResetNotes] = useState("");
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [archiveYear, setArchiveYear] = useState(getCurrentYear() - 1); // Postavi prethodnu godinu kao zadanu
+  const [archiveNotes, setArchiveNotes] = useState("");
+  const [forceArchive, setForceArchive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [stampHistory, setStampHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -222,14 +223,14 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     }
   };
 
-  const handleResetInventory = async () => {
+  const handleArchiveInventory = async () => {
     try {
       setIsLoading(true);
-      const result = await resetStampInventory(resetYear, resetNotes);
+      const result = await archiveStampInventory(archiveYear, archiveNotes, forceArchive);
       
       toast({
         title: "Success",
-        description: result.message || "Inventory reset successfully",
+        description: result.message || "Inventory archived successfully",
       });
       
       // Osvježi popis povijesti i inventar
@@ -239,12 +240,12 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       }
       
       // Zatvori dijalog
-      setShowResetDialog(false);
+      setShowArchiveDialog(false);
     } catch (error) {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to reset inventory",
+          error instanceof Error ? error.message : "Failed to archive inventory",
         variant: "destructive",
       });
     } finally {
@@ -435,9 +436,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   {member.role === "superuser" && (
                     <Button 
                       variant="secondary" 
-                      onClick={() => setShowResetDialog(true)}
+                      onClick={() => setShowArchiveDialog(true)}
                     >
-                      Reset Year
+                      Archive Year
                     </Button>
                   )}
                 </div>
@@ -626,7 +627,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                 </div>
               ) : stampHistory.length === 0 ? (
                 <div className="text-center p-4 text-gray-500">
-                  No history records found. History is created when inventory is reset for a new year.
+                  No history records found. History is created when inventory is archived for a new year.
                 </div>
               ) : (
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -697,13 +698,13 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
           </div>
         )}
       </div>
-      {showResetDialog && (
+      {showArchiveDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4">Reset Stamp Inventory</h3>
+            <h3 className="text-lg font-medium mb-4">Archive Stamp Inventory</h3>
             <p className="text-gray-600 mb-4">
-              This will archive the current stamp inventory data and reset the issued counts 
-              to zero for the new year. This action cannot be undone!
+              This will archive the stamp inventory data for the selected year. 
+              This action is used to maintain a historical record without affecting the current inventory.
             </p>
             
             <div className="mb-4">
@@ -712,8 +713,8 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
               </label>
               <input
                 type="number"
-                value={resetYear}
-                onChange={(e) => setResetYear(parseInt(e.target.value))}
+                value={archiveYear}
+                onChange={(e) => setArchiveYear(parseInt(e.target.value))}
                 className="w-full p-2 border rounded"
                 min="2020"
                 max="2050"
@@ -725,27 +726,39 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                 Notes (optional)
               </label>
               <textarea
-                value={resetNotes}
-                onChange={(e) => setResetNotes(e.target.value)}
+                value={archiveNotes}
+                onChange={(e) => setArchiveNotes(e.target.value)}
                 className="w-full p-2 border rounded"
                 rows={3}
-                placeholder="Add notes about this reset (e.g., reason, number of new stamps added)"
+                placeholder="Add notes about this archive (e.g., reason, number of new stamps added)"
               />
+            </div>
+            
+            <div className="mb-4">
+              <label className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  checked={forceArchive} 
+                  onChange={(e) => setForceArchive(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">Force archive (override if year already has records)</span>
+              </label>
             </div>
             
             <div className="flex justify-end gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => setShowResetDialog(false)}
+                onClick={() => setShowArchiveDialog(false)}
                 disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button 
-                onClick={handleResetInventory}
+                onClick={handleArchiveInventory}
                 disabled={isLoading}
               >
-                {isLoading ? "Processing..." : "Reset Inventory"}
+                {isLoading ? "Processing..." : "Archive Inventory"}
               </Button>
             </div>
           </div>
