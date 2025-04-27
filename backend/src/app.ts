@@ -25,7 +25,6 @@ import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
-import { testModeMiddleware } from './middleware/test-mode.middleware.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -133,6 +132,20 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Modifikacija za uvjetno učitavanje test-mode middleware-a
+let testModeMiddleware: any;
+try {
+  const testModeModule = await import('./middleware/test-mode.middleware.js');
+  testModeMiddleware = testModeModule.testModeMiddleware;
+  console.log('Test mode middleware successfully loaded');
+} catch (error) {
+  console.log('Test mode middleware not available in this environment');
+  // Fallback middleware koji ne radi ništa
+  testModeMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    next();
+  };
+}
 
 app.use(testModeMiddleware);
 

@@ -88,8 +88,8 @@ const membershipRepository = {
         req?: Request
       ): Promise<void> {
         await db.transaction(async client => {
-          // Provjeri je li u testnom načinu rada
-          const isTestMode = req?.isTestMode || false;
+          // Sigurna provjera jest li u testnom načinu rada
+          const isTestMode = req ? (req as any).isTestMode || false : false;
           if (isTestMode) {
             console.log(`🧪 Testni način rada: Ažuriranje razdoblja članstva za člana ${memberId}`);
           }
@@ -182,8 +182,8 @@ const membershipRepository = {
     },
 
     async createMembershipPeriod(memberId: number, startDate: Date, req?: Request): Promise<void> {
-        // Provjeri je li u testnom načinu rada
-        const isTestMode = req?.isTestMode || false;
+        // Sigurna provjera jest li u testnom načinu rada
+        const isTestMode = req ? (req as any).isTestMode || false : false;
         if (isTestMode) {
           console.log(`🧪 Testni način rada: Stvaranje novog razdoblja članstva za člana ${memberId}`);
         }
