@@ -118,6 +118,26 @@ export function determineMemberActivityStatus(member: MemberStatusData): Activit
   return totalHours >= 20 ? 'active' : 'passive';
 }
 
+// Prioriteti za različite tipove statusa članstva
+// Viši broj znači veći prioritet
+export enum MembershipStatusPriority {
+  DEATH = 100,       // najviši prioritet
+  EXPULSION = 90,
+  WITHDRAWAL = 80,
+  INACTIVE = 70,
+  PENDING = 60,
+  ACTIVE = 50,       // najniži prioritet
+}
+
+// Prošireni tip rezultata statusa s više detalja
+export interface DetailedMembershipStatus {
+  status: MembershipStatus;
+  priority: number;
+  reason?: string;
+  date?: Date | string | null; 
+  endReason?: EndReason | null; 
+}
+
 /**
  * GLAVNI ALGORITAM: Određuje status članstva na temelju svih relevantnih faktora
  * Implementira prioritete za određivanje statusa:
@@ -136,25 +156,139 @@ export function determineMembershipStatus(
   periods: MembershipPeriod[],
   currentYear?: number
 ): MembershipStatus {
-  // Prioritet 1: Provjeri postoji li aktivan period
+  // Koristimo unaprijeđenu funkciju i vraćamo samo status
+  return determineDetailedMembershipStatus(member, periods, currentYear).status;
+}
+
+/**
+ * Unaprijeđena verzija funkcije za određivanje statusa koja vraća više detalja
+ * uključujući razlog, datum i prioritet.
+ * 
+ * Implementira naprednije prioritete:
+ * 1. Smrt člana ima najviši prioritet
+ * 2. Isključenje iz članstva ima sljedeći najviši prioritet
+ * 3. Dobrovoljno povlačenje
+ * 4. Neaktivnost (bez aktivnih perioda)
+ * 5. Neplaćena članarina
+ * 6. Aktivni član s urednim statusom
+ * 
+ * @param member Podaci o članu
+ * @param periods Lista perioda članstva
+ * @param currentYear Opcionalno, trenutna godina (za testiranje)
+ * @returns Detalji o statusu članstva
+ */
+export function determineDetailedMembershipStatus(
+  member: MemberStatusData, 
+  periods: MembershipPeriod[],
+  currentYear?: number
+): DetailedMembershipStatus {
+  // Najprije provjerimo ima li završenih perioda s posebnim razlozima
+  if (periods && periods.length > 0) {
+    // Pronađi zadnji završeni period s razlogom
+    const lastPeriodWithReason = findLastPeriodWithSpecificEndReason(periods);
+    
+    if (lastPeriodWithReason) {
+      // Smrt ima najviši prioritet
+      if (lastPeriodWithReason.end_reason === 'death') {
+        return {
+          status: 'inactive',
+          priority: MembershipStatusPriority.DEATH,
+          reason: 'Smrt člana',
+          date: lastPeriodWithReason.end_date,
+          endReason: 'death'
+        };
+      }
+      
+      // Isključenje ima drugi najviši prioritet
+      if (lastPeriodWithReason.end_reason === 'expulsion') {
+        return {
+          status: 'inactive',
+          priority: MembershipStatusPriority.EXPULSION,
+          reason: 'Isključen iz članstva',
+          date: lastPeriodWithReason.end_date,
+          endReason: 'expulsion'
+        };
+      }
+      
+      // Dobrovoljno povlačenje ima treći najviši prioritet
+      if (lastPeriodWithReason.end_reason === 'withdrawal') {
+        return {
+          status: 'inactive',
+          priority: MembershipStatusPriority.WITHDRAWAL,
+          reason: 'Dobrovoljno povlačenje',
+          date: lastPeriodWithReason.end_date,
+          endReason: 'withdrawal'
+        };
+      }
+    }
+  }
+  
+  // Prioritet: Provjeri postoji li aktivan period
   const hasActivePeriod = hasActiveMembershipPeriod(periods);
   if (!hasActivePeriod) {
-    return 'inactive';
+    // Nema aktivnih perioda, ali provjeri također zadnji završeni period
+    const lastEndedPeriod = findLastEndedPeriod(periods);
+    return {
+      status: 'inactive',
+      priority: MembershipStatusPriority.INACTIVE,
+      reason: 'Članstvo završeno',
+      date: lastEndedPeriod?.end_date,
+      endReason: lastEndedPeriod?.end_reason || 'other'
+    };
   }
   
-  // Prioritet 2: Provjeri bazu podataka za eksplicitni 'inactive' status
+  // Prioritet: Provjeri bazu podataka za eksplicitni 'inactive' status
   if (member.status === 'inactive') {
-    return 'inactive';
+    return {
+      status: 'inactive',
+      priority: MembershipStatusPriority.INACTIVE,
+      reason: 'Neaktivan status u sustavu'
+    };
   }
   
-  // Prioritet 3: Provjeri je li članarina plaćena
+  // Prioritet: Provjeri je li članarina plaćena
   const hasPaidFee = hasPaidMembershipFee(member, currentYear);
   if (!hasPaidFee) {
-    return 'pending';
+    const year = currentYear || getCurrentYear();
+    return {
+      status: 'pending',
+      priority: MembershipStatusPriority.PENDING,
+      reason: `Članarina nije plaćena za ${year}. godinu`
+    };
   }
   
-  // Prioritet 4: Default status za članove s aktivnim periodima i plaćenom članarinom
-  return 'registered';
+  // Prioritet: Default status za članove s aktivnim periodima i plaćenom članarinom
+  return {
+    status: 'registered',
+    priority: MembershipStatusPriority.ACTIVE,
+    reason: 'Aktivan član s plaćenom članarinom'
+  };
+}
+
+/**
+ * Pronalazi zadnji završeni period članstva koji ima specifičan razlog završetka
+ * (smrt, isključenje, povlačenje)
+ * 
+ * @param periods Lista perioda članstva
+ * @returns Zadnji period s važnim razlogom završetka ili null
+ */
+export function findLastPeriodWithSpecificEndReason(
+  periods: MembershipPeriod[]
+): MembershipPeriod | null {
+  const significantReasons: EndReason[] = ['death', 'expulsion', 'withdrawal'];
+  
+  // Filtriraj periode koji imaju specifične razloge završetka
+  const periodsWithReason = periods
+    .filter(p => p.end_date && p.end_reason && significantReasons.includes(p.end_reason))
+    .sort((a, b) => {
+      // Sortiraj po datumu završetka, od najnovijeg prema najstarijem
+      const dateA = a.end_date ? new Date(a.end_date).getTime() : 0;
+      const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
+      return dateB - dateA;
+    });
+  
+  // Vrati najnoviji ili null ako nema takvih perioda
+  return periodsWithReason.length > 0 ? periodsWithReason[0] : null;
 }
 
 /**
@@ -195,4 +329,28 @@ export function translateEndReason(reason: EndReason): string {
   };
   
   return translations[reason] || reason;
+}
+
+/**
+ * Vraća čitljivi opis statusa članstva na temelju detaljnog statusa
+ * Korisno za prikaz u korisničkom sučelju
+ * 
+ * @param status Detalji o statusu članstva
+ * @returns Čitljivi opis statusa
+ */
+export function getMembershipStatusDescription(status: DetailedMembershipStatus): string {
+  if (status.reason) {
+    return status.reason;
+  }
+  
+  switch (status.status) {
+    case 'registered':
+      return 'Aktivan član';
+    case 'inactive':
+      return 'Neaktivan član';
+    case 'pending':
+      return 'Status na čekanju';
+    default:
+      return 'Nepoznat status';
+  }
 }

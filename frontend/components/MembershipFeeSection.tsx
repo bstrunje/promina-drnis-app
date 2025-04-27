@@ -22,15 +22,21 @@ import MembershipCardManager from './MembershipCardManager';
 import { updateMembership } from '../src/utils/api';
 import { 
   getCurrentYear, 
-  hasPaidMembershipFee, 
+  hasPaidMembershipFee,
   determineMembershipStatus, 
   findLastEndedPeriod, 
   translateEndReason, 
   hasActiveMembershipPeriod,
   determineFeeStatus,
   adaptMembershipPeriods,
-  FeeStatus 
-} from '../shared/types/memberStatus.types';
+  FeeStatus,
+  DetailedMembershipStatus,
+  getMembershipStatusDescription,
+  determineDetailedMembershipStatus,
+  determineMemberActivityStatus,
+  MembershipStatus,
+  ActivityStatus
+} from '@shared/memberStatus.types';
 import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -410,64 +416,65 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               
               {/* Prikaz statusa članstva (active/inactive) */}
               {/* Uvijek prikazujemo status članstva */}
-              {(
-                <div className="mb-3">
-                  {(() => {
-                    // Koristi nove funkcije za određivanje statusa
-                    const hasPaidFee = hasPaidMembershipFee(member);
-                    const hasActivePeriod = membershipHistory?.periods 
-                      ? hasActiveMembershipPeriod(membershipHistory.periods) 
-                      : true; // Pretpostavka ako nema podataka o periodima
+              {(() => {
+                // Koristi nove funkcije za određivanje statusa
+                const hasPaidFee = hasPaidMembershipFee(member);
+                
+                // Određivanje statusa članstva prema prioritetima
+                const detailedMembershipStatus = membershipHistory?.periods 
+                  ? determineDetailedMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
+                  : {
+                      status: hasPaidFee ? 'registered' : (member.status || 'pending'),
+                      priority: 0,
+                      reason: hasPaidFee ? 'Aktivan član s plaćenom članarinom' : 'Status na čekanju'
+                    };
+                
+                // Za kompatibilnost s postojećim kodom
+                const membershipStatus = detailedMembershipStatus.status;
+                 
+                // Aktivan član ima plaćenu članarinu i ima aktivan period
+                const isActive = hasPaidFee && (membershipStatus !== 'inactive');
+                
+                return (
+                  <div className="mb-4">
+                    <h3 className="text-sm text-gray-500 mb-1">Member Status:</h3>
+                    <div className="flex items-center">
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
+                          membershipStatus === 'registered' 
+                            ? 'bg-green-100 text-green-800' 
+                            : membershipStatus === 'inactive' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {membershipStatus === 'registered' ? 'Aktivan' : membershipStatus === 'inactive' ? 'Neaktivan' : 'Na čekanju'}
+                      </span>
+                    </div>
                     
-                    // Određivanje statusa članstva prema prioritetima
-                    const membershipStatus = membershipHistory?.periods 
-                      ? determineMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
-                      : (hasPaidFee ? 'registered' : member.status || 'pending');
-                     
-                    // Aktivan član ima plaćenu članarinu i ima aktivan period
-                    const isActive = hasPaidFee && (membershipStatus !== 'inactive');
-                     
-                    return (
-                      <>
-                        <span className="text-sm text-gray-500">Member Status:</span>
-                        <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-                          isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {isActive ? 'Active' : 'Inactive'}
-                          {membershipStatus === 'registered' && !hasPaidFee && (
-                            <span className="ml-1 text-xs">(Need fee payment)</span>
-                          )}
-                        </span>
-                        
-                        {/* Prikaz informacija o završenom članstvu */}
-                        {!hasActivePeriod && membershipHistory?.periods && membershipHistory.periods.length > 0 && (
-                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
-                            <p className="text-red-700 font-medium">Membership Ended</p>
-                            {(() => {
-                              // Koristi novu funkciju za pronalazak zadnjeg završenog perioda
-                              const lastEndedPeriod = findLastEndedPeriod(adaptMembershipPeriods(membershipHistory.periods));
-                               
-                              if (lastEndedPeriod) {
-                                return (
-                                  <>
-                                    <p className="text-sm text-red-600">
-                                      End date: {format(parseISO(lastEndedPeriod.end_date!), 'dd.MM.yyyy')}
-                                    </p>
-                                    <p className="text-sm text-red-600">
-                                      Reason: {translateEndReason(lastEndedPeriod.end_reason!)}
-                                    </p>
-                                  </>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </div>
+                    {/* Detalji statusa članstva */}
+                    {detailedMembershipStatus.reason && (
+                      <p className="text-sm text-gray-700 mt-1">
+                        {detailedMembershipStatus.reason}
+                      </p>
+                    )}
+                    
+                    {/* Prikaži datum završetka i razlog ako postoji */}
+                    {detailedMembershipStatus.date && detailedMembershipStatus.status === 'inactive' && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          End date: {new Date(detailedMembershipStatus.date).toLocaleDateString('hr-HR')}
+                        </p>
+                        {detailedMembershipStatus.endReason && (
+                          <p className="text-sm text-gray-500">
+                            Reason: {translateEndReason(detailedMembershipStatus.endReason)}
+                          </p>
                         )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Membership Card Management - visible only if fee is current */}

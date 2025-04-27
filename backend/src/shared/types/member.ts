@@ -54,6 +54,7 @@ export interface Member {
     registration_completed?: boolean;
     password_hash?: string;
     last_login?: Date;
+    status?: 'registered' | 'inactive' | 'pending';  // Added status field
 
     // Profile Information (UI/Display only)
     total_hours?: number;
@@ -65,8 +66,8 @@ export interface Member {
     // Card-related fields (legacy, use membership_details instead)
     card_number?: string;
     card_stamp_issued?: boolean;
-    next_year_stamp_issued?: boolean; 
     fee_payment_year?: number;
+    next_year_stamp_issued?: boolean;
 
     // Membership Information
     membership_details?: {
@@ -74,7 +75,7 @@ export interface Member {
         card_number?: string;
         fee_payment_year?: number;
         card_stamp_issued?: boolean;
-        next_year_stamp_issued?: boolean; 
+        next_year_stamp_issued?: boolean;
     };
     membership_history?: MembershipHistory;
 }

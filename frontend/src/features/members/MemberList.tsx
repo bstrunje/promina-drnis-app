@@ -13,35 +13,39 @@ import {
   Filter,
   Printer,
   Search,
+  XCircle
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
 import { Member } from "@shared/member";
 import AddMemberForm from "./AddMemberForm";
-import EditMemberForm from "../../../components/EditMemberForm";
-import ConfirmationModal from "../../../components/ConfirmationModal";
+import EditMemberForm from "@components/EditMemberForm";
+import ConfirmationModal from "@components/ConfirmationModal";
 import AssignCardNumberForm from "@components/AssignCardNumberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { useToast } from "@components/ui/use-toast";
 import {
-  determineMemberActivityStatus,
+  adaptMembershipPeriods,
   determineMembershipStatus,
-  determineFeeStatus,
+  determineMemberActivityStatus,
   hasPaidMembershipFee,
-  adaptMembershipPeriods
-} from "../../../shared/types/memberStatus.types";
-import { 
+  determineDetailedMembershipStatus,
+  DetailedMembershipStatus,
+  getMembershipStatusDescription,
+  determineFeeStatus
+} from "@shared/memberStatus.types";
+import {
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from "@/../components/ui/select";
-import { Input } from "@/../components/ui/input";
-import { Button } from "@/../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/../components/ui/tabs";
-import { Badge } from "@/../components/ui/badge";
+} from "@components/ui/select";
+import { Input } from "@components/ui/input";
+import { Button } from "@components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
+import { Badge } from "@components/ui/badge";
 import { formatDate, getCurrentDate, getCurrentYear, getMonth, getDate } from "../../utils/dateUtils";
 import { parseISO } from "date-fns";
 
@@ -57,6 +61,7 @@ interface MemberCardDetails {
 interface MemberWithDetails extends Member {
   cardDetails?: MemberCardDetails;
   membershipStatus?: 'registered' | 'inactive' | 'pending';
+  detailedStatus?: DetailedMembershipStatus; // Dodajemo detaljan status
   isActive?: boolean;
   feeStatus?: 'current' | 'payment required';
 }
@@ -162,23 +167,27 @@ export default function MemberList(): JSX.Element {
                 
                 // Provjeri ima li član dostupne periode
                 if (details.periods && details.periods.length > 0) {
-                  // Najprije provjeri ima li barem jedan aktivan period članstva
-                  const hasActivePeriod = details.periods.some(period => !period.end_date);
+                  // Koristi novu proširenu funkciju za detaljni status članstva
+                  const detailedStatus = determineDetailedMembershipStatus(
+                    details, 
+                    adaptMembershipPeriods(details.periods)
+                  );
                   
-                  // Prioritet za status "inactive" ako nema aktivnih perioda, čak i ako je članarina plaćena
-                  if (!hasActivePeriod) {
-                    // Ako nema aktivnih perioda, prikaži kao 'inactive' bez obzira na plaćenu članarinu
-                    member.membershipStatus = 'inactive';
-                  } else {
-                    // Uobičajena logika za određivanje statusa ako postoji barem jedan aktivan period
-                    member.membershipStatus = determineMembershipStatus(
-                      details, 
-                      adaptMembershipPeriods(details.periods)
-                    );
-                  }
+                  // Pohrani detaljni status i osnovni status za kompatibilnost
+                  member.detailedStatus = detailedStatus;
+                  member.membershipStatus = detailedStatus.status;
                 } else {
                   // Bez podataka o periodima, koristi jednostavnu logiku
                   member.membershipStatus = hasPaidMembershipFee(details) ? 'registered' : details.status || 'pending';
+                  
+                  // I u ovom slučaju kreiraj osnovni detailStatus objekt
+                  member.detailedStatus = {
+                    status: member.membershipStatus,
+                    priority: 0, // nizak prioritet jer nemamo podatke o periodima
+                    reason: member.membershipStatus === 'registered' 
+                      ? 'Aktivan član s plaćenom članarinom' 
+                      : 'Status na čekanju'
+                  };
                 }
                 
                 // Dodaj status plaćanja članarine
@@ -296,15 +305,20 @@ export default function MemberList(): JSX.Element {
     return "bg-green-100 text-green-800"; // completed
   };
 
-  const getMembershipStatusColor = (status?: string) => {
-    switch (status) {
-      case 'inactive':
-        return "bg-red-100 text-red-800";
-      case 'pending':
-        return "bg-yellow-100 text-yellow-800";
+  // Funkcija za dobivanje boje statusa članstva s podrškom za detaljne statuse
+  const getMembershipStatusColor = (status: string | DetailedMembershipStatus): string => {
+    // Ako je status DetailedMembershipStatus objekt, izvuci stvarni status
+    const actualStatus = typeof status === 'string' ? status : status.status;
+    
+    switch (actualStatus) {
       case 'registered':
+        return 'text-green-700 bg-green-100';
+      case 'inactive':
+        return 'text-red-700 bg-red-100';
+      case 'pending':
+        return 'text-yellow-700 bg-yellow-100';
       default:
-        return "bg-green-100 text-green-800";
+        return 'text-gray-700 bg-gray-100';
     }
   };
 
@@ -799,13 +813,21 @@ export default function MemberList(): JSX.Element {
                       <td className="px-6 py-4 text-center">
                         <span
                           className={`inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getMembershipStatusColor(member.membershipStatus)}`}
+                          title={member.detailedStatus?.reason || ''}
                         >
                           {member.membershipStatus === 'registered' ? (
                             <CheckCircle className="w-4 h-4" />
+                          ) : member.membershipStatus === 'inactive' ? (
+                            <XCircle className="w-4 h-4" />
                           ) : (
                             <RefreshCw className="w-4 h-4" />
                           )}
-                          {member.membershipStatus === 'registered' ? "Registered" : member.membershipStatus === 'inactive' ? 'Inactive' : 'Pending'}
+                          {member.membershipStatus === 'registered' ? "Aktivan" : member.membershipStatus === 'inactive' ? 'Neaktivan' : 'Na čekanju'}
+                          
+                          {/* Dodatni detalji ako postoje */}
+                          {member.detailedStatus?.endReason && (
+                            <span className="ml-1 text-xs opacity-75">({member.detailedStatus.endReason})</span>
+                          )}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">

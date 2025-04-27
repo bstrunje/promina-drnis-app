@@ -1,9 +1,18 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./types"
+    "rootDir": "./types",
+    "composite": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true
   },
-  "include": ["types/**/*"]
+  "include": ["types/**/*"],
+  "exclude": ["dist", "node_modules"]
 }

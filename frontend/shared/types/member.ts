@@ -67,6 +67,7 @@ export interface Member {
     card_number?: string;
     card_stamp_issued?: boolean;
     fee_payment_year?: number;
+    next_year_stamp_issued?: boolean;
 
     // Membership Information
     membership_details?: {
