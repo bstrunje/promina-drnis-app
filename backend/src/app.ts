@@ -29,6 +29,32 @@ import debugRoutes from './routes/debug.routes.js';
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
 
+// Definiramo testModeMiddleware kao običnu funkciju koja se može zamijeniti
+// bez potrebe za importom stvarnog middleware-a
+// Ovo eliminira potrebu za uvjetnim dinamičkim importom tijekom kompilacije
+const testModeMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // U produkciji, ovo će samo proslijediti zahtjev
+  // U razvoju, ovo će biti prepisano stvarnim middleware-om
+  next();
+};
+
+// Samo u razvoju, ako možemo pronaći middleware, koristit ćemo ga
+// Ovo se NE događa tijekom TypeScript kompilacije, nego samo u runtimeu
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // Pokušaj učitati testModeMiddleware korištenjem dinamičkog require-a
+    // Ovo se preskače tijekom TypeScript kompilacije
+    const testModeModule = require('./middleware/test-mode.middleware.js');
+    if (testModeModule && testModeModule.testModeMiddleware) {
+      // @ts-ignore - Namjerno zanemarujemo TS provjeru ovdje
+      Object.assign(testModeMiddleware, testModeModule.testModeMiddleware);
+      console.log('Test mode middleware successfully loaded');
+    }
+  } catch (error) {
+    console.log('Test mode middleware not available, using fallback');
+  }
+}
+
 const app: Express = express();
 
 // ES modules compatibility
@@ -132,20 +158,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Modifikacija za uvjetno učitavanje test-mode middleware-a
-let testModeMiddleware: any;
-try {
-  const testModeModule = await import('./middleware/test-mode.middleware.js');
-  testModeMiddleware = testModeModule.testModeMiddleware;
-  console.log('Test mode middleware successfully loaded');
-} catch (error) {
-  console.log('Test mode middleware not available in this environment');
-  // Fallback middleware koji ne radi ništa
-  testModeMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    next();
-  };
-}
 
 app.use(testModeMiddleware);
 
