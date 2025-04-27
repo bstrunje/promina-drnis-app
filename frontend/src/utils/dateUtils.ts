@@ -8,6 +8,7 @@ import { hr } from 'date-fns/locale';
 const MOCK_DATE_KEY = 'promina_mock_date';
 const ORIGINAL_MOCK_DATE_KEY = 'promina_original_mock_date';
 const HAS_ORIGINAL_STORED_KEY = 'promina_has_original_stored';
+const IS_TEST_MODE_KEY = 'promina_in_test_mode';
 
 // Spremnik za mock datum koji će se koristiti umjesto stvarnog datuma
 let mockDate: Date | null = null;
@@ -16,6 +17,9 @@ let mockDate: Date | null = null;
 let originalMockDate: Date | null = null;
 let hasOriginalBeenStored: boolean = false;
 
+// Zastavica koja označava koristi li se trenutno test način rada
+let inTestMode: boolean = false;
+
 // Inicijalizacija i učitavanje mock datuma iz localStorage ako postoji
 function initMockDate(): void {
   const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
@@ -23,10 +27,16 @@ function initMockDate(): void {
     try {
       mockDate = new Date(storedMockDate);
       console.log(`📅 Mock datum učitan iz localStorage: ${mockDate.toISOString()}`);
+      
+      // Ako imamo mock datum, postavimo test način rada
+      inTestMode = true;
+      localStorage.setItem(IS_TEST_MODE_KEY, 'true');
     } catch (e) {
       console.error('Greška prilikom učitavanja mock datuma iz localStorage:', e);
       mockDate = null;
       localStorage.removeItem(MOCK_DATE_KEY);
+      inTestMode = false;
+      localStorage.removeItem(IS_TEST_MODE_KEY);
     }
   }
 
@@ -43,6 +53,12 @@ function initMockDate(): void {
   const storedHasOriginal = localStorage.getItem(HAS_ORIGINAL_STORED_KEY);
   if (storedHasOriginal) {
     hasOriginalBeenStored = storedHasOriginal === 'true';
+  }
+  
+  // Učitavanje statusa testnog načina rada
+  const storedTestMode = localStorage.getItem(IS_TEST_MODE_KEY);
+  if (storedTestMode) {
+    inTestMode = storedTestMode === 'true';
   }
 }
 
@@ -90,6 +106,15 @@ export function setMockDate(date: Date | null): void {
   
   mockDate = date;
   
+  // Postavi zastavicu za testni način rada
+  if (mockDate) {
+    inTestMode = true;
+    localStorage.setItem(IS_TEST_MODE_KEY, 'true');
+  } else {
+    inTestMode = false;
+    localStorage.removeItem(IS_TEST_MODE_KEY);
+  }
+  
   // Spremi u localStorage za trajnost
   if (mockDate) {
     localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
@@ -101,42 +126,34 @@ export function setMockDate(date: Date | null): void {
 }
 
 /**
- * Resetira mock datum na null (vraća korištenje stvarnog sistemskog datuma)
+ * Vraća informaciju je li trenutno aktivan testni način rada
+ * @returns true ako je aktivan testni način rada, inače false
  */
-export function resetMockDate(): void {
-  mockDate = null;
-  hasOriginalBeenStored = false;
-  
-  // Očisti localStorage
-  localStorage.removeItem(MOCK_DATE_KEY);
-  localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
-  localStorage.removeItem(HAS_ORIGINAL_STORED_KEY);
-  
-  console.log('📅 Mock datum resetiran i uklonjeni svi podaci iz localStorage');
+export function isInTestMode(): boolean {
+  return inTestMode;
 }
 
 /**
- * Vraća mock datum na prethodnu vrijednost koja je bila prije mockanja
- * @returns true ako je uspješno vraćeno na originalnu vrijednost, false ako nema spremljenog originala
+ * Resetira mock datum na null (vraća korištenje stvarnog sistemskog datuma)
  */
-export function restoreOriginalMock(): boolean {
-  if (hasOriginalBeenStored) {
-    mockDate = originalMockDate;
-    hasOriginalBeenStored = false;
+export function resetMockDate(): void {
+  // Spremi originalnu vrijednost ako još nije spremljena
+  if (!hasOriginalBeenStored) {
+    originalMockDate = mockDate;
+    hasOriginalBeenStored = true;
     
-    // Ažuriraj localStorage
-    if (mockDate) {
-      localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
-    } else {
-      localStorage.removeItem(MOCK_DATE_KEY);
+    if (originalMockDate) {
+      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, originalMockDate.toISOString());
     }
-    localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
-    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'false');
-    
-    console.log(`📅 Mock datum vraćen na originalnu vrijednost: ${mockDate ? mockDate.toISOString() : 'null'}`);
-    return true;
+    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'true');
   }
-  return false;
+  
+  mockDate = null;
+  inTestMode = false;
+  
+  localStorage.removeItem(MOCK_DATE_KEY);
+  localStorage.removeItem(IS_TEST_MODE_KEY);
+  console.log('📅 Mock datum resetiran i uklonjen iz localStorage');
 }
 
 /**
@@ -284,4 +301,95 @@ export function getMonth(date: Date): number {
  */
 export function getDate(date: Date): number {
   return date.getDate();
+}
+
+/**
+ * Validira datum rođenja - provjerava je li datum valjan i da nije u budućnosti
+ * @param dateString - String koji sadrži datum rođenja
+ * @param minAge - Minimalna dozvoljena dob (u godinama) - ako je navedeno
+ * @returns Objekt s rezultatom validacije i porukom greške ako nije valjan
+ */
+export function validateBirthDate(
+  dateString: string | null,
+  minAge: number = 0
+): { isValid: boolean; errorMessage?: string } {
+  if (!dateString) {
+    return { isValid: false, errorMessage: 'Datum rođenja je obavezan' };
+  }
+
+  // Parsiramo datum za validaciju
+  const parsedDate = parseDate(dateString);
+  if (!parsedDate) {
+    return { isValid: false, errorMessage: 'Neispravan format datuma' };
+  }
+
+  // Datum ne smije biti u budućnosti
+  const currentDate = getCurrentDate();
+  if (parsedDate > currentDate) {
+    return { isValid: false, errorMessage: 'Datum rođenja ne može biti u budućnosti' };
+  }
+
+  // Provjera minimalne starosti ako je navedena
+  if (minAge > 0) {
+    const minAgeDate = new Date(currentDate);
+    minAgeDate.setFullYear(currentDate.getFullYear() - minAge);
+    
+    if (parsedDate > minAgeDate) {
+      return { 
+        isValid: false, 
+        errorMessage: `Osoba mora biti starija od ${minAge} ${minAge === 1 ? 'godine' : 'godina'}` 
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Provjerava je li datum valjan (nije u budućnosti i ima ispravan format)
+ * @param dateString - String koji sadrži datum
+ * @param allowFutureDates - Dozvoljava li se da datum bude u budućnosti
+ * @returns Objekt s rezultatom validacije i porukom greške ako nije valjan
+ */
+export function validateDate(
+  dateString: string | null,
+  allowFutureDates: boolean = false
+): { isValid: boolean; errorMessage?: string } {
+  if (!dateString) {
+    return { isValid: true }; // Prazan string je valjan ako datum nije obavezan
+  }
+
+  // Parsiramo datum za validaciju
+  const parsedDate = parseDate(dateString);
+  if (!parsedDate) {
+    return { isValid: false, errorMessage: 'Neispravan format datuma' };
+  }
+
+  // Datum ne smije biti u budućnosti osim ako je to eksplicitno dozvoljeno
+  if (!allowFutureDates) {
+    const currentDate = getCurrentDate();
+    if (parsedDate > currentDate) {
+      return { isValid: false, errorMessage: 'Datum ne može biti u budućnosti' };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Vraća formatiran datum za prikaz s ugrađenom validacijom
+ * @param dateString - String koji sadrži datum
+ * @param defaultValue - Zadana vrijednost ako je datum prazan ili neispravan (default: '')
+ * @returns Formatiran datum ili zadanu vrijednost
+ */
+export function getSafeFormattedDate(
+  dateString: string | null,
+  defaultValue: string = ''
+): string {
+  if (!dateString) return defaultValue;
+  
+  const parsedDate = parseDate(dateString);
+  if (!parsedDate) return defaultValue;
+  
+  return formatDate(parsedDate);
 }

@@ -1,19 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
-import { format, isFuture, isValid as isValidDate, parseISO } from 'date-fns';
-import { SystemSettings } from '@shared/settings.types';
-import { updateMembership } from '../src/utils/api'; // Use API client instead of direct axios
-import { getCurrentYear, getCurrentDate, formatInputDate, getMonth } from '../src/utils/dateUtils';
-import { ChevronDown, ChevronRight, Calendar, Edit, Save, X, Receipt, Clock } from 'lucide-react';
-import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
-import { API_BASE_URL } from '@/utils/config';
-import { useAuth } from "../src/context/AuthContext";
-import { Input } from "@components/ui/input";
+import { Input } from '@components/ui/input';
+import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
+import { getCurrentDate } from '../src/utils/dateUtils';
+import { 
+  ChevronRight, 
+  ChevronDown, 
+  Receipt, 
+  Clock, 
+  Edit, 
+  Save, 
+  X 
+} from 'lucide-react';
+
+import { useAuth } from '../src/context/AuthContext';
 import MembershipCardManager from './MembershipCardManager';
+import { updateMembership } from '../src/utils/api';
+import { 
+  getCurrentYear, 
+  hasPaidMembershipFee, 
+  determineMembershipStatus, 
+  findLastEndedPeriod, 
+  translateEndReason, 
+  hasActiveMembershipPeriod,
+  determineFeeStatus,
+  adaptMembershipPeriods,
+  FeeStatus 
+} from '../shared/types/memberStatus.types';
+import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 interface MembershipFeeSectionProps {
   member: Member;
@@ -37,10 +57,15 @@ interface MembershipFeeSectionProps {
   };
 }
 
+// Definiramo tip koji sjedinjuje različite definicije perioda članstva
+type UnifiedMembershipPeriod = MembershipPeriod & {
+  end_reason?: MembershipEndReason | null;
+};
+
 const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   member,
   isEditing,
-  isFeeCurrent,
+  isFeeCurrent: initialIsFeeCurrent,
   onUpdate,
   userRole,
   membershipHistory,
@@ -48,7 +73,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   onMembershipHistoryUpdate,
   cardManagerProps
 }) => {
-  const { toast } = useToast();
+  const { toast, removeToast } = useToast();
   const { user } = useAuth();
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -56,6 +81,12 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isNovemberDecemberPayment, setIsNovemberDecemberPayment] = useState(false);
+  const [isNewMemberPayment, setIsNewMemberPayment] = useState(false);
+
+  // Provjerava je li članarina plaćena za tekuću godinu
+  // Ako je plaćena za sljedeću godinu, također se smatra aktivnom
+  const [isFeeCurrent, setIsFeeCurrent] = useState(initialIsFeeCurrent);
 
   // States for membership history editing
   const [isEditingHistory, setIsEditingHistory] = useState(false);
@@ -73,25 +104,46 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   }, [membershipHistory]);
 
   useEffect(() => {
-    if (member?.membership_details) {
-      // Uklonjen sav debugging kod
-      // Popravak dupliranih if uvjeta
-    }
+    // Koristi novu funkciju determineFeeStatus za određivanje statusa plaćanja
+    const feeStatus = determineFeeStatus(member);
+    setIsFeeCurrent(feeStatus === 'current');
   }, [member]);
 
   const validatePaymentDate = async (dateString: string): Promise<boolean> => {
     if (!dateString) {
       setPaymentError("Date is required");
       setIsValidPayment(false);
+      setIsNovemberDecemberPayment(false);
+      setIsNewMemberPayment(false);
       return false;
     }
 
     try {
+      // Provjeravamo je li unesen kompletan datum (YYYY-MM-DD) a ne samo dio
+      if (!DATE_PATTERN.test(dateString)) {
+        setIsValidPayment(false);
+        setIsNovemberDecemberPayment(false);
+        setIsNewMemberPayment(false);
+        return false;
+      }
+
       const date = parseISO(dateString);
 
       if (!isValidDate(date)) {
         setPaymentError("Invalid date format");
         setIsValidPayment(false);
+        setIsNovemberDecemberPayment(false);
+        setIsNewMemberPayment(false);
+        return false;
+      }
+
+      // DODANO: Validacija godine
+      const year = date.getFullYear();
+      if (year < 1850 || year > 2850) {
+        setPaymentError("Godina mora biti između 1850 i 2850");
+        setIsValidPayment(false);
+        setIsNovemberDecemberPayment(false);
+        setIsNewMemberPayment(false);
         return false;
       }
 
@@ -101,30 +153,25 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       if (date > currentDate) {
         setPaymentError("Payment date cannot be in the future");
         setIsValidPayment(false);
+        setIsNovemberDecemberPayment(false);
+        setIsNewMemberPayment(false);
         return false;
       }
 
       const month = getMonth(date); // JavaScript months: 0=Jan, 1=Feb, ..., 10=Nov, 11=Dec
-
-      if (month === 10 || month === 11) { // 10=November, 11=December in JS Date
-        // Provjeri je li ovo novi član (check postoji li fee_payment_date)
-        const isNewMember = !member.membership_details?.fee_payment_date;
-
-        // Prikaži poruku samo za postojeće članove
-        if (!isNewMember) {
-          toast({
-            title: "Info",
-            description: "Payment will be counted for next year's membership",
-            variant: "default"
-          });
-        } else {
-          // Za nove članove prikazujemo drugačiju poruku
-          toast({
-            title: "Info",
-            description: "For new members, payment is counted for current year membership",
-            variant: "default"
-          });
-        }
+      
+      // Provjeri je li mjesec studeni ili prosinac
+      if (month === 10 || month === 11) {
+        const currentYear = getCurrentYear();
+        const existingYear = member?.membership_details?.fee_payment_year;
+        const isNewMember = !(existingYear && existingYear >= currentYear);
+        
+        // Postavi state za prikazivanje poruke u komponenti
+        setIsNovemberDecemberPayment(true);
+        setIsNewMemberPayment(isNewMember);
+      } else {
+        setIsNovemberDecemberPayment(false);
+        setIsNewMemberPayment(false);
       }
 
       setPaymentError(null);
@@ -135,37 +182,89 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       console.error("Error validating date:", error);
       setPaymentError("Failed to validate payment date");
       setIsValidPayment(false);
+      setIsNovemberDecemberPayment(false);
+      setIsNewMemberPayment(false);
       return false;
     }
   };
 
   useEffect(() => {
-    if (paymentDate) {
+    // Only validate when full date is entered
+    if (DATE_PATTERN.test(paymentDate)) {
       validatePaymentDate(paymentDate);
+    } else {
+      setPaymentError(null);
+      setIsValidPayment(false);
+      setIsNovemberDecemberPayment(false);
+      setIsNewMemberPayment(false);
     }
   }, [paymentDate]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPaymentDate(value);
+
+    // Resetiraj stanja za nepotpuni ili nevalidan datum
+    if (!DATE_PATTERN.test(value) || !isValidDate(parseISO(value))) {
+      setPaymentError(null);
+      setIsValidPayment(false);
+      setIsNovemberDecemberPayment(false);
+      setIsNewMemberPayment(false);
+      return;
+    }
+    // Tek sad validiraj
     validatePaymentDate(value);
+  };
+
+  const handleProcessPaymentClick = () => {
+    // Resetiramo stanje prikaza poruke za studeni/prosinac
+    setIsNovemberDecemberPayment(false);
+    setIsNewMemberPayment(false);
+    
+    setShowPaymentConfirm(true);
   };
 
   const handleFeePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    
+    // Resetiramo stanje prikaza poruke za studeni/prosinac
+    setIsNovemberDecemberPayment(false);
+    setIsNewMemberPayment(false);
+    
     try {
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
 
-      const currentYear = getCurrentYear();
+      const currentYear = new Date().getFullYear();
       const paymentMonth = getMonth(parsedDate);
-
-      const isRenewalPayment =
+      
+      // Determine if this is a renewal payment in November/December
+      // for a member who already has paid for the current year
+      const isRenewalPayment = 
         isFeeCurrent && // Already has current payment
         (paymentMonth === 10 || paymentMonth === 11) && // 10=Nov, 11=Dec in JS Date
         member?.membership_details?.fee_payment_year === currentYear; // Paid for current year
+      
+      // Obavijesti korisnika o tome kako će se tretirati plaćanje u studenom/prosincu
+      if (paymentMonth === 10 || paymentMonth === 11) { // 10=Nov, 11=Dec
+        const existingYear = member?.membership_details?.fee_payment_year;
+        const isNewMember = !(existingYear && existingYear >= currentYear);
+        
+        if (!isNewMember) {
+          toast({
+            title: "Info",
+            description: "Payment will be counted for next year's membership",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Info",
+            description: "For new members, payment is counted for current year membership",
+            variant: "default"
+          });
+        }
+      }
 
       const response = await updateMembership(member.member_id, {
         paymentDate: parsedDate.toISOString(),
@@ -183,19 +282,18 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setPaymentError(null);
 
       if (onUpdate && response && response.member) {
-        onUpdate(response.member);
-
-        const paymentYear = isRenewalPayment ? currentYear + 1 : currentYear;
-        const locallyUpdatedMember = {
-          ...member,
+        // Kombiniramo podatke iz odgovora sa servera s dodatnim lokalnim podacima
+        const updatedMember = {
+          ...response.member,
           membership_details: {
-            ...(member.membership_details || {}),
+            ...(response.member.membership_details || {}),
             fee_payment_date: parsedDate.toISOString(),
-            fee_payment_year: paymentYear
+            fee_payment_year: isRenewalPayment ? currentYear + 1 : currentYear
           }
         };
-
-        onUpdate(locallyUpdatedMember);
+        
+        // Samo jedan poziv s kompletnim podacima
+        onUpdate(updatedMember);
       }
 
     } catch (error) {
@@ -235,7 +333,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   };
 
   // Handle edit for a specific period
-  const handlePeriodChange = (index: number, field: keyof MembershipPeriod, value: any) => {
+  const handlePeriodChange = (index: number, field: keyof UnifiedMembershipPeriod, value: any) => {
     const updatedPeriods = [...editedPeriods];
     updatedPeriods[index] = {
       ...updatedPeriods[index],
@@ -248,7 +346,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const handleAddPeriod = () => {
     if (!newPeriod?.start_date) return;
 
-    const period: MembershipPeriod = {
+    const period: UnifiedMembershipPeriod = {
       period_id: Date.now(), // Koristimo period_id umjesto id (privremeni ID)
       member_id: memberId || 0,
       start_date: newPeriod.start_date,
@@ -265,21 +363,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     const updatedPeriods = [...editedPeriods];
     updatedPeriods.splice(index, 1);
     setEditedPeriods(updatedPeriods);
-  };
-
-  const translateEndReason = (reason: MembershipEndReason): string => {
-    switch (reason) {
-      case 'withdrawal':
-        return 'Istupanje';
-      case 'non_payment':
-        return 'Neplaćanje članarine';
-      case 'expulsion':
-        return 'Isključenje';
-      case 'death':
-        return 'Smrt';
-      default:
-        return 'Nepoznat razlog';
-    }
   };
 
   return (
@@ -326,40 +409,63 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               </div>
               
               {/* Prikaz statusa članstva (active/inactive) */}
-              {member.status && (
+              {/* Uvijek prikazujemo status članstva */}
+              {(
                 <div className="mb-3">
-                  <span className="text-sm text-gray-500">Member Status:</span>
-                  <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-                    member.status === 'registered' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {member.status === 'registered' ? 'Active' : 'Inactive'}
-                  </span>
-                  
-                  {member.status === 'inactive' && membershipHistory?.periods && membershipHistory.periods.length > 0 && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
-                      <p className="text-red-700 font-medium">Membership Ended</p>
-                      {(() => {
-                        // Pronađi zadnji period koji ima end_date i end_reason
-                        const lastEndedPeriod = [...membershipHistory.periods]
-                          .sort((a, b) => new Date(b.end_date || '').getTime() - new Date(a.end_date || '').getTime())
-                          .find(p => p.end_date && p.end_reason);
-                          
-                        if (lastEndedPeriod) {
-                          return (
-                            <>
-                              <p className="text-sm text-red-600">
-                                End date: {format(parseISO(lastEndedPeriod.end_date!), 'dd.MM.yyyy')}
-                              </p>
-                              <p className="text-sm text-red-600">
-                                Reason: {translateEndReason(lastEndedPeriod.end_reason!)}
-                              </p>
-                            </>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  )}
+                  {(() => {
+                    // Koristi nove funkcije za određivanje statusa
+                    const hasPaidFee = hasPaidMembershipFee(member);
+                    const hasActivePeriod = membershipHistory?.periods 
+                      ? hasActiveMembershipPeriod(membershipHistory.periods) 
+                      : true; // Pretpostavka ako nema podataka o periodima
+                    
+                    // Određivanje statusa članstva prema prioritetima
+                    const membershipStatus = membershipHistory?.periods 
+                      ? determineMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
+                      : (hasPaidFee ? 'registered' : member.status || 'pending');
+                     
+                    // Aktivan član ima plaćenu članarinu i ima aktivan period
+                    const isActive = hasPaidFee && (membershipStatus !== 'inactive');
+                     
+                    return (
+                      <>
+                        <span className="text-sm text-gray-500">Member Status:</span>
+                        <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
+                          isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {isActive ? 'Active' : 'Inactive'}
+                          {membershipStatus === 'registered' && !hasPaidFee && (
+                            <span className="ml-1 text-xs">(Need fee payment)</span>
+                          )}
+                        </span>
+                        
+                        {/* Prikaz informacija o završenom članstvu */}
+                        {!hasActivePeriod && membershipHistory?.periods && membershipHistory.periods.length > 0 && (
+                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
+                            <p className="text-red-700 font-medium">Membership Ended</p>
+                            {(() => {
+                              // Koristi novu funkciju za pronalazak zadnjeg završenog perioda
+                              const lastEndedPeriod = findLastEndedPeriod(adaptMembershipPeriods(membershipHistory.periods));
+                               
+                              if (lastEndedPeriod) {
+                                return (
+                                  <>
+                                    <p className="text-sm text-red-600">
+                                      End date: {format(parseISO(lastEndedPeriod.end_date!), 'dd.MM.yyyy')}
+                                    </p>
+                                    <p className="text-sm text-red-600">
+                                      Reason: {translateEndReason(lastEndedPeriod.end_reason!)}
+                                    </p>
+                                  </>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -396,10 +502,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           type="date"
                           id="paymentDate"
                           value={paymentDate}
-                          onChange={(e) => {
-                            setPaymentDate(e.target.value);
-                            validatePaymentDate(e.target.value);
-                          }}
+                          onChange={handleDateChange}
                           className={`${paymentError ? 'border-red-300' : ''}`}
                           required
                         />
@@ -409,11 +512,25 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       )}
                     </div>
 
+                    {/* Poruka se prikazuje isključivo kad je datum kompletan i validan */}
+                    {isValidPayment && isNovemberDecemberPayment && (
+                      <div className={`mt-4 p-4 rounded-md text-center text-lg font-medium ${
+                        isNewMemberPayment 
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-amber-600 text-white'
+                      }`}>
+                        {isNewMemberPayment
+                          ? "Za nove članove, članarina plaćena u studenom/prosincu vrijedi za tekuću godinu."
+                          : "Članarina plaćena u studenom/prosincu bit će uračunata za sljedeću godinu."}
+                      </div>
+                    )}
+
                     {!showPaymentConfirm ? (
                       <Button
                         type="button"
-                        onClick={() => setShowPaymentConfirm(true)}
+                        onClick={handleProcessPaymentClick}
                         disabled={!isValidPayment || isSubmitting}
+                        variant={isValidPayment ? "default" : "outline"}
                         className={cn(
                           "w-full",
                           isValidPayment ? "bg-black hover:bg-blue-500" : "bg-gray-200",
@@ -644,7 +761,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               </div>
             )}
           </div>
-        </CardContent>
+          </CardContent>
       </Card>
     </div>
   );

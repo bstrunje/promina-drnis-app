@@ -25,6 +25,7 @@ import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
+import { testModeMiddleware } from './middleware/test-mode.middleware.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -126,11 +127,14 @@ const corsOptions = {
     'X-Requested-With',
     'Cache-Control',    // Add this
     'Pragma',           // Add this
-    'Expires'           // Add this
+    'Expires',          // Add this
+    'X-Test-Mode'       // Dodano za podršku testnog načina rada
   ]
 };
 
 app.use(cors(corsOptions));
+
+app.use(testModeMiddleware);
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {

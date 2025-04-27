@@ -16,7 +16,7 @@ const membershipService = {
   async processFeePayment(
     memberId: number,
     paymentDate: Date,
-    req: Request,
+    req?: Request,
     isRenewalPayment?: boolean
   ): Promise<Member | null> {
     try {
@@ -71,6 +71,13 @@ const membershipService = {
           fee_payment_date: validPaymentDate,
         });
 
+        // Automatski postaviti status člana na "registered" kad plati članarinu
+        await prisma.member.update({
+          where: { member_id: memberId },
+          data: { status: 'registered' }
+        });
+        console.log(`✅ Status člana ${memberId} postavljen na "registered" nakon plaćanja članarine.`);
+
         // Check current period
         const currentPeriod = await membershipRepository.getCurrentPeriod(
           memberId
@@ -95,13 +102,19 @@ const membershipService = {
         }
       });
 
-      await auditService.logAction(
-        "MEMBERSHIP_FEE_PAYMENT",
-        memberId,
-        `Membership fee paid for ${paymentYear}`,
-        req,
-        "success"
-      );
+      // Logiraj plaćanje članarine sa sigurnosnom provjerom req objekta
+      if (req) {
+        await auditService.logAction(
+          "MEMBERSHIP_FEE_PAYMENT",
+          memberId,
+          `Membership fee paid for ${paymentYear}`,
+          req,
+          "success"
+        );
+      } else {
+        // Ako req nije dostupan, logiranje preskačemo u pozivima koji ne dolaze iz HTTP konteksta
+        console.log(`[Audit skip] Membership fee payment logged for member ${memberId}, year ${paymentYear}`);
+      }
 
       return await memberRepository.findById(memberId);
     } catch (error) {
@@ -115,22 +128,21 @@ const membershipService = {
 
   async isMembershipActive(memberId: number): Promise<boolean> {
     try {
-      const result = await db.query(`
-        SELECT 
-          fee_payment_year, 
-          fee_payment_date,
-          EXTRACT(YEAR FROM CURRENT_DATE) as current_year
-        FROM membership_details
-        WHERE member_id = $1
-      `, [memberId]);
+      const member = await memberRepository.findById(memberId);
+      if (!member || !member.membership_details) {
+        return false;
+      }
+
+      // Ako imamo fee_payment_year, usporedimo s trenutnom godinom
+      if (member.membership_details.fee_payment_year) {
+        const currentYear = new Date().getFullYear();
+        return member.membership_details.fee_payment_year >= currentYear;
+      }
       
-      if (result.rowCount === 0) return false;
-      
-      const { fee_payment_year, current_year } = result.rows[0];
-      return fee_payment_year >= current_year;
+      return false;
     } catch (error) {
-      console.error('Error checking membership status:', error);
-      return false; // Sigurnosno - ako ne možemo provjeriti, tretiramo kao neaktivno
+      console.error("Error checking membership activity:", error);
+      return false;
     }
   },
 
@@ -138,26 +150,15 @@ const membershipService = {
     memberId: number
   ): Promise<MembershipDetails | undefined> {
     try {
-      const details = await membershipRepository.getMembershipDetails(memberId);
-
-      if (!details) {
-        return undefined;
-      }
-
-      return {
-        card_number: details.card_number,
-        fee_payment_year: Number(details.fee_payment_year),
-        card_stamp_issued: Boolean(details.card_stamp_issued),
-        fee_payment_date: details.fee_payment_date,
-      };
+      const member = await memberRepository.findById(memberId);
+      return member?.membership_details;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      throw new Error("Error fetching membership details: " + errorMessage);
+      console.error("Error getting membership details:", error);
+      return undefined;
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean | null): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean | null, req?: Request): Promise<void> {
     try {
       // Provjera postoji li već zapis za ovog člana
       const existingCheck = await db.query(
@@ -224,7 +225,8 @@ const membershipService = {
 
   async updateMembershipHistory(
     memberId: number,
-    periods: MembershipPeriod[]
+    periods: MembershipPeriod[],
+    req?: Request
   ): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
@@ -240,7 +242,8 @@ const membershipService = {
   async endMembership(
     memberId: number,
     reason: MembershipEndReason,
-    endDate: Date = new Date()
+    endDate: Date = new Date(),
+    req?: Request
   ): Promise<void> {
     const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
     if (currentPeriod) {
@@ -252,7 +255,7 @@ const membershipService = {
     }
   },
 
-  async getMembershipHistory(memberId: number): Promise<{
+  async getMembershipHistory(memberId: number, req?: Request): Promise<{
     periods: MembershipPeriod[];
     totalDuration: string;
     currentPeriod?: MembershipPeriod;
@@ -317,9 +320,10 @@ const membershipService = {
   /**
    * Ažurira status svih članstava na temelju trenutnog datuma
    * Postavlja active_until datum i automatski prekida članstvo za članove s neplaćenom članarinom
+   * @param req - Express Request objekt (opcionalno)
    * @param mockDate - Opcionalni simulirani datum za testiranje
    */
-  async updateAllMembershipStatuses(mockDate?: Date): Promise<{
+  async updateAllMembershipStatuses(req?: Request, mockDate?: Date): Promise<{
     updatedCount: number;
     errors: string[];
   }> {
@@ -349,10 +353,16 @@ const membershipService = {
             none: {
               end_date: null
             }
+          },
+          membership_details: {
+            card_number: {
+              not: null
+            }
           }
         },
         include: {
-          periods: true
+          periods: true,
+          membership_details: true
         }
       });
       

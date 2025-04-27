@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '../../shared/types/member.js';
 import { AuditLog } from '../../shared/types/audit.js';
 import { API_BASE_URL } from './config';
-import { getCurrentDate } from './dateUtils';
+import { getCurrentDate, isInTestMode } from './dateUtils';
 
 export interface LoginResponse {
   member: {
@@ -33,6 +33,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Dodaj header za testni način rada ako je aktivan mock datum
+    if (isInTestMode()) {
+      config.headers['X-Test-Mode'] = 'true';
+      console.log(' Zahtjev poslan u testnom načinu rada');
+    }
+    
     return config;
   },
   (error) => {
@@ -72,6 +79,10 @@ const handleApiError = (error: unknown, defaultMessage: string): never => {
     const serverMessage = error.response?.data?.message;
     
     if (serverMessage) {
+      // Poboljšane poruke za krajnje korisnike
+      if (serverMessage === "Member with this OIB already exists") {
+        throw new Error("Član s ovim OIB-om već postoji. Molimo koristite drugi OIB ili kontaktirajte administratora.");
+      }
       throw new Error(serverMessage);
     } else {
       throw new Error(defaultMessage);
@@ -411,6 +422,24 @@ export const archiveStampInventory = async (year: number, notes: string = '', fo
     return response.data;
   } catch (error) {
     throw handleApiError(error, 'Failed to archive stamp inventory');
+  }
+};
+
+export const cleanupTestData = async (): Promise<{ 
+  success: boolean;
+  message: string;
+  details: {
+    deletedRecords: number;
+    affectedMembers: number;
+    memberIds: number[];
+  }
+}> => {
+  try {
+    const response = await api.post('debug/cleanup-test-data');
+    console.log('🧹 Testni podaci uspješno očišćeni:', response.data);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Greška prilikom čišćenja testnih podataka');
   }
 };
 

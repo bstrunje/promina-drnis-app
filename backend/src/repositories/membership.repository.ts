@@ -1,6 +1,7 @@
 import db from '../utils/db.js';
 import { PoolClient } from 'pg';
 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
+import { Request } from 'express';
 
 const membershipRepository = {
     async getMembershipDetails(memberId: number): Promise<MembershipDetails | null> {
@@ -83,10 +84,17 @@ const membershipRepository = {
 
       async updateMembershipPeriods(
         memberId: number, 
-        periods: MembershipPeriod[]
+        periods: MembershipPeriod[],
+        req?: Request
       ): Promise<void> {
-        return await db.transaction(async (client) => {
-          // Delete existing periods
+        await db.transaction(async client => {
+          // Provjeri je li u testnom načinu rada
+          const isTestMode = req?.isTestMode || false;
+          if (isTestMode) {
+            console.log(`🧪 Testni način rada: Ažuriranje razdoblja članstva za člana ${memberId}`);
+          }
+          
+          // Izbriši postojeće periode (briše SVE periode, pažljivo!)
           await client.query(
             'DELETE FROM membership_periods WHERE member_id = $1',
             [memberId]
@@ -96,13 +104,14 @@ const membershipRepository = {
           for (const period of periods) {
             await client.query(
               `INSERT INTO membership_periods 
-               (member_id, start_date, end_date, end_reason) 
-               VALUES ($1, $2, $3, $4)`,
+               (member_id, start_date, end_date, end_reason, is_test_data) 
+               VALUES ($1, $2, $3, $4, $5)`,
               [
                 memberId,
                 period.start_date,
                 period.end_date || null,
-                period.end_reason || null
+                period.end_reason || null,
+                isTestMode
               ]
             );
           }
@@ -172,10 +181,16 @@ const membershipRepository = {
         return result.rows[0] || null;
     },
 
-    async createMembershipPeriod(memberId: number, startDate: Date): Promise<void> {
+    async createMembershipPeriod(memberId: number, startDate: Date, req?: Request): Promise<void> {
+        // Provjeri je li u testnom načinu rada
+        const isTestMode = req?.isTestMode || false;
+        if (isTestMode) {
+          console.log(`🧪 Testni način rada: Stvaranje novog razdoblja članstva za člana ${memberId}`);
+        }
+        
         await db.query(
-            'INSERT INTO membership_periods (member_id, start_date) VALUES ($1, $2)',
-            [memberId, startDate]
+            'INSERT INTO membership_periods (member_id, start_date, is_test_data) VALUES ($1, $2, $3)',
+            [memberId, startDate, isTestMode]
         );
     },
 

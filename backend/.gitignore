@@ -37,3 +37,7 @@ uploads/
 
 scripts/
 .vercel
+
+# Testni alati koji nisu potrebni u produkciji
+src/middleware/test-mode.middleware.ts
+src/migrations/add_test_data_flag.sql

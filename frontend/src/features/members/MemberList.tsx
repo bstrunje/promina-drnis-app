@@ -24,6 +24,13 @@ import RoleAssignmentModal from "./RoleAssignmentModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { useToast } from "@components/ui/use-toast";
+import {
+  determineMemberActivityStatus,
+  determineMembershipStatus,
+  determineFeeStatus,
+  hasPaidMembershipFee,
+  adaptMembershipPeriods
+} from "../../../shared/types/memberStatus.types";
 import { 
   Select, 
   SelectContent, 
@@ -49,9 +56,9 @@ interface MemberCardDetails {
 
 interface MemberWithDetails extends Member {
   cardDetails?: MemberCardDetails;
-  isActive?: boolean;
-  // Dodajemo property za prikaz statusa članstva
   membershipStatus?: 'registered' | 'inactive' | 'pending';
+  isActive?: boolean;
+  feeStatus?: 'current' | 'payment required';
 }
 
 export default function MemberList(): JSX.Element {
@@ -76,7 +83,7 @@ export default function MemberList(): JSX.Element {
   // State for sorting and filtering
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive">("active");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [groupByType, setGroupByType] = useState<boolean>(false);
@@ -85,12 +92,29 @@ export default function MemberList(): JSX.Element {
     const fetchMembers = async (): Promise<void> => {
       try {
         setLoading(true);
-        const response = await api.get<Member[]>("/members");
+        // Dodaj vremenski žig kao query parametar da bi se zaobišlo keširanje
+        const timestamp = new Date().getTime();
+        const response = await api.get<Member[]>(`/members?t=${timestamp}`, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+          }
+        });
         const membersData = response.data;
 
         // Koristi podatke koji su već dostupni u osnovnim podacima o članu
         const membersWithDetails = membersData.map(member => {
-          const isActive = Number(member.total_hours) >= 20;
+          // Koristi centraliziranu funkciju za određivanje aktivnosti člana
+          const isActive = determineMemberActivityStatus(member) === 'active';
+          
+          // Koristi centraliziranu funkciju za određivanje statusa članstva
+          // Napomena: Ne možemo ovdje koristiti determineMembershipStatus jer nemamo periods podatke
+          // To će se ažurirati kasnije kad dohvatimo detalje članova
+          let membershipStatus = member.status || 'pending';
+          
+          // Provjeri plaćenu članarinu koristeći centraliziranu funkciju
+          const hasPaidFee = hasPaidMembershipFee(member);
           
           return {
             ...member,
@@ -101,7 +125,7 @@ export default function MemberList(): JSX.Element {
               fee_payment_year: member.fee_payment_year || member.membership_details?.fee_payment_year
             },
             isActive,
-            membershipStatus: 'registered' as 'registered' | 'inactive' | 'pending'
+            membershipStatus: membershipStatus
           };
         });
 
@@ -116,7 +140,15 @@ export default function MemberList(): JSX.Element {
           for (const member of detailedMembers) {
             try {
               // Use the standard member endpoint instead of the details endpoint
-              const response = await api.get(`/members/${member.member_id}`);
+              // Dodajemo timestamp za prevenciju keširanje
+              const timestamp = new Date().getTime();
+              const response = await api.get(`/members/${member.member_id}?t=${timestamp}`, {
+                headers: {
+                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                  "Pragma": "no-cache",
+                  "Expires": "0"
+                }
+              });
               const details = response.data;
               
               // Update the member with detailed info
@@ -125,11 +157,32 @@ export default function MemberList(): JSX.Element {
                 member.cardDetails.card_number = details.membership_details.card_number || member.cardDetails.card_number;
                 member.cardDetails.fee_payment_year = details.membership_details.fee_payment_year || member.cardDetails.fee_payment_year;
                 
-                // Dodaj status članstva iz detalja člana
-                member.membershipStatus = (details.status || 'registered') as 'registered' | 'inactive' | 'pending';
+                // Ažuriraj aktivnost na temelju broja sati
+                member.isActive = determineMemberActivityStatus(details) === 'active';
                 
-                // Log za dijagnostiku
-                console.log(`Member ${member.member_id} (${member.full_name}) - Status: ${member.membershipStatus}`);
+                // Provjeri ima li član dostupne periode
+                if (details.periods && details.periods.length > 0) {
+                  // Najprije provjeri ima li barem jedan aktivan period članstva
+                  const hasActivePeriod = details.periods.some(period => !period.end_date);
+                  
+                  // Prioritet za status "inactive" ako nema aktivnih perioda, čak i ako je članarina plaćena
+                  if (!hasActivePeriod) {
+                    // Ako nema aktivnih perioda, prikaži kao 'inactive' bez obzira na plaćenu članarinu
+                    member.membershipStatus = 'inactive';
+                  } else {
+                    // Uobičajena logika za određivanje statusa ako postoji barem jedan aktivan period
+                    member.membershipStatus = determineMembershipStatus(
+                      details, 
+                      adaptMembershipPeriods(details.periods)
+                    );
+                  }
+                } else {
+                  // Bez podataka o periodima, koristi jednostavnu logiku
+                  member.membershipStatus = hasPaidMembershipFee(details) ? 'registered' : details.status || 'pending';
+                }
+                
+                // Dodaj status plaćanja članarine
+                member.feeStatus = determineFeeStatus(details);
               }
             } catch (error) {
               console.error(`Error fetching details for member ${member.member_id}:`, error);
@@ -265,6 +318,20 @@ export default function MemberList(): JSX.Element {
     ) : (
       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
         Passive
+      </Badge>
+    );
+  };
+
+  const getFeeStatusBadge = (feeStatus: string | undefined) => {
+    if (!feeStatus) return null;
+    
+    return feeStatus === 'current' ? (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        Fee Current
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+        Payment Required
       </Badge>
     );
   };
@@ -496,7 +563,6 @@ export default function MemberList(): JSX.Element {
                 <th>Name</th>
                 <th>Status</th>
                 <th>Hours</th>
-                <th>Activity</th>
               </tr>
             </thead>
             <tbody>
@@ -507,14 +573,11 @@ export default function MemberList(): JSX.Element {
                 else if (stampType === 'student' || stampType === 'child/pupil/student') statusClass = 'student';
                 else if (stampType === 'pensioner') statusClass = 'pensioner';
                 
-                const activityClass = member.isActive ? 'active' : 'passive';
-                
                 return `
                   <tr class="${statusClass}">
                     <td>${member.full_name || `${member.first_name} ${member.last_name}`}</td>
                     <td>${member.registration_completed ? 'Registered' : 'Pending'}</td>
                     <td>${member.total_hours || 0}</td>
-                    <td class="${activityClass}">${member.isActive ? 'Active' : 'Passive'}</td>
                   </tr>
                 `;
               }).join('')}
@@ -587,7 +650,7 @@ export default function MemberList(): JSX.Element {
         </div>
       </div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Member List</h1>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -635,7 +698,7 @@ export default function MemberList(): JSX.Element {
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Members</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="passive">Passive</SelectItem>
                 </SelectContent>
@@ -700,20 +763,17 @@ export default function MemberList(): JSX.Element {
                 {(!groupByType || group.key === groupsToRender()[0].key) && (
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Name
                       </th>
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                         Hours
                       </th>
-                      <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Activity
-                      </th>
                       {isAdmin && (
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                           Actions
                         </th>
                       )}
@@ -731,14 +791,14 @@ export default function MemberList(): JSX.Element {
                         <div className="flex items-center">
                           <div>
                             <div className="font-medium text-gray-900">
-                              {member.first_name} {member.last_name}
+                              {member.full_name || `${member.first_name} ${member.last_name}`}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-center">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getMembershipStatusColor(member.membershipStatus)}`}
+                          className={`inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-sm ${getMembershipStatusColor(member.membershipStatus)}`}
                         >
                           {member.membershipStatus === 'registered' ? (
                             <CheckCircle className="w-4 h-4" />
@@ -748,15 +808,12 @@ export default function MemberList(): JSX.Element {
                           {member.membershipStatus === 'registered' ? "Registered" : member.membershipStatus === 'inactive' ? 'Inactive' : 'Pending'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-center">
                         {member.total_hours || 0}
                       </td>
-                      <td className="px-6 py-4">
-                        {getActivityStatusBadge(member.isActive)}
-                      </td>
                       {isAdmin && (
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex items-center gap-2">
+                        <td className="px-6 py-4 text-sm font-medium text-center">
+                          <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -786,7 +843,7 @@ export default function MemberList(): JSX.Element {
                                 </button>
                               </>
                             )}
-                            {!member.registration_completed && (
+                            {member.membershipStatus === 'pending' && (
                               <button
                                 onClick={(e) => handleAssignPassword(member, e)}
                                 className="text-yellow-600 hover:text-yellow-900"
@@ -831,7 +888,11 @@ export default function MemberList(): JSX.Element {
           onEdit={(updatedMember: Member) => {
             setMembers(
               members.map((m) =>
-                m.member_id === updatedMember.member_id ? {...updatedMember, isActive: Number(updatedMember.total_hours) >= 20} : m
+                m.member_id === updatedMember.member_id ? {
+                  ...updatedMember, 
+                  // Izračunaj isActive koristeći istu logiku kao i drugdje
+                  isActive: determineMemberActivityStatus(updatedMember) === 'active'
+                } : m
               )
             );
             setEditingMember(null);
@@ -845,7 +906,11 @@ export default function MemberList(): JSX.Element {
           onAssign={(updatedMember: Member) => {
             setMembers(
               members.map((m) =>
-                m.member_id === updatedMember.member_id ? {...updatedMember, isActive: Number(updatedMember.total_hours) >= 20} : m
+                m.member_id === updatedMember.member_id ? {
+                  ...updatedMember, 
+                  // Izračunaj isActive koristeći istu logiku kao i drugdje
+                  isActive: determineMemberActivityStatus(updatedMember) === 'active'
+                } : m
               )
             );
             setAssigningPasswordMember(null);

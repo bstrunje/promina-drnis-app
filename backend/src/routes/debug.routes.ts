@@ -452,11 +452,11 @@ router.post('/reset-test-database', async (req, res) => {
 router.post('/recalculate-membership', async (req, res) => {
   try {
     // Provjeri ima li poslani mockDate u tijelu zahtjeva
-    const { mockDate } = req.body;
+    const mockDate = req.body.mockDate;
     console.log(`🔄 Rekalkulacija statusa članstva${mockDate ? ` s mock datumom: ${mockDate}` : ' na temelju trenutnog datuma'}...`);
     
     // Koristi centraliziranu funkciju iz membership servisa i proslijedi mock datum ako postoji
-    const result = await membershipService.updateAllMembershipStatuses(mockDate ? new Date(mockDate) : undefined);
+    const result = await membershipService.updateAllMembershipStatuses(req, mockDate ? new Date(mockDate) : undefined);
     
     res.json({ 
       success: true, 
@@ -629,6 +629,88 @@ router.get('/list-backups', async (req, res) => {
     console.error('Greška prilikom listanja backupa:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška' 
+    });
+  }
+});
+
+// Endpoint za čišćenje testnih podataka iz membership_periods tablice
+router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req, res) => {
+  // Dozvoljavamo čišćenje samo u development okruženju
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(403).json({ 
+      error: 'Čišćenje testnih podataka je dopušteno samo u razvojnom okruženju' 
+    });
+  }
+
+  try {
+    console.log('🧹 Čišćenje testnih podataka iz baze...');
+    
+    // Brisanje testnih podataka iz membership_periods
+    const result = await db.query(`
+      DELETE FROM membership_periods 
+      WHERE is_test_data = true 
+      RETURNING member_id
+    `);
+    
+    const affectedMembers = result.rows.map(row => row.member_id);
+    const uniqueMembers = [...new Set(affectedMembers)];
+    
+    console.log(`✅ Obrisano ${result.rowCount} testnih zapisa za ${uniqueMembers.length} članova`);
+    
+    // Ponovno izračunavanje statusa za članove čiji su podaci očišćeni
+    if (uniqueMembers.length > 0) {
+      console.log(`🔄 Ažuriranje statusa za ${uniqueMembers.length} članova...`);
+      
+      // Za svakog člana provjeravamo ima li aktivnih razdoblja i po potrebi ažuriramo status
+      for (const memberId of uniqueMembers) {
+        const activePeriodsResult = await db.query(
+          `SELECT COUNT(*) as active_count 
+           FROM membership_periods 
+           WHERE member_id = $1 AND end_date IS NULL`,
+          [memberId]
+        );
+        
+        let activeCount = 0;
+        if (typeof activePeriodsResult.rows[0].active_count === 'string') {
+          activeCount = parseInt(activePeriodsResult.rows[0].active_count);
+        } else {
+          activeCount = Number(activePeriodsResult.rows[0].active_count);
+        }
+        
+        // Ako nema aktivnih perioda nakon čišćenja, onemogući člana
+        if (activeCount === 0) {
+          console.log(`🚫 Član ${memberId} nema aktivnih razdoblja - postavljanje na 'inactive'`);
+          await db.query(
+            'UPDATE members SET status = $1 WHERE member_id = $2',
+            ['inactive', memberId]
+          );
+        } else {
+          console.log(`✅ Član ${memberId} ima ${activeCount} aktivnih razdoblja - postavljanje na 'registered'`);
+          await db.query(
+            'UPDATE members SET status = $1 WHERE member_id = $2',
+            ['registered', memberId]
+          );
+        }
+      }
+    }
+    
+    // Šaljemo odgovor s rezultatima
+    res.json({
+      success: true,
+      message: `Uspješno očišćeni testni podaci`,
+      details: {
+        deletedRecords: result.rowCount,
+        affectedMembers: uniqueMembers.length,
+        memberIds: uniqueMembers
+      },
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('❌ Greška prilikom čišćenja testnih podataka:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+      timestamp: new Date()
     });
   }
 });

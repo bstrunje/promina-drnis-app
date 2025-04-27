@@ -12,6 +12,7 @@ interface MemberBasicInfoProps {
   handleChange?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
@@ -19,6 +20,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   isEditing,
   editedMember,
   handleChange,
+  validationErrors,
 }) => {
   const { user } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
@@ -133,6 +135,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.first_name && (
+              <p className="text-sm text-red-500">{validationErrors.first_name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Last Name</label>
@@ -143,6 +148,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.last_name && (
+              <p className="text-sm text-red-500">{validationErrors.last_name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -159,6 +167,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.date_of_birth && (
+              <p className="text-sm text-red-500">{validationErrors.date_of_birth}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Gender</label>
@@ -171,6 +182,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
+            {validationErrors?.gender && (
+              <p className="text-sm text-red-500">{validationErrors.gender}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">OIB</label>
@@ -183,6 +197,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               title="OIB must be exactly 11 digits"
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.oib && (
+              <p className="text-sm text-red-500">{validationErrors.oib}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Email</label>
@@ -193,6 +210,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.email && (
+              <p className="text-sm text-red-500">{validationErrors.email}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Phone</label>
@@ -203,6 +223,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.cell_phone && (
+              <p className="text-sm text-red-500">{validationErrors.cell_phone}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -215,6 +238,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.street_address && (
+              <p className="text-sm text-red-500">{validationErrors.street_address}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">City</label>
@@ -225,6 +251,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
+            {validationErrors?.city && (
+              <p className="text-sm text-red-500">{validationErrors.city}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -240,6 +269,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="child/pupil/student">Child/Pupil/Student</option>
               <option value="pensioner">Pensioner</option>
             </select>
+            {validationErrors?.life_status && (
+              <p className="text-sm text-red-500">{validationErrors.life_status}</p>
+            )}
           </div>
 
           {/* Add membership type dropdown */}
@@ -257,6 +289,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="supporting">Supporting Member</option>
               <option value="honorary">Honorary Member</option>
             </select>
+            {validationErrors?.membership_type && (
+              <p className="text-sm text-red-500">{validationErrors.membership_type}</p>
+            )}
           </div>
 
           <div>
@@ -277,6 +312,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="XXL">XXL</option>
               <option value="XXXL">XXXL</option>
             </select>
+            {validationErrors?.tshirt_size && (
+              <p className="text-sm text-red-500">{validationErrors.tshirt_size}</p>
+            )}
           </div>
 
           <div>
@@ -297,6 +335,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <option value="XXL">XXL</option>
               <option value="XXXL">XXXL</option>
             </select>
+            {validationErrors?.shell_jacket_size && (
+              <p className="text-sm text-red-500">{validationErrors.shell_jacket_size}</p>
+            )}
           </div>
         </div>
       </CardContent>

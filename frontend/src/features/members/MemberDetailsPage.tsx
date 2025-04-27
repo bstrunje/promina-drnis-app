@@ -10,7 +10,7 @@ import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
 import { debounce } from "lodash";
-import { getCurrentDate, getCurrentYear, parseDate, formatInputDate } from "../../utils/dateUtils";
+import { getCurrentDate, getCurrentYear, parseDate, formatInputDate, validateBirthDate, validateDate, getSafeFormattedDate } from "../../utils/dateUtils";
 import { parseISO, format } from "date-fns";
 
 // Import components
@@ -45,6 +45,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAssigningPassword, setIsAssigningPassword] = useState<boolean>(false);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Check if user can edit - only admins and superusers can
   const canEdit = user?.role === "admin" || user?.role === "superuser";
@@ -67,7 +68,15 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     () =>
       debounce(async () => {
         try {
-          const response = await api.get(`/members/${memberId}`);
+          // Dodajemo timestamp i headere za sprječavanje keširanje
+          const timestamp = new Date().getTime();
+          const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Pragma": "no-cache",
+              "Expires": "0"
+            }
+          });
           setMember(response.data);
         } catch (error) {
           console.error(error);
@@ -187,6 +196,22 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         // Osiguravamo da je format datuma za input fields yyyy-mm-dd
         const formattedDate = formatInputDate(value);
         
+        // Validacija datuma rođenja - ne može biti u budućnosti
+        const validation = validateBirthDate(formattedDate);
+        
+        if (!validation.isValid) {
+          setValidationErrors(prev => ({
+            ...prev,
+            [name]: validation.errorMessage || 'Neispravan datum rođenja'
+          }));
+        } else {
+          setValidationErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[name];
+            return newErrors;
+          });
+        }
+        
         setEditedMember((prev) =>
           prev
             ? {
@@ -197,6 +222,11 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         );
       } catch (error) {
         console.error("Invalid date format:", value);
+        setValidationErrors(prev => ({
+          ...prev,
+          [name]: 'Neispravan format datuma'
+        }));
+        
         setEditedMember((prev) =>
           prev
             ? {
@@ -406,6 +436,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           isEditing={isEditing && canEdit}
           editedMember={editedMember}
           handleChange={handleChange}
+          validationErrors={validationErrors}
         />
 
         <MembershipFeeSection

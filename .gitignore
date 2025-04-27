@@ -28,3 +28,6 @@ root_tree.txt
 
 # Backup files
 backend/backups/
+
+# windsurf rules
+.windsurfrules

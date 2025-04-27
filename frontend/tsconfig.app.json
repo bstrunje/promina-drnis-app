@@ -40,7 +40,7 @@
     "components/MemberBasicInfo.tsx",
     "components/MemberActivityStatus.tsx",
     "components/ui/button.tsx",
-    "components/ui/use-toast.ts",
+    "components/ui/use-toast.tsx",
     "components/ui/toaster.tsx"
   ],
   "references": []

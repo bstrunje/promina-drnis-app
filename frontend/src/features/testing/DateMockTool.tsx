@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { setMockDate, resetMockDate, restoreOriginalMock, getCurrentDate, formatDate, formatInputDate } from '../../utils/dateUtils';
+import { setMockDate, resetMockDate, getCurrentDate, formatDate, formatInputDate, isInTestMode } from '../../utils/dateUtils';
 import { format, isValid, parseISO } from 'date-fns';
-import { Minimize2, Maximize2, Move, Database, RotateCcw } from 'lucide-react';
-import api from '../../utils/api';
+import { Minimize2, Maximize2, Move, Database, RotateCcw, Trash2 } from 'lucide-react';
+import api, { cleanupTestData } from '../../utils/api';
 
 /**
  * Komponenta za postavljanje mock datuma za testiranje funkcionalnosti vezanih za datum
@@ -225,161 +225,197 @@ const DateMockTool = () => {
     }
   };
 
+  // Funkcija za čišćenje testnih podataka
+  const handleCleanupTestData = async () => {
+    if (window.confirm('Jeste li sigurni da želite očistiti sve testne podatke?\n\n' + 
+                       'Svi zapisi razdoblja članstva kreirani tijekom testiranja s mock datumom\n' +
+                       'bit će uklonjeni, a statusi članstva ažurirani na temelju preostalih podataka.\n\n' + 
+                       'Nastaviti?')) {
+      try {
+        // Prikaži indikator učitavanja
+        const cleanupButton = document.getElementById('cleanup-test-data-button') as HTMLButtonElement;
+        if (cleanupButton) {
+          cleanupButton.textContent = 'Čišćenje...';
+          cleanupButton.disabled = true;
+        }
+        
+        // Pozovi funkciju za čišćenje testnih podataka
+        const result = await cleanupTestData();
+        
+        // Obavijesti korisnika
+        alert(`✅ Testni podaci uspješno očišćeni!\n\n` +
+              `Uklonjeno je ${result.details.deletedRecords} zapisa.\n` +
+              `Ažurirano je ${result.details.affectedMembers} članova.\n\n` +
+              `${result.message}`);
+        
+      } catch (error) {
+        console.error('Greška prilikom čišćenja testnih podataka:', error);
+        alert('❌ Greška prilikom čišćenja testnih podataka. Provjerite konzolu za više detalja.');
+      } finally {
+        // Vrati gumb u normalno stanje
+        const cleanupButton = document.getElementById('cleanup-test-data-button') as HTMLButtonElement;
+        if (cleanupButton) {
+          cleanupButton.textContent = 'Očisti testne podatke';
+          cleanupButton.disabled = false;
+        }
+      }
+    }
+  };
+
   return (
-    <div
+    <div 
       ref={containerRef}
-      style={{
-        position: 'fixed',
-        top: position.y,
-        left: position.x,
-        zIndex: 9999,
-        maxWidth: isMinimized ? '200px' : '400px',
-        width: isMinimized ? 'auto' : '100%'
+      className={`fixed ${isMinimized ? 'w-60' : 'w-80'} bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden`}
+      style={{ 
+        top: `${position.y}px`, 
+        left: `${position.x}px`,
+        transition: isDragging ? 'none' : 'height 0.3s ease-in-out'
       }}
-      className={`rounded-lg shadow-lg overflow-hidden transition-all duration-200 ${
-        isMockActive ? 'bg-amber-50 border border-amber-300' : 'bg-white border'
-      }`}
     >
+      {/* Zaglavlje s kontrolama */}
       <div 
-        className={`p-2 flex justify-between items-center ${
-          isMockActive ? 'bg-amber-100' : 'bg-gray-100'
-        } cursor-move`}
+        className="bg-blue-600 text-white px-3 py-2 flex justify-between items-center cursor-move"
         onMouseDown={handleMouseDown}
       >
-        <div className="flex items-center gap-2">
-          <Move size={16} className="text-gray-500" />
-          <h3 className="text-sm font-medium">
-            {isMinimized ? 'Date Mock' : 'Test alat - Mock datum'}
-          </h3>
-        </div>
-        <div className="flex gap-2">
+        <span className="font-medium flex items-center">
+          <span className={`mr-1 ${isMockActive ? 'text-yellow-300' : 'text-white'}`}>
+            {isMockActive ? '⚠️' : '📅'}
+          </span>
+          {isMinimized ? 'Mock datum' : 'Simulacija datuma'}
+        </span>
+        <div className="flex space-x-1">
+          <button 
+            onClick={() => setShowBackups(!showBackups)} 
+            className="text-white hover:bg-blue-700 p-1 rounded"
+            title="Backup/Restore"
+          >
+            <Database size={16} />
+          </button>
           <button 
             onClick={toggleMinimized} 
-            className="p-1 rounded hover:bg-gray-200"
-            title={isMinimized ? "Proširi" : "Smanji"}
+            className="text-white hover:bg-blue-700 p-1 rounded"
+            title={isMinimized ? 'Proširi' : 'Smanji'}
           >
-            {isMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+            {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </button>
         </div>
       </div>
       
+      {/* Tijelo s formom i akcijama */}
       {!isMinimized && (
-        <div className="p-4">
-          <div className="mb-4">
-            <p className="text-base font-medium mb-1">Trenutni datum u aplikaciji:</p>
-            <div className={`text-lg font-bold ${isMockActive ? 'text-amber-600' : 'text-green-600'}`}>
+        <div className="p-3">
+          <div className="mb-3">
+            <div className="text-sm font-medium mb-1">Trenutni datum aplikacije:</div>
+            <div className={`text-lg ${isMockActive ? 'text-orange-600 font-bold' : 'text-green-600'}`}>
               {formatDate(currentApplicationDate)}
-              {isMockActive && <span className="ml-2 text-xs bg-amber-200 px-1 py-0.5 rounded">Mock</span>}
+              {isMockActive && <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-1 py-0.5 rounded">SIMULACIJA</span>}
             </div>
           </div>
           
-          <div className="mb-4">
-            <label className="block text-sm mb-1">Odaberi simulirani datum:</label>
-            <input
-              type="date"
-              className="w-full p-2 border rounded"
+          <div className="mb-3">
+            <label className="block text-sm font-medium mb-1">Postavi simulirani datum:</label>
+            <input 
+              type="date" 
               value={formatInputDate(date)}
               onChange={handleDateChange}
+              className="w-full px-2 py-1 border border-gray-300 rounded"
             />
           </div>
           
-          <div className="flex space-x-2 flex-wrap gap-2">
-            <button
+          <div className="flex space-x-2 mb-3">
+            <button 
               onClick={handleSetMockDate}
-              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
             >
-              Postavi mock datum
+              Postavi datum
             </button>
-            
-            <button
+            <button 
               onClick={handleResetDate}
-              className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
             >
               Resetiraj
             </button>
-            
-            <button
-              onClick={() => {
-                const restored = restoreOriginalMock();
-                if (restored) {
-                  // Ažuriraj stanje s originalnim mock datumom
-                  const originalDate = getCurrentDate();
-                  setDate(originalDate);
-                  setCurrentApplicationDate(originalDate);
-                  setIsMockActive(true);
-                  alert(`Vraćen prethodni mock datum: ${formatDate(originalDate)}`);
-                } else {
-                  alert('Nema spremljenog prethodnog mock datuma.');
-                }
-              }}
-              className="bg-amber-500 hover:bg-amber-600 text-white py-1 px-3 rounded text-sm"
-              title="Vrati na prethodni mock datum"
-            >
-              Vrati prethodni
-            </button>
           </div>
           
-          <div className="mt-2">
-            <button
+          <div className="border-t border-gray-200 pt-3">
+            <button 
               id="reset-db-button"
               onClick={handleFullReset}
-              className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm flex items-center gap-1"
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm mb-2"
             >
-              <Database size={14} />
-              Potpuni reset
+              <div className="flex items-center justify-center">
+                <RotateCcw size={14} className="mr-1" /> 
+                Potpuni reset
+              </div>
+            </button>
+            
+            <button 
+              id="cleanup-test-data-button"
+              onClick={handleCleanupTestData}
+              className={`w-full ${isInTestMode() ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-400'} text-white py-1 px-3 rounded text-sm`}
+              disabled={!isInTestMode()}
+              title={isInTestMode() ? 'Očisti testne podatke iz baze' : 'Opcija je dostupna samo tijekom testiranja s mock datumom'}
+            >
+              <div className="flex items-center justify-center">
+                <Trash2 size={14} className="mr-1" /> 
+                Očisti testne podatke
+              </div>
             </button>
           </div>
           
-          <div className="mt-4 border-t pt-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Upravljanje backupovima:</h4>
-              <button
-                onClick={fetchBackups}
-                className="bg-purple-500 hover:bg-purple-600 text-white py-1 px-2 rounded text-xs flex items-center gap-1"
-                disabled={loadingBackups}
-              >
-                <RotateCcw size={12} className={loadingBackups ? "animate-spin" : ""} />
-                {loadingBackups ? "Učitavanje..." : "Dohvati backupe"}
-              </button>
-            </div>
-            
-            {showBackups && backups.length > 0 && (
-              <div className="mt-2 max-h-60 overflow-y-auto border rounded p-2">
-                <ul className="divide-y">
-                  {backups.map((backup, index) => (
-                    <li key={index} className="py-1 text-xs">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{backup.filename}</div>
-                          <div className="text-gray-500">
-                            {backup.timestamp 
-                              ? `Datum: ${formatDate(parseISO(backup.timestamp))}`
-                              : `Datum: ${formatDate(backup.created)}`
-                            }
+          {/* Backup/Restore panel */}
+          {showBackups && (
+            <div className="mt-3 border-t border-gray-200 pt-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Upravljanje backupovima:</h4>
+                <button
+                  onClick={fetchBackups}
+                  className="bg-purple-500 hover:bg-purple-600 text-white py-1 px-2 rounded text-xs flex items-center gap-1"
+                  disabled={loadingBackups}
+                >
+                  <RotateCcw size={12} className={loadingBackups ? "animate-spin" : ""} />
+                  {loadingBackups ? "Učitavanje..." : "Dohvati backupe"}
+                </button>
+              </div>
+              
+              {backups.length > 0 && (
+                <div className="mt-2 max-h-60 overflow-y-auto border rounded p-2">
+                  <ul className="divide-y">
+                    {backups.map((backup, index) => (
+                      <li key={index} className="py-1 text-xs">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium">{backup.filename}</div>
+                            <div className="text-gray-500">
+                              {backup.timestamp 
+                                ? `Datum: ${formatDate(parseISO(backup.timestamp))}`
+                                : `Datum: ${formatDate(backup.created)}`
+                              }
+                            </div>
+                            <div className="text-gray-500">
+                              Veličina: {Math.round(backup.size / 1024)} KB
+                            </div>
                           </div>
-                          <div className="text-gray-500">
-                            Veličina: {Math.round(backup.size / 1024)} KB
-                          </div>
+                          <button
+                            onClick={() => restoreFromBackup(backup.filename)}
+                            className="bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded text-xs"
+                          >
+                            Vrati backup
+                          </button>
                         </div>
-                        <button
-                          onClick={() => restoreFromBackup(backup.filename)}
-                          className="bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded text-xs"
-                        >
-                          Vrati backup
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {showBackups && backups.length === 0 && (
-              <div className="mt-2 text-gray-500 text-xs">
-                Nema dostupnih backupa.
-              </div>
-            )}
-          </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {backups.length === 0 && (
+                <div className="mt-2 text-gray-500 text-xs">
+                  Nema dostupnih backupa.
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="mt-4 text-xs text-gray-500">
             <p>Napomena: Ovaj alat omogućuje testiranje funkcionalnosti vezanih za datum (npr. kraj godine)</p>

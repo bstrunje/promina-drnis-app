@@ -44,6 +44,7 @@ const LoginPage = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<MemberSearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -74,13 +75,6 @@ const LoginPage = () => {
     card_stamp_issued: false,  // Add this
     card_number: "",          // Add this
   });
-
-  type MessageType = "success" | "error";
-  interface Message {
-    type: MessageType;
-    content: string;
-  }
-  const [message, setMessage] = useState<Message | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -330,7 +324,15 @@ const LoginPage = () => {
 
         <div className="p-6">
           {isRegistering ? (
-            <form onSubmit={handleRegister} className="space-y-6">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <h2 className="text-2xl font-bold mb-4">Create New Account</h2>
+              
+              {/* Prikaz poruke o grešci ili uspjehu */}
+              {message && (
+                <div className={`p-3 rounded-md mb-4 ${message.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                  {message.content}
+                </div>
+              )}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <label className="flex items-start">
                   <input
@@ -354,7 +356,7 @@ const LoginPage = () => {
                 <input
                   type="text"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.first_name}
                   onChange={(e) =>
                     setRegisterData({
@@ -373,7 +375,7 @@ const LoginPage = () => {
                 <input
                   type="text"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.last_name}
                   onChange={(e) =>
                     setRegisterData({
@@ -398,7 +400,7 @@ const LoginPage = () => {
                       gender: e.target.value as "male" | "female",
                     })
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   required
                 >
                   {genderOptions.map((option) => (
@@ -417,7 +419,7 @@ const LoginPage = () => {
                 <input
                   type="date"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded bg-gray-50"
                   value={registerData.date_of_birth}
                   onChange={(e) =>
                     setRegisterData({
@@ -436,7 +438,7 @@ const LoginPage = () => {
                 <input
                   type="text"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.street_address}
                   onChange={(e) =>
                     setRegisterData({
@@ -455,7 +457,7 @@ const LoginPage = () => {
                 <input
                   type="text"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.city}
                   onChange={(e) =>
                     setRegisterData({ ...registerData, city: e.target.value })
@@ -473,7 +475,7 @@ const LoginPage = () => {
                   required
                   pattern="[0-9]{11}"
                   title="OIB must be exactly 11 digits"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.oib}
                   onChange={(e) =>
                     setRegisterData({ ...registerData, oib: e.target.value })
@@ -489,7 +491,7 @@ const LoginPage = () => {
                 <input
                   type="tel"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.cell_phone}
                   onChange={(e) =>
                     setRegisterData({
@@ -508,7 +510,7 @@ const LoginPage = () => {
                 <input
                   type="email"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded"
                   value={registerData.email}
                   onChange={(e) =>
                     setRegisterData({ ...registerData, email: e.target.value })
@@ -523,7 +525,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.life_status}
                   onChange={(e) =>
                     setRegisterData({
@@ -551,7 +553,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.tshirt_size}
                   onChange={(e) =>
                     setRegisterData({
@@ -583,7 +585,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.shell_jacket_size}
                   onChange={(e) =>
                     setRegisterData({
@@ -671,7 +673,7 @@ const LoginPage = () => {
                       name="full_name"
                       required
                       placeholder="Enter your full name"
-                      className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
+                      className="mt-2 p-2 w-full border rounded"
                       value={loginData.full_name}
                       autoComplete="off"
                       onKeyDown={async (e) => {
@@ -706,62 +708,68 @@ const LoginPage = () => {
                   {showResults && searchResults.length > 0 && (
                     <div className="absolute max-w-[calc(100%+2rem)] relative left-[-1rem] bg-white shadow-lg rounded-b border mt-1 z-10">
                       {searchResults
-                        .filter(result => 
-                          result.full_name.toLowerCase().split(' ')[0].startsWith(loginData.full_name.toLowerCase())
+                        .filter((result) =>
+                          result.full_name
+                            .toLowerCase()
+                            .split(" ")[0]
+                            .startsWith(loginData.full_name.toLowerCase())
                         )
                         .map((result, index) => (
-                        <button
-                          key={result.member_id}
-                          className="search-result w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setLoginData({ ...loginData, full_name: result.full_name });
-                            setShowResults(false);
-                            setStep(2);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                          <button
+                            key={result.member_id}
+                            className="search-result w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
                               setLoginData({
                                 ...loginData,
                                 full_name: result.full_name,
                               });
                               setShowResults(false);
                               setStep(2);
-                            } else if (
-                              e.key === "ArrowDown" &&
-                              index < searchResults.length - 1
-                            ) {
-                              e.preventDefault();
-                              const nextResult =
-                                document.querySelectorAll(".search-result")[
-                                  index + 1
-                                ];
-                              if (nextResult) {
-                                (nextResult as HTMLElement).focus();
-                              }
-                            } else if (e.key === "ArrowUp") {
-                              e.preventDefault();
-                              if (index === 0) {
-                                const input =
-                                  document.querySelector('input[type="text"]');
-                                if (input) {
-                                  (input as HTMLElement).focus();
-                                }
-                              } else {
-                                const prevResult =
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                setLoginData({
+                                  ...loginData,
+                                  full_name: result.full_name,
+                                });
+                                setShowResults(false);
+                                setStep(2);
+                              } else if (
+                                e.key === "ArrowDown" &&
+                                index < searchResults.length - 1
+                              ) {
+                                e.preventDefault();
+                                const nextResult =
                                   document.querySelectorAll(".search-result")[
-                                    index - 1
+                                    index + 1
                                   ];
-                                if (prevResult) {
-                                  (prevResult as HTMLElement).focus();
+                                if (nextResult) {
+                                  (nextResult as HTMLElement).focus();
+                                }
+                              } else if (e.key === "ArrowUp") {
+                                e.preventDefault();
+                                if (index === 0) {
+                                  const input =
+                                    document.querySelector('input[type="text"]');
+                                  if (input) {
+                                    (input as HTMLElement).focus();
+                                  }
+                                } else {
+                                  const prevResult =
+                                    document.querySelectorAll(".search-result")[
+                                      index - 1
+                                    ];
+                                  if (prevResult) {
+                                    (prevResult as HTMLElement).focus();
+                                  }
                                 }
                               }
-                            }
-                          }}
-                        >
-                          {result.full_name}
-                        </button>
-                      ))}
+                            }}
+                          >
+                            {result.full_name}
+                          </button>
+                        ))}
                     </div>
                   )}
 
@@ -792,7 +800,7 @@ const LoginPage = () => {
                         name="password"
                         required
                         placeholder="Enter your password"
-                        className="block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-3"
+                        className="mt-2 p-2 w-full border rounded"
                         value={loginData.password}
                         autoComplete="new-password"
                         onChange={handleInputChange}

@@ -143,12 +143,8 @@ const requireSuperUser = async (
 const roles = {
     requireAdmin: checkRole(['admin', 'superuser']),
     requireMember: checkRole(['member', 'admin', 'superuser']),
-    requireSuperUser: requireSuperUser
+    requireSuperUser
 };
 
-export { 
-    authenticateToken as authMiddleware,  
-    checkRole, 
-    requireSuperUser, 
-    roles 
-};
+// Export middleware
+export { authenticateToken as authMiddleware, checkRole, roles };

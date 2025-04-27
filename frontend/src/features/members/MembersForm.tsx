@@ -80,11 +80,6 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
     onSubmit(updatedMember);
   };
 
-  const genderOptions = [
-    { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' }
-];
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -103,7 +98,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
                 ...prev,
                 registration_completed: e.target.value === 'true'
               }))}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
               <option value="false">Pending</option>
               <option value="true">Completed</option>
@@ -117,7 +112,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="text"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.first_name}
               onChange={(e) => setFormData({...formData, first_name: e.target.value})}
             />
@@ -130,7 +125,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="text"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.last_name}
               onChange={(e) => setFormData({...formData, last_name: e.target.value})}
             />
@@ -143,7 +138,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="date"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-gray-50"
               value={formData.date_of_birth}
               onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
             />
@@ -156,7 +151,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="text"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.street_address}
               onChange={(e) => setFormData({...formData, street_address: e.target.value})}
             />
@@ -169,7 +164,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="text"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.city}
               onChange={(e) => setFormData({...formData, city: e.target.value})}
             />
@@ -184,7 +179,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
               required
               pattern="[0-9]{11}"
               title="OIB must be exactly 11 digits"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.oib}
               onChange={(e) => setFormData({...formData, oib: e.target.value})}
             />
@@ -197,7 +192,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="tel"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.cell_phone}
               onChange={(e) => setFormData({...formData, cell_phone: e.target.value})}
             />
@@ -210,26 +205,26 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <input
               type="email"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
             />
           </div>
 
-          <select
-    name="gender"
-    value={member?.gender}
-    onChange={handleChange}
-    className="mt-2 p-2 w-full border rounded"
-    required
->
-    <option value="">Select Gender</option>
-    {genderOptions.map(option => (
-        <option key={option.value} value={option.value}>
-            {option.label}
-        </option>
-    ))}
-</select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Gender
+            </label>
+            <select
+              required
+              value={formData.gender}
+              onChange={(e) => setFormData({...formData, gender: e.target.value as 'male' | 'female'})}
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -237,7 +232,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             </label>
             <select
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
               value={formData.life_status}
               onChange={(e) => setFormData({...formData, life_status: e.target.value as 'employed/unemployed' | 'child/pupil/student' | 'pensioner'})}
             >
@@ -255,7 +250,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             </label>
             <select
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
               value={formData.tshirt_size}
               onChange={(e) => setFormData({...formData, tshirt_size: e.target.value as 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'})}
             >
@@ -273,7 +268,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             </label>
             <select
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
               value={formData.shell_jacket_size}
               onChange={(e) => setFormData({...formData, shell_jacket_size: e.target.value as 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'})}
             >
@@ -296,7 +291,7 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
                 ...prev,
                 role: e.target.value as Member['role']
               }))}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -304,26 +299,26 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             </select>
           </div>
 
-         </div> 
+        </div> 
 
-      <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Membership Type
-            </label>
-            <select
-              name="membership_type"
-              value={formData.membership_type}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                membership_type: e.target.value as MembershipType
-              }))}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
-            >
-              <option value="regular">Regular Member</option>
-              <option value="supporting">Supporting Member</option>
-              <option value="honorary">Honorary Member</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Membership Type
+          </label>
+          <select
+            name="membership_type"
+            value={formData.membership_type}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              membership_type: e.target.value as MembershipType
+            }))}
+            className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+          >
+            <option value="regular">Regular Member</option>
+            <option value="supporting">Supporting Member</option>
+            <option value="honorary">Honorary Member</option>
+          </select>
+        </div>
 
         <div className="flex justify-end gap-4">
           <button
