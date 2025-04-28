@@ -448,7 +448,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
-                        {membershipStatus === 'registered' ? 'Aktivan' : membershipStatus === 'inactive' ? 'Neaktivan' : 'Na čekanju'}
+                        {membershipStatus === 'registered' ? 'Članstvo važeće' : membershipStatus === 'inactive' ? 'Neaktivan' : 'Na čekanju'}
                       </span>
                     </div>
                     
@@ -741,7 +741,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500">End Date</p>
-                                <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Active'}</p>
+                                <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Članstvo važeće'}</p>
                               </div>
                               {period.end_reason && (
                                 <div className="col-span-2">

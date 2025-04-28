@@ -1,43 +1,41 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 import {
   UserPlus,
   Printer
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
 import { Member } from "@shared/member";
-import AddMemberForm from "./AddMemberForm";
+import AddMemberForm from "../AddMemberForm";
 import EditMemberForm from "@components/EditMemberForm";
 import ConfirmationModal from "@components/ConfirmationModal";
 import AssignCardNumberForm from "@components/AssignCardNumberForm";
-import RoleAssignmentModal from "./RoleAssignmentModal";
+import RoleAssignmentModal from "../RoleAssignmentModal";
 import { Button } from "@components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
-import { formatDate, getCurrentDate } from "../../utils/dateUtils";
+import { formatDate, getCurrentDate } from "../../../utils/dateUtils";
 
 // Uvoz custom hooka za dohvat podataka o članovima
-import { useMemberData } from "./hooks/useMemberData";
+import useMemberData from "../hooks/useMemberData";
 // Uvoz komponente za filtriranje
-import { MemberListFilters } from "./components/MemberListFilters";
+import { MemberListFilters } from "./MemberListFilters";
 // Uvoz komponente za prikaz tablice
-import { MemberTable } from "./components/MemberTable";
+import { MemberTable } from "./MemberTable";
 // Uvoz komponente za prikaz statistike
-import { StatisticsView } from "./components/StatisticsView";
+import { StatisticsView } from "./StatisticsView";
 // Uvoz custom hooka za filtriranje i sortiranje
-import { useFilteredMembers } from "./hooks/useFilteredMembers";
+import useFilteredMembers from "../hooks/useFilteredMembers";
 
-export default function MemberList(): JSX.Element {
+export default function MemberListModular(): JSX.Element {
   // Dobavi članove pomoću custom hooka
   const {
     members,
-    filteredMembers,
     loading,
     error,
     addMember,
     updateMember,
-    deleteMember,
-    refreshMembers
+    deleteMember
   } = useMemberData();
 
   const { user } = useAuth();
@@ -64,7 +62,7 @@ export default function MemberList(): JSX.Element {
   const [groupByType, setGroupByType] = useState<boolean>(false);
 
   // Koristimo custom hook za filtriranje i sortiranje
-  const { filteredMembers: filteredMembersHook } = useFilteredMembers({
+  const { filteredMembers } = useFilteredMembers({
     members,
     searchTerm,
     activeFilter,
@@ -83,11 +81,11 @@ export default function MemberList(): JSX.Element {
   };
 
   const handleEdit = (member: Member) => {
-    navigate(`/members/${String(member.member_id)}`);
+    navigate(`/members/${member.member_id}`);
   };
 
   const handleEditMember = async (updatedMember: Member) => {
-    const success = await updateMember(String(updatedMember.member_id), updatedMember);
+    const success = await updateMember(updatedMember.member_id as string, updatedMember);
     if (success) {
       setEditingMember(null);
     }
@@ -95,7 +93,7 @@ export default function MemberList(): JSX.Element {
 
   const handleDeleteMember = async () => {
     if (deletingMember) {
-      const success = await deleteMember(String(deletingMember.member_id));
+      const success = await deleteMember(deletingMember.member_id as string);
       if (success) {
         setDeletingMember(null);
       }
@@ -215,19 +213,19 @@ export default function MemberList(): JSX.Element {
           <TabsContent value="list">
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
               <div className="p-4 border-b">
-                <MemberListFilters
+                <MemberListFilters 
                   searchTerm={searchTerm}
-                  onSearchChange={(value) => setSearchTerm(value)}
+                  setSearchTerm={setSearchTerm}
                   activeFilter={activeFilter}
-                  onActiveFilterChange={(value) => setActiveFilter(value as "all" | "active" | "passive")}
+                  setActiveFilter={setActiveFilter}
                   ageFilter={ageFilter}
-                  onAgeFilterChange={(value) => setAgeFilter(value as "all" | "adults")}
+                  setAgeFilter={setAgeFilter}
                   sortCriteria={sortCriteria}
-                  onSortCriteriaChange={(value) => setSortCriteria(value as "name" | "hours")}
                   sortOrder={sortOrder}
-                  onSortOrderChange={(value) => setSortOrder(value as "asc" | "desc")}
-                  groupType={groupByType ? "true" : ""}
-                  onGroupTypeChange={(value) => setGroupByType(!!value)}
+                  setSortCriteria={setSortCriteria}
+                  setSortOrder={setSortOrder}
+                  groupByType={groupByType}
+                  setGroupByType={setGroupByType}
                 />
                 <div className="mt-4 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-md text-base text-blue-800 mr-2 font-medium shadow-sm inline-block">
                   {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
@@ -273,7 +271,8 @@ export default function MemberList(): JSX.Element {
 
       {deletingMember && (
         <ConfirmationModal
-          message={`Jeste li sigurni da želite obrisati člana ${deletingMember.first_name} ${deletingMember.last_name}?`}
+          title="Confirm Delete"
+          message={`Are you sure you want to delete ${deletingMember.first_name} ${deletingMember.last_name}?`}
           onConfirm={handleDeleteMember}
           onCancel={() => setDeletingMember(null)}
         />
@@ -283,7 +282,6 @@ export default function MemberList(): JSX.Element {
         <AssignCardNumberForm
           member={assigningPasswordMember}
           onClose={() => setAssigningPasswordMember(null)}
-          onAssign={() => refreshMembers()}
         />
       )}
 
@@ -291,7 +289,6 @@ export default function MemberList(): JSX.Element {
         <RoleAssignmentModal
           member={roleAssignmentMember}
           onClose={() => setRoleAssignmentMember(null)}
-          onAssign={() => refreshMembers()}
         />
       )}
     </div>
