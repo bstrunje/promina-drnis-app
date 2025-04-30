@@ -47,8 +47,27 @@ export interface MemberStats {
 const memberRepository = {
     async findAll(): Promise<Member[]> {
         const result = await db.query<Member>(`
-            SELECT m.*, COALESCE(stats.total_hours, 0) as total_hours
+            SELECT m.*, 
+                   md.card_number, 
+                   md.fee_payment_year, 
+                   md.fee_payment_date, 
+                   md.card_stamp_issued, 
+                   md.next_year_stamp_issued, 
+                   COALESCE(stats.total_hours, 0) as total_hours,
+                   (
+                     SELECT json_agg(
+                       json_build_object(
+                         'period_id', mp.period_id,
+                         'start_date', mp.start_date,
+                         'end_date', mp.end_date,
+                         'end_reason', mp.end_reason
+                       )
+                     )
+                     FROM membership_periods mp
+                     WHERE mp.member_id = m.member_id
+                   ) as membership_history
             FROM members m
+            LEFT JOIN membership_details md ON m.member_id = md.member_id
             LEFT JOIN (
                 SELECT member_id, SUM(hours_spent) as total_hours
                 FROM activity_participants

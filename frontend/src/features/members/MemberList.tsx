@@ -1,12 +1,20 @@
-import React, { useState, useRef } from "react";
+import React from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
+  CalendarDays,
+  BarChart,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Printer,
   UserPlus,
-  Printer
+  Users
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
 import { Member } from "@shared/member";
+import { MemberWithDetails } from "./interfaces/memberTypes";
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "@components/EditMemberForm";
 import ConfirmationModal from "@components/ConfirmationModal";
@@ -21,7 +29,7 @@ import { useMemberData } from "./hooks/useMemberData";
 // Uvoz komponente za filtriranje
 import { MemberListFilters } from "./components/MemberListFilters";
 // Uvoz komponente za prikaz tablice
-import { MemberTable } from "./components/MemberTable";
+import { MemberTable, filterOnlyColoredRows } from "./components/MemberTable";
 // Uvoz komponente za prikaz statistike
 import { StatisticsView } from "./components/StatisticsView";
 // Uvoz custom hooka za filtriranje i sortiranje
@@ -31,7 +39,6 @@ export default function MemberList(): JSX.Element {
   // Dobavi članove pomoću custom hooka
   const {
     members,
-    filteredMembers,
     loading,
     error,
     addMember,
@@ -57,14 +64,20 @@ export default function MemberList(): JSX.Element {
 
   // Stanja za filtriranje i sortiranje
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive">("active");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid">("active");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [groupByType, setGroupByType] = useState<boolean>(false);
+  const [showOnlyColored, setShowOnlyColored] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false); // Stanje za prikaz/skrivanje filtera
+  const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // Stanje za prikaz/skrivanje navigacijskih tabova - vidljivo na desktop, ali ne na mobile
+  const [refreshing, setRefreshing] = useState(false); // Stanje za pull-to-refresh
+  const [touchStartY, setTouchStartY] = useState(0); // Za praćenje swipe geste
+  const [isMobile, setIsMobile] = useState(false);
 
   // Koristimo custom hook za filtriranje i sortiranje
-  const { filteredMembers: filteredMembersHook } = useFilteredMembers({
+  const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
     members,
     searchTerm,
     activeFilter,
@@ -73,6 +86,107 @@ export default function MemberList(): JSX.Element {
     sortOrder,
     groupByType
   });
+
+  const [filteredMembers, setFilteredMembers] = useState<{
+    key: string;
+    title: string;
+    members: MemberWithDetails[];
+  }[]>([]);
+
+  useEffect(() => {
+    // Ova funkcija se poziva kad se promijeni groupByType ili filteredMembersRaw
+    const groupedMembers = groupMembers(filteredMembersRaw);
+    setFilteredMembers(groupedMembers);
+  }, [filteredMembersRaw, groupByType, showOnlyColored]);
+
+  useEffect(() => {
+    if (showOnlyColored) {
+      const updatedMembers = filteredMembers.map(group => ({
+        ...group,
+        members: filterOnlyColoredRows(group.members)
+      }));
+      setFilteredMembers(updatedMembers);
+    }
+  }, [showOnlyColored]);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Na većim ekranima uvijek prikazuj tabove
+      if (!mobile) {
+        setShowNavTabs(true);
+      }
+      // Na mobilnim sakrivamo default
+      else if (mobile && showNavTabs === true) {
+        setShowNavTabs(false);
+      }
+    };
+    
+    // Inicijalna provjera
+    checkIsMobile();
+    
+    // Slušaj promjene veličine prozora
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, [showNavTabs]);
+
+  useEffect(() => {
+    // Dodajemo stil za ispis
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        /* Sakrivamo sve što ne treba biti na ispisu */
+        header, nav, .logo-container, button, .navigation-menu, .primary-navigation,
+        .print\\:hidden, #global-header, .items-center.gap-2, .amber-50, 
+        [aria-label="filters"], [class*="Pronađeno"], .flex.items-center.bg-amber-50 {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Čišćenje pri unmount
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Metoda za grupiranje članova - ovo će zadržati strukturu potrebnu za MemberTable
+  function groupMembers(memberList: MemberWithDetails[]): {
+    key: string;
+    title: string;
+    members: MemberWithDetails[];
+  }[] {
+    if (groupByType) {
+      // Grupiraj po životnom statusu ako je uključeno
+      const groups: Record<string, MemberWithDetails[]> = {};
+      
+      memberList.forEach(member => {
+        const status = member.life_status || 'unknown';
+        if (!groups[status]) {
+          groups[status] = [];
+        }
+        groups[status].push(member);
+      });
+      
+      return Object.entries(groups).map(([status, members]) => ({
+        key: status,
+        title: status.charAt(0).toUpperCase() + status.slice(1),
+        members
+      }));
+    } else {
+      // Bez grupiranja - vrati sve u jednoj grupi
+      return [{
+        key: 'all',
+        title: 'All Members',
+        members: memberList
+      }];
+    }
+  }
 
   // Metode za upravljanje članovima
   const handleAddMember = async (newMember: Member) => {
@@ -118,75 +232,77 @@ export default function MemberList(): JSX.Element {
     window.print();
   };
 
-  // Grupiranje članova
-  const groupsToRender = () => {
-    if (!groupByType) {
-      return [{ key: "all", title: "All Members", members: filteredMembers }];
+  const handleToggleColoredRows = () => {
+    if (showOnlyColored) {
+      // Ako već prikazujemo samo obojane, vrati sve članove
+      setShowOnlyColored(false);
+    } else {
+      // Inače, filtriraj i prikaži samo obojane
+      setShowOnlyColored(true);
     }
+  };
 
-    // Grupiraj po life_status kategorijama
-    const employedGroup = filteredMembers.filter(
-      (m) => m.life_status === "employed/unemployed"
-    );
-    const studentGroup = filteredMembers.filter(
-      (m) => m.life_status === "child/pupil/student"
-    );
-    const pensionerGroup = filteredMembers.filter(
-      (m) => m.life_status === "pensioner"
-    );
-    const otherGroup = filteredMembers.filter(
-      (m) =>
-        m.life_status !== "employed/unemployed" &&
-        m.life_status !== "child/pupil/student" &&
-        m.life_status !== "pensioner"
-    );
+  // Funkcija za pull-to-refresh
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
 
-    return [
-      {
-        key: "employed",
-        title: "Employed/Unemployed",
-        members: employedGroup,
-      },
-      { key: "student", title: "Students/Pupils", members: studentGroup },
-      { key: "pensioner", title: "Pensioners", members: pensionerGroup },
-      { key: "other", title: "Other", members: otherGroup },
-    ].filter(group => group.members.length > 0);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const touchY = e.touches[0].clientY;
+    const diff = touchY - touchStartY;
+    
+    // Ako je korisnik povukao dovoljno prema dolje i nije već u procesu osvježavanja
+    if (diff > 100 && !refreshing && window.scrollY === 0) {
+      setRefreshing(true);
+      
+      // Osvježi podatke
+      refreshMembers();
+      
+      // Postavi timer za resetiranje stanja nakon osvježavanja
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 1000); // Kratka odgoda za bolji UX
+    }
+  };
+  
+  // Funkcija za swipe za prikaz/skrivanje navigacijskih tabova
+  const handleSwipeForNav = (e: React.TouchEvent) => {
+    const touchY = e.touches[0].clientY;
+    const touchEndY = touchY;
+    const diff = touchEndY - touchStartY;
+    
+    // Ako je swipe prema dolje i tabs nisu vidljivi
+    if (diff > 50 && !showNavTabs) {
+      setShowNavTabs(true);
+    } 
+    // Ako je swipe prema gore i tabs su vidljivi
+    else if (diff < -50 && showNavTabs) {
+      setShowNavTabs(false);
+    }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 border-b border-gray-200" onTouchStart={handleTouchStart} onTouchMove={(e) => {
+        handleTouchMove(e);
+        handleSwipeForNav(e);
+      }}>
       {/* Print-only header */}
-      <div className="hidden print:block print:!block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{display: 'none', pageBreakInside: 'avoid'}} id="print-header">
-        <h1 className="text-2xl font-bold mb-2">Member List - Promina Drnis</h1>
+      <div className="hidden print:block print:!block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{pageBreakInside: 'avoid'}} id="print-header">
+        <h1 className="text-2xl font-bold mb-2">Planinarsko društvo "Promina" Drniš</h1>
+        <h2 className="text-xl font-semibold mb-3">Upisna lista članova</h2>
         <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
-          Total members: <span className="text-xl">{filteredMembers.length}</span>
+          Ukupno članova: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>
         </div>
-        <div className="text-sm text-gray-500 mt-2">
-          Generated: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
+        <div className="flex justify-center gap-4 mt-3 text-sm">
+          <div className="border rounded-md px-3 py-1 bg-gray-50">
+            Aktivni: <span className="font-semibold">{members.filter(m => m.isActive).length}</span>
+          </div>
+          <div className="border rounded-md px-3 py-1 bg-gray-50">
+            Neaktivni: <span className="font-semibold">{members.filter(m => !m.isActive).length}</span>
+          </div>
         </div>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Member List</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrint}
-            className="flex items-center gap-1"
-          >
-            <Printer className="w-4 h-4" />
-            Print List
-          </Button>
-          {isAdmin && (
-            <Button
-              className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
-              onClick={() => setShowAddForm(true)}
-            >
-              <UserPlus className="w-4 h-4" />
-              Add Member
-            </Button>
-          )}
+        <div className="text-sm text-gray-500 mt-3">
+          Generirano: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
         </div>
       </div>
 
@@ -204,39 +320,107 @@ export default function MemberList(): JSX.Element {
         </div>
       )}
 
-      {/* Tabs for List and Statistics */}
       {!loading && (
-        <Tabs defaultValue="list" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="list">Lista članova</TabsTrigger>
-            <TabsTrigger value="statistics">Statistika</TabsTrigger>
-          </TabsList>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 h-[calc(100vh-100px)]">
+          <Tabs defaultValue="list" className="w-full h-full flex flex-col">
+            {/* Fiksno zaglavlje - ostaje na mjestu prilikom skrolanja */}
+            <div className={`sticky top-0 z-10 bg-gray-50 flex-shrink-0 ${!showNavTabs ? 'border-b border-gray-200' : ''}`}>
+              {/* Svi gumbi u jednom redu */}
+              <div className="px-4 py-2 flex items-center justify-between border-b border-gray-200">
+                {/* Lijeva strana - navigacijski tabovi */}
+                <div className="flex items-center">
+                  <TabsList>
+                    <TabsTrigger value="list" className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      <span className="hidden md:inline">Lista članova</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="statistics" className="flex items-center">
+                      <BarChart className="w-4 h-4 mr-2" />
+                      <span className="hidden md:inline">Statistika</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                {/* Desna strana - ostali gumbi */}
+                <div className="flex items-center gap-2 flex-wrap print:hidden">
+                  {/* Brojač članova */}
+                  <div className="flex items-center bg-amber-50 border border-amber-200 rounded-md px-3 py-1">
+                    <span className="text-sm font-medium text-gray-500 mr-1 hidden md:inline">Pronađeno:</span>
+                    <span className="text-lg font-bold text-amber-600">
+                      {filteredMembers.reduce((count, group) => count + group.members.length, 0)}
+                    </span>
+                  </div>
+                  
+                  {/* Gumb Filteri */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="text-gray-700 hover:text-gray-900"
+                  >
+                    <Filter className="w-4 h-4 md:mr-1" />
+                    <span className="hidden md:inline">Filteri</span>
+                    {showFilters ? 
+                      <ChevronUp className="w-4 h-4 hidden md:inline md:ml-1" /> : 
+                      <ChevronDown className="w-4 h-4 hidden md:inline md:ml-1" />
+                    }
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-gray-500 hover:text-gray-700 hidden md:flex"
+                    onClick={handlePrint}
+                  >
+                    <Printer className="w-4 h-4 md:mr-1" />
+                    <span className="hidden md:inline">Print List</span>
+                  </Button>
 
-          <TabsContent value="list">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
-              <div className="p-4 border-b">
-                <MemberListFilters
-                  searchTerm={searchTerm}
-                  onSearchChange={(value) => setSearchTerm(value)}
-                  activeFilter={activeFilter}
-                  onActiveFilterChange={(value) => setActiveFilter(value as "all" | "active" | "passive")}
-                  ageFilter={ageFilter}
-                  onAgeFilterChange={(value) => setAgeFilter(value as "all" | "adults")}
-                  sortCriteria={sortCriteria}
-                  onSortCriteriaChange={(value) => setSortCriteria(value as "name" | "hours")}
-                  sortOrder={sortOrder}
-                  onSortOrderChange={(value) => setSortOrder(value as "asc" | "desc")}
-                  groupType={groupByType ? "true" : ""}
-                  onGroupTypeChange={(value) => setGroupByType(!!value)}
-                />
-                <div className="mt-4 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-md text-base text-blue-800 mr-2 font-medium shadow-sm inline-block">
-                  {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
+                  {isAdmin && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-black text-white"
+                      onClick={() => setShowAddForm(true)}
+                    >
+                      <UserPlus className="w-4 h-4 md:mr-1" />
+                      <span className="hidden md:inline">Add Member</span>
+                    </Button>
+                  )}
                 </div>
               </div>
               
-              <div ref={printRef} className="overflow-x-auto">
+              <div className="p-3 border-b border-gray-200">
+                {showFilters && (
+                  <MemberListFilters
+                    searchTerm={searchTerm}
+                    onSearchChange={(value: string) => setSearchTerm(value)}
+                    activeFilter={activeFilter}
+                    onActiveFilterChange={(value: string) => setActiveFilter(value as "all" | "active" | "passive" | "paid" | "unpaid")}
+                    ageFilter={ageFilter}
+                    onAgeFilterChange={(value: string) => setAgeFilter(value as "all" | "adults")}
+                    sortCriteria={sortCriteria}
+                    onSortCriteriaChange={(value: string) => setSortCriteria(value as "name" | "hours")}
+                    sortOrder={sortOrder}
+                    onSortOrderChange={(value: string) => setSortOrder(value as "asc" | "desc")}
+                    groupType={groupByType ? "true" : ""}
+                    onGroupTypeChange={(value) => setGroupByType(!!value)}
+                    onToggleColoredRows={handleToggleColoredRows} 
+                    showOnlyColored={showOnlyColored}
+                    onCloseFilters={() => setShowFilters(false)}
+                  />
+                )}
+                
+                {/* Uklonjen brojač s ovog mjesta jer je premješten na vrh */}
+              </div>
+            </div>
+            
+            {/* Ovdje je tablica s članovima */}
+            <TabsContent value="list" className="flex-grow overflow-hidden flex flex-col">
+              {/* Skrolabilna tablica članova */}
+              <div ref={printRef} className="overflow-auto flex-grow">
                 <MemberTable 
-                  filteredMembers={groupsToRender()} 
+                  filteredMembers={filteredMembers} 
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
                   onViewDetails={(memberId) => navigate(`/members/${memberId}`)}
@@ -244,15 +428,18 @@ export default function MemberList(): JSX.Element {
                   onDeleteMember={setDeletingMember}
                   onAssignPassword={setAssigningPasswordMember}
                   onAssignRole={setRoleAssignmentMember}
+                  setFilteredMembers={setFilteredMembers}
+                  refreshMembers={refreshMembers}
+                  hideTableHeader={false} // Prikazujemo zaglavlje tablice jer smo uklonili fiksirani header
                 />
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="statistics">
-            <StatisticsView members={members} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="statistics" className="flex-grow overflow-auto">
+              <StatisticsView members={members} />
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
 
       {/* Modal Forms */}

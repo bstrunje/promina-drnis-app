@@ -226,13 +226,40 @@ const membershipService = {
   async updateMembershipHistory(
     memberId: number,
     periods: MembershipPeriod[],
-    req?: Request
+    req?: Request,
+    updateMemberStatus: boolean = false
   ): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
       if (!member) throw new Error("Member not found");
 
       await membershipRepository.updateMembershipPeriods(memberId, periods);
+      
+      // Automatsko ažuriranje statusa člana na temelju perioda
+      if (updateMemberStatus) {
+        // Provjeri postoji li aktivni period (bez end_date)
+        const hasActivePeriod = periods.some(p => !p.end_date);
+        
+        if (hasActivePeriod) {
+          // Koristimo Prisma umjesto memberRepository za ažuriranje statusa
+          await prisma.member.update({
+            where: { member_id: memberId },
+            data: { status: 'registered' }
+          });
+          
+          // Logiraj promjenu
+          if (req?.user?.id) {
+            await auditService.logAction(
+              "UPDATE_MEMBER_STATUS",
+              req.user.id,
+              `Automatically updated member ${memberId} status to 'registered' based on active period`,
+              req,
+              "success",
+              memberId
+            );
+          }
+        }
+      }
     } catch (error) {
       console.error("Error updating membership history:", error);
       throw error;

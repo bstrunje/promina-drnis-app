@@ -115,7 +115,9 @@ export const useMemberData = () => {
           // Koristi centraliziranu funkciju za određivanje statusa članstva
           // Napomena: Ne možemo ovdje koristiti determineMembershipStatus jer nemamo periods podatke
           // To će se ažurirati kasnije kad dohvatimo detalje članova
-          let membershipStatus = member.status || 'pending';
+          const rawStatus = member.status as string;
+          // Prepoznaj "active" status iz baze podataka kao "registered" za konzistentnost prikaza
+          let membershipStatus = rawStatus === 'active' ? 'registered' : (member.status || 'pending');
           
           // Provjeri plaćenu članarinu koristeći centraliziranu funkciju
           const hasPaidFee = hasPaidMembershipFee(member);
@@ -142,26 +144,22 @@ export const useMemberData = () => {
           try {
             const memberDetailsPromises = membersWithDetails.map(async (member) => {
               try {
-                const detailsResponse = await api.get(`/members/${member.member_id}/details`);
-                const membershipDetails = detailsResponse.data;
-                
-                // Adaptiraj periode članstva ako postoje
-                const adaptedPeriods = member.membership_history ? 
-                  adaptMembershipPeriods(member.membership_history.periods || []) : [];
-                
+                // Pravilno adaptiraj periods bez obzira na backend strukturu
+                const periods = Array.isArray(member.membership_history)
+                  ? member.membership_history
+                  : (member.membership_history?.periods || []);
+                const adaptedPeriods = adaptMembershipPeriods(periods);
                 // Izračunaj detaljan status članstva
                 const detailedStatus = determineDetailedMembershipStatus(
                   member, 
                   adaptedPeriods
                 );
-                
                 // Izračunaj status plaćanja članarine
                 const feeStatus = determineFeeStatus({
                   membership_details: {
                     fee_payment_year: member.cardDetails?.fee_payment_year || 0
                   }
                 });
-                
                 return {
                   ...member,
                   periods: adaptedPeriods,
@@ -177,8 +175,6 @@ export const useMemberData = () => {
             
             const updatedMembers = await Promise.all(memberDetailsPromises);
             setMembers(updatedMembers);
-            
-            // Primijenite filtere nakon što učitate detalje
             setFilteredMembers(updatedMembers);
           } catch (error) {
             console.error("Error fetching member details:", error);

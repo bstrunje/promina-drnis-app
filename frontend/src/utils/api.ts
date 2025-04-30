@@ -37,7 +37,6 @@ api.interceptors.request.use(
     // Dodaj header za testni način rada ako je aktivan mock datum
     if (isInTestMode()) {
       config.headers['X-Test-Mode'] = 'true';
-      console.log(' Zahtjev poslan u testnom načinu rada');
     }
     
     return config;
@@ -294,23 +293,17 @@ export const getAvailableCardNumbers = async (): Promise<string[]> => {
   try {
     // Dodana eksplicitna provjera statusa
     const response = await api.get('/card-numbers/available');
-    console.log("Available card numbers received:", response.data);
     
     // Osiguraj da je response.data array, a ako nije, vrati prazan array
     if (!Array.isArray(response.data)) {
-      console.warn("API returned invalid data format for available card numbers", response.data);
       return [];
     }
     
     // Dodatna provjera i filtriranje
     const availableNumbers = response.data;
     
-    // Logiraj za debug
-    console.log(`Returning ${availableNumbers.length} available card numbers`);
-    
     return availableNumbers;
   } catch (error) {
-    console.error("API: Error fetching card numbers:", error);
     throw handleApiError(error, 'Failed to fetch available card numbers');
   }
 };

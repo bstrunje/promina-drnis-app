@@ -6,7 +6,7 @@ import { parseISO } from 'date-fns';
 interface UseFilteredMembersProps {
   members: MemberWithDetails[];
   searchTerm: string;
-  activeFilter: "all" | "active" | "passive";
+  activeFilter: "all" | "active" | "passive" | "paid" | "unpaid";
   ageFilter: "all" | "adults";
   sortCriteria: "name" | "hours";
   sortOrder: "asc" | "desc";
@@ -42,8 +42,26 @@ export const useFilteredMembers = ({
     
     // Apply active/passive filter
     if (activeFilter !== "all") {
-      const isActive = activeFilter === "active";
-      result = result.filter(member => member.isActive === isActive);
+      if (activeFilter === "active" || activeFilter === "passive") {
+        const isActive = activeFilter === "active";
+        result = result.filter(member => member.isActive === isActive);
+      } 
+      else if (activeFilter === "paid") {
+        // Filtriraj članove koji su platili članarinu (feeStatus je 'current' ili fee_payment_year odgovara trenutnoj godini)
+        const currentYear = getCurrentYear();
+        result = result.filter(member => 
+          member.feeStatus === 'current' || 
+          (member.cardDetails?.fee_payment_year === currentYear)
+        );
+      } 
+      else if (activeFilter === "unpaid") {
+        // Filtriraj članove koji nisu platili članarinu
+        const currentYear = getCurrentYear();
+        result = result.filter(member => 
+          member.feeStatus === 'payment required' || 
+          (!member.cardDetails?.fee_payment_year || member.cardDetails.fee_payment_year < currentYear)
+        );
+      }
     }
     
     // Apply age filter - samo punoljetni (18+)

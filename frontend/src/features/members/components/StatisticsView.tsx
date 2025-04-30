@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MemberWithDetails } from '../interfaces/memberTypes';
 import { TabsContent } from '@components/ui/tabs';
 
@@ -10,8 +10,50 @@ interface StatisticsViewProps {
  * Komponenta za prikaz statistike članstva
  */
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
+  // Računanje dobnih skupina u rasponima od 5 godina
+  const ageGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+    
+    // Inicijalizacija grupa po 5 godina
+    for (let i = 0; i <= 14; i++) {
+      const start = i * 5;
+      const end = start + 4;
+      if (i === 14) {
+        groups['70+'] = 0;
+      } else {
+        groups[`${start}-${end}`] = 0;
+      }
+    }
+    
+    members.forEach(member => {
+      if (!member.date_of_birth) return;
+      
+      const birthDate = new Date(member.date_of_birth);
+      const today = new Date();
+      
+      // Računanje godina
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      // Svrstavanje u dobnu skupinu
+      if (age >= 70) {
+        groups['70+']++;
+      } else {
+        const groupStart = Math.floor(age / 5) * 5;
+        const groupKey = `${groupStart}-${groupStart + 4}`;
+        groups[groupKey]++;
+      }
+    });
+    
+    return groups;
+  }, [members]);
+
   return (
-    <TabsContent value="statistics" className="pt-4">
+    <div className="space-y-6 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Ukupno članova: {members.length}</h3>
@@ -72,8 +114,23 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
             </div>
           </div>
         </div>
+        
+        {/* Nova statistika po dobnim skupinama */}
+        <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
+          <h3 className="text-lg font-semibold mb-4">Statistika po dobnim skupinama</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-2">
+            {Object.entries(ageGroups).map(([group, count]) => (
+              <div key={group} className="bg-gray-50 p-2 rounded-md">
+                <div className="text-center">
+                  <div className="text-sm text-gray-500">{group} godina</div>
+                  <div className="text-lg font-bold">{count}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </TabsContent>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import { Member } from '@shared/member';
-import { DetailedMembershipStatus } from '@shared/memberStatus.types';
+import { DetailedMembershipStatus, MembershipPeriod } from '@shared/memberStatus.types';
 
 /**
  * Interface za detalje o članskoj iskaznici
@@ -21,4 +21,5 @@ export interface MemberWithDetails extends Member {
   detailedStatus?: DetailedMembershipStatus;
   isActive?: boolean;
   feeStatus?: 'current' | 'payment required';
+  periods?: MembershipPeriod[]; // Dodano polje za periode članstva
 }

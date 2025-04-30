@@ -25,9 +25,9 @@ const sizeOptions: SizeOptions[] = [
 ];
 
 const lifeStatusOptions = [
-  { value: "employed/unemployed", label: "Employed/Unemployed" },
-  { value: "child/pupil/student", label: "Child/Pupil/Student" },
-  { value: "pensioner", label: "Pensioner" },
+  { value: "employed/unemployed", label: "Zaposlen/Nezaposlen" },
+  { value: "child/pupil/student", label: "Dijete/Učenik/Student" },
+  { value: "pensioner", label: "Umirovljenik" },
 ];
 
 const genderOptions = [
@@ -271,10 +271,14 @@ const LoginPage = () => {
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
         <div className="p-6 bg-blue-600 text-white text-center">
           <div className="mb-4">
-            {/* Placeholder for Logo */}
-            <div className="w-20 h-20 bg-gray-300 mx-auto rounded-full"></div>
+            {/* Logo */}
+            <img 
+              src="/src/assets/images/grbPD_bez_natpisa_pozadina.png" 
+              alt="PD Promina Logo" 
+              className="w-28 h-28 mx-auto rounded-full object-cover"
+            />
           </div>
-          <h2 className="text-2xl font-bold">Mountain Society "Promina"</h2>
+          <h2 className="text-2xl font-bold">Planinarsko društvo "Promina" Drniš</h2>
         </div>
 
         <div className="p-6 bg-blue-600 text-white text-center">
@@ -284,39 +288,39 @@ const LoginPage = () => {
         <div className="px-6 py-4 bg-gray-50 border-b">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-medium text-gray-700">
-              Important Documents
+              Važni dokumenti
             </h3>
             <button
               onClick={() => setShowDocuments(!showDocuments)}
               className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
             >
               <FileText className="w-4 h-4 mr-1" />
-              {showDocuments ? "Hide" : "Show"} Documents
+              {showDocuments ? "Sakrij" : "Prikaži"} Dokumente
             </button>
           </div>
 
           {showDocuments && (
             <div className="mt-3 space-y-2">
               <a
-                href="#"
+                href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
                 className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Terms and Conditions
+                Pravilnik o članstvu
               </a>
               <a
-                href="#"
+                href="https://pd-promina.hr/dokumenti/pravo-na-pristup-informacijama"
                 className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Privacy Policy
+                Politika zaštite osobnih podataka
               </a>
               <a
-                href="#"
+                href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
                 className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Membership Rules
+                Pravilnik o članstvu
               </a>
             </div>
           )}
@@ -325,7 +329,7 @@ const LoginPage = () => {
         <div className="p-6">
           {isRegistering ? (
             <form onSubmit={handleRegister} className="space-y-4">
-              <h2 className="text-2xl font-bold mb-4">Create New Account</h2>
+              <h2 className="text-2xl font-bold mb-4">Postani novi član</h2>
               
               {/* Prikaz poruke o grešci ili uspjehu */}
               {message && (
@@ -342,8 +346,7 @@ const LoginPage = () => {
                     className="mt-1 h-4 w-4 text-blue-600"
                   />
                   <span className="ml-2 text-sm text-gray-600">
-                    I have read and accept the terms and conditions, privacy
-                    policy, and membership rules
+                    Pročitah i prihvaćam Etički kodeks, Pravila o zaštiti podataka i Pravilnik o članstvu
                   </span>
                 </label>
               </div>
@@ -351,7 +354,7 @@ const LoginPage = () => {
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Name
+                  Ime
                 </label>
                 <input
                   type="text"
@@ -370,7 +373,7 @@ const LoginPage = () => {
               {/* Surname */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Surname
+                  Prezime
                 </label>
                 <input
                   type="text"
@@ -389,7 +392,7 @@ const LoginPage = () => {
               {/* Gender */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Gender
+                  Spol
                 </label>
                 <select
                   name="gender"
@@ -414,7 +417,7 @@ const LoginPage = () => {
               {/* Date of birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Date of birth
+                  Datum rođenja
                 </label>
                 <input
                   type="date"
@@ -433,7 +436,7 @@ const LoginPage = () => {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Address
+                  Ulica i broj
                 </label>
                 <input
                   type="text"
@@ -452,7 +455,7 @@ const LoginPage = () => {
               {/* City/town */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  City/town
+                  Grad/mjesto
                 </label>
                 <input
                   type="text"
@@ -486,7 +489,7 @@ const LoginPage = () => {
               {/* Mobile phone number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Mobile phone number
+                  Mobitel
                 </label>
                 <input
                   type="tel"
@@ -521,7 +524,7 @@ const LoginPage = () => {
               {/* Life status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Life status
+                  Životni status
                 </label>
                 <select
                   required
@@ -549,7 +552,7 @@ const LoginPage = () => {
               {/* T-shirt */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  T-shirt
+                  Majica
                 </label>
                 <select
                   required
@@ -581,7 +584,7 @@ const LoginPage = () => {
               {/* Shell jacket */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Shell jacket
+                  Flis jakna
                 </label>
                 <select
                   required
@@ -619,7 +622,7 @@ const LoginPage = () => {
                   }}
                   className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Back
+                  Natrag
                 </button>
                 <button
                   type="submit"
@@ -634,7 +637,7 @@ const LoginPage = () => {
                   ) : (
                     <span className="flex items-center">
                       <LogIn className="w-5 h-5 mr-2" />
-                      Register
+                      Upiši se
                     </span>
                   )}
                 </button>
@@ -648,13 +651,13 @@ const LoginPage = () => {
                     onClick={() => setStep(1)}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Login
+                    Prijavi se
                   </button>
                   <button
                     onClick={() => setIsRegistering(true)}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Do you want to become a new member? Register
+                    Hoćeš postati član Planinarskog društva Promina Drniš? Upiši se
                   </button>
                 </div>
               )}
@@ -860,7 +863,7 @@ const LoginPage = () => {
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Already have an account? Sign in
+                Već jesi član? Prijavi se
               </button>
             )}
           </div>

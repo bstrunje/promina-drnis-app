@@ -11,7 +11,7 @@ Ovaj direktorij sadrži React custom hookove za dohvat i manipulaciju podataka o
 
 ### useMemberData
 
-- **membershipStatus** - Osnovni status člana (registered/inactive/pending), odgovara stupcu "KATEGORIJA" u tablici
+- **membershipStatus** - Osnovni status člana (registered/inactive/pending), odgovara stupcu "ČLANSTVO" u tablici
 - **isActive** - Boolean vrijednost koja označava je li član aktivan (ima plaćenu članarinu i aktivan period)
 - **detailedStatus** - Objekt koji sadrži detaljnije informacije o statusu članstva, uključujući razlog i prioritet
 - **feeStatus** - Status plaćanja članarine (current/payment required)

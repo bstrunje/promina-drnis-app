@@ -679,14 +679,14 @@ export const memberController = {
   },
 
   async updateMembershipHistory(
-    req: Request<{ memberId: string }, {}, { periods: MembershipPeriod[] }>,
+    req: Request<{ memberId: string }, {}, { periods: MembershipPeriod[], updateMemberStatus?: boolean }>,
     res: Response
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const { periods } = req.body;
+      const { periods, updateMemberStatus } = req.body;
 
-      await membershipService.updateMembershipHistory(memberId, periods);
+      await membershipService.updateMembershipHistory(memberId, periods, req, updateMemberStatus);
 
       if (req.user?.id) {
         await auditService.logAction(

@@ -6,10 +6,9 @@ interface Props {
     member: Member;
     onClose: () => void;
     onAssign: (updatedMember: Member) => void;
-    key?: string;
 }
 
-const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
+const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
     const [cardNumber, setCardNumber] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -31,26 +30,20 @@ const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
                 
                 // Eksplicitno osvježi podatke bez korištenja keša
                 const timestamp = new Date().getTime();
-                console.log(`Fetching fresh available card numbers at ${timestamp}`);
                 
                 const numbers = await getAvailableCardNumbers();
-                
-                // Dodatno logiranje za debugging
-                console.log("Fetched card numbers:", numbers);
-                console.log("Card numbers type:", typeof numbers, Array.isArray(numbers));
                 
                 // Osiguraj da je rezultat uistinu array
                 if (Array.isArray(numbers)) {
                     setAvailableCardNumbers(numbers);
                 } else {
-                    console.error("getAvailableCardNumbers did not return an array:", numbers);
                     setAvailableCardNumbers([]);
                 }
                 
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching available card numbers:', error);
-                setError('Could not load available card numbers. Please try again.');
+                setError('Greška pri dohvatu dostupnih brojeva iskaznica');
+                setAvailableCardNumbers([]);
                 setLoading(false);
             }
         };
@@ -59,7 +52,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
         // Reset state kad se komponenta učita
         setError(null);
         setSuccessMessage(null);
-    }, [key]);
+    }, []);
 
     // Ažuriraj preview lozinke kad se promijeni broj iskaznice
     useEffect(() => {
@@ -72,7 +65,6 @@ const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Assigning card number for member:', member.member_id);
         setError(null);
         setLoading(true);
         setSuccessMessage(null);
@@ -110,12 +102,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign, key }: Props) => {
                 onClose();
             }
         } catch (error: unknown) {
-            console.error('Error assigning card number:', error);
-            if (error instanceof Error) {
-                setError(error.message);
-            } else {
-                setError('An unexpected error occurred');
-            }
+            setError('Greška pri dodjeli broja iskaznice');
             setLoading(false);
         }
     };

@@ -4,7 +4,10 @@ import {
   SortDesc, 
   Filter, 
   Search, 
-  XCircle 
+  XCircle,
+  RefreshCw,
+  Palette,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -29,6 +32,9 @@ export interface MemberListFiltersProps {
   onSortOrderChange: (value: string) => void;
   groupType: string;
   onGroupTypeChange: (value: string) => void;
+  showOnlyColored?: boolean;
+  onToggleColoredRows?: () => void;
+  onCloseFilters?: () => void;
 }
 
 /**
@@ -46,87 +52,136 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   sortOrder,
   onSortOrderChange,
   groupType,
-  onGroupTypeChange
+  onGroupTypeChange,
+  showOnlyColored,
+  onToggleColoredRows,
+  onCloseFilters
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
-      <div className="flex-1">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Pretraži ime, prezime ili OIB..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-          />
-          {searchTerm && (
+    <div className="flex flex-col md:flex-row gap-4">
+      {/* Reorganizirani filteri za bolji mobilni prikaz */}
+      <div className="flex flex-wrap md:flex-row flex-col gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 w-full">
+        {/* Tražilica */}
+        <div className="flex-1 md:max-w-[250px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Pretraži ime, prezime..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSearchChange("")}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                aria-label="Obriši pretragu"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Filteri članova</span>
+          <div className="flex flex-wrap md:flex-row flex-col gap-2">
+            <Select value={activeFilter} onValueChange={(value: any) => onActiveFilterChange(value)}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Status aktivnosti" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi članovi</SelectItem>
+                <SelectItem value="active">Aktivni</SelectItem>
+                <SelectItem value="passive">Pasivni</SelectItem>
+                <SelectItem value="paid">Plaćeno</SelectItem>
+                <SelectItem value="unpaid">Nije plaćeno</SelectItem>
+              </SelectContent>
+            </Select>
+            
             <Button
-              variant="ghost"
+              variant={ageFilter === "adults" ? "default" : "outline"}
               size="sm"
-              onClick={() => onSearchChange("")}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-              aria-label="Obriši pretragu"
+              onClick={() => onAgeFilterChange(ageFilter === "adults" ? "all" : "adults")}
+              title={ageFilter === "adults" ? "Prikaži sve članove" : "Prikaži samo punoljetne"}
+              className="min-w-[50px] md:min-w-[130px]"
             >
-              <XCircle className="h-4 w-4" />
+              <span>Punoljetni</span>
             </Button>
-          )}
+          </div>
+        </div>
+        
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Sortiranje</span>
+          <div className="flex flex-wrap md:flex-row flex-col gap-2">
+            <Select value={sortCriteria} onValueChange={(value: any) => onSortCriteriaChange(value)}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Sortiraj po" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Sortiraj po imenu</SelectItem>
+                <SelectItem value="hours">Sortiraj po satima</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
+              title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+              className="w-10 h-10 p-0"
+            >
+              {sortOrder === "asc" ? (
+                <SortAsc className="h-4 w-4" />
+              ) : (
+                <SortDesc className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Prikaz</span>
+          <div className="flex flex-wrap md:flex-row flex-col gap-2">
+            <Button
+              variant={groupType ? "default" : "outline"}
+              size="sm"
+              onClick={() => onGroupTypeChange(groupType ? "" : "true")}
+              title={groupType ? "Disable grouping" : "Group by member type"}
+              className="min-w-[50px] md:min-w-[130px]"
+            >
+              <span>Grupiraj</span>
+            </Button>
+            
+            {onToggleColoredRows && (
+              <Button
+                variant={showOnlyColored ? "default" : "outline"}
+                size="sm"
+                onClick={onToggleColoredRows}
+                title={showOnlyColored ? "Prikaži sve članove" : "Prikaži samo obojane retke"}
+                className="min-w-[50px] md:min-w-[130px]"
+              >
+                <Palette className="h-4 w-4 mr-1" />
+                <span>Obojani</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
-        <Select value={activeFilter} onValueChange={(value: any) => onActiveFilterChange(value)}>
-          <SelectTrigger className="w-[130px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Status aktivnosti" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Svi članovi</SelectItem>
-            <SelectItem value="active">Aktivni</SelectItem>
-            <SelectItem value="passive">Pasivni</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={ageFilter} onValueChange={(value: any) => onAgeFilterChange(value)}>
-          <SelectTrigger className="w-[130px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Dobna skupina" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Svi članovi</SelectItem>
-            <SelectItem value="adults">Punoljetni (18+)</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={sortCriteria} onValueChange={(value: any) => onSortCriteriaChange(value)}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="Sortiraj po" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">Imenu</SelectItem>
-            <SelectItem value="hours">Satima</SelectItem>
-          </SelectContent>
-        </Select>
-        
+      {/* Gumb za zatvaranje filtera na malim ekranima */}
+      <div className="md:hidden mt-4 flex justify-center">
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
-          title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+          onClick={onCloseFilters}
+          className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 w-full max-w-md"
         >
-          {sortOrder === "asc" ? (
-            <SortAsc className="h-4 w-4" />
-          ) : (
-            <SortDesc className="h-4 w-4" />
-          )}
-        </Button>
-        
-        <Button
-          variant={groupType ? "default" : "outline"}
-          size="sm"
-          onClick={() => onGroupTypeChange(groupType ? "" : "true")}
-          title={groupType ? "Disable grouping" : "Group by member type"}
-        >
-          Group by Type
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+          <span>Spremi filtriranje</span>
         </Button>
       </div>
     </div>

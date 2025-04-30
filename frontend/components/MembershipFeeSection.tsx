@@ -86,9 +86,9 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidPayment, setIsValidPayment] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [isNovemberDecemberPayment, setIsNovemberDecemberPayment] = useState(false);
   const [isNewMemberPayment, setIsNewMemberPayment] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Provjerava je li članarina plaćena za tekuću godinu
   // Ako je plaćena za sljedeću godinu, također se smatra aktivnom
@@ -119,8 +119,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     if (!dateString) {
       setPaymentError("Date is required");
       setIsValidPayment(false);
-      setIsNovemberDecemberPayment(false);
-      setIsNewMemberPayment(false);
       return false;
     }
 
@@ -128,8 +126,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // Provjeravamo je li unesen kompletan datum (YYYY-MM-DD) a ne samo dio
       if (!DATE_PATTERN.test(dateString)) {
         setIsValidPayment(false);
-        setIsNovemberDecemberPayment(false);
-        setIsNewMemberPayment(false);
         return false;
       }
 
@@ -138,8 +134,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       if (!isValidDate(date)) {
         setPaymentError("Invalid date format");
         setIsValidPayment(false);
-        setIsNovemberDecemberPayment(false);
-        setIsNewMemberPayment(false);
         return false;
       }
 
@@ -148,8 +142,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       if (year < 1850 || year > 2850) {
         setPaymentError("Godina mora biti između 1850 i 2850");
         setIsValidPayment(false);
-        setIsNovemberDecemberPayment(false);
-        setIsNewMemberPayment(false);
         return false;
       }
 
@@ -159,8 +151,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       if (date > currentDate) {
         setPaymentError("Payment date cannot be in the future");
         setIsValidPayment(false);
-        setIsNovemberDecemberPayment(false);
-        setIsNewMemberPayment(false);
         return false;
       }
 
@@ -175,6 +165,21 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         // Postavi state za prikazivanje poruke u komponenti
         setIsNovemberDecemberPayment(true);
         setIsNewMemberPayment(isNewMember);
+        
+        // Prikaži odgovarajuću toast poruku o plaćanju u studenom/prosincu
+        if (isNewMember) {
+          toast({
+            title: "Info",
+            description: "Za nove članove, članarina plaćena u studenom/prosincu vrijedi za tekuću godinu.",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Info",
+            description: "Članarina plaćena u studenom/prosincu bit će uračunata za sljedeću godinu.",
+            variant: "default"
+          });
+        }
       } else {
         setIsNovemberDecemberPayment(false);
         setIsNewMemberPayment(false);
@@ -188,8 +193,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       console.error("Error validating date:", error);
       setPaymentError("Failed to validate payment date");
       setIsValidPayment(false);
-      setIsNovemberDecemberPayment(false);
-      setIsNewMemberPayment(false);
       return false;
     }
   };
@@ -201,8 +204,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     } else {
       setPaymentError(null);
       setIsValidPayment(false);
-      setIsNovemberDecemberPayment(false);
-      setIsNewMemberPayment(false);
     }
   }, [paymentDate]);
 
@@ -214,8 +215,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     if (!DATE_PATTERN.test(value) || !isValidDate(parseISO(value))) {
       setPaymentError(null);
       setIsValidPayment(false);
-      setIsNovemberDecemberPayment(false);
-      setIsNewMemberPayment(false);
       return;
     }
     // Tek sad validiraj
@@ -404,7 +403,9 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               
               <div className="mb-3">
                 <span className="text-sm text-gray-500">Status:</span>
-                <span className={`ml-2 px-2 py-1 rounded-full text-sm ${isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <span className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${
+                  isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
                   {isFeeCurrent ? 'Current' : 'Payment Required'}
                 </span>
                 {member.membership_details?.fee_payment_year && (
@@ -420,13 +421,20 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 // Koristi nove funkcije za određivanje statusa
                 const hasPaidFee = hasPaidMembershipFee(member);
                 
+                // Potrebna je tipski sigurna provjera za "active" status koji dolazi iz baze
+                const memberStatus = member.status as string; // Eksplicitno tretiramo kao string za provjeru
+                const isRegisteredOrActive = memberStatus === 'registered' || memberStatus === 'active';
+                
                 // Određivanje statusa članstva prema prioritetima
                 const detailedMembershipStatus = membershipHistory?.periods 
                   ? determineDetailedMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
                   : {
-                      status: hasPaidFee ? 'registered' : (member.status || 'pending'),
-                      priority: 0,
-                      reason: hasPaidFee ? 'Aktivan član s plaćenom članarinom' : 'Status na čekanju'
+                      // Ako je član već registriran u bazi ili ima "active" status iz membership_details, 
+                      // tretiramo ga kao registriranog člana čak i ako još nema plaćenu članarinu
+                      status: isRegisteredOrActive ? 'registered' : (hasPaidFee ? 'registered' : (member.status || 'pending')),
+                      reason: isRegisteredOrActive ? 'Registrirani član' : (hasPaidFee ? 'Aktivan član s plaćenom članarinom' : 'Status na čekanju'),
+                      date: null,
+                      endReason: null
                     };
                 
                 // Za kompatibilnost s postojećim kodom
@@ -452,8 +460,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       </span>
                     </div>
                     
-                    {/* Detalji statusa članstva */}
-                    {detailedMembershipStatus.reason && (
+                    {/* Prikazujemo detalje statusa članstva samo ako nisu dupliranje glavnog statusa */}
+                    {detailedMembershipStatus.reason && 
+                     membershipStatus !== 'registered' && 
+                     !(membershipStatus === 'inactive' && ['Isključen iz članstva', 'Smrt člana', 'Dobrovoljno povlačenje'].includes(detailedMembershipStatus.reason)) && (
                       <p className="text-sm text-gray-700 mt-1">
                         {detailedMembershipStatus.reason}
                       </p>
@@ -741,7 +751,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500">End Date</p>
-                                <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : 'Članstvo važeće'}</p>
+                                <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : ''}</p>
                               </div>
                               {period.end_reason && (
                                 <div className="col-span-2">

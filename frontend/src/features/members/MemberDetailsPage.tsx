@@ -6,7 +6,6 @@ import { Button } from "@components/ui/button";
 import { Alert, AlertDescription } from "@components/ui/alert";
 import { Member } from "@shared/member";
 import { MembershipPeriod } from "@shared/membership";
-import { Toaster } from "@components/ui/toaster";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api";
 import { debounce } from "lodash";
@@ -105,9 +104,10 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         },
       });
 
-      // Properly handle membership_history array
       const memberData = {
         ...response.data,
+        // Osiguravamo da member.status ima prioritet, da ne bude prepisano membership_details podacima
+        status: response.data.status || 'pending', // Eksplicitno koristimo status iz tablice members
         membership_history: {
           periods: Array.isArray(response.data.membership_history)
             ? response.data.membership_history // Keep original array if it's an array
@@ -117,20 +117,9 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
               ? response.data.membership_history
               : response.data.membership_history?.periods || []
           ),
-          current_period: Array.isArray(response.data.membership_history)
-            ? response.data.membership_history.find(
-                (period: MembershipPeriod) => !period.end_date
-              )
-            : response.data.membership_history?.current_period,
         },
       };
 
-      // Validacija transformiranih podataka
-      if (!Array.isArray(memberData.membership_history.periods)) {
-        memberData.membership_history.periods = [];
-      }
-
-      // Umjesto console.error naredbi, samo učitavamo podatke
       setMember(memberData);
       setEditedMember(memberData);
     } catch (error) {
@@ -254,6 +243,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     try {
       await api.put(`/members/${memberId}/membership-history`, {
         periods: updatedPeriods,
+        updateMemberStatus: true // Zahtjev backendu da ažurira status člana na temelju perioda
       });
 
       // Odmah dohvati nove podatke
@@ -367,7 +357,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const openAssignPasswordModal = () => {
     setIsAssigningPassword(true);
     // Osvježimo dostupne brojeve iskaznica pri svakom otvaranju modala
-    console.log("Opening card number assignment modal with fresh data");
   };
 
   const closeModal = () => {
@@ -485,7 +474,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         <MemberMessagesSection member={member} />
       </div>
 
-      <Toaster />
     </div>
   );
 };

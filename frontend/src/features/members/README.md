@@ -12,7 +12,7 @@ Ovaj modul sadrži komponente i logiku vezanu za upravljanje članovima udruge.
 
 ### Statusi članstva
 
-- **KATEGORIJA** - Osnovni status članstva, može biti:
+- **ČLANSTVO** - Osnovni status članstva, može biti:
   - **Na čekanju (Pending)** - osoba koja je ispunila prijavnicu, članstvo još nije počelo
   - **Registriran (Registered)** - osoba koja je dobila broj iskaznice i postala dio članstva
   - **Neaktivan (Inactive)** - članstvo prestalo iz nekih razloga

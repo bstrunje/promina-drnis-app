@@ -13,7 +13,7 @@ Ovaj direktorij sadrži React komponente za prikaz, uređivanje i filtriranje č
 
 ### MemberTable komponenta
 
-- **KATEGORIJA** - Stupac koji prikazuje osnovni status članstva (Pending/Registered/Inactive)
+- **ČLANSTVO** - Stupac koji prikazuje osnovni status članstva (Pending/Registered/Inactive)
 - **Članstvo važeće** - Status za članove s aktivnim članstvom (ranije "Aktivan")
 - **Neaktivan** - Status za članove kojima je članstvo prestalo
 - **Na čekanju** - Status za članove čije članstvo još nije započelo
