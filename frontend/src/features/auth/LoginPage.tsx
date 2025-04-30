@@ -8,6 +8,7 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import { Member, MemberSearchResult } from "@shared/member";
 import { MemberLoginData } from "@shared/member";
 import debounce from "lodash.debounce";
+import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 
 interface SizeOptions {
   value: string;
@@ -273,7 +274,7 @@ const LoginPage = () => {
           <div className="mb-4">
             {/* Logo */}
             <img 
-              src="grbPD_bez_natpisa_pozadina.png" 
+              src={logoImage} 
               alt="PD Promina Logo" 
               className="w-28 h-28 mx-auto rounded-full object-cover"
             />

@@ -43,6 +43,7 @@ Za detaljan status članstva uzimaju se u obzir sljedeći prioriteti:
 - Sortiranje po imenu ili satima aktivnosti
 - Statistički pregled članstva po raznim kategorijama
 - Prilagođeni ispis liste članova za skupštinu
+- Responzivan dizajn prilagođen za mobilne uređaje
 
 ### Upisna lista za skupštinu
 Poseban format ispisa koji uključuje:
@@ -58,6 +59,13 @@ Poseban format ispisa koji uključuje:
 - Prikaz distribucije po statusu članstva
 - Prikaz distribucije po spolu
 - Prikaz distribucije po kategoriji članstva
+
+### Prilagodbe za mobilne uređaje
+- Optimiziran prikaz na manjim ekranima
+- Prilagođen navigacijski izbornik s kraćim nazivima
+- Poboljšana interakcija s tablicom članova na dodir
+- Promjena prikaza filtera za optimalno korištenje na mobilnim uređajima
+- Mogućnost povlačenja za osvježavanje (pull-to-refresh)
 
 ## Struktura direktorija
 
