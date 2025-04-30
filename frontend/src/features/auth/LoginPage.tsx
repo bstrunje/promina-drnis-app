@@ -273,7 +273,7 @@ const LoginPage = () => {
           <div className="mb-4">
             {/* Logo */}
             <img 
-              src="/src/assets/images/grbPD_bez_natpisa_pozadina.png" 
+              src="grbPD_bez_natpisa_pozadina.png" 
               alt="PD Promina Logo" 
               className="w-28 h-28 mx-auto rounded-full object-cover"
             />

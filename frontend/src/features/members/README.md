@@ -35,6 +35,30 @@ Za detaljan status članstva uzimaju se u obzir sljedeći prioriteti:
 5. Neplaćena članarina
 6. Aktivni član s urednim statusom
 
+## Funkcionalnosti
+
+### Lista članova
+- Prikaz svih članova društva u tablici
+- Filtriranje po imenu, statusu aktivnosti, dobi
+- Sortiranje po imenu ili satima aktivnosti
+- Statistički pregled članstva po raznim kategorijama
+- Prilagođeni ispis liste članova za skupštinu
+
+### Upisna lista za skupštinu
+Poseban format ispisa koji uključuje:
+- Zaglavlje s nazivom društva
+- Ukupan broj članova, broj aktivnih i neaktivnih članova
+- Datum generiranja
+- Tablicu s kolonama: redni broj, ime člana, sati aktivnosti i prostor za potpis
+- Automatsko obrojčavanje članova s resetiranjem brojača između aktivnih i neaktivnih članova
+- Optimizirano za ispis na papiru (bez navigacijskih elemenata)
+
+### Statistika članova
+- Prikaz distribucije članova po dobnim skupinama (5-godišnji intervali)
+- Prikaz distribucije po statusu članstva
+- Prikaz distribucije po spolu
+- Prikaz distribucije po kategoriji članstva
+
 ## Struktura direktorija
 
 - **components/** - Komponente vezane uz članove
