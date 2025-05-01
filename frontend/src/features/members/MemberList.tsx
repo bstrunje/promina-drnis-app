@@ -51,6 +51,58 @@ export default function MemberList(): JSX.Element {
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Stil za printanje direktno u komponenti
+  useEffect(() => {
+    const printStyle = document.createElement('style');
+    printStyle.innerHTML = `
+      @media print {
+        /* Sakrivanje svih nepotrebnih elemenata za print */
+        .print\\:hidden,
+        .filter-section,
+        nav,
+        header,
+        button,
+        [role="tab"],
+        [role="tablist"],
+        .tabs-list,
+        .tab-trigger {
+          display: none !important;
+        }
+        
+        /* Osiguravanje da je tablica za printanje vidljiva */
+        .print-table,
+        .print\\:table,
+        .print\\:!table {
+          display: table !important;
+        }
+
+        /* Osiguravanje da je header za printanje vidljiv */
+        .print\\:block,
+        #print-header {
+          display: block !important;
+        }
+        
+        /* Čišćenje margina i paddinga */
+        body {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        /* Kontroliranje preloma stranice */
+        #print-header {
+          page-break-after: avoid;
+        }
+      }
+    `;
+    document.head.appendChild(printStyle);
+    
+    return () => {
+      if (printStyle.parentNode) {
+        document.head.removeChild(printStyle);
+      }
+    };
+  }, []);
+
   // Modalni prozori - stanja
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -308,14 +360,14 @@ export default function MemberList(): JSX.Element {
 
       {/* Prikaz greške ako postoji */}
       {error && (
-        <Alert variant="destructive" className="mb-4">
+        <Alert variant="destructive" className="mb-4 print:hidden">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Loader */}
       {loading && (
-        <div className="flex justify-center items-center py-8">
+        <div className="flex justify-center items-center py-8 print:hidden">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
@@ -324,7 +376,7 @@ export default function MemberList(): JSX.Element {
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 h-[calc(100vh-100px)]">
           <Tabs defaultValue="list" className="w-full h-full flex flex-col">
             {/* Fiksno zaglavlje - ostaje na mjestu prilikom skrolanja */}
-            <div className={`sticky top-0 z-10 bg-gray-50 flex-shrink-0 ${!showNavTabs ? 'border-b border-gray-200' : ''}`}>
+            <div className={`sticky top-0 z-10 bg-gray-50 flex-shrink-0 ${!showNavTabs ? 'border-b border-gray-200' : ''} print:hidden`}>
               {/* Svi gumbi u jednom redu */}
               <div className="px-4 py-2 flex items-center justify-between border-b border-gray-200">
                 {/* Lijeva strana - navigacijski tabovi */}
@@ -390,7 +442,7 @@ export default function MemberList(): JSX.Element {
                 </div>
               </div>
               
-              <div className="p-3 border-b border-gray-200">
+              <div className="p-3 border-b border-gray-200 print:hidden">
                 {showFilters && (
                   <MemberListFilters
                     searchTerm={searchTerm}

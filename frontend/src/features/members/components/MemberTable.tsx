@@ -245,7 +245,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   return (
     <>
       <div className="overflow-x-auto overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch', msOverflowStyle: 'none', scrollbarWidth: 'thin' }}>
-        <table className="w-full min-w-[650px] border-collapse border border-gray-200 table-fixed">
+        {/* Standardna tablica za prikaz na ekranu */}
+        <table className="w-full min-w-[650px] border-collapse border border-gray-200 table-fixed print:hidden">
           <colgroup>
             <col className="hidden print:table-column print:w-[10%]" /> {/* Redni broj - samo za print */}
             <col className="w-1/3 print:w-[45%]" /> {/* Vraćamo originalnu širinu za ČLAN kolonu u normalnom prikazu */}
@@ -281,7 +282,10 @@ export const MemberTable: React.FC<MemberTableProps> = ({
           <tbody>
             {filteredMembers.flatMap(group => {
               // Odvajamo članove u dvije kategorije: ≥20 sati i <20 sati
-              const activeMembers = group.members.filter(m => Number(m.total_hours) >= 20);
+              const activeMembers = group.members.filter(m => {
+                console.log(`Member ${m.full_name} total_hours: ${m.total_hours}, type: ${typeof m.total_hours}`);
+                return Number(m.total_hours) >= 20;
+              });
               const inactiveMembers = group.members.filter(m => Number(m.total_hours) < 20);
               
               let activeCounter = 1;
@@ -299,8 +303,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 
                 // Prvo aktivni članovi
                 ...(activeMembers.length > 0 ? [
-                  <tr key="active-header" className="hidden">
-                    <td colSpan={4} className="px-6 py-2 font-medium text-center">
+                  <tr key="active-header" className="hidden print:hidden">
+                    <td colSpan={isSuperuser ? 6 : 4} className="px-6 py-2 font-medium text-center">
                       Aktivni članovi
                     </td>
                   </tr>
@@ -342,9 +346,9 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 
                 // Naslov za neaktivne članove (samo za print)
                 ...(inactiveMembers.length > 0 ? [
-                  <tr key="inactive-header" className="hidden">
-                    <td colSpan={4} className="px-6 py-2 font-medium text-center">
-                      Neaktivni članovi
+                  <tr key="inactive-header" className="hidden print:hidden">
+                    <td colSpan={isSuperuser ? 6 : 4} className="px-6 py-2 font-medium text-center">
+                      Pasivni članovi
                     </td>
                   </tr>
                 ] : []),
@@ -384,6 +388,88 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 ))
               ];
             })}
+          </tbody>
+        </table>
+
+        {/* Posebna tablica samo za printanje, bez kompleksne strukture */}
+        <table className="hidden print:!table w-full min-w-[650px] border-collapse border border-gray-200 table-fixed print-table">
+          <colgroup>
+            <col className="w-[10%]" /> {/* Redni broj */}
+            <col className="w-[45%]" /> {/* ČLAN */}
+            <col className="w-[15%]" /> {/* SATI */}
+            <col className="w-[30%]" /> {/* POTPIS */}
+          </colgroup>
+          <thead className="bg-white border-b border-gray-200">
+            <tr>
+              <th className="px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+                BR.
+              </th>
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+                ČLAN
+              </th>
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+                SATI
+              </th>
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
+                POTPIS
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Aktivni članovi */}
+            {filteredMembers.flatMap(group => {
+              // Prvo izdvojimo sve aktivne članove iz svih grupa
+              const activeMembers = group.members.filter(m => Number(m.total_hours) >= 20);
+              return activeMembers;
+            }).map((member, index) => (
+              <tr key={`print-active-${member.member_id}`} className="border-b border-gray-200 bg-white">
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  {index + 1}
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <div className="font-medium text-gray-900">
+                    {member.full_name || `${member.first_name} ${member.last_name}`}
+                  </div>
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  {member.total_hours || 0}
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200">
+                  {/* Polje za potpis */}
+                </td>
+              </tr>
+            ))}
+
+            {/* Naslov za neaktivne članove */}
+            <tr className="bg-gray-100">
+              <td colSpan={4} className="px-6 py-2 font-medium text-center">
+                Pasivni članovi
+              </td>
+            </tr>
+
+            {/* Neaktivni članovi */}
+            {filteredMembers.flatMap(group => {
+              // Zatim izdvojimo sve neaktivne članove iz svih grupa
+              const inactiveMembers = group.members.filter(m => Number(m.total_hours) < 20);
+              return inactiveMembers;
+            }).map((member, index) => (
+              <tr key={`print-inactive-${member.member_id}`} className="border-b border-gray-200 bg-white">
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  {index + 1}
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <div className="font-medium text-gray-900">
+                    {member.full_name || `${member.first_name} ${member.last_name}`}
+                  </div>
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  {member.total_hours || 0}
+                </td>
+                <td className="px-3 py-4 border-r border-gray-200">
+                  {/* Polje za potpis */}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

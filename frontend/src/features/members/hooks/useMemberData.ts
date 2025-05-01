@@ -100,9 +100,9 @@ export const useMemberData = () => {
         const timestamp = new Date().getTime();
         const response = await api.get<Member[]>(`/members?t=${timestamp}`, {
           headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
         const membersData = response.data;
@@ -193,6 +193,68 @@ export const useMemberData = () => {
 
     fetchMembers();
   }, [refreshTrigger]);
+
+  // Ako window postoji, dodaj CSS za ispis
+  if (typeof window !== 'undefined') {
+    useEffect(() => {
+      // Dodavanje stila za sakrivanje elemenata pri printanju
+      const style = document.createElement('style');
+      style.innerHTML = `
+        @media print {
+          /* Sakrivanje navigacije i drugih elemenata */
+          nav, 
+          .print-hide, 
+          header, 
+          button:not(.print-show),
+          [role="tablist"],
+          [role="tab"],
+          .filter-section {
+            display: none !important;
+          }
+          
+          /* Elementi koji trebaju biti vidljivi pri ispisu */
+          .print\\:table,
+          .print\\:block,
+          .print\\:table-cell,
+          .print\\:table-column,
+          #print-header,
+          .print-show {
+            display: table !important;
+            visibility: visible !important;
+          }
+          
+          .print\\:block {
+            display: block !important;
+          }
+          
+          .print\\:table-cell {
+            display: table-cell !important;
+          }
+          
+          .print\\:table-column {
+            display: table-column !important;
+          }
+          
+          /* Prilagodbe za čist ispis */
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          
+          /* Osiguravanje da sadržaj počinje od vrha stranice */
+          #print-header {
+            margin-top: 0 !important;
+            page-break-after: avoid;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }, []);
+  }
 
   return {
     members,
