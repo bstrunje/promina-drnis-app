@@ -1,14 +1,13 @@
 // frontend/src/features/auth/LoginPage.tsx
-import { FormEvent, useState, useEffect, useCallback } from "react";
+// Uklonjen useCallback iz import-a
+import { FormEvent, useState, useEffect } from "react"; 
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { login, register, searchMembers } from "../../utils/api";
+import { login, register } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import ErrorMessage from "../../../components/ErrorMessage";
-import { Member, MemberSearchResult } from "@shared/member";
-import { MemberLoginData } from "@shared/member";
-import debounce from "lodash.debounce";
+import { Member, MemberLoginData } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
+import axios from "axios";
 
 interface SizeOptions {
   value: string;
@@ -39,7 +38,7 @@ const genderOptions = [
 const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0); // 0: Initial, 1: Enter Name, 2: Enter Password
+  const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -47,11 +46,10 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<MemberSearchResult[]>([]);
-  const [showResults, setShowResults] = useState(false);
 
+  // Inicijalizacija stanja koristi ažurirani MemberLoginData tip
   const [loginData, setLoginData] = useState<MemberLoginData>({
-    full_name: "",
+    email: "",
     password: "",
   });
 
@@ -78,26 +76,10 @@ const LoginPage = () => {
   });
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        showResults &&
-        !(event.target as HTMLElement).closest(".search-container")
-      ) {
-        setShowResults(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showResults]);
-
-  useEffect(() => {
     if (step === 1) {
-      const nameInput = document.querySelector('input[type="text"]');
-      if (nameInput) {
-        (nameInput as HTMLElement).focus();
+      const emailInput = document.querySelector('input[type="email"]');
+      if (emailInput) {
+        (emailInput as HTMLElement).focus();
       }
     }
   }, [step]);
@@ -111,44 +93,10 @@ const LoginPage = () => {
     }
   }, [step]);
 
-  const handleNameSearch = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.trim();
-    setLoginData({ ...loginData, full_name: value });
-    
-    // Ne pretražujemo ako je upit prekratak (backend zahtijeva minimalno 3 znaka)
-    if (value.length < 3) {
-      setSearchResults([]);
-      setShowResults(value.length > 0);
-      return;
-    }
-    
-    try {
-      const results = await searchMembers(value);
-      setSearchResults(results);
-      setShowResults(true);
-    } catch (error) {
-      console.error("Search error:", error);
-      // Ne prikazujemo grešku korisniku - jednostavno nemamo rezultata
-      setSearchResults([]);
-    }
-  };
-
-  const debouncedSearch = useCallback(
-    debounce((event: React.ChangeEvent<HTMLInputElement>) => {
-      handleNameSearch(event);
-    }, 300),
-    []
-  );
-
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     
-    if (name === "full_name") {
-      setLoginData({ ...loginData, full_name: value });
-      debouncedSearch(event);
-    } else if (name === "password") {
-      setLoginData({ ...loginData, password: value });
-    }
+    setLoginData(prevData => ({ ...prevData, [name]: value }));
   };
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
@@ -157,39 +105,57 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      // Uklonjen loginPayload, šaljemo loginData direktno
+      // login funkcija u api.ts je ažurirana da šalje { email, password }
       const data = await login(loginData);
+
+      // Ispravljeno kreiranje member objekta:
+      // Koristimo samo garantirana polja iz data.member (id, full_name, role)
+      // Za ostala polja Member tipa postavljamo zadane/prazne vrijednosti.
       const member: Member = {
         member_id: data.member.id,
-        first_name: data.member.full_name.split(" ")[0],
-        last_name: data.member.full_name.split(" ")[1],
-        full_name: data.member.full_name,
-        date_of_birth: "",
-        gender: "male",
-        street_address: "",
-        city: "",
-        oib: "",
-        cell_phone: "",
-        email: "",
-        registration_completed: true,
-        membership_type: "regular",
-        life_status: "employed/unemployed",
+        first_name: data.member.full_name.split(" ")[0] || "",
+        last_name: data.member.full_name.split(" ").slice(1).join(" ") || "",
+        full_name: data.member.full_name, // API vraća full_name, koristimo ga
         role: data.member.role,
-        tshirt_size: "M",
-        shell_jacket_size: "M",
-        card_stamp_issued: false,  // Add this
-        card_number: "",          // Add this
+        // Zadane vrijednosti za ostala polja koja ne dolaze iz data.member
+        date_of_birth: "", // Nema u data.member
+        gender: "male",    // Nema u data.member
+        street_address: "",// Nema u data.member
+        city: "",          // Nema u data.member
+        oib: "",           // Nema u data.member
+        cell_phone: "",    // Nema u data.member
+        email: loginData.email, // Koristimo email iz forme (loginData)
+        registration_completed: true, // Nema u data.member, pretpostavka
+        membership_type: "regular",   // Nema u data.member, zadana vrijednost
+        life_status: "employed/unemployed", // Nema u data.member, zadana vrijednost
+        tshirt_size: "M",             // Nema u data.member, zadana vrijednost
+        shell_jacket_size: "M",       // Nema u data.member, zadana vrijednost
+        card_stamp_issued: false,     // Nema u data.member, zadana vrijednost
+        card_number: "",              // Nema u data.member, zadana vrijednost
+        // Dodajemo ostala opcionalna polja iz Member sučelja sa zadanim vrijednostima
+        profile_image_path: undefined,
+        profile_image_updated_at: undefined,
+        last_login: undefined,
+        status: 'registered',
+        total_hours: 0,
+        activity_status: 'passive',
+        fee_payment_year: undefined,
+        next_year_stamp_issued: false,
+        membership_details: undefined,
+        membership_history: undefined,
       };
       authLogin(member, data.token);
       navigate("/profile");
     } catch (error) {
       console.error("Login error:", error);
-      // Poboljšani prikaz poruke greške - očuvajmo sve informacije od servera
-      if (error instanceof Error) {
+      // Ažuriran prikaz greške
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+         setError(error.response.data.message); // Prikaz poruke s backenda
+      } else if (error instanceof Error) {
         setError(error.message);
-      } else if (typeof error === 'object' && error !== null && 'message' in error) {
-        setError((error as { message: string }).message);
       } else {
-        setError('Failed to login. Please contact an administrator.');
+        setError('Login failed due to an unexpected error.');
       }
     } finally {
       setLoading(false);
@@ -671,111 +637,22 @@ const LoginPage = () => {
                   }}
                   className="space-y-4"
                 >
-                  <div className="relative">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email adresa
+                    </label>
                     <input
-                      type="text"
-                      name="full_name"
+                      type="email"
+                      name="email"
+                      id="email"
                       required
-                      placeholder="Enter your full name"
-                      className="mt-2 p-2 w-full border rounded"
-                      value={loginData.full_name}
-                      autoComplete="off"
-                      onKeyDown={async (e) => {
-                        if (e.key === "Enter" && searchResults.length > 0) {
-                          e.preventDefault();
-                          const selectedMember = searchResults[0];
-                          setLoginData({
-                            ...loginData,
-                            full_name: selectedMember.full_name,
-                          });
-                          setShowResults(false);
-                          setStep(2);
-                        } else if (
-                          e.key === "ArrowDown" &&
-                          showResults &&
-                          searchResults.length > 0
-                        ) {
-                          e.preventDefault();
-                          // Focus first result
-                          const firstResult =
-                            document.querySelector(".search-result");
-                          if (firstResult) {
-                            (firstResult as HTMLElement).focus();
-                          }
-                        }
-                      }}
+                      placeholder="Unesite vašu email adresu"
+                      className="mt-1 p-2 w-full border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      value={loginData.email} // Pristup email svojstvu - sada ispravno
+                      autoComplete="email"
                       onChange={handleInputChange}
                     />
                   </div>
-
-                  {/* Search Results Dropdown */}
-                  {showResults && searchResults.length > 0 && (
-                    <div className="absolute max-w-[calc(100%+2rem)] relative left-[-1rem] bg-white shadow-lg rounded-b border mt-1 z-10">
-                      {searchResults
-                        .filter((result) =>
-                          result.full_name
-                            .toLowerCase()
-                            .split(" ")[0]
-                            .startsWith(loginData.full_name.toLowerCase())
-                        )
-                        .map((result, index) => (
-                          <button
-                            key={result.member_id}
-                            className="search-result w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setLoginData({
-                                ...loginData,
-                                full_name: result.full_name,
-                              });
-                              setShowResults(false);
-                              setStep(2);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                setLoginData({
-                                  ...loginData,
-                                  full_name: result.full_name,
-                                });
-                                setShowResults(false);
-                                setStep(2);
-                              } else if (
-                                e.key === "ArrowDown" &&
-                                index < searchResults.length - 1
-                              ) {
-                                e.preventDefault();
-                                const nextResult =
-                                  document.querySelectorAll(".search-result")[
-                                    index + 1
-                                  ];
-                                if (nextResult) {
-                                  (nextResult as HTMLElement).focus();
-                                }
-                              } else if (e.key === "ArrowUp") {
-                                e.preventDefault();
-                                if (index === 0) {
-                                  const input =
-                                    document.querySelector('input[type="text"]');
-                                  if (input) {
-                                    (input as HTMLElement).focus();
-                                  }
-                                } else {
-                                  const prevResult =
-                                    document.querySelectorAll(".search-result")[
-                                      index - 1
-                                    ];
-                                  if (prevResult) {
-                                    (prevResult as HTMLElement).focus();
-                                  }
-                                }
-                              }
-                            }}
-                          >
-                            {result.full_name}
-                          </button>
-                        ))}
-                    </div>
-                  )}
 
                   <div className="flex space-x-4">
                     <button
@@ -783,7 +660,13 @@ const LoginPage = () => {
                       onClick={() => setStep(0)}
                       className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Back
+                      Natrag
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Dalje
                     </button>
                   </div>
                 </form>
@@ -829,7 +712,7 @@ const LoginPage = () => {
                       onClick={() => setStep(1)}
                       className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Back
+                      Natrag
                     </button>
                     <button
                       type="submit"

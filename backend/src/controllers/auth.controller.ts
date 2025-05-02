@@ -73,31 +73,36 @@ async function validatePassword(
 const authController = {
   // 2. Add more detailed logging to the login function to see exact format:
   async login(
-    req: Request<{}, {}, MemberLoginData>,
+    req: Request<{}, {}, MemberLoginData>, // Koristi MemberLoginData koji sada ima email
     res: Response
   ): Promise<void> {
     try {
-      const { full_name, password } = req.body;
+      // Promijenjeno: dohvaća se email umjesto full_name
+      const { email, password } = req.body;
       const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
-      // Osnovna validacija ulaznih podataka
-      if (!full_name || !password) {
+      // Osnovna validacija ulaznih podataka (validator ovo već radi, ali dupla provjera ne škodi)
+      if (!email || !password) {
         console.warn(`Login attempt without credentials from IP ${userIP}`);
-        res.status(400).json({ message: "Username and password are required" });
+        // Promijenjeno: poruka spominje email
+        res.status(400).json({ message: "Email and password are required" });
         return;
       }
 
       // Sanitizacija ulaznih podataka
-      const sanitizedFullName = full_name.trim();
+      const sanitizedEmail = email.trim(); // Koristi se email
       
-      console.log(`Login attempt for user "${sanitizedFullName}" from IP ${userIP}`);
+      // Promijenjeno: logira se email
+      console.log(`Login attempt for user "${sanitizedEmail}" from IP ${userIP}`);
 
-      // 1. Dohvatimo člana prema punom imenu
-      const member = await authRepository.findUserByFullName(sanitizedFullName);
+      // 1. Dohvatimo člana prema emailu (pretpostavka da postoji findUserByEmail)
+      // Promijenjeno: poziva se findUserByEmail umjesto findUserByFullName
+      const member = await authRepository.findUserByEmail(sanitizedEmail);
       
       // Ako član ne postoji, logiramo pokušaj i vraćamo generičku poruku
       if (!member) {
-        console.warn(`Failed login: user "${sanitizedFullName}" not found (IP: ${userIP})`);
+        // Promijenjeno: logira se email
+        console.warn(`Failed login: user "${sanitizedEmail}" not found (IP: ${userIP})`);
         // Koristimo konstantno vrijeme odziva kako bi se spriječili timing napadi
         await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
         res.status(401).json({ message: "Invalid credentials" });
@@ -106,7 +111,8 @@ const authController = {
 
       // Ako član nema lozinku, ne može se prijaviti
       if (!member.password_hash) {
-        console.warn(`Failed login: user "${sanitizedFullName}" has no password set (IP: ${userIP})`);
+        // Promijenjeno: logira se email
+        console.warn(`Failed login: user "${sanitizedEmail}" has no password set (IP: ${userIP})`);
         res.status(401).json({ message: "Password not set. Please contact administrator." });
         return;
       }
@@ -116,7 +122,8 @@ const authController = {
       const memberStatus = statusQuery.rows[0];
       
       if (memberStatus.status !== 'registered' || !memberStatus.registration_completed) {
-        console.warn(`Failed login: user "${sanitizedFullName}" is not fully registered (IP: ${userIP})`);
+        // Promijenjeno: logira se email
+        console.warn(`Failed login: user "${sanitizedEmail}" is not fully registered (IP: ${userIP})`);
         res.status(401).json({ message: "Account setup incomplete. Please contact an administrator." });
         return;
       }
@@ -130,7 +137,7 @@ const authController = {
 
       // Provjeri postoji li zapis o članstvu
       if (membershipQuery.rowCount === 0) {
-        console.warn(`Failed login: user "${sanitizedFullName}" has no membership record (IP: ${userIP})`);
+        console.warn(`Failed login: user "${sanitizedEmail}" has no membership record (IP: ${userIP})`);
         res.status(401).json({ 
           message: "Membership information not found. Please contact an administrator."
         });
@@ -143,7 +150,7 @@ const authController = {
       
       // Provjeri jesu li plaćeni detalji za tekuću godinu
       if (membershipDetails.fee_payment_year < currentYear) {
-        console.warn(`Failed login: user "${sanitizedFullName}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
+        console.warn(`Failed login: user "${sanitizedEmail}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
         res.status(401).json({ 
           message: "Your membership has expired. Please contact an administrator to renew your membership."
         });
@@ -155,7 +162,8 @@ const authController = {
       
       // Ako lozinka ne odgovara, logiramo pokušaj i vraćamo generičku poruku
       if (!passwordMatch) {
-        console.warn(`Failed login: incorrect password for user "${sanitizedFullName}" (IP: ${userIP})`);
+        // Promijenjeno: logira se email
+        console.warn(`Failed login: incorrect password for user "${sanitizedEmail}" (IP: ${userIP})`);
         res.status(401).json({ message: "Invalid credentials" });
         return;
       }
@@ -174,22 +182,25 @@ const authController = {
       );
 
       // 6. Logiramo uspješnu prijavu
-      console.log(`Successful login: user "${sanitizedFullName}" (ID: ${member.member_id}, Role: ${member.role}) from IP ${userIP}`);
+      // Promijenjeno: logira se email
+      console.log(`Successful login: user "${sanitizedEmail}" (ID: ${member.member_id}, Role: ${member.role}) from IP ${userIP}`);
 
       // 7. Bilježimo prijavu u audit log
       await auditService.logAction(
         "LOGIN_SUCCESS",
         member.member_id,
-        `User ${sanitizedFullName} logged in`,
+        // Promijenjeno: logira se email
+        `User ${sanitizedEmail} logged in`,
         req,
         "success"
       );
 
       // 8. Vratimo JWT token i osnovne podatke o korisniku
+      // Vraćamo full_name koji postoji na member objektu dohvaćenom iz baze
       res.json({
         member: {
           id: member.member_id,
-          full_name: member.full_name,
+          full_name: member.full_name, // Dohvaćeno iz baze
           role: member.role,
         },
         token,

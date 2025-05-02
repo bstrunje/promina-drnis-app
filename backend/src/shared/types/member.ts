@@ -98,7 +98,7 @@ export interface MemberProfile {
 }
 
 export interface MemberLoginData {
-    full_name: string;
+    email: string; // Dodano
     password: string;
 }
 

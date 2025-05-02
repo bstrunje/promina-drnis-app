@@ -22,6 +22,8 @@ Ovaj modul sadrži komponente i logiku vezanu za upravljanje članovima udruge.
 
 ### Aktivnost i status plaćanja
 
+- **Aktivni član (prema satima)** - Član koji ima 20 ili više sati aktivnosti
+- **Pasivni član (prema satima)** - Član koji ima manje od 20 sati aktivnosti
 - **Aktivni član** - Član koji ima plaćenu članarinu i aktivan period članstva
 - **Pasivni član** - Član koji nema plaćenu članarinu ili ima neaktivan period članstva
 
@@ -53,6 +55,16 @@ Poseban format ispisa koji uključuje:
 - Tablicu s kolonama: redni broj, ime člana, sati aktivnosti i prostor za potpis
 - Automatsko obrojčavanje članova s resetiranjem brojača između aktivnih i neaktivnih članova
 - Optimizirano za ispis na papiru (bez navigacijskih elemenata)
+- Automatsko razdvajanje članova na dvije skupine:
+  - **Aktivni** - članovi s 20 ili više sati aktivnosti
+  - **Pasivni** - članovi s manje od 20 sati aktivnosti
+- Čisto formatiranje bez praznih prostora između zaglavlja i tablice
+
+### Prikaz sati aktivnosti
+- Sati aktivnosti članova prikazuju se iz dva izvora:
+  - U tablici članova (_Member List/Member Table_) - izračunavaju se iz tablice `activity_participants` na bazi potvrđenih aktivnosti
+  - U profilu člana (_Member Profile_) - prikazuju se iz kolone `total_hours` u tablici `members`
+- Kod dodavanja ili uklanjanja člana iz aktivnosti, ažuriraju se oba izvora
 
 ### Statistika članova
 - Prikaz distribucije članova po dobnim skupinama (5-godišnji intervali)

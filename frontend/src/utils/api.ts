@@ -91,12 +91,16 @@ const handleApiError = (error: unknown, defaultMessage: string): never => {
 };
 
 // Authentication APIs
-export const login = async ({ full_name, password }: MemberLoginData): Promise<LoginResponse> => {
+// Promijenjeno sučelje da prihvaća email
+export const login = async ({ email, password }: MemberLoginData): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>('/auth/login', { full_name, password });
+    // Šalje se email umjesto full_name
+    const response = await api.post<LoginResponse>('/auth/login', { email, password });
+    // Spremanje role ostaje isto
     localStorage.setItem('userRole', response.data.member.role);
     return response.data;
   } catch (error) {
+    // Ovdje će se vjerojatno vratiti greška s backenda ako on i dalje očekuje full_name
     throw handleApiError(error, 'Login failed. Please check your credentials.');
   }
 };

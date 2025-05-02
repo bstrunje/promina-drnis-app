@@ -10,6 +10,14 @@ const authRepository = {
         return result.rows[0] || null;
     },
 
+    async findUserByEmail(email: string): Promise<Member | null> {
+        const result = await db.query<Member>(
+            'SELECT * FROM members WHERE email = $1',
+            [email]
+        );
+        return result.rows[0] || null;
+    },
+
     async findUserById(id: number): Promise<Member | null> {
         const result = await db.query<Member>(
             'SELECT * FROM members WHERE member_id = $1',

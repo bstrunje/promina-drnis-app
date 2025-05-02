@@ -56,10 +56,12 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
 };
 
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
-    const { full_name, password } = req.body;
+    // Promijenjeno: očekuje se email umjesto full_name
+    const { email, password } = req.body;
 
-    if (!full_name || typeof full_name !== 'string') {
-        return res.status(400).json({ message: 'Full name is required' });
+    // Promijenjeno: validacija za email
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ message: 'Valid email is required' });
     }
 
     if (!password || typeof password !== 'string') {
