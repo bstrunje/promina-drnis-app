@@ -411,25 +411,36 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium">Stamp Inventory</h3>
+            {/* Sakrij naslov na malim ekranima */}
+            <h3 className="font-medium hidden sm:block">Stamp Inventory</h3>
             <div className="flex flex-wrap gap-2 items-center">
+              {/* Sakrij gumb za osvježavanje na malim ekranima */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={fetchInventory}
-                className="p-1 h-8 w-8"
+                className="p-1 h-8 w-8 hidden sm:block" 
                 title="Refresh inventory data"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
               {!isEditing ? (
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={handleEdit}>
-                    Edit Inventory
-                  </Button>
+                  {/* Prikaži gumb samo ako je korisnik superuser */}
+                  {member.role === 'superuser' && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleEdit}
+                      className="w-full sm:w-auto"
+                    >
+                      Edit Inventory
+                    </Button>
+                  )}
+                  {/* Postavi punu širinu na malim ekranima, auto na većim */}
                   <Button 
                     variant="outline" 
                     onClick={() => setShowHistory(!showHistory)}
+                    className="w-full sm:w-auto" 
                   >
                     {showHistory ? "Hide History" : "Show History"}
                   </Button>
@@ -437,6 +448,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                     <Button 
                       variant="secondary" 
                       onClick={() => setShowArchiveDialog(true)}
+                      className="w-full sm:w-auto"
                     >
                       Archive Year
                     </Button>
@@ -454,7 +466,8 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
           </div>
           <div className="space-y-4">
             <div className="flex justify-between mb-4">
-              <h3 className="font-medium">Select Year:</h3>
+              {/* Sakrij labelu na malim ekranima */}
+              <h3 className="font-medium hidden sm:block">Select Year:</h3>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -485,12 +498,15 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
             )}
             {/* Employed/Unemployed Stamps */}
             <div className="bg-blue-100 p-4 rounded-lg">
-              <h3 className="font-medium text-blue-800">
+              {/* Vraćeno na 'hidden sm:block' */}
+              <h3 className="font-medium text-blue-800 hidden sm:block"> 
                 Employed/Unemployed Members Stamps
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+              {/* Uvijek koristi grid s 3 stupca */}
+              <div className="grid grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-blue-700">Initial</label>
+                  {/* Smanji labelu */}
+                  <label className="text-xs text-blue-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -504,23 +520,25 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       }
                       onBlur={(e) => handleInputBlur("employedStamps", e.target.valueAsNumber)}
                       onFocus={handleInputFocus.bind(null, "employedStamps")}
-                      className="w-full mt-1 p-1 border rounded"
+                      // Prilagodi padding i margin za manje ekrane
+                      className="w-full mt-1 p-1 border rounded text-sm" 
                     />
                   ) : (
-                    <p className="font-bold text-blue-800">
+                    // Povećaj vrijednost
+                    <p className="font-bold text-blue-800 text-lg">
                       {inventory[selectedYear]?.employedStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-blue-700">Issued</label>
-                  <p className="font-bold text-blue-800">
+                  <label className="text-xs text-blue-700">Issued</label>
+                  <p className="font-bold text-blue-800 text-lg">
                     {inventory[selectedYear]?.employedStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-blue-700">Remaining</label>
-                  <p className="font-bold text-blue-800">
+                  <label className="text-xs text-blue-700">Remaining</label>
+                  <p className="font-bold text-blue-800 text-lg">
                     {inventory[selectedYear]?.employedStamps?.remaining || 0}
                   </p>
                 </div>
@@ -529,10 +547,14 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
             {/* Student/Pupil Stamps */}
             <div className="bg-green-100 p-4 rounded-lg">
-              <h3 className="font-medium text-green-800">Student/Pupil Stamps</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+              {/* Vraćeno na 'hidden sm:block' */}
+              <h3 className="font-medium text-green-800 hidden sm:block">
+                Student/Pupil Stamps
+              </h3>
+              {/* Uvijek koristi grid s 3 stupca */}
+              <div className="grid grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-green-700">Initial</label>
+                  <label className="text-xs text-green-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -546,23 +568,23 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       }
                       onBlur={(e) => handleInputBlur("studentStamps", e.target.valueAsNumber)}
                       onFocus={handleInputFocus.bind(null, "studentStamps")}
-                      className="w-full mt-1 p-1 border rounded"
+                      className="w-full mt-1 p-1 border rounded text-sm"
                     />
                   ) : (
-                    <p className="font-bold text-green-800">
+                    <p className="font-bold text-green-800 text-lg">
                       {inventory[selectedYear]?.studentStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-green-700">Issued</label>
-                  <p className="font-bold text-green-800">
+                  <label className="text-xs text-green-700">Issued</label>
+                  <p className="font-bold text-green-800 text-lg">
                     {inventory[selectedYear]?.studentStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-green-700">Remaining</label>
-                  <p className="font-bold text-green-800">
+                  <label className="text-xs text-green-700">Remaining</label>
+                  <p className="font-bold text-green-800 text-lg">
                     {inventory[selectedYear]?.studentStamps?.remaining || 0}
                   </p>
                 </div>
@@ -571,10 +593,14 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
 
             {/* Pensioner Stamps */}
             <div className="bg-red-100 p-4 rounded-lg">
-              <h3 className="font-medium text-red-800">Pensioner Stamps</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+              {/* Vraćeno na 'hidden sm:block' */}
+              <h3 className="font-medium text-red-800 hidden sm:block">
+                Pensioner Stamps
+              </h3>
+              {/* Uvijek koristi grid s 3 stupca */}
+              <div className="grid grid-cols-3 gap-4 mt-2">
                 <div>
-                  <label className="text-sm text-red-700">Initial</label>
+                  <label className="text-xs text-red-700">Initial</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -588,23 +614,23 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                       }
                       onBlur={(e) => handleInputBlur("pensionerStamps", e.target.valueAsNumber)}
                       onFocus={handleInputFocus.bind(null, "pensionerStamps")}
-                      className="w-full mt-1 p-1 border rounded"
+                      className="w-full mt-1 p-1 border rounded text-sm"
                     />
                   ) : (
-                    <p className="font-bold text-red-800">
+                    <p className="font-bold text-red-800 text-lg">
                       {inventory[selectedYear]?.pensionerStamps?.initial || 0}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-red-700">Issued</label>
-                  <p className="font-bold text-red-800">
+                  <label className="text-xs text-red-700">Issued</label>
+                  <p className="font-bold text-red-800 text-lg">
                     {inventory[selectedYear]?.pensionerStamps?.issued || 0}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-red-700">Remaining</label>
-                  <p className="font-bold text-red-800">
+                  <label className="text-xs text-red-700">Remaining</label>
+                  <p className="font-bold text-red-800 text-lg">
                     {inventory[selectedYear]?.pensionerStamps?.remaining || 0}
                   </p>
                 </div>
@@ -614,7 +640,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         {showHistory && (
-          <div className="col-span-2 mt-6 bg-white shadow rounded-lg overflow-hidden">
+          <div className="w-full mt-6 bg-white shadow rounded-lg overflow-hidden sm:col-span-2">
             <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
               <h2 className="text-lg font-medium text-gray-900">
                 Stamp Inventory History
@@ -630,69 +656,118 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
                   No history records found. History is created when inventory is archived for a new year.
                 </div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <div className="inline-block min-w-full align-middle">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Year
-                          </th>
-                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Type
-                          </th>
-                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Initial
-                          </th>
-                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Issued
-                          </th>
-                          <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            By
-                          </th>
-                          <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Notes
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {stampHistory.map((record) => (
-                          <tr key={record.id}>
-                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {record.year}
-                            </td>
-                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {record.stamp_type.charAt(0).toUpperCase() + record.stamp_type.slice(1)}
-                            </td>
-                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {record.initial_count}
-                            </td>
-                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {record.issued_count}
-                            </td>
-                            <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatDate(record.reset_date)}
-                            </td>
-                            <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {record.reset_by_name}
-                            </td>
-                            <td className="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
-                              {record.notes || "-"}
-                            </td>
+                <>
+                  {/* Mobile card view */}
+                  <div className="sm:hidden space-y-4">
+                    {stampHistory.map((record) => {
+                      // Odredi boju prema tipu
+                      let bg = "bg-blue-100", text = "text-blue-800", label = "";
+                      if (record.stamp_type === "student") {
+                        bg = "bg-green-100";
+                        text = "text-green-800";
+                      } else if (record.stamp_type === "pensioner") {
+                        bg = "bg-red-100";
+                        text = "text-red-800";
+                      }
+                      return (
+                        <div
+                          key={record.id}
+                          className={`border rounded-lg p-4 shadow-sm ${bg}`}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <span className={`font-semibold ${text}`}>{record.year}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">Initial:</span>
+                            <span className="font-medium">{record.initial_count}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">Issued:</span>
+                            <span className="font-medium">{record.issued_count}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">Date:</span>
+                            <span>{formatDate(record.reset_date)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">By:</span>
+                            <span>{record.reset_by_name}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Notes:</span>
+                            <span className="italic">{record.notes || "-"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Table view for sm and up */}
+                  <div className="hidden sm:block overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Year
+                            </th>
+                            {/* Ukloni Type stupac */}
+                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Initial
+                            </th>
+                            <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Issued
+                            </th>
+                            <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              By
+                            </th>
+                            <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Notes
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {stampHistory.map((record) => {
+                            // Odredi boju prema tipu
+                            let bg = "bg-blue-100", text = "text-blue-800";
+                            if (record.stamp_type === "student") {
+                              bg = "bg-green-100";
+                              text = "text-green-800";
+                            } else if (record.stamp_type === "pensioner") {
+                              bg = "bg-red-100";
+                              text = "text-red-800";
+                            }
+                            return (
+                              <tr key={record.id} className={bg}>
+                                <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold ${text}`}>
+                                  {record.year}
+                                </td>
+                                {/* Ukloni Type stupac */}
+                                <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${text}`}>
+                                  {record.initial_count}
+                                </td>
+                                <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${text}`}>
+                                  {record.issued_count}
+                                </td>
+                                <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {formatDate(record.reset_date)}
+                                </td>
+                                <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {record.reset_by_name}
+                                </td>
+                                <td className="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
+                                  {record.notes || "-"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  
-                  {/* Mobile view for hidden columns */}
-                  <div className="sm:hidden mt-4">
-                    <p className="text-xs text-gray-500 italic">Swipe horizontally to see more details or rotate device to landscape mode.</p>
-                  </div>
-                </div>
+                </>
               )}
             </div>
           </div>

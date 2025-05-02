@@ -270,21 +270,21 @@ const LoginPage = () => {
             <div className="mt-3 space-y-2">
               <a
                 href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
-                className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
                 Pravilnik o članstvu
               </a>
               <a
                 href="https://pd-promina.hr/dokumenti/pravo-na-pristup-informacijama"
-                className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
                 Politika zaštite osobnih podataka
               </a>
               <a
                 href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
-                className="block text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
                 Pravilnik o članstvu
@@ -370,6 +370,7 @@ const LoginPage = () => {
                       gender: e.target.value as "male" | "female",
                     })
                   }
+                  // Uklonjena 'block' klasa
                   className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   required
                 >
@@ -495,6 +496,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
+                  // Uklonjena 'block' klasa
                   className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.life_status}
                   onChange={(e) =>
@@ -523,6 +525,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
+                  // Uklonjena 'block' klasa
                   className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.tshirt_size}
                   onChange={(e) =>
@@ -555,6 +558,7 @@ const LoginPage = () => {
                 </label>
                 <select
                   required
+                  // Uklonjena 'block' klasa
                   className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   value={registerData.shell_jacket_size}
                   onChange={(e) =>
