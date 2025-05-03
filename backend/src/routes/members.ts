@@ -12,6 +12,9 @@ import stampService from '../services/stamp.service.js';
 const router = express.Router();
 
 // Public routes
+// Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
+router.get('/dashboard/stats', authenticateToken, memberController.getMemberDashboardStats);
+
 router.get('/', authenticateToken, memberController.getAllMembers);
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
 router.get('/:memberId/stats', authenticateToken, memberController.getMemberStats);

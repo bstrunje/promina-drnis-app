@@ -5,12 +5,38 @@ const messageService = {
         return await memberMessageRepository.create(memberId, messageText);
     },
 
+    async createAdminMessage(
+        adminId: number, 
+        recipientId: number | null, 
+        messageText: string, 
+        recipientType: 'member' | 'group' | 'all' = 'member'
+    ): Promise<MemberMessage> {
+        return await memberMessageRepository.createAdminMessage(
+            adminId, 
+            recipientId, 
+            messageText, 
+            recipientType
+        );
+    },
+
     async getAdminMessages(): Promise<MemberMessageWithSender[]> {
         return await memberMessageRepository.getAllForAdmin();
     },
 
+    async getMessagesSentByAdmin(adminId: number): Promise<MemberMessageWithSender[]> {
+        return await memberMessageRepository.getMessagesSentByAdmin(adminId);
+    },
+
     async getMemberMessages(memberId: number): Promise<MemberMessage[]> {
         return await memberMessageRepository.getByMemberId(memberId);
+    },
+
+    async getMessagesForMemberGroup(memberIds: number[]): Promise<MemberMessage[]> {
+        return await memberMessageRepository.getMessagesByGroup(memberIds);
+    },
+
+    async getMessagesForAllMembers(): Promise<MemberMessage[]> {
+        return await memberMessageRepository.getMessagesForAllMembers();
     },
 
     async markMessageAsRead(messageId: number): Promise<void> {

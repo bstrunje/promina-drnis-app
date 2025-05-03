@@ -115,8 +115,12 @@ const authRepository = {
         const result = await db.query<MemberSearchResult>(`
             SELECT 
                 member_id,
-                -- Vraća samo puno ime, bez drugih osobnih podataka
-                full_name
+                -- Vraća puno ime i nadimak ako postoji
+                first_name || ' ' || last_name || 
+                  CASE WHEN nickname IS NOT NULL AND nickname != '' 
+                       THEN ' - ' || nickname 
+                       ELSE '' END as full_name,
+                nickname
             FROM members 
             WHERE 
                 LOWER(full_name) LIKE LOWER($1)

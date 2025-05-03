@@ -215,12 +215,12 @@ export const getMemberActivities = async (memberId: number) => {
 };
 
 // Message APIs
-export const getAdminMessages = async () => {
+export const getAdminMessages = async (): Promise<any[]> => {
   try {
-    const response = await api.get('/messages/admin');
+    const response = await api.get('/messages/admin');  // Ispravljena putanja prema registriranim rutama u backendu
     return response.data;
   } catch (error) {
-    throw handleApiError(error, 'Failed to fetch messages');
+    throw handleApiError(error, 'Failed to fetch admin messages');
   }
 };
 
@@ -232,11 +232,70 @@ export const sendMemberMessage = async (memberId: number, messageText: string): 
   }
 };
 
+export const sendAdminMessageToMember = async (memberId: number, messageText: string): Promise<void> => {
+  try {
+    await api.post(`/messages/member/${memberId}`, { messageText });
+  } catch (error) {
+    throw handleApiError(error, 'Slanje poruke članu nije uspjelo');
+  }
+};
+
+export const sendAdminMessageToGroup = async (memberIds: number[], messageText: string): Promise<void> => {
+  try {
+    await api.post('/messages/group', { memberIds, messageText });
+  } catch (error) {
+    throw handleApiError(error, 'Slanje poruke grupi članova nije uspjelo');
+  }
+};
+
+export const sendAdminMessageToAll = async (messageText: string): Promise<void> => {
+  try {
+    await api.post('/messages/all', { messageText });
+  } catch (error) {
+    throw handleApiError(error, 'Slanje poruke svim članovima nije uspjelo');
+  }
+};
+
+export const getAdminSentMessages = async (): Promise<any[]> => {
+  try {
+    const response = await api.get('/admin/messages/sent');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch sent messages');
+  }
+};
+
+export const getMemberMessages = async (memberId: number): Promise<any[]> => {
+  try {
+    const response = await api.get(`/members/${memberId}/messages`);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch member messages');
+  }
+};
+
 export const markMessageAsRead = async (messageId: number): Promise<void> => {
   try {
-    await api.put(`/messages/${messageId}/read`);
+    // Potrebno je dohvatiti trenutnog korisnika iz localStorage
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Niste prijavljeni');
+    
+    // Dohvati podatke o korisniku iz tokena
+    const tokenData = JSON.parse(atob(token.split('.')[1]));
+    const userRole = tokenData.role;
+    const memberId = tokenData.id;
+    
+    if (userRole === 'admin' || userRole === 'superuser') {
+      // Admin ruta
+      await api.put(`/messages/${messageId}/read`);
+    } else if (userRole === 'member' && memberId) {
+      // Član ruta - koristi novu rutu za članove
+      await api.put(`/members/${memberId}/messages/${messageId}/read`);
+    } else {
+      throw new Error('Nemate ovlasti za označavanje poruka kao pročitane');
+    }
   } catch (error) {
-    throw handleApiError(error, 'Failed to mark message as read');
+    throw handleApiError(error, 'Nije moguće označiti poruku kao pročitanu');
   }
 };
 

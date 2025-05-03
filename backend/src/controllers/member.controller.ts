@@ -60,6 +60,118 @@ function handleControllerError(error: unknown, res: Response): void {
   }
 }
 
+/**
+ * Dohvaća statistike za članski dashboard
+ * Vraća broj nepročitanih poruka, nedavnih aktivnosti i ukupan broj članova
+ */
+export const getMemberDashboardStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Dohvati ID trenutno prijavljenog člana iz req.user (postavljen u authMiddleware)
+    const memberId = req.user?.id;
+    if (!memberId) {
+      res.status(401).json({ message: 'Unauthorized access' });
+      return;
+    }
+
+    // Dohvati broj nepročitanih poruka za člana
+    // Koristi try-catch za svaki upit kako bi se izbjeglo potpuno prekidanje funkcije ako neki upit ne uspije
+    let unreadMessages = 0;
+    try {
+      unreadMessages = await (prisma as any).message.count({
+        where: {
+          recipient_id: memberId,
+          status: 'unread'
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching unread messages:", error);
+      // Nastavi s izvršavanjem, koristimo default vrijednost 0
+    }
+    console.log(`Broj nepročitanih poruka za člana ${memberId}: ${unreadMessages}`);
+
+    // Dohvati broj nedavnih aktivnosti
+    let recentActivities = 0;
+    try {
+      recentActivities = await (prisma as any).activity.count({
+        where: {
+          member_id: memberId,
+          created_at: {
+            gte: new Date(new Date().setDate(new Date().getDate() - 30)) // Aktivnosti u zadnjih 30 dana
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+      // Nastavi s izvršavanjem, koristimo default vrijednost 0
+    }
+    console.log(`Broj nedavnih aktivnosti za člana ${memberId}: ${recentActivities}`);
+
+    // Dohvati broj članova koji imaju plaćenu članarinu za tekuću godinu
+    const currentYear = new Date().getFullYear();
+    
+    let memberCount = 0;
+    try {
+      // Detaljno logiranje za razumijevanje upita
+      console.log(`Trenutna godina: ${currentYear}`);
+      
+      const members = await prisma.member.findMany({
+        where: {
+          status: 'registered'
+        },
+        include: {
+          membership_details: true
+        }
+      });
+      
+      console.log(`Ukupno aktivnih članova: ${members.length}`);
+      
+      // Filtriraj članove koji imaju plaćenu članarinu
+      const membersWithPaidFees = members.filter(member => {
+        if (!member.membership_details || !member.membership_details.active_until) {
+          console.log(`Član ID ${member.member_id} nema membership_details ili active_until`);
+          return false;
+        }
+        
+        // Parsiraj datum
+        let paidUntilDate: Date;
+        try {
+          paidUntilDate = new Date(member.membership_details.active_until);
+          const paidYear = paidUntilDate.getFullYear();
+          console.log(`Član ID ${member.member_id} ima plaćeno do: ${paidUntilDate.toISOString()}, godina: ${paidYear}`);
+          
+          // Provjera je li članarina plaćena za tekuću godinu
+          const isPaid = paidYear >= currentYear;
+          console.log(`Član ID ${member.member_id} ima plaćenu članarinu za tekuću godinu: ${isPaid}`);
+          return isPaid;
+        } catch (parseError) {
+          console.error(`Greška kod parsiranja datuma za člana ${member.member_id}:`, parseError);
+          return false;
+        }
+      });
+      
+      memberCount = membersWithPaidFees.length;
+      console.log(`Broj članova s plaćenom članarinom za tekuću godinu: ${memberCount}`);
+      console.log(`Detalji članova s plaćenom članarinom:`, membersWithPaidFees.map(m => ({
+        id: m.member_id,
+        name: `${m.first_name} ${m.last_name}`,
+        paidUntil: m.membership_details?.active_until
+      })));
+    } catch (error) {
+      console.error("Greška kod dohvaćanja članova s plaćenom članarinom:", error);
+      // Nastavi s izvršavanjem, koristimo default vrijednost 0
+    }
+
+    // Vrati statistike
+    res.status(200).json({
+      unreadMessages,
+      recentActivities,
+      memberCount
+    });
+  } catch (error) {
+    handleControllerError(error, res);
+  }
+};
+
 export const memberController = {
   async getAllMembers(req: Request, res: Response) {
     try {
@@ -69,6 +181,8 @@ export const memberController = {
       // Error handling
     }
   },
+
+  getMemberDashboardStats,
 
   async getMemberById(
     req: Request<{ memberId: string }>,

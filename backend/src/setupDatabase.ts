@@ -65,7 +65,14 @@ export async function setupDatabase(): Promise<void> {
         life_status character varying(25),
         role character varying(20) DEFAULT 'member' NOT NULL,
         total_hours numeric(10,2) DEFAULT 0,
-        full_name character varying(100) GENERATED ALWAYS AS ((((first_name)::text || ' '::text) || (last_name)::text)) STORED,
+        nickname character varying(100),
+        full_name character varying(100) GENERATED ALWAYS AS (
+            CASE 
+                WHEN nickname IS NOT NULL AND nickname != '' 
+                THEN ((first_name)::text || ' '::text) || (last_name)::text || ' - '::text || (nickname)::text
+                ELSE ((first_name)::text || ' '::text) || (last_name)::text
+            END
+        ) STORED,
         tshirt_size character varying(4),
         shell_jacket_size character varying(4),
         CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),
@@ -185,7 +192,7 @@ export async function setupDatabase(): Promise<void> {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_by VARCHAR(255) DEFAULT 'system'
       );
-  
+
       -- Insert default settings if they don't exist
       INSERT INTO system_settings (id) 
       VALUES ('default')

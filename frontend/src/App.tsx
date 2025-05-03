@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import AdminDashboard from './features/dashboard/AdminDashboard';
 import SuperUserDashboard from './features/dashboard/SuperUserDashboard';
+import MemberDashboard from './features/dashboard/MemberDashboard';
 import MemberList from './features/members/MemberList';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Navigation from '../components/Navigation';
@@ -28,12 +29,31 @@ function AppContent() {
     navigate("/login", { replace: true });
   };
 
+  // Pomoćna funkcija za određivanje početne stranice na temelju uloge
+  const getDashboardRoute = () => {
+    if (!user) return "/login";
+    
+    // Dodajmo console.log za debugging
+    console.log("User role for dashboard redirect:", user.role);
+    
+    switch (user.role) {
+      case 'admin':
+        return "/admin/dashboard";
+      case 'superuser':
+        return "/superuser/dashboard";
+      case 'member':
+        return "/member/dashboard";
+      default:
+        return "/profile";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {user && <Navigation user={user} onLogout={handleLogout} />}
       <Routes>
-        <Route path="/" element={!user ? <LoginPage /> : <Navigate to="/profile" replace />} />
-        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/profile" replace />} />
+        <Route path="/" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
+        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<MemberDetailsPage />} />
@@ -46,9 +66,13 @@ function AppContent() {
           <Route path="/members" element={<MemberList />} />
           <Route path="/members/:id" element={<MemberDetailsPage />} />
           
+          {/* Dashboard rute za različite uloge korisnika */}
+          <Route path="/member/dashboard" element={<MemberDashboard member={user} />} />
+          
           {(user?.role === 'admin' || user?.role === 'superuser') && (
             <>
               <Route path="/admin" element={<AdminDashboard member={user} />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard member={user} />} />
               {/* Putanja /members je sad već definirana iznad za sve korisnike */}
               <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
               <Route path="/assign-password" element={<AssignPassword />} />
@@ -56,7 +80,10 @@ function AppContent() {
             </>
           )}
           {user?.role === 'superuser' && (
-            <Route path="/super-user" element={<SuperUserDashboard member={user} />} />
+            <>
+              <Route path="/super-user" element={<SuperUserDashboard member={user} />} />
+              <Route path="/superuser/dashboard" element={<SuperUserDashboard member={user} />} />
+            </>
           )}
         </Route>
       </Routes>

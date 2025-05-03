@@ -63,7 +63,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <div>
                 <label className="text-sm text-gray-500">Full Name</label>
                 <p>
-                  {member.first_name} {member.last_name}
+                  {member.first_name} {member.last_name}{member.nickname ? ` - ${member.nickname}` : ''}
                 </p>
               </div>
               <div>
@@ -151,6 +151,20 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             {validationErrors?.last_name && (
               <p className="text-sm text-red-500">{validationErrors.last_name}</p>
             )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Nadimak (opcionalno)</label>
+            <input
+              type="text"
+              name="nickname"
+              value={editedMember?.nickname || ""}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              placeholder="Unesite nadimak člana"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Nadimak se prikazuje uz ime člana i može pomoći u identifikaciji članova s istim imenom.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">

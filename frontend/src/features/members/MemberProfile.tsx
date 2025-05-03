@@ -37,8 +37,24 @@ useEffect(() => {
   if (memberId) {
     const fetchMemberDetails = async () => {
       try {
-        const response = await api.get(`/members/${memberId}`);
-        setMember(response.data);
+        // Dodaj vremenski žig za izbjegavanje keširanja
+        const timestamp = new Date().getTime();
+        const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+        
+        // Osiguraj da je full_name dostupan i uključuje nadimak
+        const memberData = response.data;
+        if (!memberData.full_name && memberData.first_name && memberData.last_name) {
+          memberData.full_name = `${memberData.first_name} ${memberData.last_name}${
+            memberData.nickname ? ` - ${memberData.nickname}` : ''}`;
+        }
+        
+        setMember(memberData);
       } catch (error) {
         console.error('Failed to fetch member details:', error);
       }
@@ -86,7 +102,7 @@ if (!member && memberId) {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              {user.first_name} {user.last_name}
+              {user.first_name} {user.last_name}{user.nickname ? ` - ${user.nickname}` : ''}
             </h1>
             <p className="opacity-90">Member Profile</p>
           </div>

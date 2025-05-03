@@ -198,9 +198,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     } catch (error) {
       console.error("Error checking messages:", error);
       toast({
-        title: "Error",
+        title: "Greška",
         description:
-          error instanceof Error ? error.message : "Failed to fetch messages",
+          error instanceof Error ? error.message : "Greška prilikom provjere poruka",
         variant: "destructive",
       });
     }

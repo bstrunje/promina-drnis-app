@@ -107,8 +107,18 @@ export const useMemberData = () => {
         });
         const membersData = response.data;
 
+        // Osiguraj da svi članovi imaju pravilno formatirano puno ime s nadimkom
+        const processedMembers = membersData.map(member => {
+          // Ako full_name već nije postavljen, generiraj ga s nadimkom
+          if (!member.full_name && member.first_name && member.last_name) {
+            member.full_name = `${member.first_name} ${member.last_name}${
+              member.nickname ? ` - ${member.nickname}` : ''}`;
+          }
+          return member;
+        });
+
         // Koristi podatke koji su već dostupni u osnovnim podacima o članu
-        const membersWithDetails = membersData.map(member => {
+        const membersWithDetails = processedMembers.map(member => {
           // Koristi centraliziranu funkciju za određivanje aktivnosti člana
           const isActive = determineMemberActivityStatus(member) === 'active';
           

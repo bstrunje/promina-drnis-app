@@ -146,7 +146,21 @@ const LoginPage = () => {
         membership_history: undefined,
       };
       authLogin(member, data.token);
-      navigate("/profile");
+      
+      // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
+      switch(member.role) {
+        case 'admin':
+          navigate("/admin/dashboard");
+          break;
+        case 'superuser':
+          navigate("/superuser/dashboard");
+          break;
+        case 'member':
+          navigate("/member/dashboard");
+          break;
+        default:
+          navigate("/profile");
+      }
     } catch (error) {
       console.error("Login error:", error);
       // Ažuriran prikaz greške

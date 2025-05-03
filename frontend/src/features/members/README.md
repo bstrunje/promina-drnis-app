@@ -9,6 +9,7 @@ Ovaj modul sadrži komponente i logiku vezanu za upravljanje članovima udruge.
 - **Član** - Osoba koja je formalno povezana s udrugom.
 - **Članarina** - Godišnja naknada koju članovi plaćaju udruzi.
 - **Period članstva** - Vremensko razdoblje tijekom kojeg je osoba član udruge.
+- **Nadimak** - Opcionalni dodatak imenu člana koji se prikazuje u formatu "Ime Prezime - nadimak". Pomaže u identifikaciji članova s istim imenom.
 
 ### Statusi članstva
 

@@ -29,7 +29,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const isAdminOrSuperuser = user?.role === 'admin' || user?.role === 'superuser';
 
   // Puno ime člana
-  const memberFullName = `${member.first_name} ${member.last_name}`;
+  const memberFullName = `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`;
 
   // Determine which property to use from the Member type
   const imagePath = member.profile_image_path || member.profile_image;

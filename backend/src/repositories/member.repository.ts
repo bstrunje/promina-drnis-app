@@ -18,6 +18,7 @@ export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 
     tshirt_size: Member['tshirt_size'];
     shell_jacket_size: Member['shell_jacket_size'];
     membership_type: Member['membership_type'];
+    nickname?: string;
 }
 
 export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'status' | 'role'>> {
@@ -35,6 +36,7 @@ export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'st
     shell_jacket_size?: Member['shell_jacket_size'];
     total_hours?: number;
     membership_type?: Member['membership_type'];
+    nickname?: string;
 }
 
 export interface MemberStats {
@@ -54,6 +56,12 @@ const memberRepository = {
                    md.card_stamp_issued, 
                    md.next_year_stamp_issued, 
                    COALESCE(stats.total_hours, 0) as total_hours,
+                   -- Eksplicitno dodaj nickname u format full_name
+                   CASE 
+                     WHEN m.nickname IS NOT NULL AND m.nickname != '' 
+                     THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
+                     ELSE m.first_name || ' ' || m.last_name
+                   END as calculated_full_name,
                    (
                      SELECT json_agg(
                        json_build_object(
@@ -76,70 +84,71 @@ const memberRepository = {
             ) stats ON m.member_id = stats.member_id
             ORDER BY m.last_name, m.first_name
         `);
-        return result.rows;
+        
+        // Koristi calculated_full_name za full_name gdje postoji
+        const members = result.rows.map(member => {
+            return {
+                ...member,
+                full_name: (member as any).calculated_full_name || member.full_name
+            };
+        });
+        
+        return members;
     },
 
     async findById(id: number): Promise<Member | null> {
-        const result = await db.query<any>( // Change type to 'any' to avoid TypeScript errors with raw DB results
-            `SELECT 
-                m.*,
-                md.card_number,
-                md.fee_payment_year,
-                md.card_stamp_issued,
-                md.next_year_stamp_issued,
-                md.fee_payment_date,
-                (SELECT json_agg(
-                    json_build_object(
-                        'period_id', mp.period_id,
-                        'start_date', mp.start_date,
-                        'end_date', mp.end_date,
-                        'end_reason', mp.end_reason
-                    )
-                )
-                FROM membership_periods mp
-                WHERE mp.member_id = m.member_id) as membership_history
+        const result = await db.query<Member>(`
+            SELECT m.*, 
+                    md.card_number, 
+                    md.fee_payment_year, 
+                    md.fee_payment_date, 
+                    md.card_stamp_issued, 
+                    md.next_year_stamp_issued,
+                    COALESCE(stats.total_hours, 0) as total_hours,
+                    -- Eksplicitno dodaj nickname u format full_name
+                    CASE 
+                      WHEN m.nickname IS NOT NULL AND m.nickname != '' 
+                      THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
+                      ELSE m.first_name || ' ' || m.last_name
+                    END as calculated_full_name,
+                    (
+                        SELECT json_agg(
+                            json_build_object(
+                                'period_id', mp.period_id,
+                                'start_date', mp.start_date,
+                                'end_date', mp.end_date,
+                                'end_reason', mp.end_reason
+                            )
+                        ) 
+                        FROM membership_periods mp
+                        WHERE mp.member_id = m.member_id
+                    ) as membership_history,
+                    (
+                        SELECT count(*) 
+                        FROM activities a 
+                        JOIN activity_participants ap ON a.activity_id = ap.activity_id 
+                        WHERE ap.member_id = m.member_id
+                    ) as total_activities
             FROM members m
             LEFT JOIN membership_details md ON m.member_id = md.member_id
+            LEFT JOIN (
+                SELECT member_id, SUM(hours_spent) as total_hours
+                FROM activity_participants
+                WHERE verified_at IS NOT NULL
+                GROUP BY member_id
+            ) stats ON m.member_id = stats.member_id
             WHERE m.member_id = $1`,
             [id]
         );
+
+        const member = result.rows[0];
+        if (!member) return null;
         
-        // Process the date fields to ensure they're properly formatted
-        if (result.rows.length > 0) {
-            const member = result.rows[0] as Member;
-            
-            // Create membership_details if it doesn't exist
-            if (!member.membership_details) {
-                member.membership_details = {};
-            }
-            
-            // Transfer the fee_payment_date from the raw DB result to the typed member object
-            if (result.rows[0].fee_payment_date) {
-                member.membership_details.fee_payment_date = 
-                    new Date(result.rows[0].fee_payment_date).toISOString();
-            }
-            
-            // Also transfer other membership details fields if needed
-            if (result.rows[0].fee_payment_year) {
-                member.membership_details.fee_payment_year = result.rows[0].fee_payment_year;
-            }
-            
-            if (result.rows[0].card_number) {
-                member.membership_details.card_number = result.rows[0].card_number;
-            }
-            
-            if (result.rows[0].card_stamp_issued !== undefined) {
-                member.membership_details.card_stamp_issued = result.rows[0].card_stamp_issued;
-            }
-            
-            if (result.rows[0].next_year_stamp_issued !== undefined) {
-                member.membership_details.next_year_stamp_issued = result.rows[0].next_year_stamp_issued;
-            }
-            
-            return member;
-        }
-        
-        return null;
+        // Koristi calculated_full_name za full_name gdje postoji
+        return {
+            ...member,
+            full_name: (member as any).calculated_full_name || member.full_name
+        };
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
@@ -159,8 +168,9 @@ const memberRepository = {
                 tshirt_size = COALESCE($11, tshirt_size),
                 shell_jacket_size = COALESCE($12, shell_jacket_size),
                 total_hours = COALESCE($13, total_hours),
-                membership_type = COALESCE($14, membership_type)
-            WHERE member_id = $15
+                membership_type = COALESCE($14, membership_type),
+                nickname = COALESCE($15, nickname)
+            WHERE member_id = $16
             RETURNING *
         `, [
             memberData.first_name,
@@ -177,6 +187,7 @@ const memberRepository = {
             memberData.shell_jacket_size,
             memberData.total_hours,
             memberData.membership_type,
+            memberData.nickname,
             memberId
         ]);
         return result.rows[0];
@@ -188,10 +199,10 @@ const memberRepository = {
                 first_name, last_name, date_of_birth, gender,
                 street_address, city, oib, cell_phone, 
                 email, life_status, tshirt_size, shell_jacket_size,
-                status, role, membership_type
+                status, role, membership_type, nickname
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-                'pending', 'member', $13
+                'pending', 'member', $13, $14
             )
             RETURNING *
         `, [
@@ -207,7 +218,8 @@ const memberRepository = {
             memberData.life_status,
             memberData.tshirt_size,
             memberData.shell_jacket_size,
-            memberData.membership_type
+            memberData.membership_type,
+            memberData.nickname
         ]);
         return result.rows[0];
     },

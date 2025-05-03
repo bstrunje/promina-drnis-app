@@ -35,6 +35,7 @@ export interface Member {
     first_name: string;
     last_name: string;
     full_name?: string;  // Computed from first_name + last_name
+    nickname?: string;  // Opcionalni nadimak člana za lakšu identifikaciju
     
     // Personal Information
     date_of_birth: string;
@@ -86,6 +87,8 @@ export interface Member {
 export interface MemberSearchResult {
     member_id: number;
     full_name: string;
+    oib: string;
+    nickname?: string;
 }
 
 /**

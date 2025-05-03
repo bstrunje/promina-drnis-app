@@ -1,8 +1,10 @@
 // frontend/components/Navigation.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
-import { Menu, X, User, Activity, Users, Settings, Shield, FileText, LogOut } from 'lucide-react';
+import { Menu, X, User, Activity, Users, Settings, Shield, FileText, LogOut, MessageCircle } from 'lucide-react';
+import axios from 'axios';
+import { API_BASE_URL } from '../src/utils/config';
 
 interface NavigationProps {
   user: Member | null;
@@ -11,6 +13,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -19,6 +22,40 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   const closeMenu = () => {
     setIsMenuOpen(false);
   };
+
+  // Dohvaćanje broja nepročitanih poruka
+  useEffect(() => {
+    const fetchUnreadMessages = async () => {
+      if (!user || !user.member_id) return;
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        let endpoint = '/messages/admin';  
+        if (user.role === 'member') {
+          endpoint = `/members/${user.member_id}/messages`;
+        }
+
+        const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Broj nepročitanih poruka
+        const unreadCount = response.data.filter((msg: any) => msg.status === 'unread').length;
+        setUnreadMessageCount(unreadCount);
+      } catch (error) {
+        console.error('Greška pri dohvaćanju nepročitanih poruka:', error);
+      }
+    };
+
+    fetchUnreadMessages();
+    
+    // Dohvati nove poruke svakih 60 sekundi
+    const interval = setInterval(fetchUnreadMessages, 60000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
   
   if (!user) return null;
   
@@ -46,6 +83,16 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             <Link to="/activities" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Activity size={20} className="inline sm:hidden" />
               <span>Activities</span>
+            </Link>
+            {/* Dodana poveznica na poruke za sve korisnike */}
+            <Link to="/messages" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 relative" onClick={closeMenu}>
+              <MessageCircle size={20} className="inline sm:hidden" />
+              <span>Poruke</span>
+              {unreadMessageCount > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center absolute -top-2 -right-2">
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
             </Link>
             {/* Omogući svim članovima pristup listi članova */}
             <Link to="/members" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>

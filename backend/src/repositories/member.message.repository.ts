@@ -2,11 +2,15 @@ import db from '../utils/db.js';
 
 export interface MemberMessage {
     message_id: number;
-    member_id: number;
+    member_id: number | null;
     message_text: string;
     created_at: Date;
     read_at: Date | null;
     status: 'unread' | 'read' | 'archived';
+    sender_id: number | null;
+    recipient_id: number | null;
+    recipient_type: 'admin' | 'member' | 'group' | 'all';
+    sender_type: 'admin' | 'member';
 }
 
 export interface MemberMessageWithSender extends MemberMessage {
@@ -16,10 +20,26 @@ export interface MemberMessageWithSender extends MemberMessage {
 const memberMessageRepository = {
     async create(memberId: number, messageText: string): Promise<MemberMessage> {
         const result = await db.query<MemberMessage>(
-            `INSERT INTO member_messages (member_id, message_text)
-             VALUES ($1, $2)
+            `INSERT INTO member_messages (member_id, message_text, sender_id, sender_type, recipient_type)
+             VALUES ($1, $2, $1, 'member', 'admin')
              RETURNING *`,
             [memberId, messageText]
+        );
+        return result.rows[0];
+    },
+
+    async createAdminMessage(
+        senderId: number, 
+        recipientId: number | null, 
+        messageText: string, 
+        recipientType: 'member' | 'group' | 'all' = 'member'
+    ): Promise<MemberMessage> {
+        const result = await db.query<MemberMessage>(
+            `INSERT INTO member_messages 
+                (message_text, sender_id, sender_type, recipient_id, recipient_type)
+             VALUES ($1, $2, 'admin', $3, $4)
+             RETURNING *`,
+            [messageText, senderId, recipientId, recipientType]
         );
         return result.rows[0];
     },
@@ -30,6 +50,7 @@ const memberMessageRepository = {
                    m.first_name || ' ' || m.last_name as sender_name
             FROM member_messages mm
             JOIN members m ON mm.member_id = m.member_id
+            WHERE mm.recipient_type = 'admin'
             ORDER BY mm.created_at DESC
         `);
         return result.rows.map(row => ({
@@ -41,13 +62,68 @@ const memberMessageRepository = {
     async getByMemberId(memberId: number): Promise<MemberMessage[]> {
         const result = await db.query<MemberMessage>(
             `SELECT * FROM member_messages 
-             WHERE member_id = $1 
+             WHERE (member_id = $1 AND recipient_type = 'admin') 
+                OR (recipient_id = $1 AND recipient_type IN ('member', 'group', 'all'))
              ORDER BY created_at DESC`,
             [memberId]
         );
         return result.rows.map(row => ({
             ...row,
             created_at: new Date(row.created_at) // Ensure created_at is a Date object
+        }));
+    },
+
+    async getMessagesSentByAdmin(adminId: number): Promise<MemberMessageWithSender[]> {
+        const result = await db.query<MemberMessageWithSender>(`
+            SELECT mm.*, 
+                   CASE 
+                     WHEN mm.recipient_id IS NOT NULL THEN 
+                        (SELECT m.first_name || ' ' || m.last_name 
+                         FROM members m 
+                         WHERE m.member_id = mm.recipient_id)
+                     WHEN mm.recipient_type = 'all' THEN 'All Members'
+                     ELSE 'Multiple Recipients' 
+                   END as sender_name
+            FROM member_messages mm
+            WHERE mm.sender_id = $1 
+              AND mm.sender_type = 'admin'
+            ORDER BY mm.created_at DESC
+        `, [adminId]);
+        
+        return result.rows.map(row => ({
+            ...row,
+            created_at: new Date(row.created_at)
+        }));
+    },
+
+    async getMessagesByGroup(groupIds: number[]): Promise<MemberMessage[]> {
+        if (groupIds.length === 0) return [];
+        
+        const placeholders = groupIds.map((_, index) => `$${index + 1}`).join(', ');
+        const result = await db.query<MemberMessage>(
+            `SELECT * FROM member_messages 
+             WHERE recipient_id IN (${placeholders}) 
+                OR (recipient_type = 'all')
+             ORDER BY created_at DESC`,
+            groupIds
+        );
+        
+        return result.rows.map(row => ({
+            ...row,
+            created_at: new Date(row.created_at)
+        }));
+    },
+
+    async getMessagesForAllMembers(): Promise<MemberMessage[]> {
+        const result = await db.query<MemberMessage>(
+            `SELECT * FROM member_messages 
+             WHERE recipient_type = 'all'
+             ORDER BY created_at DESC`
+        );
+        
+        return result.rows.map(row => ({
+            ...row,
+            created_at: new Date(row.created_at)
         }));
     },
 

@@ -6,6 +6,25 @@ Aplikacija za upravljanje članstvom, aktivnostima i administrativnim zadacima z
 
 Ova aplikacija omogućuje praćenje članstva, evidenciju uplata članarina, vođenje evidencije aktivnosti članova, izdavanje iskaznica i upravljanje ostalim administrativnim aspektima društva. Dizajnirana je za interno korištenje s maksimalno 200 korisnika u lokalnom okruženju.
 
+## Funkcionalnosti
+
+### Upravljanje članstvom
+- Evidencija članova s osobnim podacima (ime, prezime, nadimak, OIB, kontakt)
+- Praćenje statusa članstva (aktivan, neaktivan, na čekanju)
+- Generiranje i izdavanje članskih iskaznica
+- Produživanje članstva i evidencija uplate članarine
+
+### Administracija
+- Upravljanje korisničkim ulogama (član, admin, superuser)
+- Slanje poruka članovima (individualno ili grupno)
+- Vođenje evidencije aktivnosti članova
+- Generiranje izvještaja
+
+### Korisnički dio
+- Pregled osobnog profila s podacima
+- Pregled primljenih poruka
+- Ažuriranje osobnih podataka
+
 ## Tehnologije
 
 ### Frontend

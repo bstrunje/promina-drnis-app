@@ -7,5 +7,7 @@ const router = express.Router();
 // Member routes
 router.post('/:memberId/messages', authMiddleware, memberMessageController.createMessage);
 router.get('/:memberId/messages', authMiddleware, memberMessageController.getMemberMessages);
+// Dodajemo rutu za članove da mogu označiti poruke kao pročitane
+router.put('/:memberId/messages/:messageId/read', authMiddleware, memberMessageController.markMemberMessageAsRead);
 
 export default router;

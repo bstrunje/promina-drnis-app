@@ -200,7 +200,7 @@ const authController = {
       res.json({
         member: {
           id: member.member_id,
-          full_name: member.full_name, // Dohvaćeno iz baze
+          full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
           role: member.role,
         },
         token,
@@ -260,7 +260,7 @@ const authController = {
           message:
             "Member pre-registered successfully. Awaiting admin password configuration.",
           member_id: member.member_id,
-          full_name: `${member.first_name} ${member.last_name}`,
+          full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
           email: member.email,
         });
       });
