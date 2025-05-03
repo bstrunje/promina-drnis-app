@@ -32,19 +32,41 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   // Možemo li uređivati podatke? Dopušteno samo za admin i superuser
   const canEdit = userRole === 'admin' || userRole === 'superuser';
 
-  // Stil za karticu ovisno o statusu člana
-  const getStatusColor = () => {
+  // Helper funkcija za određivanje stilova na temelju životnog statusa člana
+  const getStatusColors = () => {
     switch (member.life_status) {
       case "employed/unemployed":
-        return "bg-blue-300";
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          cardBg: "bg-blue-300"
+        };
       case "child/pupil/student":
-        return "bg-green-300";
+        return {
+          bg: "bg-green-100",
+          text: "text-green-800",
+          cardBg: "bg-green-300"
+        };
       case "pensioner":
-        return "bg-red-300";
+        return {
+          bg: "bg-red-100",
+          text: "text-red-800",
+          cardBg: "bg-red-300"
+        };
       default:
-        return "bg-gray-600";
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-800",
+          cardBg: "bg-gray-300"
+        };
     }
   };
+  
+  // Dohvati stilove za trenutnog člana
+  const { bg, text, cardBg } = getStatusColors();
+
+  // Stil za karticu ovisno o statusu člana (zadržavamo postojeću funkciju za kompatibilnost)
+  const getStatusColor = () => cardBg;
 
   return (
     <div className="space-y-4">
@@ -91,23 +113,12 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
         
         {/* Statistika kartica */}
         {canEdit && cardStats && (
-          <div className="grid grid-cols-3 gap-2 mb-3 text-center text-sm">
-            <div className="bg-gray-100 p-2 rounded">
-              <div className="text-gray-500">Ukupno</div>
-              <div className="font-bold">{cardStats.total}</div>
-            </div>
-            <div className="bg-green-100 p-2 rounded">
-              <div className="text-gray-500">Dostupno</div>
-              <div className="font-bold text-green-600">
-                {cardStats.available}
-              </div>
-            </div>
-            <div className="bg-blue-100 p-2 rounded">
-              <div className="text-gray-500">Dodijeljeno</div>
-              <div className="font-bold text-blue-600">
-                {cardStats.assigned}
-              </div>
-            </div>
+          <div className="mb-3 text-sm">
+            <span className={`text-xs ${bg} px-2 py-1 rounded`}>
+              <span className="hidden sm:inline">Ukupno: <span className={`font-bold ${text}`}>{cardStats.total}</span> &nbsp;|&nbsp;</span> 
+              Dostupno: <span className={`font-bold ${text}`}>{cardStats.available}</span>
+              <span className="hidden sm:inline"> &nbsp;|&nbsp; Dodijeljeno: <span className={`font-bold ${text}`}>{cardStats.assigned}</span></span>
+            </span>
           </div>
         )}
       </div>

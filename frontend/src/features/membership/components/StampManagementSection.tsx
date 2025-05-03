@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StampManagementSectionProps } from "../types/membershipTypes";
 import { Label } from "@components/ui/label";
 import { RefreshCw } from "lucide-react";
@@ -19,6 +19,41 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
 }) => {
   const canEdit = userRole === 'admin' || userRole === 'superuser';
   
+  // Helper funkcija za određivanje stilova na temelju životnog statusa člana
+  const getStatusColors = () => {
+    switch (member.life_status) {
+      case "employed/unemployed":
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-800"
+        };
+      case "child/pupil/student":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-800"
+        };
+      case "pensioner":
+        return {
+          bg: "bg-red-100",
+          text: "text-red-800"
+        };
+      default:
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-800"
+        };
+    }
+  };
+  
+  // Dohvati stilove za trenutnog člana
+  const { bg, text } = getStatusColors();
+  
+  // Dijagnostika - pratimo dostupnost inventoryStatus
+  useEffect(() => {
+    console.log("Current inventoryStatus:", inventoryStatus);
+    console.log("Next year inventoryStatus:", nextYearInventoryStatus);
+  }, [inventoryStatus, nextYearInventoryStatus]);
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between mb-2">
@@ -28,20 +63,21 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
       {/* Sekcija za markice tekuće godine */}
       <div className="bg-white border rounded-md p-3 mb-3">
         <div className="flex justify-between mb-2">
-          <h5 className="font-medium text-sm">{getCurrentYear()} (Tekuća godina)</h5>
+          <h5 className="font-medium text-sm">{getCurrentYear()} <span className="hidden sm:inline">(Tekuća godina)</span></h5>
           
           {/* Status inventara za tekuću godinu */}
-          {inventoryStatus && (
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-              Dostupno markica:{" "}
-              <span
-                className={`font-bold ${
-                  inventoryStatus.remaining > 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
+          {inventoryStatus ? (
+            <span className={`text-xs ${bg} px-2 py-1 rounded`}>
+              <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+              <span className={`font-bold ${text}`}>
                 {inventoryStatus.remaining}
+              </span>
+            </span>
+          ) : (
+            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+              <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+              <span className="font-bold">
+                --
               </span>
             </span>
           )}
@@ -79,20 +115,21 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
         member?.membership_details?.next_year_stamp_issued === true) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
           <div className="flex justify-between mb-2">
-            <h5 className="font-medium text-sm">{getCurrentYear() + 1} (Sljedeća godina)</h5>
+            <h5 className="font-medium text-sm">{getCurrentYear() + 1} <span className="hidden sm:inline">(Sljedeća godina)</span></h5>
             
             {/* Status inventara za sljedeću godinu */}
-            {nextYearInventoryStatus && (
-              <span className="text-xs bg-yellow-100 px-2 py-1 rounded">
-                Dostupno markica:{" "}
-                <span
-                  className={`font-bold ${
-                    nextYearInventoryStatus.remaining > 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
+            {nextYearInventoryStatus ? (
+              <span className={`text-xs ${bg} px-2 py-1 rounded`}>
+                <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+                <span className={`font-bold ${text}`}>
                   {nextYearInventoryStatus.remaining}
+                </span>
+              </span>
+            ) : (
+              <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+                <span className="font-bold">
+                  --
                 </span>
               </span>
             )}
