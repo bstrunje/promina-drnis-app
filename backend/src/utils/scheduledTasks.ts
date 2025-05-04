@@ -19,27 +19,35 @@ export const initScheduledTasks = () => {
     }
   }, 1000); // Provjera svake sekunde
   
-  // Postavi redovito periodičko ažuriranje statusa članstva (svakih 30 minuta)
-  setInterval(async () => {
-    console.log('Pokretanje periodičkog ažuriranja statusa članstva...');
-    try {
-      await membershipService.updateAllMembershipStatuses();
-      console.log('Periodičko ažuriranje statusa članstva završeno.');
-    } catch (error) {
-      console.error('Greška prilikom periodičkog ažuriranja statusa članstva:', error);
-    }
-  }, 30 * 60 * 1000); // 30 minuta
+  // U produkcijskom okruženju možemo imati problema s pristupom Prismi
+  // Kako bismo izbjegli probleme s deploymentom, provjeravamo okruženje
+  const isProduction = process.env.NODE_ENV === 'production';
   
-  // Odmah pokreni prvo ažuriranje statusa članstva pri pokretanju servera
-  setTimeout(async () => {
-    console.log('Inicijalno ažuriranje statusa članstva...');
-    try {
-      await membershipService.updateAllMembershipStatuses();
-      console.log('Inicijalno ažuriranje statusa članstva završeno.');
-    } catch (error) {
-      console.error('Greška prilikom inicijalnog ažuriranja statusa članstva:', error);
-    }
-  }, 5000); // Pričekaj 5 sekundi nakon pokretanja servera
+  if (!isProduction) {
+    // Postavi redovito periodičko ažuriranje statusa članstva (svakih 30 minuta)
+    setInterval(async () => {
+      console.log('Pokretanje periodičkog ažuriranja statusa članstva...');
+      try {
+        await membershipService.updateAllMembershipStatuses();
+        console.log('Periodičko ažuriranje statusa članstva završeno.');
+      } catch (error) {
+        console.error(' Greška prilikom ažuriranja članstava:', error);
+      }
+    }, 30 * 60 * 1000); // 30 minuta
+    
+    // Odmah pokreni prvo ažuriranje statusa članstva pri pokretanju servera
+    setTimeout(async () => {
+      console.log('Inicijalno ažuriranje statusa članstva...');
+      try {
+        await membershipService.updateAllMembershipStatuses();
+        console.log('Inicijalno ažuriranje statusa članstva završeno.');
+      } catch (error) {
+        console.error(' Greška prilikom ažuriranja članstava:', error);
+      }
+    }, 5000); // Pričekaj 5 sekundi nakon pokretanja servera
+  } else {
+    console.log(' Periodički zadaci za ažuriranje statusa članstva preskočeni u produkcijskom okruženju');
+  }
   
   console.log(' Periodički zadaci uspješno inicijalizirani');
 };
