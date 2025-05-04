@@ -217,10 +217,19 @@ export const getMemberActivities = async (memberId: number) => {
 // Message APIs
 export const getAdminMessages = async (): Promise<any[]> => {
   try {
-    const response = await api.get('/messages/admin');  // Ispravljena putanja prema registriranim rutama u backendu
+    const response = await api.get('/messages/admin');
     return response.data;
   } catch (error) {
     throw handleApiError(error, 'Failed to fetch admin messages');
+  }
+};
+
+export const getAllMembers = async (): Promise<any[]> => {
+  try {
+    const response = await api.get('/members');
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, 'Nije moguće dohvatiti popis svih članova');
   }
 };
 
@@ -258,7 +267,7 @@ export const sendAdminMessageToAll = async (messageText: string): Promise<void> 
 
 export const getAdminSentMessages = async (): Promise<any[]> => {
   try {
-    const response = await api.get('/admin/messages/sent');
+    const response = await api.get('/messages/sent');
     return response.data;
   } catch (error) {
     throw handleApiError(error, 'Failed to fetch sent messages');

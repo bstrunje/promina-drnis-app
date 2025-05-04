@@ -5,12 +5,13 @@ import {
   archiveMessage, 
   deleteMessage, 
   deleteAllMessages,
-  getAdminSentMessages
+  getAdminSentMessages,
+  getAllMembers
 } from '../../utils/api';
 import { useToast } from "@components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { Bell, CheckCircle, Archive, Trash2, Inbox, Send, PlusCircle } from "lucide-react";
+import { Bell, CheckCircle, Archive, Trash2, Inbox, Send, PlusCircle, ChevronDown, ChevronRight, Users, UserCheck } from "lucide-react";
 import { 
   Tabs, 
   TabsContent, 
@@ -35,6 +36,21 @@ interface Message {
   recipient_type?: 'admin' | 'member' | 'group' | 'all';
 }
 
+interface MessageGroup {
+  messages: Message[];
+  key: string;
+  isExpanded: boolean;
+}
+
+interface Member {
+  member_id: number;
+  full_name: string;
+  membership_type?: string;
+  detailed_status?: {
+    status: string;
+  };
+}
+
 export default function MessageList() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,6 +61,8 @@ export default function MessageList() {
   const [filter, setFilter] = useState<'unread' | 'read' | 'archived'>('unread');
   const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'compose'>('received');
   const [showSendForm, setShowSendForm] = useState(false);
+  const [groupedMessages, setGroupedMessages] = useState<MessageGroup[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
 
   // Dohvaćanje poruka koje su članovi poslali adminu
   const fetchMessages = async () => {
@@ -68,7 +86,7 @@ export default function MessageList() {
     }
   };
 
-  // Dohvaćanje poruka koje je admin poslao članovima
+  // Funkcija za dohvaćanje poruka koje je admin poslao članovima
   const fetchSentMessages = async () => {
     // Ako je običan član, preskačemo API poziv za admin poruke
     if (user?.role === 'member') {
@@ -79,7 +97,44 @@ export default function MessageList() {
     try {
       setLoadingSent(true);
       const data = await getAdminSentMessages();
-      setSentMessages(data);
+      
+      // Predprocesiranje podataka za konzistentnost
+      const processedData = data.map(message => {
+        // Osiguravamo konzistentnost između sender_name i recipient_type
+        // Ako je poruka označena kao "All Members", dosljednost traži da recipient_type bude 'all'
+        if (message.sender_name === 'All Members') {
+          return {
+            ...message,
+            recipient_type: 'all'
+          };
+        }
+        return message;
+      });
+      
+      setSentMessages(processedData);
+      
+      // Dohvati popis svih članova za poruke poslane svim članovima
+      if (processedData.some(msg => msg.recipient_type === 'all' || msg.sender_name === 'All Members')) {
+        try {
+          const membersData = await getAllMembers();
+          
+          // Filtriramo samo redovne članove prema definiciji iz MemberTable komponente:
+          // status = "registered" i membership_type = "regular"
+          const regularMembers = membersData
+            .filter(member => 
+              member.detailed_status?.status === 'registered' && 
+              member.membership_type === 'regular'
+            )
+            .sort((a, b) => a.full_name.localeCompare(b.full_name, 'hr'));
+          
+          setAllMembers(regularMembers);
+        } catch (error) {
+          console.error('Greška pri dohvaćanju svih članova:', error);
+        }
+      }
+      
+      // Grupiranje poruka nakon dohvaćanja
+      groupSentMessages(processedData);
     } catch (error) {
       toast({
         title: "Greška",
@@ -172,6 +227,67 @@ export default function MessageList() {
       fetchSentMessages();
     }
   }, [activeTab]);
+
+  // Funkcija za grupiranje poruka po sadržaju, tipu primatelja i vremenu
+  const groupSentMessages = (messages: Message[]) => {
+    const messageGroups: Record<string, Message[]> = {};
+    
+    messages.forEach(message => {
+      // Poruke poslane svim članovima trebaju UVIJEK biti tretirane kao grupne poruke
+      if (message.recipient_type === 'all' || message.sender_name === 'All Members') {
+        // Za poruke svim članovima - formatiraj datum bez sekundi za grupiranje
+        const dateWithoutSeconds = new Date(message.created_at).toISOString().slice(0, 16);
+        const key = `all-${message.message_text}-${dateWithoutSeconds}`;
+        
+        if (!messageGroups[key]) {
+          messageGroups[key] = [];
+        }
+        messageGroups[key].push(message);
+      } 
+      else if (message.recipient_type === 'group') {
+        // Za grupne poruke - formatiraj datum bez sekundi za grupiranje
+        const dateWithoutSeconds = new Date(message.created_at).toISOString().slice(0, 16);
+        const key = `group-${message.message_text}-${dateWithoutSeconds}`;
+        
+        if (!messageGroups[key]) {
+          messageGroups[key] = [];
+        }
+        messageGroups[key].push(message);
+      } else {
+        // Za pojedinačne poruke ne radimo grupiranje
+        const key = `individual-${message.message_id}`;
+        messageGroups[key] = [message];
+      }
+    });
+    
+    // Pretvori object u niz grupa s expanded statusom
+    const groups = Object.entries(messageGroups).map(([key, messages]) => ({
+      key,
+      messages,
+      isExpanded: false
+    }));
+    
+    // Sortiraj grupe po vremenu slanja - najnovije prvo
+    groups.sort((a, b) => {
+      const dateA = new Date(a.messages[0].created_at).getTime();
+      const dateB = new Date(b.messages[0].created_at).getTime();
+      return dateB - dateA;  // Descendirajući redoslijed (najnovije prvo)
+    });
+    
+    setGroupedMessages(groups);
+  };
+  
+  // Funkcija za promjenu stanja proširenja grupe
+  const toggleGroupExpand = (groupIndex: number) => {
+    setGroupedMessages(prevGroups => {
+      const newGroups = [...prevGroups];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        isExpanded: !newGroups[groupIndex].isExpanded
+      };
+      return newGroups;
+    });
+  };
 
   // Ako je još u tijeku učitavanje i prikazuju se primljene poruke
   if (loading && activeTab === 'received') {
@@ -314,41 +430,157 @@ export default function MessageList() {
 
     return (
       <div className="space-y-4">
-        {sentMessages.length > 0 ? (
-          sentMessages.map((message) => (
-            <Card key={message.message_id}>
-              <CardHeader>
-                <CardTitle className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center">
-                    <span>Primatelj: {message.sender_name}</span>
-                    {message.recipient_type === 'all' && <span className="ml-0 sm:ml-2 text-blue-600">(Svi članovi)</span>}
-                    {message.recipient_type === 'group' && <span className="ml-0 sm:ml-2 text-green-600">(Grupa članova)</span>}
-                  </div>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={() => onDelete(message.message_id)}
-                    className="flex items-center"
+        {groupedMessages.length > 0 ? (
+          groupedMessages.map((group, groupIndex) => {
+            const isGrouped = group.messages.length > 1;
+            const firstMessage = group.messages[0];
+            
+            // Provjera je li poruka za sve članove (bilo kojeg tipa 'all' ili sender_name 'All Members')
+            const isAllMembersMessage = firstMessage.recipient_type === 'all' || 
+                                        firstMessage.sender_name === 'All Members';
+                                        
+            // Uvijek koristi grupni prikaz za poruke svim članovima
+            if (!isGrouped && !isAllMembersMessage) {
+              // Prikaz samo za stvarno pojedinačne poruke (ne one za sve članove)
+              return (
+                <Card key={`individual-${firstMessage.message_id}`}>
+                  <CardHeader>
+                    <CardTitle className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center">
+                        <span>
+                          Primatelj: {firstMessage.sender_name}
+                        </span>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => onDelete(firstMessage.message_id)}
+                        className="flex items-center"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Izbriši</span>
+                        <span className="sm:hidden">Izbriši</span>
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-2 text-sm text-gray-500">
+                      {new Date(firstMessage.created_at).toLocaleString('hr-HR')}
+                    </div>
+                    <div className="whitespace-pre-wrap">
+                      {firstMessage.message_text}
+                    </div>
+                    <div className="mt-2 text-sm text-gray-500">
+                      <span>
+                        Status: {firstMessage.status === 'read' ? 'Pročitano' : 'Nepročitano'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            } else {
+              // Koristimo ovaj prikaz za stvarno grupne poruke I poruke svim članovima
+              const readCount = group.messages.filter(m => m.status === 'read').length;
+              // Za poruke svim članovima, brojač prikazuje broj članova iz dohvaćene liste svih članova
+              const recipientsCount = isAllMembersMessage && allMembers.length > 0 
+                ? allMembers.length 
+                : group.messages.length;
+              
+              return (
+                <Card key={`group-${groupIndex}`}>
+                  <CardHeader 
+                    onClick={() => toggleGroupExpand(groupIndex)} 
+                    className="cursor-pointer hover:bg-gray-50"
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Izbriši</span>
-                    <span className="sm:hidden">Izbriši</span>
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-2 text-sm text-gray-500">
-                  {new Date(message.created_at).toLocaleString('hr-HR')}
-                </div>
-                <div className="whitespace-pre-wrap">
-                  {message.message_text}
-                </div>
-                <div className="mt-2 text-sm text-gray-500">
-                  Status: {message.status === 'read' ? 'Pročitano' : 'Nepročitano'}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                    <CardTitle className="flex justify-between items-center">
+                      <div className="flex flex-wrap items-center">
+                        {isAllMembersMessage ? (
+                          // Poruke za sve članove - plava ikona i oznaka "Svi članovi"
+                          <div className="flex items-center">
+                            <UserCheck className="h-5 w-5 mr-2 text-blue-600" />
+                            <span className="font-medium">Svi članovi</span>
+                            <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                              {recipientsCount}/{readCount} pročitano
+                            </span>
+                          </div>
+                        ) : firstMessage.recipient_type === 'group' ? (
+                          // Grupne poruke - zelena ikona i oznaka "Grupa članova"
+                          <div className="flex items-center">
+                            <Users className="h-5 w-5 mr-2 text-green-600" />
+                            <span className="font-medium">Grupa članova</span>
+                            <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                              {recipientsCount}/{readCount} pročitano
+                            </span>
+                          </div>
+                        ) : (
+                          // Pojedinačne poruke (fallback) - prikazujemo bez posebne ikone
+                          <div className="flex items-center">
+                            <UserCheck className="h-5 w-5 mr-2 text-gray-600" />
+                            <span className="font-medium">Pojedinačna poruka</span>
+                          </div>
+                        )}
+                      </div>
+                      {group.isExpanded ? (
+                        <ChevronDown className="h-5 w-5" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-2 text-sm text-gray-500">
+                      {new Date(firstMessage.created_at).toLocaleString('hr-HR')}
+                    </div>
+                    <div className="whitespace-pre-wrap">
+                      {firstMessage.message_text}
+                    </div>
+                    
+                    {/* Proširivi prikaz primatelja */}
+                    {group.isExpanded && (
+                      <div className="mt-4 border-t pt-2">
+                        <h4 className="font-medium mb-2">Primatelji:</h4>
+                        <div className="space-y-1 max-h-60 overflow-y-auto">
+                          {/* Prikazujemo sve članove za poruke poslane svim članovima */}
+                          {isAllMembersMessage && allMembers.length > 0 ? (
+                            // Prikaži listu svih članova umjesto "All Members"
+                            allMembers.map((member) => (
+                              <div key={`all-${member.member_id}`} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded">
+                                <span>{member.full_name}</span>
+                                <span className={`text-sm text-red-600`}>
+                                  {/* U slučaju poruka svim članovima, postavljamo inicijalni status na "Nepročitano" */}
+                                  {/* Ako je član poruku pročitao, to će biti označeno u group.messages */}
+                                  {group.messages.some(m => 
+                                    // Provjeravamo je li član pročitao poruku
+                                    m.recipient_id === member.member_id && m.status === 'read'
+                                  ) ? (
+                                    <span className="text-green-600">Pročitano</span>
+                                  ) : (
+                                    <span className="text-red-600">Nepročitano</span>
+                                  )}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            // Za grupne poruke nastavljamo koristiti postojeći prikaz
+                            [...group.messages].sort((a, b) => 
+                              a.sender_name.localeCompare(b.sender_name, 'hr')
+                            ).map(message => (
+                              <div key={message.message_id} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded">
+                                <span>{message.sender_name}</span>
+                                <span className={`text-sm ${message.status === 'read' ? 'text-green-600' : 'text-red-600'}`}>
+                                  {message.status === 'read' ? 'Pročitano' : 'Nepročitano'}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            }
+          })
         ) : (
           <div className="text-center py-8 text-gray-500">
             Niste poslali nijednu poruku članovima

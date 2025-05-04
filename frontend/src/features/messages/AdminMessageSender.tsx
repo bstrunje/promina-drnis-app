@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  searchMembers, 
-  sendAdminMessageToMember, 
-  sendAdminMessageToGroup, 
-  sendAdminMessageToAll 
+import {
+  searchMembers,
+  sendAdminMessageToMember,
+  sendAdminMessageToGroup,
+  sendAdminMessageToAll
 } from '../../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from '@components/ui/tabs';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@components/ui/select';
 import { useToast } from '@components/ui/use-toast';
 import { Checkbox } from '@components/ui/checkbox';
@@ -86,13 +86,13 @@ const AdminMessageSender: React.FC = () => {
       setSearchTerm('');
       setSearchResults([]);
       setShowSuccess(true);
-      
+
       toast({
         title: "Uspjeh",
         description: `Poruka uspješno poslana članu ${selectedMember.full_name}`,
         variant: "success"
       });
-      
+
       // Sakrij indikator uspjeha nakon 3 sekunde
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
@@ -110,7 +110,7 @@ const AdminMessageSender: React.FC = () => {
   const toggleMemberInGroup = (member: MemberSearchResult) => {
     setSelectedMembers(prevSelected => {
       const alreadySelected = prevSelected.some(m => m.member_id === member.member_id);
-      
+
       if (alreadySelected) {
         return prevSelected.filter(m => m.member_id !== member.member_id);
       } else {
@@ -148,13 +148,13 @@ const AdminMessageSender: React.FC = () => {
       setSearchTerm('');
       setSearchResults([]);
       setShowSuccess(true);
-      
+
       toast({
         title: "Uspjeh",
         description: `Poruka uspješno poslana grupi od ${memberIds.length} članova`,
         variant: "success"
       });
-      
+
       // Sakrij indikator uspjeha nakon 3 sekunde
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
@@ -188,13 +188,13 @@ const AdminMessageSender: React.FC = () => {
       await sendAdminMessageToAll(messageText);
       setMessageText('');
       setShowSuccess(true);
-      
+
       toast({
         title: "Uspjeh",
         description: `Poruka uspješno poslana svim članovima`,
         variant: "success"
       });
-      
+
       // Sakrij indikator uspjeha nakon 3 sekunde
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
@@ -244,29 +244,24 @@ const AdminMessageSender: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              
+
               {searchResults.length > 0 && (
                 <div className="border rounded-md p-2 max-h-60 overflow-y-auto mt-2">
                   {searchResults.map((member) => (
-                    <div 
-                      key={member.member_id} 
-                      className={`flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md ${
-                        selectedMember?.member_id === member.member_id ? 'bg-blue-50 border border-blue-200' : ''
-                      }`}
+                    <div
+                      key={member.member_id}
+                      className={`flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md ${selectedMember?.member_id === member.member_id ? 'bg-blue-50 border border-blue-200' : ''
+                        }`}
                       onClick={() => setSelectedMember(member)}
                     >
-                      <div>
-                        <div className="font-medium">
-                          {member.full_name}
-                          {/* Uklanjam prikaz nadimka ovdje jer je već uključen u full_name */}
-                        </div>
-                        <div className="text-sm text-gray-500">OIB: {member.oib}</div>
+                      <div className="font-medium">
+                        {member.full_name}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              
+
               {searchTerm.length > 0 && searchTerm.length < 3 && (
                 <div className="text-sm text-gray-500 mt-1">
                   Unesite najmanje 3 znaka za pretragu članova
@@ -285,13 +280,13 @@ const AdminMessageSender: React.FC = () => {
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
-              
-              <Button 
-                onClick={handleSendToSingle} 
+
+              <Button
+                onClick={handleSendToSingle}
                 disabled={isSending || !selectedMember || !messageText.trim()}
                 className="w-full"
               >
-                {isSending ? 'Slanje...' : 'Pošalji poruku'} 
+                {isSending ? 'Slanje...' : 'Pošalji poruku'}
                 <CornerDownLeft className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -308,31 +303,29 @@ const AdminMessageSender: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              
+
               {searchResults.length > 0 && (
                 <div className="border rounded-md p-2 max-h-60 overflow-y-auto mt-2">
                   {searchResults.map((member) => (
-                    <div 
-                      key={member.member_id} 
+                    <div
+                      key={member.member_id}
                       className="flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md"
                       onClick={() => toggleMemberInGroup(member)}
                     >
-                      <Checkbox 
-                        id={`member-${member.member_id}`} 
+                      <Checkbox
+                        id={`member-${member.member_id}`}
                         checked={selectedMembers.some(m => m.member_id === member.member_id)}
                       />
                       <div className="ml-2 w-full">
                         <div className="font-medium">
                           {member.full_name}
-                          {/* Uklanjam prikaz nadimka ovdje jer je već uključen u full_name */}
                         </div>
-                        <div className="text-sm text-gray-500">OIB: {member.oib}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              
+
               {searchTerm.length > 0 && searchTerm.length < 3 && (
                 <div className="text-sm text-gray-500 mt-1">
                   Unesite najmanje 3 znaka za pretragu članova
@@ -344,7 +337,7 @@ const AdminMessageSender: React.FC = () => {
               <div className="p-2 border rounded-md bg-slate-50 mt-4">
                 <div className="flex justify-between items-center">
                   <p className="font-medium">Odabrani članovi ({selectedMembers.length}):</p>
-                  <button 
+                  <button
                     className="text-xs text-red-500"
                     onClick={() => setSelectedMembers([])}
                   >
@@ -356,9 +349,8 @@ const AdminMessageSender: React.FC = () => {
                     <div key={member.member_id} className="flex justify-between text-sm py-1 items-center hover:bg-gray-100 rounded px-1">
                       <span>
                         {member.full_name}
-                        {/* Uklanjam prikaz nadimka ovdje jer je već uključen u full_name */}
                       </span>
-                      <button 
+                      <button
                         className="text-red-500"
                         onClick={() => toggleMemberInGroup(member)}
                       >
@@ -381,13 +373,13 @@ const AdminMessageSender: React.FC = () => {
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
-              
-              <Button 
-                onClick={handleSendToGroup} 
+
+              <Button
+                onClick={handleSendToGroup}
                 disabled={isSending || selectedMembers.length === 0 || !messageText.trim()}
                 className="w-full"
               >
-                {isSending ? 'Slanje...' : `Pošalji poruku (${selectedMembers.length} članova)`} 
+                {isSending ? 'Slanje...' : `Pošalji poruku (${selectedMembers.length} članova)`}
                 <Users className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -413,19 +405,19 @@ const AdminMessageSender: React.FC = () => {
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
-              
-              <Button 
-                onClick={handleSendToAll} 
+
+              <Button
+                onClick={handleSendToAll}
                 disabled={isSending || !messageText.trim()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
-                {isSending ? 'Slanje...' : 'Pošalji svim članovima'} 
+                {isSending ? 'Slanje...' : 'Pošalji svim članovima'}
                 <Mail className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </TabsContent>
         </Tabs>
-        
+
         {showSuccess && (
           <div className="mt-4 p-3 bg-green-100 border border-green-200 rounded-md text-green-800 animate-pulse">
             Poruka uspješno poslana!

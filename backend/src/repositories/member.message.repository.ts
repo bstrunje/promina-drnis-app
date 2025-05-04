@@ -60,11 +60,23 @@ const memberMessageRepository = {
     },
 
     async getByMemberId(memberId: number): Promise<MemberMessage[]> {
+        // Poboljšani SQL upit s detaljnijim komentarima za bolje razumijevanje
         const result = await db.query<MemberMessage>(
-            `SELECT * FROM member_messages 
-             WHERE (member_id = $1 AND recipient_type = 'admin') 
-                OR (recipient_id = $1 AND recipient_type IN ('member', 'group', 'all'))
-             ORDER BY created_at DESC`,
+            `SELECT mm.* FROM member_messages mm
+             WHERE 
+                -- Poruke koje je član sam poslao adminu
+                (mm.member_id = $1 AND mm.recipient_type = 'admin') 
+                
+                -- Poruke koje su poslane direktno ovom članu
+                OR (mm.recipient_id = $1 AND mm.recipient_type = 'member') 
+                
+                -- Grupne poruke gdje je član dio grupe primatelja
+                OR (mm.recipient_id = $1 AND mm.recipient_type = 'group')
+                
+                -- Poruke poslane svim članovima (prikazuju se svima)
+                OR (mm.recipient_type = 'all' AND mm.sender_type = 'admin')
+                
+             ORDER BY mm.created_at DESC`,
             [memberId]
         );
         return result.rows.map(row => ({

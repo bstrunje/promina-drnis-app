@@ -163,7 +163,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               placeholder="Unesite nadimak člana"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Nadimak se prikazuje uz ime člana i može pomoći u identifikaciji članova s istim imenom.
+              
             </p>
           </div>
           <div>

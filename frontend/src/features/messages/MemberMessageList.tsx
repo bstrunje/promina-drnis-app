@@ -38,9 +38,9 @@ const MemberMessageList: React.FC = () => {
         (msg.recipient_id === user.member_id || msg.recipient_type === 'all')
       );
       
-      // Sortiramo poruke uzlazno - od najstarije prema najnovijoj
+      // Sortiramo poruke silazno - od najnovije prema najstarijoj (kao i kod admin prikaza)
       const sortedMessages = [...receivedMessages].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       
       setMessages(sortedMessages);
@@ -130,8 +130,15 @@ const MemberMessageList: React.FC = () => {
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="text-sm text-gray-500">
-                    {new Date(message.created_at).toLocaleString('hr-HR')}
+                  <div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(message.created_at).toLocaleString('hr-HR')}
+                    </div>
+                    {message.recipient_type === 'all' && (
+                      <div className="mt-1 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">
+                        Poslano svim članovima
+                      </div>
+                    )}
                   </div>
                   {message.status === 'unread' && (
                     <Button
