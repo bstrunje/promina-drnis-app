@@ -1,18 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import db from '../utils/db.js';
+import prisma from '../utils/prisma.js';
 
 // Types
 interface JWTPayload {
     id: number;
-    full_name: string;
+    full_name?: string;
+    type?: 'member' | 'system_admin';
 }
 
 export interface DatabaseUser {
     id: number;
-    role: string;        // Dodano
-    role_name: string;   // Postojeće
+    role: string;        
+    role_name: string;   
     member_id?: number;
+    is_system_admin?: boolean; 
+    user_type: 'member' | 'system_admin'; 
 }
 
 // Extend Express Request type to include user
@@ -43,6 +47,31 @@ const authenticateToken = async (
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
+        // Provjeri tip korisnika - ako je eksplicitno 'system_admin'
+        if (decoded.type === 'system_admin') {
+            // Dohvati system admina iz baze
+            const systemAdmin = await prisma.systemAdmin.findUnique({
+                where: { id: decoded.id }
+            });
+
+            if (!systemAdmin) {
+                res.status(401).json({ message: 'System administrator not found' });
+                return;
+            }
+
+            // Postavi system_admin podatke na request objekt
+            req.user = {
+                id: systemAdmin.id,
+                role: 'system_admin',  
+                role_name: 'system_admin',
+                is_system_admin: true,
+                user_type: 'system_admin'
+            };
+            next();
+            return;
+        }
+
+        // Za članove - postojeća logika
         // Get member from database
         const result = await db.query<DatabaseUser>(
             `SELECT 
@@ -72,8 +101,10 @@ const authenticateToken = async (
         req.user = {
             id: result.rows[0].id,
             role: result.rows[0].role,  
-            role_name: result.rows[0].role_name,  
-            member_id: result.rows[0].id
+            role_name: result.rows[0].role_name,
+            member_id: result.rows[0].id,
+            is_system_admin: false,
+            user_type: 'member'
         };
         next();
     } catch (error) {
@@ -91,19 +122,25 @@ const checkRole = (allowedRoles: string[]) => {
                 return;
             }
 
-            // Superuser can do everything
+            // System admin ima sve ovlasti
+            if (req.user.is_system_admin) {
+                next();
+                return;
+            }
+
+            // Superuser također može sve (na razini člana)
             if (req.user.role_name === 'superuser') {
                 next();
                 return;
             }
 
-            // For admin, allow both admin and member actions
+            // Za admin, allow both admin and member actions
             if (req.user.role_name === 'admin' && allowedRoles.includes('admin')) {
                 next();
                 return;
             }
 
-            // For regular member, only allow member actions
+            // Za regular member, only allow member actions
             if (allowedRoles.includes(req.user.role_name)) {
                 next();
                 return;
@@ -119,6 +156,26 @@ const checkRole = (allowedRoles: string[]) => {
     };
 };
 
+// Posebni middleware za system admin korisnike
+const requireSystemAdmin = async (
+    req: Request, 
+    res: Response, 
+    next: NextFunction
+): Promise<void> => {
+    try {
+        if (!req.user || !req.user.is_system_admin) {
+            res.status(403).json({ 
+                message: 'Access denied. System administrator privileges required.' 
+            });
+            return;
+        }
+        next();
+    } catch (error) {
+        console.error('System admin check error:', error);
+        res.status(500).json({ message: 'Error checking system admin status' });
+    }
+};
+
 // Super user check middleware
 const requireSuperUser = async (
     req: Request, 
@@ -126,6 +183,12 @@ const requireSuperUser = async (
     next: NextFunction
 ): Promise<void> => {
     try {
+        // I system admin i superuser mogu pristupiti
+        if (req.user?.is_system_admin) {
+            next();
+            return;
+        }
+        
         if (!req.user || req.user.role_name !== 'superuser') {
             res.status(403).json({ 
                 message: 'Access denied. Super user privileges required.' 
@@ -139,12 +202,60 @@ const requireSuperUser = async (
     }
 };
 
+// Nova metoda za provjeru specifičnih ovlasti - za granularnu kontrolu
+const checkPermission = (permission: string) => {
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            // Ako korisnik nije autentificiran
+            if (!req.user) {
+                res.status(401).json({ message: 'User not authenticated' });
+                return;
+            }
+            
+            // System admin i superuser imaju sve ovlasti
+            if (req.user.is_system_admin || req.user.role_name === 'superuser') {
+                next();
+                return;
+            }
+            
+            // Za obične članove s admin ovlastima, provjeri konkretnu ovlast
+            if (req.user.member_id) {
+                const memberPermissions = await prisma.adminPermissions.findUnique({
+                    where: { member_id: req.user.member_id }
+                });
+                
+                // Ako član nema nikakve ovlasti
+                if (!memberPermissions) {
+                    res.status(403).json({ 
+                        message: `Access denied. Required permission: ${permission}`
+                    });
+                    return;
+                }
+                
+                // Provjera ima li član specificiranu ovlast
+                if (memberPermissions[permission as keyof typeof memberPermissions] === true) {
+                    next();
+                    return;
+                }
+            }
+            
+            res.status(403).json({ 
+                message: `Access denied. Required permission: ${permission}`
+            });
+        } catch (error) {
+            console.error('Permission checking error:', error);
+            res.status(500).json({ message: 'Error checking user permission' });
+        }
+    };
+};
+
 // Role-based middleware shortcuts
 const roles = {
     requireAdmin: checkRole(['admin', 'superuser']),
     requireMember: checkRole(['member', 'admin', 'superuser']),
-    requireSuperUser
+    requireSuperUser,
+    requireSystemAdmin
 };
 
 // Export middleware
-export { authenticateToken as authMiddleware, checkRole, roles };
+export { authenticateToken as authMiddleware, checkRole, checkPermission, roles };

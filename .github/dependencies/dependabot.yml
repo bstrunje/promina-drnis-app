@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # Zamijenite s odgovarajućim ekosustavom (npr. "pip", "maven", "gradle")
+    directory: "/" # Putanja do direktorija gdje se nalaze zavisnosti
+    schedule:
+      interval: "daily" # Frekvencija provjere (daily, weekly, monthly)

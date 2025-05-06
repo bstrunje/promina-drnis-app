@@ -6,6 +6,8 @@ import { Bell, CheckCircle, MessageCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMemberMessages, markMessageAsRead } from "../../utils/api";
 import BackToDashboard from "../../../components/BackToDashboard";
+import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
+import { formatDate } from "../../utils/dateUtils";
 
 interface MemberMessage {
   message_id: number;
@@ -68,6 +70,10 @@ const MemberMessageList: React.FC = () => {
             : msg
         )
       );
+      
+      // Emitiraj događaj za osvježavanje brojača u navigaciji
+      const event = new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED);
+      window.dispatchEvent(event);
       
       toast({
         title: "Uspjeh",
@@ -132,7 +138,7 @@ const MemberMessageList: React.FC = () => {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm text-gray-500">
-                      {new Date(message.created_at).toLocaleString('hr-HR')}
+                      {formatDate(message.created_at, 'dd.MM.yyyy HH:mm:ss')}
                     </div>
                     {message.recipient_type === 'all' && (
                       <div className="mt-1 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">

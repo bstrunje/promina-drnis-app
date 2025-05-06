@@ -25,6 +25,7 @@ import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
+import systemAdminRoutes from './routes/systemAdmin.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -207,6 +208,7 @@ app.get('/', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/system-admin', systemAdminRoutes); // Registrirana ruta za SystemAdmin
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
@@ -231,6 +233,7 @@ app.get('/api', (req: Request, res: Response) => {
       activities: '/api/activities',
       audit: '/api/audit',
       settings: '/api/settings',
+      'system-admin': '/api/system-admin',
       debug: '/api/debug'
     }
   });

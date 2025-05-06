@@ -9,6 +9,8 @@ export interface AuditLog {
     created_at: Date;
     status: string;
     affected_member?: number;
+    performer_name?: string;
+    affected_name?: string;
 }
 
 interface RawAuditLogResult {
@@ -65,14 +67,17 @@ const auditRepository = {
         }
     },
 
-    // Rest of the methods remain unchanged
     async getAll(): Promise<AuditLog[]> {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
-            SELECT al.*, 
-                   m1.full_name as performer_name,
+            SELECT al.*,
+                   CASE 
+                     WHEN al.action_type LIKE '%SYSTEM_ADMIN%' THEN sa.display_name
+                     ELSE m1.full_name 
+                   END as performer_name,
                    m2.full_name as affected_name
             FROM audit_logs al
             LEFT JOIN members m1 ON al.performed_by = m1.member_id
+            LEFT JOIN system_admin sa ON al.performed_by = sa.id
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             ORDER BY al.created_at DESC
         `;
@@ -82,7 +87,16 @@ const auditRepository = {
 
     async getByMemberId(memberId: number): Promise<AuditLog[]> {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
-            SELECT * FROM audit_logs
+            SELECT al.*,
+                   CASE 
+                     WHEN al.action_type LIKE '%SYSTEM_ADMIN%' THEN sa.display_name
+                     ELSE m1.full_name 
+                   END as performer_name,
+                   m2.full_name as affected_name
+            FROM audit_logs al
+            LEFT JOIN members m1 ON al.performed_by = m1.member_id
+            LEFT JOIN system_admin sa ON al.performed_by = sa.id
+            LEFT JOIN members m2 ON al.affected_member = m2.member_id
             WHERE performed_by = ${memberId}
                OR affected_member = ${memberId}
             ORDER BY created_at DESC
@@ -100,7 +114,9 @@ const mapPrismaToAuditLog = (raw: RawAuditLogResult): AuditLog => ({
     ip_address: raw.ip_address,
     created_at: raw.created_at,
     status: raw.status,
-    affected_member: raw.affected_member || undefined
+    affected_member: raw.affected_member || undefined,
+    performer_name: raw.performer_name || undefined,
+    affected_name: raw.affected_name || undefined
 });
 
 export default auditRepository;

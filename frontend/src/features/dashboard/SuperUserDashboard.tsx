@@ -191,13 +191,6 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
               <span>System Settings</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
-            <button
-              onClick={() => navigate("/audit-logs")}
-              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
-            >
-              <span>Audit Logs</span>
-              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
-            </button>
           </div>
         </div>
 

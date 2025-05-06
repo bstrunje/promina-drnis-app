@@ -110,7 +110,8 @@ router.get('/dashboard/stats', async (req, res) => {
         
         fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
         if (fileStats[0]) {
-          lastBackup = fileStats[0].mtime.toLocaleString();
+          // Formatiramo datum u ISO format umjesto korištenja toLocaleString
+          lastBackup = fileStats[0].mtime.toISOString();
         }
       }
     } catch (err) {

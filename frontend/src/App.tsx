@@ -19,6 +19,8 @@ import Settings from "./features/settings/Settings";
 import DateMockTool from './features/testing/DateMockTool';
 import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
+import SystemAdminRoutes from './features/systemAdmin/SystemAdminRoutes';
+import { TimeZoneProvider } from './context/TimeZoneContext';
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -32,9 +34,6 @@ function AppContent() {
   // Pomoćna funkcija za određivanje početne stranice na temelju uloge
   const getDashboardRoute = () => {
     if (!user) return "/login";
-    
-    // Dodajmo console.log za debugging
-    console.log("User role for dashboard redirect:", user.role);
     
     switch (user.role) {
       case 'admin':
@@ -52,6 +51,9 @@ function AppContent() {
     <div className="min-h-screen bg-gray-100">
       {user && <Navigation user={user} onLogout={handleLogout} />}
       <Routes>
+        {/* System Admin rute - potpuno odvojene od postojećeg sustava autentikacije */}
+        <Route path="/system-admin/*" element={<SystemAdminRoutes />} />
+        
         <Route path="/" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
         
@@ -94,16 +96,19 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-        {import.meta.env.DEV && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <DateMockTool />
-          </div>
-        )}
-        <Toaster />
-      </ToastProvider>
+      <TimeZoneProvider>
+        <ToastProvider>
+          <AppContent />
+          {import.meta.env.DEV && (
+            <div className="fixed bottom-4 right-4 z-50">
+              <DateMockTool />
+            </div>
+          )}
+          <Toaster />
+        </ToastProvider>
+      </TimeZoneProvider>
     </AuthProvider>
   );
 }
+
 export default App;

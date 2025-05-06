@@ -256,31 +256,31 @@ export default function CardNumberManagement() {
         <CardTitle>Card Number Management</CardTitle>
         <CardDescription>
           Add and manage membership card numbers
-          {cardStats && (
-            <div className="mt-2 text-sm font-medium flex flex-col space-y-1">
-              <div className="flex items-center justify-between">
-                <span>
-                  Total card numbers: {cardStats.total}
-                  {isLoadingCount && <span className="ml-2">(refreshing...)</span>}
-                </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0" 
-                  title="Refresh card statistics"
-                  onClick={refreshCardNumbers}
-                  disabled={isLoadingCount}
-                >
-                  <RefreshCw className={`h-3 w-3 ${isLoadingCount ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-              <div className="flex space-x-4">
-                <span className="text-green-600">Available: {cardStats.available}</span>
-                <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
-              </div>
-            </div>
-          )}
         </CardDescription>
+        {cardStats && (
+          <div className="mt-2 text-sm font-medium flex flex-col space-y-1">
+            <div className="flex items-center justify-between">
+              <span>
+                Total card numbers: {cardStats.total}
+                {isLoadingCount && <span className="ml-2">(refreshing...)</span>}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0" 
+                title="Refresh card statistics"
+                onClick={refreshCardNumbers}
+                disabled={isLoadingCount}
+              >
+                <RefreshCw className={`h-3 w-3 ${isLoadingCount ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            <div className="flex space-x-4">
+              <span className="text-green-600">Available: {cardStats.available}</span>
+              <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {/* New accordion-style UI */}

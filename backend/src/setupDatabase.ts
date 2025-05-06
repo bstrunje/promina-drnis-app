@@ -175,7 +175,7 @@ export async function setupDatabase(): Promise<void> {
                 performed_by INTEGER REFERENCES members(member_id),
                 action_details TEXT NOT NULL,
                 ip_address VARCHAR(45),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                 status VARCHAR(20),
                 affected_member INTEGER REFERENCES members(member_id)
             );

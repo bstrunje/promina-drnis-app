@@ -3,6 +3,14 @@ import { Request } from 'express';
 import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 
+interface LogEventParams {
+    event_type: string;
+    user_id: number | null;
+    user_type: string | null;
+    ip_address: string;
+    details: Record<string, any>;
+}
+
 const auditService = {
     async logAction(
         action_type: string,
@@ -27,6 +35,29 @@ const auditService = {
         } catch (error) {
             console.error('Error logging audit action:', error);
             // Don't throw the error - just log it and continue
+        }
+    },
+
+    // Nova metoda za logiranje događaja koristeći parametrizirani objekt
+    async logEvent(params: LogEventParams): Promise<void> {
+        try {
+            const { event_type, user_id, details, ip_address } = params;
+            
+            // Pretvori detalje u string format
+            const detailsStr = JSON.stringify(details);
+            
+            // Koristi direktno repository za stvaranje zapisa
+            await auditRepository.create(
+                event_type,
+                user_id,
+                detailsStr,
+                ip_address,
+                'success', // Pretpostavljeni status
+                details.affected_member || null
+            );
+        } catch (error) {
+            console.error('Error logging audit event:', error);
+            // Ne bacaj grešku - samo je logiraj i nastavi
         }
     },
 

@@ -5,6 +5,7 @@ import { Member } from '@shared/member';
 import { Menu, X, User, Activity, Users, Settings, Shield, FileText, LogOut, MessageCircle } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../src/utils/config';
+import { MESSAGE_EVENTS } from '../src/utils/events';
 
 interface NavigationProps {
   user: Member | null;
@@ -54,7 +55,17 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
     // Dohvati nove poruke svakih 60 sekundi
     const interval = setInterval(fetchUnreadMessages, 60000);
     
-    return () => clearInterval(interval);
+    // Slušaj događaj za ažuriranje brojača nepročitanih poruka
+    const handleUnreadMessagesUpdated = () => {
+      fetchUnreadMessages();
+    };
+    
+    window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
+    };
   }, [user]);
   
   if (!user) return null;
@@ -119,12 +130,16 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                   <Shield size={20} className="inline sm:hidden" />
                   <span>Super User</span>
                 </Link>
-                <Link to="/audit-logs" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
-                  <FileText size={20} className="inline sm:hidden" />
-                  <span>Audit Logs</span>
-                </Link>
               </>
             )}
+            {/* Audit Logs link nije dostupan ni za jednu korisničku rolu jer 'system-admin' nije dio MemberRole tipa na frontendu */}
+            {/* Ova logika se treba rješavati kroz SystemAdmin sučelje, a ne kroz korisničku navigaciju */}
+            {/* Uklanjamo u potpunosti prikaz Audit Logs linka iz Navigation.tsx */}
+            {/* System Admin login link ostaje vidljiv svima */}
+            <Link to="/system-admin/login" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium" onClick={closeMenu}>
+              <Shield size={20} className="inline sm:hidden" />
+              <span>System Admin</span>
+            </Link>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
                 {user.first_name} {user.last_name}

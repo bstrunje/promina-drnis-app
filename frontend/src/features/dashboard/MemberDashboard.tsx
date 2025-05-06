@@ -5,6 +5,7 @@ import { Users, Activity, Mail, User, RefreshCw, Bell } from "lucide-react";
 import { Member } from "@shared/member";
 import { API_BASE_URL } from "@/utils/config";
 import axios from "axios";
+import { MESSAGE_EVENTS } from "../../utils/events";
 
 interface Props {
   member: Member;
@@ -17,7 +18,6 @@ interface MemberStats {
 }
 
 const MemberDashboard: React.FC<Props> = ({ member }) => {
-  console.log('Rendering MemberDashboard for:', member.full_name);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +65,17 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
   useEffect(() => {
     fetchDashboardStats();
+    
+    // Dodajemo slušanje događaja za ažuriranje statistike kad se poruka označi kao pročitana
+    const handleUnreadMessagesUpdated = () => {
+      fetchDashboardStats();
+    };
+    
+    window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
+    
+    return () => {
+      window.removeEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
+    };
   }, []);
 
   return (

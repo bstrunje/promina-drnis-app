@@ -20,19 +20,38 @@ let hasOriginalBeenStored: boolean = false;
 // Zastavica koja označava koristi li se trenutno test način rada
 let inTestMode: boolean = false;
 
+// Funkcija za dohvat trenutno konfigurirane vremenske zone
+let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
+
+/**
+ * Postavlja vremensku zonu koja će se koristiti za sve funkcije formatiranja datuma
+ * @param timeZone String s vremenskom zonom (npr. 'Europe/Zagreb', 'UTC')
+ */
+export function setCurrentTimeZone(timeZone: string): void {
+  if (timeZone) {
+    // Spremamo u globalnu varijablu
+    currentTimeZone = timeZone;
+    
+    // Spremimo i u localStorage za trajno pohranjivanje
+    localStorage.setItem('promina_app_timezone', timeZone);
+  }
+}
+
+/**
+ * Vraća trenutno aktivnu vremensku zonu
+ * @returns String s vremenskom zonom
+ */
+export function getCurrentTimeZone(): string {
+  return currentTimeZone;
+}
+
 // Inicijalizacija i učitavanje mock datuma iz localStorage ako postoji
 function initMockDate(): void {
   const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
   if (storedMockDate) {
     try {
       mockDate = new Date(storedMockDate);
-      console.log(`📅 Mock datum učitan iz localStorage: ${mockDate.toISOString()}`);
-      
-      // Ako imamo mock datum, postavimo test način rada
-      inTestMode = true;
-      localStorage.setItem(IS_TEST_MODE_KEY, 'true');
     } catch (e) {
-      console.error('Greška prilikom učitavanja mock datuma iz localStorage:', e);
       mockDate = null;
       localStorage.removeItem(MOCK_DATE_KEY);
       inTestMode = false;
@@ -60,6 +79,12 @@ function initMockDate(): void {
   if (storedTestMode) {
     inTestMode = storedTestMode === 'true';
   }
+  
+  // Učitavanje postavljene vremenske zone
+  const storedTimeZone = localStorage.getItem('promina_app_timezone');
+  if (storedTimeZone) {
+    currentTimeZone = storedTimeZone;
+  }
 }
 
 // Pozovi inicijalizaciju odmah
@@ -70,16 +95,6 @@ initMockDate();
  */
 export function getCurrentDate(): Date {
   if (mockDate) {
-    // Svakih 30 minuta osvježi podatak da sustav koristi mock datum (za dijagnostiku)
-    const thirtyMinutesInMs = 30 * 60 * 1000;
-    const now = new Date().getTime();
-    const lastLog = parseInt(localStorage.getItem('promina_last_mock_date_log') || '0', 10);
-    
-    if (now - lastLog > thirtyMinutesInMs) {
-      console.log(`📅 Koristi se simulirani datum: ${mockDate.toISOString()}`);
-      localStorage.setItem('promina_last_mock_date_log', now.toString());
-    }
-    
     return mockDate;
   }
   return new Date();
@@ -118,10 +133,8 @@ export function setMockDate(date: Date | null): void {
   // Spremi u localStorage za trajnost
   if (mockDate) {
     localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
-    console.log(`📅 Mock datum postavljen i spremljen u localStorage: ${mockDate.toISOString()}`);
   } else {
     localStorage.removeItem(MOCK_DATE_KEY);
-    console.log('📅 Mock datum resetiran i uklonjen iz localStorage');
   }
 }
 
@@ -153,7 +166,6 @@ export function resetMockDate(): void {
   
   localStorage.removeItem(MOCK_DATE_KEY);
   localStorage.removeItem(IS_TEST_MODE_KEY);
-  console.log('📅 Mock datum resetiran i uklonjen iz localStorage');
 }
 
 /**
@@ -172,21 +184,94 @@ export function isCurrentYear(date: Date): boolean {
 }
 
 /**
- * Vraća formatiran datum kao string
- * @param date - Datum koji treba formatirati (ili null za trenutni datum)
- * @param dateFormat - Format datuma (default: 'dd.MM.yyyy')
+ * Pretvara ISO string ili Date objekt u željeni format prikaza
+ * @param date Datum za formatiranje (ISO string, timestamp ili Date objekt)
+ * @param pattern Obrazac formatiranja (npr. 'dd.MM.yyyy HH:mm:ss')
+ * @returns Formatirani string datuma
  */
-export function formatDate(date: Date | string | null = null, dateFormat: string = 'dd.MM.yyyy'): string {
+export function formatDate(
+  date: string | Date | number | undefined | null,
+  pattern: string = 'dd.MM.yyyy'
+): string {
   if (!date) return '';
-  
+
   try {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return format(d, dateFormat, { locale: hr });
+    // Pretvori u Date objekt, ovisi o tipu podatka
+    let dateObj: Date;
+    
+    if (typeof date === 'string') {
+      // Ako je string s ISO formatom (sadrži 'T'), koristi parseISO za precizniju obradu
+      dateObj = date.includes('T') ? parseISO(date) : new Date(date);
+    } else if (typeof date === 'number') {
+      dateObj = new Date(date);
+    } else {
+      dateObj = date;
+    }
+    
+    if (!isValid(dateObj)) {
+      return '';
+    }
+    
+    // Koristi Intl.DateTimeFormat za formatiranje s ispravnom vremenskom zonom
+    const formatter = new Intl.DateTimeFormat('hr-HR', {
+      timeZone: currentTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: pattern.includes('HH') ? '2-digit' : undefined, 
+      minute: pattern.includes('mm') ? '2-digit' : undefined,
+      second: pattern.includes('ss') ? '2-digit' : undefined,
+      hour12: false
+    });
+    
+    const parts = formatter.formatToParts(dateObj);
+    let formattedDate = pattern;
+    
+    // Zamijeni placeholdere s vrijednostima
+    for (const part of parts) {
+      switch (part.type) {
+        case 'day':
+          formattedDate = formattedDate.replace('dd', part.value);
+          break;
+        case 'month':
+          formattedDate = formattedDate.replace('MM', part.value);
+          break;
+        case 'year':
+          formattedDate = formattedDate.replace('yyyy', part.value);
+          break;
+        case 'hour':
+          formattedDate = formattedDate.replace('HH', part.value);
+          break;
+        case 'minute':
+          formattedDate = formattedDate.replace('mm', part.value);
+          break;
+        case 'second':
+          formattedDate = formattedDate.replace('ss', part.value);
+          break;
+      }
+    }
+    
+    return formattedDate;
   } catch (error) {
-    console.error('Error formatting date:', error);
+    console.error('Greška prilikom formatiranja datuma:', error);
     return '';
   }
 }
+
+/**
+ * OVAJ KOD SE MOŽE KORISTITI KAO PRIMJER ZA OSTALE KOMPONENTE
+ * 
+ * // Import funkcije za formatiranje datuma
+ * import { formatDate } from "../../utils/dateUtils";
+ * 
+ * // Pravilno korištenje
+ * formatDate(myDate, 'dd.MM.yyyy HH:mm:ss')
+ * 
+ * // NIKAD NE KORISTITI:
+ * // new Date().toLocaleString()
+ * // new Date().toISOString()
+ * // format(new Date(), 'dd.MM.yyyy')
+ */
 
 /**
  * Pretvara datum iz ISO formata u hrvatski format za prikaz u input poljima

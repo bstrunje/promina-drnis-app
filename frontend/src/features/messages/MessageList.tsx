@@ -11,7 +11,19 @@ import {
 import { useToast } from "@components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { Bell, CheckCircle, Archive, Trash2, Inbox, Send, PlusCircle, ChevronDown, ChevronRight, Users, UserCheck } from "lucide-react";
+import { 
+  Bell, 
+  CheckCircle, 
+  Archive, 
+  Trash2, 
+  Inbox, 
+  Send, 
+  PlusCircle, 
+  ChevronDown, 
+  ChevronRight, 
+  Users, 
+  UserCheck 
+} from "lucide-react";
 import { 
   Tabs, 
   TabsContent, 
@@ -22,6 +34,8 @@ import { useAuth } from '../../context/AuthContext';
 import AdminMessageSender from './AdminMessageSender';
 import MemberMessageList from './MemberMessageList';
 import BackToDashboard from '../../../components/BackToDashboard';
+import { MESSAGE_EVENTS } from '../../utils/events';
+import { formatDate } from "../../utils/dateUtils";
 
 interface Message {
   message_id: number;
@@ -63,6 +77,7 @@ export default function MessageList() {
   const [showSendForm, setShowSendForm] = useState(false);
   const [groupedMessages, setGroupedMessages] = useState<MessageGroup[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Dohvaćanje poruka koje su članovi poslali adminu
   const fetchMessages = async () => {
@@ -76,6 +91,7 @@ export default function MessageList() {
       const data = await getAdminMessages();
       setMessages(data);
       setLoading(false);
+      setUnreadCount(data.filter(m => m.status === 'unread').length);
     } catch (error) {
       toast({
         title: "Greška",
@@ -149,16 +165,32 @@ export default function MessageList() {
   const onMarkAsRead = async (messageId: number) => {
     try {
       await markMessageAsRead(messageId);
-      await fetchMessages();
+      
+      // Ažuriraj lokalni state
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.message_id === messageId 
+            ? { ...msg, status: 'read' } 
+            : msg
+        )
+      );
+      
+      // Ažuriraj broj nepročitanih poruka
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Emitiraj događaj za osvježavanje brojača u navigaciji
+      const event = new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED);
+      window.dispatchEvent(event);
+      
       toast({
-        title: "Uspjeh",
-        description: "Poruka označena kao pročitana",
-        variant: "success"
+        title: "Poruka označena",
+        description: "Poruka je označena kao pročitana",
       });
+      
     } catch (error) {
       toast({
         title: "Greška",
-        description: error instanceof Error ? error.message : "Nije moguće označiti poruku kao pročitanu",
+        description: error instanceof Error ? error.message : 'Nije moguće označiti poruku kao pročitanu',
         variant: "destructive"
       });
     }
@@ -298,10 +330,6 @@ export default function MessageList() {
     return message.status === filter;
   });
 
-  const unreadCount = messages.filter(m => m.status === 'unread').length;
-  const archivedCount = messages.filter(m => m.status === 'archived').length;
-  const readCount = messages.filter(m => m.status === 'read').length;
-
   // Ako je obični član, prikaži samo poruke koje je admin poslao članu
   if (user?.role === 'member') {
     return <MemberMessageList />;
@@ -329,7 +357,7 @@ export default function MessageList() {
               className="flex items-center space-x-1"
             >
               <Inbox className="h-4 w-4" />
-              <span>Pročitane ({readCount})</span>
+              <span>Pročitane</span>
             </Button>
             <Button 
               variant={filter === 'archived' ? "default" : "outline"}
@@ -338,7 +366,7 @@ export default function MessageList() {
               className="flex items-center space-x-1"
             >
               <Archive className="h-4 w-4" />
-              <span>Arhivirane ({archivedCount})</span>
+              <span>Arhivirane</span>
             </Button>
           </div>
         </div>
@@ -403,7 +431,7 @@ export default function MessageList() {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-2 text-sm text-gray-500">
-                      {new Date(message.created_at).toLocaleString('hr-HR')}
+                      {formatDate(message.created_at, 'dd.MM.yyyy HH:mm:ss')}
                     </div>
                     <div className="whitespace-pre-wrap">
                       {message.message_text}
@@ -465,7 +493,7 @@ export default function MessageList() {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-2 text-sm text-gray-500">
-                      {new Date(firstMessage.created_at).toLocaleString('hr-HR')}
+                      {formatDate(firstMessage.created_at, 'dd.MM.yyyy HH:mm:ss')}
                     </div>
                     <div className="whitespace-pre-wrap">
                       {firstMessage.message_text}
@@ -529,7 +557,7 @@ export default function MessageList() {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-2 text-sm text-gray-500">
-                      {new Date(firstMessage.created_at).toLocaleString('hr-HR')}
+                      {formatDate(firstMessage.created_at, 'dd.MM.yyyy HH:mm:ss')}
                     </div>
                     <div className="whitespace-pre-wrap">
                       {firstMessage.message_text}
