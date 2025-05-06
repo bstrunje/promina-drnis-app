@@ -193,40 +193,6 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             </button>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium mb-4">System Status</h3>
-          {loading ? (
-            <div className="space-y-4">
-              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
-              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
-              <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b">
-                <span className="text-gray-600">System Health</span>
-                <span className={`font-medium ${
-                  stats.systemHealth === "Optimal" ? "text-green-600" : 
-                  stats.systemHealth === "Warning" ? "text-yellow-600" : 
-                  "text-gray-600"
-                }`}>
-                  {stats.systemHealth}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pb-2 border-b">
-                <span className="text-gray-600">Last Backup</span>
-                <span className="text-gray-900">{stats.lastBackup}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Database Status</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Connected
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

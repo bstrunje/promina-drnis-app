@@ -13,6 +13,7 @@ import debugRoutes from './routes/debug.js';
 import { runAllMigrations } from './runMigrations.js';
 import scheduledService from './services/scheduled.service.js';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
+import prisma from './utils/prisma.js';
 
 // Windows-friendly path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -176,7 +177,7 @@ async function initialize() {
         
         // Pokreni migracije nakon setupDatabase
         console.log('🔄 Pokretanje migracija...');
-        await runAllMigrations();
+        await runAllMigrations(prisma);
         console.log('✅ Migracije uspješno izvršene');
         
         // Pokreni server

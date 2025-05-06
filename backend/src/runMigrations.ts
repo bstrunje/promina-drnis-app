@@ -7,11 +7,13 @@ import { addMessageDirectionFields } from './migrations/add_message_direction_fi
 import { addMemberNicknameField } from './migrations/add_member_nickname.js';
 import { addSystemAdminTable } from './migrations/add_system_admin_table.js';
 import { addTimeZoneToSettings } from './migrations/add_time_zone_to_settings.js';
+import { runActivitiesMigration } from './migrations/runActivitiesMigration.js';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Pokreće sve migracije koje su potrebne za aplikaciju
  */
-export async function runAllMigrations(): Promise<void> {
+export async function runAllMigrations(prisma: PrismaClient): Promise<void> {
   console.log('🚀 Pokretanje migracija...');
   
   try {
@@ -24,6 +26,7 @@ export async function runAllMigrations(): Promise<void> {
     await addMemberNicknameField(); // Dodana migracija za polje nadimka (nickname) članova
     await addSystemAdminTable(); // Dodana migracija za system_admin tablicu i proširenje AdminPermissions modela
     await addTimeZoneToSettings(); // Dodana migracija za vremensku zonu u postavkama
+    await runActivitiesMigration(prisma);
     
     console.log('✅ Migracije uspješno izvršene');
   } catch (error) {

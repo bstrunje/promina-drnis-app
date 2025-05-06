@@ -77,7 +77,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     // Koristi try-catch za svaki upit kako bi se izbjeglo potpuno prekidanje funkcije ako neki upit ne uspije
     let unreadMessages = 0;
     try {
-      unreadMessages = await (prisma as any).message.count({
+      unreadMessages = await prisma.message.count({
         where: {
           recipient_id: memberId,
           status: 'unread'
@@ -92,9 +92,9 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     // Dohvati broj nedavnih aktivnosti
     let recentActivities = 0;
     try {
-      recentActivities = await (prisma as any).activity.count({
+      recentActivities = await prisma.activity.count({
         where: {
-          member_id: memberId,
+          created_by: memberId,
           created_at: {
             gte: new Date(new Date().setDate(new Date().getDate() - 30)) // Aktivnosti u zadnjih 30 dana
           }

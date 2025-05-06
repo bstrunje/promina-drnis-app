@@ -325,26 +325,33 @@ const SystemAdminDashboard: React.FC = () => {
                 <h3 className="text-lg font-medium mb-4">Status sustava</h3>
                 {statsLoading ? (
                   <div className="space-y-4">
-                    <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
-                    <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+                    <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
+                    <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
+                    <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Zdravlje sustava</p>
-                      <div className={`px-3 py-2 rounded-md ${
-                        stats.systemHealth === 'Healthy' ? 'bg-green-100 text-green-800' :
-                        stats.systemHealth === 'Warning' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                    <div className="flex items-center justify-between pb-2 border-b">
+                      <span className="text-gray-600">Zdravlje sustava</span>
+                      <span className={`font-medium ${
+                        stats.systemHealth === 'Healthy' ? 'text-green-600' :
+                        stats.systemHealth === 'Warning' ? 'text-yellow-600' :
+                        'text-red-600'
                       }`}>
                         {stats.systemHealth === 'Healthy' ? 'Zdravo' :
                          stats.systemHealth === 'Warning' ? 'Upozorenje' :
                          'Kritično'}
-                      </div>
+                      </span>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Zadnja sigurnosna kopija</p>
-                      <p className="font-medium">{stats.lastBackup === 'Never' ? 'Nikad' : formatDate(stats.lastBackup, 'dd.MM.yyyy HH:mm:ss')}</p>
+                    <div className="flex items-center justify-between pb-2 border-b">
+                      <span className="text-gray-600">Zadnja sigurnosna kopija</span>
+                      <span className="text-gray-900">{stats.lastBackup === 'Never' ? 'Nikad' : formatDate(stats.lastBackup, 'dd.MM.yyyy HH:mm:ss')}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Status baze podataka</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Povezano
+                      </span>
                     </div>
                   </div>
                 )}
