@@ -7,12 +7,115 @@ import { useSystemAdmin } from '../../context/SystemAdminContext';
 import { useTimeZone } from '../../context/TimeZoneContext'; // Dodana linija
 import { SystemSettings } from '@shared/settings.types';
 import { getCurrentDate } from '../../utils/dateUtils';
+import systemAdminApi from './systemAdminApi';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
+}
+
+export function ChangePasswordForm() {
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [message, setMessage] = useState('');
+  const { admin, refreshAdmin } = useSystemAdmin();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    let usernameChanged = false;
+    try {
+      if (newUsername && newUsername !== admin?.username) {
+        await systemAdminApi.patch('/system-admin/change-username', { newUsername });
+        usernameChanged = true;
+        await refreshAdmin(); // automatski osvježi username u UI
+      }
+      if (oldPassword && newPassword) {
+        if (newPassword !== confirm) {
+          setMessage('Nova lozinka i potvrda nisu iste.');
+          return;
+        }
+        await systemAdminApi.patch('/system-admin/change-password', { oldPassword, newPassword });
+      }
+      setMessage(
+        (usernameChanged ? 'Username uspješno promijenjen. ' : '') +
+        (oldPassword && newPassword ? 'Lozinka uspješno promijenjena.' : '')
+      );
+      setOldPassword('');
+      setNewPassword('');
+      setConfirm('');
+      setNewUsername('');
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Greška pri spremanju promjena.');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow">
+      <label htmlFor="newUsername" className="font-medium">Novi username (opcionalno)</label>
+      <input
+        id="newUsername"
+        type="text"
+        autoComplete="username"
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={newUsername}
+        onChange={e => setNewUsername(e.target.value)}
+        placeholder={admin?.username || 'Trenutni username'}
+      />
+      <label htmlFor="oldPassword" className="font-medium">Stara lozinka</label>
+      {/* Skriveno polje za username radi accessibility i browser autofill */}
+      <input
+        type="text"
+        name="username"
+        autoComplete="username"
+        value={admin?.username || ''}
+        style={{ display: 'none' }}
+        readOnly
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <input
+        id="oldPassword"
+        type="password"
+        autoComplete="current-password"
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={oldPassword}
+        onChange={e => setOldPassword(e.target.value)}
+        required={!!(newPassword || confirm)}
+      />
+      <label htmlFor="newPassword" className="font-medium">Nova lozinka</label>
+      <input
+        id="newPassword"
+        type="password"
+        autoComplete="new-password"
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={newPassword}
+        onChange={e => setNewPassword(e.target.value)}
+        required={!!oldPassword}
+      />
+      <label htmlFor="confirmPassword" className="font-medium">Potvrdi novu lozinku</label>
+      <input
+        id="confirmPassword"
+        type="password"
+        autoComplete="new-password"
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={confirm}
+        onChange={e => setConfirm(e.target.value)}
+        required={!!oldPassword}
+      />
+      <button
+        type="submit"
+        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+      >
+        Spremi promjene
+      </button>
+      {message && <div className={`mt-2 text-sm ${message.includes('uspješno') ? 'text-green-600' : 'text-red-600'}`}>{message}</div>}
+    </form>
+  );
 }
 
 // Izdvojeni formular za bolje organiziran kod
@@ -189,7 +292,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 };
 
 const SystemAdminSettings: React.FC = () => {
-  const { admin } = useSystemAdmin();
+  const { admin, refreshAdmin } = useSystemAdmin();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
@@ -351,6 +454,10 @@ const SystemAdminSettings: React.FC = () => {
           onChange={handleChange}
           onSubmit={handleSubmit}
         />
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold mb-2">Promjena lozinke</h2>
+          <ChangePasswordForm />
+        </section>
       </main>
     </div>
   );

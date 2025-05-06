@@ -14,6 +14,7 @@ interface SystemAdminContextType {
   login: (credentials: SystemAdminLoginData) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  refreshAdmin: () => Promise<void>;
 }
 
 // Default vrijednosti za kontekst
@@ -22,7 +23,8 @@ const defaultContext: SystemAdminContextType = {
   admin: null,
   login: async () => {},
   logout: () => {},
-  loading: true
+  loading: true,
+  refreshAdmin: async () => {}
 };
 
 // Kreiranje konteksta
@@ -85,13 +87,32 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
     navigate('/system-admin/login');
   };
 
+  // Funkcija za dohvat aktualnog admina iz backenda (npr. nakon promjene username-a)
+  const refreshAdmin = async () => {
+    const token = localStorage.getItem('systemAdminToken');
+    if (!token) return;
+    try {
+      const response = await fetch(`${process.env.NODE_ENV === 'production' ? 'https://promina-drnis-api.onrender.com/api' : 'http://localhost:3000/api'}/system-admin/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAdmin(data.admin);
+        localStorage.setItem('systemAdmin', JSON.stringify(data.admin));
+      }
+    } catch (err) {
+      // fail silently
+    }
+  };
+
   // Vrijednosti koje će biti dostupne kroz kontekst
   const contextValue: SystemAdminContextType = {
     isAuthenticated,
     admin,
     login,
     logout,
-    loading
+    loading,
+    refreshAdmin
   };
 
   return (

@@ -2,11 +2,21 @@
 import express from 'express';
 import systemAdminController from '../controllers/systemAdmin.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
+import { changePassword } from '../controllers/systemAdmin.controller.js';
+import { requireSystemAdmin } from '../middleware/authMiddleware.js';
+import { changeUsername } from '../controllers/systemAdmin.controller.js';
+import prisma from '../utils/prisma.js';
 
 const router = express.Router();
 
 // Javne rute (bez autentikacije)
 router.post('/login', systemAdminController.login);
+
+// Ruta za postavljanje lozinke
+router.patch('/system-admin/change-password', requireSystemAdmin, changePassword);
+
+// Ruta za promjenu korisničkog imena
+router.patch('/system-admin/change-username', requireSystemAdmin, changeUsername);
 
 // Provjera postoji li system admin u sustavu (potrebno za inicijalno postavljanje)
 router.get('/exists', systemAdminController.checkSystemAdminExists);
@@ -33,5 +43,13 @@ router.delete('/member-permissions/:memberId', systemAdminController.removeMembe
 
 // Dohvat revizijskih zapisa
 router.get('/audit-logs', systemAdminController.getAuditLogs);
+
+// Dohvati podatke o trenutno prijavljenom system adminu
+router.get('/system-admin/me', requireSystemAdmin, async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  const admin = await prisma.systemAdmin.findUnique({ where: { id: req.user.id }, select: { id: true, username: true, display_name: true } });
+  if (!admin) return res.status(404).json({ message: 'Not found' });
+  res.json({ admin });
+});
 
 export default router;

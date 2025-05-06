@@ -258,4 +258,4 @@ const roles = {
 };
 
 // Export middleware
-export { authenticateToken as authMiddleware, checkRole, checkPermission, roles };
+export { authenticateToken as authMiddleware, checkRole, checkPermission, roles, requireSystemAdmin };

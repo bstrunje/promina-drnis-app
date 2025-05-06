@@ -11,18 +11,72 @@ import prisma from '../utils/prisma.js';
 
 // Privremena definicija tipova dok se ne implementira potpuno rješenje
 type SystemAdminLoginData = {
-  username: string;
-  password: string;
+    username: string;
+    password: string;
 };
 
 // Extend Express Request type to include user
 declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
+    namespace Express {
+        interface Request {
+            user?: DatabaseUser;
+        }
     }
-  }
 }
+
+// Promjena lozinke system admina
+export const changePassword = async (req: Request, res: Response) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const adminId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
+    const { oldPassword, newPassword } = req.body;
+
+    const admin = await prisma.systemAdmin.findUnique({ where: { id: adminId } });
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    const isMatch = await bcrypt.compare(oldPassword, admin.password_hash);
+    if (!isMatch) return res.status(400).json({ message: 'Pogrešna stara lozinka' });
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await prisma.systemAdmin.update({
+        where: { id: adminId },
+        data: { password_hash: newHash },
+    });
+
+    return res.json({ message: 'Lozinka uspješno promijenjena' });
+};
+
+// PATCH /system-admin/change-username
+export const changeUsername = async (req: Request, res: Response) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const adminId = req.user.id;
+    const { newUsername } = req.body;
+    if (!newUsername || typeof newUsername !== 'string' || newUsername.length < 4) {
+        return res.status(400).json({ message: 'Novi username mora imati barem 4 znaka.' });
+    }
+    // Provjeri je li username već zauzet
+    const existing = await prisma.systemAdmin.findUnique({ where: { username: newUsername } });
+    if (existing) {
+        return res.status(409).json({ message: 'Taj username je već zauzet.' });
+    }
+    // Promijeni username
+    const updated = await prisma.systemAdmin.update({
+        where: { id: adminId },
+        data: { username: newUsername },
+    });
+    // Audit log (opcionalno)
+    await auditService.logAction && auditService.logAction(
+        'CHANGE_USERNAME',
+        adminId,
+        `Promijenjen username na ${newUsername}`,
+        req,
+        'success'
+    );
+    return res.json({ message: 'Username uspješno promijenjen.', username: updated.username });
+};
 
 const systemAdminController = {
     // Prijava system admina
@@ -43,12 +97,12 @@ const systemAdminController = {
 
             // Sanitizacija ulaznih podataka
             const sanitizedUsername = username.trim();
-            
+
             console.log(`System Admin login attempt for user "${sanitizedUsername}" from IP ${userIP}`);
 
             // Autentikacija
             const admin = await systemAdminService.authenticate(sanitizedUsername, password);
-            
+
             if (!admin) {
                 console.warn(`Failed System Admin login: user "${sanitizedUsername}" not found or invalid credentials (IP: ${userIP})`);
                 res.status(401).json({ message: "Invalid username or password" });
@@ -57,7 +111,7 @@ const systemAdminController = {
 
             // Generiranje JWT tokena
             const token = systemAdminService.generateToken(admin);
-            
+
             // Bilježenje uspješne prijave
             await auditService.logEvent({
                 event_type: 'SYSTEM_ADMIN_LOGIN',
@@ -69,17 +123,17 @@ const systemAdminController = {
                     admin_id: admin.id
                 }
             });
-            
+
             console.log(`System Admin "${sanitizedUsername}" successfully logged in (IP: ${userIP})`);
-            
+
             // Vraćamo samo osnovne podatke o administratoru
-            res.json({ 
+            res.json({
                 admin: {
                     id: admin.id,
                     username: admin.username,
                     display_name: admin.display_name
                 },
-                token 
+                token
             });
         } catch (error) {
             console.error('System Admin login error:', error);
@@ -95,25 +149,25 @@ const systemAdminController = {
         try {
             const { username, email, password, display_name } = req.body;
             const userIP = req.ip || req.socket.remoteAddress || 'unknown';
-            
+
             // Provjera postoji li već system admin s tim korisničkim imenom
             const existingAdmin = await systemAdminRepository.findByUsername(username);
             if (existingAdmin) {
                 res.status(400).json({ message: "Username already exists" });
                 return;
             }
-            
+
             // Provjera postoji li već system admin s tim emailom
             const adminWithEmail = await systemAdminRepository.findByEmail(email);
             if (adminWithEmail) {
                 res.status(400).json({ message: "Email already in use" });
                 return;
             }
-            
+
             // Kreiranje hash-a lozinke
             const saltRounds = 10;
             const passwordHash = await bcrypt.hash(password, saltRounds);
-            
+
             // Kreiranje novog administratora
             const admin = await systemAdminService.createSystemAdmin({
                 username,
@@ -121,7 +175,7 @@ const systemAdminController = {
                 password_hash: passwordHash,
                 display_name
             });
-            
+
             // Bilježenje kreacije novog admina
             await auditService.logEvent({
                 event_type: 'SYSTEM_ADMIN_CREATED',
@@ -134,7 +188,7 @@ const systemAdminController = {
                     created_by: req.user?.id || 'unknown'
                 }
             });
-            
+
             // Vraćamo podatke bez lozinke
             const { password_hash, ...adminWithoutPassword } = admin;
             res.status(201).json({ admin: adminWithoutPassword });
@@ -169,15 +223,15 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const admins = await systemAdminService.getAllSystemAdmins();
-            
+
             // Vraćamo podatke bez hash-a lozinke
             const adminsWithoutPassword = admins.map(admin => {
                 const { password_hash, ...adminData } = admin;
                 return adminData;
             });
-            
+
             res.json(adminsWithoutPassword);
         } catch (error) {
             console.error('Error fetching all system admins:', error);
@@ -196,21 +250,21 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const memberId = parseInt(req.params.memberId);
-            
+
             if (isNaN(memberId)) {
                 res.status(400).json({ message: "Invalid member ID" });
                 return;
             }
-            
+
             const permissions = await systemAdminService.getMemberPermissions(memberId);
-            
+
             if (!permissions) {
                 res.status(404).json({ message: "Member or permissions not found" });
                 return;
             }
-            
+
             res.json(permissions);
         } catch (error) {
             console.error('Error fetching member permissions:', error);
@@ -229,27 +283,27 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const { memberId, permissions } = req.body;
-            
+
             if (!memberId || !permissions) {
                 res.status(400).json({ message: "Member ID and permissions are required" });
                 return;
             }
-            
+
             // Provjera postoji li član
             const memberExists = await prisma.member.findUnique({
                 where: { member_id: memberId }
             });
-            
+
             if (!memberExists) {
                 res.status(404).json({ message: "Member not found" });
                 return;
             }
-            
+
             // Ažuriranje ovlasti
             await systemAdminService.updateMemberPermissions(memberId, permissions, req.user.id);
-            
+
             await auditService.logEvent({
                 event_type: 'MEMBER_PERMISSIONS_UPDATED',
                 user_id: req.user.id,
@@ -261,7 +315,7 @@ const systemAdminController = {
                     permissions
                 }
             });
-            
+
             res.json({ message: "Permissions updated successfully" });
         } catch (error) {
             console.error('Error updating member permissions:', error);
@@ -280,7 +334,7 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const members = await systemAdminService.getMembersWithPermissions();
             res.json(members);
         } catch (error) {
@@ -300,25 +354,25 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const memberId = parseInt(req.params.memberId);
-            
+
             if (isNaN(memberId)) {
                 res.status(400).json({ message: "Invalid member ID" });
                 return;
             }
-            
+
             // Provjera postoje li ovlasti za ovog člana
             const permissions = await systemAdminService.getMemberPermissions(memberId);
-            
+
             if (!permissions) {
                 res.status(404).json({ message: "Member or permissions not found" });
                 return;
             }
-            
+
             // Uklanjanje ovlasti
             await systemAdminService.removeMemberPermissions(memberId);
-            
+
             await auditService.logEvent({
                 event_type: 'MEMBER_PERMISSIONS_REMOVED',
                 user_id: req.user.id,
@@ -329,7 +383,7 @@ const systemAdminController = {
                     removed_by: req.user.id
                 }
             });
-            
+
             res.json({ message: "Permissions removed successfully" });
         } catch (error) {
             console.error('Error removing member permissions:', error);
@@ -348,7 +402,7 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const stats = await systemAdminService.getDashboardStats();
             res.json(stats);
         } catch (error) {
@@ -368,7 +422,7 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             const settings = await systemAdminService.getSystemSettings();
             res.json(settings);
         } catch (error) {
@@ -388,43 +442,43 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             // Validacija ulaznih podataka
             const { cardNumberLength, renewalStartMonth, renewalStartDay, timeZone } = req.body;
-            
+
             if (
-                cardNumberLength === undefined || 
-                renewalStartMonth === undefined || 
+                cardNumberLength === undefined ||
+                renewalStartMonth === undefined ||
                 renewalStartDay === undefined
             ) {
-                res.status(400).json({ 
-                    message: "All required fields must be provided: cardNumberLength, renewalStartMonth, renewalStartDay" 
+                res.status(400).json({
+                    message: "All required fields must be provided: cardNumberLength, renewalStartMonth, renewalStartDay"
                 });
                 return;
             }
-            
+
             // Dodatna validacija
             if (cardNumberLength < 1 || cardNumberLength > 10) {
                 res.status(400).json({ message: "Card number length must be between 1 and 10" });
                 return;
             }
-            
+
             if (renewalStartDay < 1 || renewalStartDay > 31) {
                 res.status(400).json({ message: "Renewal start day must be between 1 and 31" });
                 return;
             }
-            
+
             if (renewalStartMonth !== 10 && renewalStartMonth !== 11) {
                 res.status(400).json({ message: "Renewal start month must be 10 (November) or 11 (December)" });
                 return;
             }
-            
+
             // Validacija vremenske zone (ako je prisutna)
             if (timeZone && !isValidTimeZone(timeZone)) {
                 res.status(400).json({ message: "Invalid time zone" });
                 return;
             }
-            
+
             // Ažuriranje postavki
             const updatedSettings = await systemAdminService.updateSystemSettings({
                 id: 'default',
@@ -433,7 +487,7 @@ const systemAdminController = {
                 renewalStartDay,
                 timeZone // Dodajemo vremensku zonu
             });
-            
+
             // Bilježenje promjene
             await auditService.logEvent({
                 event_type: 'SYSTEM_SETTINGS_UPDATED',
@@ -450,7 +504,7 @@ const systemAdminController = {
                     updated_by: req.user.id
                 }
             });
-            
+
             res.json(updatedSettings);
         } catch (error) {
             console.error('Error updating system settings:', error);
@@ -469,10 +523,10 @@ const systemAdminController = {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
-            
+
             // Dohvat revizijskih zapisa
             const logs = await auditService.getAllLogs();
-            
+
             res.status(200).json(logs);
         } catch (error) {
             console.error('Error fetching audit logs:', error);
