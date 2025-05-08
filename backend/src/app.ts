@@ -26,6 +26,7 @@ import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemAdminRoutes from './routes/systemAdmin.js';
+import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -212,10 +213,12 @@ app.use('/api/system-admin', systemAdminRoutes); // Registrirana ruta za SystemA
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
+// Poruke se šalju članovima po imenu (razlikuju se admini po imenu)
+app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin messages routes
+app.use('/api/generic-messages', genericMessagesRouter); // Integrate generic message system (no auth for testing)
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
-app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/card-numbers', cardNumberRoutes);
@@ -227,11 +230,17 @@ app.get('/api', (req: Request, res: Response) => {
     message: 'Welcome to Promina Drnis API',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
+    notes: 'Messages are sent to members by name; if multiple admins exist, they are distinguished by name.',
     endpoints: {
       auth: '/api/auth',
       members: '/api/members',
       activities: '/api/activities',
       audit: '/api/audit',
+      messages: {
+        member: '/api/members/:memberId/messages',
+        admin: '/api/messages',
+        generic: '/api/generic-messages'
+      },
       settings: '/api/settings',
       'system-admin': '/api/system-admin',
       debug: '/api/debug'

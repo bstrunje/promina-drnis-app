@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
+import { formatDate } from '../src/utils/dateUtils';
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
@@ -23,21 +24,12 @@ import { updateMembership } from '../src/utils/api';
 import { 
   getCurrentYear, 
   hasPaidMembershipFee,
-  determineMembershipStatus, 
-  findLastEndedPeriod, 
   translateEndReason, 
-  hasActiveMembershipPeriod,
   determineFeeStatus,
   adaptMembershipPeriods,
-  FeeStatus,
-  DetailedMembershipStatus,
-  getMembershipStatusDescription,
-  determineDetailedMembershipStatus,
-  determineMemberActivityStatus,
-  MembershipStatus,
-  ActivityStatus
-} from '@shared/memberStatus.types';
+  determineDetailedMembershipStatus} from '@shared/memberStatus.types';
 import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
+import { feeStatusLabels, feeStatusColors } from "@shared/helpers/membershipDisplay"; // Centralizirane labele i boje
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -79,6 +71,9 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   onMembershipHistoryUpdate,
   cardManagerProps
 }) => {
+  // DEBUG: logiraj cijelog membera i membership_details
+  console.log('DEBUG: member', member);
+  console.log('DEBUG: membership_details', member?.membership_details);
   const { toast, removeToast } = useToast();
   const { user } = useAuth();
   const [paymentDate, setPaymentDate] = useState('');
@@ -112,6 +107,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   useEffect(() => {
     // Koristi novu funkciju determineFeeStatus za određivanje statusa plaćanja
     const feeStatus = determineFeeStatus(member);
+    console.log('DEBUG: feeStatus iz determineFeeStatus:', feeStatus);
+    console.log('DEBUG: membership_details u useEffect:', member?.membership_details);
     setIsFeeCurrent(feeStatus === 'current');
   }, [member]);
 
@@ -389,25 +386,36 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 <div className="mb-3">
                   <span className="text-sm text-gray-500">Last Payment Date:</span>
                   <p>
-                    {format(parseISO(member.membership_details.fee_payment_date), 'dd.MM.yyyy')}
+                  {member.membership_details?.fee_payment_date
+                    ? formatDate(member.membership_details.fee_payment_date, 'dd.MM.yyyy.')
+                    : 'Nema podataka o plaćanju za tekuću ili iduću godinu'}
                   </p>
                 </div>
               )}
               
-              {(member.membership_details?.fee_payment_year || member.fee_payment_year) && (
+              {member.membership_details?.fee_payment_year && (
                 <div className="mb-3">
-                  <span className="text-sm text-gray-500">Payment Year:</span>
-                  <p>{member.membership_details?.fee_payment_year || member.fee_payment_year}</p>
+                  <span className="text-sm text-gray-500">Godina uplate:</span>
+                  <p>{member.membership_details.fee_payment_year}</p>
                 </div>
               )}
               
               <div className="mb-3">
-                <span className="text-sm text-gray-500">Status:</span>
-                <span className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${
-                  isFeeCurrent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {isFeeCurrent ? 'Current' : 'Payment Required'}
+                <span className="text-sm text-gray-500">Status uplate:</span>
+                {(() => {
+                  const feeStatus = determineFeeStatus(member);
+                  console.log('DEBUG: fee_payment_date:', member.membership_details?.fee_payment_date);
+                  console.log('DEBUG: fee_payment_year:', member.membership_details?.fee_payment_year);
+                  console.log('DEBUG: determineFeeStatus:', feeStatus);
+                  return (
+                <span
+                  className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${feeStatusColors[isFeeCurrent ? 'current' : 'payment required']}`}
+                >
+                  {feeStatusLabels[isFeeCurrent ? 'current' : 'payment required']}
                 </span>
+                  );
+                })()}
+
                 {member.membership_details?.fee_payment_year && (
                   <p className="text-xs text-gray-500 mt-1">
                     Paid for year: {member.membership_details.fee_payment_year}

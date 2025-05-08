@@ -58,6 +58,7 @@ Sinkronizacija tipova se trenutno obavlja ručno zbog specifičnih prilagodbi ko
 4. **Verifikacija**:
    - Nakon sinkronizacije, pokrenite `npm run build` kako biste provjerili jesu li tipovi ispravno usklađeni
    - Rješavanje eventualnih TypeScript grešaka
+   - **Prilikom migracije na enum tipove (npr. MembershipTypeEnum), obavezno provjeriti i zamijeniti sve string literal vrijednosti u kodu s odgovarajućim enum vrijednostima!**
 
 ## Važna razmatranja
 

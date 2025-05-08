@@ -4,6 +4,9 @@ import { PoolClient } from 'pg';
 import { Member, MemberRole, Gender } from '../shared/types/member.js';
 
 // Interfaces for data operations
+import { MembershipTypeEnum } from '../shared/types/member.js';
+import { mapMembershipTypeToEnum } from '../services/member.service.js';
+
 export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'last_login' | 'password_hash' | 'full_name'> {
     first_name: string;
     last_name: string;
@@ -48,15 +51,17 @@ export interface MemberStats {
 
 const memberRepository = {
     async findAll(): Promise<Member[]> {
+        // SQL upit koji vraća membership_details kao ugniježđeni JSON objekt
         const result = await db.query<Member>(`
             SELECT m.*, 
-                   md.card_number, 
-                   md.fee_payment_year, 
-                   md.fee_payment_date, 
-                   md.card_stamp_issued, 
-                   md.next_year_stamp_issued, 
+                   json_build_object(
+                       'card_number', md.card_number,
+                       'fee_payment_year', md.fee_payment_year,
+                       'fee_payment_date', md.fee_payment_date,
+                       'card_stamp_issued', md.card_stamp_issued,
+                       'next_year_stamp_issued', md.next_year_stamp_issued
+                   ) as membership_details,
                    COALESCE(stats.total_hours, 0) as total_hours,
-                   -- Eksplicitno dodaj nickname u format full_name
                    CASE 
                      WHEN m.nickname IS NOT NULL AND m.nickname != '' 
                      THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
@@ -97,38 +102,41 @@ const memberRepository = {
     },
 
     async findById(id: number): Promise<Member | null> {
+        // SQL upit koji vraća membership_details kao ugniježđeni JSON objekt
+        // Ovdje se koristi json_build_object za stvaranje ugniježđenog JSON objekta
         const result = await db.query<Member>(`
             SELECT m.*, 
-                    md.card_number, 
-                    md.fee_payment_year, 
-                    md.fee_payment_date, 
-                    md.card_stamp_issued, 
-                    md.next_year_stamp_issued,
-                    COALESCE(stats.total_hours, 0) as total_hours,
-                    -- Eksplicitno dodaj nickname u format full_name
-                    CASE 
-                      WHEN m.nickname IS NOT NULL AND m.nickname != '' 
-                      THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
-                      ELSE m.first_name || ' ' || m.last_name
-                    END as calculated_full_name,
-                    (
-                        SELECT json_agg(
-                            json_build_object(
-                                'period_id', mp.period_id,
-                                'start_date', mp.start_date,
-                                'end_date', mp.end_date,
-                                'end_reason', mp.end_reason
-                            )
-                        ) 
-                        FROM membership_periods mp
-                        WHERE mp.member_id = m.member_id
-                    ) as membership_history,
-                    (
-                        SELECT count(*) 
-                        FROM activities a 
-                        JOIN activity_participants ap ON a.activity_id = ap.activity_id 
-                        WHERE ap.member_id = m.member_id
-                    ) as total_activities
+                   json_build_object(
+                       'card_number', md.card_number,
+                       'fee_payment_year', md.fee_payment_year,
+                       'fee_payment_date', md.fee_payment_date,
+                       'card_stamp_issued', md.card_stamp_issued,
+                       'next_year_stamp_issued', md.next_year_stamp_issued
+                   ) as membership_details,
+                   COALESCE(stats.total_hours, 0) as total_hours,
+                   CASE 
+                     WHEN m.nickname IS NOT NULL AND m.nickname != '' 
+                     THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
+                     ELSE m.first_name || ' ' || m.last_name
+                   END as calculated_full_name,
+                   (
+                     SELECT json_agg(
+                       json_build_object(
+                         'period_id', mp.period_id,
+                         'start_date', mp.start_date,
+                         'end_date', mp.end_date,
+                         'end_reason', mp.end_reason
+                       )
+                     )
+                     FROM membership_periods mp
+                     WHERE mp.member_id = m.member_id
+                   ) as membership_history,
+                   (
+                       SELECT count(*) 
+                       FROM activities a 
+                       JOIN activity_participants ap ON a.activity_id = ap.activity_id 
+                       WHERE ap.member_id = m.member_id
+                   ) as total_activities
             FROM members m
             LEFT JOIN membership_details md ON m.member_id = md.member_id
             LEFT JOIN (
@@ -143,7 +151,7 @@ const memberRepository = {
 
         const member = result.rows[0];
         if (!member) return null;
-        
+
         // Koristi calculated_full_name za full_name gdje postoji
         return {
             ...member,
@@ -186,7 +194,7 @@ const memberRepository = {
             memberData.tshirt_size,
             memberData.shell_jacket_size,
             memberData.total_hours,
-            memberData.membership_type,
+            memberData.membership_type !== undefined ? mapMembershipTypeToEnum(memberData.membership_type) : undefined,
             memberData.nickname,
             memberId
         ]);
@@ -218,7 +226,7 @@ const memberRepository = {
             memberData.life_status,
             memberData.tshirt_size,
             memberData.shell_jacket_size,
-            memberData.membership_type,
+            mapMembershipTypeToEnum(memberData.membership_type),
             memberData.nickname
         ]);
         return result.rows[0];

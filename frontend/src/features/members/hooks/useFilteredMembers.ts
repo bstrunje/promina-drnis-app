@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MemberWithDetails } from '../interfaces/memberTypes';
+import { MemberWithDetails } from '@shared/memberDetails.types';
 import { getCurrentDate, getCurrentYear, getMonth, getDate } from '../../../utils/dateUtils';
 import { parseISO } from 'date-fns';
 
@@ -51,7 +51,7 @@ export const useFilteredMembers = ({
         const currentYear = getCurrentYear();
         result = result.filter(member => 
           member.feeStatus === 'current' || 
-          (member.cardDetails?.fee_payment_year === currentYear)
+          (member.membership_details?.fee_payment_year === currentYear)
         );
       } 
       else if (activeFilter === "unpaid") {
@@ -59,7 +59,7 @@ export const useFilteredMembers = ({
         const currentYear = getCurrentYear();
         result = result.filter(member => 
           member.feeStatus === 'payment required' || 
-          (!member.cardDetails?.fee_payment_year || member.cardDetails.fee_payment_year < currentYear)
+          (!member.membership_details?.fee_payment_year || member.membership_details.fee_payment_year < currentYear)
         );
       }
     }

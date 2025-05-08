@@ -148,16 +148,11 @@ const membershipRepository = {
           
           console.log(`DEBUG: Processed activeCount (after conversion):`, activeCount);
         
+          // Ako nema aktivnih perioda, član je izvedeno 'inactive' (ali status se NE zapisuje u tablicu)
           if (activeCount === 0 && hasEndedPeriods) {
-            console.log(`Deactivating member ${memberId} - no active membership periods`);
-            await client.query(
-              'UPDATE members SET status = $1 WHERE member_id = $2',
-              ['inactive', memberId]
-            );
-            
-            // Dodatno logirajmo status nakon promjene
-            const statusCheck = await client.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
-            console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
+            console.log(`Member ${memberId} je logički INACTIVE (nema aktivnih perioda). Status u bazi ostaje nepromijenjen.`);
+            // Status 'inactive' se ne zapisuje u tablicu members!
+            // Odluka: status 'inactive' je izveden i koristi se samo u helper funkcijama i prikazu.
           } else {
             // Osiguraj da je član aktivan ako ima aktivnih perioda
             console.log(`Ensuring member ${memberId} is active - has active membership periods: ${activeCount}`);
@@ -238,17 +233,11 @@ const membershipRepository = {
             
             console.log(`DEBUG [endMembershipPeriod]: Processed activeCount (after conversion):`, activeCount);
             
-            // Ako nema drugih aktivnih perioda, postavi status na 'inactive'
+            // Ako nema drugih aktivnih perioda, član je izvedeno 'inactive' (ali status se NE zapisuje u tablicu)
             if (activeCount === 0) {
-                console.log(`Deactivating member ${memberId} in endMembershipPeriod - no active membership periods`);
-                await db.query(
-                    'UPDATE members SET status = $1 WHERE member_id = $2',
-                    ['inactive', memberId]
-                );
-                
-                // Dodatno logirajmo status nakon promjene
-                const statusCheck = await db.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
-                console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
+                console.log(`Member ${memberId} is now logically INACTIVE (no active membership periods). Status in DB remains unchanged.`);
+                // Status 'inactive' se ne zapisuje u tablicu members!
+                // Odluka: status 'inactive' je izveden i koristi se samo u helper funkcijama i prikazu.
             }
         }
     },

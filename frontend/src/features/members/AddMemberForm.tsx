@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '@shared/member';
+import { Member, MembershipTypeEnum } from '@shared/member';
 import { formatInputDate } from '../../utils/dateUtils';
 
 interface AddMemberFormProps {
@@ -45,12 +45,21 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     cell_phone: '',
     email: '',
     life_status: 'employed/unemployed',
+    activity_status: 'active',
+    membership_type: MembershipTypeEnum.Regular,
     tshirt_size: 'M',
     shell_jacket_size: 'M',
+    role: 'member',
+    membership_details: {
+      card_number: undefined,
+      fee_payment_year: undefined,
+      card_stamp_issued: undefined,
+      next_year_stamp_issued: undefined,
+      fee_payment_date: undefined,
+      life_status: undefined
+    },
     registration_completed: false,
-    membership_type: 'regular',
-    total_hours: 0,
-    role: 'member'
+    total_hours: 0
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

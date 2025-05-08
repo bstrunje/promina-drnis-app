@@ -175,10 +175,8 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['superuser']
       if (activeCount > 0) {
         // Ima aktivnih perioda - treba biti 'registered'
         shouldBeStatus = 'registered';
-      } else if (hasClosedPeriods.rows[0].has_closed) {
-        // Nema aktivnih perioda, ali ima zatvorenih - treba biti 'inactive'
-        shouldBeStatus = 'inactive';
-      }
+      } // Nema aktivnih perioda, ali ima zatvorenih - status 'inactive' je izveden, NE zapisuje se u tablicu
+      // shouldBeStatus ostaje 'pending' ili 'registered'
       
       // Ažuriraj status ako nije ispravan
       if (member.status !== shouldBeStatus) {

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/../components/ui/alert.js";
 import { Member } from "@shared/member";
-import { MemberWithDetails } from "./interfaces/memberTypes";
+import { MemberWithDetails } from "@shared/memberDetails.types"; // Already updated above
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "@components/EditMemberForm";
 import ConfirmationModal from "@components/ConfirmationModal";

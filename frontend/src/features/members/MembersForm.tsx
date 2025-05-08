@@ -1,6 +1,19 @@
 import { useState } from 'react';
-import { Member, MembershipType } from '@shared/member';
+import { Member, MembershipTypeEnum } from '@shared/member';
 import { Save, X } from 'lucide-react';
+
+// Helper za backward kompatibilnost - premješten nakon importa
+/**
+ * Mapira različite formate tipa članstva u standardni MembershipTypeEnum
+ * @param value Vrijednost koju treba mapirati u enum
+ * @returns Odgovarajući MembershipTypeEnum
+ */
+function mapMembershipTypeToEnum(value: any): MembershipTypeEnum {
+  if (value === 'regular' || value === MembershipTypeEnum.Regular) return MembershipTypeEnum.Regular;
+  if (value === 'supporting' || value === MembershipTypeEnum.Supporting) return MembershipTypeEnum.Supporting;
+  if (value === 'honorary' || value === MembershipTypeEnum.Honorary) return MembershipTypeEnum.Honorary;
+  return MembershipTypeEnum.Regular; // fallback
+}
 
 interface MemberFormProps {
   member?: Member;
@@ -21,7 +34,7 @@ interface MemberFormData {
   life_status: 'employed/unemployed' | 'child/pupil/student' | 'pensioner';
   tshirt_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
   shell_jacket_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
-  membership_type: MembershipType;
+  membership_type: MembershipTypeEnum;
   registration_completed: boolean;
   total_hours: number;
   role: 'member' | 'admin' | 'superuser';
@@ -63,7 +76,15 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
     life_status: member?.life_status || 'employed/unemployed',
     tshirt_size: member?.tshirt_size || 'M',
     shell_jacket_size: member?.shell_jacket_size || 'M',
-    membership_type: member?.membership_type || 'regular',
+    membership_type: typeof member?.membership_type === 'string'
+      ? (member.membership_type === 'regular'
+          ? MembershipTypeEnum.Regular
+          : member.membership_type === 'honorary'
+            ? MembershipTypeEnum.Honorary
+            : member.membership_type === 'supporting'
+              ? MembershipTypeEnum.Supporting
+              : MembershipTypeEnum.Regular)
+      : (member?.membership_type || MembershipTypeEnum.Regular),
     registration_completed: member?.registration_completed || false,
     role: member?.role || 'member',
     total_hours: member?.total_hours || 0,
@@ -310,13 +331,13 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             value={formData.membership_type}
             onChange={(e) => setFormData(prev => ({
               ...prev,
-              membership_type: e.target.value as MembershipType
+              membership_type: mapMembershipTypeToEnum(e.target.value)
             }))}
             className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
           >
-            <option value="regular">Regular Member</option>
-            <option value="supporting">Supporting Member</option>
-            <option value="honorary">Honorary Member</option>
+            <option value={MembershipTypeEnum.Regular}>Regular Member</option>
+            <option value={MembershipTypeEnum.Supporting}>Supporting Member</option>
+            <option value={MembershipTypeEnum.Honorary}>Honorary Member</option>
           </select>
         </div>
 

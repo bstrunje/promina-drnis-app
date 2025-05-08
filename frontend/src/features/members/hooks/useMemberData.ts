@@ -9,7 +9,7 @@ import {
   determineFeeStatus,
   DetailedMembershipStatus
 } from '@shared/memberStatus.types';
-import { MemberWithDetails, MemberCardDetails } from '../interfaces/memberTypes';
+import { MemberWithDetails, MemberCardDetails } from '@shared/memberDetails.types';
 import { useToast } from "@components/ui/use-toast";
 
 /**
@@ -135,10 +135,10 @@ export const useMemberData = () => {
           return {
             ...member,
             cardDetails: {
-              card_number: member.card_number || member.membership_details?.card_number,
+              card_number: member.membership_details?.card_number || member.membership_details?.card_number,
               stamp_type: member.life_status as any, // Koristi life_status kao tip markice
               card_stamp_issued: false, // Default value, will be updated later
-              fee_payment_year: member.fee_payment_year || member.membership_details?.fee_payment_year
+              fee_payment_year: member.membership_details?.fee_payment_year || member.membership_details?.fee_payment_year
             },
             isActive,
             membershipStatus: membershipStatus
@@ -166,12 +166,11 @@ export const useMemberData = () => {
                 );
                 // Izračunaj status plaćanja članarine
                 const feeStatus = determineFeeStatus({
-                  membership_details: {
-                    fee_payment_year: member.cardDetails?.fee_payment_year || 0
-                  }
+                  membership_details: member.membership_details || {}
                 });
                 return {
                   ...member,
+                  membership_details: member.membership_details,
                   periods: adaptedPeriods,
                   detailedStatus,
                   feeStatus,

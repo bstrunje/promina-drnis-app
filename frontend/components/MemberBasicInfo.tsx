@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User, ChevronDown, ChevronRight } from "lucide-react";
 import { Member } from "@shared/member";
+import { getMembershipDisplayLabel } from "@shared/helpers/membershipDisplay";
+import { MembershipTypeEnum } from "@shared/member";
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
 

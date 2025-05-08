@@ -1,5 +1,5 @@
 import React from "react";
-import { MemberWithDetails } from "../interfaces/memberTypes";
+import { MemberWithDetails } from "@shared/memberDetails.types";
 import {
   DetailedMembershipStatus,
   getMembershipStatusDescription,
@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@components/ui/badge";
 import { Member } from "@shared/member";
-
-// Funkcija za filtriranje članova s obojenim retcima
-export function filterOnlyColoredRows(members: MemberWithDetails[]) {
+import { getMembershipDisplayLabel } from "@shared/helpers/membershipDisplay";
+import { MembershipTypeEnum } from "@shared/member";
+// Funkcija za filtriranje članova s obojenim retcima - definirana kao konstanta za Fast Refresh kompatibilnost
+export const filterOnlyColoredRows = (members: MemberWithDetails[]) => {
   return members.filter((member) => {
     // Dohvati status člana
     const displayStatus = getMembershipDisplayStatusExternal(
@@ -48,17 +49,17 @@ export function filterOnlyColoredRows(members: MemberWithDetails[]) {
 
     return false;
   });
-}
+};
 
-// Funkcija za filtriranje članova koji imaju člansku iskaznicu
-export function filterOnlyWithCardNumber(members: MemberWithDetails[]) {
+// Funkcija za filtriranje članova koji imaju člansku iskaznicu - definirana kao konstanta za Fast Refresh kompatibilnost
+export const filterOnlyWithCardNumber = (members: MemberWithDetails[]) => {
   return members.filter(
     (member) =>
-      member.cardDetails?.card_number !== undefined &&
-      member.cardDetails?.card_number !== null &&
-      member.cardDetails?.card_number !== ""
+      member.membership_details?.card_number !== undefined &&
+      member.membership_details?.card_number !== null &&
+      member.membership_details?.card_number !== ""
   );
-}
+};
 
 // Helper funkcija za vanjsko određivanje statusa članstva bez pristupa komponentnim stanjima
 export function getMembershipDisplayStatusExternal(
@@ -128,7 +129,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   refreshMembers,
   hideTableHeader,
 }) => {
-  // Pomoćna funkcija za određivanje boje statusa članstva
+  
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
   const getMembershipStatusColor = (displayStatus: string): string => {
     switch (displayStatus) {
@@ -329,32 +330,32 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 // Group header ako nije "all"
                 ...(group.key !== "all"
                   ? [
-                      <tr
-                        key={`group-${group.key}`}
-                        className="bg-gray-100 print:hidden"
+                    <tr
+                      key={`group-${group.key}`}
+                      className="bg-gray-100 print:hidden"
+                    >
+                      <td
+                        colSpan={isSuperuser ? 4 : 3}
+                        className="px-6 py-2 font-medium"
                       >
-                        <td
-                          colSpan={isSuperuser ? 4 : 3}
-                          className="px-6 py-2 font-medium"
-                        >
-                          {group.title} ({group.members.length})
-                        </td>
-                      </tr>,
-                    ]
+                        {group.title} ({group.members.length})
+                      </td>
+                    </tr>,
+                  ]
                   : []),
 
                 // Prvo aktivni članovi
                 ...(activeMembers.length > 0
                   ? [
-                      <tr key="active-header" className="hidden print:hidden">
-                        <td
-                          colSpan={isSuperuser ? 6 : 4}
-                          className="px-6 py-2 font-medium text-center"
-                        >
-                          Aktivni članovi
-                        </td>
-                      </tr>,
-                    ]
+                    <tr key="active-header" className="hidden print:hidden">
+                      <td
+                        colSpan={isSuperuser ? 6 : 4}
+                        className="px-6 py-2 font-medium text-center"
+                      >
+                        Aktivni članovi
+                      </td>
+                    </tr>,
+                  ]
                   : []),
 
                 // Aktivni članovi
@@ -374,8 +375,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     <td className="px-3 py-4 border-r border-gray-200 text-center">
                       <div className="font-medium text-gray-900">
                         {member.full_name ||
-                          `${member.first_name} ${member.last_name}${
-                            member.nickname ? ` - ${member.nickname}` : ""
+                          `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                           }`}
                       </div>
                     </td>
@@ -391,12 +391,11 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                           )
                         )} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
                       >
-                        {getMembershipDisplayStatus(
-                          member.detailedStatus,
-                          !!isAdmin,
-                          !!isSuperuser,
-                          member.membership_type,
-                          member.periods
+                        {getMembershipDisplayLabel(
+                          member.membership_type as MembershipTypeEnum,
+                          member.periods || [],
+                          new Date().getFullYear(),
+                          member.membership_details
                         )}
                       </span>
                     </td>
@@ -417,15 +416,15 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 // Naslov za neaktivne članove (samo za print)
                 ...(inactiveMembers.length > 0
                   ? [
-                      <tr key="inactive-header" className="hidden print:hidden">
-                        <td
-                          colSpan={isSuperuser ? 6 : 4}
-                          className="px-6 py-2 font-medium text-center"
-                        >
-                          Pasivni članovi
-                        </td>
-                      </tr>,
-                    ]
+                    <tr key="inactive-header" className="hidden print:hidden">
+                      <td
+                        colSpan={isSuperuser ? 6 : 4}
+                        className="px-6 py-2 font-medium text-center"
+                      >
+                        Pasivni članovi
+                      </td>
+                    </tr>,
+                  ]
                   : []),
 
                 // Neaktivni članovi
@@ -445,8 +444,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     <td className="px-3 py-4 border-r border-gray-200 text-center">
                       <div className="font-medium text-gray-900">
                         {member.full_name ||
-                          `${member.first_name} ${member.last_name}${
-                            member.nickname ? ` - ${member.nickname}` : ""
+                          `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                           }`}
                       </div>
                     </td>
@@ -534,8 +532,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   <td className="px-3 py-4 border-r border-gray-200 text-center">
                     <div className="font-medium text-gray-900">
                       {member.full_name ||
-                        `${member.first_name} ${member.last_name}${
-                          member.nickname ? ` - ${member.nickname}` : ""
+                        `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                         }`}
                     </div>
                   </td>
@@ -575,8 +572,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   <td className="px-3 py-4 border-r border-gray-200 text-center">
                     <div className="font-medium text-gray-900">
                       {member.full_name ||
-                        `${member.first_name} ${member.last_name}${
-                          member.nickname ? ` - ${member.nickname}` : ""
+                        `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                         }`}
                     </div>
                   </td>

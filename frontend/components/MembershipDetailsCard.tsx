@@ -27,7 +27,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   };
 
   // Get card number from membership_details first (source of truth), fall back to direct property
-  const cardNumber = member.membership_details?.card_number || member.card_number;
+  const cardNumber = member.membership_details?.card_number || member.membership_details?.card_number;
   
   // Provjeri je li korisnik admin ili superuser
   const canViewCardNumber = user?.role === "admin" || user?.role === "superuser";

@@ -2,8 +2,9 @@
 import { useAuth } from "../../context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
+import { membershipTypeLabels } from "@shared/helpers/membershipDisplay";
 import { MembershipPeriod, MembershipHistory } from "@shared/membership";
-import { Member } from "@shared/member";
+import { Member, MembershipTypeEnum } from "@shared/member";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import api from "../../utils/api"; 
@@ -280,7 +281,7 @@ if (!member && memberId) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Membership Type</label>
-                <p>{user.membership_type}</p>
+                <p>{membershipTypeLabels[user.membership_type as MembershipTypeEnum] || user.membership_type}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">Role</label>

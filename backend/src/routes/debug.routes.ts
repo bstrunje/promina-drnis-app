@@ -678,12 +678,10 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
         }
         
         // Ako nema aktivnih perioda nakon čišćenja, onemogući člana
+        // Ako nema aktivnih perioda, status 'inactive' je izveden i NE zapisuje se u tablicu
         if (activeCount === 0) {
-          console.log(`🚫 Član ${memberId} nema aktivnih razdoblja - postavljanje na 'inactive'`);
-          await db.query(
-            'UPDATE members SET status = $1 WHERE member_id = $2',
-            ['inactive', memberId]
-          );
+          console.log(`🚫 Član ${memberId} nema aktivnih razdoblja - status 'inactive' je izveden, ne zapisuje se u bazu.`);
+          // Ovdje po potrebi možeš postaviti na 'pending' ako želiš, ali 'inactive' se ne zapisuje.
         } else {
           console.log(`✅ Član ${memberId} ima ${activeCount} aktivnih razdoblja - postavljanje na 'registered'`);
           await db.query(

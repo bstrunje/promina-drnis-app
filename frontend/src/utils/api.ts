@@ -283,6 +283,22 @@ export const getMemberMessages = async (memberId: number): Promise<any[]> => {
   }
 };
 
+export interface GenericMessage {
+  id: number;
+  content: string;
+  sender: string;
+  timestamp: string;
+}
+
+export const getGenericMessages = async (): Promise<GenericMessage[]> => {
+  try {
+    const response = await api.get('/generic-messages');
+    return response.data.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to fetch generic messages');
+  }
+};
+
 export const markMessageAsRead = async (messageId: number): Promise<void> => {
   try {
     // Potrebno je dohvatiti trenutnog korisnika iz localStorage

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Member } from '@shared/member';
+import { MembershipTypeEnum } from "@shared/member";
 
 interface EditMemberFormProps {
   member: Member;
@@ -39,7 +40,16 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
     tshirt_size: member.tshirt_size || 'XS',
     shell_jacket_size: member.shell_jacket_size || 'XS',
     life_status: member.life_status || 'employed/unemployed',
-    gender: member.gender || 'male'
+    gender: member.gender || 'male',
+    membership_type: typeof member.membership_type === 'string'
+      ? (member.membership_type === 'regular'
+          ? MembershipTypeEnum.Regular
+          : member.membership_type === 'honorary'
+            ? MembershipTypeEnum.Honorary
+            : member.membership_type === 'supporting'
+              ? MembershipTypeEnum.Supporting
+              : MembershipTypeEnum.Regular)
+      : (member.membership_type || MembershipTypeEnum.Regular)
   }));
 
   useEffect(() => {
@@ -48,16 +58,31 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
       tshirt_size: member.tshirt_size || 'XS',
       shell_jacket_size: member.shell_jacket_size || 'XS',
       life_status: member.life_status || 'employed/unemployed',
-      gender: member.gender || 'male'
+      gender: member.gender || 'male',
+      membership_type: typeof member.membership_type === 'string'
+        ? (member.membership_type === 'regular'
+            ? MembershipTypeEnum.Regular
+            : member.membership_type === 'honorary'
+              ? MembershipTypeEnum.Honorary
+              : member.membership_type === 'supporting'
+                ? MembershipTypeEnum.Supporting
+                : MembershipTypeEnum.Regular)
+        : (member.membership_type || MembershipTypeEnum.Regular)
     });
   }, [member]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setEditedMember(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEditedMember(prev => {
+      if (name === 'membership_type') {
+        let enumValue = MembershipTypeEnum.Regular;
+        if (value === 'honorary') enumValue = MembershipTypeEnum.Honorary;
+        else if (value === 'supporting') enumValue = MembershipTypeEnum.Supporting;
+        else if (value === 'regular') enumValue = MembershipTypeEnum.Regular;
+        return { ...prev, membership_type: enumValue };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {

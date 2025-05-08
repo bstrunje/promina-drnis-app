@@ -8,7 +8,25 @@ export type MemberRole = 'member' | 'admin' | 'superuser';
 /**
  * Membership classification types (UI display only)
  */
+/**
+ * @deprecated Koristi MembershipTypeEnum umjesto ovog tipa za sve nove funkcionalnosti.
+ */
+/**
+ * Stari string literal tip za tip članstva (deprecated).
+ * NOVO: koristiti isključivo MembershipTypeEnum!
+ */
 export type MembershipType = 'regular' | 'supporting' | 'honorary';
+
+
+/**
+ * Enum za tipove članstva.
+ * Koristiti isključivo enum vrijednosti kroz cijelu aplikaciju radi tip-sigurnosti i konzistentnosti.
+ */
+export enum MembershipTypeEnum {
+    Regular = "regular",
+    Honorary = "honorary",
+    Supporting = "supporting"
+  }
 
 /**
  * Activity status for display
@@ -60,24 +78,18 @@ export interface Member {
     // Profile Information (UI/Display only)
     total_hours?: number;
     activity_status?: ActivityStatus;  // Calculated from total_hours
-    membership_type?: MembershipType;
+    membership_type?: MembershipTypeEnum; // Migrirano na enum
     tshirt_size?: ClothingSize;
     shell_jacket_size?: ClothingSize;
 
-    // Card-related fields (legacy, use membership_details instead)
-    card_number?: string;
-    card_stamp_issued?: boolean;
-    fee_payment_year?: number;
-    next_year_stamp_issued?: boolean;
+    // Informacije o članskoj iskaznici i članarini (izvor istine)
+    membership_details: MembershipDetails; // Uvijek prisutan objekt s detaljima članstva
 
-    // Membership Information
-    membership_details?: {
-        fee_payment_date?: string;
-        card_number?: string;
-        fee_payment_year?: number;
-        card_stamp_issued?: boolean;
-        next_year_stamp_issued?: boolean;
-    };
+    // Legacy polja za kompatibilnost (ne koristiti, migrirano u membership_details)
+    // card_number?: string;
+    // card_stamp_issued?: boolean;
+    // fee_payment_year?: number;
+    // next_year_stamp_issued?: boolean;
     membership_history?: MembershipHistory;
 }
 
@@ -97,7 +109,7 @@ export interface MemberSearchResult {
 export interface MemberProfile {
     total_hours: number;
     activity_status: ActivityStatus;  // Calculated: 'active' if total_hours >= 20, otherwise 'passive'
-    membership_type: MembershipType;
+    membership_type: MembershipTypeEnum; // Migrirano na enum
 }
 
 export interface MemberLoginData {

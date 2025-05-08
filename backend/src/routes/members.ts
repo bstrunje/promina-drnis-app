@@ -96,10 +96,7 @@ router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (re
     
     // Update member record for current year stamps only (prisma limitation)
     if (!forNextYear) {
-      // Update in members table
-      await memberService.updateMember(memberId, { card_stamp_issued: true });
-      
-      // Update/create in membership_details table
+      // Ažuriraj samo u membership_details tablici jer card_stamp_issued više nije polje na Memberu
       await prisma.membershipDetails.upsert({
         where: { member_id: memberId },
         update: { card_stamp_issued: true },
@@ -124,11 +121,9 @@ router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (re
     // Get updated member to return
     const updatedMember = await memberService.getMemberById(memberId);
     
-    // Manually inject the next_year_stamp field into response if needed
-    if (forNextYear && updatedMember) {
-      // Fake it in the response
-      updatedMember.next_year_stamp_issued = true;
-    }
+    // next_year_stamp_issued se više ne postavlja ručno na Member objekt - koristi se membership_details
+    // (Ovdje nije potreban manualni patch jer frontend koristi membership_details.next_year_stamp_issued)
+    
     
     res.json({ 
       message: forNextYear ? "Stamp for next year issued successfully" : "Stamp issued successfully",
@@ -165,10 +160,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
     
     // Update only for current year stamps (prisma limitation)
     if (!forNextYear) {
-      // Update member's stamp status in both tables
-      await memberService.updateMember(memberId, { card_stamp_issued: false });
-      
-      // Update directly in membership_details table to ensure it's updated
+      // Ažuriraj samo u membership_details tablici jer card_stamp_issued više nije polje na Memberu
       await prisma.membershipDetails.update({
         where: { member_id: memberId },
         data: { card_stamp_issued: false }

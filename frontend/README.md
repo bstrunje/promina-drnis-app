@@ -1,3 +1,21 @@
+# Promina-Drniš App – Frontend
+
+## Tipizacija i Enumi za Članstvo
+
+Aplikacija koristi strogu tipizaciju za sve podatke o članstvu. Tip `MembershipTypeEnum` koristi se kroz cijeli frontend i backend za sve operacije nad članovima.
+
+- **Enum koristi se za:**
+  - `membership_type` (umjesto string literal vrijednosti)
+  - status članstva (`MembershipStatus`)
+  - razlozi prekida članstva (`MembershipEndReason`)
+
+Time se osigurava tip-sigurnost, lakše održavanje i manje grešaka.
+
+### Centralizacija tipova
+Svi zajednički tipovi definirani su u `frontend/shared/types` i automatski se sinkroniziraju s backendom.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

@@ -8,8 +8,8 @@ import { Request } from 'express';
 import membershipRepository from '../repositories/membership.repository.js';
 import { MembershipPeriod } from '../shared/types/membership.js';
 import authRepository from '../repositories/auth.repository.js';
-// Add missing import for auditService
 import auditService from './audit.service.js';
+import { MembershipTypeEnum } from '../shared/types/member.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -18,6 +18,15 @@ interface MemberWithActivities extends Member {
         date: string;
         hours_spent: number;
     }[];
+}
+
+export function mapMembershipTypeToEnum(value: any): MembershipTypeEnum {
+  if (typeof value === 'string') {
+    if (value === 'regular') return MembershipTypeEnum.Regular;
+    if (value === 'supporting') return MembershipTypeEnum.Supporting;
+    if (value === 'honorary') return MembershipTypeEnum.Honorary;
+  }
+  return value as MembershipTypeEnum;
 }
 
 const memberService = {
@@ -57,7 +66,12 @@ const memberService = {
                 }
             }
 
-            return await memberRepository.update(memberId, memberData);
+            return await memberRepository.update(memberId, {
+    ...memberData,
+    membership_type: memberData.membership_type !== undefined
+      ? mapMembershipTypeToEnum(memberData.membership_type)
+      : undefined
+  });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error updating member: ' + errorMessage);
@@ -116,7 +130,7 @@ const memberService = {
             // Set default values for new members
             const newMemberData: MemberCreateData = {
                 ...memberData,
-                membership_type: memberData.membership_type || 'regular'
+                membership_type: mapMembershipTypeToEnum(memberData.membership_type) || MembershipTypeEnum.Regular
             };
             return await memberRepository.create(newMemberData);
         } catch (error: unknown) {
@@ -195,25 +209,22 @@ const memberService = {
         try {
             const member = await memberRepository.findById(memberId);
             if (!member) return null;
-    
-            const membershipDetails = await membershipService.getMembershipDetails(memberId);
-            const membershipHistory = await membershipService.getMembershipHistory(memberId);
-            
+
+            // Uvijek složi membership_details property iz podataka koje vraća findById
+            const membershipDetails = {
+                card_number: (member as any).card_number ?? undefined,
+                fee_payment_year: (member as any).fee_payment_year ?? undefined,
+                card_stamp_issued: (member as any).card_stamp_issued ?? undefined,
+                fee_payment_date: (member as any).fee_payment_date
+                    ? new Date((member as any).fee_payment_date).toISOString()
+                    : undefined,
+                next_year_stamp_issued: (member as any).next_year_stamp_issued ?? undefined,
+            };
+
             return {
                 ...member,
-                date_of_birth: member.date_of_birth,
-                oib: member.oib,
-                gender: member.gender,
-                life_status: member.life_status, // Keep life_status at the member level
-                membership_details: membershipDetails ? {
-                    card_number: member.card_number || membershipDetails?.card_number,
-                fee_payment_year: member.fee_payment_year || membershipDetails?.fee_payment_year,
-                card_stamp_issued: member.card_stamp_issued || membershipDetails?.card_stamp_issued,
-                fee_payment_date: membershipDetails?.fee_payment_date
-                        ? new Date(membershipDetails.fee_payment_date).toISOString() 
-                        : ''  // Provide an empty string as default
-                } : undefined,
-                membership_history: membershipHistory
+                full_name: (member as any).calculated_full_name || member.full_name,
+                membership_details: membershipDetails,
             };
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

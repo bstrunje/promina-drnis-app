@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MemberWithDetails } from '../interfaces/memberTypes';
+import { MemberWithDetails } from '@shared/memberDetails.types';
 import { TabsContent } from '@components/ui/tabs';
 
 interface StatisticsViewProps {
