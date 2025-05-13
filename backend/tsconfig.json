@@ -16,7 +16,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolvePackageJsonExports": true
+    "resolvePackageJsonExports": true,
+    "types": ["vitest/globals"] 
   },
   "references": [],
   "include": ["src/**/*"],

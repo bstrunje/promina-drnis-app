@@ -51,7 +51,7 @@ const memberMessageRepository = {
 
     async getAllForAdmin(): Promise<MemberMessageWithSender[]> {
         const raws = await prisma.memberMessage.findMany({
-            where: { recipient_type: 'admin' },
+            where: { recipient_type: { in: ['admin', 'all'] } },
             include: { member: { select: { first_name: true, last_name: true } } },
             orderBy: { created_at: 'desc' }
         });

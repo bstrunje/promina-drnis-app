@@ -1,39 +1,37 @@
-import { describe, it, beforeAll, afterAll, expect } from 'vitest';
+import { describe, it, beforeEach, afterEach, expect } from 'vitest';
+import { faker } from '@faker-js/faker';
 import prisma from '../../utils/prisma.js';
 import messageService from '../../services/message.service.js';
 import { PrismaClient } from '@prisma/client';
 
 const client = new PrismaClient();
-let memberId: number;
-let messageId: number;
 
 describe('message.service', () => {
-  beforeAll(async () => {
-    // Seed test member
+  let memberId: number;
+
+  beforeEach(async () => {
+    // Svaki test dobiva svog člana
     const member = await prisma.member.create({ data: {
       first_name: 'SvcTest',
       last_name: 'Tester',
-      oib: '00000000008',
-      cell_phone: '0910000002',
+      oib: faker.string.numeric(11),
+      cell_phone: '091' + Math.floor(Math.random() * 1e7).toString().padStart(7, '0'),
       city: 'SvcCity',
       street_address: 'Svc St'
     }});
     memberId = member.member_id;
   });
 
-  afterAll(async () => {
-    // Cleanup test data
+  afterEach(async () => {
     await prisma.memberMessage.deleteMany({ where: { member_id: memberId } });
     await prisma.member.deleteMany({ where: { member_id: memberId } });
-    await client.$disconnect();
   });
 
   it('creates and retrieves member message', async () => {
     const msg = await messageService.createMessage(memberId, 'Svc Hello');
     expect(msg.member_id).toBe(memberId);
-    messageId = msg.message_id;
     const msgs = await messageService.getMemberMessages(memberId);
-    expect(msgs.some(m => m.message_id === messageId)).toBe(true);
+    expect(msgs.some(m => m.message_id === msg.message_id)).toBe(true);
   });
 
   it('admin messaging flows', async () => {
@@ -52,24 +50,26 @@ describe('message.service', () => {
   });
 
   it('marks read and archives', async () => {
-    await messageService.markMessageAsRead(messageId);
+    const msg = await messageService.createMessage(memberId, 'Svc Hello');
+    await messageService.markMessageAsRead(msg.message_id);
     let msgs = await messageService.getMemberMessages(memberId);
-    let read = msgs.find(m => m.message_id === messageId);
+    let read = msgs.find(m => m.message_id === msg.message_id);
     expect(read?.status).toBe('read');
 
-    await messageService.archiveMessage(messageId);
+    await messageService.archiveMessage(msg.message_id);
     msgs = await messageService.getMemberMessages(memberId);
-    read = msgs.find(m => m.message_id === messageId);
+    read = msgs.find(m => m.message_id === msg.message_id);
     expect(read?.status).toBe('archived');
   });
 
   it('deletes messages', async () => {
-    await messageService.deleteMessage(messageId);
-    let exists = await messageService.messageExists(messageId);
+    const msg = await messageService.createMessage(memberId, 'Svc Hello');
+    await messageService.deleteMessage(msg.message_id);
+    let exists = await messageService.messageExists(msg.message_id);
     expect(exists).toBe(false);
 
-    await messageService.createMessage(memberId, 'One');
-    await messageService.createMessage(memberId, 'Two');
+    const msg1 = await messageService.createMessage(memberId, 'One');
+    const msg2 = await messageService.createMessage(memberId, 'Two');
     let msgs = await messageService.getMemberMessages(memberId);
     expect(msgs.length).toBe(2);
 
@@ -77,4 +77,6 @@ describe('message.service', () => {
     msgs = await messageService.getMemberMessages(memberId);
     expect(msgs.length).toBe(0);
   });
+
+  // Ovdje možeš dodati još izoliranih testova po potrebi
 });

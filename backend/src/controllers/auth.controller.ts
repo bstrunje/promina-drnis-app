@@ -609,28 +609,18 @@ const authController = {
         shell_jacket_size,
       } = req.body;
 
-      const existingMember = await db.query(
-        "SELECT member_id FROM members WHERE oib = $1",
-        [oib],
-        { singleRow: true }
-      );
-
-      if (existingMember?.rowCount && existingMember.rowCount > 0) {
+      // Provjeri postoji li član s istim OIB-om koristeći Prisma ORM
+      const existingMember = await prisma.member.findUnique({ where: { oib } });
+      if (existingMember) {
         res.status(400).json({
           message: "Member with this OIB already exists",
         });
         return;
       }
 
-      const result = await db.query<Member>(
-        `INSERT INTO members (
-                    first_name, last_name, date_of_birth, gender,
-                    street_address, city, oib, cell_phone, 
-                    email, life_status, tshirt_size, shell_jacket_size,
-                    status, role
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', 'member')
-                RETURNING member_id`,
-        [
+      // Kreiraj novog člana koristeći Prisma ORM
+      const member = await prisma.member.create({
+        data: {
           first_name,
           last_name,
           date_of_birth,
@@ -643,12 +633,15 @@ const authController = {
           life_status,
           tshirt_size,
           shell_jacket_size,
-        ]
-      );
+          status: 'pending', // Novi član je uvijek na čekanju
+          role: 'member',
+        },
+        select: { member_id: true }, // Vraćamo samo member_id
+      });
 
       res.status(201).json({
         message: "Registration successful. Please wait for admin approval.",
-        member_id: result.rows[0].member_id,
+        member_id: member.member_id,
       });
     } catch (error) {
       console.error("Registration error:", error);
