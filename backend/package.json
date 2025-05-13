@@ -5,15 +5,19 @@
   "engines": {
     "node": "20.x"
   },
-  "scripts": {
-    "start": "node dist/server.js",
-    "build": "tsc",
-    "render-build": "npm install typescript && tsc",
-    "postinstall": "prisma generate",
-    "setup-db": "node dist/setupDatabase.js"
-  },
+ "scripts": {
+   "start": "node dist/server.js",
+   "build": "prisma generate && tsc",
+   "render-build": "npm install typescript && prisma migrate deploy && tsc",
+   "postinstall": "prisma generate",
+   "setup-db": "node dist/setupDatabase.js",
+   "test": "vitest run",
+   "test:ui": "vitest",
+   "migrate:dev": "prisma migrate dev",
+   "migrate:deploy": "prisma migrate deploy"
+ },
   "dependencies": {
-    "@prisma/client": "^6.6.0",
+    "@prisma/client": "^6.7.0",
     "@types/bcrypt": "^5.0.0",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
@@ -28,6 +32,7 @@
     "@types/swagger-ui-express": "^4.1.6",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
@@ -48,7 +53,10 @@
     "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
     "@types/express": "^4.17.17",
-    "prisma": "^6.6.0"
+    "@vitest/ui": "^3.1.3",
+    "prisma": "^6.7.0",
+    "vitest": "^3.1.3"
   }
 }

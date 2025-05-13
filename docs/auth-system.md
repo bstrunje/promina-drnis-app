@@ -406,12 +406,109 @@ API rute su zaštićene od neželjenog pristupa kroz:
 - Validaciju ulaznih podataka za sprječavanje injekcijskih napada
 - CORS konfiguraciju za kontrolu pristupa
 
+### JWT Refresh Token sustav
+
+Aplikacija koristi robustan JWT refresh token sustav za sigurniju autentikaciju i bolje korisničko iskustvo.
+
+#### Arhitektura sustava
+
+1. **Access Token**
+   - Kratkog trajanja (15 minuta)
+   - Koristi se za pristup zaštićenim rutama
+   - Potpisan s JWT_SECRET ključem
+   - Sadrži ID korisnika i ulogu
+
+2. **Refresh Token**
+   - Dugog trajanja (7 dana)
+   - Koristi se za dobivanje novog access tokena
+   - Potpisan s REFRESH_TOKEN_SECRET ključem (odvojeni ključ za bolju sigurnost)
+   - Pohranjuje se u bazi podataka u tablici `refresh_tokens`
+   - Šalje se klijentu kao HTTP-only kolačić
+
+#### Implementacija na backendu
+
+```typescript
+// Generiranje tokena pri prijavi
+const token = jwt.sign(
+  { id: member.member_id, role: member.role },
+  JWT_SECRET,
+  { expiresIn: "15m" }
+);
+
+// Generiranje refresh tokena
+const refreshToken = jwt.sign(
+  { id: member.member_id, role: member.role },
+  REFRESH_TOKEN_SECRET,
+  { expiresIn: "7d" }
+);
+
+// Pohrana refresh tokena u bazu
+await prisma.refresh_tokens.create({
+  data: {
+    token: refreshToken,
+    member_id: member.member_id,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  }
+});
+
+// Postavljanje refresh tokena kao HTTP-only kolačića
+res.cookie('refreshToken', refreshToken, { 
+  httpOnly: true, 
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dana
+});
+```
+
+#### Token rotacija
+
+Implementirana je token rotacija koja generira novi refresh token pri svakom obnavljanju access tokena, što povećava sigurnost sustava:
+
+```typescript
+// Implementacija token rotation - generiranje novog refresh tokena
+const newRefreshToken = jwt.sign(
+  { id: member.member_id, role: member.role }, 
+  REFRESH_TOKEN_SECRET, 
+  { expiresIn: '7d' }
+);
+
+// Ažuriranje refresh tokena u bazi
+await prisma.refresh_tokens.update({
+  where: { id: storedToken.id },
+  data: {
+    token: newRefreshToken,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  }
+});
+```
+
+#### Rute za autentikaciju
+
+```typescript
+// Nove rute za refresh token mehanizam
+router.post('/refresh', authController.refreshToken);
+router.post('/logout', authController.logout);
+```
+
+#### Prednosti implementacije
+
+1. **Poboljšana sigurnost**
+   - Kraće trajanje access tokena smanjuje rizik od zlouporabe ukradenog tokena
+   - HTTP-only kolačići za refresh tokene štite od XSS napada
+   - Token rotacija onemogućuje korištenje istog refresh tokena više puta
+
+2. **Bolje korisničko iskustvo**
+   - Korisnici se ne moraju često prijavljivati
+   - Automatsko obnavljanje tokena u pozadini
+   - Sigurna odjava koja poništava refresh token
+
 ### Sigurnosna najbolja praksa
 
-1. Tokeni se spremaju samo u localStorage (ne u kolačićima)
+1. Access tokeni se spremaju u memoriji aplikacije, a refresh tokeni u HTTP-only kolačićima
 2. Osjetljivi podaci se filtriraju prije slanja na frontend
 3. Validacija se provodi i na frontendu i na backendu
 4. Implementirane su provjere duljine i kompleksnosti lozinke
+5. Koriste se različiti tajni ključevi za access i refresh tokene
 
 ## Primjeri korištenja
 

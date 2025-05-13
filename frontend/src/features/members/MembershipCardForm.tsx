@@ -108,7 +108,7 @@ export default function MembershipCardForm({
     setIsLoading(true);
 
     try {
-      const today = getCurrentDate().toISOString();
+      const today = getCurrentDate()formatDate(const today = getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
       
       await updateMembership(memberId, {
         paymentDate: today,

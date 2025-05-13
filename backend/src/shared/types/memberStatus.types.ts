@@ -48,6 +48,11 @@ export interface MemberStatusData {
 /**
  * Funkcija za dobivanje trenutne godine
  * Izdvojena kao zasebna funkcija za lakše testiranje i mockanje
+ * 
+ * Napomena: U shared direktoriju koristimo direktno new Date() jer ne možemo
+ * importati funkcije iz utils direktorija zbog TypeScript konfiguracije.
+ * Kada se koristi na backendu, ova funkcija će koristiti sistemski datum,
+ * a kada se koristi na frontendu, može se overridati s mock datumom.
  */
 export function getCurrentYear(): number {
   return new Date().getFullYear();

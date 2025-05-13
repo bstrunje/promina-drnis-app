@@ -1,6 +1,7 @@
 // services/systemAdmin.service.ts
 import systemAdminRepository from '../repositories/systemAdmin.repository.js';
 import prisma from '../utils/prisma.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 // Privremeno koristimo any umjesto eksplicitnih tipova
 // import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
@@ -140,7 +141,7 @@ const systemAdminService = {
                 }
             });
 
-            const now = new Date();
+            const now = getCurrentDate();
             
             if (existingPermissions) {
                 // Ako ovlasti već postoje, ažuriramo ih
@@ -322,7 +323,7 @@ const systemAdminService = {
                 recentActivities = await (prisma as any).activity.count({
                     where: {
                         created_at: {
-                            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // zadnjih 24 sata
+                            gte: new Date(getCurrentDate().getTime() - 24 * 60 * 60 * 1000) // zadnjih 24 sata
                         }
                     }
                 });
@@ -393,7 +394,7 @@ const systemAdminService = {
                     renewalStartMonth: 11, // Prosinac
                     renewalStartDay: 1,
                     timeZone: 'Europe/Zagreb', // Zadana vremenska zona
-                    updatedAt: new Date()
+                    updatedAt: getCurrentDate()
                 };
             }
             
@@ -439,7 +440,7 @@ const systemAdminService = {
                 ? existingSettingsResult[0] 
                 : null;
             
-            const now = new Date();
+            const now = getCurrentDate();
             
             if (!existingSettings) {
                 // Ako ne postoje, kreiraj nove direktnim SQL upitom

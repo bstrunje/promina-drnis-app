@@ -15,6 +15,9 @@ router.post('/login', systemAdminController.login);
 // Provjera postoji li system admin u sustavu (potrebno za inicijalno postavljanje)
 router.get('/exists', systemAdminController.checkSystemAdminExists);
 
+// Rute dostupne superuser korisnicima
+router.get('/audit-logs', authMiddleware, roles.requireSuperUser, systemAdminController.getAuditLogs);
+
 // Zaštićene rute - zahtijevaju system_admin autentikaciju
 router.use(authMiddleware, roles.requireSystemAdmin);
 
@@ -39,8 +42,7 @@ router.get('/member-permissions/:memberId', systemAdminController.getMemberPermi
 router.post('/update-permissions', systemAdminController.updateMemberPermissions);
 router.delete('/member-permissions/:memberId', systemAdminController.removeMemberPermissions);
 
-// Dohvat revizijskih zapisa
-router.get('/audit-logs', systemAdminController.getAuditLogs);
+// Napomena: Ruta za audit-logs je premještena iznad globalnog middleware-a kako bi bila dostupna i superuser korisnicima
 
 // Dohvati podatke o trenutno prijavljenom system adminu
 router.get('/me', requireSystemAdmin, async (req, res) => {

@@ -5,6 +5,7 @@ import memberRepository, {
   MemberCreateData,
   MemberUpdateData,
 } from "../repositories/member.repository.js";
+import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
 import { DatabaseUser } from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";
 import authRepository from "../repositories/auth.repository.js";
@@ -77,7 +78,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     // Koristi try-catch za svaki upit kako bi se izbjeglo potpuno prekidanje funkcije ako neki upit ne uspije
     let unreadMessages = 0;
     try {
-      unreadMessages = await prisma.message.count({
+      unreadMessages = await prisma.memberMessage.count({
         where: {
           recipient_id: memberId,
           status: 'unread'
@@ -96,7 +97,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
         where: {
           created_by: memberId,
           created_at: {
-            gte: new Date(new Date().setDate(new Date().getDate() - 30)) // Aktivnosti u zadnjih 30 dana
+            gte: new Date(getCurrentDate().setDate(getCurrentDate().getDate() - 30)) // Aktivnosti u zadnjih 30 dana
           }
         }
       });
@@ -107,7 +108,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     console.log(`Broj nedavnih aktivnosti za člana ${memberId}: ${recentActivities}`);
 
     // Dohvati broj članova koji imaju plaćenu članarinu za tekuću godinu
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentDate().getFullYear();
     
     let memberCount = 0;
     try {
@@ -135,7 +136,13 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
         // Parsiraj datum
         let paidUntilDate: Date;
         try {
-          paidUntilDate = new Date(member.membership_details.active_until);
+          // Provjeri je li active_until već Date objekt ili string
+          if (member.membership_details.active_until instanceof Date) {
+            paidUntilDate = member.membership_details.active_until;
+          } else {
+            paidUntilDate = parseDate(member.membership_details.active_until as string);
+          }
+          
           const paidYear = paidUntilDate.getFullYear();
           console.log(`Član ID ${member.member_id} ima plaćeno do: ${paidUntilDate.toISOString()}, godina: ${paidYear}`);
           
@@ -217,7 +224,7 @@ export const memberController = {
           if (typeof member.membership_details.fee_payment_date === 'object') {
             // Safely convert to ISO string (works for Date objects)
             member.membership_details.fee_payment_date = 
-              new Date(member.membership_details.fee_payment_date).toISOString();
+              parseDate(member.membership_details.fee_payment_date).toISOString();
           }
         }
 
@@ -704,7 +711,7 @@ export const memberController = {
       // Procesuiramo plaćanje članarine samo ako je datum plaćanja proslijeđen
       if (paymentDate) {
         // Validate payment date
-        const parsedDate = new Date(paymentDate);
+        const parsedDate = parseDate(paymentDate);
         if (isNaN(parsedDate.getTime())) {
           res.status(400).json({ message: "Invalid payment date format" });
           return;
@@ -719,7 +726,7 @@ export const memberController = {
         // Pass the isRenewalPayment flag to the updateMembershipFee function
         await memberService.updateMembershipFee(
           memberId,
-          new Date(paymentDate),
+          parseDate(paymentDate),
           req,
           isRenewalPayment
         );
@@ -843,7 +850,7 @@ export const memberController = {
       await memberService.terminateMembership(
         memberId,
         reason,
-        endDate ? new Date(endDate) : undefined
+        endDate ? parseDate(endDate) : undefined
       );
 
       // Log the membership termination in audit log

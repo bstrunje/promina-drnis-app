@@ -40,11 +40,13 @@ const messageController = {
                 return;
             }
 
+            const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
             const message = await messageService.createAdminMessage(
-                adminId, 
-                recipientId, 
-                messageText, 
-                'member'
+                adminId,
+                recipientId,
+                messageText,
+                'member',
+                senderType
             );
             
             await auditService.logAction(
@@ -82,11 +84,13 @@ const messageController = {
             const messages = [];
             
             for (const recipientId of memberIds) {
+                const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
                 const message = await messageService.createAdminMessage(
-                    adminId, 
-                    recipientId, 
-                    messageText, 
-                    'group'
+                    adminId,
+                    recipientId,
+                    messageText,
+                    'group',
+                    senderType
                 );
                 messages.push(message);
             }
@@ -118,11 +122,13 @@ const messageController = {
                 return;
             }
 
+            const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
             const message = await messageService.createAdminMessage(
-                adminId, 
-                null, 
-                messageText, 
-                'all'
+                adminId,
+                null,
+                messageText,
+                'all',
+                senderType
             );
             
             await auditService.logAction(

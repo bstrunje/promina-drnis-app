@@ -9,6 +9,7 @@ import {
   determineFeeStatus,
   DetailedMembershipStatus
 } from '@shared/memberStatus.types';
+import { getCurrentDate } from '../../../utils/dateUtils';
 import { MemberWithDetails, MemberCardDetails } from '@shared/memberDetails.types';
 import { useToast } from "@components/ui/use-toast";
 
@@ -97,7 +98,7 @@ export const useMemberData = () => {
       try {
         setLoading(true);
         // Dodaj vremenski žig kao query parametar da bi se zaobišlo keširanje
-        const timestamp = new Date().getTime();
+        const timestamp = getCurrentDate().getTime();
         const response = await api.get<Member[]>(`/members?t=${timestamp}`, {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',

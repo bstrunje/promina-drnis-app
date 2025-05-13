@@ -57,10 +57,15 @@ const poolConfig: ExtendedPoolConfig = process.env.DATABASE_URL
 
 const pool = new Pool(poolConfig);
 
+// Postavljanje client_encoding nakon inicijalizacije Pool-a
 pool.on('connect', async (client) => {
     try {
         await client.query("SET client_encoding = 'UTF8'");
         await client.query("SET NAMES 'UTF8'");
+        // Dodatna postavka za pravilno rukovanje hrvatskim znakovljem
+        await client.query("SET lc_collate = 'hr_HR.UTF-8'");
+        await client.query("SET lc_ctype = 'hr_HR.UTF-8'");
+        
         if (process.env.NODE_ENV === 'production') {
             console.log('📦 Production database pool connected with UTF-8 encoding');
         } else {

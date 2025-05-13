@@ -2,6 +2,7 @@ import db from '../utils/db.js';
 import { PoolClient } from 'pg';
 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 import { Request } from 'express';
+import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 
 const membershipRepository = {
     async getMembershipDetails(memberId: number): Promise<MembershipDetails | null> {
@@ -63,7 +64,7 @@ const membershipRepository = {
               .filter(value => value !== undefined)
               .map(value => {
                 if (value instanceof Date) {
-                  return value.toISOString();
+                  return formatDate(value, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
                 }
                 return value;
               });
@@ -298,7 +299,7 @@ const membershipRepository = {
         
         // Markice su nepovratne, više ne resetiramo oznake izdanih markica
         
-        console.log(`Završena članstva za godinu ${year} (${new Date().toISOString()})`);
+        console.log(`Završena članstva za godinu ${year} (${formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')})`);
     }
 };
 

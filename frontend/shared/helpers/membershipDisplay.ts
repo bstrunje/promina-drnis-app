@@ -52,7 +52,12 @@ export const lifeStatusLabels: Record<string, string> = {
 import { MembershipPeriod } from "@shared/memberStatus.types.js";
 import { MembershipDetails } from "@shared/membership";
 
-// Dohvati najnoviji period članstva (prema start_date)
+/**
+ * Dohvati najnoviji period članstva (prema start_date)
+ * @param periods - Niz perioda članstva
+ * @returns Najnoviji period članstva ili null ako nema perioda
+ * @remarks start_date je u ISO string formatu (YYYY-MM-DDTHH:mm:ss.sssZ)
+ */
 function getLatestPeriod(periods: MembershipPeriod[]): MembershipPeriod | null {
   if (!periods || periods.length === 0) return null;
   return [...periods].sort((a, b) => (b.start_date || "").localeCompare(a.start_date || ""))[0];

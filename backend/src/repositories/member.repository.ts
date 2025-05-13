@@ -1,10 +1,10 @@
 // backend/src/repositories/member.repository.ts
-import db from '../utils/db.js';
-import { PoolClient } from 'pg';
-import { Member, MemberRole, Gender } from '../shared/types/member.js';
+import prisma from '../utils/prisma.js';
+import { mapToMember } from '../utils/memberMapper.js';
+import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSize } from '../shared/types/member.js';
+import { MembershipEndReason } from '../shared/types/membership.js';
 
 // Interfaces for data operations
-import { MembershipTypeEnum } from '../shared/types/member.js';
 import { mapMembershipTypeToEnum } from '../services/member.service.js';
 
 export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 'role' | 'total_hours' | 'last_login' | 'password_hash' | 'full_name'> {
@@ -51,295 +51,148 @@ export interface MemberStats {
 
 const memberRepository = {
     async findAll(): Promise<Member[]> {
-        // SQL upit koji vraća membership_details kao ugniježđeni JSON objekt
-        const result = await db.query<Member>(`
-            SELECT m.*, 
-                   json_build_object(
-                       'card_number', md.card_number,
-                       'fee_payment_year', md.fee_payment_year,
-                       'fee_payment_date', md.fee_payment_date,
-                       'card_stamp_issued', md.card_stamp_issued,
-                       'next_year_stamp_issued', md.next_year_stamp_issued
-                   ) as membership_details,
-                   COALESCE(stats.total_hours, 0) as total_hours,
-                   CASE 
-                     WHEN m.nickname IS NOT NULL AND m.nickname != '' 
-                     THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
-                     ELSE m.first_name || ' ' || m.last_name
-                   END as calculated_full_name,
-                   (
-                     SELECT json_agg(
-                       json_build_object(
-                         'period_id', mp.period_id,
-                         'start_date', mp.start_date,
-                         'end_date', mp.end_date,
-                         'end_reason', mp.end_reason
-                       )
-                     )
-                     FROM membership_periods mp
-                     WHERE mp.member_id = m.member_id
-                   ) as membership_history
-            FROM members m
-            LEFT JOIN membership_details md ON m.member_id = md.member_id
-            LEFT JOIN (
-                SELECT member_id, SUM(hours_spent) as total_hours
-                FROM activity_participants
-                WHERE verified_at IS NOT NULL
-                GROUP BY member_id
-            ) stats ON m.member_id = stats.member_id
-            ORDER BY m.last_name, m.first_name
-        `);
-        
-        // Koristi calculated_full_name za full_name gdje postoji
-        const members = result.rows.map(member => {
-            return {
-                ...member,
-                full_name: (member as any).calculated_full_name || member.full_name
-            };
+        const members = await prisma.member.findMany({
+            orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
+            include: {
+                membership_details: true,
+                periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } }
+            }
         });
-        
-        return members;
+        const hours = await prisma.activityParticipant.groupBy({
+            by: ['member_id'], where: { verified_at: { not: null } }, _sum: { hours_spent: true }
+        });
+        const mapHours = new Map(hours.map(h => [h.member_id!, h._sum.hours_spent?.toNumber() || 0]));
+        return members.map(m => mapToMember(m, mapHours.get(m.member_id) || 0));
     },
 
     async findById(id: number): Promise<Member | null> {
-        // SQL upit koji vraća membership_details kao ugniježđeni JSON objekt
-        // Ovdje se koristi json_build_object za stvaranje ugniježđenog JSON objekta
-        const result = await db.query<Member>(`
-            SELECT m.*, 
-                   json_build_object(
-                       'card_number', md.card_number,
-                       'fee_payment_year', md.fee_payment_year,
-                       'fee_payment_date', md.fee_payment_date,
-                       'card_stamp_issued', md.card_stamp_issued,
-                       'next_year_stamp_issued', md.next_year_stamp_issued
-                   ) as membership_details,
-                   COALESCE(stats.total_hours, 0) as total_hours,
-                   CASE 
-                     WHEN m.nickname IS NOT NULL AND m.nickname != '' 
-                     THEN m.first_name || ' ' || m.last_name || ' - ' || m.nickname
-                     ELSE m.first_name || ' ' || m.last_name
-                   END as calculated_full_name,
-                   (
-                     SELECT json_agg(
-                       json_build_object(
-                         'period_id', mp.period_id,
-                         'start_date', mp.start_date,
-                         'end_date', mp.end_date,
-                         'end_reason', mp.end_reason
-                       )
-                     )
-                     FROM membership_periods mp
-                     WHERE mp.member_id = m.member_id
-                   ) as membership_history,
-                   (
-                       SELECT count(*) 
-                       FROM activities a 
-                       JOIN activity_participants ap ON a.activity_id = ap.activity_id 
-                       WHERE ap.member_id = m.member_id
-                   ) as total_activities
-            FROM members m
-            LEFT JOIN membership_details md ON m.member_id = md.member_id
-            LEFT JOIN (
-                SELECT member_id, SUM(hours_spent) as total_hours
-                FROM activity_participants
-                WHERE verified_at IS NOT NULL
-                GROUP BY member_id
-            ) stats ON m.member_id = stats.member_id
-            WHERE m.member_id = $1`,
-            [id]
-        );
-
-        const member = result.rows[0];
-        if (!member) return null;
-
-        // Koristi calculated_full_name za full_name gdje postoji
-        return {
-            ...member,
-            full_name: (member as any).calculated_full_name || member.full_name
-        };
+        const raw = await prisma.member.findFirst({
+            where: { member_id: id },
+            include: { membership_details: true, periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } } }
+        });
+        if (!raw) return null;
+        const agg = await prisma.activityParticipant.aggregate({ where: { member_id: id, verified_at: { not: null } }, _sum: { hours_spent: true } });
+        const total = agg._sum.hours_spent?.toNumber() || 0;
+        return mapToMember(raw, total);
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
-        const result = await db.query<Member>(`
-            UPDATE members
-            SET 
-                first_name = COALESCE($1, first_name),
-                last_name = COALESCE($2, last_name),
-                date_of_birth = COALESCE($3, date_of_birth),
-                gender = COALESCE($4, gender),
-                street_address = COALESCE($5, street_address),
-                city = COALESCE($6, city),
-                oib = COALESCE($7, oib),
-                cell_phone = COALESCE($8, cell_phone),
-                email = COALESCE($9, email),
-                life_status = COALESCE($10, life_status),
-                tshirt_size = COALESCE($11, tshirt_size),
-                shell_jacket_size = COALESCE($12, shell_jacket_size),
-                total_hours = COALESCE($13, total_hours),
-                membership_type = COALESCE($14, membership_type),
-                nickname = COALESCE($15, nickname)
-            WHERE member_id = $16
-            RETURNING *
-        `, [
-            memberData.first_name,
-            memberData.last_name,
-            memberData.date_of_birth,
-            memberData.gender,
-            memberData.street_address,
-            memberData.city,
-            memberData.oib,
-            memberData.cell_phone,
-            memberData.email,
-            memberData.life_status,
-            memberData.tshirt_size,
-            memberData.shell_jacket_size,
-            memberData.total_hours,
-            memberData.membership_type !== undefined ? mapMembershipTypeToEnum(memberData.membership_type) : undefined,
-            memberData.nickname,
-            memberId
-        ]);
-        return result.rows[0];
+        const raw = await prisma.member.update({ where: { member_id: memberId }, data: {
+            first_name: memberData.first_name,
+            last_name: memberData.last_name,
+            date_of_birth: memberData.date_of_birth,
+            gender: memberData.gender,
+            street_address: memberData.street_address,
+            city: memberData.city,
+            oib: memberData.oib,
+            cell_phone: memberData.cell_phone,
+            email: memberData.email,
+            life_status: memberData.life_status,
+            tshirt_size: memberData.tshirt_size,
+            shell_jacket_size: memberData.shell_jacket_size,
+            total_hours: memberData.total_hours,
+            membership_type: memberData.membership_type !== undefined ? mapMembershipTypeToEnum(memberData.membership_type) : undefined,
+            nickname: memberData.nickname
+        } });
+        return mapToMember(raw);
     },
 
     async create(memberData: MemberCreateData): Promise<Member> {
-        const result = await db.query<Member>(`
-            INSERT INTO members (
-                first_name, last_name, date_of_birth, gender,
-                street_address, city, oib, cell_phone, 
-                email, life_status, tshirt_size, shell_jacket_size,
-                status, role, membership_type, nickname
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-                'pending', 'member', $13, $14
-            )
-            RETURNING *
-        `, [
-            memberData.first_name,
-            memberData.last_name,
-            memberData.date_of_birth,
-            memberData.gender,
-            memberData.street_address,
-            memberData.city,
-            memberData.oib,
-            memberData.cell_phone,
-            memberData.email,
-            memberData.life_status,
-            memberData.tshirt_size,
-            memberData.shell_jacket_size,
-            mapMembershipTypeToEnum(memberData.membership_type),
-            memberData.nickname
-        ]);
-        return result.rows[0];
+        const raw = await prisma.member.create({ data: {
+            first_name: memberData.first_name,
+            last_name: memberData.last_name,
+            date_of_birth: memberData.date_of_birth,
+            gender: memberData.gender,
+            street_address: memberData.street_address,
+            city: memberData.city,
+            oib: memberData.oib,
+            cell_phone: memberData.cell_phone,
+            email: memberData.email,
+            life_status: memberData.life_status,
+            tshirt_size: memberData.tshirt_size,
+            shell_jacket_size: memberData.shell_jacket_size,
+            status: 'pending',
+            role: 'member',
+            membership_type: mapMembershipTypeToEnum(memberData.membership_type),
+            nickname: memberData.nickname
+        } });
+        return mapToMember(raw);
     },
 
     async getStats(memberId: number): Promise<MemberStats> {
-        const stats = await db.query<MemberStats>(`
-            SELECT 
-                COUNT(DISTINCT ap.activity_id) as total_activities,
-                COALESCE(SUM(ap.hours_spent), 0) as total_hours,
-                m.membership_type,
-                m.status
-            FROM members m
-            LEFT JOIN activity_participants ap ON m.member_id = ap.member_id
-            WHERE m.member_id = $1
-            GROUP BY m.member_id, m.membership_type, m.status
-        `, [memberId]);
-    
-        if (stats.rows.length === 0) {
-            throw new Error('Member not found');
-        }
-    
-        return stats.rows[0];
+        // count total activities and sum hours for member
+        const totalActivities = await prisma.activityParticipant.count({
+            where: { member_id: memberId }
+        });
+        const agg = await prisma.activityParticipant.aggregate({
+            where: { member_id: memberId, verified_at: { not: null } },
+            _sum: { hours_spent: true }
+        });
+        const member = await prisma.member.findUnique({
+            where: { member_id: memberId },
+            select: { membership_type: true }
+        });
+        if (!member) throw new Error('Member not found');
+        const totalHours = agg._sum.hours_spent?.toNumber() || 0;
+        return {
+            total_activities: totalActivities,
+            total_hours: totalHours,
+            membership_type: member.membership_type as MembershipTypeEnum,
+            activity_status: totalHours >= 20 ? 'active' : 'passive'
+        };
     },
 
     async updateProfileImage(memberId: number, imagePath: string): Promise<void> {
-        await db.query(
-            `UPDATE members 
-             SET profile_image_path = $1, 
-                 profile_image_updated_at = CURRENT_TIMESTAMP 
-             WHERE member_id = $2`,
-            [imagePath, memberId]
-        );
+        await prisma.member.update({
+            where: { member_id: memberId },
+            data: {
+                profile_image_path: imagePath,
+                profile_image_updated_at: new Date()
+            }
+        });
     },
     
     async getProfileImage(memberId: number): Promise<string | null> {
-        const result = await db.query<{ profile_image_path: string }>(
-            'SELECT profile_image_path FROM members WHERE member_id = $1',
-            [memberId]
-        );
-        return result.rows[0]?.profile_image_path || null;
+        const result = await prisma.member.findFirst({
+            where: { member_id: memberId },
+            select: { profile_image_path: true }
+        });
+        return result?.profile_image_path || null;
     },
 
-    async delete(memberId: number, client: PoolClient): Promise<Member | null> {
-        await client.query(
-            'DELETE FROM audit_logs WHERE performed_by = $1',
-            [memberId]
-        );;
-        // First verify if period exists
-        const periodCheck = await client.query(
-            'SELECT EXISTS(SELECT 1 FROM membership_periods WHERE member_id = $1)',
-            [memberId]
-        );
-    
-        if (periodCheck.rows[0].exists) {
-            // Explicitly delete membership period first
-            await client.query(
-                'DELETE FROM membership_periods WHERE member_id = $1',
-                [memberId]
-            );
-        }
-    
-        // Continue with other deletions
+    async delete(memberId: number): Promise<Member> {
+        // delete related entities first to maintain referential integrity
         const deletionOrder = [
             'membership_details',
+            'membership_periods',
             'activity_participants',
             'member_messages',
             'annual_statistics'
         ];
-    
-        for (const table of deletionOrder) {
-            await client.query(`DELETE FROM ${table} WHERE member_id = $1`, [memberId]);
+        for (const model of deletionOrder) {
+            // dynamic model access via any to satisfy TS
+            await (prisma as any)[model].deleteMany({ where: { member_id: memberId } });
         }
-    
-        // Finally delete member
-        const result = await client.query<Member>(
-            'DELETE FROM members WHERE member_id = $1 RETURNING *',
-            [memberId]
-        );
-    
-        return result.rows[0];
+        const raw = await prisma.member.delete({ where: { member_id: memberId } });
+        return mapToMember(raw);
     },
 
     async updateRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
-        const result = await db.query<Member>(
-            'UPDATE members SET role = $1 WHERE member_id = $2 RETURNING *',
-            [role, memberId]
-        );
-    
-        if (result.rows.length === 0) {
-            throw new Error('Member not found');
-        }
-    
-        return result.rows[0];
+        const raw = await prisma.member.update({ where: { member_id: memberId }, data: { role } });
+        return mapToMember(raw);
     },
 
     async updatePassword(memberId: number, password: string): Promise<void> {
-        await db.query(`
-            UPDATE members
-            SET password_hash = $1
-            WHERE member_id = $2
-        `, [password, memberId]);
+        await prisma.member.update({
+            where: { member_id: memberId },
+            data: { password_hash: password }
+        });
     },
 
     async findByRole(role: string): Promise<Member[]> {
-        const result = await db.query<Member>(
-            `SELECT * FROM members 
-             WHERE role = $1 
-             AND status = 'registered' 
-             ORDER BY full_name`,
-            [role]
-        );
-        return result.rows;
+        // reuse findAll and filter by role for Prisma consistency
+        const all = await this.findAll();
+        return all.filter(member => member.role === role);
     }
 };
 

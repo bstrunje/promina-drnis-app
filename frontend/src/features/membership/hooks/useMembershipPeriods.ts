@@ -6,6 +6,7 @@ import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/AuthContext";
+import { getCurrentDate } from '../utils/dateUtils';
 
 export const useMembershipPeriods = (
   periods: MembershipPeriod[],
@@ -187,7 +188,7 @@ export const useMembershipPeriods = (
         return;
       }
       
-      const date = parse(value, "dd.MM.yyyy", new Date());
+      const date = parse(value, "dd.MM.yyyy", getCurrentDate());
       
       if (!isValid(date)) {
         console.error('Invalid date format. Please use DD.MM.YYYY');
@@ -204,7 +205,7 @@ export const useMembershipPeriods = (
           return;
         }
         if (periodToUpdate.end_date && typeof periodToUpdate.end_date === 'string') {
-          const endDate = parse(periodToUpdate.end_date, "dd.MM.yyyy", new Date());
+          const endDate = parse(periodToUpdate.end_date, "dd.MM.yyyy", getCurrentDate());
           if (isAfter(date, endDate)) {
             toast({
               title: "Greška",
@@ -216,7 +217,7 @@ export const useMembershipPeriods = (
         }
       } else if (field === "end_date") {
         if (typeof periodToUpdate.start_date === 'string') {
-          const startDate = parse(periodToUpdate.start_date, "dd.MM.yyyy", new Date());
+          const startDate = parse(periodToUpdate.start_date, "dd.MM.yyyy", getCurrentDate());
           if (isBefore(date, startDate)) {
             toast({
               title: "Greška", 
@@ -272,7 +273,7 @@ export const useMembershipPeriods = (
     if (field === "start_date" || field === "end_date") {
       // Za datume u hrvatskom formatu
       if (value) {
-        const date = parse(value, "dd.MM.yyyy", new Date());
+        const date = parse(value, "dd.MM.yyyy", getCurrentDate());
         if (!isValid(date)) {
           toast({
             title: "Greška",
@@ -307,7 +308,7 @@ export const useMembershipPeriods = (
 
   const handleAddPeriod = () => {
     setNewPeriod({
-      start_date: getCurrentDate().toISOString().split("T")[0],
+      start_date: getCurrentDate()formatDate(start_date: getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split("T")[0],
       end_date: null,
     });
   };

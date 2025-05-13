@@ -26,9 +26,24 @@ function AppContent() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+  const handleLogout = async () => {
+    try {
+      console.log('Započinjem odjavu korisnika iz App komponente...');
+      
+      // Pozivamo funkciju za odjavu
+      await logout();
+      
+      // Koristimo replace: true kako bismo spriječili povratak na prethodnu stranicu nakon odjave
+      // i osigurali da korisnik ne može koristiti back button za povratak na zaštićene stranice
+      navigate("/login", { replace: true });
+      
+      console.log('Korisnik uspješno preusmjeren na login stranicu');
+    } catch (error) {
+      console.error('Greška prilikom odjave korisnika:', error);
+      
+      // Čak i u slučaju greške, preusmjeravamo korisnika na login
+      navigate("/login", { replace: true });
+    }
   };
 
   // Pomoćna funkcija za određivanje početne stranice na temelju uloge

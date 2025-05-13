@@ -17,6 +17,7 @@ export interface MembershipDetails {
     next_year_stamp_issued?: boolean;
     fee_payment_date?: string;
     life_status?: string;
+    active_until?: string; // Datum do kojeg je članarina aktivna
 }
 
 export interface MembershipHistory {

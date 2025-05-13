@@ -1,6 +1,7 @@
 import stampRepository from "../repositories/stamp.repository.js";
 import membershipRepository from "../repositories/membership.repository.js";
 import { DatabaseError } from "../utils/errors.js";
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 const stampService = {
   async getInventoryStatus() {
@@ -78,7 +79,7 @@ const stampService = {
       }
 
       // Determine which year stamp to use
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       const stampYear = forNextYear ? currentYear + 1 : currentYear;
 
       // Check if stamp is available in inventory
@@ -114,7 +115,7 @@ const stampService = {
   async returnStamp(type: string, memberId?: number, forNextYear: boolean = false) {
     try {
       // Determine which year stamp to return
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       const stampYear = forNextYear ? currentYear + 1 : currentYear;
       
       // Update inventory (decrement issued count)

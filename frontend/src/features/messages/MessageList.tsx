@@ -268,7 +268,7 @@ export default function MessageList() {
       // Poruke poslane svim članovima trebaju UVIJEK biti tretirane kao grupne poruke
       if (message.recipient_type === 'all' || message.sender_name === 'All Members') {
         // Za poruke svim članovima - formatiraj datum bez sekundi za grupiranje
-        const dateWithoutSeconds = new Date(message.created_at).toISOString().slice(0, 16);
+        const dateWithoutSeconds = formatDate(new Date(message.created_at), 'yyyy-MM-dd\'T\'HH:mm');
         const key = `all-${message.message_text}-${dateWithoutSeconds}`;
         
         if (!messageGroups[key]) {

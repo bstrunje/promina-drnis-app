@@ -112,7 +112,7 @@ export function setMockDate(date: Date | null): void {
     
     // Spremi u localStorage
     if (originalMockDate) {
-      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, originalMockDate.toISOString());
+      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, formatDate(originalMockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
     } else {
       localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
     }
@@ -132,7 +132,7 @@ export function setMockDate(date: Date | null): void {
   
   // Spremi u localStorage za trajnost
   if (mockDate) {
-    localStorage.setItem(MOCK_DATE_KEY, mockDate.toISOString());
+    localStorage.setItem(MOCK_DATE_KEY, formatDate(mockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
   } else {
     localStorage.removeItem(MOCK_DATE_KEY);
   }
@@ -156,7 +156,7 @@ export function resetMockDate(): void {
     hasOriginalBeenStored = true;
     
     if (originalMockDate) {
-      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, originalMockDate.toISOString());
+      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, formatDate(originalMockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
     }
     localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'true');
   }

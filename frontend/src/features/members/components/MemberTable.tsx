@@ -7,7 +7,7 @@ import {
   hasActiveMembershipPeriod,
   MembershipPeriod,
 } from "@shared/memberStatus.types";
-import { formatDate } from "../../../utils/dateUtils";
+import { formatDate, getCurrentDate } from "../../../utils/dateUtils";
 import { Button } from "@components/ui/button";
 import {
   Eye,
@@ -23,8 +23,8 @@ import { Badge } from "@components/ui/badge";
 import { Member } from "@shared/member";
 import { getMembershipDisplayLabel } from "@shared/helpers/membershipDisplay";
 import { MembershipTypeEnum } from "@shared/member";
-// Funkcija za filtriranje članova s obojenim retcima - definirana kao konstanta za Fast Refresh kompatibilnost
-export const filterOnlyColoredRows = (members: MemberWithDetails[]) => {
+// Funkcija za filtriranje članova s obojenim retcima
+export function filterOnlyColoredRows(members: MemberWithDetails[]) {
   return members.filter((member) => {
     // Dohvati status člana
     const displayStatus = getMembershipDisplayStatusExternal(
@@ -49,17 +49,17 @@ export const filterOnlyColoredRows = (members: MemberWithDetails[]) => {
 
     return false;
   });
-};
+}
 
-// Funkcija za filtriranje članova koji imaju člansku iskaznicu - definirana kao konstanta za Fast Refresh kompatibilnost
-export const filterOnlyWithCardNumber = (members: MemberWithDetails[]) => {
+// Funkcija za filtriranje članova koji imaju člansku iskaznicu
+export function filterOnlyWithCardNumber(members: MemberWithDetails[]) {
   return members.filter(
     (member) =>
       member.membership_details?.card_number !== undefined &&
       member.membership_details?.card_number !== null &&
       member.membership_details?.card_number !== ""
   );
-};
+}
 
 // Helper funkcija za vanjsko određivanje statusa članstva bez pristupa komponentnim stanjima
 export function getMembershipDisplayStatusExternal(
@@ -129,7 +129,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   refreshMembers,
   hideTableHeader,
 }) => {
-  
+  // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
   const getMembershipStatusColor = (displayStatus: string): string => {
     switch (displayStatus) {
@@ -391,11 +391,12 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                           )
                         )} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
                       >
-                        {getMembershipDisplayLabel(
-                          member.membership_type as MembershipTypeEnum,
-                          member.periods || [],
-                          new Date().getFullYear(),
-                          member.membership_details
+                        {getMembershipDisplayStatus(
+                          member.detailedStatus,
+                          !!isAdmin,
+                          !!isSuperuser,
+                          member.membership_type,
+                          member.periods
                         )}
                       </span>
                     </td>

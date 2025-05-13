@@ -46,9 +46,14 @@ export interface SortParams {
 }
 
 // Date range type
+/**
+ * Raspon datuma
+ * @property startDate - Početni datum u ISO string formatu (YYYY-MM-DDTHH:mm:ss.sssZ)
+ * @property endDate - Završni datum u ISO string formatu (YYYY-MM-DDTHH:mm:ss.sssZ)
+ */
 export interface DateRange {
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
 }
 
 // Status and validation types

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { setMockDate, resetMockDate, getCurrentDate, formatDate, formatInputDate, isInTestMode } from '../../utils/dateUtils';
+import { setMockDate, resetMockDate, getCurrentDate, formatDate, formatInputDate, isInTestMode, parseDate } from '../../utils/dateUtils';
 import { format, isValid, parseISO } from 'date-fns';
 import { Minimize2, Maximize2, Move, Database, RotateCcw, Trash2 } from 'lucide-react';
 import api, { cleanupTestData } from '../../utils/api';
@@ -31,7 +31,7 @@ const DateMockTool = () => {
       setCurrentApplicationDate(appDate);
       
       // Provjeri je li mock aktivan
-      setIsMockActive(appDate.getTime() !== new Date().getTime());
+      setIsMockActive(appDate.getTime() !== getCurrentDate().getTime());
     };
     
     // Provjeri odmah na početku
@@ -92,7 +92,7 @@ const DateMockTool = () => {
     resetMockDate();
     
     // Ažuriraj stanje
-    const realDate = new Date();
+    const realDate = getCurrentDate();
     setDate(realDate);
     setCurrentApplicationDate(realDate);
     setIsMockActive(false);
@@ -159,7 +159,7 @@ const DateMockTool = () => {
         resetMockDate();
         
         // Ažuriraj stanje
-        const realDate = new Date();
+        const realDate = getCurrentDate();
         setDate(realDate);
         setCurrentApplicationDate(realDate);
         setIsMockActive(false);
@@ -190,7 +190,7 @@ const DateMockTool = () => {
   };
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const inputDate = new Date(event.target.value);
+    const inputDate = parseDate(event.target.value);
     if (isValid(inputDate)) {
       setDate(inputDate);
     }
@@ -216,10 +216,10 @@ const DateMockTool = () => {
       // Pozovi backend endpoint bez /api/ prefiksa jer axios klijent već dodaje taj prefiks
       // Dodajemo simulirani datum kao parametar
       await api.post('debug/recalculate-membership', {
-        mockDate: currentDate.toISOString()
+        mockDate: formatDate(currentDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
       });
       
-      console.log(`Refreshed membership status based on date: ${currentDate.toISOString()}`);
+      console.log(`Refreshed membership status based on date: ${formatDate(currentDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);
     } catch (error) {
       console.error('Error refreshing membership status:', error);
     }

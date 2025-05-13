@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import memberMessageController from '../controllers/member.message.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 

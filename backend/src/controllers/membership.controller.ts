@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import membershipService from '../services/membership.service.js';
 import auditService from '../services/audit.service.js';
 import permissionsService from '../services/permissions.service.js';
+import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
 
 interface MembershipUpdateRequest {
     paymentDate: string;
@@ -13,7 +14,7 @@ const membershipController = {
             const memberId = parseInt(req.params.memberId);
             const { paymentDate } = req.body;
 
-            await membershipService.processFeePayment(memberId, new Date(paymentDate), req);
+            await membershipService.processFeePayment(memberId, parseDate(paymentDate), req);
             
             if (req.user?.id) {
                 await auditService.logAction(

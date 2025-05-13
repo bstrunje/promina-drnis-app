@@ -3,6 +3,7 @@ import permissionsController from '../controllers/permissions.controller.js';
 import { authMiddleware as authenticateToken, checkRole } from '../middleware/authMiddleware.js';
 import type { Request } from 'express';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 // Import types
 import { Member as MemberType, MembershipDetails, MembershipPeriod } from '../shared/types/index.js';
 // Import actual models for database operations
@@ -70,7 +71,7 @@ router.get('/dashboard/stats', async (req, res) => {
     });
     
     // Get recent activities 
-    const twentyFourHoursAgo = new Date();
+    const twentyFourHoursAgo = getCurrentDate();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
     
     let recentActivities = 0;
@@ -111,7 +112,7 @@ router.get('/dashboard/stats', async (req, res) => {
         fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
         if (fileStats[0]) {
           // Formatiramo datum u ISO format umjesto korištenja toLocaleString
-          lastBackup = fileStats[0].mtime.toISOString();
+          lastBackup = fileStats[0].mtime.toISOString(); // Već je standardni JS metod, ne treba mijenjati
         }
       }
     } catch (err) {

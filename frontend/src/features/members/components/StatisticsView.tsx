@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { TabsContent } from '@components/ui/tabs';
+import { getCurrentDate } from '../../../utils/dateUtils';
+import { parseDate } from '../../../utils/dateUtils';
 
 interface StatisticsViewProps {
   members: MemberWithDetails[];
@@ -28,8 +30,8 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     members.forEach(member => {
       if (!member.date_of_birth) return;
       
-      const birthDate = new Date(member.date_of_birth);
-      const today = new Date();
+      const birthDate = parseDate(member.date_of_birth);
+      const today = getCurrentDate();
       
       // Računanje godina
       let age = today.getFullYear() - birthDate.getFullYear();

@@ -1,5 +1,6 @@
 // src/utils/scheduledTasks.ts
 import membershipService from '../services/membership.service.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 // Funkcija koja pokreće sve planirane zadatke
 export const initScheduledTasks = () => {
@@ -7,7 +8,7 @@ export const initScheduledTasks = () => {
   
   // Postavi dnevnu provjeru članstava u ponoć
   setInterval(async () => {
-    const now = new Date();
+    const now = getCurrentDate();
     // Provjeri je li ponoć (00:00:00)
     if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
       console.log('Pokretanje planirane provjere članstava...');
@@ -24,27 +25,8 @@ export const initScheduledTasks = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   
   if (!isProduction) {
-    // Postavi redovito periodičko ažuriranje statusa članstva (svakih 30 minuta)
-    setInterval(async () => {
-      console.log('Pokretanje periodičkog ažuriranja statusa članstva...');
-      try {
-        await membershipService.updateAllMembershipStatuses();
-        console.log('Periodičko ažuriranje statusa članstva završeno.');
-      } catch (error) {
-        console.error(' Greška prilikom ažuriranja članstava:', error);
-      }
-    }, 30 * 60 * 1000); // 30 minuta
-    
-    // Odmah pokreni prvo ažuriranje statusa članstva pri pokretanju servera
-    setTimeout(async () => {
-      console.log('Inicijalno ažuriranje statusa članstva...');
-      try {
-        await membershipService.updateAllMembershipStatuses();
-        console.log('Inicijalno ažuriranje statusa članstva završeno.');
-      } catch (error) {
-        console.error(' Greška prilikom ažuriranja članstava:', error);
-      }
-    }, 5000); // Pričekaj 5 sekundi nakon pokretanja servera
+    // Uklonjeno automatsko ažuriranje statusa članstva!
+    // Ako želiš ručno pokretanje, koristi npr. API endpoint ili CLI.
   } else {
     console.log(' Periodički zadaci za ažuriranje statusa članstva preskočeni u produkcijskom okruženju');
   }

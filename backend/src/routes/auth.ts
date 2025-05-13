@@ -32,6 +32,11 @@ router.post('/register', registerRateLimit, validateRegistration, authController
 router.post('/login', loginRateLimit, validateLogin, authController.login);
 router.get('/search-members', searchRateLimit, authController.searchMembers);
 
+// Nove rute za refresh token mehanizam
+// Koristimo iste putanje koje očekuje frontend
+router.post('/refresh', authController.refreshToken);
+router.post('/logout', authController.logout);
+
 // Very simple direct debug endpoint for quicker testing
 router.get('/debug-member/:id', async (req, res) => {
   try {

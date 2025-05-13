@@ -98,7 +98,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
           <span className="text-sm text-gray-500">Trenutni broj kartice:</span>
           {(() => {
             const cardNumber =
-              member.membership_details?.card_number || member.card_number;
+              member.membership_details?.card_number;
             return cardNumber ? (
               <span
                 className={`ml-2 px-3 py-1 rounded text-black ${getStatusColor()}`}

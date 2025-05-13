@@ -3,6 +3,7 @@ import { StampManagementSectionProps } from "../types/membershipTypes";
 import { Label } from "@components/ui/label";
 import { RefreshCw } from "lucide-react";
 import { getCurrentYear } from "../../../utils/dateUtils";
+import { getCurrentDate } from '../../../utils/dateUtils';
 
 const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   member,
@@ -110,7 +111,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
       </div>
       
       {/* Sekcija za markice sljedeće godine - omogućeno za obnove članstva pri kraju godine ili ako je članarina za sljedeću godinu već plaćena */}
-      {(new Date().getMonth() >= 10 || 
+      {(getCurrentDate().getMonth() >= 10 || 
         member?.membership_details?.fee_payment_year === getCurrentYear() + 1 ||
         member?.membership_details?.next_year_stamp_issued === true) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">

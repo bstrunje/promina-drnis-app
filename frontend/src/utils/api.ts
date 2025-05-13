@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { Member, MemberLoginData, MemberSearchResult } from '../../shared/types/member.js';
 import { AuditLog } from '../../shared/types/audit.js';
 import { API_BASE_URL } from './config';
-import { getCurrentDate, isInTestMode } from './dateUtils';
+import { getCurrentDate, isInTestMode, formatDate } from './dateUtils';
 
 export interface LoginResponse {
   member: {
@@ -22,7 +22,9 @@ export interface RegisterResponse {
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=utf-8',
+    'Accept': 'application/json; charset=utf-8'
+    // 'Accept-Charset' se ne može postaviti iz preglednika (sigurnosno ograničenje)
   },
 });
 
@@ -92,6 +94,16 @@ const handleApiError = (error: unknown, defaultMessage: string): never => {
 
 // Authentication APIs
 // Promijenjeno sučelje da prihvaća email
+export interface LoginResponse {
+  member: {
+    id: number;
+    full_name: string;
+    role: Member['role'];
+  };
+  token: string;
+  refreshToken?: string; // Dodano polje za refresh token koji se vraća u razvojnom okruženju
+}
+
 export const login = async ({ email, password }: MemberLoginData): Promise<LoginResponse> => {
   try {
     // Šalje se email umjesto full_name
@@ -181,7 +193,7 @@ export const terminateMembership = async (memberId: number, reason: string) => {
   try {
     const response = await api.post(`/members/${memberId}/membership/terminate`, { 
       reason, 
-      endDate: getCurrentDate().toISOString(), 
+      endDate: formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''), 
     });
     return response.data;
   } catch (error) {

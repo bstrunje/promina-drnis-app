@@ -132,14 +132,8 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 </Link>
               </>
             )}
-            {/* Audit Logs link nije dostupan ni za jednu korisničku rolu jer 'system-admin' nije dio MemberRole tipa na frontendu */}
-            {/* Ova logika se treba rješavati kroz SystemAdmin sučelje, a ne kroz korisničku navigaciju */}
-            {/* Uklanjamo u potpunosti prikaz Audit Logs linka iz Navigation.tsx */}
-            {/* System Admin login link ostaje vidljiv svima */}
-            <Link to="/system-admin/login" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium" onClick={closeMenu}>
-              <Shield size={20} className="inline sm:hidden" />
-              <span>System Admin</span>
-            </Link>
+            {/* System Admin je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
+            {/* Pristup System Admin sučelju moguć je samo direktnim unosom URL-a /system-admin/login */}
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
                 {user.first_name} {user.last_name}

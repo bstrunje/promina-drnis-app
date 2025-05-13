@@ -3,12 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs/promises';
 import config from './config/config.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
+import { getCurrentDate, formatDate } from './utils/dateUtils.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -79,6 +81,7 @@ app.use(compression());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Dodano za podršku refresh tokena
 
 // Set up static file serving with better error handling
 const uploadsDir = process.env.NODE_ENV === 'production'
@@ -140,6 +143,7 @@ const corsOptions = {
       origin.match(/https:\/\/promina-drnis.*\.vercel\.app/) ||
       origin.endsWith('vercel.app')
     ) {
+      console.log(`Origin ${origin} allowed by CORS`);
       callback(null, true);
     } else {
       console.log(`Origin ${origin} not allowed by CORS`);
@@ -152,24 +156,67 @@ const corsOptions = {
     'Content-Type', 
     'Authorization', 
     'X-Requested-With',
-    'Cache-Control',    // Add this
-    'Pragma',           // Add this
-    'Expires',          // Add this
-    'X-Test-Mode'       // Dodano za podršku testnog načina rada
-  ]
+    'Cache-Control',    
+    'Pragma',           
+    'Expires',          
+    'X-Test-Mode',      // Dodano za podršku testnog načina rada
+    'Cookie'            // Eksplicitno dozvoljavamo Cookie zaglavlje
+  ],
+  exposedHeaders: ['Set-Cookie'] // Eksplicitno izlažemo Set-Cookie zaglavlje
 };
 
 app.use(cors(corsOptions));
 
 app.use(testModeMiddleware);
 
+// Express middleware za parsiranje JSON-a s UTF-8 kodiranjem
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf, encoding) => {
+    // Provjera UTF-8 kompatibilnosti
+    if (buf && buf.length) {
+      try {
+        const text = buf.toString('utf8');
+        JSON.parse(text);
+      } catch (e) {
+        console.error('JSON parsing error - potential encoding issue:', e);
+      }
+    }
+  }
+}));
+
+// Eksplicitno postavljamo standard za parsiranje URL-encoded podataka s UTF-8 kodiranjem
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '10mb',
+  parameterLimit: 50000
+}));
+
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const timestamp = new Date().toLocaleString('en-US', { 
+  const timestamp = getCurrentDate().toLocaleString('en-US', { 
     timeZone: 'Europe/Zagreb',
     hour12: false 
   });
   console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  next();
+});
+
+// Osiguravanje ispravnog kodiranja za ulazne i izlazne podatke
+app.use((req, res, next) => {
+  // Postaviti charset za ulazne podatke
+  if (req.headers['content-type']) {
+    if (!req.headers['content-type'].includes('charset=utf-8')) {
+      req.headers['content-type'] = req.headers['content-type'] + '; charset=utf-8';
+    }
+  }
+  
+  // Postaviti charset za izlazne podatke
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  
+  // Postaviti Collation za ispravno sortiranje hrvatskih znakova
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
   next();
 });
 
@@ -178,7 +225,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
   try {
     res.json({
       status: 'healthy',
-      timestamp: new Date().toISOString(),
+      timestamp: formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''),
       services: {
         api: 'running'
       },
@@ -188,7 +235,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
     const err = error as Error;
     res.status(500).json({
       status: 'unhealthy',
-      timestamp: new Date().toISOString(),
+      timestamp: formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''),
       services: {
         api: 'error'
       },

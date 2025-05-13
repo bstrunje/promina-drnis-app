@@ -1,5 +1,6 @@
 import { PoolClient } from 'pg';
 import db from '../utils/db.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 import { 
     Activity, 
     ActivityCreateInput, 

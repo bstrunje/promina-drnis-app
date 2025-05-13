@@ -6,17 +6,17 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "isolatedModules": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolvePackageJsonExports": true
   },
   "references": [],
   "include": ["src/**/*"],

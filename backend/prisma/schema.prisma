@@ -8,6 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SenderType {
+  member
+  admin
+  superuser
+}
+
 model Member {
   status                   String?                 @default("pending") @db.VarChar(50)
   date_of_birth            DateTime?               @db.Date
@@ -34,7 +40,7 @@ model Member {
   membership_type          String?                 @default("regular") @db.VarChar(20)
   created_at               DateTime?               @default(now()) @db.Timestamptz(6)
   updated_at               DateTime?               @default(now()) @db.Timestamptz(6)
-  hours                    Hours[]
+  nickname                 String?                 @db.VarChar(50)
   grantedPermissions       AdminPermissions[]      @relation("grantedByPermissions")
   permissions              AdminPermissions?       @relation("memberPermissions")
   annual_statistics        AnnualStatistics[]
@@ -45,10 +51,8 @@ model Member {
   membership_details       MembershipDetails?
   periods                  MembershipPeriod[]
   password_update_queue    password_update_queue[]
+  refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
-  messagesSent             Message[]               @relation("MessageSender")
-  messagesReceived         Message[]               @relation("MessageRecipient")
-  activities               Activity[]
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -67,38 +71,37 @@ model ActivityType {
 }
 
 model Activity {
-  activity_id      Int                   @id @default(autoincrement()) @map("id")
-  title            String                @db.VarChar(100)
-  description      String?
-  start_date       DateTime              @db.Timestamp(6) @map("startDate")
-  end_date         DateTime              @db.Timestamp(6) @map("endDate")
-  location         String?               @db.VarChar(100)
-  difficulty_level String?               @db.VarChar(20) @map("difficultyLevel")
-  max_participants Int?                  @map("maxParticipants")
-  created_by       Int?                  @map("createdBy")
-  creator          Member?               @relation(fields: [created_by], references: [member_id])
-  created_at       DateTime?             @default(now()) @db.Timestamp(6) @map("createdAt")
-  activity_type_id Int?                  @map("activityTypeId")
-
-  activity_type    ActivityType?         @relation(fields: [activity_type_id], references: [type_id])
-  participants     ActivityParticipant[]
+  activity_id           Int                   @id @default(autoincrement())
+  title                 String                @db.VarChar(100)
+  description           String?
+  start_date            DateTime              @db.Timestamp(6)
+  end_date              DateTime              @db.Timestamp(6)
+  location              String?               @db.VarChar(100)
+  difficulty_level      String?               @db.VarChar(20)
+  max_participants      Int?
+  created_by            Int?
+  created_at            DateTime?             @default(now()) @db.Timestamp(6)
+  activity_type_id      Int?
+  activity_types        ActivityType?         @relation(fields: [activity_type_id], references: [type_id], onDelete: NoAction, onUpdate: NoAction)
+  activity_participants ActivityParticipant[]
 
   @@index([start_date], map: "idx_activities_date")
   @@index([activity_type_id], map: "idx_activities_type")
+  @@index([start_date], map: "idx_activities_start_date")
   @@map("activities")
 }
 
 model ActivityParticipant {
-  participation_id      Int       @id @default(autoincrement()) @map("id")
-  activity_id           Int?      @map("activityId")
-  member_id             Int?      @map("memberId")
-  hours_spent           Decimal   @db.Decimal(5, 2) @map("hoursSpent")
+  participation_id      Int       @id @default(autoincrement())
+  activity_id           Int?
+  member_id             Int?
+  hours_spent           Decimal   @db.Decimal(5, 2)
   role                  String?   @db.VarChar(50)
   notes                 String?
-  verified_by           Int?      @map("verifiedBy")
-  verified_at           DateTime? @db.Timestamp(6) @map("verifiedAt")
-  verified_by_member_id Int?      @map("verifiedByMemberId")
-  activity              Activity? @relation(fields: [activity_id], references: [activity_id])
+  verified_by           Int?
+  verified_at           DateTime? @db.Timestamp(6)
+  verified_by_member_id Int?
+  activities            Activity? @relation(fields: [activity_id], references: [activity_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([activity_id], map: "idx_activity_participants_activity")
   @@index([hours_spent], map: "idx_activity_participants_hours")
@@ -160,17 +163,17 @@ model StampInventory {
 }
 
 model MemberMessage {
-  message_id       Int       @id @default(autoincrement())
-  member_id        Int?
-  message_text     String
-  created_at       DateTime? @default(now()) @db.Timestamp(6)
-  read_at          DateTime? @db.Timestamp(6)
-  status           String?   @default("unread") @db.VarChar(20)
-  member           Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
-  sender_id        Int?
-  recipient_id     Int?
-  recipient_type   String?   @default("admin") @db.VarChar(10)
-  sender_type      String?   @default("member") @db.VarChar(10)
+  message_id     Int        @id @default(autoincrement())
+  member_id      Int?
+  message_text   String
+  created_at     DateTime?  @default(now()) @db.Timestamp(6)
+  read_at        DateTime?  @db.Timestamp(6)
+  status         String?    @default("unread") @db.VarChar(20)
+  sender_id      Int?
+  recipient_id   Int?
+  recipient_type String?    @default("admin") @db.VarChar(10)
+  sender_type    SenderType @default(member)
+  member         Member?    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("member_messages")
 }
@@ -196,7 +199,7 @@ model AuditLog {
   performed_by    Int?
   action_details  String
   ip_address      String?   @db.VarChar(45)
-  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
   status          String?   @db.VarChar(20)
   affected_member Int?
   affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onUpdate: NoAction)
@@ -213,57 +216,27 @@ model Hours {
   verified    Boolean? @default(false)
   createdAt   DateTime @db.Timestamptz(6)
   updatedAt   DateTime @db.Timestamptz(6)
-  member_id   Int?
-  member      Member?  @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("Hours")
 }
 
 model SystemAdmin {
-  id               Int       @id @default(autoincrement())
-  username         String    @unique @db.VarChar(100)
-  email            String    @unique @db.VarChar(255)
-  password_hash    String    @db.VarChar(255)
-  display_name     String    @db.VarChar(100)
-  last_login       DateTime? @db.Timestamp(6)
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  id            Int       @id @default(autoincrement())
+  username      String    @unique @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  display_name  String    @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  last_login    DateTime? @db.Timestamp(6)
 
   @@map("system_admins")
 }
 
 model AdminPermissions {
-  permission_id             Int       @id @default(autoincrement())
-  member_id                 Int?      @unique
-
-  // Ovlasti za članstvo (Level 1 ovlasti)
-  can_view_members          Boolean?  @default(false)
-  can_edit_members          Boolean?  @default(false)
-  can_add_members           Boolean?  @default(false)
-  can_manage_membership     Boolean?  @default(false)
-
-  // Ovlasti za aktivnosti
-  can_view_activities       Boolean?  @default(false)
-  can_create_activities     Boolean?  @default(false)
-  can_approve_activities    Boolean?  @default(false)
-
-  // Finansije
-  can_view_financials       Boolean?  @default(false)
-  can_manage_financials     Boolean?  @default(false)
-
-  // Poruke
-  can_send_group_messages   Boolean?  @default(false)
-  can_manage_all_messages   Boolean?  @default(false)
-
-  // Statistika
-  can_view_statistics       Boolean?  @default(false)
-  can_export_data           Boolean?  @default(false)
-
-  // Razno
-  can_manage_end_reasons    Boolean?  @default(false)
-  can_manage_card_numbers   Boolean?  @default(false)
-  can_assign_passwords      Boolean?  @default(false)
-
+  permission_id          Int       @id @default(autoincrement())
+  member_id              Int?      @unique
+  can_manage_end_reasons Boolean?  @default(false)
   granted_by             Int?
   granted_at             DateTime? @default(now()) @db.Timestamp(6)
   grantedByMember        Member?   @relation("grantedByPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
@@ -278,8 +251,8 @@ model CardNumber {
   id          Int       @id @default(autoincrement())
   card_number String    @unique(map: "card_number_unique") @db.VarChar(20)
   status      String    @default("available") @db.VarChar(20)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  assigned_at DateTime? @db.Timestamp(6)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  assigned_at DateTime? @db.Timestamptz(6)
   member_id   Int?
   members     Member?   @relation(fields: [member_id], references: [member_id], onUpdate: NoAction, map: "member_fk")
 
@@ -292,7 +265,7 @@ model password_update_queue {
   queue_id    Int       @id @default(autoincrement())
   member_id   Int
   card_number String    @db.VarChar(20)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
   processed   Boolean?  @default(false)
   members     Member    @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -310,18 +283,42 @@ model stamp_history {
   members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model Message {
-  message_id   Int       @id @default(autoincrement()) @map("id")
-  title        String    @db.VarChar(100)
-  content      String    @db.Text
-  sender_id    Int?      @map("senderId")
-  recipient_id Int?      @map("recipientId")
-  status       String    @default("unread") @db.VarChar(20)
-  created_at   DateTime? @default(now()) @db.Timestamp(6) @map("createdAt")
-  read_at      DateTime? @db.Timestamp(6) @map("readAt")
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model members_backup {
+  id             Int?
+  name           String?   @db.VarChar(255)
+  status         String?   @db.VarChar(50)
+  date_of_birth  DateTime? @db.Date
+  oib            String?   @db.VarChar(13)
+  cell_phone     String?   @db.VarChar(20)
+  city           String?   @db.VarChar(100)
+  street_address String?   @db.VarChar(200)
+  email          String?   @db.VarChar(255)
+  first_name     String?   @db.VarChar(100)
+  last_name      String?   @db.VarChar(100)
+  member_id      String?   @db.VarChar(1000)
 
-  sender       Member?   @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
-  recipient    Member?   @relation("MessageRecipient", fields: [recipient_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  @@ignore
+}
 
-  @@map("messages")
+model refresh_tokens {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  member_id  Int
+  expires_at DateTime @db.Timestamp(6)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  members    Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([member_id], map: "idx_refresh_tokens_member_id")
+}
+
+model system_admin {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique @db.VarChar(50)
+  email         String    @unique @db.VarChar(100)
+  display_name  String    @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  last_login    DateTime? @db.Timestamp(6)
 }

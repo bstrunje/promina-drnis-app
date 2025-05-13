@@ -68,7 +68,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       debounce(async () => {
         try {
           // Dodajemo timestamp i headere za sprječavanje keširanje
-          const timestamp = new Date().getTime();
+          const timestamp = getCurrentDate().getTime();
           const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
             headers: {
               "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -459,7 +459,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
             member={member}
             onClose={closeModal}
             onAssign={handleAssign}
-            key={`assign-card-${new Date().getTime()}`}
+            key={`assign-card-${getCurrentDate().getTime()}`}
           />
         )}
 

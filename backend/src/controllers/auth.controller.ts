@@ -8,8 +8,9 @@ import { PoolClient } from "pg";
 import { DatabaseError } from "../utils/db.js";
 import authRepository from "../repositories/auth.repository.js";
 import auditService from "../services/audit.service.js";
-import { JWT_SECRET } from '../config/jwt.config.js';
+import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../config/jwt.config.js';
 import prisma from "../utils/prisma.js";
+import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
 
 // Extend Express Request to include user
 declare global {
@@ -68,6 +69,209 @@ async function validatePassword(
   }
 
   return { isValid: true };
+}
+
+// Funkcija za obnavljanje access tokena pomoću refresh tokena
+async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
+  console.log('Refresh token zahtjev primljen, cookies:', req.cookies);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  
+  // Dohvati refresh token iz kolačića ili iz tijela zahtjeva (za razvoj)
+  let refreshToken = req.cookies.refreshToken;
+  
+  // Ako token nije pronađen u kolačićima, provjeri tijelo zahtjeva (za razvoj)
+  if (!refreshToken && req.body && req.body.refreshToken) {
+    console.log('Refresh token nije pronađen u kolačićima, ali je pronađen u tijelu zahtjeva');
+    refreshToken = req.body.refreshToken;
+  }
+  
+  if (!refreshToken) {
+    console.log('Refresh token nije pronađen ni u kolačićima ni u tijelu zahtjeva');
+    res.status(401).json({ error: 'Refresh token nije pronađen' });
+    return;
+  }
+  
+  console.log('Refresh token pronađen, nastavljam s provjerom...');
+  
+  try {
+    // Provjeri valjanost refresh tokena koristeći REFRESH_TOKEN_SECRET
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number, role: string };
+    
+    // Provjeri postoji li RefreshToken model u Prisma klijentu
+    if (!prisma.refresh_tokens) {
+      console.error('RefreshToken model nije dostupan u Prisma klijentu!');
+      console.log('Dostupni modeli u Prisma klijentu:', Object.keys(prisma));
+      res.status(500).json({ error: 'Interna greška servera' });
+      return;
+    }
+    
+    console.log(`Tražim refresh token u bazi za korisnika ID: ${decoded.id}`);
+    
+    // Provjeri postoji li token u bazi
+    const storedToken = await prisma.refresh_tokens.findFirst({
+      where: { 
+        token: refreshToken,
+        member_id: decoded.id
+      }
+    });
+    
+    console.log('Rezultat pretrage tokena:', storedToken ? `Token pronađen (ID: ${storedToken.id})` : 'Token nije pronađen');
+    
+    if (!storedToken) {
+      console.error(`Refresh token nije pronađen u bazi za korisnika ID: ${decoded.id}`);
+      
+      // Dodatna dijagnostika - provjeri postoje li uopće tokeni u bazi
+      const allTokens = await prisma.refresh_tokens.findMany({
+        take: 5 // Ograniči na 5 rezultata
+      });
+      
+      console.log(`Broj tokena u bazi: ${allTokens.length}`);
+      if (allTokens.length > 0) {
+        console.log('Primjeri tokena u bazi:', allTokens.map(t => ({ id: t.id, member_id: t.member_id })));
+      }
+      
+      res.status(403).json({ error: 'Refresh token nije valjan' });
+      return;
+    }
+    
+    // Generiraj novi access token
+    const member = await prisma.member.findUnique({ 
+      where: { member_id: decoded.id } 
+    });
+    
+    if (!member) {
+      res.status(403).json({ error: 'Korisnik nije pronađen' });
+      return;
+    }
+    
+    // Generiraj novi access token koristeći JWT_SECRET
+    const accessToken = jwt.sign(
+      { id: member.member_id, role: member.role }, 
+      JWT_SECRET, 
+      { expiresIn: '15m' }
+    );
+    
+    // Implementacija token rotation - generiranje novog refresh tokena koristeći REFRESH_TOKEN_SECRET
+    const newRefreshToken = jwt.sign(
+      { id: member.member_id, role: member.role }, 
+      REFRESH_TOKEN_SECRET, 
+      { expiresIn: '7d' }
+    );
+    
+    // Ažuriranje refresh tokena u bazi
+    console.log(`Ažuriram refresh token u bazi (ID: ${storedToken.id})`);
+    
+    try {
+      const expiresAt = new Date(getCurrentDate().getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dana
+      
+      const updatedToken = await prisma.refresh_tokens.update({
+        where: { id: storedToken.id },
+        data: {
+          token: newRefreshToken,
+          expires_at: expiresAt // <-- ispravljeno
+        }
+      });
+      
+      console.log(`Token uspješno ažuriran, novi datum isteka: ${expiresAt.toISOString()}`);
+      
+      // Dodatna provjera je li token stvarno ažuriran
+      const verifyToken = await prisma.refresh_tokens.findFirst({
+        where: { token: newRefreshToken }
+      });
+      
+      if (verifyToken) {
+        console.log(`Potvrda: novi token je uspješno ažuriran u bazi s ID: ${verifyToken.id}`);
+      } else {
+        console.error('Upozorenje: novi token nije pronađen u bazi nakon ažuriranja!');
+      }
+    } catch (error) {
+      console.error('Greška pri ažuriranju refresh tokena:', error);
+      throw error; // Propagiraj grešku kako bi se uhvatila u vanjskom try-catch bloku
+    }
+    
+    // Postavi novi refresh token u kolačić s prilagođenim postavkama za cross-origin zahtjeve
+    res.cookie('refreshToken', newRefreshToken, { 
+      httpOnly: true, 
+      // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
+      // U produkciji uvijek koristimo secure: true
+      secure: process.env.NODE_ENV === 'production',
+      // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
+      // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
+      sameSite: 'none' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+      path: '/', // Osigurava da je kolačić dostupan na svim putanjama
+      // Dodajemo domain postavku za dodatnu fleksibilnost
+      domain: process.env.COOKIE_DOMAIN || undefined
+    });
+    
+    console.log('Postavljen novi refresh token kolačić s opcijama:', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined
+    });
+    
+    // Za razvojno okruženje, vraćamo i refresh token u odgovoru kako bi se mogao spremiti u lokalno spremište
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
+    if (isDevelopment) {
+      console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
+      res.json({ 
+        accessToken,
+        refreshToken: newRefreshToken
+      });
+    } else {
+      // U produkciji vraćamo samo access token
+      res.json({ accessToken });
+    }
+  } catch (error) {
+    console.error('Greška pri obnavljanju tokena:', error);
+    res.status(403).json({ error: 'Refresh token nije valjan' });
+  }
+}
+
+// Funkcija za odjavu korisnika i poništavanje refresh tokena
+async function logoutHandler(req: Request, res: Response): Promise<void> {
+  // Provjeri postoje li kolačići i refreshToken
+  const refreshToken = req.cookies && req.cookies.refreshToken;
+  
+  console.log('Logout request received, cookies:', req.cookies);
+  
+  if (refreshToken) {
+    try {
+      // Ukloni token iz baze
+      await (prisma as any).refresh_tokens.deleteMany({
+        where: { token: refreshToken }
+      });
+      console.log('RefreshToken uspješno obrisan iz baze');
+    } catch (error) {
+      console.error('Greška pri brisanju refresh tokena:', error);
+      // Nastavljamo s odjavom čak i ako brisanje ne uspije
+    }
+  } else {
+    console.log('RefreshToken nije pronađen u kolačićima');
+  }
+  
+  // Ukloni kolačić (uvijek pokušaj obrisati, čak i ako ne postoji)
+  // Moramo koristiti iste postavke kao i pri postavljanju kolačića
+  const cookieOptions = {
+    httpOnly: true,
+    // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
+    // U produkciji uvijek koristimo secure: true
+    secure: process.env.NODE_ENV === 'production',
+    // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
+    // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
+    sameSite: 'none' as const,
+    path: '/', // Osigurava da je kolačić dostupan na svim putanjama
+    // Dodajemo domain postavku za dodatnu fleksibilnost
+    domain: process.env.COOKIE_DOMAIN || undefined
+  };
+  
+  console.log('Brišem refresh token kolačić s opcijama:', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
+  res.status(200).json({ message: 'Uspješna odjava' });
 }
 
 const authController = {
@@ -146,7 +350,7 @@ const authController = {
       
       // Dohvati detalje o članstvu
       const membershipDetails = membershipQuery.rows[0];
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       
       // Provjeri jesu li plaćeni detalji za tekuću godinu
       if (membershipDetails.fee_payment_year < currentYear) {
@@ -168,12 +372,99 @@ const authController = {
         return;
       }
 
-      // 5. Uspješna prijava - generirajmo JWT token
+      // 5. Uspješna prijava - generirajmo JWT token (access token)
       const token = jwt.sign(
         { id: member.member_id, role: member.role },
         JWT_SECRET,
-        { expiresIn: "24h" }
+        { expiresIn: "15m" } // Smanjeno na 15 minuta za bolju sigurnost
       );
+
+      // Generiraj refresh token
+      const refreshToken = jwt.sign(
+        { id: member.member_id, role: member.role },
+        REFRESH_TOKEN_SECRET,
+        { expiresIn: "7d" } // Refresh token traje 7 dana
+      );
+
+      // Spremi refresh token u bazu
+      try {
+        console.log(`Pokušavam spremiti refresh token za korisnika ID: ${member.member_id}`);
+        
+        // Provjeri postoji li RefreshToken model u Prisma klijentu
+        if (!prisma.refresh_tokens) {
+          console.error('RefreshToken model nije dostupan u Prisma klijentu!');
+          console.log('Dostupni modeli u Prisma klijentu:', Object.keys(prisma));
+          throw new Error('RefreshToken model nije dostupan');
+        }
+        
+        // Prvo provjeri postoji li već refresh token za ovog korisnika
+        console.log('Tražim postojeći refresh token u bazi...');
+        const existingToken = await prisma.refresh_tokens.findFirst({
+          where: { member_id: member.member_id }
+        });
+
+        const expiresAt = new Date(getCurrentDate().getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dana
+        
+        if (existingToken) {
+          console.log(`Pronađen postojeći token (ID: ${existingToken.id}), ažuriram ga...`);
+          // Ažuriraj postojeći token
+          const updatedToken = await prisma.refresh_tokens.update({
+            where: { id: existingToken.id },
+            data: {
+              token: refreshToken,
+              expires_at: expiresAt // <-- ispravljeno
+            }
+          });
+          console.log(`Token uspješno ažuriran, novi datum isteka: ${expiresAt.toISOString()}`);
+        } else {
+          console.log('Nije pronađen postojeći token, kreiram novi...');
+          // Kreiraj novi token
+          const newToken = await prisma.refresh_tokens.create({
+            data: {
+              token: refreshToken,
+              member_id: member.member_id,
+              expires_at: expiresAt // <-- ispravljeno
+            }
+          });
+          console.log(`Novi token uspješno kreiran s ID: ${newToken.id}, datum isteka: ${expiresAt.toISOString()}`);
+        }
+        
+        // Dodatna provjera je li token stvarno spremljen
+        const verifyToken = await prisma.refresh_tokens.findFirst({
+          where: { token: refreshToken }
+        });
+        
+        if (verifyToken) {
+          console.log(`Potvrda: token je uspješno spremljen u bazu s ID: ${verifyToken.id}`);
+        } else {
+          console.error('Upozorenje: token nije pronađen u bazi nakon spremanja!');
+        }
+
+        // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama za cross-origin zahtjeve
+        const cookieOptions = { 
+          httpOnly: true, 
+          // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
+          // U produkciji uvijek koristimo secure: true
+          secure: process.env.NODE_ENV === 'production',
+          // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
+          // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
+          sameSite: 'none' as const,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+          path: '/', // Osigurava da je kolačić dostupan na svim putanjama
+          // Dodajemo domain postavku za dodatnu fleksibilnost
+          domain: process.env.COOKIE_DOMAIN || undefined
+        };
+        
+        console.log('Postavljam refresh token kolačić s opcijama:', cookieOptions);
+        res.cookie('refreshToken', refreshToken, cookieOptions);
+
+        // Provjeri je li kolačić postavljen u odgovoru
+        console.log('Response headers:', res.getHeaders());
+        console.log(`Refresh token uspješno generiran i pohranjen za korisnika ID: ${member.member_id}`);
+      } catch (error) {
+        console.error('Greška pri spremanju refresh tokena:', error);
+        // Nastavljamo s prijavom čak i ako spremanje refresh tokena ne uspije
+      }
 
       // Ažuriramo podatak o zadnjoj prijavi u bazi
       await db.query(
@@ -197,14 +488,27 @@ const authController = {
 
       // 8. Vratimo JWT token i osnovne podatke o korisniku
       // Vraćamo full_name koji postoji na member objektu dohvaćenom iz baze
-      res.json({
+      
+      // Za razvojno okruženje, vraćamo i refresh token kako bi se mogao spremiti u lokalno spremište
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      
+      const responseData = {
         member: {
           id: member.member_id,
           full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
           role: member.role,
         },
         token,
-      });
+      };
+      
+      // Ako smo u razvojnom okruženju, dodaj refresh token u odgovor
+      if (isDevelopment) {
+        console.log('Razvojno okruženje: vraćam refresh token u odgovoru');
+        // Dodajemo refresh token u odgovor samo za razvojno okruženje
+        Object.assign(responseData, { refreshToken });
+      }
+      
+      res.json(responseData);
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({
@@ -471,7 +775,7 @@ const authController = {
   },
 
   // Debug method for member information
-  async debugMember(req: Request, res: Response): Promise<void> {
+  async debugMember(req: Request, res: Response): Promise<void | Response> {
     try {
       const memberId = parseInt(req.params.id);
       console.log(`Debug request for member ${memberId}`);
@@ -498,15 +802,27 @@ const authController = {
         return;
       }
       
-      res.json({ 
+      const member = result.rows[0];
+      return res.json({ 
         member: result.rows[0],
         debug_note: "This endpoint is for development only"
       });
     } catch (error) {
-      console.error('Debug error:', error);
-      res.status(500).json({ message: 'Error retrieving member debug info', error: String(error) });
+      console.error('Debug endpoint error:', error);
+      return res.status(500).json({ error: String(error) });
     }
+  },
+
+  // Funkcija za obnavljanje access tokena
+  async refreshToken(req: Request, res: Response): Promise<void | Response> {
+    await refreshTokenHandler(req, res);
+  },
+
+  // Funkcija za odjavu korisnika
+  async logout(req: Request, res: Response): Promise<void | Response> {
+    await logoutHandler(req, res);
   }
+
 };
 
 export default authController;

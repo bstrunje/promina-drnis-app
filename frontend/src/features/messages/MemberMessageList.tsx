@@ -8,6 +8,7 @@ import { getMemberMessages, markMessageAsRead, getGenericMessages, GenericMessag
 import BackToDashboard from "../../../components/BackToDashboard";
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";
+import { parseDate } from '../../utils/dateUtils';
 
 interface MemberMessage {
   message_id: number;
@@ -44,7 +45,7 @@ const MemberMessageList: React.FC = () => {
       
       // Sortiramo poruke silazno - od najnovije prema najstarijoj (kao i kod admin prikaza)
       const sortedMessages = [...receivedMessages].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => parseDate(b.created_at).getTime() - parseDate(a.created_at).getTime()
       );
       
       setMessages(sortedMessages);

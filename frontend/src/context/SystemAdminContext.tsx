@@ -80,11 +80,29 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   // Funkcija za odjavu
-  const logout = () => {
-    systemAdminLogout();
-    setAdmin(null);
-    setIsAuthenticated(false);
-    navigate('/system-admin/login');
+  const logout = async () => {
+    try {
+      console.log('Započinjem odjavu system admina...');
+      
+      // Pozivamo API funkciju za odjavu
+      const success = systemAdminLogout();
+      
+      // Čistimo lokalno stanje
+      setAdmin(null);
+      setIsAuthenticated(false);
+      
+      console.log('System admin uspješno odjavljen');
+      
+      // Koristimo replace: true kako bismo spriječili povratak na dashboard nakon odjave
+      navigate('/system-admin/login', { replace: true });
+    } catch (error) {
+      console.error('Greška prilikom odjave system admina:', error);
+      
+      // Čak i u slučaju greške, čistimo stanje i preusmjeravamo korisnika
+      setAdmin(null);
+      setIsAuthenticated(false);
+      navigate('/system-admin/login', { replace: true });
+    }
   };
 
   // Funkcija za dohvat aktualnog admina iz backenda (npr. nakon promjene username-a)

@@ -9,13 +9,15 @@ const messageService = {
         adminId: number, 
         recipientId: number | null, 
         messageText: string, 
-        recipientType: 'member' | 'group' | 'all' = 'member'
+        recipientType: 'member' | 'group' | 'all' = 'member',
+        senderType: 'admin' | 'superuser'
     ): Promise<MemberMessage> {
         return await memberMessageRepository.createAdminMessage(
             adminId, 
             recipientId, 
             messageText, 
-            recipientType
+            recipientType,
+            senderType
         );
     },
 

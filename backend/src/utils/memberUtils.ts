@@ -1,6 +1,8 @@
+import { getCurrentDate, parseDate } from './dateUtils.js';
+
 export const calculateAge = (birthDate: string): string => {
-    const today = new Date();
-    const birth = new Date(birthDate);
+    const today = getCurrentDate();
+    const birth = parseDate(birthDate);
     
     const years = today.getFullYear() - birth.getFullYear();
     const months = today.getMonth() - birth.getMonth();

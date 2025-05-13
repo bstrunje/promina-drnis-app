@@ -106,11 +106,28 @@ export const systemAdminLogin = async ({ username, password }: SystemAdminLoginD
 
 /**
  * Odjava system admina
+ * @returns {boolean} Uspješnost odjave
  */
-export const systemAdminLogout = (): void => {
-  localStorage.removeItem('systemAdminToken');
-  localStorage.removeItem('systemAdmin');
-  window.location.href = '/system-admin/login';
+export const systemAdminLogout = (): boolean => {
+  try {
+    console.log('Čišćenje lokalnih podataka za system admina');
+    localStorage.removeItem('systemAdminToken');
+    localStorage.removeItem('systemAdmin');
+    
+    // Čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
+    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    // Ako smo u produkciji, dodajemo secure i SameSite atribute
+    if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
+    }
+    
+    // Ne preusmjeravamo ovdje, prepuštamo to komponenti koja poziva ovu funkciju
+    return true;
+  } catch (error) {
+    console.error('Greška pri odjavi system admina:', error);
+    return false;
+  }
 };
 
 /**

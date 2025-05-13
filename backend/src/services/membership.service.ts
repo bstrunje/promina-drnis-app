@@ -11,6 +11,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";
 import prisma from "../utils/prisma.js";
+import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
 
 const membershipService = {
   async processFeePayment(
@@ -41,7 +42,7 @@ const membershipService = {
 
       // Create cutoff date (October 31st of current year)
       const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
-      const startDate = new Date(paymentDate);
+      const startDate = new Date(paymentYear, 0, 1); // January 1st of payment year
 
       // Provjeri je li ovo novi član (koji nikad nije platio članarinu)
       // ili postojeći član koji obnavlja članstvo
@@ -92,7 +93,7 @@ const membershipService = {
         } else if (currentPeriod.end_reason === "non_payment") {
           await membershipRepository.endMembershipPeriod(
             currentPeriod.period_id,
-            new Date(),
+            getCurrentDate(),
             "non_payment"
           );
           await membershipRepository.createMembershipPeriod(
@@ -135,7 +136,7 @@ const membershipService = {
 
       // Ako imamo fee_payment_year, usporedimo s trenutnom godinom
       if (member.membership_details.fee_payment_year) {
-        const currentYear = new Date().getFullYear();
+        const currentYear = getCurrentDate().getFullYear();
         return member.membership_details.fee_payment_year >= currentYear;
       }
       
@@ -269,7 +270,7 @@ const membershipService = {
   async endMembership(
     memberId: number,
     reason: MembershipEndReason,
-    endDate: Date = new Date(),
+    endDate: Date = getCurrentDate(),
     req?: Request
   ): Promise<void> {
     const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
@@ -288,12 +289,12 @@ const membershipService = {
     currentPeriod?: MembershipPeriod;
   }> {
     const periods = await membershipRepository.getMembershipPeriods(memberId);
-    const currentPeriod = periods.find((p) => !p.end_date);
+    const currentPeriod = periods.find((p: MembershipPeriod) => !p.end_date);
 
     // Calculate total duration
     let totalDays = 0;
-    periods.forEach((period) => {
-      const end = new Date(period.end_date || new Date());
+    periods.forEach((period: MembershipPeriod) => {
+      const end = new Date(period.end_date || getCurrentDate());
       const start = new Date(period.start_date);
       totalDays += Math.floor(
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
@@ -313,8 +314,8 @@ const membershipService = {
 
   async checkAutoTerminations(): Promise<void> {
     try {
-      const currentYear = new Date().getFullYear();
-      const currentDate = new Date();
+      const currentYear = getCurrentDate().getFullYear();
+      const currentDate = getCurrentDate();
 
       // Dohvati postavke sustava
       const settings = await prisma.systemSettings.findFirst({
@@ -326,7 +327,7 @@ const membershipService = {
       const cutoffDay = settings?.renewalStartDay || 1;
 
       // Kreiraj datum za provjeru (31.12. tekuće godine)
-      const yearEndDate = new Date(currentYear, 11, 31); // Mjesec 11 je prosinac
+      const yearEndDate = parseDate(`${currentYear}-12-31`); // Mjesec 11 je prosinac
 
       // Ako je trenutni datum nakon kraja godine, završi sva članstva koja nisu obnovljena
       if (currentDate >= yearEndDate) {
@@ -346,6 +347,8 @@ const membershipService = {
 
   /**
    * Ažurira status svih članstava na temelju trenutnog datuma
+   * Ova funkcija se NE SMIJE automatski pozivati na startu aplikacije!
+   * Pokreći je ručno (CLI, admin sučelje ili test s mockDate).
    * Postavlja active_until datum i automatski prekida članstvo za članove s neplaćenom članarinom
    * @param req - Express Request objekt (opcionalno)
    * @param mockDate - Opcionalni simulirani datum za testiranje
@@ -362,10 +365,10 @@ const membershipService = {
       console.log('\n\n===== POČETAK IZVRŠAVANJA updateAllMembershipStatuses =====');
       
       // Koristi mock datum ako je proslijeđen, inače koristi stvarni datum
-      const currentDate = mockDate || new Date();
+      const currentDate = mockDate || getCurrentDate();
       const currentYear = currentDate.getFullYear();
       
-      console.log(`🔄 Ažuriranje statusa članstva na temelju datuma: ${currentDate.toISOString()}${mockDate ? ' (SIMULIRANI DATUM)' : ''}`);
+      console.log(`🔄 Ažuriranje statusa članstva na temelju datuma: ${formatDate(currentDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}${mockDate ? ' (SIMULIRANI DATUM)' : ''}`);
       console.log(`Trenutna godina: ${currentYear}${mockDate ? ' (SIMULIRANA GODINA)' : ''}`);
       
       // 0. DODATNA PROVJERA: Članovi bez aktivnog perioda trebaju biti označeni kao 'inactive'
@@ -441,7 +444,8 @@ const membershipService = {
           membership_details: true,
           periods: {
             where: {
-              end_date: null  // Aktivni periodi
+              end_date: null,  // Aktivni periodi
+              is_test_data: false  // Ignoriraj testne podatke
             }
           }
         }
@@ -470,9 +474,9 @@ const membershipService = {
         
         if (feeYear) {
           // Postavi datum do kojeg je članstvo aktivno (31.12. godine plaćanja članarine)
-          activeUntilDate = new Date(Date.UTC(feeYear, 11, 31));
+          activeUntilDate = parseDate(`${feeYear}-12-31`);
           
-          console.log(`🔄 Ažuriranje active_until datuma za člana ${member.full_name} (ID: ${member.member_id}), godina plaćanja: ${feeYear}, active_until: ${activeUntilDate.toISOString()}`);
+          console.log(`🔄 Ažuriranje active_until datuma za člana ${member.full_name} (ID: ${member.member_id}), godina plaćanja: ${feeYear}, active_until: ${formatDate(activeUntilDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);
           
           // Izbjegavamo izravno postavljanje active_until polja kroz Prisma klijent
           // jer je polje dodano naknadno u shemu, pa ćemo to napraviti kroz SQL upit
@@ -501,7 +505,7 @@ const membershipService = {
           const isActive = feeYear >= currentYear;
           
           // Dijagnostika
-          console.log(`Član ${member.full_name} (ID: ${member.member_id}): članarina plaćena za ${feeYear}, aktivno do ${activeUntilDate.toISOString().split('T')[0]}, status člana: ${member.status}, članstvo ${isActive ? 'aktivno' : 'isteklo'}`);
+          console.log(`Član ${member.full_name} (ID: ${member.member_id}): članarina plaćena za ${feeYear}, aktivno do ${formatDate(activeUntilDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]}, status člana: ${member.status}, članstvo ${isActive ? 'aktivno' : 'isteklo'}`);
           
           // 3. Provjeri treba li automatski prekinuti članstvo - proširujemo uvjet da obuhvati "registered" i "regular" statuse
           // Ispravljamo uvjet da prekidamo članstvo svim aktivnim članovima čija je članarina istekla
@@ -509,7 +513,7 @@ const membershipService = {
             const activePeriod = member.periods[0]; // Trenutno aktivni period
             
             // Postavi datum kraja perioda na 31.12. prethodne godine
-            const endDate = new Date(Date.UTC(currentYear - 1, 11, 31));
+            const endDate = parseDate(`${currentYear-1}-12-31`);
             
             console.log(`🔄 Automatski prekidam članstvo za člana ${member.full_name} (ID: ${member.member_id}) zbog neplaćanja članarine.`);
             console.log(`Member status prije prekida: ${member.status}`);
@@ -540,7 +544,7 @@ const membershipService = {
               
               console.log(`✅ Status člana uspješno ažuriran na inactive. Prethodni status: ${member.status}, novi status: ${memberUpdateResult.status}`);
               
-              console.log(`✅ Članstvo uspješno prekinuto za člana ${member.full_name} s datumom ${endDate.toISOString().split('T')[0]}`);
+              console.log(`✅ Članstvo uspješno prekinuto za člana ${member.full_name} s datumom ${formatDate(endDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]}`);
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
               console.error(`❌ Greška prilikom automatskog prekidanja članstva za člana ${member.full_name}:`, errorMessage);

@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import api from "../../utils/api"; 
 import { IMAGE_BASE_URL } from "../../utils/config";
 import { formatDate } from "../../utils/dateUtils";
+import { getCurrentDate } from '../utils/dateUtils';
 
 declare module "@shared/member" {
   interface Member {
@@ -39,7 +40,7 @@ useEffect(() => {
     const fetchMemberDetails = async () => {
       try {
         // Dodaj vremenski žig za izbjegavanje keširanja
-        const timestamp = new Date().getTime();
+        const timestamp = getCurrentDate().getTime();
         const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',

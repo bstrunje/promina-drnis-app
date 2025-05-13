@@ -10,7 +10,7 @@ import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
-import { runAllMigrations } from './runMigrations.js';
+// import { runAllMigrations } from './runMigrations.js';
 import scheduledService from './services/scheduled.service.js';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
 import prisma from './utils/prisma.js';
@@ -174,11 +174,6 @@ async function initialize() {
         // Prvo pokreni bazu podataka
         await setupDatabase();
         console.log('✅ Database setup completed');
-        
-        // Pokreni migracije nakon setupDatabase
-        console.log('🔄 Pokretanje migracija...');
-        await runAllMigrations(prisma);
-        console.log('✅ Migracije uspješno izvršene');
         
         // Pokreni server
         await startServer();

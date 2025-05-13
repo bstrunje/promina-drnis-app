@@ -10,6 +10,7 @@ import { MembershipPeriod } from '../shared/types/membership.js';
 import authRepository from '../repositories/auth.repository.js';
 import auditService from './audit.service.js';
 import { MembershipTypeEnum } from '../shared/types/member.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -154,7 +155,7 @@ const memberService = {
                 );
                 
                 // Nastavak s brisanjem člana
-                const deletedMember = await memberRepository.delete(memberId, client);
+                const deletedMember = await memberRepository.delete(memberId);
                 if (!deletedMember) {
                     throw new Error('Failed to delete member');
                 }
@@ -246,7 +247,7 @@ const memberService = {
             }
     
             const paymentMonth = paymentDate.getMonth(); // 0-11 where 10=Nov, 11=Dec
-            const currentYear = new Date().getFullYear();
+            const currentYear = getCurrentDate().getFullYear();
             
             // Determine which year to assign the payment to
             let paymentYear = currentYear;

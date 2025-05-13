@@ -5,7 +5,7 @@ import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { login, register } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import { Member, MemberLoginData } from "@shared/member"; // Sada koristi ažurirani tip
+import { Member, MemberLoginData, MembershipTypeEnum } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import axios from "axios";
 
@@ -69,10 +69,12 @@ const LoginPage = () => {
     tshirt_size: "M", // Default size
     shell_jacket_size: "M", // Default size
     registration_completed: true,
-    membership_type: "regular" as const,
+    membership_type: MembershipTypeEnum.Regular,
     role: "member",
-    card_stamp_issued: false,  // Add this
-    card_number: "",          // Add this
+    membership_details: {
+      card_stamp_issued: false,
+      card_number: ""
+    }
   });
 
   useEffect(() => {
@@ -127,25 +129,25 @@ const LoginPage = () => {
         cell_phone: "",    // Nema u data.member
         email: loginData.email, // Koristimo email iz forme (loginData)
         registration_completed: true, // Nema u data.member, pretpostavka
-        membership_type: "regular",   // Nema u data.member, zadana vrijednost
+        membership_type: MembershipTypeEnum.Regular,   // Nema u data.member, zadana vrijednost
         life_status: "employed/unemployed", // Nema u data.member, zadana vrijednost
         tshirt_size: "M",             // Nema u data.member, zadana vrijednost
         shell_jacket_size: "M",       // Nema u data.member, zadana vrijednost
-        card_stamp_issued: false,     // Nema u data.member, zadana vrijednost
-        card_number: "",              // Nema u data.member, zadana vrijednost
-        // Dodajemo ostala opcionalna polja iz Member sučelja sa zadanim vrijednostima
+        membership_details: {
+          card_stamp_issued: false,
+          card_number: ""
+        },
+        // Dodaj ostala opcionalna polja iz Member sučelja sa zadanim vrijednostima
         profile_image_path: undefined,
         profile_image_updated_at: undefined,
         last_login: undefined,
         status: 'registered',
         total_hours: 0,
         activity_status: 'passive',
-        fee_payment_year: undefined,
-        next_year_stamp_issued: false,
-        membership_details: undefined,
         membership_history: undefined,
       };
-      authLogin(member, data.token);
+      // Proslijeđujemo i refresh token ako je dostupan (u razvojnom okruženju)
+      authLogin(member, data.token, data.refreshToken);
       
       // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
       switch(member.role) {
@@ -206,7 +208,7 @@ const LoginPage = () => {
       const memberData: Omit<Member, "member_id" | "total_hours"> = {
         ...registerData,
         registration_completed: false,
-        membership_type: "regular",
+        membership_type: MembershipTypeEnum.Regular,
         role: "member",
         first_name: registerData.first_name,
         last_name: registerData.last_name,
@@ -219,8 +221,10 @@ const LoginPage = () => {
         life_status: registerData.life_status,
         tshirt_size: registerData.tshirt_size,
         shell_jacket_size: registerData.shell_jacket_size,
-        card_stamp_issued: false,  // Add this explicitly
-        card_number: "",          // Add this explicitly
+        membership_details: {
+          card_stamp_issued: false,
+          card_number: ""
+        }
       };
 
       const response = await register(memberData);

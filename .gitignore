@@ -29,5 +29,10 @@ root_tree.txt
 # Backup files
 backend/backups/
 
+# Scripts folder - ignoriraj pomoćne datoteke, ali prati JS skripte
+scripts/*
+!scripts/*.js
+!scripts/*.md
+
 # windsurf rules
 .windsurfrules

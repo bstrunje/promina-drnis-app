@@ -1,5 +1,6 @@
 // repositories/systemAdmin.repository.ts
 import prisma from '../utils/prisma.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 // Privremeno koristimo any umjesto eksplicitnih tipova
 // import { SystemAdmin, CreateSystemAdminDto } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
@@ -50,7 +51,7 @@ const systemAdminRepository = {
     async updateLastLogin(id: number): Promise<void> {
         await (prisma as any).systemAdmin.update({
             where: { id },
-            data: { last_login: new Date() }
+            data: { last_login: getCurrentDate() }
         });
     },
     

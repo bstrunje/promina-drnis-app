@@ -16,7 +16,7 @@ import memberService from '../services/member.service.js';
 // Import membership service
 import membershipService from '../services/membership.service.js';
 
-import { getCurrentDate, setMockDate, resetMockDate } from '../utils/dateUtils.js';
+import { getCurrentDate, setMockDate, resetMockDate, parseDate } from '../utils/dateUtils.js';
 
 const execPromise = util.promisify(exec);
 
@@ -153,7 +153,7 @@ router.post('/fs/test-write', async (req, res) => {
     
     const testFileName = `test-file-${Date.now()}.txt`;
     const testFilePath = path.join(basePath, testFileName);
-    const content = `Test file created at ${new Date().toISOString()}`;
+    const content = `Test file created at ${getCurrentDate().toISOString()}`;
     
     // Ensure directory exists
     await fsPromises.mkdir(basePath, { recursive: true });
@@ -295,7 +295,7 @@ router.post('/reset-test-database', async (req, res) => {
       
       // Spremamo u backup objekt
       backupData = {
-        timestamp: new Date().toISOString(),
+        timestamp: getCurrentDate().toISOString(),
         members: membersResult.rows,
         membership_details: membershipDetailsResult.rows,
         membership_periods: membershipPeriodsResult.rows,
@@ -308,7 +308,7 @@ router.post('/reset-test-database', async (req, res) => {
       const backupDir = path.join(__dirname, '..', '..', 'backups');
       await fsPromises.mkdir(backupDir, { recursive: true });
       
-      const backupFileName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      const backupFileName = `backup_${getCurrentDate().toISOString().replace(/[:.]/g, '-')}.json`;
       const backupPath = path.join(backupDir, backupFileName);
       
       await fsPromises.writeFile(
@@ -350,7 +350,7 @@ router.post('/reset-test-database', async (req, res) => {
       // 2. RESETIRANJE ČLANARINA I PERIODA
       
       // Vraćanje članarina na trenutnu godinu i poništavanje datuma plaćanja
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       await client.query(`
         UPDATE membership_details 
         SET 
@@ -456,7 +456,7 @@ router.post('/recalculate-membership', async (req, res) => {
     console.log(`🔄 Rekalkulacija statusa članstva${mockDate ? ` s mock datumom: ${mockDate}` : ' na temelju trenutnog datuma'}...`);
     
     // Koristi centraliziranu funkciju iz membership servisa i proslijedi mock datum ako postoji
-    const result = await membershipService.updateAllMembershipStatuses(req, mockDate ? new Date(mockDate) : undefined);
+    const result = await membershipService.updateAllMembershipStatuses(req, mockDate ? parseDate(mockDate) : undefined);
     
     res.json({ 
       success: true, 
@@ -726,12 +726,12 @@ router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req
       res.json({
         success: true,
         message: 'Simulirani datum je resetiran',
-        currentDate: new Date(),
+        currentDate: getCurrentDate(),
         isMockDate: false
       });
     } else if (date) {
       // Postavi simulirani datum
-      const mockDate = new Date(date);
+      const mockDate = parseDate(date);
       
       if (isNaN(mockDate.getTime())) {
         return res.status(400).json({ 
@@ -752,7 +752,7 @@ router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req
     } else {
       // Ako nema datuma ni reseta, vrati trenutno stanje
       const currentDate = getCurrentDate();
-      const isMockDate = getCurrentDate().getTime() !== new Date().getTime();
+      const isMockDate = getCurrentDate().getTime() !== (new Date()).getTime();
       
       res.json({
         success: true,

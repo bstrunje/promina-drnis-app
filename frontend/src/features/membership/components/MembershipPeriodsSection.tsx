@@ -6,6 +6,8 @@ import { MembershipPeriodsSectionProps } from "../types/membershipTypes";
 import PeriodFormRow from "./PeriodFormRow";
 import { parseISO } from "date-fns";
 import { useMembershipPeriods } from "../hooks/useMembershipPeriods";
+import { parseDate } from '../utils/dateUtils';
+import { formatDate } from '../../../utils/dateUtils';
 
 const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   member,
@@ -186,7 +188,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Datum početka (DD.MM.YYYY)</label>
                     <input
                       type="text"
-                      value={newPeriod.start_date ? new Date(newPeriod.start_date as string).toLocaleDateString('hr-HR') : ''}
+                      value={newPeriod.start_date ? parseDate($1).toLocaleDateString('hr-HR') : ''}
                       onChange={(e) =>
                         handleNewPeriodChange(
                           "start_date",
@@ -201,7 +203,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Datum završetka (DD.MM.YYYY)</label>
                     <input
                       type="text"
-                      value={newPeriod.end_date ? new Date(newPeriod.end_date as string).toLocaleDateString('hr-HR') : ''}
+                      value={newPeriod.end_date ? parseDate($1).toLocaleDateString('hr-HR') : ''}
                       onChange={(e) =>
                         handleNewPeriodChange(
                           "end_date",
