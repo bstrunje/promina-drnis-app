@@ -2,7 +2,7 @@
 import systemAdminRepository from '../repositories/systemAdmin.repository.js';
 import prisma from '../utils/prisma.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
-// Privremeno koristimo any umjesto eksplicitnih tipova
+// import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js'; // Može se koristiti za tipizaciju ako je potrebno
 // import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -281,87 +281,74 @@ const systemAdminService = {
         }
     },
 
-    // Dohvat statistika za system admin dashboard
-    async getDashboardStats(): Promise<any> {
+    /**
+     * Dohvaća tjednu povijest aktivnosti i druge ključne statistike za dashboard admina.
+     * Povijest aktivnosti vraća se kao niz objekata po tjednima (zadnjih 8 tjedana).
+     * @returns Objekt sa statistikom i poviješću aktivnosti
+     */
+    async getDashboardStats(): Promise<{
+        weeklyActivityHistory: { weekStart: Date; count: number }[];
+        totalActivities: number;
+        systemHealth: null; // Placeholder, može se proširiti prema stvarnoj logici
+        lastBackup: null; // Placeholder, može se proširiti prema stvarnoj logici
+    }> {
         try {
-            // Broj svih članova
-            const totalMembers = await prisma.member.count();
-            
-            // Broj registriranih članova (s korisničkim računom)
-            const registeredMembers = await prisma.member.count({
-                where: {
-                    email: {
-                        not: null
-                    },
-                    password_hash: {
-                        not: null
-                    }
-                }
-            });
-            
-            // Broj aktivnih članova (status = active)
-            const activeMembers = await prisma.member.count({
-                where: {
-                    status: 'active'
-                }
-            });
-            
-            // Broj članova koji čekaju na odobrenje (registrirani ali bez lozinke)
-            const pendingApprovals = await prisma.member.count({
-                where: {
-                    email: {
-                        not: null
-                    },
-                    password_hash: null
-                }
-            });
-            
-            // Broj nedavnih aktivnosti (u zadnjih 24 sata)
-            // Koristimo type assertion jer ne znamo je li Activity model dostupan u Prisma shemi
-            let recentActivities = 0;
-            try {
-                recentActivities = await (prisma as any).activity.count({
-                    where: {
-                        created_at: {
-                            gte: new Date(getCurrentDate().getTime() - 24 * 60 * 60 * 1000) // zadnjih 24 sata
-                        }
-                    }
-                });
-            } catch (err) {
-                console.warn('Activity table not available in Prisma schema, using default value', err);
+            // Koliko tjedana povijesti vraćamo
+            const NUM_WEEKS = 8;
+            const now = getCurrentDate();
+            // Pronađi početak ovog tjedna (ponedjeljak)
+            const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // 0 je nedjelja, želimo 1-7
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
+            startOfWeek.setHours(0,0,0,0);
+
+            // Generiraj tjedne granice
+            const weekStarts: Date[] = [];
+            for (let i = NUM_WEEKS - 1; i >= 0; i--) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() - i * 7);
+                weekStarts.push(d);
             }
-            
-            // Dohvat podataka o zadnjoj sigurnosnoj kopiji
-            let lastBackup = 'Never';
-            try {
-                const backupRecord = await (prisma as any).systemBackup.findFirst({
-                    orderBy: {
-                        created_at: 'desc'
+
+            // Dohvati sve aktivnosti iz zadnjih N tjedana
+            const oldestWeek = weekStarts[0];
+            const activities = await prisma.activity.findMany({
+                where: {
+                    start_date: {
+                        gte: oldestWeek
                     }
-                });
-                
-                if (backupRecord) {
-                    lastBackup = backupRecord.created_at;
+                },
+                select: {
+                    start_date: true
                 }
-            } catch (err) {
-                console.warn('SystemBackup table not available in Prisma schema, using default value', err);
-            }
-            
-            // Provjera zdravlja sustava (test verzija - uvijek vraća "Healthy")
-            // U stvarnoj implementaciji bi se provjeravali resursi servera, npr. disk space, CPU load, memory
-            const systemHealth = 'Healthy';
-            
+            });
+
+            // Grupiraj aktivnosti po tjednima
+            const weeklyCounts = weekStarts.map((weekStart, idx) => {
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 7);
+                const count = activities.filter(a => {
+                    return a.start_date >= weekStart && a.start_date < weekEnd;
+                }).length;
+                return { weekStart, count };
+            });
+
+            // Ukupan broj aktivnosti
+            const totalActivities = await prisma.activity.count();
+
+            // Placeholderi za health i backup (može se proširiti kad bude logika)
+            const systemHealth = null;
+            const lastBackup = null;
+
+            // Povratni objekt
             return {
-                totalMembers,
-                registeredMembers,
-                activeMembers,
-                pendingApprovals,
-                recentActivities,
+                weeklyActivityHistory: weeklyCounts,
+                totalActivities,
                 systemHealth,
                 lastBackup
             };
         } catch (error) {
-            console.error('Error getting dashboard stats:', error);
+            console.error('Greška prilikom dohvaćanja dashboard statistike:', error);
             throw error;
         }
     },

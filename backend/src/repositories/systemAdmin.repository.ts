@@ -1,8 +1,7 @@
 // repositories/systemAdmin.repository.ts
 import prisma from '../utils/prisma.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
-// Privremeno koristimo any umjesto eksplicitnih tipova
-// import { SystemAdmin, CreateSystemAdminDto } from '../shared/types/systemAdmin.js';
+// import { SystemAdmin, CreateSystemAdminDto } from '../shared/types/systemAdmin.js'; // Može se koristiti za tipizaciju ako je potrebno
 import bcrypt from 'bcrypt';
 
 // Pomoćne funkcije
@@ -14,21 +13,21 @@ const hashPassword = async (password: string): Promise<string> => {
 const systemAdminRepository = {
     // Dohvat administratora po korisničkom imenu
     async findByUsername(username: string): Promise<any> {
-        return (prisma as any).systemAdmin.findUnique({
+        return prisma.system_admin.findUnique({
             where: { username }
         });
     },
     
     // Dohvat administratora po email adresi
     async findByEmail(email: string): Promise<any> {
-        return (prisma as any).systemAdmin.findUnique({
+        return prisma.system_admin.findUnique({
             where: { email }
         });
     },
     
     // Dohvat administratora po ID-u
     async findById(id: number): Promise<any> {
-        return (prisma as any).systemAdmin.findUnique({
+        return prisma.system_admin.findUnique({
             where: { id }
         });
     },
@@ -37,7 +36,7 @@ const systemAdminRepository = {
     async create(adminData: any): Promise<any> {
         const passwordHash = await hashPassword(adminData.password);
         
-        return (prisma as any).systemAdmin.create({
+        return prisma.system_admin.create({
             data: {
                 username: adminData.username,
                 email: adminData.email,
@@ -49,7 +48,7 @@ const systemAdminRepository = {
     
     // Ažuriranje vremena zadnje prijave
     async updateLastLogin(id: number): Promise<void> {
-        await (prisma as any).systemAdmin.update({
+        await prisma.system_admin.update({
             where: { id },
             data: { last_login: getCurrentDate() }
         });
@@ -57,7 +56,7 @@ const systemAdminRepository = {
     
     // Provjera postoji li već administrator u sustavu
     async exists(): Promise<boolean> {
-        const count = await (prisma as any).systemAdmin.count();
+        const count = await prisma.system_admin.count();
         return count > 0;
     },
     
@@ -65,7 +64,7 @@ const systemAdminRepository = {
     async changePassword(id: number, newPassword: string): Promise<void> {
         const passwordHash = await hashPassword(newPassword);
         
-        await (prisma as any).systemAdmin.update({
+        await prisma.system_admin.update({
             where: { id },
             data: { password_hash: passwordHash }
         });
@@ -73,7 +72,7 @@ const systemAdminRepository = {
     
     // Dohvat svih administratora
     async findAll(): Promise<any[]> {
-        return (prisma as any).systemAdmin.findMany({
+        return prisma.system_admin.findMany({
             select: {
                 id: true,
                 username: true,

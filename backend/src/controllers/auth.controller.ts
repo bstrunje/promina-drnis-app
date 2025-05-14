@@ -623,6 +623,7 @@ const authController = {
         data: {
           first_name,
           last_name,
+          full_name: `${first_name} ${last_name}`, // Puno ime je obavezno polje
           date_of_birth,
           gender,
           street_address,

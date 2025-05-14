@@ -101,6 +101,7 @@ const memberRepository = {
         const raw = await prisma.member.create({ data: {
             first_name: memberData.first_name,
             last_name: memberData.last_name,
+            full_name: `${memberData.first_name} ${memberData.last_name}`, // Puno ime je obavezno polje
             date_of_birth: memberData.date_of_birth,
             gender: memberData.gender,
             street_address: memberData.street_address,

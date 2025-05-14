@@ -12,6 +12,7 @@ describe('member.repository.findAll', () => {
       data: {
         first_name: 'Vitest',
         last_name: 'Tester',
+        full_name: 'Vitest Tester', // Puno ime je obavezno polje
         oib: '00000000006',
         cell_phone: '0910000000',
         city: 'TestCity',

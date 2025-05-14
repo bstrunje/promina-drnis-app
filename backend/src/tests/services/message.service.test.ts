@@ -14,6 +14,7 @@ describe('message.service', () => {
     const member = await prisma.member.create({ data: {
       first_name: 'SvcTest',
       last_name: 'Tester',
+      full_name: 'SvcTest Tester', // Puno ime je obavezno polje
       oib: faker.string.numeric(11),
       cell_phone: '091' + Math.floor(Math.random() * 1e7).toString().padStart(7, '0'),
       city: 'SvcCity',

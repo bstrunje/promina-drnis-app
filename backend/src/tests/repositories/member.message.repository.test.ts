@@ -13,6 +13,7 @@ describe('member.message.repository', () => {
     const member = await prisma.member.create({ data: {
       first_name: 'MsgTest',
       last_name: 'Tester',
+      full_name: 'MsgTest Tester', // Puno ime je obavezno polje
       oib: '00000000007',
       cell_phone: '0910000001',
       city: 'TestCity',

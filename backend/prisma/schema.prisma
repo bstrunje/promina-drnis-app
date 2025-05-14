@@ -28,7 +28,7 @@ model Member {
   password_hash            String?                 @db.VarChar(255)
   role                     String                  @default("member") @db.VarChar(20)
   last_login               DateTime?               @db.Timestamp(6)
-  full_name                String                  @default(dbgenerated("(((first_name)::text || ' '::text) || (last_name)::text)")) @db.VarChar(100)
+  full_name                String                  @db.VarChar(100)
   life_status              String?                 @db.VarChar(25)
   tshirt_size              String?                 @db.VarChar(4)
   shell_jacket_size        String?                 @db.VarChar(4)
@@ -154,9 +154,9 @@ model StampInventory {
   stamp_type    String    @db.VarChar(20)
   initial_count Int       @default(0)
   issued_count  Int?      @default(0)
-  remaining     Int?      @default(dbgenerated("(initial_count - issued_count)"))
+  remaining     Int?
   last_updated  DateTime? @default(now()) @db.Timestamp(6)
-  stamp_year    Int?      @default(dbgenerated("EXTRACT(year FROM CURRENT_DATE)"))
+  stamp_year    Int?
 
   @@unique([stamp_type, stamp_year], name: "stamp_type_year_unique", map: "stamp_type_year_unique")
   @@map("stamp_inventory")
@@ -279,7 +279,7 @@ model stamp_history {
   reset_date    DateTime @default(now()) @db.Timestamp(6)
   reset_by      Int?
   notes         String?
-  stamp_year    Int      @default(dbgenerated("EXTRACT(year FROM CURRENT_DATE)"))
+  stamp_year    Int
   members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 }
 

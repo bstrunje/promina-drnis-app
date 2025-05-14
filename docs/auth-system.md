@@ -378,16 +378,14 @@ export default router;
 
 Registracija novih članova zahtijeva sljedeće korake:
 
-1. Administrator dodaje osnovne podatke o članu (ime, prezime, kontakt)
-2. Član dobiva personalizirani link za dovršetak registracije
-3. Član postavlja svoju lozinku i dovršava registraciju
+1. Nakon registracije novi član je u statusu "pending" ("Na čekanju")dok mu admin ne dodijeli broj kartice, tada postaje "regular" ("Redovni član")
+2. Dodjelom broja kartice formira se lozinka zadanog formata full_name-isk-broj kartice
+3. Prijavu u sustav član (novi ili stari)  može napraviti tek ako je članarina plaćena
 
 ### Resetiranje lozinke
 
 Sustav podržava resetiranje zaboravljene lozinke kroz:
-1. Zahtjev za resetiranje lozinke
-2. Generiranje i slanje personaliziranog linka za resetiranje
-3. Potvrdu identiteta i postavljanje nove lozinke
+1. Lozinka se mijenja promjenom broja članske iskaznice
 
 ## Sigurnosne mjere
 
