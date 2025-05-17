@@ -5,9 +5,9 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../utils/config';
 import { useSystemAdmin } from '../../context/SystemAdminContext';
 import { useTimeZone } from '../../context/TimeZoneContext'; // Dodana linija
-import { SystemSettings } from '@shared/settings.types';
+import { SystemSettings } from '@shared/settings';
 import { getCurrentDate } from '../../utils/dateUtils';
-import systemAdminApi from './systemAdminApi';
+import systemAdminApi, { updateSystemSettings } from './systemAdminApi';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;
@@ -297,6 +297,8 @@ const SystemAdminSettings: React.FC = () => {
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
     cardNumberLength: 5,
+    membershipFee: 0, // Dodano zbog tipa SystemSettings
+    paymentDueMonths: 12, // Dodano zbog tipa SystemSettings
     renewalStartMonth: 11, // Prosinac kao zadana vrijednost
     renewalStartDay: 31,
     timeZone: 'Europe/Zagreb', // Dodana zadana vremenska zona
@@ -384,30 +386,20 @@ const SystemAdminSettings: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const token = localStorage.getItem('systemAdminToken');
-      const response = await axios.put(`${API_BASE_URL}/system-admin/settings`, settings, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data) {
-        setSettings(response.data);
-        setSuccessMessage("Postavke su uspješno ažurirane!");
-        
-        // Osvježi vremensku zonu u kontekstu
-        refreshTimeZone();
-        
-        // Automatski sakrij poruku uspjeha nakon 8 sekundi
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 8000);
-      }
+      // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
+      const updatedSettings = await updateSystemSettings(settings);
+      setSettings(updatedSettings);
+      setSuccessMessage("Postavke su uspješno ažurirane!");
+      
+      // Osvježi vremensku zonu u kontekstu
+      refreshTimeZone();
+      
+      // Automatski sakrij poruku uspjeha nakon 8 sekundi
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 8000);
     } catch (err) {
-      const errorMessage = axios.isAxiosError(err)
-        ? err.response?.data?.message || err.message
-        : 'Dogodila se nepoznata greška';
+      const errorMessage = err instanceof Error ? err.message : 'Dogodila se nepoznata greška';
       setError(`Greška prilikom ažuriranja postavki: ${errorMessage}`);
     } finally {
       setIsLoading(false);

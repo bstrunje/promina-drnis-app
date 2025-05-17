@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { MemberWithDetails } from '@shared/memberDetails.types';
-import { TabsContent } from '@components/ui/tabs';
 import { getCurrentDate } from '../../../utils/dateUtils';
 import { parseDate } from '../../../utils/dateUtils';
 
@@ -29,8 +28,8 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     
     members.forEach(member => {
       if (!member.date_of_birth) return;
-      
       const birthDate = parseDate(member.date_of_birth);
+      if (!birthDate) return;
       const today = getCurrentDate();
       
       // Računanje godina

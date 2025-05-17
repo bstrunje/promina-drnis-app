@@ -2,6 +2,7 @@
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '../../utils/config';
 import { SystemAdmin, SystemAdminLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemAdmin';
+import { SystemSettings } from '@shared/settings';
 
 // Definicija odgovora nakon prijave
 export interface SystemAdminLoginResponse {
@@ -229,6 +230,20 @@ export const getSystemAdminDashboardStats = async (): Promise<SystemAdminDashboa
     return response.data;
   } catch (error) {
     throw handleApiError(error, "Greška prilikom dohvata statistika dashboarda.");
+  }
+};
+
+/**
+ * Ažuriranje postavki sustava
+ * @param settings Novi podaci za postavke sustava
+ * @returns Ažurirane postavke sustava
+ */
+export const updateSystemSettings = async (settings: SystemSettings): Promise<SystemSettings> => {
+  try {
+    const response = await systemAdminApi.put<SystemSettings>('/system-admin/settings', settings);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, "Greška prilikom ažuriranja postavki sustava.");
   }
 };
 

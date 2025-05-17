@@ -34,8 +34,8 @@ export const useFilteredMembers = ({
     // Apply search filter
     if (searchTerm) {
       result = result.filter(member => 
-        member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ??
+        `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ??
         member.oib?.includes(searchTerm)
       );
     }
@@ -90,16 +90,16 @@ export const useFilteredMembers = ({
     // Apply sorting
     if (sortCriteria === "name") {
       result.sort((a, b) => {
-        const nameA = a.full_name || `${a.first_name} ${a.last_name}`;
-        const nameB = b.full_name || `${b.first_name} ${b.last_name}`;
+        const nameA = a.full_name ?? `${a.first_name} ${a.last_name}`;
+        const nameB = b.full_name ?? `${b.first_name} ${b.last_name}`;
         return sortOrder === "asc" 
           ? nameA.localeCompare(nameB, 'hr') 
           : nameB.localeCompare(nameA, 'hr');
       });
     } else if (sortCriteria === "hours") {
       result.sort((a, b) => {
-        const hoursA = a.total_hours || 0;
-        const hoursB = b.total_hours || 0;
+        const hoursA = a.total_hours ?? 0;
+        const hoursB = b.total_hours ?? 0;
         return sortOrder === "asc" 
           ? hoursA - hoursB 
           : hoursB - hoursA;
@@ -111,7 +111,7 @@ export const useFilteredMembers = ({
 
   const groupMembersByType = groupByType ? 
     filteredMembers.reduce((groups, member) => {
-      const type = member.membership_type || 'unknown';
+      const type = member.membership_type ?? 'unknown';
       if (!groups[type]) {
         groups[type] = [];
       }

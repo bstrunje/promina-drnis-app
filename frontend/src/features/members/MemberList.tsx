@@ -29,11 +29,12 @@ import { useMemberData } from "./hooks/useMemberData";
 // Uvoz komponente za filtriranje
 import { MemberListFilters } from "./components/MemberListFilters";
 // Uvoz komponente za prikaz tablice
-import { MemberTable, filterOnlyColoredRows } from "./components/MemberTable";
+import { filterOnlyColoredRows } from "./components/memberTableUtils";
 // Uvoz komponente za prikaz statistike
 import { StatisticsView } from "./components/StatisticsView";
 // Uvoz custom hooka za filtriranje i sortiranje
 import { useFilteredMembers } from "./hooks/useFilteredMembers";
+import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
   // Dobavi članove pomoću custom hooka
@@ -140,6 +141,50 @@ export default function MemberList(): JSX.Element {
     groupByType
   });
 
+  // Memoizirana funkcija za grupiranje članova prema statusu
+  const groupMembers = React.useCallback((memberList: MemberWithDetails[]): { key: string; title: string; members: MemberWithDetails[]; }[] => {
+    if (groupByType) {
+      const groups: Record<string, MemberWithDetails[]> = {};
+      memberList.forEach(member => {
+        const status = member.life_status ?? 'unknown';
+        if (!groups[status]) groups[status] = [];
+        groups[status].push(member);
+      });
+      return Object.entries(groups).map(([status, members]) => ({
+        key: status,
+        title: status.charAt(0).toUpperCase() + status.slice(1),
+        members
+      }));
+    } else {
+      return [{ key: 'all', title: 'All Members', members: memberList }];
+    }
+  }, [groupByType]);
+
+  // Handleri kao u modularnom pristupu
+  const handleAddMember = async (newMember: Member) => {
+    const success = await addMember(newMember);
+    if (success) {
+      setShowAddForm(false);
+    }
+  };
+
+  const handleEditMember = async (updatedMember: Member) => {
+    const success = await updateMember(String(updatedMember.member_id), updatedMember);
+    if (success) {
+      setEditingMember(null);
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    if (deletingMember) {
+      const success = await deleteMember(String(deletingMember.member_id));
+      if (success) {
+        setDeletingMember(null);
+      }
+    }
+  };
+
+
   const [filteredMembers, setFilteredMembers] = useState<{
     key: string;
     title: string;
@@ -147,10 +192,8 @@ export default function MemberList(): JSX.Element {
   }[]>([]);
 
   useEffect(() => {
-    // Ova funkcija se poziva kad se promijeni groupByType ili filteredMembersRaw
-    const groupedMembers = groupMembers(filteredMembersRaw);
-    setFilteredMembers(groupedMembers);
-  }, [filteredMembersRaw, groupByType, showOnlyColored, groupMembers]);
+    setFilteredMembers(groupMembers(filteredMembersRaw));
+  }, [filteredMembersRaw, groupByType, groupMembers]);
 
   useEffect(() => {
     if (showOnlyColored) {
@@ -208,82 +251,6 @@ export default function MemberList(): JSX.Element {
     };
   }, []);
 
-  // Metoda za grupiranje članova - ovo će zadržati strukturu potrebnu za MemberTable
-  function groupMembers(memberList: MemberWithDetails[]): {
-    key: string;
-    title: string;
-    members: MemberWithDetails[];
-  }[] {
-    if (groupByType) {
-      // Grupiraj po životnom statusu ako je uključeno
-      const groups: Record<string, MemberWithDetails[]> = {};
-      
-      memberList.forEach(member => {
-        const status = member.life_status ?? 'unknown';
-        if (!groups[status]) {
-          groups[status] = [];
-        }
-        groups[status].push(member);
-      });
-      
-      return Object.entries(groups).map(([status, members]) => ({
-        key: status,
-        title: status.charAt(0).toUpperCase() + status.slice(1),
-        members
-      }));
-    } else {
-      // Bez grupiranja - vrati sve u jednoj grupi
-      return [{
-        key: 'all',
-        title: 'All Members',
-        members: memberList
-      }];
-    }
-  }
-
-  // Metode za upravljanje članovima
-  const handleAddMember = async (newMember: Member) => {
-    const success = await addMember(newMember);
-    if (success) {
-      setShowAddForm(false);
-    }
-  };
-
-  const handleEdit = (member: Member) => {
-    navigate(`/members/${String(member.member_id)}`);
-  };
-
-  const handleEditMember = async (updatedMember: Member) => {
-    const success = await updateMember(String(updatedMember.member_id), updatedMember);
-    if (success) {
-      setEditingMember(null);
-    }
-  };
-
-  const handleDeleteMember = async () => {
-    if (deletingMember) {
-      const success = await deleteMember(String(deletingMember.member_id));
-      if (success) {
-        setDeletingMember(null);
-      }
-    }
-  };
-
-  // Rukovatelji za dodjelu zaporke i uloge
-  const handleAssignPassword = (member: Member, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setAssigningPasswordMember(member);
-  };
-
-  const handleOpenRoleAssignment = (member: Member, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setRoleAssignmentMember(member);
-  };
-
-  // Funkcija za ispis
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleToggleColoredRows = () => {
     if (showOnlyColored) {
@@ -420,14 +387,14 @@ export default function MemberList(): JSX.Element {
                   </Button>
                   
                   <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-gray-500 hover:text-gray-700 hidden md:flex"
-                    onClick={handlePrint}
-                  >
-                    <Printer className="w-4 h-4 md:mr-1" />
-                    <span className="hidden md:inline">Print List</span>
-                  </Button>
+            variant="ghost" 
+            size="sm"
+            className="text-gray-500 hover:text-gray-700 hidden md:flex"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-4 h-4 md:mr-1" />
+            <span className="hidden md:inline">Print List</span>
+          </Button>
 
                   {isAdmin && (
                     <Button
@@ -477,13 +444,13 @@ export default function MemberList(): JSX.Element {
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
                   onViewDetails={(memberId) => navigate(`/members/${memberId}`)}
-                  onEditMember={setEditingMember}
+          
                   onDeleteMember={setDeletingMember}
                   onAssignPassword={setAssigningPasswordMember}
                   onAssignRole={setRoleAssignmentMember}
-                  setFilteredMembers={setFilteredMembers}
-                  refreshMembers={refreshMembers}
-                  hideTableHeader={false} // Prikazujemo zaglavlje tablice jer smo uklonili fiksirani header
+          
+          
+           // Prikazujemo zaglavlje tablice jer smo uklonili fiksirani header
                 />
               </div>
             </TabsContent>
@@ -499,7 +466,7 @@ export default function MemberList(): JSX.Element {
       {showAddForm && (
         <AddMemberForm
           onClose={() => setShowAddForm(false)}
-          onAdd={handleAddMember}
+          onAdd={(newMember) => { void handleAddMember(newMember); }}
         />
       )}
 
@@ -507,14 +474,14 @@ export default function MemberList(): JSX.Element {
         <EditMemberForm
           member={editingMember}
           onClose={() => setEditingMember(null)}
-          onEdit={handleEditMember}
+          onEdit={(updatedMember) => { void handleEditMember(updatedMember); }}
         />
       )}
 
       {deletingMember && (
         <ConfirmationModal
           message={`Jeste li sigurni da želite obrisati člana ${deletingMember.first_name} ${deletingMember.last_name}?`}
-          onConfirm={handleDeleteMember}
+          onConfirm={() => { void handleDeleteMember(); }}
           onCancel={() => setDeletingMember(null)}
         />
       )}

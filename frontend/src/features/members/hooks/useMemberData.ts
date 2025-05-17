@@ -4,13 +4,11 @@ import { Member } from '@shared/member';
 import { 
   adaptMembershipPeriods, 
   determineMemberActivityStatus, 
-  hasPaidMembershipFee,
   determineDetailedMembershipStatus,
-  determineFeeStatus,
-  DetailedMembershipStatus
+  determineFeeStatus
 } from '@shared/memberStatus.types';
 import { getCurrentDate } from '../../../utils/dateUtils';
-import { MemberWithDetails, MemberCardDetails } from '@shared/memberDetails.types';
+import { MemberWithDetails } from '@shared/memberDetails.types';
 import { useToast } from "@components/ui/use-toast";
 
 /**
@@ -128,18 +126,15 @@ export const useMemberData = () => {
           // To će se ažurirati kasnije kad dohvatimo detalje članova
           const rawStatus = member.status as string;
           // Prepoznaj "active" status iz baze podataka kao "registered" za konzistentnost prikaza
-          const membershipStatus = rawStatus === 'active' ? 'registered' : (member.status || 'pending');
-          
-          // Provjeri plaćenu članarinu koristeći centraliziranu funkciju
-          const hasPaidFee = hasPaidMembershipFee(member);
+          const membershipStatus = rawStatus === 'active' ? 'registered' : (member.status ?? 'pending');
           
           return {
             ...member,
             cardDetails: {
-              card_number: member.membership_details?.card_number || member.membership_details?.card_number,
-              stamp_type: member.life_status as any, // Koristi life_status kao tip markice
+              card_number: member.membership_details?.card_number ?? member.membership_details?.card_number,
+              stamp_type: member.life_status as unknown, // Koristi life_status kao tip markice
               card_stamp_issued: false, // Default value, will be updated later
-              fee_payment_year: member.membership_details?.fee_payment_year || member.membership_details?.fee_payment_year
+              fee_payment_year: member.membership_details?.fee_payment_year ?? member.membership_details?.fee_payment_year
             },
             isActive,
             membershipStatus: membershipStatus
@@ -153,12 +148,12 @@ export const useMemberData = () => {
         // Now fetch detailed membership information for each member
         const fetchMembershipDetails = async () => {
           try {
-            const memberDetailsPromises = membersWithDetails.map(async (member) => {
+            const memberDetailsPromises = membersWithDetails.map((member) => {
               try {
                 // Pravilno adaptiraj periods bez obzira na backend strukturu
                 const periods = Array.isArray(member.membership_history)
                   ? member.membership_history
-                  : (member.membership_history?.periods || []);
+                  : (member.membership_history?.periods ?? []);
                 const adaptedPeriods = adaptMembershipPeriods(periods);
                 // Izračunaj detaljan status članstva
                 const detailedStatus = determineDetailedMembershipStatus(
@@ -167,7 +162,7 @@ export const useMemberData = () => {
                 );
                 // Izračunaj status plaćanja članarine
                 const feeStatus = determineFeeStatus({
-                  membership_details: member.membership_details || {}
+                  membership_details: member.membership_details ?? {}
                 });
                 return {
                   ...member,
@@ -177,7 +172,7 @@ export const useMemberData = () => {
                   feeStatus,
                   membershipStatus: detailedStatus.status
                 };
-              } catch (error) {
+              } catch (error: unknown) {
                 console.error(`Failed to fetch details for member ${member.member_id}:`, error);
                 return member;
               }
@@ -186,27 +181,26 @@ export const useMemberData = () => {
             const updatedMembers = await Promise.all(memberDetailsPromises);
             setMembers(updatedMembers);
             setFilteredMembers(updatedMembers);
-          } catch (error) {
+          } catch (error: unknown) {
             console.error("Error fetching member details:", error);
           } finally {
             setLoading(false);
           }
         };
         
-        fetchMembershipDetails();
-      } catch (error: any) {
+        void fetchMembershipDetails();
+      } catch (error: unknown) {
         console.error("Error fetching members:", error);
-        setError(error.message || "Failed to load members");
+        setError(typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message ?? "Failed to load members" : "Failed to load members");
         setLoading(false);
       }
     };
 
-    fetchMembers();
+    void fetchMembers();
   }, [refreshTrigger]);
 
-  // Ako window postoji, dodaj CSS za ispis
-  if (typeof window !== 'undefined') {
-    useEffect(() => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
       // Dodavanje stila za sakrivanje elemenata pri printanju
       const style = document.createElement('style');
       style.innerHTML = `
@@ -263,8 +257,8 @@ export const useMemberData = () => {
       return () => {
         document.head.removeChild(style);
       };
-    }, []);
-  }
+    }
+  }, []);
 
   return {
     members,

@@ -5,7 +5,7 @@ import {
   Filter, 
   Search, 
   XCircle,
-  RefreshCw,
+
   Palette,
   CheckCircle2
 } from 'lucide-react';
@@ -88,7 +88,7 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         <div className="flex flex-col">
           <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Filteri članova</span>
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
-            <Select value={activeFilter} onValueChange={(value: any) => onActiveFilterChange(value)}>
+            <Select value={activeFilter} onValueChange={(value: string) => onActiveFilterChange(value)}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Status aktivnosti" />
@@ -117,7 +117,7 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         <div className="flex flex-col">
           <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Sortiranje</span>
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
-            <Select value={sortCriteria} onValueChange={(value: any) => onSortCriteriaChange(value)}>
+            <Select value={sortCriteria} onValueChange={(value: string) => onSortCriteriaChange(value)}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Sortiraj po" />
               </SelectTrigger>

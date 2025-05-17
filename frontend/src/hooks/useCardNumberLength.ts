@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import api from '../utils/api/apiConfig';
-import { getCardNumberLength } from '../utils/api/apiCards';
-import { SystemSettings } from '@shared/settings';
 
-export function useCardNumberLength(): { length: number, isLoading: boolean, error: any } {
+import { getCardNumberLength } from '../utils/api/apiCards';
+
+
+// error je sada tipa unknown radi sigurnosti
+export function useCardNumberLength(): { length: number, isLoading: boolean, error: unknown } {
   const [length, setLength] = useState<number>(5); // Default
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
+  // error je sada tipa unknown radi sigurnosti
+  const [error, setError] = useState<unknown>(null);
  
   useEffect(() => {
     const fetchLength = async () => {
@@ -21,7 +23,7 @@ export function useCardNumberLength(): { length: number, isLoading: boolean, err
       }
     };
 
-    fetchLength();
+    void fetchLength();
   }, []);
 
   return {  length,
