@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
-import { API_BASE_URL, IMAGE_BASE_URL } from '../src/utils/config';
+import { API_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
-import { getCurrentDate, formatDate } from '../src/utils/dateUtils';
+import { formatDate } from '../src/utils/dateUtils';
 import { useAuth } from '../src/context/AuthContext';
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imgKey, setImgKey] = useState(Date.now());
@@ -32,7 +32,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const memberFullName = `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`;
 
   // Determine which property to use from the Member type
-  const imagePath = member.profile_image_path || member.profile_image;
+  const imagePath = member.profile_image_path ?? member.profile_image;
 
   // Reset image failure state when member or path changes
   useEffect(() => {
@@ -63,7 +63,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
+    if (!e.target.files?.[0]) return;
 
     const file = e.target.files[0];
     console.log('Selected file:', file.name, file.type, file.size);
@@ -78,7 +78,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
       return;
     }
 
-    setImageFile(file);
+
 
     // Create preview URL for immediate feedback
     const objectUrl = URL.createObjectURL(file);
@@ -106,7 +106,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
         throw new Error(`Image upload failed: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result: unknown = await response.json();
       console.log('Upload successful, server response:', result);
 
       // Force refresh member data from server
@@ -135,7 +135,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   // Clean up object URLs
   useEffect(() => {
     return () => {
-      if (previewUrl && previewUrl.startsWith('blob:')) {
+      if (previewUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
     };
@@ -207,7 +207,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/gif"
-                onChange={handleImageUpload}
+                onChange={e => { void handleImageUpload(e); }}
                 className="hidden"
                 id="image-upload"
                 disabled={isUploading}
@@ -225,8 +225,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
           {debugMode && (
             <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">
-              <p>Image path: {imagePath || 'none'}</p>
-              <p>Image URL: {displayImageSrc || 'none'}</p>
+              <p>Image path: {imagePath ?? 'none'}</p>
+              <p>Image URL: {displayImageSrc ?? 'none'}</p>
               <p>Failed to load: {imageFailed ? 'Yes' : 'No'}</p>
               <p>Last updated: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
             </div>

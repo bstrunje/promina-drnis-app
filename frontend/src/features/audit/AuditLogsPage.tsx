@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { AuditLog } from '@shared/audit';
 import { getAuditLogs } from '../../utils/api';
-import { format, parseISO } from 'date-fns';
-import { formatDate, parseDate } from "../../utils/dateUtils";
+import { parseISO } from 'date-fns';
+import { formatDate } from "../../utils/dateUtils";
 
 const AuditLogsPage: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -20,15 +20,8 @@ const AuditLogsPage: React.FC = () => {
     user: '',
   });
 
-  useEffect(() => {
-    fetchAuditLogs();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [auditLogs, filters]);
-
-  const fetchAuditLogs = async () => {
+  // Definicija funkcija prije njihovog korištenja u useEffect
+  const fetchAuditLogs = useCallback(async () => {
     try {
       setLoading(true);
       const logs = await getAuditLogs();
@@ -39,30 +32,9 @@ const AuditLogsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSort = (field: keyof AuditLog) => {
-    setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
-    setSortField(field);
-    
-    const sorted = [...filteredLogs].sort((a, b) => {
-      const valueA = a[field];
-      const valueB = b[field];
-      
-      if (valueA === undefined || valueB === undefined) {
-        return 0;
-      }
-      
-      if (sortDirection === 'asc') {
-        return String(valueA) > String(valueB) ? 1 : -1;
-      }
-      return String(valueA) < String(valueB) ? 1 : -1;
-    });
-    
-    setFilteredLogs(sorted);
-};
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...auditLogs];
 
     if (filters.startDate) {
@@ -91,11 +63,42 @@ const AuditLogsPage: React.FC = () => {
 
     if (filters.user) {
       filtered = filtered.filter(log => 
-        log.performer_name.toLowerCase().includes(filters.user.toLowerCase())
+        (log.performer_name || '').toLowerCase().includes(filters.user.toLowerCase())
       );
     }
 
     setFilteredLogs(filtered);
+  }, [auditLogs, filters]);
+
+  // Dohvat audit logova pri mountanju komponente
+  useEffect(() => {
+    void fetchAuditLogs();
+  }, [fetchAuditLogs]);
+
+  // Primjena filtera kada se promijene audit logovi ili filteri
+  useEffect(() => {
+    applyFilters();
+  }, [auditLogs, filters, applyFilters]);
+
+  const handleSort = (field: keyof AuditLog) => {
+    setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    setSortField(field);
+    
+    const sorted = [...filteredLogs].sort((a, b) => {
+      const valueA = a[field];
+      const valueB = b[field];
+      
+      if (valueA === undefined || valueB === undefined) {
+        return 0;
+      }
+      
+      if (sortDirection === 'asc') {
+        return String(valueA) > String(valueB) ? 1 : -1;
+      }
+      return String(valueA) < String(valueB) ? 1 : -1;
+    });
+    
+    setFilteredLogs(sorted);
   };
 
   const handleFilterChange = (name: string, value: string) => {

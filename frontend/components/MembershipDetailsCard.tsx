@@ -27,7 +27,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   };
 
   // Get card number from membership_details first (source of truth), fall back to direct property
-  const cardNumber = member.membership_details?.card_number || member.membership_details?.card_number;
+  const cardNumber = member.membership_details?.card_number ?? member.membership_details?.card_number;
   
   // Provjeri je li korisnik admin ili superuser
   const canViewCardNumber = user?.role === "admin" || user?.role === "superuser";
@@ -93,20 +93,20 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
               <div>
                 <label className="text-sm text-gray-500">Total Hours</label>
                 <p className="text-2xl font-bold">
-                  {member?.total_hours || 0}
+                  {member?.total_hours ?? 0}
                 </p>
               </div>
-              {getActivityStatus(Number(member?.total_hours) || 0) === "passive" && (
+              {getActivityStatus(Number(member?.total_hours ?? 0)) === "passive" && (
                 <div className="text-yellow-600">
                   <p>
-                    Need {20 - (Number(member?.total_hours) || 0)} more
+                    Need {20 - (Number(member?.total_hours ?? 0))} more
                     hours to become active
                   </p>
                 </div>
               )}
               <div>
                 <label className="text-sm text-gray-500">Status</label>
-                <p>{getActivityStatus(Number(member?.total_hours) || 0)}</p>
+                <p>{getActivityStatus(Number(member?.total_hours ?? 0))}</p>
               </div>
             </div>
           </div>

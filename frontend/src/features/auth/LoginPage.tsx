@@ -5,7 +5,7 @@ import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { login, register } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import { Member, MemberLoginData, MembershipTypeEnum } from "@shared/member"; // Sada koristi ažurirani tip
+import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import axios from "axios";
 
@@ -119,7 +119,7 @@ const LoginPage = () => {
         first_name: data.member.full_name.split(" ")[0] || "",
         last_name: data.member.full_name.split(" ").slice(1).join(" ") || "",
         full_name: data.member.full_name, // API vraća full_name, koristimo ga
-        role: data.member.role,
+        role: (data.member.role as MemberRole),
         // Zadane vrijednosti za ostala polja koja ne dolaze iz data.member
         date_of_birth: "", // Nema u data.member
         gender: "male",    // Nema u data.member
@@ -166,8 +166,10 @@ const LoginPage = () => {
     } catch (error) {
       console.error("Login error:", error);
       // Ažuriran prikaz greške
-      if (axios.isAxiosError(error) && error.response?.data?.message) {
-         setError(error.response.data.message); // Prikaz poruke s backenda
+      if (axios.isAxiosError(error) && error.response?.data) {
+         // Eksplicitno definiramo tip za error.response.data
+         const errorData = error.response.data as { message: string };
+         setError(errorData.message); // Prikaz poruke s backenda
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -313,7 +315,7 @@ const LoginPage = () => {
 
         <div className="p-6">
           {isRegistering ? (
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={(e) => { void handleRegister(e); }} className="space-y-4">
               <h2 className="text-2xl font-bold mb-4">Postani novi član</h2>
               
               {/* Prikaz poruke o grešci ili uspjehu */}
@@ -695,7 +697,7 @@ const LoginPage = () => {
               )}
 
               {step === 2 && (
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={(e) => { void handleLogin(e); }} className="space-y-4">
                   {error && (
                     <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
                       <p className="font-bold">Login Failed</p>

@@ -18,7 +18,7 @@ const EventsList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEvents();
+    void fetchEvents();
   }, []);
 
   const fetchEvents = async () => {
@@ -26,10 +26,25 @@ const EventsList: React.FC = () => {
       setLoading(true);
       const response = await fetch('/api/events');
       if (!response.ok) throw new Error('Failed to fetch events');
-      const data = await response.json();
-      setEvents(data);
+      
+      // Eksplicitno definiramo tip podataka koji očekujemo od API-ja
+      const data = await response.json() as Event[];
+      
+      // Validiramo podatke prije korištenja
+      const validatedEvents = data.map(event => ({
+        id: typeof event.id === 'number' ? event.id : 0,
+        title: typeof event.title === 'string' ? event.title : '',
+        description: typeof event.description === 'string' ? event.description : '',
+        date: typeof event.date === 'string' ? event.date : '',
+        location: typeof event.location === 'string' ? event.location : '',
+        capacity: typeof event.capacity === 'number' ? event.capacity : 0,
+        registeredCount: typeof event.registeredCount === 'number' ? event.registeredCount : undefined
+      }));
+      
+      setEvents(validatedEvents);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load events');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load events';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

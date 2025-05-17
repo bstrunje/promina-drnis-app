@@ -25,7 +25,7 @@ const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) =
           <div>
             <label className="text-sm text-gray-500">Total Hours</label>
             <p className="text-2xl font-bold">
-              {member?.total_hours || 0}
+              {member?.total_hours ?? 0}
             </p>
           </div>
           {getActivityStatus(Number(member?.total_hours) || 0) === "passive" && (

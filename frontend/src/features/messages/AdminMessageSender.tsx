@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { searchMembers } from '../../utils/api/apiAuth';
 import {
-  searchMembers,
   sendAdminMessageToMember,
   sendAdminMessageToGroup,
   sendAdminMessageToAll
@@ -47,8 +47,17 @@ const AdminMessageSender: React.FC = () => {
       }
 
       try {
-        const results = await searchMembers(searchTerm);
-        setSearchResults(results);
+        const members = await searchMembers(searchTerm);
+        
+        // Transformiramo Member[] u MemberSearchResult[]
+        const transformedResults: MemberSearchResult[] = members.map(member => ({
+          member_id: member.member_id,
+          full_name: member.full_name || `${member.first_name} ${member.last_name}`,
+          oib: member.oib,
+          nickname: member.nickname
+        }));
+        
+        setSearchResults(transformedResults);
       } catch (error) {
         console.error('Greška pri pretraživanju članova:', error);
         // Ne prikazujemo toast obavijest kod greške pretrage

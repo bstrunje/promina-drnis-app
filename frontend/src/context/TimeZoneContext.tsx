@@ -21,31 +21,29 @@ const TimeZoneContext = createContext<TimeZoneContextType>({
   timeZone: 'Europe/Zagreb', // Zadana vrijednost
   loading: false,
   error: null,
-  setTimeZone: () => {}, // Bit će zamijenjena stvarnom funkcijom
-  refreshTimeZone: async () => {} // Bit će zamijenjena stvarnom funkcijom
+  setTimeZone: () => { /* Implementacija će biti dostavljena kroz Provider */ }, 
+  refreshTimeZone: async () => { /* Implementacija će biti dostavljena kroz Provider */ }
 });
 
 // Hook za korištenje konteksta
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTimeZone = () => useContext(TimeZoneContext);
 
 // Provider komponenta
 export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [timeZone, setTimeZone] = useState<string>(() => {
     // Pokušaj dohvatiti iz cache-a, ili koristi default
-    return localStorage.getItem(TIME_ZONE_CACHE_KEY) || 'Europe/Zagreb';
+    return localStorage.getItem(TIME_ZONE_CACHE_KEY) ?? 'Europe/Zagreb';
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth(); // Dohvaćamo user objekt
+  // Dohvaćamo auth kontekst (trenutno ne koristimo ništa iz njega)
+  useAuth();
   
-  // Dohvaćamo token iz localStorage (definiran u AuthContext-u)
-  const getAuthToken = (): string | null => {
-    return localStorage.getItem('token');
-  };
-
   // Dohvati vremensku zonu iz postavki
-  const fetchTimeZone = async () => {
-    const token = getAuthToken();
+  const fetchTimeZone = React.useCallback(async () => {
+    // Dohvaćamo token iz localStorage (definiran u AuthContext-u)
+    const token = localStorage.getItem('token');
     
     // Provjeri je li korisnik autoriziran
     if (!token) {
@@ -63,10 +61,16 @@ export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             Authorization: `Bearer ${token}`
           }
         });
-        if (response.data && response.data.timeZone) {
-          setTimeZone(response.data.timeZone);
-          localStorage.setItem(TIME_ZONE_CACHE_KEY, response.data.timeZone);
-          setCurrentTimeZone(response.data.timeZone);
+        // Definiramo tip odgovora
+        interface SettingsResponse {
+          timeZone: string;
+        }
+        
+        const responseData = response.data as SettingsResponse;
+        if (responseData?.timeZone) {
+          setTimeZone(responseData.timeZone);
+          localStorage.setItem(TIME_ZONE_CACHE_KEY, responseData.timeZone);
+          setCurrentTimeZone(responseData.timeZone);
         }
       } catch (apiErr) {
         if (axios.isAxiosError(apiErr) && (apiErr.response?.status === 403 || apiErr.response?.status === 401)) {
@@ -76,17 +80,17 @@ export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           throw apiErr;
         }
       }
-    } catch (err) {
+    } catch {
       setError('Nije moguće dohvatiti postavke vremenske zone.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setError, timeZone, setTimeZone]);
 
   // Funkcija za ručno osvježavanje postavki vremenske zone
-  const refreshTimeZone = async () => {
+  const refreshTimeZone = React.useCallback(async () => {
     await fetchTimeZone();
-  };
+  }, [fetchTimeZone]);
 
   // Efekt za sinkronizaciju vremenske zone kada se promijeni u kontekstu
   useEffect(() => {
@@ -96,7 +100,7 @@ export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Cache vremensku zonu za sve korisnike
       localStorage.setItem(TIME_ZONE_CACHE_KEY, timeZone);
     }
-  }, [timeZone]);
+  }, [timeZone]); // setCurrentTimeZone je stabilna funkcija, ne treba biti u dependency arrayu
 
   // Vrijednosti koje će biti dostupne kroz kontekst
   const contextValue: TimeZoneContextType = {

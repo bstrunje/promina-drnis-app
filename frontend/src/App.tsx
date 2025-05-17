@@ -64,7 +64,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {user && <Navigation user={user} onLogout={handleLogout} />}
+      {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
       <Routes>
         {/* System Admin rute - potpuno odvojene od postojećeg sustava autentikacije */}
         <Route path="/system-admin/*" element={<SystemAdminRoutes />} />
@@ -84,7 +84,7 @@ function AppContent() {
           <Route path="/members/:id" element={<MemberDetailsPage />} />
           
           {/* Dashboard rute za različite uloge korisnika */}
-          <Route path="/member/dashboard" element={<MemberDashboard member={user} />} />
+          {user && <Route path="/member/dashboard" element={<MemberDashboard member={user} />} />}
           
           {(user?.role === 'admin' || user?.role === 'superuser') && (
             <>

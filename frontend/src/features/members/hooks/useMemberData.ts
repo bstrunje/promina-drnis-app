@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../../utils/api';
+import api from '../../../utils/api/apiConfig';
 import { Member } from '@shared/member';
 import { 
   adaptMembershipPeriods, 
@@ -128,7 +128,7 @@ export const useMemberData = () => {
           // To će se ažurirati kasnije kad dohvatimo detalje članova
           const rawStatus = member.status as string;
           // Prepoznaj "active" status iz baze podataka kao "registered" za konzistentnost prikaza
-          let membershipStatus = rawStatus === 'active' ? 'registered' : (member.status || 'pending');
+          const membershipStatus = rawStatus === 'active' ? 'registered' : (member.status || 'pending');
           
           // Provjeri plaćenu članarinu koristeći centraliziranu funkciju
           const hasPaidFee = hasPaidMembershipFee(member);

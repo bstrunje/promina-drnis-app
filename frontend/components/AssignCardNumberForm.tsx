@@ -29,8 +29,6 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                 setCardNumber('');
                 
                 // Eksplicitno osvježi podatke bez korištenja keša
-                const timestamp = new Date().getTime();
-                
                 const numbers = await getAvailableCardNumbers();
                 
                 // Osiguraj da je rezultat uistinu array
@@ -41,14 +39,14 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                 }
                 
                 setLoading(false);
-            } catch (error) {
+            } catch {
                 setError('Greška pri dohvatu dostupnih brojeva iskaznica');
                 setAvailableCardNumbers([]);
                 setLoading(false);
             }
         };
 
-        fetchCardNumbers();
+        void fetchCardNumbers();
         // Reset state kad se komponenta učita
         setError(null);
         setSuccessMessage(null);
@@ -85,7 +83,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
             };
             
             // Prikaži poruku uspjeha s generiranom lozinkom
-            if (response && response.generatedPassword) {
+            if (response?.generatedPassword) {
                 setSuccessMessage({
                     message: "Broj članske iskaznice uspješno dodijeljen i član aktiviran.",
                     generatedPassword: response.generatedPassword
@@ -101,7 +99,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                 onAssign(updatedMember);
                 onClose();
             }
-        } catch (error: unknown) {
+        } catch {
             setError('Greška pri dodjeli broja iskaznice');
             setLoading(false);
         }
@@ -139,7 +137,7 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                         </div>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={e => { void handleSubmit(e); }}>
                         <div className="mb-4">
                             <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
                                 Select Card Number

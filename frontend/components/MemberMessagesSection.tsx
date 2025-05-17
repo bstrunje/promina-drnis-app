@@ -54,7 +54,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleCommentSubmit}>
+        <form onSubmit={e => { void handleCommentSubmit(e); }}>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}

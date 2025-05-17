@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import api, { getCardNumberLength } from '../utils/api';
+import api from '../utils/api/apiConfig';
+import { getCardNumberLength } from '../utils/api/apiCards';
 import { SystemSettings } from '@shared/settings';
 
 export function useCardNumberLength(): { length: number, isLoading: boolean, error: any } {

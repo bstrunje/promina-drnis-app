@@ -191,7 +191,8 @@ const DateMockTool = () => {
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputDate = parseDate(event.target.value);
-    if (isValid(inputDate)) {
+    // Eksplicitna provjera da inputDate nije null i da je validan datum
+    if (inputDate !== null && isValid(inputDate)) {
       setDate(inputDate);
     }
   };

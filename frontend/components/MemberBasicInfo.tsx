@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User, ChevronDown, ChevronRight } from "lucide-react";
 import { Member } from "@shared/member";
-import { getMembershipDisplayLabel } from "@shared/helpers/membershipDisplay";
-import { MembershipTypeEnum } from "@shared/member";
+
+
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
 
@@ -101,11 +101,11 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">T-Shirt Size</label>
-                <p>{member?.tshirt_size || "Not set"}</p>
+                <p>{member?.tshirt_size ?? "Not set"}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">Shell Jacket Size</label>
-                <p>{member?.shell_jacket_size || "Not set"}</p>
+                <p>{member?.shell_jacket_size ?? "Not set"}</p>
               </div>
             </div>
           ) : canViewDetails ? (
@@ -133,7 +133,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="first_name"
-              value={editedMember?.first_name || ""}
+              value={editedMember?.first_name ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -146,7 +146,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="last_name"
-              value={editedMember?.last_name || ""}
+              value={editedMember?.last_name ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -159,7 +159,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="nickname"
-              value={editedMember?.nickname || ""}
+              value={editedMember?.nickname ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
               placeholder="Unesite nadimak člana"
@@ -191,7 +191,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <label className="block text-sm font-medium mb-1">Gender</label>
             <select
               name="gender"
-              value={editedMember?.gender || ""}
+              value={editedMember?.gender ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
@@ -207,7 +207,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="oib"
-              value={editedMember?.oib || ""}
+              value={editedMember?.oib ?? ""}
               onChange={handleChange}
               pattern="[0-9]{11}"
               title="OIB must be exactly 11 digits"
@@ -222,7 +222,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="email"
               name="email"
-              value={editedMember?.email || ""}
+              value={editedMember?.email ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -235,7 +235,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="tel"
               name="cell_phone"
-              value={editedMember?.cell_phone || ""}
+              value={editedMember?.cell_phone ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -250,7 +250,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="street_address"
-              value={editedMember?.street_address || ""}
+              value={editedMember?.street_address ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -263,7 +263,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             <input
               type="text"
               name="city"
-              value={editedMember?.city || ""}
+              value={editedMember?.city ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />
@@ -277,7 +277,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </label>
             <select
               name="life_status"
-              value={editedMember?.life_status || ""}
+              value={editedMember?.life_status ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
@@ -297,7 +297,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </label>
             <select
               name="membership_type"
-              value={editedMember?.membership_type || "regular"}
+              value={editedMember?.membership_type ?? "regular"}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
@@ -316,7 +316,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </label>
             <select
               name="tshirt_size"
-              value={editedMember?.tshirt_size || ""}
+              value={editedMember?.tshirt_size ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
@@ -339,7 +339,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </label>
             <select
               name="shell_jacket_size"
-              value={editedMember?.shell_jacket_size || ""}
+              value={editedMember?.shell_jacket_size ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >

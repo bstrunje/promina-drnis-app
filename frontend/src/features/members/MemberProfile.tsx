@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import api from "../../utils/api"; 
 import { IMAGE_BASE_URL } from "../../utils/config";
 import { formatDate } from "../../utils/dateUtils";
-import { getCurrentDate } from '../utils/dateUtils';
+import { getCurrentDate } from '../../utils/dateUtils';
 
 declare module "@shared/member" {
   interface Member {
@@ -282,7 +282,7 @@ if (!member && memberId) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Membership Type</label>
-                <p>{membershipTypeLabels[user.membership_type as MembershipTypeEnum] || user.membership_type}</p>
+                <p>{user.membership_type ? membershipTypeLabels[user.membership_type] : 'Nije definirano'}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">Role</label>

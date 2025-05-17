@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Member } from '@shared/member';
-import { MembershipTypeEnum } from "@shared/member";
+import { Member, MembershipTypeEnum } from '@shared/member';
+
 
 interface EditMemberFormProps {
   member: Member;
@@ -34,40 +34,30 @@ const genderOptions = [
   { value: 'female', label: 'Female' }
 ];
 
+type EditMemberLocal = Omit<Member, 'membership_type'> & { membership_type: 'regular' | 'honorary' | 'supporting' };
+
+function parseMembershipType(value: unknown): 'regular' | 'honorary' | 'supporting' {
+  return value === 'regular' || value === 'honorary' || value === 'supporting' ? value : 'regular';
+}
+
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
-  const [editedMember, setEditedMember] = useState<Member>(() => ({
+  const [editedMember, setEditedMember] = useState<EditMemberLocal>(() => ({
     ...member,
-    tshirt_size: member.tshirt_size || 'XS',
-    shell_jacket_size: member.shell_jacket_size || 'XS',
-    life_status: member.life_status || 'employed/unemployed',
-    gender: member.gender || 'male',
-    membership_type: typeof member.membership_type === 'string'
-      ? (member.membership_type === 'regular'
-          ? MembershipTypeEnum.Regular
-          : member.membership_type === 'honorary'
-            ? MembershipTypeEnum.Honorary
-            : member.membership_type === 'supporting'
-              ? MembershipTypeEnum.Supporting
-              : MembershipTypeEnum.Regular)
-      : (member.membership_type || MembershipTypeEnum.Regular)
+    tshirt_size: member.tshirt_size ?? 'XS',
+    shell_jacket_size: member.shell_jacket_size ?? 'XS',
+    life_status: member.life_status ?? 'employed/unemployed',
+    gender: member.gender ?? 'male',
+    membership_type: parseMembershipType(member.membership_type)
   }));
 
   useEffect(() => {
     setEditedMember({
       ...member,
-      tshirt_size: member.tshirt_size || 'XS',
-      shell_jacket_size: member.shell_jacket_size || 'XS',
-      life_status: member.life_status || 'employed/unemployed',
-      gender: member.gender || 'male',
-      membership_type: typeof member.membership_type === 'string'
-        ? (member.membership_type === 'regular'
-            ? MembershipTypeEnum.Regular
-            : member.membership_type === 'honorary'
-              ? MembershipTypeEnum.Honorary
-              : member.membership_type === 'supporting'
-                ? MembershipTypeEnum.Supporting
-                : MembershipTypeEnum.Regular)
-        : (member.membership_type || MembershipTypeEnum.Regular)
+      tshirt_size: member.tshirt_size ?? 'XS',
+      shell_jacket_size: member.shell_jacket_size ?? 'XS',
+      life_status: member.life_status ?? 'employed/unemployed',
+      gender: member.gender ?? 'male',
+      membership_type: parseMembershipType(member.membership_type)
     });
   }, [member]);
 
@@ -75,11 +65,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
     const { name, value } = e.target;
     setEditedMember(prev => {
       if (name === 'membership_type') {
-        let enumValue = MembershipTypeEnum.Regular;
-        if (value === 'honorary') enumValue = MembershipTypeEnum.Honorary;
-        else if (value === 'supporting') enumValue = MembershipTypeEnum.Supporting;
-        else if (value === 'regular') enumValue = MembershipTypeEnum.Regular;
-        return { ...prev, membership_type: enumValue };
+        return { ...prev, membership_type: value as EditMemberLocal['membership_type'] };
       }
       return { ...prev, [name]: value };
     });
@@ -87,8 +73,22 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onEdit(editedMember);
+        // Prije slanja prema backendu, mapiraj membership_type string na MembershipTypeEnum
+    let mappedMembershipType: MembershipTypeEnum = MembershipTypeEnum.Regular;
+    switch (editedMember.membership_type) {
+      case 'honorary':
+        mappedMembershipType = MembershipTypeEnum.Honorary;
+        break;
+      case 'supporting':
+        mappedMembershipType = MembershipTypeEnum.Supporting;
+        break;
+      case 'regular':
+      default:
+        mappedMembershipType = MembershipTypeEnum.Regular;
+    }
+    onEdit({ ...editedMember, membership_type: mappedMembershipType });
   };
+
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">

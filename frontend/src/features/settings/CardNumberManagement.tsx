@@ -37,12 +37,12 @@ export default function CardNumberManagement() {
     assigned: number;
   }>({ total: 0, available: 0, assigned: 0 });
   
-  const [allCardNumbers, setAllCardNumbers] = useState<Array<{
+  const [allCardNumbers, setAllCardNumbers] = useState<{
     card_number: string;
     status: 'available' | 'assigned' | 'retired';
     member_id?: number;
     member_name?: string;
-  }>>([]);
+  }[]>([]);
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'assigned'>('all');
   

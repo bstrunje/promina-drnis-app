@@ -107,7 +107,7 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
                 <Select
                   value={period.end_reason || ""}
                   onValueChange={(value) => 
-                    onEndReasonChange(period.period_id as number, value)
+                    onEndReasonChange(period.period_id, value)
                   }
                 >
                   <SelectTrigger className="h-7 text-xs">

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { getMemberActivities } from '../src/utils/api';
-import { getCurrentDate, formatDate, getCurrentYear, parseDate } from "../src/utils/dateUtils";
+import { formatDate } from "../src/utils/dateUtils";
 import { History } from 'lucide-react';
 
 interface Props {
@@ -26,7 +26,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
     if (!memberId) return;
     
     try {
-      const data = await getMemberActivities(memberId);
+      const data = await getMemberActivities(memberId) as MemberActivity[];
       setActivities(data);
     } catch (error) {
       console.error('Error fetching activities:', error);
@@ -38,7 +38,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
 
   // Koristi useEffect s dependency listom
   useEffect(() => {
-    fetchActivities();
+    void fetchActivities();
   }, [fetchActivities]);
 
   if (loading) {

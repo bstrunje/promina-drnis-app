@@ -15,17 +15,13 @@ export const AdminPermissionsManager: React.FC<Props> = ({ admin }) => {
   const [isChanged, setIsChanged] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPermissions();
-  }, [admin.member_id]);
-
-  const fetchPermissions = async () => {
+  const fetchPermissions = React.useCallback(async () => {
     try {
       console.log('Fetching permissions for admin:', admin.member_id);
       const response = await api.get(`/admin/permissions/${admin.member_id}`);
       console.log('Raw API Response:', response);
       console.log('Permissions data:', response.data);
-      setPermissions(response.data);
+      setPermissions(response.data as AdminPermissions);
     } catch (error) {
       console.error('Failed to fetch permissions:', error);
       toast({
@@ -34,19 +30,22 @@ export const AdminPermissionsManager: React.FC<Props> = ({ admin }) => {
         variant: "destructive"
       });
     }
-  };
+  }, [admin.member_id, toast]);
 
-  const handlePermissionChange = async () => {
+  useEffect(() => {
+    void fetchPermissions();
+  }, [admin.member_id, fetchPermissions]);
+
+  const handlePermissionChange = () => {
+    if (!permissions) return;
     try {
       const newPermissions = {
         ...permissions,
-        can_manage_end_reasons: !permissions?.can_manage_end_reasons
+        can_manage_end_reasons: !permissions.can_manage_end_reasons
       };
-      
+
       console.log('Changing permissions from:', permissions);
       console.log('to:', newPermissions);
-      
-      // Odmah ažuriramo lokalno stanje
       setPermissions(newPermissions);
       setIsChanged(true);
     } catch (error) {
@@ -58,6 +57,7 @@ export const AdminPermissionsManager: React.FC<Props> = ({ admin }) => {
       });
     }
   };
+
 
   const handleSave = async () => {
     try {
@@ -101,7 +101,7 @@ export const AdminPermissionsManager: React.FC<Props> = ({ admin }) => {
                 {permissions?.can_manage_end_reasons ? 'Enabled' : 'Disabled'}
               </span>
               <SwitchPrimitive.Root
-                checked={permissions?.can_manage_end_reasons || false}
+                checked={permissions?.can_manage_end_reasons ?? false}
                 onCheckedChange={handlePermissionChange}
                 className="peer inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-4 border-transparent transition-colors data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
@@ -115,7 +115,7 @@ export const AdminPermissionsManager: React.FC<Props> = ({ admin }) => {
           {isChanged && (
             <div className="flex justify-end mt-4 border-t pt-4">
               <button
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold shadow-sm"
               >
                 Save Changes

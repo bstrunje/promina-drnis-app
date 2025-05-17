@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@components/ui/alert";
 import { Member } from "@shared/member";
 import { MembershipPeriod } from "@shared/membership";
 import { useToast } from "@components/ui/use-toast";
-import api from "../../utils/api";
+import api from "../../utils/api/apiConfig";
 import { debounce } from "lodash";
 import { getCurrentDate, getCurrentYear, parseDate, formatInputDate, validateBirthDate, validateDate, getSafeFormattedDate } from "../../utils/dateUtils";
 import { parseISO, format } from "date-fns";
@@ -34,7 +34,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const memberId = parseInt(id || String(user?.member_id) || "0");
+  const memberId = parseInt(id ?? String(user?.member_id) ?? "0");
 
   const [member, setMember] = useState<Member | null>(null);
   const [editedMember, setEditedMember] = useState<Member | null>(null);
@@ -169,7 +169,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   }, [memberId]);
 
   useEffect(() => {
-    if (member && member.membership_history) {
+    if (member?.membership_history) {
       // Uklanjam console.error log 
     }
   }, [member]);
@@ -433,7 +433,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           isEditing={isEditing && canEdit}
           isFeeCurrent={isFeeCurrent}
           onUpdate={handleMemberUpdate}
-          userRole={user?.role}
           membershipHistory={{
             periods: member?.membership_history?.periods || [],
             totalDuration: member?.membership_history?.total_duration,
@@ -443,10 +442,9 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
           cardManagerProps={canEdit ? {
             member,
-            onUpdate: handleMemberUpdate,
-            userRole: user?.role,
+            onUpdate: (updatedMember: Member) => handleMemberUpdate(updatedMember),
             isFeeCurrent,
-            hideTitle: true  // Dodajem hideTitle prop da sakrijem naslov u MembershipCardManager komponenti
+            hideTitle: true  
           } : undefined}
         />
 

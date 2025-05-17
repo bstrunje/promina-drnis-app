@@ -15,10 +15,10 @@ let mockDate: Date | null = null;
 
 // Spremnik za originalne mock datume prije resetiranja
 let originalMockDate: Date | null = null;
-let hasOriginalBeenStored: boolean = false;
+let hasOriginalBeenStored = false;
 
 // Zastavica koja označava koristi li se trenutno test način rada
-let inTestMode: boolean = false;
+let inTestMode = false;
 
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
 let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
@@ -51,7 +51,7 @@ function initMockDate(): void {
   if (storedMockDate) {
     try {
       mockDate = new Date(storedMockDate);
-    } catch (e) {
+    } catch {
       mockDate = null;
       localStorage.removeItem(MOCK_DATE_KEY);
       inTestMode = false;
@@ -63,7 +63,7 @@ function initMockDate(): void {
   if (storedOriginalMockDate) {
     try {
       originalMockDate = new Date(storedOriginalMockDate);
-    } catch (e) {
+    } catch {
       originalMockDate = null;
       localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
     }
@@ -191,7 +191,7 @@ export function isCurrentYear(date: Date): boolean {
  */
 export function formatDate(
   date: string | Date | number | undefined | null,
-  pattern: string = 'dd.MM.yyyy'
+  pattern = 'dd.MM.yyyy'
 ): string {
   if (!date) return '';
 
@@ -332,7 +332,7 @@ export function formatInputDate(date: Date | string | null = null): string {
  * @param dateString - String koji sadrži datum
  * @param dateFormat - Format datuma (default: 'yyyy-MM-dd')
  */
-export function parseDate(dateString: string | null, dateFormat: string = 'yyyy-MM-dd'): Date | null {
+export function parseDate(dateString: string | null, dateFormat = 'yyyy-MM-dd'): Date | null {
   if (!dateString) return null;
   
   try {
@@ -396,7 +396,7 @@ export function getDate(date: Date): number {
  */
 export function validateBirthDate(
   dateString: string | null,
-  minAge: number = 0
+  minAge = 0
 ): { isValid: boolean; errorMessage?: string } {
   if (!dateString) {
     return { isValid: false, errorMessage: 'Datum rođenja je obavezan' };
@@ -438,7 +438,7 @@ export function validateBirthDate(
  */
 export function validateDate(
   dateString: string | null,
-  allowFutureDates: boolean = false
+  allowFutureDates = false
 ): { isValid: boolean; errorMessage?: string } {
   if (!dateString) {
     return { isValid: true }; // Prazan string je valjan ako datum nije obavezan
@@ -469,7 +469,7 @@ export function validateDate(
  */
 export function getSafeFormattedDate(
   dateString: string | null,
-  defaultValue: string = ''
+  defaultValue = ''
 ): string {
   if (!dateString) return defaultValue;
   

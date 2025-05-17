@@ -1,6 +1,4 @@
 // shared/types/activity.ts
-import { Member } from './member.js';
-
 export type DifficultyLevel = 'easy' | 'moderate' | 'difficult' | 'very_difficult' | 'extreme';
 export type ActivityType = 'hiking' | 'climbing' | 'training' | 'maintenance' | 'social' | 'community' | 'general';
 

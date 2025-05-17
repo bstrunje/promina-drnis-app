@@ -1,4 +1,6 @@
-// Create new ErrorBoundary.tsx
+// ErrorBoundary komponenta služi za hvatanje i prikaz grešaka u React komponentama.
+// Omogućuje aplikaciji da nastavi s radom i prikaže korisničku poruku umjesto rušenja cijelog sučelja.
+
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
@@ -10,35 +12,45 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  // Inicijalno stanje - nema greške
+  state: State = {
     hasError: false
   };
 
-  public static getDerivedStateFromError(_: Error): State {
+  /**
+   * Ova metoda se poziva kada dođe do greške u child komponentama
+   * @returns Novo stanje s hasError: true
+   */
+  static getDerivedStateFromError(): State {
     return { hasError: true };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+  // Logiranje greške za potrebe debuggiranja
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+     
+    console.error('Neuhvaćena greška u ErrorBoundary:', error, errorInfo);
   }
 
-  public render() {
+  // Render metoda prikazuje fallback UI ako je došlo do greške
+  render() {
     if (this.state.hasError) {
       return (
         <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-          <h2 className="text-red-800">Something went wrong</h2>
+          <h2 className="text-red-800">Došlo je do greške</h2>
           <button
             className="mt-2 text-red-600 hover:text-red-800"
             onClick={() => this.setState({ hasError: false })}
           >
-            Try again
+            Pokušaj ponovno
           </button>
         </div>
       );
     }
 
+    // Ako nema greške, prikazuju se child komponente
     return this.props.children;
   }
 }
 
+// Defaultni export ErrorBoundary komponente
 export default ErrorBoundary;

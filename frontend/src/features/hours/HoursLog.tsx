@@ -17,7 +17,7 @@ const HoursLog: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchHours();
+    void fetchHours();
   }, []);
 
   const fetchHours = async () => {
@@ -33,10 +33,23 @@ const HoursLog: React.FC = () => {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch hours');
-      const data = await response.json();
-      setHours(data);
+      // Eksplicitno definiramo tip podataka koji očekujemo od API-ja
+      const data = await response.json() as LoggedHours[];
+      
+      // Validiramo podatke prije korištenja
+      const validatedHours = data.map(hour => ({
+        id: typeof hour.id === 'number' ? hour.id : 0,
+        activity_id: typeof hour.activity_id === 'number' ? hour.activity_id : 0,
+        date: typeof hour.date === 'string' ? hour.date : '',
+        hours: typeof hour.hours === 'number' ? hour.hours : 0,
+        activity_name: typeof hour.activity_name === 'string' ? hour.activity_name : '',
+        verified: typeof hour.verified === 'boolean' ? hour.verified : false
+      }));
+      
+      setHours(validatedHours);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load hours');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load hours';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

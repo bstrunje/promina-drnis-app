@@ -163,7 +163,7 @@ const Settings: React.FC = () => {
           {selectedAdminId && (
             <div className="mt-4">
               <AdminPermissionsManager 
-                admin={admins.find(a => a.member_id === parseInt(selectedAdminId))!} 
+                admin={admins.find(a => a.member_id === parseInt(selectedAdminId))} 
               />
             </div>
           )}

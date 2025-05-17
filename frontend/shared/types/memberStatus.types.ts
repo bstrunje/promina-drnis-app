@@ -28,8 +28,8 @@ export function adaptMembershipPeriods(periods: OriginalMembershipPeriod[]): Mem
   return periods.map(period => ({
     period_id: period.period_id,
     start_date: period.start_date,
-    end_date: period.end_date || null,
-    end_reason: period.end_reason || null
+    end_date: period.end_date ?? null,
+    end_reason: period.end_reason ?? null
   }));
 }
 
@@ -92,11 +92,12 @@ export function isMembershipPeriodActive(period: MembershipPeriod): boolean {
  * @returns true ako je članarina plaćena, false inače
  */
 export function hasPaidMembershipFee(member: MemberStatusData, currentYear?: number): boolean {
-  const year = currentYear || getCurrentYear();
+  const year = currentYear ?? getCurrentYear();
   const paymentYear = member.membership_details?.fee_payment_year;
   
   if (!paymentYear) return false;
   
+  // Pravilno: || za logičku provjeru više uvjeta, ne ??
   return paymentYear === year || paymentYear === year + 1;
 }
 
@@ -129,7 +130,7 @@ export function isFeePaidForYear(member: MemberStatusData, yearToCheck: number):
 export function determineMemberActivityStatus(member: MemberStatusData): ActivityStatus {
   const totalHours = typeof member.total_hours === 'string' 
     ? parseFloat(member.total_hours) 
-    : Number(member.total_hours || 0);
+    : Number(member.total_hours ?? 0);
     
   return totalHours >= 20 ? 'active' : 'passive';
 }
@@ -179,7 +180,7 @@ export function determineDetailedMembershipStatus(
     // Provjeri je li članarina plaćena
     const hasPaidFee = hasPaidMembershipFee(member, currentYear);
     if (!hasPaidFee) {
-      const year = currentYear || getCurrentYear();
+      const year = currentYear ?? getCurrentYear();
       return {
         status: 'registered',
         reason: `Članarina nije plaćena za ${year}. godinu`
@@ -210,7 +211,7 @@ export function determineDetailedMembershipStatus(
       status: 'inactive',
       reason: 'Članstvo završeno',
       date: lastEndedPeriod?.end_date,
-      endReason: lastEndedPeriod?.end_reason || 'other'
+      endReason: lastEndedPeriod?.end_reason ?? 'other'
     };
   }
   
@@ -225,7 +226,7 @@ export function determineDetailedMembershipStatus(
   // Provjeri je li članarina plaćena
   const hasPaidFee = hasPaidMembershipFee(member, currentYear);
   if (!hasPaidFee) {
-    const year = currentYear || getCurrentYear();
+    const year = currentYear ?? getCurrentYear();
     return {
       status: 'pending',
       reason: `Članarina nije plaćena za ${year}. godinu`

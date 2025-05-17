@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
-import { Menu, X, User, Activity, Users, Settings, Shield, FileText, LogOut, MessageCircle } from 'lucide-react';
+import { Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../src/utils/config';
 import { MESSAGE_EVENTS } from '../src/utils/events';
@@ -27,7 +27,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   // Dohvaćanje broja nepročitanih poruka
   useEffect(() => {
     const fetchUnreadMessages = async () => {
-      if (!user || !user.member_id) return;
+      if (!user?.member_id) return;
       
       try {
         const token = localStorage.getItem('token');
@@ -43,21 +43,21 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
         });
 
         // Broj nepročitanih poruka
-        const unreadCount = response.data.filter((msg: any) => msg.status === 'unread').length;
+        const unreadCount = (response.data as { status: string }[]).filter((msg) => msg.status === 'unread').length;
         setUnreadMessageCount(unreadCount);
       } catch (error) {
         console.error('Greška pri dohvaćanju nepročitanih poruka:', error);
       }
     };
 
-    fetchUnreadMessages();
+    void fetchUnreadMessages();
     
     // Dohvati nove poruke svakih 60 sekundi
-    const interval = setInterval(fetchUnreadMessages, 60000);
+    const interval = setInterval(() => { void fetchUnreadMessages(); }, 60000);
     
     // Slušaj događaj za ažuriranje brojača nepročitanih poruka
     const handleUnreadMessagesUpdated = () => {
-      fetchUnreadMessages();
+      void fetchUnreadMessages();
     };
     
     window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
@@ -140,7 +140,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
               </span>
               <button
-                onClick={(e) => {
+                onClick={() => {
                   closeMenu();
                   onLogout();
                 }}

@@ -1,5 +1,5 @@
 //frontend/src/features/activities/ActivitiesList.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Activity } from 'lucide-react';
 import { Member } from '@shared/member';
 import { Alert, AlertDescription } from '@components/ui/alert';
@@ -22,11 +22,7 @@ const ActivitiesList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchActivities();
-  }, []);
-
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -36,14 +32,21 @@ const ActivitiesList: React.FC = () => {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch activities');
-      const data = await response.json();
+      
+      // Eksplicitno definiramo tip podataka iz odgovora
+      const data = await response.json() as ActivityItem[];
       setActivities(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load activities');
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setActivities, setError]);
+
+  // Pozivamo fetchActivities pri mountanju komponente
+  useEffect(() => {
+    void fetchActivities();
+  }, [fetchActivities]);
 
   if (loading) {
     return <div className="p-6">Loading...</div>;

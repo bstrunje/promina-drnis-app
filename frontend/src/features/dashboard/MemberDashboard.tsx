@@ -17,6 +17,15 @@ interface MemberStats {
   memberCount: number;
 }
 
+/**
+ * Tip za odgovor API-ja s dashboarda
+ */
+interface DashboardStatsResponse {
+  unreadMessages: number;
+  recentActivities: number;
+  memberCount: number;
+}
+
 const MemberDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -35,15 +44,15 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
       
       // Pokušaj dohvatiti statistike sa servera
       try {
-        const statsResponse = await axios.get(`${API_BASE_URL}/members/dashboard/stats`, {
+        const statsResponse = await axios.get<DashboardStatsResponse>(`${API_BASE_URL}/members/dashboard/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         // Ažuriraj podacima sa servera
         setStats({
-          unreadMessages: statsResponse.data.unreadMessages || 0,
-          recentActivities: statsResponse.data.recentActivities || 0,
-          memberCount: statsResponse.data.memberCount || 0,
+          unreadMessages: statsResponse.data.unreadMessages ?? 0,
+          recentActivities: statsResponse.data.recentActivities ?? 0,
+          memberCount: statsResponse.data.memberCount ?? 0,
         });
       } catch (apiErr) {
         console.error("API error:", apiErr);
@@ -64,11 +73,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   };
 
   useEffect(() => {
-    fetchDashboardStats();
+    void fetchDashboardStats();
     
     // Dodajemo slušanje događaja za ažuriranje statistike kad se poruka označi kao pročitana
     const handleUnreadMessagesUpdated = () => {
-      fetchDashboardStats();
+      void fetchDashboardStats();
     };
     
     window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
@@ -91,7 +100,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         <h2 className="text-xl font-semibold">Pregled Dashboarda</h2>
         
         <button 
-          onClick={fetchDashboardStats} 
+          onClick={() => void fetchDashboardStats()} 
           disabled={loading}
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
@@ -213,13 +222,13 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Godina članarine:</span>
               <span className="font-medium">
-                {member.membership_details?.fee_payment_year || "N/A"}
+                {member.membership_details?.fee_payment_year ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Status životne dobi:</span>
               <span className="font-medium">
-                {member.life_status || "N/A"}
+                {member.life_status ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">

@@ -21,16 +21,17 @@ interface SystemAdminContextType {
 const defaultContext: SystemAdminContextType = {
   isAuthenticated: false,
   admin: null,
-  login: async () => {},
-  logout: () => {},
+  login: async () => { /* Implementacija će biti dostavljena kroz Provider */ },
+  logout: () => { /* Implementacija će biti dostavljena kroz Provider */ },
   loading: true,
-  refreshAdmin: async () => {}
+  refreshAdmin: async () => { /* Implementacija će biti dostavljena kroz Provider */ }
 };
 
 // Kreiranje konteksta
 const SystemAdminContext = createContext<SystemAdminContextType>(defaultContext);
 
 // Hook za korištenje konteksta u komponentama
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSystemAdmin = () => useContext(SystemAdminContext);
 
 // Provider komponenta
@@ -41,6 +42,7 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   const navigate = useNavigate();
 
   // Provjera postojeće sesije prilikom učitavanja
+   
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem('systemAdminToken');
@@ -48,7 +50,9 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       if (token && storedAdmin) {
         try {
-          const parsedAdmin = JSON.parse(storedAdmin);
+          // Eksplicitno definiramo tip parsiranog objekta
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const parsedAdmin: { id: number; username: string; display_name: string } = JSON.parse(storedAdmin);
           setAdmin(parsedAdmin);
           setIsAuthenticated(true);
         } catch (e) {
@@ -64,11 +68,13 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, []);
 
   // Funkcija za prijavu
-  const login = async (credentials: SystemAdminLoginData) => {
+  const login = React.useCallback(async (credentials: SystemAdminLoginData) => {
     setLoading(true);
     try {
       const response = await systemAdminLogin(credentials);
-      setAdmin(response.admin);
+      // Eksplicitno definiramo tip podataka iz odgovora
+      const adminData: { id: number; username: string; display_name: string } = response.admin;
+      setAdmin(adminData);
       setIsAuthenticated(true);
       navigate('/system-admin/dashboard');
     } catch (error) {
@@ -77,15 +83,15 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, setAdmin, setIsAuthenticated, setLoading]);
 
   // Funkcija za odjavu
-  const logout = async () => {
+  const logout = React.useCallback(() => {
     try {
       console.log('Započinjem odjavu system admina...');
       
       // Pozivamo API funkciju za odjavu
-      const success = systemAdminLogout();
+      void systemAdminLogout();
       
       // Čistimo lokalno stanje
       setAdmin(null);
@@ -103,10 +109,10 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
       setIsAuthenticated(false);
       navigate('/system-admin/login', { replace: true });
     }
-  };
+  }, [navigate, setAdmin, setIsAuthenticated]);
 
   // Funkcija za dohvat aktualnog admina iz backenda (npr. nakon promjene username-a)
-  const refreshAdmin = async () => {
+  const refreshAdmin = React.useCallback(async () => {
     const token = localStorage.getItem('systemAdminToken');
     if (!token) return;
     try {
@@ -114,14 +120,18 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        const data = await response.json();
+        // Eksplicitno definiramo tip podataka iz odgovora
+        interface AdminResponse {
+          admin: { id: number; username: string; display_name: string };
+        }
+        const data = await response.json() as AdminResponse;
         setAdmin(data.admin);
         localStorage.setItem('systemAdmin', JSON.stringify(data.admin));
       }
-    } catch (err) {
-      // fail silently
+    } catch {
+      // fail silently - bez varijable za grešku
     }
-  };
+  }, [setAdmin]);
 
   // Vrijednosti koje će biti dostupne kroz kontekst
   const contextValue: SystemAdminContextType = {
@@ -140,4 +150,5 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   );
 };
 
+ 
 export default SystemAdminContext;

@@ -1,5 +1,5 @@
 import React from "react";
-import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
+import { MembershipPeriod } from "@shared/membership";
 import MembershipHistoryAdapter from "../src/features/membership/MembershipHistoryAdapter";
 
 interface MembershipHistoryProps {

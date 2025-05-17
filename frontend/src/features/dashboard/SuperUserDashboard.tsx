@@ -20,6 +20,19 @@ interface DashboardStats {
   lastBackup: string;
 }
 
+/**
+ * Tip za odgovor API-ja s dashboarda
+ */
+interface DashboardStatsResponse {
+  totalMembers: number;
+  registeredMembers: number;
+  activeMembers: number;
+  pendingRegistrations: number;
+  recentActivities: number;
+  systemHealth: string;
+  lastBackup: string;
+}
+
 const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
@@ -42,7 +55,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
       const token = localStorage.getItem('token');
       
       // Fetch membership stats
-      const memberResponse = await axios.get(`${API_BASE_URL}/admin/dashboard/stats`, {
+      const memberResponse = await axios.get<DashboardStatsResponse>(`${API_BASE_URL}/admin/dashboard/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -55,13 +68,13 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
       
       // Update with real data
       setStats({
-        totalMembers: memberResponse.data.totalMembers || 0,
-        registeredMembers: memberResponse.data.registeredMembers || 0, // New field
-        activeMembers: memberResponse.data.activeMembers || 0,
-        pendingApprovals: memberResponse.data.pendingRegistrations || 0,
-        recentActivities: memberResponse.data.recentActivities || 0,
-        systemHealth: memberResponse.data.systemHealth || "Unknown",
-        lastBackup: memberResponse.data.lastBackup || "Never",
+        totalMembers: memberResponse.data.totalMembers ?? 0,
+        registeredMembers: memberResponse.data.registeredMembers ?? 0, // New field
+        activeMembers: memberResponse.data.activeMembers ?? 0,
+        pendingApprovals: memberResponse.data.pendingRegistrations ?? 0,
+        recentActivities: memberResponse.data.recentActivities ?? 0,
+        systemHealth: memberResponse.data.systemHealth ?? "Unknown",
+        lastBackup: memberResponse.data.lastBackup ?? "Never",
       });
     } catch (err) {
       console.error("Error fetching dashboard stats:", err);
@@ -74,7 +87,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   };
 
   useEffect(() => {
-    fetchDashboardStats();
+    void fetchDashboardStats();
   }, []);
 
   return (
@@ -90,7 +103,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         <h2 className="text-xl font-semibold">Dashboard Overview</h2>
         
         <button 
-          onClick={fetchDashboardStats} 
+          onClick={() => void fetchDashboardStats()} 
           disabled={loading}
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >

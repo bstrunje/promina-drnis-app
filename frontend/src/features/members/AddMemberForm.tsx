@@ -70,7 +70,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
         // Osiguravamo da je format datuma za input fields yyyy-mm-dd
         const formattedDate = formatInputDate(value);
         setMember(prev => ({ ...prev, [name]: formattedDate }));
-      } catch (error) {
+      } catch {
         console.error("Invalid date format:", value);
         setMember(prev => ({ ...prev, [name]: value }));
       }
