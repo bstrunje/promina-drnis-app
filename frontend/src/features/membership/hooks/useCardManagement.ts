@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
-import { 
-  updateMembership, 
-  getAvailableCardNumbers, 
-  getAllCardNumbers 
-} from "../../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { getAvailableCardNumbers, getAllCardNumbers } from '../../../utils/api/apiCards';
+import { updateMembership } from '../../../utils/api/apiMembership';
 import { useCardNumberLength } from "../../../hooks/useCardNumberLength";
 import { CardStats } from "../types/membershipTypes";
 

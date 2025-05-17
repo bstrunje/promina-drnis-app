@@ -6,21 +6,21 @@
  */
 
 // Uvoz aktivnih modula
-import apiInstance from './api/config';
-import { handleApiError } from './api/utils';
+import apiInstance from './api/apiConfig';
+import { handleApiError } from './api/apiUtils';
 import { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 
 // Direktno izvozimo sve funkcije iz modula
 
 // Izvoz svih funkcija iz modula
-export * from './api/types';
-export * from './api/auth';
-export * from './api/members';
-export * from './api/membership';
-export * from './api/messages';
-export * from './api/stamps';
-export * from './api/cards';
-export * from './api/misc';
+export * from './api/apiTypes';
+export * from './api/apiAuth';
+export * from './api/apiMembers';
+export * from './api/apiMembership';
+export * from './api/apiMessages';
+export * from './api/apiStamps';
+export * from './api/apiCards';
+export * from './api/apiMisc';
 
 // Izvoz handleApiError funkcije
 export { handleApiError };

@@ -7,7 +7,8 @@ import { MembershipPeriod, MembershipHistory } from "@shared/membership";
 import { Member, MembershipTypeEnum } from "@shared/member";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
-import api from "../../utils/api"; 
+// Zamijenjeno prema novoj modularnoj API strukturi
+import api from '../../utils/api/apiConfig'; 
 import { IMAGE_BASE_URL } from "../../utils/config";
 import { formatDate } from "../../utils/dateUtils";
 import { getCurrentDate } from '../../utils/dateUtils';

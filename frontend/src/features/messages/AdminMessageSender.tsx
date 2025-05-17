@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { searchMembers } from '../../utils/api/apiAuth';
+// Zamijenjeno prema novoj modularnoj API strukturi
 import {
   sendAdminMessageToMember,
   sendAdminMessageToGroup,
   sendAdminMessageToAll
-} from '../../utils/api';
+} from '../../utils/api/apiMessages';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';

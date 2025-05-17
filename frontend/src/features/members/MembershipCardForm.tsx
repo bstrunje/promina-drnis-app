@@ -10,10 +10,11 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "../../../components/ui/select";
-import { updateMembership } from "../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { updateMembership } from '../../utils/api/apiMembership';
 import { useToast } from "../../../components/ui/use-toast";
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
-import { getCurrentDate } from "../../utils/dateUtils";
+import { formatDate, getCurrentDate } from "../../utils/dateUtils";
 
 // Add direct reference to API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -108,7 +109,8 @@ export default function MembershipCardForm({
     setIsLoading(true);
 
     try {
-      const today = getCurrentDate()formatDate(const today = getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+      // Mora biti string, ne Date, zbog API očekivanja
+const today = formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
       
       await updateMembership(memberId, {
         paymentDate: today,

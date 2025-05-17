@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { setMockDate, resetMockDate, getCurrentDate, formatDate, formatInputDate, isInTestMode, parseDate } from '../../utils/dateUtils';
 import { format, isValid, parseISO } from 'date-fns';
 import { Minimize2, Maximize2, Move, Database, RotateCcw, Trash2 } from 'lucide-react';
-import api, { cleanupTestData } from '../../utils/api';
+// Zamijenjeno prema novoj modularnoj API strukturi
+import api from '../../utils/api/apiConfig';
+import { cleanupTestData } from '../../utils/api/apiMisc';
 
 /**
  * Komponenta za postavljanje mock datuma za testiranje funkcionalnosti vezanih za datum

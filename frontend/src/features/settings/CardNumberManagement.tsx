@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { useToast } from "../../../components/ui/use-toast";
 import { API_BASE_URL } from "@/utils/config";
 import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
-import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange, getAllCardNumbers } from "../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange, getAllCardNumbers } from '../../utils/api/apiCards';
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {

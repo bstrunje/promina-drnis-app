@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Edit, Save, X } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Alert, AlertDescription } from "@components/ui/alert";
-import { Member } from "@shared/member";
+import { Member, MembershipTypeEnum } from "@shared/member";
 import { MembershipPeriod } from "@shared/membership";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
-import { debounce } from "lodash";
-import { getCurrentDate, getCurrentYear, parseDate, formatInputDate, validateBirthDate, validateDate, getSafeFormattedDate } from "../../utils/dateUtils";
-import { parseISO, format } from "date-fns";
+// import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
+import { getCurrentDate, getCurrentYear, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
+import { parseISO } from "date-fns";
 
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -34,7 +34,12 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const memberId = parseInt(id ?? String(user?.member_id) ?? "0");
+  // Ako id nije definiran, koristi user.member_id ili fallback na "0" (default)
+const memberId = useMemo(() => {
+  if (id) return parseInt(id, 10);
+  if (user?.member_id) return user.member_id;
+  return 0;
+}, [id, user]);
 
   const [member, setMember] = useState<Member | null>(null);
   const [editedMember, setEditedMember] = useState<Member | null>(null);
@@ -50,7 +55,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const canEdit = user?.role === "admin" || user?.role === "superuser";
   
   // Check if this is user's own profile
-  const isOwnProfile = user?.member_id === Number(memberId);
 
   const isFeeCurrent = useMemo(() => {
     if (!member?.membership_details?.fee_payment_year) return false;
@@ -62,29 +66,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     return paymentYear >= currentYear;
   }, [member?.membership_details?.fee_payment_year]);
 
-  // Debounce member fetch
-  const debouncedFetchMember = useMemo(
-    () =>
-      debounce(async () => {
-        try {
-          // Dodajemo timestamp i headere za sprječavanje keširanje
-          const timestamp = getCurrentDate().getTime();
-          const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
-            headers: {
-              "Cache-Control": "no-cache, no-store, must-revalidate",
-              "Pragma": "no-cache",
-              "Expires": "0"
-            }
-          });
-          setMember(response.data);
-        } catch (error) {
-          console.error(error);
-        }
-      }, 300),
-    [memberId]
-  );
 
-  const fetchMemberDetails = async (preserveScroll = true) => {
+  const fetchMemberDetails = useCallback(async (preserveScroll = true): Promise<void> => {
     if (preserveScroll) {
       setSavedScrollPosition(window.scrollY);
     }
@@ -96,7 +79,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
 
       // Use your configured API client instead of direct axios
       // This will use the correct base URL from your api.ts configuration
-      const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
+      // Tipiziraj response kao Member
+const response = await api.get<Member>(`/members/${memberId}?t=${timestamp}`, {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
@@ -104,24 +88,36 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         },
       });
 
-      const memberData = {
-        ...response.data,
-        // Osiguravamo da member.status ima prioritet, da ne bude prepisano membership_details podacima
-        status: response.data.status || 'pending', // Eksplicitno koristimo status iz tablice members
-        membership_history: {
-          periods: Array.isArray(response.data.membership_history)
-            ? response.data.membership_history // Keep original array if it's an array
-            : response.data.membership_history?.periods || [],
-          total_duration: calculateTotalDuration(
-            Array.isArray(response.data.membership_history)
-              ? response.data.membership_history
-              : response.data.membership_history?.periods || []
-          ),
-        },
-      };
+      // Dodaj default vrijednosti prema schema.prisma
+const data = response.data as Member | (Member & { membership_history?: unknown });
+
+// Sigurno dohvaćanje periods polja
+let periods: MembershipPeriod[] = [];
+if (Array.isArray(data.membership_history)) {
+  periods = data.membership_history as MembershipPeriod[];
+} else if (
+  data.membership_history &&
+  typeof data.membership_history === 'object' &&
+  Array.isArray((data.membership_history as { periods?: unknown }).periods)
+) {
+  periods = (data.membership_history as { periods: MembershipPeriod[] }).periods;
+}
+
+const memberData: Member = {
+  ...data,
+  status: data.status ?? 'pending',
+  role: data.role ?? 'member',
+  membership_type: data.membership_type ?? MembershipTypeEnum.Regular, // koristi enum za tip
+  registration_completed: data.registration_completed ?? false,
+  total_hours: data.total_hours ?? 0,
+  membership_history: {
+    periods,
+    total_duration: calculateTotalDuration(periods),
+  },
+};
 
       setMember(memberData);
-      setEditedMember(memberData);
+setEditedMember(memberData);
     } catch (error) {
       console.error("Error fetching member details:", error);
       setError(
@@ -137,8 +133,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         }, 100);
       }
     }
-  };
-
+  }, [memberId, savedScrollPosition]);
+  
   // Helper function to calculate total duration
   const calculateTotalDuration = (periods: MembershipPeriod[]): string => {
     if (!Array.isArray(periods) || periods.length === 0) return "";
@@ -163,10 +159,10 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   };
 
   useEffect(() => {
-    if (memberId) {
-      fetchMemberDetails(false);
-    }
-  }, [memberId]);
+  if (memberId) {
+    void fetchMemberDetails(false); // Označi kao floating promise
+  }
+}, [memberId, fetchMemberDetails]); // Dodan fetchMemberDetails u dependencies
 
   useEffect(() => {
     if (member?.membership_history) {
@@ -191,7 +187,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
         if (!validation.isValid) {
           setValidationErrors(prev => ({
             ...prev,
-            [name]: validation.errorMessage || 'Neispravan datum rođenja'
+            [name]: validation.errorMessage ?? 'Neispravan datum rođenja'
           }));
         } else {
           setValidationErrors(prev => {
@@ -209,22 +205,22 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
               }
             : null
         );
-      } catch (error) {
-        console.error("Invalid date format:", value);
-        setValidationErrors(prev => ({
-          ...prev,
-          [name]: 'Neispravan format datuma'
-        }));
-        
-        setEditedMember((prev) =>
-          prev
-            ? {
-                ...prev,
-                [name]: value,
-              }
-            : null
-        );
-      }
+      } catch {
+      console.error("Invalid date format:", value);
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: 'Neispravan format datuma'
+      }));
+      
+      setEditedMember((prev) =>
+        prev
+          ? {
+              ...prev,
+              [name]: value,
+            }
+          : null
+      );
+    }
     } else {
       setEditedMember((prev) =>
         prev
@@ -263,7 +259,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const handleMemberUpdate = async (updatedData?: Partial<Member>) => {
+  const handleMemberUpdate = async (updatedData?: Partial<Member>): Promise<void> => {
     try {
       if (updatedData && Object.keys(updatedData).length) {
         setMember((currentMember) => 
@@ -295,7 +291,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (!editedMember) return;
     setIsSubmitting(true);
     try {
@@ -311,7 +307,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
       const response = await api.put(`/members/${memberId}`, formattedMember);
 
       if (response.data) {
-        setMember(response.data);
+        setMember(response.data as Member);
         setIsEditing(false);
         toast({
           title: "Success",
@@ -319,9 +315,9 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           variant: "success",
         });
         if (onUpdate) {
-          onUpdate(response.data);
+          onUpdate(response.data as Member);
         }
-        fetchMemberDetails(); // Fetch member details after saving
+        void fetchMemberDetails(); // Fetch member details after saving
       }
     } catch (error) {
       setError("Failed to save member details");
@@ -338,28 +334,28 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = (): void => {
     setIsEditing(true);
     setEditedMember(member);
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setEditedMember(member);
     setIsEditing(false);
     setError(null);
   };
 
-  const handleAssign = (updatedMember: Member) => {
+  const handleAssign = (updatedMember: Member): void => {
     setMember(updatedMember);
-    fetchMemberDetails(); // Fetch member details after assigning password
+    void fetchMemberDetails(); // Fetch member details after assigning password
   };
 
-  const openAssignPasswordModal = () => {
+  const openAssignPasswordModal = (): void => {
     setIsAssigningPassword(true);
     // Osvježimo dostupne brojeve iskaznica pri svakom otvaranju modala
   };
 
-  const closeModal = () => {
+  const closeModal = (): void => {
     setIsAssigningPassword(false);
   };
 
@@ -383,7 +379,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
               {isEditing ? (
                 <div className="space-x-2">
                   <Button
-                    onClick={handleSave}
+                    onClick={() => { void handleSave(); }}
                     className="bg-green-500 hover:bg-green-600"
                     disabled={isSubmitting}
                   >
@@ -432,9 +428,9 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
           member={member}
           isEditing={isEditing && canEdit}
           isFeeCurrent={isFeeCurrent}
-          onUpdate={handleMemberUpdate}
+          onUpdate={(updatedMember: Member) => { void handleMemberUpdate(updatedMember); }}
           membershipHistory={{
-            periods: member?.membership_history?.periods || [],
+            periods: member?.membership_history?.periods ?? [],
             totalDuration: member?.membership_history?.total_duration,
             currentPeriod: member?.membership_history?.current_period
           }}

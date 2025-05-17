@@ -4,7 +4,10 @@ import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 import { Bell, CheckCircle, MessageCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { getMemberMessages, markMessageAsRead, getGenericMessages, GenericMessage } from "../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { getMemberMessages, markMessageAsRead, getGenericMessages } from '../../utils/api/apiMessages';
+import { ApiGenericMessage } from '../../utils/api/apiTypes';
 import BackToDashboard from "../../../components/BackToDashboard";
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";

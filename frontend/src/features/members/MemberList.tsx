@@ -126,7 +126,8 @@ export default function MemberList(): JSX.Element {
   const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // Stanje za prikaz/skrivanje navigacijskih tabova - vidljivo na desktop, ali ne na mobile
   const [refreshing, setRefreshing] = useState(false); // Stanje za pull-to-refresh
   const [touchStartY, setTouchStartY] = useState(0); // Za praćenje swipe geste
-  const [isMobile, setIsMobile] = useState(false);
+  // Ova varijabla se koristi u useEffect funkciji za provjeru veličine ekrana
+  const [, setIsMobile] = useState(false);
 
   // Koristimo custom hook za filtriranje i sortiranje
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
@@ -149,7 +150,7 @@ export default function MemberList(): JSX.Element {
     // Ova funkcija se poziva kad se promijeni groupByType ili filteredMembersRaw
     const groupedMembers = groupMembers(filteredMembersRaw);
     setFilteredMembers(groupedMembers);
-  }, [filteredMembersRaw, groupByType, showOnlyColored]);
+  }, [filteredMembersRaw, groupByType, showOnlyColored, groupMembers]);
 
   useEffect(() => {
     if (showOnlyColored) {
@@ -159,7 +160,7 @@ export default function MemberList(): JSX.Element {
       }));
       setFilteredMembers(updatedMembers);
     }
-  }, [showOnlyColored]);
+  }, [showOnlyColored, filteredMembers]);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -218,7 +219,7 @@ export default function MemberList(): JSX.Element {
       const groups: Record<string, MemberWithDetails[]> = {};
       
       memberList.forEach(member => {
-        const status = member.life_status || 'unknown';
+        const status = member.life_status ?? 'unknown';
         if (!groups[status]) {
           groups[status] = [];
         }

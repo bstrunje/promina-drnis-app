@@ -6,8 +6,29 @@ import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/AuthContext";
-import { getCurrentDate } from '../utils/dateUtils';
 
+interface UseMembershipPeriodsReturn {
+  isEditing: boolean;
+  editedPeriods: MembershipPeriod[];
+  isSubmitting: boolean;
+  newPeriod: Partial<MembershipPeriod> | null;
+  canEdit: boolean;
+  canManageEndReasons: boolean;
+  canSeeEndReason: boolean;
+  calculateTotalDuration: (periods: MembershipPeriod[]) => string;
+  handleEndReasonChange: (periodId: number, reason: string) => void;
+  handleEdit: () => void;
+  handleCancel: () => void;
+  handleSave: () => Promise<void>;
+  handlePeriodChange: (periodId: number, field: string, value: any) => void;
+  handleNewPeriodChange: (field: string, value: any) => void;
+  handleAddPeriod: () => void;
+  handleSaveNewPeriod: () => Promise<void>;
+  formatFeePaymentInfo: (year: number, date: string) => string;
+  isCurrentMembershipActive: boolean;
+  getMembershipType: () => string;
+  setNewPeriod: React.Dispatch<React.SetStateAction<Partial<MembershipPeriod> | null>>;
+}
 export const useMembershipPeriods = (
   periods: MembershipPeriod[],
   memberId: number,
@@ -35,7 +56,7 @@ export const useMembershipPeriods = (
   // Izračunaj ukupno trajanje članstva
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
     const totalDays = periods.reduce((total, period) => {
-      const start = typeof period.start_date === 'string' ? parseISO(period.start_date) : period.start_date as Date;
+      const start = typeof period.start_date === 'string' ? parseISO(period.start_date) : period.start_date;
       const end = period.end_date 
         ? (typeof period.end_date === 'string' ? parseISO(period.end_date) : period.end_date)
         : getCurrentDate();
@@ -292,10 +313,17 @@ export const useMembershipPeriods = (
         } : null);
       } else {
         // Prazno polje je prihvatljivo za end_date
-        setNewPeriod(prev => prev ? {
-          ...prev,
-          [field]: field === "end_date" ? null : '',
-        } : null);
+        setNewPeriod(prev => {
+          if (!prev) return null;
+          
+          // Ako brišemo end_date, brišemo i end_reason
+          const updates: Partial<MembershipPeriod> = { [field]: null };
+          if (field === 'end_date') {
+            updates.end_reason = null;
+          }
+          
+          return { ...prev, ...updates };
+        });
       }
     } else {
       // Za ostala polja
@@ -307,29 +335,74 @@ export const useMembershipPeriods = (
   };
 
   const handleAddPeriod = () => {
+    const today = getCurrentDate();
+    const formattedDate = format(today, 'yyyy-MM-dd');
+    
     setNewPeriod({
-      start_date: getCurrentDate()formatDate(start_date: getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split("T")[0],
+      start_date: formattedDate,
       end_date: null,
+      end_reason: null,
     });
   };
 
   const handleSaveNewPeriod = () => {
-    if (!newPeriod?.start_date) return;
+    if (!newPeriod?.start_date) {
+      toast({
+        title: "Greška",
+        description: "Datum početka je obavezan",
+        variant: "destructive"
+      });
+      return;
+    }
 
     // Validacija datuma
     try {
-      // Za startDate već imamo ISO format iz handleNewPeriodChange
-      const startDate = typeof newPeriod.start_date === 'string' ? parseISO(newPeriod.start_date) : newPeriod.start_date as Date;
+      // Parse start date
+      const startDateStr = typeof newPeriod.start_date === 'string' 
+        ? newPeriod.start_date 
+        : newPeriod.start_date.toISOString();
+      const startDate = parseISO(startDateStr);
       
-      let endDate = null;
+      if (!isValid(startDate)) {
+        toast({
+          title: "Greška",
+          description: "Neispravan datum početka",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      let endDate: Date | null = null;
       if (newPeriod.end_date) {
-        // Za endDate također već imamo ISO format
-        endDate = typeof newPeriod.end_date === 'string' ? parseISO(newPeriod.end_date as string) : newPeriod.end_date as Date;
-        
-        if (!isValid(startDate) || !isValid(endDate) || isAfter(startDate, endDate)) {
+        // Ako postoji datum završetka, mora postojati i razlog
+        if (!newPeriod.end_reason) {
           toast({
             title: "Greška",
-            description: "Neispravan raspon datuma", 
+            description: "Molimo odaberite razlog završetka članstva",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Parse end date
+        const endDateStr = typeof newPeriod.end_date === 'string'
+          ? newPeriod.end_date
+          : newPeriod.end_date.toISOString();
+        endDate = parseISO(endDateStr);
+        
+        if (!isValid(endDate)) {
+          toast({
+            title: "Greška",
+            description: "Neispravan datum završetka",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (isAfter(startDate, endDate)) {
+          toast({
+            title: "Greška",
+            description: "Datum završetka ne može biti prije datuma početka",
             variant: "destructive"
           });
           return;

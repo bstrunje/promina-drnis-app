@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
-import api from "../../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import api from '../../../utils/api/apiConfig';
 import { InventoryStatus } from "../types/membershipTypes";
 import { getCurrentYear } from "../../../utils/dateUtils";
 

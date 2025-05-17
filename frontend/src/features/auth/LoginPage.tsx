@@ -3,7 +3,8 @@
 import { FormEvent, useState, useEffect } from "react"; 
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { login, register } from "../../utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';

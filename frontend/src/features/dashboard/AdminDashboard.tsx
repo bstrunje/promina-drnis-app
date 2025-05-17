@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Member } from "@shared/member";
 import { useToast } from "@components/ui/use-toast";
-import { getAdminMessages } from "@/utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { getAdminMessages } from '@/utils/api/apiMessages';
 import { AdminMessage } from "./components/types";
 
 // Uvoz komponenti

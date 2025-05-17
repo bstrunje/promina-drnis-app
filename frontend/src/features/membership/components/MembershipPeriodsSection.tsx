@@ -6,7 +6,7 @@ import { MembershipPeriodsSectionProps } from "../types/membershipTypes";
 import PeriodFormRow from "./PeriodFormRow";
 import { parseISO } from "date-fns";
 import { useMembershipPeriods } from "../hooks/useMembershipPeriods";
-import { parseDate } from '../utils/dateUtils';
+import { parseDate } from '../../../utils/dateUtils';
 import { formatDate } from '../../../utils/dateUtils';
 
 const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
@@ -188,7 +188,11 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Datum početka (DD.MM.YYYY)</label>
                     <input
                       type="text"
-                      value={newPeriod.start_date ? parseDate($1).toLocaleDateString('hr-HR') : ''}
+                      value={newPeriod?.start_date ? (() => {
+                        const dateStr = typeof newPeriod.start_date === 'string' ? newPeriod.start_date : newPeriod.start_date.toISOString();
+                        const parsedDate = parseDate(dateStr);
+                        return parsedDate ? parsedDate.toLocaleDateString('hr-HR') : '';
+                      })() : ''}
                       onChange={(e) =>
                         handleNewPeriodChange(
                           "start_date",
@@ -203,7 +207,11 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <label className="block text-xs text-gray-500 mb-1">Datum završetka (DD.MM.YYYY)</label>
                     <input
                       type="text"
-                      value={newPeriod.end_date ? parseDate($1).toLocaleDateString('hr-HR') : ''}
+                      value={newPeriod?.end_date ? (() => {
+                        const dateStr = typeof newPeriod.end_date === 'string' ? newPeriod.end_date : newPeriod.end_date.toISOString();
+                        const parsedDate = parseDate(dateStr);
+                        return parsedDate ? parsedDate.toLocaleDateString('hr-HR') : '';
+                      })() : ''}
                       onChange={(e) =>
                         handleNewPeriodChange(
                           "end_date",

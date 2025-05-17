@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { AuditLog } from '@shared/audit';
-import { getAuditLogs } from '../../utils/api';
+// Zamijenjeno prema novoj modularnoj API strukturi
+// Ispravljeno: koristi apiMisc jer ne postoji apiAudit modul
+import { getAuditLogs } from '../../utils/api/apiMisc';
 import { parseISO } from 'date-fns';
 import { formatDate } from "../../utils/dateUtils";
 

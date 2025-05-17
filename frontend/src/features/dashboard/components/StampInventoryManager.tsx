@@ -7,9 +7,10 @@ import { StampTypeCard } from "./StampTypeCard";
 import { ArchiveDialog } from "./ArchiveDialog";
 import { StampHistorySection } from "./StampHistorySection";
 import { StampInventory, YearlyInventory, InventoryData, StampHistoryItem, ArchiveResult } from "./types";
-import apiInstance from "@/utils/api/config";
+import apiInstance from "@/utils/api/apiConfig";
 import { getCurrentYear } from "@/utils/dateUtils";
-import { getStampHistory, archiveStampInventory } from "@/utils/api";
+// Zamijenjeno prema novoj modularnoj API strukturi
+import { getStampHistory, archiveStampInventory } from '@/utils/api/apiStamps';
 
 interface StampInventoryManagerProps {
   member: Member;
