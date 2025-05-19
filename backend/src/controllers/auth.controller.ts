@@ -618,13 +618,23 @@ const authController = {
         return;
       }
 
+      // Formatiranje datuma rođenja u ispravan ISO-8601 DateTime format
+      let formattedDateOfBirth = date_of_birth;
+      
+      // Provjeri je li date_of_birth samo datum (bez vremena)
+      if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.length === 10) {
+        // Dodaj vrijeme (T00:00:00.000Z) na kraj datuma
+        formattedDateOfBirth = new Date(`${date_of_birth}T00:00:00.000Z`).toISOString();
+        console.log(`Formatiran datum rođenja: ${formattedDateOfBirth}`);
+      }
+
       // Kreiraj novog člana koristeći Prisma ORM
       const member = await prisma.member.create({
         data: {
           first_name,
           last_name,
           full_name: `${first_name} ${last_name}`, // Puno ime je obavezno polje
-          date_of_birth,
+          date_of_birth: formattedDateOfBirth,
           gender,
           street_address,
           city,
