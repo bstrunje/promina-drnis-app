@@ -29,6 +29,9 @@ root_tree.txt
 # Backup files
 backend/backups/
 
+# Test files
+backend/src/tests/
+
 # Scripts folder - ignoriraj pomoćne datoteke, ali prati JS skripte
 scripts/*
 !scripts/*.js
