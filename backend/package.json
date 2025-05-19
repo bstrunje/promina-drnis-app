@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "prisma generate && tsc",
-    "render-build": "npm install typescript && prisma migrate deploy && tsc",
+    "render-build": "npm install typescript && prisma migrate deploy && tsc -p tsconfig.production.json",
     "postinstall": "prisma generate",
     "setup-db": "node dist/setupDatabase.js",
     "test": "vitest run",
