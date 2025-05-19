@@ -1,10 +1,10 @@
 // routes/systemAdmin.ts
 import express from 'express';
-import systemAdminController from '../controllers/systemAdmin.controller.js';
-import { authMiddleware, roles } from '../middleware/authMiddleware.js';
-import { changePassword } from '../controllers/systemAdmin.controller.js';
-import { requireSystemAdmin } from '../middleware/authMiddleware.js';
-import { changeUsername } from '../controllers/systemAdmin.controller.js';
+import systemAdminController, {
+  changePassword,
+  changeUsername
+} from '../controllers/systemAdmin.controller.js';
+import { authMiddleware, roles, requireSystemAdmin } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
 
 const router = express.Router();
@@ -22,8 +22,10 @@ router.get('/audit-logs', authMiddleware, roles.requireSuperUser, systemAdminCon
 router.use(authMiddleware, roles.requireSystemAdmin);
 
 // Rute za promjenu lozinke i username-a (PATCH)
-router.patch('/change-password', requireSystemAdmin, changePassword);
-router.patch('/change-username', requireSystemAdmin, changeUsername);
+router.patch('/change-password', changePassword);
+router.patch('/change-username', changeUsername);
+
+// Napomena: za dohvat profila trenutnog admina koristimo rutu '/me' ispod
 
 // Rute za upravljanje system adminima
 router.post('/create', systemAdminController.createSystemAdmin);
@@ -38,7 +40,7 @@ router.put('/settings', systemAdminController.updateSystemSettings);
 
 // Rute za upravljanje ovlastima članova
 router.get('/members-with-permissions', systemAdminController.getMembersWithPermissions);
-router.get('/member-permissions/:memberId', systemAdminController.getMemberPermissions);
+// router.get('/member-permissions/:memberId', systemAdminController.getMemberPermissions); // Trenutno nedostupno
 router.post('/update-permissions', systemAdminController.updateMemberPermissions);
 router.delete('/member-permissions/:memberId', systemAdminController.removeMemberPermissions);
 
@@ -47,7 +49,7 @@ router.delete('/member-permissions/:memberId', systemAdminController.removeMembe
 // Dohvati podatke o trenutno prijavljenom system adminu
 router.get('/me', requireSystemAdmin, async (req, res) => {
   if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-  const admin = await prisma.systemAdmin.findUnique({ where: { id: req.user.id }, select: { id: true, username: true, display_name: true } });
+  const admin = await prisma.system_admin.findUnique({ where: { id: req.user.id }, select: { id: true, username: true, display_name: true } });
   if (!admin) return res.status(404).json({ message: 'Not found' });
   res.json({ admin });
 });

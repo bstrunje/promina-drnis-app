@@ -12,7 +12,7 @@ interface MessageError extends Error {
 }
 
 // In-memory store for messages (replace with database in production)
-let messages: Message[] = [];
+const messages: Message[] = [];
 
 export const createMessage = async (req: Request, res: Response): Promise<void> => {
     try {

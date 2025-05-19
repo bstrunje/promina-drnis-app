@@ -49,8 +49,8 @@ const authenticateToken = async (
 
         // Provjeri tip korisnika - ako je eksplicitno 'system_admin'
         if (decoded.type === 'system_admin') {
-            // Dohvati system admina iz baze
-            const systemAdmin = await prisma.systemAdmin.findUnique({
+            // Dohvati system admina iz baze - koristi system_admin model s malim početnim slovom
+            const systemAdmin = await prisma.system_admin.findUnique({
                 where: { id: decoded.id }
             });
 

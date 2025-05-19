@@ -89,7 +89,7 @@ export function formatDate(date: Date, format: string = 'yyyy-MM-dd'): string {
   const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
   
   // Zamijeni placeholdere u formatu
-  let result = format
+  const result = format
     .replace('yyyy', String(year))
     .replace('MM', month)
     .replace('dd', day)

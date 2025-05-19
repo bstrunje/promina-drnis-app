@@ -66,7 +66,7 @@ describe('message.service', () => {
   it('deletes messages', async () => {
     const msg = await messageService.createMessage(memberId, 'Svc Hello');
     await messageService.deleteMessage(msg.message_id);
-    let exists = await messageService.messageExists(msg.message_id);
+    const exists = await messageService.messageExists(msg.message_id);
     expect(exists).toBe(false);
 
     const msg1 = await messageService.createMessage(memberId, 'One');

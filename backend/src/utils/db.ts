@@ -62,9 +62,8 @@ pool.on('connect', async (client) => {
     try {
         await client.query("SET client_encoding = 'UTF8'");
         await client.query("SET NAMES 'UTF8'");
-        // Dodatna postavka za pravilno rukovanje hrvatskim znakovljem
-        await client.query("SET lc_collate = 'hr_HR.UTF-8'");
-        await client.query("SET lc_ctype = 'hr_HR.UTF-8'");
+        // Napomena: lc_collate i lc_ctype ne mogu se mijenjati nakon kreiranja baze
+        // Ove postavke treba definirati prilikom stvaranja baze podataka
         
         if (process.env.NODE_ENV === 'production') {
             console.log('📦 Production database pool connected with UTF-8 encoding');
