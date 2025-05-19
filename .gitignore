@@ -30,7 +30,7 @@ root_tree.txt
 backend/backups/
 
 # Test files
-backend/src/tests/
+backend/src/tests
 
 # Scripts folder - ignoriraj pomoćne datoteke, ali prati JS skripte
 scripts/*
