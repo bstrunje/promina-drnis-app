@@ -9,13 +9,9 @@ export { default as CardNumberSection } from './components/CardNumberSection';
 export { default as StampManagementSection } from './components/StampManagementSection';
 export { default as PeriodFormRow } from './components/PeriodFormRow';
 
-// Export hooks
-export { useCardManagement } from './hooks/useCardManagement';
-export { useStampManagement } from './hooks/useStampManagement';
-export { useMembershipPeriods } from './hooks/useMembershipPeriods';
+// Export hookova je sada centraliziran u membershipHooks.ts radi Fast Refresh best practice
 
 // Export types
-export * from './types/membershipTypes';
 
 /**
  * MembershipManager - Komponenta koja kombinira upravljanje članskom karticom i povijesti članstva
@@ -24,9 +20,11 @@ export * from './types/membershipTypes';
  * MembershipCardManagerModular i MembershipPeriodsSection komponente za potpuno
  * rješenje upravljanja članstvom.
  */
+import { Member } from '@shared/member';
+
 interface MembershipManagerProps {
-  member: any;
-  onUpdate: (member: any) => Promise<void>;
+  member: Member;
+  onUpdate: (member: Member) => Promise<void>;
   userRole?: string;
   isFeeCurrent?: boolean;
 }
@@ -50,14 +48,14 @@ export const MembershipManager: React.FC<MembershipManagerProps> = ({
       {/* Komponenta za prikaz i upravljanje povijesti članstva */}
       <MembershipPeriodsSection
         member={member}
-        periods={member.membership_history || []}
+        periods={member.membership_history?.periods ?? []} // koristi nullish coalescing
         feePaymentYear={member.membership_details?.fee_payment_year}
         feePaymentDate={member.membership_details?.fee_payment_date}
         onUpdatePeriods={async (periods) => {
           // Ažuriraj člana s novim periodima
           await onUpdate({
             ...member,
-            membership_history: periods
+            membership_history: { periods },
           });
         }}
         onUpdate={onUpdate}

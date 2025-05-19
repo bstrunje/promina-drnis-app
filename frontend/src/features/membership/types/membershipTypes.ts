@@ -1,15 +1,7 @@
-import { Member } from "@shared/member";
+// Tipovi za props-e i pomoćne UI tipove. Za podatkovne modele koristi shared/types/membership!
 
-export type MembershipEndReason = "withdrawal" | "non_payment" | "expulsion" | "death" | "";
-
-// Type for Membership Period
-export interface MembershipPeriod {
-  period_id?: number;
-  member_id?: number;
-  start_date: string | Date;
-  end_date?: string | Date | null;
-  end_reason?: MembershipEndReason | string | null;
-}
+import { Member } from '@shared/member';
+import { MembershipPeriod } from '@shared/membership';
 
 // Inventory status type
 export interface InventoryStatus {
@@ -25,7 +17,8 @@ export interface CardStats {
   assigned: number;
 }
 
-// Base props for membership components
+// Props za pojedine UI komponente
+
 export interface MembershipComponentProps {
   member: Member;
   onUpdate: (member: Member) => Promise<void>;
@@ -33,7 +26,6 @@ export interface MembershipComponentProps {
   isFeeCurrent?: boolean;
 }
 
-// Props for CardNumberSection component
 export interface CardNumberSectionProps extends MembershipComponentProps {
   availableCardNumbers: string[];
   isLoadingCardNumbers: boolean;
@@ -49,7 +41,6 @@ export interface CardNumberSectionProps extends MembershipComponentProps {
   handleCardNumberAssign: (e: React.FormEvent) => Promise<void>;
 }
 
-// Props for StampManagementSection component
 export interface StampManagementSectionProps extends MembershipComponentProps {
   inventoryStatus: InventoryStatus | null;
   nextYearInventoryStatus: InventoryStatus | null;
@@ -61,22 +52,20 @@ export interface StampManagementSectionProps extends MembershipComponentProps {
   onNextYearStampToggle: (newState: boolean) => Promise<void>;
 }
 
-// Props for MembershipPeriodsSection component
 export interface MembershipPeriodsSectionProps extends MembershipComponentProps {
-  periods: MembershipPeriod[];
+  periods: import('@shared/membership').MembershipPeriod[];
   totalDuration?: string;
   feePaymentYear?: number;
   feePaymentDate?: string;
-  onUpdatePeriods?: (periods: MembershipPeriod[]) => Promise<void>;
+  onUpdatePeriods?: (periods: import('@shared/membership').MembershipPeriod[]) => Promise<void>;
 }
 
-// Props for PeriodFormRow component
 export interface PeriodFormRowProps {
-  period: MembershipPeriod;
+  period: import('@shared/membership').MembershipPeriod;
   index: number;
   isEditing: boolean;
   canSeeEndReason: boolean;
   canManageEndReasons: boolean;
-  onPeriodChange: (index: number, field: keyof MembershipPeriod, value: string) => void;
+  onPeriodChange: (index: number, field: keyof import('@shared/membership').MembershipPeriod, value: string) => void;
   onEndReasonChange: (periodId: number, newReason: string) => Promise<void>;
 }

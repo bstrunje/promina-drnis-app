@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
 // Zamijenjeno prema novoj modularnoj API strukturi
@@ -7,15 +7,25 @@ import { updateMembership } from '../../../utils/api/apiMembership';
 import { useCardNumberLength } from "../../../hooks/useCardNumberLength";
 import { CardStats } from "../types/membershipTypes";
 
+// Tip za pojedinačnu karticu iz API responsa
+// Status može biti samo 'available' ili 'assigned' – 'retired' nije prihvatljiv u aplikaciji
+interface CardInfo {
+  card_number: string;
+  status: "available" | "assigned";
+  member_id?: number;
+  member_name?: string;
+}
+
+
 export const useCardManagement = (member: Member, onUpdate: (member: Member) => Promise<void>) => {
   const { toast } = useToast();
   
   // Inicijaliziraj stanje iz membership_details (izvor istine), a zatim iz direktnih property-a
   const [cardNumber, setCardNumber] = useState(
-    member?.membership_details?.card_number || member?.card_number || ""
+    member?.membership_details?.card_number ?? "" // Uvijek koristi samo membership_details.card_number
   );
   const [originalCardNumber, setOriginalCardNumber] = useState(
-    member?.membership_details?.card_number || member?.card_number || ""
+    member?.membership_details?.card_number ?? "" // Uvijek koristi samo membership_details.card_number
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
@@ -30,10 +40,10 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
   useEffect(() => {
     if (member) {
       setCardNumber(
-        member.membership_details?.card_number || member.card_number || ""
+        member.membership_details?.card_number ?? "" // Uvijek koristi samo membership_details.card_number
       );
       setOriginalCardNumber(
-        member.membership_details?.card_number || member.card_number || ""
+        member.membership_details?.card_number ?? "" // Uvijek koristi samo membership_details.card_number
       );
     }
   }, [member]);
@@ -44,7 +54,7 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       setIsLoadingCardNumbers(true);
       try {
         const numbers = await getAvailableCardNumbers();
-        setAvailableCardNumbers(numbers || []);
+        setAvailableCardNumbers(numbers ?? []); // ESLint: koristimo ??
       } catch (error) {
         console.error("Nije moguće dohvatiti dostupne brojeve kartica:", error);
         toast({
@@ -57,32 +67,42 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       }
     };
 
-    fetchCardNumbers();
+    void fetchCardNumbers();
   }, [toast]);
 
   // Funkcija za osvježavanje statistike kartica
-  const refreshCardStats = async () => {
+  // Tipiziramo podatke iz API-a i koristimo nullish coalescing
+  const refreshCardStats = useCallback(async () => {
     setIsLoadingCardStats(true);
     try {
-      const data = await getAllCardNumbers();
+      const data: { stats: CardStats; cards: CardInfo[] } = await getAllCardNumbers();
       setCardStats(data.stats);
 
       // Osvježi dostupne brojeve kartica ako je potrebno
+      // Filtriramo sve kartice koje nisu 'available' ili 'assigned', 'retired' ignoriramo jer nije prihvatljiv status
       setAvailableCardNumbers(
-        data.cards
-          .filter((card: any) => card.status === "available")
-          .map((card: any) => card.card_number)
+        (data.cards ?? [])
+          .filter((card) => card.status === "available" || card.status === "assigned")
+          .map((card) => card.card_number)
       );
-    } catch (error) {
-      console.error("Nije moguće osvježiti statistiku kartica:", error);
+    } catch (error: unknown) {
+      // Sigurno logiranje greške
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Nije moguće dohvatiti statistiku kartica:", errorMessage);
+      toast({
+        title: "Greška",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoadingCardStats(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    refreshCardStats();
-  }, []);
+    void refreshCardStats();
+    // Dodajemo refreshCardStats u dependency array radi exhaustiveness
+  }, [refreshCardStats]);
 
   // Funkcija za dodjelu broja kartice
   const handleCardNumberAssign = async (e: React.FormEvent) => {
@@ -101,14 +121,13 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       }
 
       // Ažuriraj lokalno stanje s prioritetom na membership_details
+      // Ažuriraj samo membership_details.card_number, Member.card_number se više ne koristi
       await onUpdate({
         ...member,
         membership_details: {
           ...member.membership_details,
           card_number: cardNumber,
-        },
-        // Postavi ove vrijednosti i za kompatibilnost s prethodnim kodom, ali membership_details je izvor istine
-        card_number: cardNumber,
+        }
       });
 
       toast({
@@ -116,17 +135,16 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
         description: "Broj kartice uspješno dodijeljen",
         variant: "success",
       });
-    } catch (error: any) {
+    }catch (error: unknown) {
+      // Sigurno logiranje greške
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Detalji greške kod dodjele kartice:", {
-        error,
+        error: errorMessage,
         memberId: member.member_id,
         cardNumber,
         memberData: member,
       });
-
-      const errorMessage =
-        error instanceof Error ? error.message : "Dogodila se nepoznata greška";
-
+    
       toast({
         title: "Greška",
         description: errorMessage,

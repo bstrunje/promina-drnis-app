@@ -5,13 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui
 import { AuditLog } from '@shared/audit';
 import { formatDate, parseDate, setCurrentTimeZone } from "../../utils/dateUtils";
 import { useToast } from '@components/ui/use-toast';
-import { useSystemAdmin } from '../../context/SystemAdminContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/config';
 import { useTimeZone } from '../../context/TimeZoneContext';
 
 const SystemAdminAuditLogs: React.FC = () => {
-  const { admin } = useSystemAdmin();
+  // const { admin } = useSystemAdmin(); // Uklonjeno jer nije korišteno
   const { toast } = useToast();
   const { timeZone } = useTimeZone();
 
@@ -35,21 +34,67 @@ const SystemAdminAuditLogs: React.FC = () => {
     }
   }, [timeZone]); // Efekt se pokreće kada se promijeni timeZone
 
-  useEffect(() => {
-    fetchAuditLogs();
-  }, []);
+  // Handler za filtriranje logova - koristi useCallback zbog dependency arraya
+  const applyFilters = React.useCallback(() => {
+    let filtered = [...auditLogs];
 
-  useEffect(() => {
-    applyFilters();
+    if (filters.startDate) {
+      filtered = filtered.filter(log => {
+        const logDate = String(log.created_at ?? '');
+        const startDate = String(filters.startDate ?? '');
+        const parsedLogDate = parseDate(logDate);
+        const parsedStartDate = parseDate(startDate);
+        if (parsedLogDate === null || parsedLogDate === undefined) return false;
+        if (parsedStartDate === null || parsedStartDate === undefined) return false;
+        return parsedLogDate >= parsedStartDate;
+      });
+    }
+
+    if (filters.endDate) {
+      filtered = filtered.filter(log => {
+        const logDate = String(log.created_at ?? '');
+        const endDate = String(filters.endDate ?? '');
+        const parsedLogDate = parseDate(logDate);
+        const parsedEndDate = parseDate(endDate);
+        if (parsedLogDate === null || parsedLogDate === undefined) return false;
+        if (parsedEndDate === null || parsedEndDate === undefined) return false;
+        return parsedLogDate <= parsedEndDate;
+      });
+    }
+
+    if (filters.actionType) {
+      filtered = filtered.filter(log => {
+        const actionType = typeof log.action_type === 'string' ? log.action_type : '';
+        const filterActionType = typeof filters.actionType === 'string' ? filters.actionType : '';
+        return actionType.toLowerCase().includes(filterActionType.toLowerCase());
+      });
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter(log => {
+        const status = typeof log.status === 'string' ? log.status : '';
+        const filterStatus = typeof filters.status === 'string' ? filters.status : '';
+        return status.toLowerCase() === filterStatus.toLowerCase();
+      });
+    }
+
+    if (filters.user) {
+      filtered = filtered.filter(log => {
+        const performer = typeof log.performer_name === 'string' ? log.performer_name : '';
+        const filterUser = typeof filters.user === 'string' ? filters.user : '';
+        return performer.toLowerCase().includes(filterUser.toLowerCase());
+      });
+    }
+
+    setFilteredLogs(filtered);
   }, [auditLogs, filters]);
 
-  const fetchAuditLogs = async () => {
+  // Handler za dohvat audit logova
+  const fetchAuditLogs = React.useCallback(async () => {
     try {
       setLoading(true);
-      
       // Dohvat tokena iz localStorage-a
       const token = localStorage.getItem('systemAdminToken');
-      
       if (!token) {
         toast({
           title: "Greška",
@@ -59,16 +104,20 @@ const SystemAdminAuditLogs: React.FC = () => {
         setLoading(false);
         return;
       }
-      
       const response = await axios.get(`${API_BASE_URL}/system-admin/audit-logs`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      setAuditLogs(response.data);
-      setFilteredLogs(response.data);
+      // Provjeri da je response.data niz tipa AuditLog[]
+      if (Array.isArray(response.data)) {
+        setAuditLogs(response.data as AuditLog[]);
+        setFilteredLogs(response.data as AuditLog[]);
+      } else {
+        setAuditLogs([]);
+        setFilteredLogs([]);
+      }
     } catch (err) {
       console.error('Error fetching audit logs:', err);
       toast({
@@ -79,7 +128,15 @@ const SystemAdminAuditLogs: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void fetchAuditLogs(); // void zbog lint pravila
+  }, [fetchAuditLogs]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [auditLogs, filters, applyFilters]);
 
   const handleSort = (field: keyof AuditLog) => {
     setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
@@ -102,41 +159,7 @@ const SystemAdminAuditLogs: React.FC = () => {
     setFilteredLogs(sorted);
   };
 
-  const applyFilters = () => {
-    let filtered = [...auditLogs];
 
-    if (filters.startDate) {
-      filtered = filtered.filter(log => 
-        parseDate(log.created_at) >= parseDate(filters.startDate)
-      );
-    }
-
-    if (filters.endDate) {
-      filtered = filtered.filter(log => 
-        parseDate(log.created_at) <= parseDate(filters.endDate)
-      );
-    }
-
-    if (filters.actionType) {
-      filtered = filtered.filter(log => 
-        log.action_type.toLowerCase().includes(filters.actionType.toLowerCase())
-      );
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter(log => 
-        log.status.toLowerCase() === filters.status.toLowerCase()
-      );
-    }
-
-    if (filters.user) {
-      filtered = filtered.filter(log => 
-        (log.performer_name || '').toLowerCase().includes(filters.user.toLowerCase())
-      );
-    }
-
-    setFilteredLogs(filtered);
-  };
 
   const handleFilterChange = (name: string, value: string) => {
     setFilters(prev => ({

@@ -17,19 +17,22 @@ import {
 } from "../../../components/ui/select";
 import CardNumberManagement from './CardNumberManagement';
 
-const MONTHS = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'];
+// Mjeseci na hrvatskom ako zatrebaju u budućnosti
+// const MONTHS = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'];
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
     renewalStartMonth: 11, // December by default
     renewalStartDay: 31,
     updatedAt: getCurrentDate(),
   });
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const [admins, setAdmins] = useState<Member[]>([]);
   const [selectedAdminId, setSelectedAdminId] = useState<string>("");
@@ -51,9 +54,15 @@ const Settings: React.FC = () => {
         });
         
         // Filtrirati samo korisnike koji imaju admin role
-        const adminUsers = response.data.filter(
-          (member: Member) => member.role === 'admin'
-        );
+        const responseData = response.data as unknown[];
+        const adminUsers = responseData
+          .filter(
+            (item): item is Member => 
+              typeof item === 'object' && 
+              item !== null && 
+              'role' in item && 
+              item.role === 'admin'
+          );
         
         console.log('Filtered admin users:', adminUsers);
         setAdmins(adminUsers);
@@ -67,58 +76,31 @@ const Settings: React.FC = () => {
       }
     };
 
-    fetchAdmins();
-  }, [user]);
+    void fetchAdmins();
+  }, [user, toast]);
 
+  // Submission handler - trenutno nekorišten jer se postavke ne ažuriraju
+  // Ovo je zadržano kao referenca za buduću implementaciju
+  /*
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
 
     try {
-      const token = localStorage.getItem('token');
-      
-      const settingsToUpdate = {
-        id: settings.id,
-        renewalStartMonth: settings.renewalStartMonth,
-        renewalStartDay: settings.renewalStartDay,
-        updatedAt: getCurrentDate()
-      };
-      
-      // Ukloniti poziv na /api/system-admin/settings
-      // Provjeriti sve ostale reference na system-admin/settings
-      // Očistiti sve što nije vezano za obične admin/superuser ovlasti
+      // Implementacija ažuriranja postavki
     } catch (err) {
       const errorMessage = axios.isAxiosError(err)
-        ? err.response?.data?.message || err.message
+        ? err.response?.data?.message ?? err.message
         : 'An unknown error occurred';
       toast({
         title: "Error",
         description: `Failed to update settings: ${errorMessage}`,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  const handleSettingsChange = (field: string, value: number | string) => {
-    if (field === 'renewalStartDay') {
-      // Eksplicitno pretvaranje u number za usporedbu
-      const numValue = typeof value === 'string' ? parseInt(value) : value;
-      if (numValue < 1 || numValue > 31) {
-        setError('Renewal start day must be between 1 and 31');
-        return;
-      }
-    }
-
-    setError(null);
-    setSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  */
 
   return (
     <div className="p-6">
@@ -133,11 +115,13 @@ const Settings: React.FC = () => {
         </Alert>
       )}
 
+      {/* Poruka o uspjehu trenutno nije potrebna jer nemamo aktivne akcije koje bi je koristile
       {successMessage && (
         <Alert className="mb-4 bg-green-50 text-green-800 border border-green-200">
           <AlertDescription>{successMessage}</AlertDescription>
         </Alert>
       )}
+      */}
 
       {user?.role === 'superuser' && (
         <div className="mt-8">
@@ -160,13 +144,22 @@ const Settings: React.FC = () => {
             </SelectContent>
           </Select>
 
-          {selectedAdminId && (
-            <div className="mt-4">
-              <AdminPermissionsManager 
-                admin={admins.find(a => a.member_id === parseInt(selectedAdminId))} 
-              />
-            </div>
-          )}
+          {selectedAdminId && (() => {
+            // Prvo pronađemo admina i onda provjerimo da li postoji
+            const selectedAdmin = admins.find(a => a.member_id === parseInt(selectedAdminId));
+            return selectedAdmin ? (
+              <div className="mt-4">
+                <AdminPermissionsManager 
+                  admin={selectedAdmin} 
+                />
+              </div>
+            ) : (
+              <div className="mt-4 p-4 border border-yellow-200 bg-yellow-50 rounded-md">
+                Admin nije pronađen. Možda je uklonjen iz sustava.
+              </div>
+            );
+          })()
+          }
         </div>
       )}
 

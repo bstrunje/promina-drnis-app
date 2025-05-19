@@ -1,5 +1,5 @@
 import React from "react";
-import { MembershipPeriod, MembershipHistory } from "@shared/membership";
+import { MembershipPeriod } from "@shared/membership";
 import { Member } from "@shared/member";
 import { useAuth } from "../../context/AuthContext";
 import MembershipPeriodsSection from "./components/MembershipPeriodsSection";
@@ -19,7 +19,8 @@ interface MembershipHistoryAdapterProps {
   feePaymentDate?: string;
   totalDuration?: string;
   currentPeriod?: MembershipPeriod;
-  onUpdate?: (periods: MembershipPeriod[]) => Promise<void>;
+  onUpdate?: (member: Member) => Promise<void>;
+  onUpdatePeriods?: (periods: MembershipPeriod[]) => Promise<void>;
 }
 
 /**
@@ -33,6 +34,7 @@ const MembershipHistoryAdapter: React.FC<MembershipHistoryAdapterProps> = ({
   totalDuration,
   currentPeriod,
   onUpdate,
+  onUpdatePeriods,
 }) => {
   const { user } = useAuth();
   
@@ -64,12 +66,12 @@ const MembershipHistoryAdapter: React.FC<MembershipHistoryAdapterProps> = ({
   return (
     <MembershipPeriodsSection
       member={memberData}
-      periods={periods || []}
+      periods={periods ?? []} // Sigurnosna promjena: nullish coalescing za tipnu sigurnost
       feePaymentYear={feePaymentYear}
       feePaymentDate={feePaymentDate}
       totalDuration={totalDuration}
-      onUpdatePeriods={onUpdate}
-      onUpdate={async () => {}} // Dummy funkcija - stvarno ažuriranje događa se kroz onUpdatePeriods
+      onUpdatePeriods={onUpdatePeriods}
+      onUpdate={onUpdate ?? (async () => Promise.resolve())} // dummy funkcija za tipnu kompatibilnost bez unused var
       userRole={user?.role}
     />
   );

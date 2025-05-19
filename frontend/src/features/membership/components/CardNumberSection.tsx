@@ -20,7 +20,6 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   cardStats, 
   isLoadingCardStats, 
   cardNumberLength, 
-  isLoadingCardLength, 
   refreshCardStats,
   cardNumber,
   isSubmitting,
@@ -80,7 +79,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={refreshCardStats}
+              onClick={() => { void refreshCardStats(); }}
               disabled={isLoadingCardStats}
               className="h-8 text-xs"
             >
@@ -125,7 +124,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
 
       {/* Forma za dodjelu broja kartice */}
       {canEdit && (
-        <form onSubmit={handleCardNumberAssign} className="space-y-3">
+        <form onSubmit={(e) => { void handleCardNumberAssign(e); }} className="space-y-3">
           <div>
             <Label htmlFor="card-number">Promijeni broj kartice</Label>
             <div className="mt-1">
@@ -141,7 +140,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {/* Opcija za trenutni broj kartice ako postoji */}
-                    {member.membership_details?.card_number && (
+                    {typeof member?.membership_details?.card_number === 'string' && member.membership_details.card_number !== '' && (
                       <SelectItem value={member.membership_details.card_number}>
                         {member.membership_details.card_number} (Trenutni)
                       </SelectItem>

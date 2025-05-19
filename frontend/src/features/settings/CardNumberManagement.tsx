@@ -3,17 +3,16 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { useToast } from "../../../components/ui/use-toast";
-import { API_BASE_URL } from "@/utils/config";
 import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 // Zamijenjeno prema novoj modularnoj API strukturi
-import { deleteCardNumber, getAvailableCardNumbers, addCardNumber, addCardNumberRange, getAllCardNumbers } from '../../utils/api/apiCards';
+import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers } from '../../utils/api/apiCards';
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {
   const { toast } = useToast(); 
   
   // Dohvati duljinu broja kartice iz postavki
-  const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
+  const { length: cardNumberLength } = useCardNumberLength();
   
   // Form states
   const [singleCardNumber, setSingleCardNumber] = useState("");
@@ -27,20 +26,18 @@ export default function CardNumberManagement() {
   const [isDeletingCard, setIsDeletingCard] = useState<string | null>(null);
   
   // Data states
-  const [availableCount, setAvailableCount] = useState<number | null>(null);
-  const [existingCardNumbers, setExistingCardNumbers] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
   const [cardStats, setCardStats] = useState<{
     total: number;
     available: number;
     assigned: number;
   }>({ total: 0, available: 0, assigned: 0 });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
   
   const [allCardNumbers, setAllCardNumbers] = useState<{
     card_number: string;
-    status: 'available' | 'assigned' | 'retired';
+    status: 'available' | 'assigned';
     member_id?: number;
     member_name?: string;
   }[]>([]);
@@ -59,13 +56,7 @@ export default function CardNumberManagement() {
         setCardStats(data.stats);
         setAllCardNumbers(data.cards);
         
-        // Keep this for existing code compatibility
-        setAvailableCount(data.stats.available);
-        setExistingCardNumbers(
-          data.cards
-            .filter(card => card.status === 'available')
-            .map(card => card.card_number)
-        );
+        // Kompatibilnost s originalnim kodom je sada osigurana kroz cardStats
       } catch (error) {
         console.error('Error fetching card numbers:', error);
         toast({
@@ -78,8 +69,8 @@ export default function CardNumberManagement() {
       }
     }
   
-    fetchCardNumbers();
-  }, []);
+    void fetchCardNumbers();
+  }, [toast]);
 
   const handleAddSingle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +100,7 @@ export default function CardNumberManagement() {
       setSingleCardNumber("");
       
       // Refresh data
-      refreshCardNumbers();
+      void refreshCardNumbers();
     } catch (error) {
       console.error('Error adding card number:', error);
       toast({
@@ -145,7 +136,7 @@ export default function CardNumberManagement() {
     setIsLoadingRange(true);
 
     try {
-      const result = await addCardNumberRange(rangeStart, rangeEnd);
+      await addCardNumberRange(rangeStart, rangeEnd);
       
       toast({
         title: "Success",
@@ -157,7 +148,7 @@ export default function CardNumberManagement() {
       setRangeEnd(null);
       
       // Refresh data
-      refreshCardNumbers();
+      void refreshCardNumbers();
     } catch (error) {
       console.error('Error adding card number range:', error);
       toast({
@@ -176,7 +167,7 @@ export default function CardNumberManagement() {
       await deleteCardNumber(cardNumber);
       
       // Update local state
-      setExistingCardNumbers(prev => prev.filter(num => num !== cardNumber));
+      // Nema više potrebe za setExistingCardNumbers
       setAllCardNumbers(prev => prev.filter(card => card.card_number !== cardNumber));
       setCardStats(prev => ({
         ...prev,
@@ -233,17 +224,12 @@ export default function CardNumberManagement() {
       const data = await getAllCardNumbers();
       setCardStats(data.stats);
       setAllCardNumbers(data.cards);
-      setAvailableCount(data.stats.available);
-      setExistingCardNumbers(
-        data.cards
-          .filter(card => card.status === 'available')
-          .map(card => card.card_number)
-      );
+      // Kompatibilnost s originalnim kodom je sada osigurana kroz cardStats
     } catch (error) {
-      console.error("Error refreshing card numbers:", error);
+      console.error('Error fetching card numbers:', error);
       toast({
         title: "Error",
-        description: "Failed to refresh card numbers",
+        description: "Failed to load card numbers",
         variant: "destructive",
       });
     } finally {
@@ -270,7 +256,7 @@ export default function CardNumberManagement() {
                 size="sm" 
                 className="h-6 w-6 p-0" 
                 title="Refresh card statistics"
-                onClick={refreshCardNumbers}
+                onClick={() => { void refreshCardNumbers(); }}
                 disabled={isLoadingCount}
               >
                 <RefreshCw className={`h-3 w-3 ${isLoadingCount ? 'animate-spin' : ''}`} />
@@ -334,7 +320,7 @@ export default function CardNumberManagement() {
               </div>
               
               <div className="bg-white p-6 rounded-lg border">
-                <form onSubmit={handleAddSingle} className="space-y-4">
+                <form onSubmit={(e) => { void handleAddSingle(e); }} className="space-y-4">
                   <Input
                     id="singleCardNumber"
                     placeholder={`Enter new card number (${cardNumberLength} digits)`}
@@ -379,7 +365,7 @@ export default function CardNumberManagement() {
               </div>
               
               <div className="bg-white p-6 rounded-lg border">
-                <form onSubmit={handleAddRange} className="space-y-4">
+                <form onSubmit={(e) => { void handleAddRange(e); }} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="rangeStart" className="text-sm text-gray-500 mb-1 block">
@@ -389,7 +375,7 @@ export default function CardNumberManagement() {
                         id="rangeStart"
                         placeholder={`e.g., ${'1'.padStart(cardNumberLength, '0')}`}
                         type="number"
-                        value={rangeStart !== null ? rangeStart : ''}
+                        value={rangeStart ?? ''}
                         onChange={(e) => setRangeStart(e.target.value ? parseInt(e.target.value) : null)}
                         disabled={isLoadingRange}
                         autoFocus
@@ -403,7 +389,7 @@ export default function CardNumberManagement() {
                         id="rangeEnd"
                         placeholder={`e.g., ${'100'.padStart(cardNumberLength, '0')}`}
                         type="number"
-                        value={rangeEnd !== null ? rangeEnd : ''}
+                        value={rangeEnd ?? ''}
                         onChange={(e) => setRangeEnd(e.target.value ? parseInt(e.target.value) : null)}
                         disabled={isLoadingRange}
                       />
@@ -512,7 +498,7 @@ export default function CardNumberManagement() {
                             className={`font-medium select-all cursor-pointer ${
                               card.status === 'assigned' ? 'text-blue-600' : ''
                             }`}
-                            onClick={() => navigator.clipboard.writeText(card.card_number)}
+                            onClick={() => { void navigator.clipboard.writeText(card.card_number); }}
                             title="Click to copy"
                           >
                             {card.card_number}
@@ -529,7 +515,7 @@ export default function CardNumberManagement() {
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDeleteCard(card.card_number)}
+                            onClick={() => { void handleDeleteCard(card.card_number); }}
                             disabled={isDeletingCard === card.card_number}
                           >
                             {isDeletingCard === card.card_number ? (
@@ -560,7 +546,7 @@ export default function CardNumberManagement() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={nextPage} 
+                        onClick={() => { void nextPage(); }} 
                         disabled={currentPage === totalPages}
                       >
                         Next

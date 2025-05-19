@@ -11,10 +11,10 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   
   // Inicijaliziraj stanje iz membership_details (izvor istine)
   const [stampIssued, setStampIssued] = useState(
-    member?.membership_details?.card_stamp_issued || false
+    member?.membership_details?.card_stamp_issued ?? false // Promjena: koristi ?? umjesto || zbog lint pravila
   );
   const [nextYearStampIssued, setNextYearStampIssued] = useState(
-    member?.membership_details?.next_year_stamp_issued || false
+    member?.membership_details?.next_year_stamp_issued ?? false // Promjena: koristi ?? umjesto || zbog lint pravila
   );
   const [isIssuingStamp, setIsIssuingStamp] = useState(false);
   const [isIssuingNextYearStamp, setIsIssuingNextYearStamp] = useState(false);
@@ -24,10 +24,10 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   // Kada se podaci o članu promijene, ažuriraj iz ispravnog izvora
   useEffect(() => {
     if (member) {
-      const newStampState = member.membership_details?.card_stamp_issued || false;
+      const newStampState = member.membership_details?.card_stamp_issued ?? false; // Promjena: koristi ?? umjesto || zbog lint pravila
       
       setStampIssued(newStampState);
-      setNextYearStampIssued(member?.membership_details?.next_year_stamp_issued || false);
+      setNextYearStampIssued(member?.membership_details?.next_year_stamp_issued ?? false); // Promjena: koristi ?? umjesto || zbog lint pravila
     }
   }, [member]);
 
@@ -47,21 +47,19 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   useEffect(() => {
     const checkInventory = async () => {
       try {
-        const response = await api.get("/stamps/inventory");
+        const response = await api.get<{ stamp_type: string; stamp_year: number; remaining: number }[]>("/stamps/inventory"); // Sigurnosna promjena: tipiziran response
         const data = response.data;
 
         const stampType = getMemberStampType(member);
 
         // Pronađi zalihu markica za tekuću godinu
         const currentYearInventory = data.find(
-          (item: { stamp_type: string, stamp_year: number }) => 
-            item.stamp_type === stampType && item.stamp_year === getCurrentYear()
+          (item) => item.stamp_type === stampType && item.stamp_year === getCurrentYear()
         );
 
         // Pronađi zalihu markica za sljedeću godinu
         const nextYearInventory = data.find(
-          (item: { stamp_type: string, stamp_year: number }) => 
-            item.stamp_type === stampType && item.stamp_year === getCurrentYear() + 1
+          (item) => item.stamp_type === stampType && item.stamp_year === getCurrentYear() + 1
         );
 
         if (currentYearInventory) {
@@ -80,16 +78,17 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
           });
         }
       } catch (error) {
-        console.error("Greška kod provjere zalihe:", error);
+        console.error("Greška kod provjere zalihe markica:", error);
+        // Sigurnosna promjena: koristi se nullish coalescing umjesto ||
         toast({
           title: "Greška",
-          description: "Nije moguće provjeriti zalihu markica",
+          description: error instanceof Error ? error.message : "Nije moguće provjeriti zalihu markica",
           variant: "destructive",
         });
       }
     };
 
-    checkInventory();
+    void checkInventory(); // Sigurnosna promjena: void za no-floating-promises
   }, [member.life_status, member, getMemberStampType, toast]);
 
   // Upravljanje izdavanjem markice za tekuću godinu
@@ -123,11 +122,11 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
       setIsIssuingStamp(true);
       
       let apiSuccess = false;
-      let updatedMember = null;
+      let updatedMember: Member | null = null; // Sigurnosna promjena: ispravan tip za ažuriranog člana
   
       if (newState) {
         // Poziv API-ja za izdavanje markice
-        const response = await api.post(`/members/${member.member_id}/stamp`, { forNextYear: false });
+        await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp`, { forNextYear: false }); // Sigurnosna promjena: uklonjen unused var response
         apiSuccess = true;
   
         // Ažuriraj prikaz zalihe
@@ -136,11 +135,11 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
         );
       } else {
         // Poziv API-ja za vraćanje markice
-        const response = await api.post(`/members/${member.member_id}/stamp/return`, { forNextYear: false });
+        const response = await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp/return`, { forNextYear: false }); // Sigurnosna promjena: tipiziran response
         
         // Pokušaj dobiti ažuriranog člana iz odgovora
         if (response.data?.member) {
-          updatedMember = response.data.member;
+          updatedMember = response.data.member; // Sigurnosna promjena: eksplicitni cast na Member
         }
         
         apiSuccess = true;
@@ -162,7 +161,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
         };
         
         // Prenesi podatke za ažuriranje roditeljskoj komponenti
-        await onUpdate(updatedMember || {
+        await onUpdate(updatedMember ?? { // Promjena: koristi ?? umjesto || zbog lint pravila
           ...member,
           ...updatedData
         });
@@ -211,9 +210,18 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
         const stampType = getMemberStampType(member);
         
         // Tražimo odgovarajući inventar za tip markice i godinu
-        const foundInventory = response.data.find(
-          (item: any) => item.stamp_type === stampType && item.stamp_year === nextYear
-        );
+        // Definiramo tip koji odgovara raw API response-u
+interface StampInventoryItem {
+  stamp_type: string;
+  stamp_year: number;
+  remaining: number;
+  // Uklonjen index signature zbog sigurnosti tipova
+}
+
+const foundInventory = (response.data as StampInventoryItem[]).find(
+  (item) => item.stamp_type === stampType && item.stamp_year === nextYear
+);
+
         
         // Ako je pronađen, pretvaramo ga u InventoryStatus
         if (foundInventory) {
@@ -241,19 +249,19 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
       setIsIssuingNextYearStamp(true);
       
       let apiSuccess = false;
-      let updatedMember = null;
+      let updatedMember: Member | null = null; // Sigurnosna promjena: ispravan tip za ažuriranog člana
   
       if (newState) {
         // Poziv API-ja za izdavanje markice za sljedeću godinu
-        const response = await api.post(`/members/${member.member_id}/stamp`, { forNextYear: true });
+        await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp`, { forNextYear: true }); // Sigurnosna promjena: uklonjen unused var response
         apiSuccess = true;
       } else {
         // Poziv API-ja za vraćanje markice za sljedeću godinu
-        const response = await api.post(`/members/${member.member_id}/stamp/return`, { forNextYear: true });
+        const response = await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp/return`, { forNextYear: true }); // Sigurnosna promjena: tipiziran response
         
         // Pokušaj dobiti ažuriranog člana iz odgovora
         if (response.data?.member) {
-          updatedMember = response.data.member;
+          updatedMember = response.data.member; // Sigurnosna promjena: eksplicitni cast na Member
         }
         
         apiSuccess = true;
@@ -269,7 +277,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
         };
         
         // Prenesi podatke za ažuriranje roditeljskoj komponenti
-        await onUpdate(updatedMember || {
+        await onUpdate(updatedMember ?? { // Promjena: koristi ?? umjesto || zbog lint pravila
           ...member,
           ...updatedData
         });

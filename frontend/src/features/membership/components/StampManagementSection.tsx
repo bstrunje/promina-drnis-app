@@ -16,7 +16,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   onStampToggle,
   onNextYearStampToggle,
   userRole,
-  isFeeCurrent = true,
+
 }) => {
   const canEdit = userRole === 'admin' || userRole === 'superuser';
   
@@ -85,15 +85,14 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
         </div>
         
         {/* Provjera je li članarina plaćena za tekuću godinu */}
-        {(member?.membership_details?.fee_payment_year === getCurrentYear() || 
-          member?.membership_details?.card_stamp_issued === true) ? (
+        {((member?.membership_details?.fee_payment_year === getCurrentYear()) || (member?.membership_details?.card_stamp_issued ?? false)) ? (
           canEdit && (
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
                 id="stamp-toggle"
                 checked={stampIssued}
-                onChange={(e) => onStampToggle(e.target.checked)}
+                onChange={(e) => { void onStampToggle(e.target.checked); }} // Sigurnosna promjena: void za no-floating-promises
                 disabled={isIssuingStamp || (!stampIssued && inventoryStatus?.remaining === 0)}
                 className="w-4 h-4"
               />
@@ -111,9 +110,9 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
       </div>
       
       {/* Sekcija za markice sljedeće godine - omogućeno za obnove članstva pri kraju godine ili ako je članarina za sljedeću godinu već plaćena */}
-      {(getCurrentDate().getMonth() >= 10 || 
-        member?.membership_details?.fee_payment_year === getCurrentYear() + 1 ||
-        member?.membership_details?.next_year_stamp_issued === true) && (
+      {((getCurrentDate().getMonth() >= 10) || 
+        (member?.membership_details?.fee_payment_year === getCurrentYear() + 1) || 
+        ((member?.membership_details?.next_year_stamp_issued) ?? false)) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
           <div className="flex justify-between mb-2">
             <h5 className="font-medium text-sm">{getCurrentYear() + 1} <span className="hidden sm:inline">(Sljedeća godina)</span></h5>
@@ -137,15 +136,15 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
           </div>
           
           {/* Provjera je li članarina plaćena za sljedeću godinu */}
-          {(member?.membership_details?.fee_payment_year === getCurrentYear() + 1 || 
-            member?.membership_details?.next_year_stamp_issued === true) ? (
+          {((member?.membership_details?.fee_payment_year === getCurrentYear() + 1) ||
+            (member?.membership_details?.next_year_stamp_issued ?? false)) ? (
             canEdit && (
               <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
                   id="next-year-stamp-toggle"
                   checked={nextYearStampIssued}
-                  onChange={(e) => onNextYearStampToggle(e.target.checked)}
+                  onChange={(e) => { void onNextYearStampToggle(e.target.checked); }} // Sigurnosna promjena: void za no-floating-promises
                   disabled={isIssuingNextYearStamp || (!nextYearStampIssued && nextYearInventoryStatus?.remaining === 0)}
                   className="w-4 h-4"
                 />

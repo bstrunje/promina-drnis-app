@@ -12,6 +12,8 @@ src/features/membership/
 │   ├── MembershipPeriodsSection.tsx  # Komponenta za prikaz i upravljanje periodima članstva
 │   ├── PeriodFormRow.tsx             # Pomoćna komponenta za redak u formi perioda
 │   └── MembershipCardManagerModular.tsx  # Modularna verzija glavne komponente
+├── MembershipCardManagerAdapter.tsx  # Adapter za kompatibilnost sa starim sučeljem
+
 ├── hooks/                  # Prilagođeni hook-ovi za odvajanje logike
 │   ├── useCardManagement.ts          # Hook za upravljanje karticama 
 │   ├── useStampManagement.ts         # Hook za upravljanje markicama
@@ -20,6 +22,9 @@ src/features/membership/
 │   └── membershipTypes.ts            # Zajednički tipovi za komponente
 ├── MembershipCardManagerAdapter.tsx  # Adapter za glavnu komponentu kartice
 ├── MembershipHistoryAdapter.tsx      # Adapter za komponentu povijesti članstva
+
+# NAPOMENA: Stari MembershipCardManager.tsx je uklonjen. Svi novi i postojeći pozivi trebaju koristiti Adapter ili direktno modularnu komponentu.
+# Adapter omogućuje kompatibilnost sa starim props sučeljem, a modularna komponenta je preporučena ulazna točka za nove integracije.
 ├── test/                   # Testne komponente
 │   └── MembershipModuleTest.tsx      # Testna komponenta za usporedbu implementacija
 └── index.tsx               # Glavni ulazni modul koji izlaže sve komponente

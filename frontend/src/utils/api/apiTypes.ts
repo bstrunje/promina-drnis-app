@@ -159,7 +159,7 @@ export interface ApiCleanupTestDataResult {
 export interface ApiCardNumbersResult {
   cards: {
     card_number: string; 
-    status: 'available' | 'assigned' | 'retired';
+    status: 'available' | 'assigned';
     member_id?: number;
     member_name?: string;
   }[];

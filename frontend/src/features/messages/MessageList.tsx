@@ -80,13 +80,13 @@ export default function MessageList() {
 
         <TabsContent value="received">
           <ReceivedMessages 
-            userRole={user?.role || 'member'} 
+            userRole={user?.role ?? 'member'} 
             onUnreadCountChange={handleUnreadCountChange} 
           />
         </TabsContent>
 
         <TabsContent value="sent">
-          <SentMessages userRole={user?.role || 'member'} />
+          <SentMessages userRole={user?.role ?? 'member'} />
         </TabsContent>
         
         <TabsContent value="compose">

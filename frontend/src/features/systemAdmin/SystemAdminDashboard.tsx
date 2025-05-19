@@ -45,7 +45,7 @@ const SystemAdminDashboard: React.FC = () => {
       }
     };
 
-    fetchMembersWithPermissions();
+    void fetchMembersWithPermissions();
   }, []);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ const SystemAdminDashboard: React.FC = () => {
     };
 
     if (activeTab === 'dashboard') {
-      fetchDashboardStats();
+      void fetchDashboardStats();
     }
   }, [activeTab]);
 
@@ -89,55 +89,6 @@ const SystemAdminDashboard: React.FC = () => {
     }
   };
 
-  // Funkcija za kategorizaciju ovlasti
-  const categorizePermissions = (member: MemberWithPermissions) => {
-    const categories = [
-      {
-        name: 'Članstvo',
-        permissions: [
-          { key: 'can_view_members', label: 'Pregled članova', value: member.can_view_members },
-          { key: 'can_edit_members', label: 'Uređivanje članova', value: member.can_edit_members },
-          { key: 'can_add_members', label: 'Dodavanje članova', value: member.can_add_members },
-          { key: 'can_manage_membership', label: 'Upravljanje članstvom', value: member.can_manage_membership },
-        ]
-      },
-      {
-        name: 'Aktivnosti',
-        permissions: [
-          { key: 'can_view_activities', label: 'Pregled aktivnosti', value: member.can_view_activities },
-          { key: 'can_create_activities', label: 'Kreiranje aktivnosti', value: member.can_create_activities },
-          { key: 'can_approve_activities', label: 'Odobravanje aktivnosti', value: member.can_approve_activities },
-        ]
-      },
-      {
-        name: 'Financije',
-        permissions: [
-          { key: 'can_view_financials', label: 'Pregled financija', value: member.can_view_financials },
-          { key: 'can_manage_financials', label: 'Upravljanje financijama', value: member.can_manage_financials },
-        ]
-      },
-      {
-        name: 'Poruke',
-        permissions: [
-          { key: 'can_send_group_messages', label: 'Slanje grupnih poruka', value: member.can_send_group_messages },
-          { key: 'can_manage_all_messages', label: 'Upravljanje svim porukama', value: member.can_manage_all_messages },
-        ]
-      },
-      {
-        name: 'Ostalo',
-        permissions: [
-          { key: 'can_view_statistics', label: 'Pregled statistika', value: member.can_view_statistics },
-          { key: 'can_export_data', label: 'Izvoz podataka', value: member.can_export_data },
-          { key: 'can_manage_end_reasons', label: 'Upravljanje razlozima prestanka', value: member.can_manage_end_reasons },
-          { key: 'can_manage_card_numbers', label: 'Upravljanje brojevima iskaznica', value: member.can_manage_card_numbers },
-          { key: 'can_assign_passwords', label: 'Dodjela lozinki', value: member.can_assign_passwords },
-        ]
-      }
-    ];
-
-    return categories;
-  };
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -152,7 +103,7 @@ const SystemAdminDashboard: React.FC = () => {
               Prijavljeni kao: <span className="font-medium">{admin?.display_name}</span>
             </div>
             <button
-              onClick={logout}
+              onClick={() => { void logout(); }}
               className="flex items-center text-red-600 hover:text-red-800"
             >
               <LogOut className="h-4 w-4 mr-1" />
@@ -172,7 +123,7 @@ const SystemAdminDashboard: React.FC = () => {
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => { void setActiveTab('dashboard'); }}
           >
             <div className="flex items-center">
               <Activity className="h-4 w-4 mr-2" />
@@ -185,7 +136,7 @@ const SystemAdminDashboard: React.FC = () => {
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
-            onClick={() => setActiveTab('members')}
+            onClick={() => { void setActiveTab('members'); }}
           >
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-2" />
@@ -198,7 +149,7 @@ const SystemAdminDashboard: React.FC = () => {
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
-            onClick={() => setActiveTab('settings')}
+            onClick={() => { void setActiveTab('settings'); }}
           >
             <div className="flex items-center">
               <Settings className="h-4 w-4 mr-2" />
@@ -214,7 +165,7 @@ const SystemAdminDashboard: React.FC = () => {
               <h2 className="text-xl font-semibold">Pregled sustava</h2>
               
               <button 
-                onClick={refreshDashboardStats} 
+                onClick={() => { void refreshDashboardStats(); }} 
                 disabled={statsLoading}
                 className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
@@ -417,7 +368,7 @@ const SystemAdminDashboard: React.FC = () => {
                                   {member.member.full_name}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  {member.member.email || 'Nema email adrese'}
+                                  {member.member.email ?? 'Nema email adrese'}
                                 </div>
                               </div>
                             </div>

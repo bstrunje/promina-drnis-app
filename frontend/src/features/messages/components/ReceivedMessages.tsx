@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   getAdminMessages, 
   markMessageAsRead, 
@@ -30,35 +30,34 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'unread' | 'read' | 'archived'>('unread');
 
-  // Dohvaćanje poruka koje su članovi poslali adminu
-  const fetchMessages = async () => {
-    // Ako je običan član, preskačemo API poziv za admin poruke
-    if (userRole === 'member') {
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      const apiData = await getAdminMessages();
-      const convertedData = convertApiMessagesToMessages(apiData);
-      setMessages(convertedData);
-      setLoading(false);
-      const unreadCount = convertedData.filter(m => m.status === 'unread').length;
-      onUnreadCountChange(unreadCount);
-    } catch (error) {
-      toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poruke',
-        variant: "destructive"
-      });
-      setLoading(false);
-    }
-  };
-
   // Učitaj poruke pri prvom renderiranju
-  useEffect(() => {
-    fetchMessages();
-  }, [userRole]);
+  // Zamotaj fetchMessages u useCallback
+const fetchMessages = useCallback(async () => {
+  // Ako je običan član, preskačemo API poziv za admin poruke
+  if (userRole === 'member') {
+    setLoading(false);
+    return;
+  }
+  try {
+    const apiData = await getAdminMessages();
+    const convertedData = convertApiMessagesToMessages(apiData);
+    setMessages(convertedData);
+    setLoading(false);
+    const unreadCount = convertedData.filter(m => m.status === 'unread').length;
+    onUnreadCountChange(unreadCount);
+  } catch (error) {
+    toast({
+      title: "Greška",
+      description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poruke',
+      variant: "destructive"
+    });
+    setLoading(false);
+  }
+}, [userRole, toast, onUnreadCountChange]);
+
+useEffect(() => {
+    void fetchMessages();
+  }, [userRole, fetchMessages]);
 
   // Funkcija za označavanje poruke kao pročitane
   const onMarkAsRead = async (messageId: number) => {
@@ -231,7 +230,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
             <div className="flex justify-end mb-4">
               <Button
                 variant="destructive"
-                onClick={onDeleteAll}
+                onClick={() => { void onDeleteAll(); }}
                 className="flex items-center space-x-2"
               >
                 <Trash2 className="h-4 w-4" />
@@ -250,7 +249,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => onMarkAsRead(message.message_id)}
+                          onClick={() => { void onMarkAsRead(message.message_id); }}
                           className="flex items-center"
                         >
                           <CheckCircle className="h-4 w-4 mr-1" />
@@ -262,7 +261,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => onArchive(message.message_id)}
+                          onClick={() => { void onArchive(message.message_id); }}
                           className="flex items-center"
                         >
                           <Archive className="h-4 w-4 mr-1" />
@@ -273,7 +272,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
                       <Button 
                         variant="destructive" 
                         size="sm" 
-                        onClick={() => onDelete(message.message_id)}
+                        onClick={() => { void onDelete(message.message_id); }}
                         className="flex items-center"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -306,7 +305,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       <div className="mt-4">
         <Button
           variant="outline"
-          onClick={fetchMessages}
+          onClick={() => { void fetchMessages(); }}
           className="w-full"
         >
           Osvježi poruke

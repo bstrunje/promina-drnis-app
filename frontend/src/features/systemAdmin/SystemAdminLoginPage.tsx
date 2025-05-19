@@ -5,7 +5,7 @@ import { useSystemAdmin } from '../../context/SystemAdminContext';
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 
 const SystemAdminLoginPage: React.FC = () => {
-  const { login, loading } = useSystemAdmin();
+  const { login } = useSystemAdmin(); // 'loading' nije korišten
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,7 +58,8 @@ const SystemAdminLoginPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={e => { void handleSubmit(e); }}>
+
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
               Korisničko ime

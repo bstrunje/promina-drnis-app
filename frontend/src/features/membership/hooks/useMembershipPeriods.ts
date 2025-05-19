@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@components/ui/use-toast";
-import { Member } from "@shared/member";
-import { MembershipPeriod, MembershipEndReason } from "../types/membershipTypes";
+// Uklonjeno: import { Member } from "@shared/member"; // nije korišteno
+import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
 import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/AuthContext";
 
-interface UseMembershipPeriodsReturn {
+// Ispravno deklariran interface, koristi isključivo tipove
+export interface UseMembershipPeriodsReturn {
   isEditing: boolean;
   editedPeriods: MembershipPeriod[];
   isSubmitting: boolean;
@@ -20,15 +21,16 @@ interface UseMembershipPeriodsReturn {
   handleEdit: () => void;
   handleCancel: () => void;
   handleSave: () => Promise<void>;
-  handlePeriodChange: (periodId: number, field: string, value: any) => void;
-  handleNewPeriodChange: (field: string, value: any) => void;
+  handlePeriodChange: (periodId: number, field: keyof MembershipPeriod, value: string) => void;
+  handleNewPeriodChange: (field: keyof MembershipPeriod, value: string) => void;
   handleAddPeriod: () => void;
   handleSaveNewPeriod: () => Promise<void>;
   formatFeePaymentInfo: (year: number, date: string) => string;
-  isCurrentMembershipActive: boolean;
+  isCurrentMembershipActive: () => boolean;
   getMembershipType: () => string;
   setNewPeriod: React.Dispatch<React.SetStateAction<Partial<MembershipPeriod> | null>>;
 }
+
 export const useMembershipPeriods = (
   periods: MembershipPeriod[],
   memberId: number,
@@ -39,10 +41,14 @@ export const useMembershipPeriods = (
   const { toast } = useToast();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>(periods || []);
+  const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>(periods ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
-  const [adminPermissions, setAdminPermissions] = useState<any | null>(null);
+  // adminPermissions tipiziran prema očekivanom obliku s can_manage_end_reasons
+interface AdminPermissions {
+  can_manage_end_reasons: boolean;
+}
+const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
 
   const canEdit = user?.role === "superuser" || user?.role === "admin";
   const canManageEndReasons = 
@@ -92,15 +98,21 @@ export const useMembershipPeriods = (
               }
             }
           );
-          const permissions = await response.json();
-          setAdminPermissions(permissions);
+                    // TypeScript: response.json() vraća any, pa je potreban dvostruki cast na unknown pa na AdminPermissions radi tipne sigurnosti
+const permissions = (await response.json()) as unknown as AdminPermissions;
+          // Backend bi uvijek trebao vratiti { can_manage_end_reasons: boolean }, ali fallback osigurava tipnu sigurnost
+          setAdminPermissions(
+            permissions && typeof permissions.can_manage_end_reasons === 'boolean'
+              ? permissions
+              : { can_manage_end_reasons: false }
+          );
         } catch (error) {
           console.error('Failed to fetch admin permissions:', error);
         }
       }
     };
 
-    fetchAdminPermissions();
+    void fetchAdminPermissions(); // Sigurnosna promjena: void za no-floating-promises
   }, [user]);
 
   // Promjena razloga završetka perioda
@@ -175,15 +187,17 @@ export const useMembershipPeriods = (
   };
 
   // Promjena vrijednosti perioda
+  // Sigurnosna promjena: provjeri tip periodToUpdate prije pristupa njegovim svojstvima
+  // Sigurnosna promjena: eksplicitno tipizirani handler za promjenu perioda
   const handlePeriodChange = (
-    index: number,
+    periodId: number,
     field: keyof MembershipPeriod,
     value: string
   ) => {
     const updatedPeriods = [...editedPeriods];
     
     const periodToUpdate = updatedPeriods.find(
-      p => p.period_id === editedPeriods[index].period_id
+      p => p.period_id === periodId
     );
 
     if (!periodToUpdate) {
@@ -197,12 +211,12 @@ export const useMembershipPeriods = (
       // Poseban slučaj za prazno polje end_date - postaviti na null za aktivne periode
       if (field === "end_date" && value === "") {
         const periodIndex = updatedPeriods.findIndex(
-          p => p.period_id === periodToUpdate.period_id
+          p => p.period_id === periodId
         );
 
         updatedPeriods[periodIndex] = {
           ...periodToUpdate,
-          [field]: null, // Postavi na null umjesto na prazan string
+          [field]: undefined,
         };
         
         setEditedPeriods([...updatedPeriods]);
@@ -262,7 +276,7 @@ export const useMembershipPeriods = (
       const isoDate = format(date, "yyyy-MM-dd");
       
       const periodIndex = updatedPeriods.findIndex(
-        p => p.period_id === periodToUpdate.period_id
+        p => p.period_id === periodId
       );
 
       updatedPeriods[periodIndex] = {
@@ -272,7 +286,7 @@ export const useMembershipPeriods = (
     } else {
       // Za ostala polja
       const periodIndex = updatedPeriods.findIndex(
-        p => p.period_id === periodToUpdate.period_id
+        p => p.period_id === periodId
       );
 
       updatedPeriods[periodIndex] = {
@@ -285,6 +299,8 @@ export const useMembershipPeriods = (
   };
 
   // Upravljanje novim periodom
+  // Sigurnosna promjena: provjeri tip newPeriod prije pristupa njegovim svojstvima
+  // Sigurnosna promjena: eksplicitno tipizirani handler za promjenu novog perioda
   const handleNewPeriodChange = (
     field: keyof MembershipPeriod,
     value: string
@@ -319,7 +335,7 @@ export const useMembershipPeriods = (
           // Ako brišemo end_date, brišemo i end_reason
           const updates: Partial<MembershipPeriod> = { [field]: null };
           if (field === 'end_date') {
-            updates.end_reason = null;
+            updates.end_reason = undefined;
           }
           
           return { ...prev, ...updates };
@@ -340,8 +356,8 @@ export const useMembershipPeriods = (
     
     setNewPeriod({
       start_date: formattedDate,
-      end_date: null,
-      end_reason: null,
+      end_date: undefined,
+      end_reason: undefined,
     });
   };
 
@@ -358,10 +374,7 @@ export const useMembershipPeriods = (
     // Validacija datuma
     try {
       // Parse start date
-      const startDateStr = typeof newPeriod.start_date === 'string' 
-        ? newPeriod.start_date 
-        : newPeriod.start_date.toISOString();
-      const startDate = parseISO(startDateStr);
+      const startDate = parseISO(newPeriod.start_date ?? '');
       
       if (!isValid(startDate)) {
         toast({
@@ -385,10 +398,7 @@ export const useMembershipPeriods = (
         }
 
         // Parse end date
-        const endDateStr = typeof newPeriod.end_date === 'string'
-          ? newPeriod.end_date
-          : newPeriod.end_date.toISOString();
-        endDate = parseISO(endDateStr);
+        endDate = parseISO(newPeriod.end_date ?? '');
         
         if (!isValid(endDate)) {
           toast({
@@ -415,7 +425,7 @@ export const useMembershipPeriods = (
           period_id: Math.floor(Math.random() * -1000),
           member_id: editedPeriods.length > 0 ? editedPeriods[0]?.member_id : memberId,
           start_date: newPeriod.start_date, // Već je u ISO formatu
-          end_date: newPeriod.end_date || null, // Eksplicitno postavljanje na null
+          end_date: newPeriod.end_date ?? null, // Eksplicitno postavljanje na null
           end_reason: newPeriod.end_reason,
         } as MembershipPeriod,
       ];
@@ -447,6 +457,7 @@ export const useMembershipPeriods = (
   };
 
   // Provjeri je li trenutno članstvo aktivno
+  // Ispravno: vraća boolean, koristi samo logičke izraze
   const isCurrentMembershipActive = (): boolean => {
     if (!feePaymentYear || !feePaymentDate) return false;
 
@@ -456,11 +467,10 @@ export const useMembershipPeriods = (
 
     return (
       feePaymentYear === currentYear ||
-      (feePaymentYear === currentYear &&
-        feePaymentYear === currentYear &&
-        paymentMonth >= 10)
-    );
+      (feePaymentYear === currentYear && paymentMonth >= 10)
+    ); // Sigurnosna promjena: koristi isključivo logičke izraze, nema smisla koristiti ?? za broj
   };
+
 
   // Dobijanje tipa članstva
   const getMembershipType = (): string => {

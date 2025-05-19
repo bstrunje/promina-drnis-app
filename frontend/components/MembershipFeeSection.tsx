@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../src/context/AuthContext';
-import MembershipCardManager from './MembershipCardManager';
+// Zamijenjeno: koristi novi adapter iz modularnog membership feature-a
+import MembershipCardManagerAdapter from '../src/features/membership/MembershipCardManagerAdapter';
+// Ako koristiš MembershipCardManager u JSX-u, zamijeni ga s MembershipCardManagerAdapter
 import { updateMembership } from '../src/utils/api';
 import { 
   getCurrentYear, 
@@ -263,10 +265,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         }
       }
 
-      const response = await updateMembership(member.member_id, {
-  paymentDate: parsedDate.toISOString(),
-  isRenewalPayment
-}) as { member: Member };
+      // Pozivamo API za ažuriranje članarine bez pohranjivanja odgovora
+      await updateMembership(member.member_id, {
+        paymentDate: parsedDate.toISOString(),
+        isRenewalPayment
+      });
 
 
       toast({
@@ -279,18 +282,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setShowPaymentConfirm(false);
       setPaymentError(null);
 
-      if (onUpdate && response?.member) {
-        // Kombiniramo podatke iz odgovora sa servera s dodatnim lokalnim podacima
+      // ApiMembershipUpdateResult nema member property, pa ručno ažuriramo lokalnog člana
+      if (onUpdate) {
         const updatedMember: Member = {
-          ...response.member,
+          ...member,
           membership_details: {
-            ...(response.member?.membership_details ?? {}),
+            ...(member?.membership_details ?? {}),
             fee_payment_date: parsedDate.toISOString(),
             fee_payment_year: isRenewalPayment ? currentYear + 1 : currentYear
           }
         };
-        
-        // Samo jedan poziv s kompletnim podacima
         onUpdate(updatedMember);
       }
 
@@ -495,7 +496,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {isEditing && cardManagerProps && (
               <div className="border-t pt-4">
                 <h3 className="text-lg font-medium mb-3">Membership Card Management</h3>
-                <MembershipCardManager {...cardManagerProps} />
+                <MembershipCardManagerAdapter {...cardManagerProps} />
               </div>
             )}
             

@@ -4,12 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
 import { membershipTypeLabels } from "@shared/helpers/membershipDisplay";
 import { MembershipPeriod, MembershipHistory } from "@shared/membership";
-import { Member, MembershipTypeEnum } from "@shared/member";
+import { Member } from "@shared/member";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import api from '../../utils/api/apiConfig'; 
-import { IMAGE_BASE_URL } from "../../utils/config";
+
 import { formatDate } from "../../utils/dateUtils";
 import { getCurrentDate } from '../../utils/dateUtils';
 
@@ -19,61 +19,60 @@ declare module "@shared/member" {
   }
 }
 
+// Type guard za Member tip
+function isMember(obj: unknown): obj is Member {
+  if (!obj || typeof obj !== 'object') return false;
+  const m = obj as Partial<Member>;
+  return typeof m.member_id === 'number' && typeof m.first_name === 'string' && typeof m.last_name === 'string';
+}
+
 const MemberProfile = () => {
   const { user } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
   const memberId = user?.member_id;
 
-  // Placeholder SVG as data URI - a simple user icon
-  const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXVzZXIiPjxwYXRoIGQ9Ik0xOSAyMXYtMmE0IDQgMCAwIDAtNC00SDlhNCA0IDAgMCAwLTQgNHYyIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+';
 
-  const getImageUrl = (path: string | null | undefined): string => {
-    if (!path) return PLACEHOLDER_IMAGE;
-    
-    if (path.startsWith('http')) return path;
-    
-    // Use the IMAGE_BASE_URL constant from config
-    return `${IMAGE_BASE_URL}/${path}`;
-  };
 
-useEffect(() => {
-  if (memberId) {
-    const fetchMemberDetails = async () => {
-      try {
-        // Dodaj vremenski žig za izbjegavanje keširanja
-        const timestamp = getCurrentDate().getTime();
-        const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+  useEffect(() => {
+    if (memberId) {
+      const fetchMemberDetails = async () => {
+        try {
+          // Dodaj vremenski žig za izbjegavanje keširanja
+          const timestamp = getCurrentDate().getTime();
+          const response = await api.get(`/members/${memberId}?t=${timestamp}`, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
+          
+          // Sigurna validacija podatka iz API responsa
+          const data: unknown = response.data;
+          if (isMember(data)) {
+            // Osiguraj da je full_name dostupan i uključuje nadimak
+            data.full_name ??= `${data.first_name} ${data.last_name}${data.nickname ? ` - ${data.nickname}` : ''}`;
+            setMember(data);
+          } else {
+             
+            console.error('Neispravan format podataka za člana', data);
           }
-        });
-        
-        // Osiguraj da je full_name dostupan i uključuje nadimak
-        const memberData = response.data;
-        if (!memberData.full_name && memberData.first_name && memberData.last_name) {
-          memberData.full_name = `${memberData.first_name} ${memberData.last_name}${
-            memberData.nickname ? ` - ${memberData.nickname}` : ''}`;
+        } catch (error) {
+          console.error('Failed to fetch member details:', error);
         }
-        
-        setMember(memberData);
-      } catch (error) {
-        console.error('Failed to fetch member details:', error);
-      }
-    };
-    
-    fetchMemberDetails();
-  }
-}, [memberId]);
+      };
+      
+      void fetchMemberDetails(); // Riješeno no-floating-promises
+    }
+  }, [memberId]);
 
-if (!user) {
-  return <div className="p-6">Loading...</div>;
-}
-// Ako nismo još dohvatili detalje člana, prikazujemo loading
-if (!member && memberId) {
-  return <div className="p-6">Loading member details...</div>;
-}
+  if (!user) {
+    return <div className="p-6">Loading...</div>;
+  }
+  // Ako nismo još dohvatili detalje člana, prikazujemo loading
+  if (!member && memberId) {
+    return <div className="p-6">Loading member details...</div>;
+  }
 
   const getActivityStatus = () => {
     const hours = user.total_hours ?? 0;
@@ -137,27 +136,24 @@ if (!member && memberId) {
               <div>
                 <label className="text-sm text-gray-500">Card Number</label>
                 {/* Sakrij broj kartice od običnih članova zbog sigurnosti */}
-                {user.membership_details?.card_number ? (
-                  user.role === "admin" || user.role === "superuser" ? (
-                    <p
-                      className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
-                        user.life_status
-                      )}`}
-                    >
-                      {user.membership_details.card_number}
-                    </p>
-                  ) : (
-                    <p className="text-gray-500">
-                      <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
-                        *** Skriveno ***
-                      </span>
-                      <span className="text-xs ml-2 text-gray-400">
-                        (Vidljivo samo administratorima)
-                      </span>
-                    </p>
-                  )
+                {user.membership_details?.card_number ?? "N/A"}
+                {user.role === "admin" || user.role === "superuser" ? (
+                  <p
+                    className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
+                      user.life_status
+                    )}`}
+                  >
+                    {user.membership_details?.card_number}
+                  </p>
                 ) : (
-                  <p className="text-gray-400">Not assigned</p>
+                  <p className="text-gray-500">
+                    <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
+                      *** Skriveno ***
+                    </span>
+                    <span className="text-xs ml-2 text-gray-400">
+                      (Vidljivo samo administratorima)
+                    </span>
+                  </p>
                 )}
               </div>
               <div>
@@ -206,7 +202,7 @@ if (!member && memberId) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Total Hours</label>
-                <p className="text-2xl font-bold">{activityStatus.hours}</p>
+                <p className="text-2xl font-bold">{activityStatus.hours ?? 0}</p>
               </div>
               {activityStatus.status === "passive" && (
                 <div className="text-yellow-600">
@@ -264,7 +260,7 @@ if (!member && memberId) {
               <div className="mt-4 pt-4 border-t">
                 <span className="text-sm font-medium">Total Duration: </span>
                 <span className="text-sm">
-                  {user.membership_history?.total_duration || "N/A"}
+                  {user.membership_history?.total_duration ?? "N/A"}
                 </span>
               </div>
             </div>
@@ -305,13 +301,13 @@ if (!member && memberId) {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">T-Shirt Size</label>
-                <p>{member?.tshirt_size || "Not set"}</p>
+                <p>{member?.tshirt_size ?? "Not set"}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">
                   Shell Jacket Size
                 </label>
-                <p>{member?.shell_jacket_size || "Not set"}</p>
+                <p>{member?.shell_jacket_size ?? "Not set"}</p>
               </div>
             </div>
           </CardContent>

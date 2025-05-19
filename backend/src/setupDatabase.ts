@@ -374,7 +374,7 @@ export async function setupDatabase(): Promise<void> {
         assigned_at TIMESTAMP WITH TIME ZONE,
         member_id INTEGER,
         CONSTRAINT card_number_unique UNIQUE (card_number),
-        CONSTRAINT status_check CHECK (status IN ('available', 'assigned', 'retired')),
+        CONSTRAINT status_check CHECK (status IN ('available', 'assigned')),
         CONSTRAINT member_fk FOREIGN KEY (member_id) REFERENCES members(member_id) ON DELETE SET NULL
       );
 

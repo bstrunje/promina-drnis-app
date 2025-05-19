@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { setMockDate, resetMockDate, getCurrentDate, formatDate, formatInputDate, isInTestMode, parseDate } from '../../utils/dateUtils';
-import { format, isValid, parseISO } from 'date-fns';
-import { Minimize2, Maximize2, Move, Database, RotateCcw, Trash2 } from 'lucide-react';
+import { isValid, parseISO } from 'date-fns';
+import { Minimize2, Maximize2, Database, RotateCcw, Trash2 } from 'lucide-react';
 // Zamijenjeno prema novoj modularnoj API strukturi
 import api from '../../utils/api/apiConfig';
 import { cleanupTestData } from '../../utils/api/apiMisc';
@@ -20,9 +20,19 @@ const DateMockTool = () => {
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Tipizacija backup objekta
+  interface DateBackup {
+    filename: string;
+    timestamp: string;
+    created: string;
+    size: number;
+    backupCreated?: boolean;
+    message?: string;
+  }
+  
   // Stanje za backup/restore funkcionalnost
   const [showBackups, setShowBackups] = useState<boolean>(false);
-  const [backups, setBackups] = useState<any[]>([]);
+  const [backups, setBackups] = useState<DateBackup[]>([]);
   const [loadingBackups, setLoadingBackups] = useState<boolean>(false);
 
   // Efekt koji ažurira prikaz trenutnog aplikacijskog datuma
@@ -84,7 +94,7 @@ const DateMockTool = () => {
     setIsMockActive(true);
     
     // Pozovi backend endpoint za rekalkulaciju statusa članstva
-    refreshMembershipStatus();
+    void refreshMembershipStatus();
     
     alert(`Simulirani datum je postavljen na: ${formatDate(date)}`);
   };
@@ -100,7 +110,7 @@ const DateMockTool = () => {
     setIsMockActive(false);
     
     // Pozovi backend endpoint za rekalkulaciju statusa članstva
-    refreshMembershipStatus();
+    void refreshMembershipStatus();
     
     alert('Simulacija datuma je isključena. Koristi se stvarni sustavni datum.');
   };
@@ -110,15 +120,22 @@ const DateMockTool = () => {
   };
 
   // Funkcija za dohvaćanje dostupnih backupa
+  // Tipizacija API odgovora
+  interface BackupsResponse {
+    backups: DateBackup[];
+  }
+
   const fetchBackups = async () => {
     setLoadingBackups(true);
     try {
-      const response = await api.get('debug/list-backups');
-      setBackups(response.data.backups || []);
+      const response = await api.get<BackupsResponse>('debug/list-backups');
+      // Sada TypeScript zna da response.data.backups je DateBackup[]
+      setBackups(response.data.backups ?? []);
       setShowBackups(true);
     } catch (error) {
       console.error('Greška prilikom dohvaćanja backupa:', error);
-      alert('Greška prilikom dohvaćanja backupa. Provjerite konzolu za više detalja.');
+      const errorMsg = error instanceof Error ? error.message : 'Greška pri dohvaćanju backupa';
+      alert(errorMsg);
     } finally {
       setLoadingBackups(false);
     }
@@ -128,8 +145,11 @@ const DateMockTool = () => {
   const restoreFromBackup = async (filename: string) => {
     if (window.confirm(`Jeste li sigurni da želite vratiti podatke iz backupa: ${filename}?`)) {
       try {
-        const response = await api.post(`debug/restore-from-backup/${filename}`);
-        alert(`Uspješno! Podaci su vraćeni iz backupa. ${response.data.message}`);
+        interface RestoreResponse {
+          message: string;
+        }
+        const response = await api.post<RestoreResponse>(`debug/restore-from-backup/${filename}`);
+        alert(`Uspješno! Podaci su vraćeni iz backupa. ${response.data.message ?? ''}`);
         // Refresh nakon vraćanja backupa
         window.location.reload();
       } catch (error) {
@@ -154,8 +174,14 @@ const DateMockTool = () => {
           resetButton.disabled = true;
         }
         
+        // Tipizacija za odgovor resetiranja baze
+        interface ResetDatabaseResponse {
+          backupCreated: boolean;
+          message: string;
+        }
+        
         // Pozovi backend endpoint za reset baze
-        const response = await api.post('debug/reset-test-database');
+        const response = await api.post<ResetDatabaseResponse>('debug/reset-test-database');
         
         // Također resetiraj i mock datum
         resetMockDate();
@@ -171,11 +197,11 @@ const DateMockTool = () => {
               `Baza podataka je vraćena na početno stanje.\n` +
               `Koristi se stvarni sistemski datum.\n\n` +
               `${response.data.backupCreated ? '✓ Backup je uspješno kreiran.' : '❌ Backup nije kreiran.'}\n` +
-              `${response.data.message}`);
+              `${response.data.message ?? ''}`);
 
         // Osvježi listu backupa ako je otvorena
         if (showBackups) {
-          fetchBackups();
+          void fetchBackups();
         }
       } catch (error) {
         console.error('Greška prilikom resetiranja testne baze:', error);
@@ -250,7 +276,7 @@ const DateMockTool = () => {
               `Uklonjeno je ${result.details.deletedRecords} zapisa.\n` +
               `Ažurirano je ${result.details.affectedMembers} članova.\n\n` +
               `${result.message}`);
-        
+
       } catch (error) {
         console.error('Greška prilikom čišćenja testnih podataka:', error);
         alert('❌ Greška prilikom čišćenja testnih podataka. Provjerite konzolu za više detalja.');
@@ -343,7 +369,7 @@ const DateMockTool = () => {
           <div className="border-t border-gray-200 pt-3">
             <button 
               id="reset-db-button"
-              onClick={handleFullReset}
+              onClick={() => { void handleFullReset(); }}
               className="w-full bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm mb-2"
             >
               <div className="flex items-center justify-center">
@@ -354,7 +380,7 @@ const DateMockTool = () => {
             
             <button 
               id="cleanup-test-data-button"
-              onClick={handleCleanupTestData}
+              onClick={() => { void handleCleanupTestData(); }}
               className={`w-full ${isInTestMode() ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-400'} text-white py-1 px-3 rounded text-sm`}
               disabled={!isInTestMode()}
               title={isInTestMode() ? 'Očisti testne podatke iz baze' : 'Opcija je dostupna samo tijekom testiranja s mock datumom'}
@@ -372,7 +398,7 @@ const DateMockTool = () => {
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Upravljanje backupovima:</h4>
                 <button
-                  onClick={fetchBackups}
+                  onClick={() => { void fetchBackups(); }}
                   className="bg-purple-500 hover:bg-purple-600 text-white py-1 px-2 rounded text-xs flex items-center gap-1"
                   disabled={loadingBackups}
                 >
@@ -400,7 +426,7 @@ const DateMockTool = () => {
                             </div>
                           </div>
                           <button
-                            onClick={() => restoreFromBackup(backup.filename)}
+                            onClick={() => { void restoreFromBackup(backup.filename); }}
                             className="bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded text-xs"
                           >
                             Vrati backup

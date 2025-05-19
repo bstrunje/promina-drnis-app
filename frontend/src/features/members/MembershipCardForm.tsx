@@ -3,13 +3,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Checkbox } from "../../../components/ui/checkbox";
 import { Label } from "../../../components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "../../../components/ui/select";
+
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { updateMembership } from '../../utils/api/apiMembership';
 import { useToast } from "../../../components/ui/use-toast";
@@ -17,7 +11,7 @@ import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 import { formatDate, getCurrentDate } from "../../utils/dateUtils";
 
 // Add direct reference to API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_URL = process.env.REACT_APP_API_URL ?? 'http://localhost:3000';
 
 interface MembershipCardFormProps {
   memberId: number;
@@ -31,8 +25,8 @@ export default function MembershipCardForm({
   currentCardNumber 
 }: MembershipCardFormProps) {
   const { toast } = useToast();
-  const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
-  const [cardNumber, setCardNumber] = useState<string>(currentCardNumber || "");
+  const { length: cardNumberLength } = useCardNumberLength();
+  const [cardNumber, setCardNumber] = useState<string>(currentCardNumber ?? "");
   const [stampIssued, setStampIssued] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
@@ -66,13 +60,12 @@ export default function MembershipCardForm({
           throw new Error(`Server returned ${response.status}`);
         }
         
-        const data = await response.json();
-        
-        // Ensure we have an array
-        if (Array.isArray(data)) {
+        const data: unknown = await response.json();
+        // Provjera da je array stringova zbog sigurnosti
+        if (Array.isArray(data) && data.every((item) => typeof item === 'string')) {
           setAvailableCardNumbers(data);
         } else {
-          console.error("Expected array but got:", typeof data);
+          console.error("Expected array of strings but got:", data);
           setAvailableCardNumbers([]);
         }
       } catch (error) {
@@ -89,8 +82,8 @@ export default function MembershipCardForm({
       }
     }
 
-    fetchAvailableCardNumbers();
-  }, []);
+    void fetchAvailableCardNumbers();
+  }, [toast]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -140,13 +133,14 @@ const today = formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Dopustiti samo unos brojeva
+    // Ovdje nije smisleno koristiti ?? jer želimo dopustiti ili prazan string ili samo brojeve
     if (value === '' || /^\d+$/.test(value)) {
       setCardNumber(value);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={e => void handleSubmit(e)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="cardNumber">Card Number</Label>
         

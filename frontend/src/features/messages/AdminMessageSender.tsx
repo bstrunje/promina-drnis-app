@@ -15,13 +15,7 @@ import {
   TabsList,
   TabsTrigger
 } from '@components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@components/ui/select';
+// Import iz @components/ui/select nije potreban
 import { useToast } from '@components/ui/use-toast';
 import { Checkbox } from '@components/ui/checkbox';
 import { CornerDownLeft, Send, Users, UserCheck, Mail } from 'lucide-react';
@@ -53,7 +47,7 @@ const AdminMessageSender: React.FC = () => {
         // Transformiramo Member[] u MemberSearchResult[]
         const transformedResults: MemberSearchResult[] = members.map(member => ({
           member_id: member.member_id,
-          full_name: member.full_name || `${member.first_name} ${member.last_name}`,
+          full_name: member.full_name ?? `${member.first_name} ${member.last_name}`,
           oib: member.oib,
           nickname: member.nickname
         }));
@@ -65,7 +59,7 @@ const AdminMessageSender: React.FC = () => {
       }
     };
 
-    fetchMembers();
+    void fetchMembers();
   }, [searchTerm, toast]);
 
   // Funkcija za slanje poruke pojedinačnom članu
@@ -292,7 +286,7 @@ const AdminMessageSender: React.FC = () => {
               />
 
               <Button
-                onClick={handleSendToSingle}
+                onClick={() => { void handleSendToSingle(); }}
                 disabled={isSending || !selectedMember || !messageText.trim()}
                 className="w-full"
               >
@@ -385,7 +379,7 @@ const AdminMessageSender: React.FC = () => {
               />
 
               <Button
-                onClick={handleSendToGroup}
+                onClick={() => { void handleSendToGroup(); }}
                 disabled={isSending || selectedMembers.length === 0 || !messageText.trim()}
                 className="w-full"
               >
@@ -417,7 +411,7 @@ const AdminMessageSender: React.FC = () => {
               />
 
               <Button
-                onClick={handleSendToAll}
+                onClick={() => { void handleSendToAll(); }}
                 disabled={isSending || !messageText.trim()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >

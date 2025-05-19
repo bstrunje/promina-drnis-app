@@ -13,7 +13,7 @@ interface SystemSettingsFormProps {
   settings: SystemSettings;
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
 export function ChangePasswordForm() {
@@ -24,7 +24,7 @@ export function ChangePasswordForm() {
   const [message, setMessage] = useState('');
   const { admin, refreshAdmin } = useSystemAdmin();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage('');
     let usernameChanged = false;
@@ -49,13 +49,25 @@ export function ChangePasswordForm() {
       setNewPassword('');
       setConfirm('');
       setNewUsername('');
-    } catch (err) {
-      setMessage(err.response?.data?.message || 'Greška pri spremanju promjena.');
+    } catch (err: unknown) {
+      // Sigurna provjera tipa errora
+      if (axios.isAxiosError(err)) {
+        // Provjera da err.response.data postoji i da ima message tipa string
+const data = err.response?.data as unknown;
+const serverMsg = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
+  ? (data as { message: string }).message
+  : undefined;
+        setMessage(serverMsg ?? 'Greška pri spremanju promjena.');
+      } else if (err instanceof Error) {
+        setMessage(typeof err.message === 'string' ? err.message : 'Greška pri spremanju promjena.');
+      } else {
+        setMessage('Greška pri spremanju promjena.');
+      }
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow">
+    <form onSubmit={e => void handleSubmit(e)} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow"> // void zbog lint pravila
       <label htmlFor="newUsername" className="font-medium">Novi username (opcionalno)</label>
       <input
         id="newUsername"
@@ -64,7 +76,7 @@ export function ChangePasswordForm() {
         className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         value={newUsername}
         onChange={e => setNewUsername(e.target.value)}
-        placeholder={admin?.username || 'Trenutni username'}
+        placeholder={admin?.username ?? 'Trenutni username'}
       />
       <label htmlFor="oldPassword" className="font-medium">Stara lozinka</label>
       {/* Skriveno polje za username radi accessibility i browser autofill */}
@@ -72,7 +84,7 @@ export function ChangePasswordForm() {
         type="text"
         name="username"
         autoComplete="username"
-        value={admin?.username || ''}
+        value={admin?.username ?? ''}
         style={{ display: 'none' }}
         readOnly
         tabIndex={-1}
@@ -212,7 +224,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               <select
                 name="timeZone"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                value={settings.timeZone || 'Europe/Zagreb'}
+                value={settings.timeZone ?? 'Europe/Zagreb'} // prefer-nullish-coalescing
                 onChange={onChange}
               >
                 <option value="Europe/Zagreb">Zagreb (UTC+1/UTC+2)</option>
@@ -292,7 +304,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 };
 
 const SystemAdminSettings: React.FC = () => {
-  const { admin, refreshAdmin } = useSystemAdmin();
+  const { admin } = useSystemAdmin();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
@@ -320,18 +332,31 @@ const SystemAdminSettings: React.FC = () => {
             'Content-Type': 'application/json'
           }
         });
-        setSettings(response.data);
-      } catch (err) {
-        const errorMessage = axios.isAxiosError(err)
-          ? err.response?.data?.message || err.message
-          : 'Dogodila se nepoznata greška';
+        if (typeof response.data === 'object' && response.data !== null) {
+          setSettings(response.data as SystemSettings);
+        } else {
+          setError('Neispravan odgovor servera.');
+        }
+      } catch (err: unknown) {
+        let errorMessage: string;
+        if (axios.isAxiosError(err)) {
+          // Provjera da err.response.data postoji i da ima message tipa string
+          const data = err.response?.data as unknown;
+          errorMessage = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
+            ? (data as { message: string }).message
+            : err.message;
+        } else if (err instanceof Error) {
+          errorMessage = typeof err.message === 'string' ? err.message : 'Dogodila se nepoznata greška';
+        } else {
+          errorMessage = 'Dogodila se nepoznata greška';
+        }
         setError(`Greška prilikom dohvata postavki: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadSettings();
+    void loadSettings(); // void zbog lint pravila
   }, []);
 
   // Obrada promjene vrijednosti u poljima
@@ -392,12 +417,12 @@ const SystemAdminSettings: React.FC = () => {
       setSuccessMessage("Postavke su uspješno ažurirane!");
       
       // Osvježi vremensku zonu u kontekstu
-      refreshTimeZone();
+      void refreshTimeZone(); // void zbog lint pravila
       
       // Automatski sakrij poruku uspjeha nakon 8 sekundi
-      setTimeout(() => {
+      void setTimeout(() => {
         setSuccessMessage(null);
-      }, 8000);
+      }, 8000); // void zbog lint pravila
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Dogodila se nepoznata greška';
       setError(`Greška prilikom ažuriranja postavki: ${errorMessage}`);
@@ -444,7 +469,7 @@ const SystemAdminSettings: React.FC = () => {
           settings={settings}
           isLoading={isLoading}
           onChange={handleChange}
-          onSubmit={handleSubmit}
+          onSubmit={e => void handleSubmit(e)} // void zbog lint pravila
         />
         <section className="mt-10">
           <h2 className="text-lg font-semibold mb-2">Promjena lozinke</h2>

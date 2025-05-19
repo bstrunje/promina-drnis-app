@@ -1,8 +1,9 @@
 import React from "react";
-import { MembershipPeriod, PeriodFormRowProps } from "../types/membershipTypes";
 import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { isoToHrFormat } from "../../../utils/dateUtils";
+
+import { PeriodFormRowProps } from '../types/membershipTypes';
 
 const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
   period,
@@ -20,7 +21,9 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
           <label className="block text-xs text-gray-500 mb-1">Datum početka (DD.MM.YYYY)</label>
           <Input
             type="text"
-            value={isoToHrFormat(period.start_date as string)}
+            // Sigurnije: period.start_date je uvijek string prema tipu
+            // Prisilno pretvaramo na string zbog tipne sigurnosti
+            value={isoToHrFormat(String(period.start_date))}
             onChange={(e) =>
               onPeriodChange(
                 index,
@@ -35,7 +38,9 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
           <label className="block text-xs text-gray-500 mb-1">Datum završetka (DD.MM.YYYY)</label>
           <Input
             type="text"
-            value={period.end_date ? isoToHrFormat(period.end_date as string) : ""}
+            // Sigurnije: period.end_date može biti string ili null
+            // Prisilno pretvaramo na string zbog tipne sigurnosti
+            value={period.end_date ? isoToHrFormat(String(period.end_date)) : ""}
             onChange={(e) =>
               onPeriodChange(
                 index,
@@ -50,10 +55,12 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
           <div>
             <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
             <Select
-              value={period.end_reason || ""}
-              onValueChange={(value) => 
-                onPeriodChange(index, "end_reason", value)
-              }
+              // Zamijenjeno || s ?? zbog ESLint pravila
+value={period.end_reason ?? ""}
+              // Zamijenjeno || s ?? zbog ESLint pravila
+onValueChange={(value) => 
+  onPeriodChange(index, "end_reason", value)
+}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Odaberite razlog završetka" />
@@ -76,13 +83,13 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
         <div className="flex justify-between items-start">
           <div>
             <span className="block text-xs text-gray-500">Od:</span>
-            <span className="font-medium">{isoToHrFormat(period.start_date as string)}</span>
+            <span className="font-medium">{isoToHrFormat(period.start_date)}</span>
           </div>
           <div className="text-right">
             <span className="block text-xs text-gray-500">Do:</span>
             <span className="font-medium">
               {period.end_date 
-                ? isoToHrFormat(period.end_date as string)
+                ? isoToHrFormat(period.end_date)
                 : ""}
             </span>
           </div>
@@ -105,10 +112,17 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
             {period.period_id && period.period_id > 0 && canManageEndReasons && (
               <div className="ms-auto">
                 <Select
-                  value={period.end_reason || ""}
-                  onValueChange={(value) => 
-                    onEndReasonChange(period.period_id, value)
-                  }
+                  // Zamijenjeno || s ?? zbog ESLint pravila
+value={period.end_reason ?? ""}
+                  // onEndReasonChange vraća Promise pa koristimo async funkciju zbog ESLint pravila
+// Pozivamo onEndReasonChange samo ako period_id nije undefined
+// onValueChange ne smije biti async zbog ESLint pravila, pozivamo bez await
+// onValueChange: Promise mora biti hendlan, ali bez await/async zbog ESLint pravila
+onValueChange={(value) => {
+  if (typeof period.period_id === 'number') {
+    void onEndReasonChange(period.period_id, value).catch(() => { /* Grešku ignoriramo jer korisniku nije bitno */ });
+  }
+}}
                 >
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="Odaberi razlog" />

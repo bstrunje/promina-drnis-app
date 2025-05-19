@@ -21,8 +21,8 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
   onClose,
   onSave
 }) => {
-  // Početne prazne ovlasti
-  const emptyPermissions: AdminPermissionsModel = {
+  // Početne prazne ovlasti - koristi useMemo da objekt bude stabilan između rendera
+  const emptyPermissions = React.useMemo<AdminPermissionsModel>(() => ({
     can_view_members: false,
     can_edit_members: false,
     can_add_members: false,
@@ -39,7 +39,7 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
     can_manage_end_reasons: false,
     can_manage_card_numbers: false,
     can_assign_passwords: false
-  };
+  }), []);
 
   const [permissions, setPermissions] = useState<AdminPermissionsModel>(emptyPermissions);
   const [loading, setLoading] = useState<boolean>(true);
@@ -47,57 +47,58 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Definicija kategorija ovlasti za grupiranje u UI-u
-  const permissionCategories = [
+// Funkcija za grupiranje ovlasti po kategorijama
+function categorizePermissions(permissions: AdminPermissionsModel) {
+  return [
     {
       name: 'Članstvo',
       permissions: [
-        { key: 'can_view_members', label: 'Pregled članova' },
-        { key: 'can_edit_members', label: 'Uređivanje članova' },
-        { key: 'can_add_members', label: 'Dodavanje članova' },
-        { key: 'can_manage_membership', label: 'Upravljanje članstvom' },
+        { key: 'can_view_members', label: 'Pregled članova', value: permissions.can_view_members },
+        { key: 'can_edit_members', label: 'Uređivanje članova', value: permissions.can_edit_members },
+        { key: 'can_add_members', label: 'Dodavanje članova', value: permissions.can_add_members },
+        { key: 'can_manage_membership', label: 'Upravljanje članstvom', value: permissions.can_manage_membership },
       ]
     },
     {
       name: 'Aktivnosti',
       permissions: [
-        { key: 'can_view_activities', label: 'Pregled aktivnosti' },
-        { key: 'can_create_activities', label: 'Kreiranje aktivnosti' },
-        { key: 'can_approve_activities', label: 'Odobravanje aktivnosti' },
+        { key: 'can_view_activities', label: 'Pregled aktivnosti', value: permissions.can_view_activities },
+        { key: 'can_create_activities', label: 'Kreiranje aktivnosti', value: permissions.can_create_activities },
+        { key: 'can_approve_activities', label: 'Odobravanje aktivnosti', value: permissions.can_approve_activities },
       ]
     },
     {
       name: 'Financije',
       permissions: [
-        { key: 'can_view_financials', label: 'Pregled financija' },
-        { key: 'can_manage_financials', label: 'Upravljanje financijama' },
+        { key: 'can_view_financials', label: 'Pregled financija', value: permissions.can_view_financials },
+        { key: 'can_manage_financials', label: 'Upravljanje financijama', value: permissions.can_manage_financials },
       ]
     },
     {
       name: 'Poruke',
       permissions: [
-        { key: 'can_send_group_messages', label: 'Slanje grupnih poruka' },
-        { key: 'can_manage_all_messages', label: 'Upravljanje svim porukama' },
-      ]
-    },
-    {
-      name: 'Statistika i izvještaji',
-      permissions: [
-        { key: 'can_view_statistics', label: 'Pregled statistika' },
-        { key: 'can_export_data', label: 'Izvoz podataka' },
+        { key: 'can_send_group_messages', label: 'Slanje grupnih poruka', value: permissions.can_send_group_messages },
+        { key: 'can_manage_all_messages', label: 'Upravljanje svim porukama', value: permissions.can_manage_all_messages },
       ]
     },
     {
       name: 'Ostalo',
       permissions: [
-        { key: 'can_manage_end_reasons', label: 'Upravljanje razlozima prestanka' },
-        { key: 'can_manage_card_numbers', label: 'Upravljanje brojevima iskaznica' },
-        { key: 'can_assign_passwords', label: 'Dodjela lozinki' },
+        { key: 'can_view_statistics', label: 'Pregled statistika', value: permissions.can_view_statistics },
+        { key: 'can_export_data', label: 'Izvoz podataka', value: permissions.can_export_data },
+        { key: 'can_manage_end_reasons', label: 'Upravljanje razlozima prestanka', value: permissions.can_manage_end_reasons },
+        { key: 'can_manage_card_numbers', label: 'Upravljanje brojevima iskaznica', value: permissions.can_manage_card_numbers },
+        { key: 'can_assign_passwords', label: 'Dodjela lozinki', value: permissions.can_assign_passwords },
       ]
     }
   ];
+}
 
-  // Predlošci ovlasti
+// Kategorije za prikaz u UI-u (dinamički)
+const permissionCategories = categorizePermissions(permissions);
+
+// --- OVDJE NASTAVLJA OSTATak KODA (predlošci, useEffect, itd.) ---
+
   const permissionTemplates = [
     {
       name: 'Puni administratorski pristup',
@@ -190,8 +191,8 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
       }
     };
 
-    fetchMemberPermissions();
-  }, [member.member_id]);
+    void fetchMemberPermissions(); // void zbog lint pravila
+  }, [member.member_id, emptyPermissions]);
 
   // Handler za promjenu pojedinačne ovlasti
   const handlePermissionChange = (key: keyof AdminPermissionsModel) => {
@@ -278,7 +279,7 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
             <>
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900">{member.full_name}</h3>
-                <p className="text-sm text-gray-600">{member.email || 'Nema email adrese'}</p>
+                <p className="text-sm text-gray-600">{member.email ?? 'Nema email adrese'}</p>
               </div>
 
               {/* Predlošci ovlasti */}
@@ -344,7 +345,7 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
             Odustani
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => { void handleSave(); }}
             className={`px-4 py-2 rounded-md text-sm font-medium text-white ${
               saving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}

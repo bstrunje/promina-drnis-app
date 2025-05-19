@@ -3,7 +3,7 @@ import db from '../utils/db.js';
 interface CardNumberResult {
   id: number;
   card_number: string;
-  status: 'available' | 'assigned' | 'retired';
+  status: 'available' | 'assigned';
   assigned_at?: Date;
   member_id?: number;
 }
@@ -151,7 +151,7 @@ const cardNumberRepository = {
   // Modify the getAllCardNumbers method to check all tables for card assignment information
   async getAllCardNumbers(): Promise<{
     card_number: string;
-    status: 'available' | 'assigned' | 'retired';
+    status: 'available' | 'assigned';
     member_id?: number;
     member_name?: string;
   }[]> {

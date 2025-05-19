@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
@@ -29,11 +29,11 @@ const MemberMessageList: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<MemberMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [genericMessages, setGenericMessages] = useState<GenericMessage[]>([]);
+  const [genericMessages, setGenericMessages] = useState<ApiGenericMessage[]>([]);
   const [loadingGeneric, setLoadingGeneric] = useState(true);
 
   // Dohvaćanje poruka za člana
-  const fetchMemberMessages = async () => {
+  const fetchMemberMessages = useCallback(async () => {
     if (!user?.member_id) return;
     
     try {
@@ -43,15 +43,49 @@ const MemberMessageList: React.FC = () => {
       // Filtriramo samo poruke koje je admin poslao članu
       const receivedMessages = data.filter(msg => 
         msg.sender_type === 'admin' && 
-        (msg.recipient_id === user.member_id || msg.recipient_type === 'all')
+        (String(msg.recipient_id) === String(user.member_id) || msg.recipient_type === 'all')
       );
       
       // Sortiramo poruke silazno - od najnovije prema najstarijoj (kao i kod admin prikaza)
       const sortedMessages = [...receivedMessages].sort(
-        (a, b) => parseDate(b.created_at).getTime() - parseDate(a.created_at).getTime()
+        (a, b) => {
+          // Potpuna null provjera
+          const timestampA = a && typeof a === 'object' && a.timestamp ? a.timestamp : '';
+          const timestampB = b && typeof b === 'object' && b.timestamp ? b.timestamp : '';
+          
+          // Siguran pristup getTime
+          let dateA = 0;
+          let dateB = 0;
+          try {
+            const parsedDateA = parseDate(timestampA);
+            if (parsedDateA) {
+              dateA = parsedDateA.getTime();
+            }
+          } catch { /* ignoriramo greške */ }
+          
+          try {
+            const parsedDateB = parseDate(timestampB);
+            if (parsedDateB) {
+              dateB = parsedDateB.getTime();
+            }
+          } catch { /* ignoriramo greške */ }
+          return dateB - dateA;
+        }
       );
       
-      setMessages(sortedMessages);
+      // Konverzija u lokalni tip MemberMessage
+      const convertedMessages = sortedMessages.map(msg => ({
+        message_id: Number(msg.id),
+        message_text: msg.content,
+        created_at: msg.timestamp,
+        status: msg.read ? ('read' as const) : ('unread' as const),
+        sender_id: Number(msg.sender_id) || null,
+        sender_type: msg.sender_type === 'system' ? 'admin' : msg.sender_type,
+        recipient_id: Number(msg.recipient_id) || null,
+        recipient_type: msg.recipient_type
+      }));
+      
+      setMessages(convertedMessages);
     } catch (error) {
       toast({
         title: "Greška",
@@ -61,9 +95,9 @@ const MemberMessageList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.member_id, toast]);
 
-  const fetchGenericMessages = async () => {
+  const fetchGenericMessages = useCallback(async () => {
     try {
       setLoadingGeneric(true);
       const data = await getGenericMessages();
@@ -77,7 +111,7 @@ const MemberMessageList: React.FC = () => {
     } finally {
       setLoadingGeneric(false);
     }
-  };
+  }, [toast]);
 
   // Označavanje poruke kao pročitane
   const handleMarkAsRead = async (messageId: number) => {
@@ -113,9 +147,9 @@ const MemberMessageList: React.FC = () => {
 
   // Učitavanje poruka kad se komponenta montira
   useEffect(() => {
-    fetchMemberMessages();
-    fetchGenericMessages();
-  }, [user?.member_id]);
+    void fetchMemberMessages();
+    void fetchGenericMessages();
+  }, [user?.member_id, fetchMemberMessages, fetchGenericMessages]);
 
   if (loading || loadingGeneric) {
     return <div className="p-4">Učitavanje poruka...</div>;
@@ -133,7 +167,7 @@ const MemberMessageList: React.FC = () => {
           <CardContent className="p-4 space-y-4">
             {genericMessages.map((msg) => (
               <div key={msg.id} className="p-4 rounded-md border bg-gray-50">
-                <div className="mb-2 text-sm text-gray-500">{formatDate(msg.timestamp, 'dd.MM.yyyy HH:mm:ss')}</div>
+                <div className="mb-2 text-sm text-gray-500">{formatDate(msg.timestamp || '', 'dd.MM.yyyy HH:mm:ss')}</div>
                 <div className="font-medium mb-1">{msg.sender}</div>
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               </div>
@@ -190,7 +224,7 @@ const MemberMessageList: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleMarkAsRead(message.message_id)}
+                        onClick={() => { void handleMarkAsRead(message.message_id); }}
                         className="h-8 text-xs"
                       >
                         <CheckCircle className="h-4 w-4 mr-1" />
@@ -204,7 +238,7 @@ const MemberMessageList: React.FC = () => {
               
               <Button
                 variant="outline"
-                onClick={fetchMemberMessages}
+                onClick={() => { void fetchMemberMessages(); }}
                 className="w-full"
               >
                 Osvježi poruke

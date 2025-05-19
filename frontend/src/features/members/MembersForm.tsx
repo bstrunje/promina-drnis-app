@@ -8,10 +8,12 @@ import { Save, X } from 'lucide-react';
  * @param value Vrijednost koju treba mapirati u enum
  * @returns Odgovarajući MembershipTypeEnum
  */
-function mapMembershipTypeToEnum(value: any): MembershipTypeEnum {
-  if (value === 'regular' || value === MembershipTypeEnum.Regular) return MembershipTypeEnum.Regular;
-  if (value === 'supporting' || value === MembershipTypeEnum.Supporting) return MembershipTypeEnum.Supporting;
-  if (value === 'honorary' || value === MembershipTypeEnum.Honorary) return MembershipTypeEnum.Honorary;
+// Ovdje nije smisleno koristiti ?? jer želimo provjeriti oba slučaja (string ili enum vrijednost)
+// Uspoređujemo samo string literal vrijednosti zbog sigurnosti i lintera
+function mapMembershipTypeToEnum(value: string | MembershipTypeEnum): MembershipTypeEnum {
+  if (value === 'regular' || value === 'Regular') return MembershipTypeEnum.Regular;
+  if (value === 'supporting' || value === 'Supporting') return MembershipTypeEnum.Supporting;
+  if (value === 'honorary' || value === 'Honorary') return MembershipTypeEnum.Honorary;
   return MembershipTypeEnum.Regular; // fallback
 }
 
@@ -64,47 +66,43 @@ const lifeStatusOptions = [
 
 export default function MemberForm({ member, onSubmit, onCancel }: MemberFormProps) {
   const [formData, setFormData] = useState<MemberFormData>({
-    member_id: member?.member_id || 0,
-    first_name: member?.first_name || '',
-    last_name: member?.last_name || '',
-    date_of_birth: member?.date_of_birth || '',
-    street_address: member?.street_address || '',
-    city: member?.city || '',
-    oib: member?.oib || '',
-    cell_phone: member?.cell_phone || '',
-    email: member?.email || '',
-    life_status: member?.life_status || 'employed/unemployed',
-    tshirt_size: member?.tshirt_size || 'M',
-    shell_jacket_size: member?.shell_jacket_size || 'M',
-    membership_type: typeof member?.membership_type === 'string'
-      ? (member.membership_type === 'regular'
-          ? MembershipTypeEnum.Regular
-          : member.membership_type === 'honorary'
-            ? MembershipTypeEnum.Honorary
-            : member.membership_type === 'supporting'
-              ? MembershipTypeEnum.Supporting
-              : MembershipTypeEnum.Regular)
-      : (member?.membership_type || MembershipTypeEnum.Regular),
-    registration_completed: member?.registration_completed || false,
-    role: member?.role || 'member',
-    total_hours: member?.total_hours || 0,
-    gender: member?.gender || 'male'
+    member_id: member?.member_id ?? 0,
+    first_name: member?.first_name ?? '',
+    last_name: member?.last_name ?? '',
+    date_of_birth: member?.date_of_birth ?? '',
+    street_address: member?.street_address ?? '',
+    city: member?.city ?? '',
+    oib: member?.oib ?? '',
+    cell_phone: member?.cell_phone ?? '',
+    email: member?.email ?? '',
+    life_status: member?.life_status ?? 'employed/unemployed',
+    tshirt_size: member?.tshirt_size ?? 'M',
+    shell_jacket_size: member?.shell_jacket_size ?? 'M',
+    // Uvijek uspoređuj s string literalima zbog lintera
+// Zbog lintera i sigurnosti koristi se mapMembershipTypeToEnum util
+membership_type: mapMembershipTypeToEnum(
+  typeof member?.membership_type === 'string'
+    ? member.membership_type
+    : member?.membership_type ?? 'regular'
+),
+    registration_completed: member?.registration_completed ?? false,
+    role: member?.role ?? 'member',
+    total_hours: member?.total_hours ?? 0,
+    gender: member?.gender ?? 'male'
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Combine existing member data with form data
     const updatedMember = {
-      ...(member || {}),
+      ...(member ?? {}),
       ...formData,
     } as Member;
     onSubmit(updatedMember);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  // Uklonjeno jer nije korišteno
+
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -308,10 +306,16 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
             <select
               name="role"
               value={formData.role}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                role: e.target.value as Member['role']
-              }))}
+              onChange={(e) => {
+                // TypeScript zahtijeva da role bude točno 'member' | 'admin' | 'superuser', nikad undefined
+                const value = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  role: value === 'member' || value === 'admin' || value === 'superuser'
+                    ? value
+                    : 'member', // fallback na 'member' ako iz nekog razloga value nije očekivan
+                }));
+              }}
               className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
               <option value="member">Member</option>
@@ -361,4 +365,5 @@ export default function MemberForm({ member, onSubmit, onCancel }: MemberFormPro
       </form>
     </div>
   );
+
 }

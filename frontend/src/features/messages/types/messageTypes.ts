@@ -4,6 +4,10 @@
  * Osnovni tip za poruku
  */
 export interface Message {
+  /**
+   * Popis članova koji su pročitali poruku (ako je dostupno)
+   */
+  read_by?: string[];
   message_id: number;
   member_id: number;
   sender_name: string;

@@ -20,8 +20,8 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
   onUpdate, 
   userRole, 
   isFeeCurrent = true,
-  hideTitle = false,
-  showPeriods = false
+  hideTitle = false
+
 }) => {
   // Koristimo custom hooks za upravljanje karticama i markicama
   const {

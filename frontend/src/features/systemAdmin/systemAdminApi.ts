@@ -42,8 +42,12 @@ systemAdminApi.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
+  (error: unknown) => {
+    // Provjeri je li error tipa AxiosError
+    if (axios.isAxiosError(error)) {
+      return Promise.reject(new Error(error.message));
+    }
+    return Promise.reject(new Error('Dogodila se greška.'));
   }
 );
 
@@ -61,27 +65,15 @@ systemAdminApi.interceptors.response.use(
       return Promise.reject(new Error('Sesija je istekla. Molimo, prijavite se ponovno.'));
     }
     
-    return Promise.reject(error);
+    // Provjeri je li error tipa AxiosError
+    if (axios.isAxiosError(error)) {
+      return Promise.reject(new Error(error.message));
+    }
+    return Promise.reject(new Error('Dogodila se greška.'));
   }
 );
 
-// Standardni handler za greške API-ja
-const handleApiError = (error: unknown, defaultMessage: string): never => {
-  console.error("API Error:", error);
-  
-  if (axios.isAxiosError(error)) {
-    console.log("Server response:", error.response?.data);
-    
-    const serverMessage = error.response?.data?.message;
-    
-    if (serverMessage) {
-      throw new Error(serverMessage);
-    } else {
-      throw new Error(defaultMessage);
-    }
-  }
-  throw new Error(defaultMessage);
-};
+
 
 // API funkcije za System Admin
 
@@ -100,8 +92,11 @@ export const systemAdminLogin = async ({ username, password }: SystemAdminLoginD
     localStorage.setItem('systemAdmin', JSON.stringify(response.data.admin));
     
     return response.data;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom prijave. Provjerite korisničko ime i lozinku.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -125,7 +120,7 @@ export const systemAdminLogout = (): boolean => {
     
     // Ne preusmjeravamo ovdje, prepuštamo to komponenti koja poziva ovu funkciju
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Greška pri odjavi system admina:', error);
     return false;
   }
@@ -138,8 +133,11 @@ export const checkSystemAdminExists = async (): Promise<boolean> => {
   try {
     const response = await systemAdminApi.get<{ exists: boolean }>('/system-admin/exists');
     return response.data.exists;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom provjere postojanja system admina.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -150,8 +148,11 @@ export const getMembersWithPermissions = async (): Promise<MemberWithPermissions
   try {
     const response = await systemAdminApi.get<MemberWithPermissions[]>('/system-admin/members-with-permissions');
     return response.data;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom dohvata članova s ovlastima.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -162,11 +163,14 @@ export const getMemberPermissions = async (memberId: number): Promise<AdminPermi
   try {
     const response = await systemAdminApi.get<AdminPermissionsModel>(`/system-admin/member-permissions/${memberId}`);
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       return null; // Član nema ovlasti
     }
-    throw handleApiError(error, "Greška prilikom dohvata ovlasti za člana.");
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -176,8 +180,11 @@ export const getMemberPermissions = async (memberId: number): Promise<AdminPermi
 export const updateMemberPermissions = async (updateData: UpdateMemberPermissionsDto): Promise<void> => {
   try {
     await systemAdminApi.post('/system-admin/update-permissions', updateData);
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom ažuriranja ovlasti člana.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -187,8 +194,11 @@ export const updateMemberPermissions = async (updateData: UpdateMemberPermission
 export const removeMemberPermissions = async (memberId: number): Promise<void> => {
   try {
     await systemAdminApi.delete(`/system-admin/remove-permissions/${memberId}`);
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom uklanjanja ovlasti člana.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -199,8 +209,11 @@ export const getAllSystemAdmins = async (): Promise<SystemAdmin[]> => {
   try {
     const response = await systemAdminApi.get<SystemAdmin[]>('/system-admin');
     return response.data;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom dohvata system admina.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -216,8 +229,11 @@ export const createSystemAdmin = async (adminData: {
   try {
     const response = await systemAdminApi.post<{ admin: SystemAdmin, message: string }>('/system-admin/create', adminData);
     return response.data.admin;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom kreiranja system admina.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -228,8 +244,11 @@ export const getSystemAdminDashboardStats = async (): Promise<SystemAdminDashboa
   try {
     const response = await systemAdminApi.get<SystemAdminDashboardStats>('/system-admin/dashboard/stats');
     return response.data;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom dohvata statistika dashboarda.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 
@@ -242,8 +261,11 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
   try {
     const response = await systemAdminApi.put<SystemSettings>('/system-admin/settings', settings);
     return response.data;
-  } catch (error) {
-    throw handleApiError(error, "Greška prilikom ažuriranja postavki sustava.");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
   }
 };
 

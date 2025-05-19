@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Edit, Save, X, Plus, Trash } from "lucide-react";
+import { Calendar, Edit, Save, X, Plus } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { MembershipPeriodsSectionProps } from "../types/membershipTypes";
@@ -7,7 +7,7 @@ import PeriodFormRow from "./PeriodFormRow";
 import { parseISO } from "date-fns";
 import { useMembershipPeriods } from "../hooks/useMembershipPeriods";
 import { parseDate } from '../../../utils/dateUtils';
-import { formatDate } from '../../../utils/dateUtils';
+
 
 const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   member,
@@ -16,7 +16,6 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   feePaymentYear,
   feePaymentDate,
   onUpdatePeriods,
-  userRole
 }) => {
   const {
     isEditing,
@@ -58,10 +57,6 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
     );
   }
 
-  const currentPeriod = periods[periods.length - 1].end_date
-    ? null
-    : periods[periods.length - 1];
-
   return (
     <Card>
       <CardHeader>
@@ -85,7 +80,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
         <div className="space-y-4">
           <div className="text-sm">
             <span className="font-medium">Ukupno trajanje: </span>
-            {totalDuration || calculateTotalDuration(periods)}
+            {totalDuration ?? calculateTotalDuration(periods)} // Sigurnosna promjena: koristi se nullish coalescing operator
           </div>
 
           <div className="text-sm">
@@ -107,7 +102,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleSave}
+                onClick={() => { void handleSave(); }} // Sigurnosna promjena: void za no-floating-promises
                 disabled={isSubmitting}
                 className="bg-black hover:bg-blue-500 transition-colors"
               >
@@ -133,7 +128,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
           <div className="space-y-2">
             {[...(isEditing ? editedPeriods : periods)]
               .sort((a, b) =>
-                parseISO(a.start_date as string).getTime() - parseISO(b.start_date as string).getTime()
+                parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime()
               )
               .map((period, index) => {
                 return (
@@ -145,11 +140,12 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       Period {index + 1}:{" "}
                     </div>
                     <PeriodFormRow
+                      key={period.period_id}
                       period={period}
                       index={index}
-                      isEditing={isEditing}
-                      canSeeEndReason={canSeeEndReason}
-                      canManageEndReasons={canManageEndReasons}
+                      isEditing={!!isEditing}
+                      canSeeEndReason={!!canSeeEndReason}
+                      canManageEndReasons={!!canManageEndReasons}
                       onPeriodChange={handlePeriodChange}
                       onEndReasonChange={handleEndReasonChange}
                     />
@@ -189,7 +185,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <input
                       type="text"
                       value={newPeriod?.start_date ? (() => {
-                        const dateStr = typeof newPeriod.start_date === 'string' ? newPeriod.start_date : newPeriod.start_date.toISOString();
+                        const dateStr = typeof newPeriod.start_date === 'string' ? newPeriod.start_date : '';
                         const parsedDate = parseDate(dateStr);
                         return parsedDate ? parsedDate.toLocaleDateString('hr-HR') : '';
                       })() : ''}
@@ -208,7 +204,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <input
                       type="text"
                       value={newPeriod?.end_date ? (() => {
-                        const dateStr = typeof newPeriod.end_date === 'string' ? newPeriod.end_date : newPeriod.end_date.toISOString();
+                        const dateStr = typeof newPeriod.end_date === 'string' ? newPeriod.end_date : '';
                         const parsedDate = parseDate(dateStr);
                         return parsedDate ? parsedDate.toLocaleDateString('hr-HR') : '';
                       })() : ''}
@@ -226,7 +222,8 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
                       <select
-                        value={newPeriod.end_reason || ""}
+                        // Zamijenjeno || s ?? zbog ESLint pravila
+value={newPeriod.end_reason ?? ""}
                         onChange={(e) =>
                           handleNewPeriodChange(
                             "end_reason",
