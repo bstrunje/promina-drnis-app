@@ -1,13 +1,13 @@
-// features/systemAdmin/SystemAdminSettings.tsx
+// features/systemAdmin/pages/settings/SystemAdminSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { Shield, RefreshCw, Save } from 'lucide-react';
 import axios from 'axios';
-import { API_BASE_URL } from '../../utils/config';
-import { useSystemAdmin } from '../../context/SystemAdminContext';
-import { useTimeZone } from '../../context/TimeZoneContext'; // Dodana linija
+import { API_BASE_URL } from '../../../../utils/config';
+import { useSystemAdmin } from '../../../../context/SystemAdminContext';
+import { useTimeZone } from '../../../../context/TimeZoneContext'; // Dodana linija
 import { SystemSettings } from '@shared/settings';
-import { getCurrentDate } from '../../utils/dateUtils';
-import systemAdminApi, { updateSystemSettings } from './systemAdminApi';
+import { getCurrentDate } from '../../../../utils/dateUtils';
+import systemAdminApi, { updateSystemSettings } from '../../utils/systemAdminApi';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;

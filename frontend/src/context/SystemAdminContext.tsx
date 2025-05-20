@@ -1,7 +1,7 @@
 // context/SystemAdminContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { systemAdminLogin, systemAdminLogout } from '../features/systemAdmin/systemAdminApi';
+import { systemAdminLogin, systemAdminLogout } from '../features/systemAdmin/utils/systemAdminApi';
 import { SystemAdminLoginData } from '@shared/systemAdmin';
 
 interface SystemAdminContextType {

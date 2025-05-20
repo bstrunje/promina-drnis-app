@@ -1,13 +1,13 @@
-// features/systemAdmin/SystemAdminAuditLogs.tsx
+// features/systemAdmin/pages/auditLogs/SystemAdminAuditLogs.tsx
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { AuditLog } from '@shared/audit';
-import { formatDate, parseDate, setCurrentTimeZone } from "../../utils/dateUtils";
+import { formatDate, parseDate, setCurrentTimeZone } from "../../../../utils/dateUtils";
 import { useToast } from '@components/ui/use-toast';
 import axios from 'axios';
-import { API_BASE_URL } from '../../utils/config';
-import { useTimeZone } from '../../context/TimeZoneContext';
+import { API_BASE_URL } from '../../../../utils/config';
+import { useTimeZone } from '../../../../context/TimeZoneContext';
 
 const SystemAdminAuditLogs: React.FC = () => {
   // const { admin } = useSystemAdmin(); // Uklonjeno jer nije korišteno

@@ -2,10 +2,10 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SystemAdminProvider, useSystemAdmin } from '../../context/SystemAdminContext';
-import SystemAdminLoginPage from './SystemAdminLoginPage';
-import SystemAdminDashboard from './SystemAdminDashboard';
-import SystemAdminSettings from './SystemAdminSettings';
-import SystemAdminAuditLogs from './SystemAdminAuditLogs';
+import SystemAdminLoginPage from './pages/login/SystemAdminLoginPage';
+import SystemAdminDashboard from './pages/dashboard/SystemAdminDashboard';
+import SystemAdminSettings from './pages/settings/SystemAdminSettings';
+import SystemAdminAuditLogs from './pages/auditLogs/SystemAdminAuditLogs';
 
 // Zaštićena ruta za system admin
 const SystemAdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

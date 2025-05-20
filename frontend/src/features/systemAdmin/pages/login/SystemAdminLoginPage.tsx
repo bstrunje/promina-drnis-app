@@ -1,8 +1,8 @@
-// features/systemAdmin/SystemAdminLoginPage.tsx
+// features/systemAdmin/pages/login/SystemAdminLoginPage.tsx
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
-import { useSystemAdmin } from '../../context/SystemAdminContext';
-import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
+import { useSystemAdmin } from '../../../../context/SystemAdminContext';
+import logoImage from '../../../../assets/images/grbPD_bez_natpisa_pozadina.png';
 
 const SystemAdminLoginPage: React.FC = () => {
   const { login } = useSystemAdmin(); // 'loading' nije korišten

@@ -1,6 +1,6 @@
 // features/systemAdmin/systemAdminApi.ts
 import axios, { AxiosError } from 'axios';
-import { API_BASE_URL } from '../../utils/config';
+import { API_BASE_URL } from '../../../utils/config';
 import { SystemAdmin, SystemAdminLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemAdmin';
 import { SystemSettings } from '@shared/settings';
 

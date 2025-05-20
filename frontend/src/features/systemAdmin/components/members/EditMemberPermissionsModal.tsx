@@ -1,7 +1,7 @@
-// features/systemAdmin/EditMemberPermissionsModal.tsx
+// features/systemAdmin/components/members/EditMemberPermissionsModal.tsx
 import React, { useState, useEffect } from 'react';
 import { AdminPermissionsModel, UpdateMemberPermissionsDto } from '@shared/systemAdmin';
-import { getMemberPermissions, updateMemberPermissions } from './systemAdminApi';
+import { getMemberPermissions, updateMemberPermissions } from '../../utils/systemAdminApi';
 import { X } from 'lucide-react';
 
 interface Member {
