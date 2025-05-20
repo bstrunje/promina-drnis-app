@@ -2,7 +2,7 @@
 import React from 'react';
 import { Users, Activity, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { SystemAdminDashboardStats } from '../../systemAdminApi';
+import { SystemAdminDashboardStats } from '../../utils/systemAdminApi';
 import StatisticCard from './StatisticCard';
 
 // Komponenta za prikaz svih statističkih kartica na dashboardu
@@ -22,11 +22,11 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) 
       <StatisticCard
         title="Članovi"
         icon={<Users className="h-6 w-6 text-blue-600" />}
-        value={stats.totalMembers}
+        value={stats?.totalMembers ?? 0}
         subtitle={
-          `${stats.registeredMembers} registriranih, ${stats.activeMembers} aktivnih 
-          ${stats.registeredMembers > 0 ? 
-            ` (${((stats.activeMembers / stats.registeredMembers) * 100).toFixed(1)}% aktivnih)` : 
+          `${stats?.registeredMembers ?? 0} registriranih, ${stats?.activeMembers ?? 0} aktivnih 
+          ${(stats?.registeredMembers ?? 0) > 0 ? 
+            ` (${(((stats?.activeMembers ?? 0) / (stats?.registeredMembers ?? 1)) * 100).toFixed(1)}% aktivnih)` : 
             ''}`
         }
         loading={statsLoading}
@@ -37,7 +37,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) 
       <StatisticCard
         title="Nedavne aktivnosti"
         icon={<Activity className="h-6 w-6 text-green-600" />}
-        value={stats.recentActivities}
+        value={stats?.recentActivities ?? 0}
         subtitle="U posljednja 24 sata"
         loading={statsLoading}
         onClick={() => navigate("/activities")}
@@ -47,7 +47,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) 
       <StatisticCard
         title="Registracije na čekanju"
         icon={<Shield className="h-6 w-6 text-orange-600" />}
-        value={stats.pendingApprovals}
+        value={stats?.pendingApprovals ?? 0}
         subtitle="Čeka dodjelu lozinke"
         loading={statsLoading}
         onClick={() => navigate("/members?filter=pending")}

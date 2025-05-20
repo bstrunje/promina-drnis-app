@@ -44,6 +44,10 @@ router.get('/members-with-permissions', systemAdminController.getMembersWithPerm
 router.post('/update-permissions', systemAdminController.updateMemberPermissions);
 router.delete('/member-permissions/:memberId', systemAdminController.removeMemberPermissions);
 
+// Rute za upravljanje članovima sa statusom 'pending'
+router.get('/pending-members', systemAdminController.getPendingMembers);
+router.post('/assign-password', systemAdminController.assignPasswordToMember);
+
 // Napomena: Ruta za audit-logs je premještena iznad globalnog middleware-a kako bi bila dostupna i superuser korisnicima
 
 // Dohvati podatke o trenutno prijavljenom system adminu

@@ -3,7 +3,8 @@ import { DatabaseUser } from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../utils/db.js";
-import { Member, MemberLoginData } from "../shared/types/member.js";
+import { Member, MemberLoginData } from '../shared/types/member.js';
+import { MemberUpdateData } from '../shared/types/prisma-extensions.js';
 import { PoolClient } from "pg";
 import { DatabaseError } from "../utils/db.js";
 import authRepository from "../repositories/auth.repository.js";
@@ -11,6 +12,13 @@ import auditService from "../services/audit.service.js";
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../config/jwt.config.js';
 import prisma from "../utils/prisma.js";
 import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
+import { 
+  MAX_FAILED_LOGIN_ATTEMPTS, 
+  ACCOUNT_LOCKOUT_DURATION_MINUTES, 
+  FAILED_ATTEMPTS_RESET_MINUTES,
+  LOGIN_DELAY_MS,
+  LOCKOUT_ADMINS
+} from '../config/auth.config.js';
 
 // Extend Express Request to include user
 declare global {
@@ -24,6 +32,16 @@ declare global {
 interface SetPasswordRequest {
   member_id: number;
   suffix_numbers: string;
+}
+
+/**
+ * Pomoćna funkcija za formatiranje teksta za minute u hrvatskom jeziku
+ * (pravilno gramatičko sklanjanje riječi "minuta")
+ */
+function formatMinuteText(minutes: number): string {
+  if (minutes === 1) return 'minutu';
+  if (minutes >= 2 && minutes <= 4) return 'minute';
+  return 'minuta';
 }
 
 // Pomoćna funkcija za dohvat duljine broja kartice
@@ -308,8 +326,39 @@ const authController = {
         // Promijenjeno: logira se email
         console.warn(`Failed login: user "${sanitizedEmail}" not found (IP: ${userIP})`);
         // Koristimo konstantno vrijeme odziva kako bi se spriječili timing napadi
-        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+        await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS + Math.random() * LOGIN_DELAY_MS));
         res.status(401).json({ message: "Invalid credentials" });
+        return;
+      }
+      
+      // Provjeri je li korisnički račun blokiran
+      if (member.locked_until && member.locked_until > getCurrentDate()) {
+        // Račun je zaključan - izračunaj preostalo vrijeme u minutama
+        const remainingTimeMs = member.locked_until.getTime() - getCurrentDate().getTime();
+        const remainingMinutes = Math.ceil(remainingTimeMs / (60 * 1000));
+        
+        console.warn(`Login attempt for locked account: "${sanitizedEmail}" (IP: ${userIP}, locked for ${remainingMinutes} more minutes)`);
+        
+        // Zabilježi pokušaj pristupa zaključanom računu u audit log
+        await auditService.logAction(
+          "LOGIN_ATTEMPT_LOCKED_ACCOUNT",
+          member.member_id,
+          `Login attempt on locked account for user ${sanitizedEmail}`,
+          req,
+          "warning"
+        );
+        
+        // Odgodi odgovor radi zaštite
+        await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS + Math.random() * LOGIN_DELAY_MS));
+        
+        // Vrati informaciju o zaključanom računu s preostalim vremenom
+        const minuteText = formatMinuteText(remainingMinutes);
+        
+        res.status(401).json({
+          message: `Vaš račun je privremeno blokiran zbog više neuspjelih pokušaja prijave. Pokušajte ponovno za ${remainingMinutes} ${minuteText}.`,
+          lockedUntil: member.locked_until,
+          remainingMinutes
+        });
         return;
       }
 
@@ -368,6 +417,91 @@ const authController = {
       if (!passwordMatch) {
         // Promijenjeno: logira se email
         console.warn(`Failed login: incorrect password for user "${sanitizedEmail}" (IP: ${userIP})`);
+        
+        // Ne pratimo neuspjele pokušaje za admine i superusere ako je tako konfigurirano
+        let shouldTrackFailedAttempt = true;
+        if (!LOCKOUT_ADMINS && (member.role === 'admin' || member.role === 'superuser')) {
+          shouldTrackFailedAttempt = false;
+          console.log(`Skip tracking failed attempt for admin/superuser: ${sanitizedEmail}`);
+        }
+        
+        if (shouldTrackFailedAttempt) {
+          // Dohvati trenutno vrijeme
+          const now = getCurrentDate();
+          
+          // Provjeri treba li resetirati brojač neuspjelih pokušaja
+          // Ako je prošlo više od FAILED_ATTEMPTS_RESET_MINUTES od zadnjeg neuspjelog pokušaja
+          let failedAttempts = member.failed_login_attempts || 0; // Defaultna vrijednost 0 ako je undefined
+          
+          if (member.last_failed_login) {
+            const minutesSinceLastFailure = (now.getTime() - member.last_failed_login.getTime()) / (60 * 1000);
+            if (minutesSinceLastFailure > FAILED_ATTEMPTS_RESET_MINUTES) {
+              failedAttempts = 0; // Resetiraj brojač ako je prošlo dovoljno vremena
+              console.log(`Resetting failed login counter for ${sanitizedEmail} after ${minutesSinceLastFailure.toFixed(2)} minutes of inactivity`);
+            }
+          }
+          
+          // Povećaj brojač neuspjelih pokušaja
+          failedAttempts += 1;
+          
+          // Odredi treba li zaključati račun
+          let lockedUntil = null;
+          if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            // Izračunaj vrijeme isteka zaključavanja
+            lockedUntil = new Date(now.getTime() + ACCOUNT_LOCKOUT_DURATION_MINUTES * 60 * 1000);
+            console.warn(`Account locked: ${sanitizedEmail} (IP: ${userIP}, ${failedAttempts} failed attempts, locked until ${lockedUntil})`);
+            
+            // Zabilježi zaključavanje računa u audit log
+            await auditService.logAction(
+              "ACCOUNT_LOCKED",
+              member.member_id,
+              `Account locked after ${failedAttempts} failed login attempts`,
+              req,
+              "warning"
+            );
+          }
+          
+          // Ažuriraj podatke o neuspjelim prijavama u bazi
+          const updateData: MemberUpdateData = {
+            failed_login_attempts: failedAttempts,
+            last_failed_login: now,
+            locked_until: lockedUntil
+          };
+          
+          await prisma.member.update({
+            where: { member_id: member.member_id },
+            data: updateData
+          });
+          
+          // Zabilježi neuspjelu prijavu u audit log
+          await auditService.logAction(
+            "LOGIN_FAILED",
+            member.member_id,
+            `Failed login attempt (${failedAttempts}/${MAX_FAILED_LOGIN_ATTEMPTS})`,
+            req,
+            "warning"
+          );
+          
+          // Ako je račun zaključan, vrati specifičnu poruku
+          if (lockedUntil) {
+            // Koristimo funkciju za formatiranje teksta za minute - izbor pravilnog teksta za hrvatski jezik
+            const minutes = ACCOUNT_LOCKOUT_DURATION_MINUTES;
+            const minuteText = formatMinuteText(minutes);
+            
+            res.status(401).json({
+              message: `Vaš račun je privremeno blokiran zbog više neuspjelih pokušaja prijave. Pokušajte ponovno za ${minutes} ${minuteText}.`,
+              lockedUntil: lockedUntil,
+              remainingMinutes: ACCOUNT_LOCKOUT_DURATION_MINUTES
+            });
+            return;
+          }
+        } else {
+          // Za administratore i superusere (ako je tako konfigurirano) ne pratimo neuspjele pokušaje
+          console.log(`Not tracking failed login attempt for admin/superuser: ${sanitizedEmail}`);
+        }
+        
+        // Odgodi odgovor radi dosljednog ponašanja
+        await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS + Math.random() * LOGIN_DELAY_MS));
         res.status(401).json({ message: "Invalid credentials" });
         return;
       }
@@ -466,11 +600,17 @@ const authController = {
         // Nastavljamo s prijavom čak i ako spremanje refresh tokena ne uspije
       }
 
-      // Ažuriramo podatak o zadnjoj prijavi u bazi
-      await db.query(
-        "UPDATE members SET last_login = NOW() WHERE member_id = $1",
-        [member.member_id]
-      );
+      // Ažuriramo podatak o zadnjoj prijavi u bazi i resetiramo neuspjele pokušaje prijave
+      const updateData: MemberUpdateData = {
+        last_login: getCurrentDate(),
+        failed_login_attempts: 0,   // Resetiraj neuspjele pokušaje pri uspješnoj prijavi
+        locked_until: null         // Ukloni eventualno zaključavanje
+      };
+      
+      await prisma.member.update({
+        where: { member_id: member.member_id },
+        data: updateData
+      });
 
       // 6. Logiramo uspješnu prijavu
       // Promijenjeno: logira se email

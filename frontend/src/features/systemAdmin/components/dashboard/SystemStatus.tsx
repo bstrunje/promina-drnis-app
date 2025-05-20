@@ -1,6 +1,6 @@
 // features/systemAdmin/components/dashboard/SystemStatus.tsx
 import React, { useState } from 'react';
-import { SystemAdminDashboardStats, SystemHealthInfo, BackupInfo } from '../../utils/systemAdminApi';
+import { SystemAdminDashboardStats } from '../../utils/systemAdminApi';
 import { formatDate } from "../../../../utils/dateUtils";
 import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle, HardDrive, Cpu } from 'lucide-react';
 

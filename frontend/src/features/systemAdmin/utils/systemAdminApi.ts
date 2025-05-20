@@ -190,6 +190,61 @@ export const getMembersWithPermissions = async (): Promise<MemberWithPermissions
 /**
  * Dohvat ovlasti za konkretnog člana
  */
+/**
+ * Tip za člana sa statusom 'pending'
+ */
+export interface PendingMember {
+  member_id: number;
+  first_name: string;
+  last_name: string;
+  full_name?: string;
+  email: string;
+  status: string;
+  created_at: string;
+  registration_completed?: boolean;
+}
+
+/**
+ * Dohvat svih članova sa statusom 'pending'
+ */
+export const getPendingMembers = async (): Promise<PendingMember[]> => {
+  try {
+    const response = await systemAdminApi.get<PendingMember[]>('/system-admin/pending-members');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
+  }
+};
+
+/**
+ * Tip odgovora za dodjeljivanje lozinke
+ */
+export interface PasswordAssignmentResponse {
+  message: string;
+}
+
+/**
+ * Dodjeljivanje lozinke članu (aktivacija računa)
+ */
+export const assignPasswordToMember = async (memberId: number, password: string, cardNumber?: string): Promise<PasswordAssignmentResponse> => {
+  try {
+    const response = await systemAdminApi.post<PasswordAssignmentResponse>('/system-admin/assign-password', {
+      memberId,
+      password,
+      cardNumber
+    });
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška prilikom dodjeljivanja lozinke.');
+  }
+};
+
 export const getMemberPermissions = async (memberId: number): Promise<AdminPermissionsModel | null> => {
   try {
     const response = await systemAdminApi.get<AdminPermissionsModel>(`/system-admin/member-permissions/${memberId}`);

@@ -1,11 +1,11 @@
 // features/systemAdmin/components/common/AdminTabNav.tsx
 import React from 'react';
-import { Activity, Users, Settings } from 'lucide-react';
+import { Activity, Users, Settings, UserPlus } from 'lucide-react';
 
 // Komponenta za navigacijske tabove u System Admin panelu
 interface AdminTabNavProps {
-  activeTab: 'dashboard' | 'members' | 'settings';
-  setActiveTab: (tab: 'dashboard' | 'members' | 'settings') => void;
+  activeTab: 'dashboard' | 'members' | 'settings' | 'register-members';
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members') => void;
 }
 
 const AdminTabNav: React.FC<AdminTabNavProps> = ({ activeTab, setActiveTab }) => {
@@ -35,6 +35,19 @@ const AdminTabNav: React.FC<AdminTabNavProps> = ({ activeTab, setActiveTab }) =>
         <div className="flex items-center">
           <Users className="h-4 w-4 mr-2" />
           <span>Upravljanje ovlastima članova</span>
+        </div>
+      </button>
+      <button
+        className={`px-4 py-2 font-medium ${
+          activeTab === 'register-members'
+            ? 'text-blue-600 border-b-2 border-blue-600'
+            : 'text-gray-600 hover:text-blue-600'
+        }`}
+        onClick={() => { void setActiveTab('register-members'); }}
+      >
+        <div className="flex items-center">
+          <UserPlus className="h-4 w-4 mr-2" />
+          <span>Registracija članova</span>
         </div>
       </button>
       <button

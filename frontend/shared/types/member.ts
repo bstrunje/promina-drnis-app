@@ -74,6 +74,11 @@ export interface Member {
     password_hash?: string;
     last_login?: Date;
     status?: 'registered' | 'inactive' | 'pending';  // Added status field
+    
+    // Authentication security fields
+    failed_login_attempts?: number;  // Broj neuspjelih pokušaja prijave
+    locked_until?: Date;           // Vrijeme do kojeg je račun zaključan
+    last_failed_login?: Date;       // Vrijeme zadnjeg neuspjelog pokušaja prijave
 
     // Profile Information (UI/Display only)
     total_hours?: number;

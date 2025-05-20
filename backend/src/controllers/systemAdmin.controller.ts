@@ -533,6 +533,107 @@ const systemAdminController = {
             res.status(500).json({ message: "Internal server error" });
         }
     },
+
+    // Dohvat svih članova sa statusom 'pending'
+    async getPendingMembers(
+        req: Request,
+        res: Response
+    ): Promise<void> {
+        try {
+            // Provjera autorizacije: samo system admin može dohvatiti pending članove
+            if (!req.user || req.user.user_type !== 'system_admin') {
+                res.status(403).json({ message: "Access denied" });
+                return;
+            }
+            
+            // Dohvat članova sa statusom 'pending'
+            const pendingMembers = await prisma.member.findMany({
+                where: {
+                    status: 'pending'
+                },
+                select: {
+                    member_id: true,
+                    first_name: true,
+                    last_name: true,
+                    full_name: true,
+                    email: true,
+                    status: true,
+                    registration_completed: true,
+                    created_at: true
+                },
+                orderBy: {
+                    created_at: 'desc'
+                }
+            });
+            
+            res.json(pendingMembers);
+        } catch (error) {
+            console.error('Error fetching pending members:', error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    },
+
+    // Dodjeljivanje lozinke članu (aktivacija korisničkog računa)
+    async assignPasswordToMember(
+        req: Request<
+            {},
+            {},
+            { memberId: number; password: string; cardNumber?: string }
+        >,
+        res: Response
+    ): Promise<void> {
+        try {
+            const { memberId, password, cardNumber } = req.body;
+            
+            // Provjera autorizacije: samo system admin može dodjeljivati lozinke
+            if (!req.user || req.user.user_type !== 'system_admin') {
+                res.status(403).json({ message: "Access denied" });
+                return;
+            }
+            
+            const adminId = req.user.id;
+            console.log(`System Admin ${adminId} assigning password to member: ${memberId}`);
+            
+            // Hashiranje lozinke
+            const hashedPassword = await bcrypt.hash(password, 10);
+            
+            // Dohvat člana prije ažuriranja (za audit log)
+            const member = await prisma.member.findUnique({
+                where: { member_id: memberId },
+                select: { full_name: true, email: true }
+            });
+            
+            if (!member) {
+                res.status(404).json({ message: 'Member not found' });
+                return;
+            }
+
+            // Ažuriranje člana - postavljanje lozinke i statusa 'registered'
+            await prisma.member.update({
+                where: { member_id: memberId },
+                data: {
+                    password_hash: hashedPassword,
+                    status: 'registered',
+                    registration_completed: true,
+                    ...(cardNumber ? { card_number: cardNumber } : {})
+                }
+            });
+            
+            // Bilježenje u audit log
+            await auditService.logAction(
+                'MEMBER_ACTIVATED',
+                adminId,
+                `System Admin activated member account for ${member.full_name} (${member.email})`,
+                req,
+                'success'
+            );
+            
+            res.json({ message: 'Password assigned and member activated successfully' });
+        } catch (error) {
+            console.error('Error assigning password to member:', error);
+            res.status(500).json({ message: 'Failed to assign password to member' });
+        }
+    },
 };
 
 // Pomoćna funkcija za validaciju vremenske zone

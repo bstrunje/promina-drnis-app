@@ -41,6 +41,9 @@ model Member {
   created_at               DateTime?               @default(now()) @db.Timestamptz(6)
   updated_at               DateTime?               @default(now()) @db.Timestamptz(6)
   nickname                 String?                 @db.VarChar(50)
+  failed_login_attempts    Int                     @default(0)
+  locked_until             DateTime?               @db.Timestamp(6)
+  last_failed_login        DateTime?               @db.Timestamp(6)
   grantedPermissions       AdminPermissions[]      @relation("grantedByPermissions")
   permissions              AdminPermissions?       @relation("memberPermissions")
   annual_statistics        AnnualStatistics[]

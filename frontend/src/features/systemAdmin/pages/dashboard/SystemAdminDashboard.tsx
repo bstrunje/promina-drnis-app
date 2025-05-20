@@ -1,10 +1,13 @@
 // features/systemAdmin/pages/dashboard/SystemAdminDashboard.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSystemAdmin } from '../../../../context/SystemAdminContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminHeader from '../../components/common/AdminHeader';
 import AdminTabNav from '../../components/common/AdminTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
 import MembersWithPermissions from '../../components/members/MembersWithPermissions';
+import PendingMembersList from '../../components/members/PendingMembersList';
+import SystemAdminSettings from '../settings/SystemAdminSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
 
 /**
@@ -13,7 +16,42 @@ import useDashboardStats from '../../hooks/useDashboardStats';
  */
 const SystemAdminDashboard: React.FC = () => {
   const { admin } = useSystemAdmin();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings'>('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members'>('dashboard');
+  
+  // Prilagođeno rukovanje tabovima kroz URL
+  useEffect(() => {
+    // Dobivanje trenutnog taba iz URL-a
+    const path = location.pathname;
+    if (path.includes('/system-admin/members')) {
+      setActiveTab('members');
+    } else if (path.includes('/system-admin/settings')) {
+      setActiveTab('settings');
+    } else if (path.includes('/system-admin/register-members')) {
+      setActiveTab('register-members');
+    } else {
+      // Default - dashboard
+      setActiveTab('dashboard');
+    }
+  }, [location.pathname]);
+  
+  // Handler za promjenu taba koji ažurira URL
+  const handleTabChange = (tab: 'dashboard' | 'members' | 'settings' | 'register-members') => {
+    let targetPath = '/system-admin/';
+    if (tab === 'members') {
+      targetPath = '/system-admin/members';
+    } else if (tab === 'settings') {
+      targetPath = '/system-admin/settings';
+    } else if (tab === 'register-members') {
+      targetPath = '/system-admin/register-members';
+    } else {
+      targetPath = '/system-admin/dashboard';
+    }
+    
+    // Navigiraj na odgovarajući URL s prefixom system-admin
+    navigate(targetPath);
+  };
   
   // Koristimo hook za dohvat statistika dashboarda
   const { stats, statsLoading, statsError, refreshDashboardStats } = useDashboardStats(activeTab);
@@ -26,7 +64,7 @@ const SystemAdminDashboard: React.FC = () => {
       {/* Glavni sadržaj */}
       <main className="container mx-auto p-4">
         {/* Navigacija između tabova */}
-        <AdminTabNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        <AdminTabNav activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Tab sadržaj - Dashboard */}
         {activeTab === 'dashboard' && (
@@ -45,13 +83,18 @@ const SystemAdminDashboard: React.FC = () => {
         
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (
-          <div>
+          <>
             <h2 className="text-xl font-semibold mb-6">Postavke sustava</h2>
-            <p className="text-gray-500">
-              Postavke sustava će biti implementirane kao posebna komponenta.
-              Za sada koristimo postojeću SystemAdminSettings.tsx komponentu.
-            </p>
-          </div>
+            <SystemAdminSettings />
+          </>
+        )}
+        
+        {/* Tab sadržaj - Registracija članova */}
+        {activeTab === 'register-members' && (
+          <>
+            <h2 className="text-xl font-semibold mb-6">Registracija članova</h2>
+            <PendingMembersList />
+          </>
         )}
       </main>
     </div>

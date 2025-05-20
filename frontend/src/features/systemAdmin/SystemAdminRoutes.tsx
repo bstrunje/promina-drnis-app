@@ -4,7 +4,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { SystemAdminProvider, useSystemAdmin } from '../../context/SystemAdminContext';
 import SystemAdminLoginPage from './pages/login/SystemAdminLoginPage';
 import SystemAdminDashboard from './pages/dashboard/SystemAdminDashboard';
-import SystemAdminSettings from './pages/settings/SystemAdminSettings';
 import SystemAdminAuditLogs from './pages/auditLogs/SystemAdminAuditLogs';
 
 // Zaštićena ruta za system admin
@@ -46,10 +45,18 @@ const SystemAdminRoutesContent: React.FC = () => {
         } 
       />
       <Route 
+        path="/members" 
+        element={
+          <SystemAdminProtectedRoute>
+            <SystemAdminDashboard />
+          </SystemAdminProtectedRoute>
+        } 
+      />
+      <Route 
         path="/settings" 
         element={
           <SystemAdminProtectedRoute>
-            <SystemAdminSettings />
+            <SystemAdminDashboard />
           </SystemAdminProtectedRoute>
         } 
       />
@@ -58,6 +65,22 @@ const SystemAdminRoutesContent: React.FC = () => {
         element={
           <SystemAdminProtectedRoute>
             <SystemAdminAuditLogs />
+          </SystemAdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/activities" 
+        element={
+          <SystemAdminProtectedRoute>
+            <SystemAdminDashboard />
+          </SystemAdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/register-members" 
+        element={
+          <SystemAdminProtectedRoute>
+            <SystemAdminDashboard />
           </SystemAdminProtectedRoute>
         } 
       />
