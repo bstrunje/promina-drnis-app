@@ -14,6 +14,35 @@ export interface SystemAdminLoginResponse {
   token: string;
 }
 
+// Tipovi za praćenje zdravlja sustava
+export type SystemHealthStatus = 'Healthy' | 'Warning' | 'Critical';
+
+// Informacije o stanju sustava
+export interface SystemHealthInfo {
+  status: SystemHealthStatus;
+  dbConnection: boolean;
+  diskSpace: {
+    available: number;
+    total: number;
+    percentUsed: number;
+  };
+  memory: {
+    available: number;
+    total: number;
+    percentUsed: number;
+  };
+  uptime: number; // vrijeme rada servera u sekundama
+  lastCheck: Date;
+}
+
+// Informacije o sigurnosnoj kopiji
+export interface BackupInfo {
+  lastBackup: Date | null;
+  backupSize: number | null;
+  backupLocation: string | null;
+  status: 'Success' | 'Failed' | 'Never' | 'Unknown';
+}
+
 // Definicija statistika dashboarda
 export interface SystemAdminDashboardStats {
   totalMembers: number;
@@ -23,6 +52,8 @@ export interface SystemAdminDashboardStats {
   recentActivities: number;
   systemHealth: string;
   lastBackup: string;
+  healthDetails?: SystemHealthInfo;
+  backupDetails?: BackupInfo;
 }
 
 // Kreiranje instance axios-a s osnovnim postavkama

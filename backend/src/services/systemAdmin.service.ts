@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.config.js';
 import db from '../utils/db.js';
+import systemHealthService, { SystemHealthStatus, SystemHealthInfo, BackupInfo } from './systemHealth.service.js';
 
 interface SystemSettings {
     id: string;
@@ -289,8 +290,10 @@ const systemAdminService = {
     async getDashboardStats(): Promise<{
         weeklyActivityHistory: { weekStart: Date; count: number }[];
         totalActivities: number;
-        systemHealth: null; // Placeholder, može se proširiti prema stvarnoj logici
-        lastBackup: null; // Placeholder, može se proširiti prema stvarnoj logici
+        systemHealth: string; // Status zdravlja sustava ('Healthy', 'Warning', 'Critical')
+        lastBackup: string; // Informacija o zadnjoj sigurnosnoj kopiji
+        healthDetails?: SystemHealthInfo; // Detaljne informacije o zdravlju sustava (opciono)
+        backupDetails?: BackupInfo; // Detaljne informacije o sigurnosnoj kopiji (opciono)
     }> {
         try {
             // Koliko tjedana povijesti vraćamo
@@ -336,16 +339,22 @@ const systemAdminService = {
             // Ukupan broj aktivnosti
             const totalActivities = await prisma.activity.count();
 
-            // Placeholderi za health i backup (može se proširiti kad bude logika)
-            const systemHealth = null;
-            const lastBackup = null;
+            // Dohvat stvarnih informacija o zdravlju sustava
+            const healthInfo = await systemHealthService.checkSystemHealth();
+            const backupInfo = await systemHealthService.getBackupInfo();
+            
+            // Formatiranje za prikaz na dashboardu
+            const systemHealth = systemHealthService.formatHealthStatus(healthInfo);
+            const lastBackup = systemHealthService.formatBackupInfo(backupInfo);
 
             // Povratni objekt
             return {
                 weeklyActivityHistory: weeklyCounts,
                 totalActivities,
                 systemHealth,
-                lastBackup
+                lastBackup,
+                healthDetails: healthInfo,  // Detaljne informacije ako ih frontend želi prikazati
+                backupDetails: backupInfo   // Detaljne informacije ako ih frontend želi prikazati
             };
         } catch (error) {
             console.error('Greška prilikom dohvaćanja dashboard statistike:', error);
