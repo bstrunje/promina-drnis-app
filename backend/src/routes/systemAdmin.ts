@@ -40,7 +40,8 @@ router.put('/settings', systemAdminController.updateSystemSettings);
 
 // Rute za upravljanje ovlastima članova
 router.get('/members-with-permissions', systemAdminController.getMembersWithPermissions);
-// router.get('/member-permissions/:memberId', systemAdminController.getMemberPermissions); // Trenutno nedostupno
+router.get('/members-without-permissions', systemAdminController.getMembersWithoutPermissions);
+router.get('/member-permissions/:memberId', systemAdminController.getMemberPermissions);
 router.post('/update-permissions', systemAdminController.updateMemberPermissions);
 router.delete('/member-permissions/:memberId', systemAdminController.removeMemberPermissions);
 

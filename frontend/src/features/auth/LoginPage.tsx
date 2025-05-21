@@ -46,6 +46,7 @@ const LoginPage = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
+  const [loginPageMessage, setLoginPageMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Inicijalizacija stanja koristi ažurirani MemberLoginData tip
@@ -183,6 +184,8 @@ const LoginPage = () => {
 
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log('Registration form submitted');
+    
     if (!acceptedTerms) {
       setMessage({
         type: "error",
@@ -230,14 +233,26 @@ const LoginPage = () => {
         }
       };
 
+      console.log('Sending registration data to API:', memberData);
       const response = await register(memberData);
+      console.log('Registration API response:', response);
+      
       if (response.message) {
+        console.log('Setting success message:', response.message);
+        
+        // Postavljamo poruku u formi za registraciju
         setMessage({ type: "success", content: response.message });
+        
+        // Postavljamo poruku koja će biti vidljiva na početnom ekranu
+        setLoginPageMessage({ type: "success", content: response.message });
+        
+        // Zatvaramo formu za registraciju nakon kratke pauze da korisnik može vidjeti poruku
         setTimeout(() => {
           setIsRegistering(false);
-        }, 3000);
+        }, 2000);
       }
     } catch (error) {
+      console.error('Registration error:', error);
       if (error instanceof Error) {
         setMessage({
           type: "error",
@@ -639,6 +654,13 @@ const LoginPage = () => {
             <>
               {step === 0 && (
                 <div className="space-y-4">
+                  {/* Prikaz poruke o uspješnoj registraciji na početnoj stranici */}
+                  {loginPageMessage && (
+                    <div className={`p-3 rounded-md mb-4 ${loginPageMessage.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                      {loginPageMessage.content}
+                    </div>
+                  )}
+                  
                   <button
                     onClick={() => setStep(1)}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -646,7 +668,10 @@ const LoginPage = () => {
                     Prijavi se
                   </button>
                   <button
-                    onClick={() => setIsRegistering(true)}
+                    onClick={() => {
+                      setIsRegistering(true);
+                      setLoginPageMessage(null); // Brišemo poruku kad korisnik ponovno otvori formu za registraciju
+                    }}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     Hoćeš postati član Planinarskog društva Promina Drniš? Upiši se

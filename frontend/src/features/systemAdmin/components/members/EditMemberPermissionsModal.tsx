@@ -221,9 +221,35 @@ const permissionCategories = categorizePermissions(permissions);
       setSaving(true);
       setError(null);
       
-      const updateData: UpdateMemberPermissionsDto = {
+      // Osiguramo da imamo samo boolean vrijednosti za ovlasti
+      // Bez reference na članove, datum i ostale podatke
+      const permissionsOnly = {
+        can_view_members: Boolean(permissions.can_view_members),
+        can_edit_members: Boolean(permissions.can_edit_members),
+        can_add_members: Boolean(permissions.can_add_members),
+        can_manage_membership: Boolean(permissions.can_manage_membership),
+        can_view_activities: Boolean(permissions.can_view_activities),
+        can_create_activities: Boolean(permissions.can_create_activities),
+        can_approve_activities: Boolean(permissions.can_approve_activities),
+        can_view_financials: Boolean(permissions.can_view_financials),
+        can_manage_financials: Boolean(permissions.can_manage_financials),
+        can_send_group_messages: Boolean(permissions.can_send_group_messages),
+        can_manage_all_messages: Boolean(permissions.can_manage_all_messages),
+        can_view_statistics: Boolean(permissions.can_view_statistics),
+        can_export_data: Boolean(permissions.can_export_data),
+        can_manage_end_reasons: Boolean(permissions.can_manage_end_reasons),
+        can_manage_card_numbers: Boolean(permissions.can_manage_card_numbers),
+        can_assign_passwords: Boolean(permissions.can_assign_passwords)
+      };
+      
+      console.log('Permissions format before API call:', { 
         member_id: member.member_id,
-        permissions
+        permissions: permissionsOnly
+      });
+      
+      const updateData = {
+        member_id: member.member_id,
+        permissions: permissionsOnly
       };
       
       await updateMemberPermissions(updateData);

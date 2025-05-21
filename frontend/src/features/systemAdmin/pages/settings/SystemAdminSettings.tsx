@@ -67,7 +67,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
   };
 
   return (
-    <form onSubmit={e => void handleSubmit(e)} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow"> // void zbog lint pravila
+    <form onSubmit={e => void handleSubmit(e)} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow">
       <label htmlFor="newUsername" className="font-medium">Novi username (opcionalno)</label>
       <input
         id="newUsername"

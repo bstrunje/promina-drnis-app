@@ -108,6 +108,39 @@ const systemAdminService = {
             }
 
             if (!permissions) {
+                // Ako član ima ulogu superuser ili admin, vrati defaultne ovlasti
+                if (member.role === 'superuser' || member.role === 'admin') {
+                    return {
+                        member_id: member.member_id,
+                        can_view_members: true,
+                        can_edit_members: true,
+                        can_add_members: member.role === 'superuser',
+                        can_manage_membership: member.role === 'superuser',
+                        can_view_activities: true,
+                        can_create_activities: true,
+                        can_approve_activities: member.role === 'superuser',
+                        can_view_financials: member.role === 'superuser',
+                        can_manage_financials: member.role === 'superuser',
+                        can_send_group_messages: true,
+                        can_manage_all_messages: member.role === 'superuser',
+                        can_view_statistics: true,
+                        can_export_data: member.role === 'superuser',
+                        can_manage_end_reasons: member.role === 'superuser',
+                        can_manage_card_numbers: member.role === 'superuser',
+                        can_assign_passwords: member.role === 'superuser',
+                        granted_by: null,
+                        granted_at: new Date(),
+                        updated_at: new Date(),
+                        member: {
+                            member_id: member.member_id,
+                            first_name: member.first_name,
+                            last_name: member.last_name,
+                            full_name: `${member.first_name} ${member.last_name}`,
+                            email: member.email,
+                            role: member.role
+                        }
+                    };
+                }
                 return null;
             }
 
@@ -135,6 +168,15 @@ const systemAdminService = {
         grantedById: number
     ): Promise<void> {
         try {
+            // Logiramo primljene podatke za dijagnostiku
+            console.log('updateMemberPermissions called with:', { memberId, permissions, grantedById });
+            
+            // Filtriramo i ekstrahiramo samo polja koja postoje u bazi podataka
+            // Prema Prisma shemi, jedino polje dozvole je 'can_manage_end_reasons'
+            const can_manage_end_reasons = permissions.can_manage_end_reasons === true;
+            
+            console.log('Using permission:', { can_manage_end_reasons });
+            
             // Prvo pokušamo pronaći postojeće ovlasti
             const existingPermissions = await prisma.adminPermissions.findUnique({
                 where: {
@@ -145,6 +187,7 @@ const systemAdminService = {
             const now = getCurrentDate();
             
             if (existingPermissions) {
+                console.log('Existing permissions found, updating...');
                 // Ako ovlasti već postoje, ažuriramo ih
                 try {
                     await prisma.adminPermissions.update({
@@ -152,58 +195,60 @@ const systemAdminService = {
                             member_id: memberId
                         },
                         data: {
-                            ...permissions,
-                            granted_by: grantedById,
-                            updated_at: now
+                            can_manage_end_reasons: can_manage_end_reasons,
+                            grantedByMember: {
+                                connect: { member_id: grantedById }
+                            }
                         }
                     });
+                    console.log('Permissions updated successfully via Prisma');
                 } catch (prismaError) {
                     // Ako Prisma ne uspije, koristimo direktni SQL upit
                     console.warn('Prisma error when updating permissions, falling back to SQL:', prismaError);
                     
-                    const permissionEntries = Object.entries(permissions);
-                    const updates = permissionEntries
-                        .map(([key, value]) => `${key} = ${value === true ? 'true' : 'false'}`)
-                        .join(', ');
-                    
                     await db.query(
                         `UPDATE admin_permissions 
-                         SET ${updates}, granted_by = $1, updated_at = $2
+                         SET can_manage_end_reasons = $1, granted_by = $2
                          WHERE member_id = $3`,
-                        [grantedById, now, memberId]
+                        [can_manage_end_reasons, grantedById, memberId]
                     );
+                    console.log('Permissions updated successfully via SQL');
                 }
             } else {
+                console.log('No existing permissions found, creating new entry...');
                 // Ako ovlasti ne postoje, kreiramo ih
                 try {
                     await prisma.adminPermissions.create({
                         data: {
-                            member_id: memberId,
-                            ...permissions,
-                            granted_by: grantedById,
-                            granted_at: now,
-                            updated_at: now
+                            can_manage_end_reasons: can_manage_end_reasons,
+                            member: {
+                                connect: { member_id: memberId }
+                            },
+                            grantedByMember: {
+                                connect: { member_id: grantedById }
+                            },
+                            granted_at: now
                         }
                     });
+                    console.log('Permissions created successfully via Prisma');
                 } catch (prismaError) {
                     // Ako Prisma ne uspije, koristimo direktni SQL upit
                     console.warn('Prisma error when creating permissions, falling back to SQL:', prismaError);
                     
-                    const permissionKeys = Object.keys(permissions);
-                    const permissionValues = Object.values(permissions).map(v => v === true ? 'true' : 'false');
-                    
-                    const columns = ['member_id', ...permissionKeys, 'granted_by', 'granted_at', 'updated_at'].join(', ');
-                    const placeholders = Array.from({ length: permissionKeys.length + 3 }, (_, i) => `$${i + 1}`).join(', ');
-                    
                     await db.query(
-                        `INSERT INTO admin_permissions (${columns})
-                         VALUES (${placeholders})`,
-                        [memberId, ...permissionValues, grantedById, now, now]
+                        `INSERT INTO admin_permissions (member_id, can_manage_end_reasons, granted_by, granted_at)
+                         VALUES ($1, $2, $3, $4)`,
+                        [memberId, can_manage_end_reasons, grantedById, now]
                     );
+                    console.log('Permissions created successfully via SQL');
                 }
             }
         } catch (error) {
             console.error('Error in updateMemberPermissions:', error);
+            if (error instanceof Error) {
+                console.error('Error details:', error.message);
+                console.error('Error stack:', error.stack);
+            }
             throw error;
         }
     },
@@ -211,7 +256,27 @@ const systemAdminService = {
     // Dohvat svih članova s admin ovlastima
     async getMembersWithPermissions(): Promise<any[]> {
         try {
-            // Prvo pokušavamo dohvatiti podatke korištenjem Prisma
+            // Prvo dohvaćamo članove sa superuser ili admin ulogom
+            const specialRoleMembers = await prisma.member.findMany({
+                where: {
+                    OR: [
+                        { role: 'superuser' },
+                        { role: 'admin' }
+                    ]
+                },
+                select: {
+                    member_id: true,
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    role: true
+                },
+                orderBy: {
+                    last_name: 'asc'
+                }
+            });
+            
+            // Zatim dohvaćamo članove koji imaju admin ovlasti
             try {
                 const result = await prisma.adminPermissions.findMany({
                     include: {
@@ -220,7 +285,8 @@ const systemAdminService = {
                                 member_id: true,
                                 first_name: true,
                                 last_name: true,
-                                email: true
+                                email: true,
+                                role: true
                             }
                         }
                     },
@@ -231,39 +297,109 @@ const systemAdminService = {
                     }
                 });
                 
-                // Formatiraj podatke
-                return result.map(item => ({
-                    ...item,
-                    member: item.member ? {
-                        ...item.member,
-                        full_name: `${item.member.first_name} ${item.member.last_name}`
-                    } : null
-                }));
+                // Kreiraj mapu ID članova s ovlastima da izbjegnemo duplikate
+                const memberMap = new Map();
+                
+                // Dodaj članove iz admin_permissions
+                for (const permission of result) {
+                    if (permission.member) {
+                        memberMap.set(permission.member_id, {
+                            ...permission,
+                            member: {
+                                ...permission.member,
+                                full_name: `${permission.member.first_name} ${permission.member.last_name}`
+                            }
+                        });
+                    }
+                }
+                
+                // Dodaj članove s posebnim ulogama (superuser/admin) ako već nisu dodani
+                for (const member of specialRoleMembers) {
+                    if (!memberMap.has(member.member_id)) {
+                        // Kreiraj objekt koji odgovara formatu za članove s ovlastima
+                        memberMap.set(member.member_id, {
+                            member_id: member.member_id,
+                            // Podrazumijevane ovlasti za superuser/admin članove ako ih nemaju eksplicitno dodane
+                            can_view_members: member.role === 'superuser' || member.role === 'admin',
+                            can_edit_members: member.role === 'superuser' || member.role === 'admin',
+                            can_delete_members: member.role === 'superuser',
+                            can_view_activities: member.role === 'superuser' || member.role === 'admin',
+                            can_edit_activities: member.role === 'superuser' || member.role === 'admin',
+                            can_delete_activities: member.role === 'superuser',
+                            can_view_reports: member.role === 'superuser' || member.role === 'admin',
+                            can_manage_settings: member.role === 'superuser',
+                            member: {
+                                ...member,
+                                full_name: `${member.first_name} ${member.last_name}`
+                            },
+                            // Ovi podaci mogu biti null za članove bez eksplicitnih ovlasti
+                            granted_by: null,
+                            granted_at: null,
+                            updated_at: null
+                        });
+                    }
+                }
+                
+                // Vrati vrijednosti kao array
+                return Array.from(memberMap.values());
             } catch (prismaError) {
-                // Ako Prisma ne uspije, koristimo direktni SQL upit
-                console.warn('Prisma error when fetching members with permissions, falling back to SQL:', prismaError);
+                // Ako Prisma upit za ovlasti ne uspije, vrati samo članove s posebnim ulogama
+                console.warn('Error fetching admin permissions, falling back to special role members only:', prismaError);
                 
-                const result = await db.query(`
-                    SELECT ap.*, m.member_id, m.first_name, m.last_name, m.email 
-                    FROM admin_permissions ap 
-                    JOIN members m ON ap.member_id = m.member_id 
-                    ORDER BY m.last_name, m.first_name
-                `);
+                // Kreiraj mapu članova iz posebnih uloga
+                const memberMap = new Map();
                 
-                // Formatiraj podatke
-                return result.rows.map((row: any) => ({
-                    ...row,
-                    member: row.member_id ? {
-                        member_id: row.member_id,
-                        first_name: row.first_name,
-                        last_name: row.last_name,
-                        email: row.email,
-                        full_name: `${row.first_name} ${row.last_name}`
-                    } : null
-                }));
+                for (const member of specialRoleMembers) {
+                    memberMap.set(member.member_id, {
+                        member_id: member.member_id,
+                        can_view_members: member.role === 'superuser' || member.role === 'admin',
+                        can_edit_members: member.role === 'superuser' || member.role === 'admin',
+                        can_delete_members: member.role === 'superuser',
+                        can_view_activities: member.role === 'superuser' || member.role === 'admin',
+                        can_edit_activities: member.role === 'superuser' || member.role === 'admin',
+                        can_delete_activities: member.role === 'superuser',
+                        can_view_reports: member.role === 'superuser' || member.role === 'admin',
+                        can_manage_settings: member.role === 'superuser',
+                        member: {
+                            ...member,
+                            full_name: `${member.first_name} ${member.last_name}`
+                        },
+                        granted_by: null,
+                        granted_at: null,
+                        updated_at: null
+                    });
+                }
+                
+                return Array.from(memberMap.values());
             }
         } catch (error) {
             console.error('Error in getMembersWithPermissions:', error);
+            throw error;
+        }
+    },
+    
+    // Dohvat članova koji nemaju administratorske ovlasti
+    async getMembersWithoutPermissions(): Promise<any[]> {
+        try {
+            // Dohvaćamo članove koji nemaju zapis u tablici admin_permissions
+            // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'admin', 'superuser' ili 'member'
+            return db.query(`
+                SELECT 
+                    m.member_id, 
+                    m.first_name, 
+                    m.last_name, 
+                    m.email,
+                    m.role
+                FROM member m
+                WHERE m.member_id NOT IN (
+                    SELECT member_id FROM admin_permissions
+                )
+                AND m.detailed_status = 'registered'
+                AND m.role IN ('admin', 'superuser', 'member')
+                ORDER BY m.last_name, m.first_name
+            `).then(result => result.rows);
+        } catch (error) {
+            console.error('Error in getMembersWithoutPermissions:', error);
             throw error;
         }
     },

@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from '../../../utils/config';
 import { SystemAdmin, SystemAdminLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemAdmin';
 import { SystemSettings } from '@shared/settings';
+import { Member } from '@shared/member';
 
 // Definicija odgovora nakon prijave
 export interface SystemAdminLoginResponse {
@@ -188,6 +189,21 @@ export const getMembersWithPermissions = async (): Promise<MemberWithPermissions
 };
 
 /**
+ * Dohvat svih članova koji nemaju administratorske ovlasti
+ */
+export const getMembersWithoutPermissions = async (): Promise<Member[]> => {
+  try {
+    const response = await systemAdminApi.get<Member[]>('/system-admin/members-without-permissions');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška prilikom dohvata članova bez ovlasti.');
+  }
+};
+
+/**
  * Dohvat ovlasti za konkretnog člana
  */
 /**
@@ -229,12 +245,11 @@ export interface PasswordAssignmentResponse {
 /**
  * Dodjeljivanje lozinke članu (aktivacija računa)
  */
-export const assignPasswordToMember = async (memberId: number, password: string, cardNumber?: string): Promise<PasswordAssignmentResponse> => {
+export const assignPasswordToMember = async (memberId: number, password: string): Promise<PasswordAssignmentResponse> => {
   try {
     const response = await systemAdminApi.post<PasswordAssignmentResponse>('/system-admin/assign-password', {
       memberId,
-      password,
-      cardNumber
+      password
     });
     return response.data;
   } catch (error: unknown) {
@@ -265,7 +280,14 @@ export const getMemberPermissions = async (memberId: number): Promise<AdminPermi
  */
 export const updateMemberPermissions = async (updateData: UpdateMemberPermissionsDto): Promise<void> => {
   try {
-    await systemAdminApi.post('/system-admin/update-permissions', updateData);
+    // Osiguravamo da objekt ima točno traženi format (member_id i permissions kao zasebna polja na root razini)
+    const formattedData = {
+      member_id: updateData.member_id,
+      permissions: updateData.permissions
+    };
+    
+    console.log('Sending update data:', JSON.stringify(formattedData, null, 2));
+    await systemAdminApi.post('/system-admin/update-permissions', formattedData);
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.message);

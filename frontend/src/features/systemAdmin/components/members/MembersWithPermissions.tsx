@@ -1,7 +1,10 @@
 // features/systemAdmin/components/members/MembersWithPermissions.tsx
 import React, { useState } from 'react';
-import { User, UserPlus, RefreshCw } from 'lucide-react';
+import { User, RefreshCw } from 'lucide-react';
 import useMembersWithPermissions from '../../hooks/useMembersWithPermissions';
+import EditMemberPermissionsModal from './EditMemberPermissionsModal';
+import { removeMemberPermissions } from '../../utils/systemAdminApi';
+import { Member } from '@shared/member';
 
 // Komponenta za prikaz i upravljanje članovima s administratorskim ovlastima
 interface MembersWithPermissionsProps {
@@ -11,6 +14,12 @@ interface MembersWithPermissionsProps {
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
   const { membersWithPermissions, loading, error, refreshMembersWithPermissions } = useMembersWithPermissions(activeTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  
+  // State za modalni prozor uređivanja ovlasti
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   // Filtriranje članova prema searchTerm
   const filteredMembers = membersWithPermissions.filter(memberWithPermissions => {
@@ -20,6 +29,49 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
     
     return fullName.includes(term) || email.includes(term);
   });
+  
+  // Funkcija za otvaranje modalnog prozora za uređivanje ovlasti
+  const handleEditClick = (memberWithPermissions: any) => {
+    setSelectedMember(memberWithPermissions.member);
+    setIsEditModalOpen(true);
+  };
+  
+  // Funkcija za zatvaranje modalnog prozora za uređivanje
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedMember(null);
+  };
+
+  // Funkcija za uklanjanje ovlasti člana
+  const handleRemovePermissions = async (memberId: number) => {
+    if (!window.confirm('Jeste li sigurni da želite ukloniti sve administratorske ovlasti ovom članu?')) {
+      return;
+    }
+    
+    try {
+      await removeMemberPermissions(memberId);
+      setDeleteError(null);
+      setDeleteSuccess('Ovlasti uspješno uklonjene.');
+      // Osvježi popis članova nakon 1.5 sekundi
+      setTimeout(() => {
+        void refreshMembersWithPermissions();
+        setDeleteSuccess(null);
+      }, 1500);
+    } catch (err) {
+      if (err instanceof Error) {
+        setDeleteError(err.message);
+      } else {
+        setDeleteError('Došlo je do greške prilikom uklanjanja ovlasti.');
+      }
+      // Automatski ukloni poruku o grešci nakon 3 sekunde
+      setTimeout(() => setDeleteError(null), 3000);
+    }
+  };
+  
+  // Funkcija koja se poziva nakon što se ovlasti uspješno spreme
+  const handleSaveSuccess = () => {
+    void refreshMembersWithPermissions();
+  };
 
   return (
     <div>
@@ -41,10 +93,22 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
           {error}
         </div>
       )}
+      
+      {deleteError && (
+        <div className="bg-red-100 text-red-700 p-4 rounded-md mb-6">
+          {deleteError}
+        </div>
+      )}
+      
+      {deleteSuccess && (
+        <div className="bg-green-100 text-green-700 p-4 rounded-md mb-6">
+          {deleteSuccess}
+        </div>
+      )}
 
       {/* Pretraga i akcije */}
       <div className="flex justify-between items-center mb-6">
-        <div className="relative w-72">
+        <div className="relative w-full max-w-md">
           <input
             type="text"
             placeholder="Pretraži članove..."
@@ -59,11 +123,6 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
             </svg>
           </div>
         </div>
-        
-        <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-          <UserPlus className="h-4 w-4 mr-2" />
-          <span>Dodaj ovlasti članu</span>
-        </button>
       </div>
 
       {/* Tablica s članovima */}
@@ -145,14 +204,33 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                     {new Date(memberWithPermissions.granted_at).toLocaleDateString('hr-HR')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">Uredi</button>
-                    <button className="text-red-600 hover:text-red-900">Ukloni</button>
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      onClick={() => handleEditClick(memberWithPermissions)}
+                    >
+                      Uredi
+                    </button>
+                    <button 
+                      className="text-red-600 hover:text-red-900"
+                      onClick={() => void handleRemovePermissions(memberWithPermissions.member.member_id)}
+                    >
+                      Ukloni
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      
+      {/* Modalni prozor za uređivanje ovlasti */}
+      {isEditModalOpen && selectedMember && (
+        <EditMemberPermissionsModal
+          member={selectedMember}
+          onClose={handleCloseModal}
+          onSave={handleSaveSuccess}
+        />
       )}
     </div>
   );

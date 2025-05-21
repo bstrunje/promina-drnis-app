@@ -92,7 +92,8 @@ const PendingMembersList: React.FC = () => {
     
     try {
       setAssigningPassword(true);
-      await assignPasswordToMember(selectedMember.member_id, password, cardNumber || undefined);
+      // Uklanjamo cardNumber iz zahtjeva jer backend ne može postaviti card_number direktno
+      await assignPasswordToMember(selectedMember.member_id, password);
       setAssignmentMessage({ type: 'success', text: 'Lozinka uspješno dodijeljena' });
       
       // Nakon uspješne dodjele lozinke, osvježimo listu članova
@@ -110,15 +111,23 @@ const PendingMembersList: React.FC = () => {
     }
   };
 
-  // Generiranje slučajne lozinke
-  const generateRandomPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let result = '';
-    for (let i = 0; i < 10; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  // Generiranje standardizirane lozinke prema formatu ${full_name}-isk-${card_number}
+  const generateStandardPassword = () => {
+    if (!selectedMember) return;
+    
+    const fullName = selectedMember.full_name ?? `${selectedMember.first_name} ${selectedMember.last_name}`;
+    // Ako korisnik nije unio broj iskaznice, generiramo privremeni broj od 5 znamenki
+    const tempCardNumber = cardNumber || String(Math.floor(10000 + Math.random() * 90000));
+    
+    // Generiraj lozinku prema dinamičkom formatu
+    const generatedPassword = `${fullName}-isk-${tempCardNumber}`;
+    setPassword(generatedPassword);
+    setConfirmPassword(generatedPassword);
+    
+    // Ako korisnik nije unio broj iskaznice, postavimo ovu privremenu vrijednost
+    if (!cardNumber) {
+      setCardNumber(tempCardNumber);
     }
-    setPassword(result);
-    setConfirmPassword(result);
   };
 
   return (
@@ -263,7 +272,7 @@ const PendingMembersList: React.FC = () => {
                   />
                   <button
                     type="button"
-                    onClick={generateRandomPassword}
+                    onClick={generateStandardPassword}
                     className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200"
                   >
                     Generiraj

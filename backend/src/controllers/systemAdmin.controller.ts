@@ -284,9 +284,34 @@ const systemAdminController = {
                 return;
             }
 
-            const { memberId, permissions } = req.body;
+            console.log('Request body in updateMemberPermissions:', JSON.stringify(req.body, null, 2));
 
-            if (!memberId || !permissions) {
+            // Dohvati member_id i permissions iz req.body, s podrškom za različite formate
+            let memberId;
+            let permissionsData;
+            
+            // Format 1: { member_id, permissions }
+            if (req.body.member_id && req.body.permissions) {
+                memberId = req.body.member_id;
+                permissionsData = req.body.permissions;
+            } 
+            // Format 2: { memberId, permissions }
+            else if (req.body.memberId && req.body.permissions) {
+                memberId = req.body.memberId;
+                permissionsData = req.body.permissions;
+            }
+            // Format 3: samo permissions s member_id unutra
+            else if (req.body.permissions && req.body.permissions.member_id) {
+                memberId = req.body.permissions.member_id;
+                // Uklanjamo member_id iz permissions objekta
+                const { member_id, ...rest } = req.body.permissions;
+                permissionsData = rest;
+            }
+           
+            console.log('Resolved memberId:', memberId);
+            console.log('Resolved permissions:', permissionsData);
+
+            if (!memberId || !permissionsData) {
                 res.status(400).json({ message: "Member ID and permissions are required" });
                 return;
             }
@@ -302,7 +327,7 @@ const systemAdminController = {
             }
 
             // Ažuriranje ovlasti
-            await systemAdminService.updateMemberPermissions(memberId, permissions, req.user.id);
+            await systemAdminService.updateMemberPermissions(memberId, permissionsData, req.user.id);
 
             await auditService.logEvent({
                 event_type: 'MEMBER_PERMISSIONS_UPDATED',
@@ -312,14 +337,23 @@ const systemAdminController = {
                 details: {
                     member_id: memberId,
                     updated_by: req.user.id,
-                    permissions
+                    permissions: permissionsData
                 }
             });
 
             res.json({ message: "Permissions updated successfully" });
         } catch (error) {
-            console.error('Error updating member permissions:', error);
-            res.status(500).json({ message: "Internal server error" });
+            console.error('Error updating member permissions - detailed error:', error);
+            console.error('Request body was:', JSON.stringify(req.body, null, 2));
+            
+            // Dohvaćamo dodatne detalje o grešci
+            let errorMessage = "Internal server error";
+            if (error instanceof Error) {
+                errorMessage = error.message;
+                console.error('Error stack:', error.stack);
+            }
+            
+            res.status(500).json({ message: errorMessage });
         }
     },
 
@@ -340,6 +374,28 @@ const systemAdminController = {
         } catch (error) {
             console.error('Error fetching members with permissions:', error);
             res.status(500).json({ message: "Internal server error" });
+        }
+    },
+
+    // Dohvat svih članova koji nemaju administratorske ovlasti
+    async getMembersWithoutPermissions(
+        req: Request,
+        res: Response
+    ): Promise<void> {
+        try {
+            // Provjera autorizacije: samo system admin ili superuser može dohvatiti ovlasti
+            if (!req.user || (req.user.user_type !== 'system_admin' && req.user.role !== 'superuser')) {
+                res.status(403).json({ message: "Access denied" });
+                return;
+            }
+            
+            const members = await systemAdminService.getMembersWithoutPermissions();
+            res.json(members);
+        } catch (error) {
+            console.error('Error getting members without permissions:', error);
+            res.status(500).json({
+                message: 'Došlo je do greške pri dohvatu članova bez ovlasti.'
+            });
         }
     },
 
@@ -583,7 +639,7 @@ const systemAdminController = {
         res: Response
     ): Promise<void> {
         try {
-            const { memberId, password, cardNumber } = req.body;
+            const { memberId, password } = req.body;
             
             // Provjera autorizacije: samo system admin može dodjeljivati lozinke
             if (!req.user || req.user.user_type !== 'system_admin') {
@@ -608,16 +664,34 @@ const systemAdminController = {
                 return;
             }
 
-            // Ažuriranje člana - postavljanje lozinke i statusa 'registered'
+            // Ažuriranje člana - postavljanje lozinke, statusa 'registered' i uloge 'superuser'
             await prisma.member.update({
                 where: { member_id: memberId },
                 data: {
                     password_hash: hashedPassword,
                     status: 'registered',
                     registration_completed: true,
-                    ...(cardNumber ? { card_number: cardNumber } : {})
+                    role: 'superuser', // Postavljanje superuser uloge je ključno za omogućavanje prijave
                 }
             });
+            
+            // Provjeri postoji li zapis o članstvu
+            const membershipDetails = await prisma.membershipDetails.findUnique({
+                where: { member_id: memberId }
+            });
+            
+            // Ako ne postoji, kreiraj osnovni zapis o članstvu
+            if (!membershipDetails) {
+                const currentYear = new Date().getFullYear();
+                await prisma.membershipDetails.create({
+                    data: {
+                        member_id: memberId,
+                        fee_payment_date: new Date(), // Datum plaćanja (danas)
+                        fee_payment_year: currentYear // Tekuća godina
+                        // Prisma će automatski postaviti ostala polja
+                    }
+                });
+            }
             
             // Bilježenje u audit log
             await auditService.logAction(
