@@ -15,7 +15,7 @@ Sustav autentifikacije i autorizacije omogućuje:
 Aplikacija podržava tri glavne uloge:
 
 ```typescript
-type MemberRole = 'member' | 'admin' | 'superuser';
+type MemberRole = 'member' | 'member_administrator' | 'member_superuser';
 ```
 
 ### Hijerarhija pristupa
@@ -25,14 +25,14 @@ type MemberRole = 'member' | 'admin' | 'superuser';
    - Može vidjeti ograničeni set informacija o aktivnostima
    - Ne može uređivati podatke drugih članova
 
-2. **admin** - Administratorski pristup
+2. **member_administrator** - Administratorski pristup
    - Sve mogućnosti običnog člana
    - Upravlja članovima (dodavanje, uređivanje, brisanje)
    - Upravlja članarinama
    - Upravlja aktivnostima
    - Pristupa izvještajima
 
-3. **superuser** - Najviša razina pristupa
+3. **member_superuser** - Najviša razina pristupa
    - Sve mogućnosti administratora
    - Konfigurira postavke sustava
    - Upravlja korisničkim ulogama
@@ -68,8 +68,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const isAuthenticated = !!currentUser;
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superuser';
-  const isSuperUser = currentUser?.role === 'superuser';
+  const isAdmin = currentUser?.role === 'member_administrator' || currentUser?.role === 'member_superuser';
+  const isSuperUser = currentUser?.role === 'member_superuser';
 
   // Provjera postojećeg tokena pri učitavanju
   useEffect(() => {
@@ -326,7 +326,7 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
 
 // Middleware za provjeru admin prava
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'superuser')) {
+  if (req.user && (req.user.role === 'member_administrator' || req.user.role === 'member_superuser')) {
     next();
   } else {
     res.status(403).json({ message: 'Pristup odbijen: Potrebna admin prava' });
@@ -335,7 +335,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 
 // Middleware za provjeru superuser prava
 export const requireSuperUser = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === 'superuser') {
+  if (req.user && req.user.role === 'member_superuser') {
     next();
   } else {
     res.status(403).json({ message: 'Pristup odbijen: Potrebna superuser prava' });

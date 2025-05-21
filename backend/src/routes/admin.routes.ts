@@ -26,14 +26,14 @@ router.get(
 router.put(
     '/permissions/:memberId',
     authenticateToken,
-    checkRole(['superuser']),
+    checkRole(['member_superuser']),
     permissionsController.updateAdminPermissions
 );
 
 // Require admin or superuser role for all routes
 router.use(authenticateToken);
 router.use((req: AuthRequest, res, next) => {
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'superuser')) {
+  if (req.user && (req.user.role === 'member_administrator' || req.user.role === 'member_superuser')) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied. Admin privileges required.' });
@@ -136,7 +136,7 @@ router.get('/dashboard/stats', async (req, res) => {
 });
 
 // Endpoint za provjeru i ažuriranje statusa članova prema njihovim periodima članstva
-router.post('/check-member-statuses', authenticateToken, checkRole(['superuser']), async (req: AuthRequest, res: Response) => {
+router.post('/check-member-statuses', authenticateToken, checkRole(['member_superuser']), async (req: AuthRequest, res: Response) => {
   try {
     console.log('Starting member status check and update...');
     const db = await import('../utils/db.js').then(m => m.default);

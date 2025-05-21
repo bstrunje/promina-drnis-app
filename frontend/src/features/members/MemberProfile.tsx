@@ -137,7 +137,7 @@ const MemberProfile = () => {
                 <label className="text-sm text-gray-500">Card Number</label>
                 {/* Sakrij broj kartice od običnih članova zbog sigurnosti */}
                 {user.membership_details?.card_number ?? "N/A"}
-                {user.role === "admin" || user.role === "superuser" ? (
+                {user.role === "member_administrator" || user.role === "member_superuser" ? (
                   <p
                     className={`inline-block px-3 py-1 rounded-lg font-mono ${getStatusColor(
                       user.life_status

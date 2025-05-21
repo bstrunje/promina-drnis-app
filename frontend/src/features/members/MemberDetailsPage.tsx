@@ -52,7 +52,7 @@ const memberId = useMemo(() => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Check if user can edit - only admins and superusers can
-  const canEdit = user?.role === "admin" || user?.role === "superuser";
+  const canEdit = user?.role === "member_administrator" || user?.role === "member_superuser";
   
   // Check if this is user's own profile
 

@@ -178,7 +178,7 @@ const memberRepository = {
         return mapToMember(raw);
     },
 
-    async updateRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
+    async updateRole(memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
         const raw = await prisma.member.update({ where: { member_id: memberId }, data: { role } });
         return mapToMember(raw);
     },

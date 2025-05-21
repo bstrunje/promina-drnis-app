@@ -296,9 +296,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // Čišćenje interceptora pri unmount-u
     return () => {
       axios.interceptors.request.eject(requestInterceptor);
-      axios.interceptors.response.eject(responseInterceptor);
-    };
-  }, [token, logout, refreshToken]); // Ponovno postavi interceptore kada se token, logout ili refreshToken promijeni
+    axios.interceptors.response.eject(responseInterceptor);
+  };
+}, [token, logout, refreshToken]); // Ponovno postavi interceptore kada se token, logout ili refreshToken promijeni
 
   // Funkcija za prijavu korisnika
   const login = (user: Member, accessToken: string, refreshToken?: string) => {
@@ -306,6 +306,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       ...user,
       registration_completed: true,
     };
+    
+    // Čišćenje bilo kojeg postojećeg System Admin tokena
+    // kako bismo izbjegli konflikt između dva tipa autentikacije
+    localStorage.removeItem('systemAdminToken');
+    localStorage.removeItem('systemAdmin');
+    console.log('Uklonjeni eventualni System Admin tokeni prilikom prijave člana');
     
     setUser(userWithStatus);
     setToken(accessToken);

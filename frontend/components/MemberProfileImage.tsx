@@ -23,10 +23,10 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const [debugMode, setDebugMode] = useState(false);
 
   // Provjera može li korisnik uređivati sliku
-  const canEditImage = user?.role === 'admin' || user?.role === 'superuser' || user?.member_id === member.member_id;
+  const canEditImage = user?.role === 'member_administrator' || user?.role === 'member_superuser' || user?.member_id === member.member_id;
 
   // Provjera je li korisnik admin ili superuser za prikaz naslova
-  const isAdminOrSuperuser = user?.role === 'admin' || user?.role === 'superuser';
+  const isAdminOrSuperuser = user?.role === 'member_administrator' || user?.role === 'member_superuser';
 
   // Puno ime člana
   const memberFullName = `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`;

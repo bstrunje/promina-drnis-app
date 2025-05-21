@@ -45,19 +45,19 @@ export const useMembershipPeriods = (
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
   // adminPermissions tipiziran prema očekivanom obliku s can_manage_end_reasons
-interface AdminPermissions {
+interface MemberPermissions {
   can_manage_end_reasons: boolean;
 }
-const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
+const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | null>(null);
 
-  const canEdit = user?.role === "superuser" || user?.role === "admin";
+  const canEdit = user?.role === "member_superuser" || user?.role === "member_administrator";
   const canManageEndReasons = 
-    user?.role === 'superuser' || 
-    (user?.role === 'admin' && adminPermissions?.can_manage_end_reasons);
+    user?.role === 'member_superuser' || 
+    (user?.role === 'member_administrator' && memberPermissions?.can_manage_end_reasons);
 
   const canSeeEndReason = 
-    user?.role === 'superuser' || 
-    (user?.role === 'admin' && adminPermissions?.can_manage_end_reasons);
+    user?.role === 'member_superuser' || 
+    (user?.role === 'member_administrator' && memberPermissions?.can_manage_end_reasons);
 
   // Izračunaj ukupno trajanje članstva
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
@@ -84,10 +84,10 @@ const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null
     setEditedPeriods(periods);
   }, [periods]);
 
-  // Dohvati administratorske dozvole
+  // Dohvati ovlasti za članove administratore
   useEffect(() => {
-    const fetchAdminPermissions = async () => {
-      if (user?.role === 'admin') {
+    const fetchMemberPermissions = async () => {
+      if (user?.role === 'member_administrator') {
         try {
           const token = localStorage.getItem('token');
           const response = await fetch(
@@ -98,21 +98,21 @@ const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null
               }
             }
           );
-                    // TypeScript: response.json() vraća any, pa je potreban dvostruki cast na unknown pa na AdminPermissions radi tipne sigurnosti
-const permissions = (await response.json()) as unknown as AdminPermissions;
+                    // TypeScript: response.json() vraća any, pa je potreban dvostruki cast na unknown pa na MemberPermissions radi tipne sigurnosti
+const permissions = (await response.json()) as unknown as MemberPermissions;
           // Backend bi uvijek trebao vratiti { can_manage_end_reasons: boolean }, ali fallback osigurava tipnu sigurnost
-          setAdminPermissions(
+          setMemberPermissions(
             permissions && typeof permissions.can_manage_end_reasons === 'boolean'
               ? permissions
               : { can_manage_end_reasons: false }
           );
         } catch (error) {
-          console.error('Failed to fetch admin permissions:', error);
+          console.error('Failed to fetch member permissions:', error);
         }
       }
     };
 
-    void fetchAdminPermissions(); // Sigurnosna promjena: void za no-floating-promises
+    void fetchMemberPermissions(); // Sigurnosna promjena: void za no-floating-promises
   }, [user]);
 
   // Promjena razloga završetka perioda

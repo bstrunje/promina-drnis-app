@@ -29,7 +29,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   userRole
 }) => {
   // Možemo li uređivati podatke? Dopušteno samo za admin i superuser
-  const canEdit = userRole === 'admin' || userRole === 'superuser';
+  const canEdit = userRole === 'member_administrator' || userRole === 'member_superuser';
 
   // Helper funkcija za određivanje stilova na temelju životnog statusa člana
   const getStatusColors = () => {

@@ -353,7 +353,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
             {!isEditing ? (
               <div className="flex flex-wrap gap-2">
                 {/* Prikaži gumb samo ako je korisnik superuser */}
-                {member.role === 'superuser' && (
+                {member.role === 'member_superuser' && (
                   <Button 
                     variant="outline" 
                     onClick={handleEdit}
@@ -370,7 +370,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
                 >
                   {showHistory ? "Hide History" : "Show History"}
                 </Button>
-                {member.role === "superuser" && (
+                {member.role === "member_superuser" && (
                   <Button 
                     variant="secondary" 
                     onClick={() => setShowArchiveDialog(true)}

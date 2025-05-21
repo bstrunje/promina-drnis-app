@@ -32,14 +32,14 @@ export const changePassword = async (req: Request, res: Response) => {
     const adminId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
     const { oldPassword, newPassword } = req.body;
 
-    const admin = await prisma.systemAdmin.findUnique({ where: { id: adminId } });
+    const admin = await prisma.memberAdministrator.findUnique({ where: { id: adminId } });
     if (!admin) return res.status(404).json({ message: 'Admin not found' });
 
     const isMatch = await bcrypt.compare(oldPassword, admin.password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Pogrešna stara lozinka' });
 
     const newHash = await bcrypt.hash(newPassword, 10);
-    await prisma.systemAdmin.update({
+    await prisma.memberAdministrator.update({
         where: { id: adminId },
         data: { password_hash: newHash },
     });
@@ -58,12 +58,12 @@ export const changeUsername = async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Novi username mora imati barem 4 znaka.' });
     }
     // Provjeri je li username već zauzet
-    const existing = await prisma.systemAdmin.findUnique({ where: { username: newUsername } });
+    const existing = await prisma.memberAdministrator.findUnique({ where: { username: newUsername } });
     if (existing) {
         return res.status(409).json({ message: 'Taj username je već zauzet.' });
     }
     // Promijeni username
-    const updated = await prisma.systemAdmin.update({
+    const updated = await prisma.memberAdministrator.update({
         where: { id: adminId },
         data: { username: newUsername },
     });
@@ -116,7 +116,7 @@ const systemAdminController = {
             await auditService.logEvent({
                 event_type: 'SYSTEM_ADMIN_LOGIN',
                 user_id: admin.id,
-                user_type: 'system_admin',
+                user_type: 'member_administrator',
                 ip_address: userIP,
                 details: {
                     username: sanitizedUsername,
@@ -332,7 +332,7 @@ const systemAdminController = {
             await auditService.logEvent({
                 event_type: 'MEMBER_PERMISSIONS_UPDATED',
                 user_id: req.user.id,
-                user_type: 'system_admin',
+                user_type: 'member_administrator',
                 ip_address: req.ip || req.socket.remoteAddress || 'unknown',
                 details: {
                     member_id: memberId,
@@ -384,7 +384,7 @@ const systemAdminController = {
     ): Promise<void> {
         try {
             // Provjera autorizacije: samo system admin ili superuser može dohvatiti ovlasti
-            if (!req.user || (req.user.user_type !== 'system_admin' && req.user.role !== 'superuser')) {
+            if (!req.user || (req.user.user_type !== 'system_admin' && req.user.role !== 'member_superuser')) {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
@@ -671,7 +671,7 @@ const systemAdminController = {
                     password_hash: hashedPassword,
                     status: 'registered',
                     registration_completed: true,
-                    role: 'superuser', // Postavljanje superuser uloge je ključno za omogućavanje prijave
+                    role: 'member_superuser', // Postavljanje superuser uloge je ključno za omogućavanje prijave
                 }
             });
             

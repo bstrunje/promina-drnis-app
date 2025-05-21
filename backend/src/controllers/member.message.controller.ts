@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import messageService from '../services/message.service.js';
 import auditService from '../services/audit.service.js';
+import { SenderType } from '@prisma/client';
 
 const messageController = {
     async createMessage(req: Request, res: Response): Promise<void> {
@@ -40,7 +41,7 @@ const messageController = {
                 return;
             }
 
-            const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
+            const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
             const message = await messageService.createAdminMessage(
                 adminId,
                 recipientId,
@@ -84,7 +85,7 @@ const messageController = {
             const messages = [];
             
             for (const recipientId of memberIds) {
-                const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
+                const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
                 const message = await messageService.createAdminMessage(
                     adminId,
                     recipientId,
@@ -122,7 +123,7 @@ const messageController = {
                 return;
             }
 
-            const senderType = req.user?.role_name === 'superuser' ? 'superuser' : 'admin';
+            const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
             const message = await messageService.createAdminMessage(
                 adminId,
                 null,
@@ -300,7 +301,7 @@ const messageController = {
             const memberId = parseInt(req.params.memberId);
             
             // Sigurnosna provjera - korisnik može označiti samo svoje poruke
-            if (req.user?.id !== memberId && req.user?.role !== 'admin' && req.user?.role !== 'superuser') {
+            if (req.user?.id !== memberId && req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
                 res.status(403).json({ message: 'Nedovoljne ovlasti za označavanje poruka drugih članova' });
                 return;
             }

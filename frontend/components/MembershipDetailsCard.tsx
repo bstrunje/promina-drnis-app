@@ -30,7 +30,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   const cardNumber = member.membership_details?.card_number ?? member.membership_details?.card_number;
   
   // Provjeri je li korisnik admin ili superuser
-  const canViewCardNumber = user?.role === "admin" || user?.role === "superuser";
+  const canViewCardNumber = user?.role === "member_administrator" || user?.role === "member_superuser";
 
   // Activity status calculation (moved from MemberActivityStatus)
   const getActivityStatus = (totalHours: number) => {

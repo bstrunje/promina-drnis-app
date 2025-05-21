@@ -51,9 +51,9 @@ function AppContent() {
     if (!user) return "/login";
     
     switch (user.role) {
-      case 'admin':
+      case 'member_administrator':
         return "/admin/dashboard";
-      case 'superuser':
+      case 'member_superuser':
         return "/superuser/dashboard";
       case 'member':
         return "/member/dashboard";
@@ -86,7 +86,7 @@ function AppContent() {
           {/* Dashboard rute za različite uloge korisnika */}
           {user && <Route path="/member/dashboard" element={<MemberDashboard member={user} />} />}
           
-          {(user?.role === 'admin' || user?.role === 'superuser') && (
+          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <>
               <Route path="/admin" element={<AdminDashboard member={user} />} />
               <Route path="/admin/dashboard" element={<AdminDashboard member={user} />} />
@@ -96,7 +96,7 @@ function AppContent() {
               <Route path="/settings" element={<Settings />} />
             </>
           )}
-          {user?.role === 'superuser' && (
+          {user?.role === 'member_superuser' && (
             <>
               <Route path="/super-user" element={<SuperUserDashboard member={user} />} />
               <Route path="/superuser/dashboard" element={<SuperUserDashboard member={user} />} />

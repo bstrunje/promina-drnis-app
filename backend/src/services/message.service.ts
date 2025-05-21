@@ -10,7 +10,7 @@ const messageService = {
         recipientId: number | null, 
         messageText: string, 
         recipientType: 'member' | 'group' | 'all' = 'member',
-        senderType: 'admin' | 'superuser'
+        senderType: 'member_administrator' | 'member_superuser'
     ): Promise<MemberMessage> {
         return await memberMessageRepository.createAdminMessage(
             adminId, 

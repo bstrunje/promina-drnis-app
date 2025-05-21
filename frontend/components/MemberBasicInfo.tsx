@@ -30,7 +30,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   // Determine if the user can view details
   // Admins, superusers, and the member viewing their own profile should always see details
   const isOwnProfile = user?.member_id === member.member_id;
-  const isAdminOrSuperuser = user?.role === "admin" || user?.role === "superuser";
+  const isAdminOrSuperuser = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canViewDetails = isOwnProfile || isAdminOrSuperuser;
 
   // Automatically show details if user has edit permission

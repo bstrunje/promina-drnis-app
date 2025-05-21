@@ -42,30 +42,96 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   const navigate = useNavigate();
 
   // Provjera postojeće sesije prilikom učitavanja
-   
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('systemAdminToken');
+      console.log('Provjeravam System Admin autentikaciju...');
+      
+      const systemAdminToken = localStorage.getItem('systemAdminToken');
       const storedAdmin = localStorage.getItem('systemAdmin');
+      const regularToken = localStorage.getItem('token');
+      
+      // Provjera konflikta tokena - ako postoje obje vrste tokena, ukloni regularne tokene
+      if (systemAdminToken && regularToken) {
+        console.warn('Otkriven konflikt tokena: postoje i System Admin i korisnički token!');
+        // Uklanjaanje regularnih tokena korisnika
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('refreshToken');
+        console.log('Uklonjeni regularni tokeni za korisnika koji uzrokuju konflikt');
+      }
 
-      if (token && storedAdmin) {
+      if (systemAdminToken && storedAdmin) {
         try {
           // Eksplicitno definiramo tip parsiranog objekta
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const parsedAdmin: { id: number; username: string; display_name: string } = JSON.parse(storedAdmin);
           setAdmin(parsedAdmin);
           setIsAuthenticated(true);
+          console.log('System Admin autentikacija uspješna');
         } catch (e) {
           console.error('Greška pri parsiranju podataka system admina:', e);
           localStorage.removeItem('systemAdminToken');
           localStorage.removeItem('systemAdmin');
         }
+      } else {
+        console.log('System Admin nije prijavljen');
       }
       setLoading(false);
     };
 
     checkAuth();
   }, []);
+
+  // Funkcija za osvježavanje podataka admina
+  const refreshAdmin = React.useCallback(async () => {
+    console.log('Osvježavam podatke System Admina...');
+    
+    const systemAdminToken = localStorage.getItem('systemAdminToken');
+    const storedAdmin = localStorage.getItem('systemAdmin');
+    const regularToken = localStorage.getItem('token');
+    
+    // Provjera konflikta tokena
+    if (systemAdminToken && regularToken) {
+      console.warn('Otkriven konflikt tokena tijekom osvježavanja!');
+      // Uklanjanje regularnih tokena korisnika u korist System Admina
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('refreshToken');
+      console.log('Uklonjeni regularni tokeni zbog konflikta tijekom osvježavanja');
+    }
+    
+    // Provjera postoji li System Admin token
+    if (!systemAdminToken) {
+      console.warn('System Admin token nedostaje - odjavljujem System Admina');
+      setAdmin(null);
+      setIsAuthenticated(false);
+      return;
+    }
+    
+    if (storedAdmin) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const parsedAdmin: { id: number; username: string; display_name: string } = JSON.parse(storedAdmin);
+        setAdmin(parsedAdmin);
+        setIsAuthenticated(true);
+        console.log('Podaci System Admina uspješno osvježeni');
+      } catch (e) {
+        console.error('Greška pri parsiranju podataka System Admina:', e);
+        localStorage.removeItem('systemAdminToken');
+        localStorage.removeItem('systemAdmin');
+        setAdmin(null);
+        setIsAuthenticated(false);
+      }
+    } else {
+      console.warn('Podaci System Admina nedostaju, ali token postoji - nekonzistentno stanje');
+      // Čišćenje nekonzistentnog stanja
+      localStorage.removeItem('systemAdminToken');
+      setAdmin(null);
+      setIsAuthenticated(false);
+    }
+  }, [setAdmin, setIsAuthenticated]);
 
   // Funkcija za prijavu
   const login = React.useCallback(async (credentials: SystemAdminLoginData) => {
@@ -112,26 +178,7 @@ export const SystemAdminProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [navigate, setAdmin, setIsAuthenticated]);
 
   // Funkcija za dohvat aktualnog admina iz backenda (npr. nakon promjene username-a)
-  const refreshAdmin = React.useCallback(async () => {
-    const token = localStorage.getItem('systemAdminToken');
-    if (!token) return;
-    try {
-      const response = await fetch(`${process.env.NODE_ENV === 'production' ? 'https://promina-drnis-api.onrender.com/api' : 'http://localhost:3000/api'}/system-admin/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        // Eksplicitno definiramo tip podataka iz odgovora
-        interface AdminResponse {
-          admin: { id: number; username: string; display_name: string };
-        }
-        const data = await response.json() as AdminResponse;
-        setAdmin(data.admin);
-        localStorage.setItem('systemAdmin', JSON.stringify(data.admin));
-      }
-    } catch {
-      // fail silently - bez varijable za grešku
-    }
-  }, [setAdmin]);
+  // refreshAdmin funkcija je već definirana iznad
 
   // Vrijednosti koje će biti dostupne kroz kontekst
   const contextValue: SystemAdminContextType = {

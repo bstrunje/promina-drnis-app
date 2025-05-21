@@ -153,10 +153,10 @@ const LoginPage = () => {
       
       // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
       switch(member.role) {
-        case 'admin':
+        case 'member_administrator':
           navigate("/admin/dashboard");
           break;
-        case 'superuser':
+        case 'member_superuser':
           navigate("/superuser/dashboard");
           break;
         case 'member':
@@ -305,11 +305,11 @@ const LoginPage = () => {
           {showDocuments && (
             <div className="mt-3 space-y-2">
               <a
-                href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
+                href="https://www.pd-promina.hr/dokumenti/eticki-kodeks-pd-promina"
                 className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Pravilnik o članstvu
+                Etički kodeks PD Promina
               </a>
               <a
                 href="https://pd-promina.hr/dokumenti/pravo-na-pristup-informacijama"

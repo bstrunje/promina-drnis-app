@@ -90,7 +90,7 @@ const systemAdminService = {
             // Pokušaj dohvata ovlasti koristeći Prisma
             let permissions = null;
             try {
-                permissions = await prisma.adminPermissions.findUnique({
+                permissions = await prisma.memberPermissions.findUnique({
                     where: {
                         member_id: memberId
                     }
@@ -100,7 +100,7 @@ const systemAdminService = {
                 console.warn('Prisma error when fetching permissions, falling back to SQL:', prismaError);
                 
                 const result = await db.query(
-                    `SELECT * FROM admin_permissions WHERE member_id = $1`,
+                    `SELECT * FROM member_permissions WHERE member_id = $1`,
                     [memberId]
                 );
                 
@@ -108,26 +108,26 @@ const systemAdminService = {
             }
 
             if (!permissions) {
-                // Ako član ima ulogu superuser ili admin, vrati defaultne ovlasti
-                if (member.role === 'superuser' || member.role === 'admin') {
+                // Ako član ima ulogu member_superuser ili member_administrator, vrati defaultne ovlasti
+                if (member.role === 'member_superuser' || member.role === 'member_administrator') {
                     return {
                         member_id: member.member_id,
                         can_view_members: true,
                         can_edit_members: true,
-                        can_add_members: member.role === 'superuser',
-                        can_manage_membership: member.role === 'superuser',
+                        can_add_members: member.role === 'member_superuser',
+                        can_manage_membership: member.role === 'member_superuser',
                         can_view_activities: true,
                         can_create_activities: true,
-                        can_approve_activities: member.role === 'superuser',
-                        can_view_financials: member.role === 'superuser',
-                        can_manage_financials: member.role === 'superuser',
+                        can_approve_activities: member.role === 'member_superuser',
+                        can_view_financials: member.role === 'member_superuser',
+                        can_manage_financials: member.role === 'member_superuser',
                         can_send_group_messages: true,
-                        can_manage_all_messages: member.role === 'superuser',
+                        can_manage_all_messages: member.role === 'member_superuser',
                         can_view_statistics: true,
-                        can_export_data: member.role === 'superuser',
-                        can_manage_end_reasons: member.role === 'superuser',
-                        can_manage_card_numbers: member.role === 'superuser',
-                        can_assign_passwords: member.role === 'superuser',
+                        can_export_data: member.role === 'member_superuser',
+                        can_manage_end_reasons: member.role === 'member_superuser',
+                        can_manage_card_numbers: member.role === 'member_superuser',
+                        can_assign_passwords: member.role === 'member_superuser',
                         granted_by: null,
                         granted_at: new Date(),
                         updated_at: new Date(),
@@ -178,7 +178,7 @@ const systemAdminService = {
             console.log('Using permission:', { can_manage_end_reasons });
             
             // Prvo pokušamo pronaći postojeće ovlasti
-            const existingPermissions = await prisma.adminPermissions.findUnique({
+            const existingPermissions = await prisma.memberPermissions.findUnique({
                 where: {
                     member_id: memberId
                 }
@@ -190,7 +190,7 @@ const systemAdminService = {
                 console.log('Existing permissions found, updating...');
                 // Ako ovlasti već postoje, ažuriramo ih
                 try {
-                    await prisma.adminPermissions.update({
+                    await prisma.memberPermissions.update({
                         where: {
                             member_id: memberId
                         },
@@ -207,7 +207,7 @@ const systemAdminService = {
                     console.warn('Prisma error when updating permissions, falling back to SQL:', prismaError);
                     
                     await db.query(
-                        `UPDATE admin_permissions 
+                        `UPDATE member_permissions 
                          SET can_manage_end_reasons = $1, granted_by = $2
                          WHERE member_id = $3`,
                         [can_manage_end_reasons, grantedById, memberId]
@@ -218,7 +218,7 @@ const systemAdminService = {
                 console.log('No existing permissions found, creating new entry...');
                 // Ako ovlasti ne postoje, kreiramo ih
                 try {
-                    await prisma.adminPermissions.create({
+                    await prisma.memberPermissions.create({
                         data: {
                             can_manage_end_reasons: can_manage_end_reasons,
                             member: {
@@ -236,7 +236,7 @@ const systemAdminService = {
                     console.warn('Prisma error when creating permissions, falling back to SQL:', prismaError);
                     
                     await db.query(
-                        `INSERT INTO admin_permissions (member_id, can_manage_end_reasons, granted_by, granted_at)
+                        `INSERT INTO member_permissions (member_id, can_manage_end_reasons, granted_by, granted_at)
                          VALUES ($1, $2, $3, $4)`,
                         [memberId, can_manage_end_reasons, grantedById, now]
                     );
@@ -256,12 +256,12 @@ const systemAdminService = {
     // Dohvat svih članova s admin ovlastima
     async getMembersWithPermissions(): Promise<any[]> {
         try {
-            // Prvo dohvaćamo članove sa superuser ili admin ulogom
+            // Prvo dohvaćamo članove sa member_superuser ili member_administrator ulogom
             const specialRoleMembers = await prisma.member.findMany({
                 where: {
                     OR: [
-                        { role: 'superuser' },
-                        { role: 'admin' }
+                        { role: 'member_superuser' },
+                        { role: 'member_administrator' }
                     ]
                 },
                 select: {
@@ -278,7 +278,7 @@ const systemAdminService = {
             
             // Zatim dohvaćamo članove koji imaju admin ovlasti
             try {
-                const result = await prisma.adminPermissions.findMany({
+                const result = await prisma.memberPermissions.findMany({
                     include: {
                         member: {
                             select: {
@@ -300,7 +300,7 @@ const systemAdminService = {
                 // Kreiraj mapu ID članova s ovlastima da izbjegnemo duplikate
                 const memberMap = new Map();
                 
-                // Dodaj članove iz admin_permissions
+                // Dodaj članove iz member_permissions
                 for (const permission of result) {
                     if (permission.member) {
                         memberMap.set(permission.member_id, {
@@ -407,7 +407,7 @@ const systemAdminService = {
     // Uklanjanje svih ovlasti za člana
     async removeMemberPermissions(memberId: number): Promise<void> {
         try {
-            await prisma.adminPermissions.delete({
+            await prisma.memberPermissions.delete({
                 where: {
                     member_id: memberId
                 }

@@ -18,7 +18,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   userRole,
 
 }) => {
-  const canEdit = userRole === 'admin' || userRole === 'superuser';
+  const canEdit = userRole === 'member_administrator' || userRole === 'member_superuser';
   
   // Helper funkcija za određivanje stilova na temelju životnog statusa člana
   const getStatusColors = () => {

@@ -110,7 +110,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <Users size={20} className="inline sm:hidden" />
               <span>Members</span>
             </Link>
-            {(user.role === 'admin' || user.role === 'superuser') && (
+            {(user.role === 'member_administrator' || user.role === 'member_superuser') && (
               <>
                 <Link to="/admin" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Settings size={20} className="inline sm:hidden" />
@@ -124,7 +124,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 )}
               </>
             )}
-            {user.role === 'superuser' && (
+            {user.role === 'member_superuser' && (
               <>
                 <Link to="/super-user" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Shield size={20} className="inline sm:hidden" />

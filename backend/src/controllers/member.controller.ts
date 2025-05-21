@@ -265,7 +265,7 @@ export const memberController = {
     req: Request<
       { memberId: string },
       {},
-      { role: "member" | "admin" | "superuser" }
+      { role: "member" | "member_administrator" | "member_superuser" }
     >,
     res: Response
   ): Promise<void> {
@@ -273,7 +273,7 @@ export const memberController = {
       const memberId = parseInt(req.params.memberId, 10);
       const { role } = req.body;
 
-      if (!["member", "admin", "superuser"].includes(role)) {
+      if (!["member", "member_administrator", "member_superuser"].includes(role)) {
         res.status(400).json({ message: "Invalid role" });
         return;
       }

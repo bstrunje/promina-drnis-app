@@ -15,7 +15,7 @@ Ova aplikacija omogućuje praćenje članstva, evidenciju uplata članarina, vo�
 - Produživanje članstva i evidencija uplate članarine
 
 ### Administracija
-- Upravljanje korisničkim ulogama (član, admin, superuser)
+- Upravljanje korisničkim ulogama (član, member_administrator, member_superuser)
 - Slanje poruka članovima (individualno ili grupno)
 - Vođenje evidencije aktivnosti članova
 - Generiranje izvještaja

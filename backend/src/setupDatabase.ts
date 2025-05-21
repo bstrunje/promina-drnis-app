@@ -82,7 +82,7 @@ export async function setupDatabase(): Promise<void> {
         tshirt_size character varying(4),
         shell_jacket_size character varying(4),
         CONSTRAINT life_status_check CHECK (life_status IN ('employed/unemployed', 'child/pupil/student', 'pensioner')),
-        CONSTRAINT members_role_check CHECK (role IN ('member', 'admin', 'superuser'))
+        CONSTRAINT members_role_check CHECK (role IN ('member', 'member_administrator', 'member_superuser'))
     );
         `);
     console.log("✅ Members table created successfully");
@@ -284,28 +284,58 @@ export async function setupDatabase(): Promise<void> {
     ADD COLUMN IF NOT EXISTS date_of_birth DATE;
   `);
 
-    // Add admin_permissions table right before the COMMIT
+    // Add member_permissions table right before the COMMIT
     await db.query(`
-      CREATE TABLE IF NOT EXISTS admin_permissions (
+      CREATE TABLE IF NOT EXISTS member_permissions (
         permission_id SERIAL PRIMARY KEY,
         member_id INTEGER REFERENCES members(member_id),
+        
+        -- Ovlasti za članstvo
+        can_view_members BOOLEAN DEFAULT false,
+        can_edit_members BOOLEAN DEFAULT false,
+        can_add_members BOOLEAN DEFAULT false,
+        can_manage_membership BOOLEAN DEFAULT false,
+        
+        -- Ovlasti za aktivnosti
+        can_view_activities BOOLEAN DEFAULT false,
+        can_create_activities BOOLEAN DEFAULT false,
+        can_approve_activities BOOLEAN DEFAULT false,
+        
+        -- Financije
+        can_view_financials BOOLEAN DEFAULT false,
+        can_manage_financials BOOLEAN DEFAULT false,
+        
+        -- Poruke
+        can_send_group_messages BOOLEAN DEFAULT false,
+        can_manage_all_messages BOOLEAN DEFAULT false,
+        
+        -- Statistika
+        can_view_statistics BOOLEAN DEFAULT false,
+        can_export_data BOOLEAN DEFAULT false,
+        
+        -- Specifične ovlasti
         can_manage_end_reasons BOOLEAN DEFAULT false,
+        can_manage_card_numbers BOOLEAN DEFAULT false,
+        can_assign_passwords BOOLEAN DEFAULT false,
+        
+        -- Sustav
         granted_by INTEGER REFERENCES members(member_id),
         granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(member_id)
       );
     `);
-    console.log("✅ Admin permissions table created successfully");
+    console.log("✅ Member permissions table created successfully");
 
-    // Create indexes for admin_permissions
+    // Create indexes for member_permissions
     await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_admin_permissions_member 
-      ON admin_permissions(member_id);
+      CREATE INDEX IF NOT EXISTS idx_member_permissions_member 
+      ON member_permissions(member_id);
       
-      CREATE INDEX IF NOT EXISTS idx_admin_permissions_granted_by 
-      ON admin_permissions(granted_by);
+      CREATE INDEX IF NOT EXISTS idx_member_permissions_granted_by 
+      ON member_permissions(granted_by);
     `);
-    console.log("✅ Admin permissions indexes created successfully");
+    console.log("✅ Member permissions indexes created successfully");
 
     // Kreiranje tablice stamp_history za arhiviranje podataka o markicama po godinama
     await db.query(`

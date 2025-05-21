@@ -112,8 +112,8 @@ export default function MemberList(): JSX.Element {
   const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
 
   // Check if user has admin privileges (for editing, deleting, adding members)
-  const isAdmin = user?.role === "admin" || user?.role === "superuser";
-  const isSuperuser = user?.role === "superuser";
+  const isAdmin = user?.role === "member_administrator" || user?.role === "member_superuser";
+  const isSuperuser = user?.role === "member_superuser";
 
   // Stanja za filtriranje i sortiranje
   const [searchTerm, setSearchTerm] = useState("");

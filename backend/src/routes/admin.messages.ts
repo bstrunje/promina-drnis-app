@@ -4,7 +4,7 @@ import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Admin/Superuser routes za pregled poruka članova
+// Member Administrator/Superuser routes za pregled poruka članova
 router.get('/admin', authMiddleware, roles.requireAdmin, memberMessageController.getAdminMessages);
 router.put('/:messageId/read', authMiddleware, roles.requireAdmin, memberMessageController.markAsRead);
 router.put('/:messageId/archive', authMiddleware, roles.requireAdmin, memberMessageController.archiveMessage);

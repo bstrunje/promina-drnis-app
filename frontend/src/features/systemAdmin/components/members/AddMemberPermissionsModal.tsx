@@ -121,7 +121,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {member.role === 'superuser' ? 'Superuser' : member.role === 'admin' ? 'Admin' : 'Član'}
+                    {member.role === 'member_superuser' ? 'Superuser' : member.role === 'member_administrator' ? 'Admin' : 'Član'}
                   </div>
                 </div>
               ))}

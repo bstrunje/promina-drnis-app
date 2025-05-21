@@ -93,7 +93,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
 
   // Upravljanje izdavanjem markice za tekuću godinu
   const handleStampToggle = async (newState: boolean, userRole?: string) => {
-    const canReturnStamp = userRole === "superuser";
+    const canReturnStamp = userRole === "member_superuser";
     
     // Ako korisnik pokušava odznačiti markicu (vratiti u inventar), a nema dozvolu
     if (!newState && !canReturnStamp) {
@@ -187,7 +187,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
 
   // Upravljanje izdavanjem markice za sljedeću godinu
   const handleNextYearStampToggle = async (newState: boolean, userRole?: string) => {
-    const canReturnStamp = userRole === "superuser";
+    const canReturnStamp = userRole === "member_superuser";
     
     // Ako korisnik pokušava odznačiti markicu (vratiti u inventar), a nema dozvolu
     if (!newState && !canReturnStamp) {

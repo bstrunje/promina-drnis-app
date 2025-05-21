@@ -42,9 +42,9 @@ const membershipController = {
             const periodId = parseInt(req.params.periodId);
             
             // Provjeri ima li korisnik dozvolu
-            const permissions = await permissionsService.getAdminPermissions(req.user?.id || 0);
+            const permissions = await permissionsService.getMemberPermissions(req.user?.id || 0);
             
-            if (!permissions?.can_manage_end_reasons && req.user?.role_name !== 'superuser') {
+            if (!permissions?.can_manage_end_reasons && req.user?.role_name !== 'member_superuser') {
                 return res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
             }
 

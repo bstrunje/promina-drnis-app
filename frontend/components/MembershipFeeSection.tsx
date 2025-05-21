@@ -95,7 +95,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isSubmittingHistory, setIsSubmittingHistory] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
 
-  const hasAdminPrivileges = user?.role === "admin" || user?.role === "superuser";
+  const hasAdminPrivileges = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canEdit = hasAdminPrivileges;
 
   useEffect(() => {

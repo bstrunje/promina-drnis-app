@@ -10,8 +10,8 @@ datasource db {
 
 enum SenderType {
   member
-  admin
-  superuser
+  member_administrator
+  member_superuser
 }
 
 model Member {
@@ -44,8 +44,8 @@ model Member {
   failed_login_attempts    Int                     @default(0)
   locked_until             DateTime?               @db.Timestamp(6)
   last_failed_login        DateTime?               @db.Timestamp(6)
-  grantedPermissions       AdminPermissions[]      @relation("grantedByPermissions")
-  permissions              AdminPermissions?       @relation("memberPermissions")
+  grantedPermissions       MemberPermissions[]      @relation("grantedByMemberPermissions")
+  permissions              MemberPermissions?       @relation("memberPermissionsRelation")
   annual_statistics        AnnualStatistics[]
   affected_audits          AuditLog[]              @relation("AuditAffected")
   performed_audits         AuditLog[]              @relation("AuditPerformer")
@@ -174,7 +174,7 @@ model MemberMessage {
   status         String?    @default("unread") @db.VarChar(20)
   sender_id      Int?
   recipient_id   Int?
-  recipient_type String?    @default("admin") @db.VarChar(10)
+  recipient_type String?    @default("member_administrator") @db.VarChar(20)
   sender_type    SenderType @default(member)
   member         Member?    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -223,7 +223,7 @@ model Hours {
   @@map("Hours")
 }
 
-model SystemAdmin {
+model MemberAdministrator {
   id            Int       @id @default(autoincrement())
   username      String    @unique @db.VarChar(100)
   email         String    @unique @db.VarChar(255)
@@ -233,21 +233,52 @@ model SystemAdmin {
   updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   last_login    DateTime? @db.Timestamp(6)
 
-  @@map("system_admins")
+  @@map("member_administrator")
 }
 
-model AdminPermissions {
+model MemberPermissions {
   permission_id          Int       @id @default(autoincrement())
   member_id              Int?      @unique
-  can_manage_end_reasons Boolean?  @default(false)
-  granted_by             Int?
-  granted_at             DateTime? @default(now()) @db.Timestamp(6)
-  grantedByMember        Member?   @relation("grantedByPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
-  member                 Member?   @relation("memberPermissions", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  
+  // Ovlasti za članstvo
+  can_view_members        Boolean?  @default(false)
+  can_edit_members        Boolean?  @default(false)
+  can_add_members         Boolean?  @default(false)
+  can_manage_membership   Boolean?  @default(false)
+  
+  // Ovlasti za aktivnosti
+  can_view_activities     Boolean?  @default(false)
+  can_create_activities   Boolean?  @default(false)
+  can_approve_activities  Boolean?  @default(false)
+  
+  // Financije
+  can_view_financials     Boolean?  @default(false)
+  can_manage_financials   Boolean?  @default(false)
+  
+  // Poruke
+  can_send_group_messages Boolean?  @default(false)
+  can_manage_all_messages Boolean?  @default(false)
+  
+  // Statistika
+  can_view_statistics     Boolean?  @default(false)
+  can_export_data         Boolean?  @default(false)
+  
+  // Specifične ovlasti
+  can_manage_end_reasons  Boolean?  @default(false)
+  can_manage_card_numbers Boolean?  @default(false)
+  can_assign_passwords    Boolean?  @default(false)
+  
+  // Sustav
+  granted_by              Int?
+  granted_at              DateTime? @default(now()) @db.Timestamp(6)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+  
+  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([granted_by], map: "idx_admin_permissions_granted_by")
-  @@index([member_id], map: "idx_admin_permissions_member")
-  @@map("admin_permissions")
+  @@index([granted_by], map: "idx_member_permissions_granted_by")
+  @@index([member_id], map: "idx_member_permissions_member")
+  @@map("member_permissions")
 }
 
 model CardNumber {

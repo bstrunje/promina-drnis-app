@@ -366,7 +366,7 @@ const authController = {
       if (!member.password_hash) {
         // Promijenjeno: logira se email
         console.warn(`Failed login: user "${sanitizedEmail}" has no password set (IP: ${userIP})`);
-        res.status(401).json({ message: "Password not set. Please contact administrator." });
+        res.status(401).json({ message: "Greška prilikom prijave. Kontaktiraj administratora." });
         return;
       }
 
@@ -405,7 +405,7 @@ const authController = {
       if (membershipDetails.fee_payment_year < currentYear) {
         console.warn(`Failed login: user "${sanitizedEmail}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
         res.status(401).json({ 
-          message: "Your membership has expired. Please contact an administrator to renew your membership."
+          message: "Članstvo ti je isteklo. Za obnovu članstva kontaktiraj administratora."
         });
         return;
       }
@@ -420,9 +420,9 @@ const authController = {
         
         // Ne pratimo neuspjele pokušaje za admine i superusere ako je tako konfigurirano
         let shouldTrackFailedAttempt = true;
-        if (!LOCKOUT_ADMINS && (member.role === 'admin' || member.role === 'superuser')) {
+        if (!LOCKOUT_ADMINS && (member.role === 'member_administrator' || member.role === 'member_superuser')) {
           shouldTrackFailedAttempt = false;
-          console.log(`Skip tracking failed attempt for admin/superuser: ${sanitizedEmail}`);
+          console.log(`Skip tracking failed attempt for administrator/superuser: ${sanitizedEmail}`);
         }
         
         if (shouldTrackFailedAttempt) {
@@ -702,7 +702,7 @@ const authController = {
         const member = result.rows[0];
         res.status(201).json({
           message:
-            "Member pre-registered successfully. Awaiting admin password configuration.",
+            "Member pre-registered successfully. Awaiting administrator password configuration.",
           member_id: member.member_id,
           full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
           email: member.email,
@@ -791,7 +791,7 @@ const authController = {
       });
 
       res.status(201).json({
-        message: "Registration successful. Please wait for admin approval.",
+        message: "Pristupnica zaprimljena. Administrator će te kontaktirati.",
         member_id: member.member_id,
       });
     } catch (error) {

@@ -100,7 +100,7 @@ export type DifficultyLevel = 'easy' | 'moderate' | 'difficult' | 'very_difficul
 export type ParticipantRole = 'leader' | 'assistant' | 'participant' | 'trainee';
 
 // Dodati lokalnu definiciju
-export type MemberRole = 'member' | 'admin' | 'superuser';
+export type MemberRole = 'member' | 'member_administrator' | 'member_superuser';
 
 // Join result types
 export interface MemberWithUser extends Member {

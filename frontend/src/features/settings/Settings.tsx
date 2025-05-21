@@ -39,7 +39,7 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     const fetchAdmins = async () => {
-      if (user?.role !== 'superuser') return;
+      if (user?.role !== 'member_superuser') return;
       
       try {
         console.log('Fetching admins...');
@@ -48,7 +48,7 @@ const Settings: React.FC = () => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
           params: {
-            role: 'admin',
+            role: 'member_administrator',
             status: 'registered'
           }
         });
@@ -61,7 +61,7 @@ const Settings: React.FC = () => {
               typeof item === 'object' && 
               item !== null && 
               'role' in item && 
-              item.role === 'admin'
+              item.role === 'member_administrator'
           );
         
         console.log('Filtered admin users:', adminUsers);
@@ -105,8 +105,8 @@ const Settings: React.FC = () => {
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-purple-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Admin Card & Permissions Management</h1>
-        <p className="opacity-90">Manage membership card numbers and admin permissions</p>
+        <h1 className="text-2xl font-bold mb-2">Administrator Card & Permissions Management</h1>
+        <p className="opacity-90">Manage membership card numbers and administrator permissions</p>
       </div>
 
       {error && (
@@ -123,7 +123,7 @@ const Settings: React.FC = () => {
       )}
       */}
 
-      {user?.role === 'superuser' && (
+      {user?.role === 'member_superuser' && (
         <div className="mt-8">
           <Select
             value={selectedAdminId}
@@ -133,7 +133,7 @@ const Settings: React.FC = () => {
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select an admin to manage" />
+              <SelectValue placeholder="Select an administrator to manage" />
             </SelectTrigger>
             <SelectContent>
               {admins.map(admin => (
@@ -163,7 +163,7 @@ const Settings: React.FC = () => {
         </div>
       )}
 
-      {user?.role === 'superuser' && (
+      {user?.role === 'member_superuser' && (
         <div className="mt-8">
           <CardNumberManagement />
         </div>

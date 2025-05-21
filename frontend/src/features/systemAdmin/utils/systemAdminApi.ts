@@ -68,10 +68,21 @@ const systemAdminApi = axios.create({
 // Interceptor za dodavanje tokena u zahtjeve
 systemAdminApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('systemAdminToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Eksplicitno koristimo samo systemAdminToken za System Admin API zahtjeve
+    // a ne regularni member token koji se također može nalaziti u localStorage
+    const systemAdminToken = localStorage.getItem('systemAdminToken');
+    
+    if (systemAdminToken) {
+      config.headers.Authorization = `Bearer ${systemAdminToken}`;
+      // Dodatno logiranje u development modu
+      if (process.env.NODE_ENV === 'development') {
+        console.log('System Admin API koristi token:', systemAdminToken.substring(0, 15) + '...');
+      }
+    } else {
+      // Upozorenje ako nedostaje System Admin token
+      console.warn('System Admin API pozvan bez System Admin tokena!');
     }
+    
     return config;
   },
   (error: unknown) => {
@@ -119,7 +130,14 @@ export const systemAdminLogin = async ({ username, password }: SystemAdminLoginD
       password 
     });
     
-    // Spremanje ID-a i tokena u localStorage
+    // Čišćenje tokena običnog člana kako bi se izbjegao konflikt
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('refreshToken');
+    console.log('Uklonjeni tokeni regularnog člana prilikom prijave kao System Admin');
+    
+    // Spremanje ID-a i tokena System Admina u localStorage
     localStorage.setItem('systemAdminToken', response.data.token);
     localStorage.setItem('systemAdmin', JSON.stringify(response.data.admin));
     
@@ -138,22 +156,31 @@ export const systemAdminLogin = async ({ username, password }: SystemAdminLoginD
  */
 export const systemAdminLogout = (): boolean => {
   try {
-    console.log('Čišćenje lokalnih podataka za system admina');
+    console.log('Započinjem proces odjave System Admina...');
+    
+    // Pokušaj poziva backend API-ja za odjavu (ako je potrebno implementirati)
+    // Primjer: await systemAdminApi.post('/system-admin/logout');
+    
+    // Čišćenje System Admin tokena iz localStorage-a
     localStorage.removeItem('systemAdminToken');
     localStorage.removeItem('systemAdmin');
+    console.log('Uklonjeni System Admin tokeni iz lokalnog spremišta');
     
     // Čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
+    document.cookie = "system_admin_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     
     // Ako smo u produkciji, dodajemo secure i SameSite atribute
     if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+      document.cookie = "system_admin_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
       document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
     }
     
+    console.log('System Admin uspješno odjavljen');
     // Ne preusmjeravamo ovdje, prepuštamo to komponenti koja poziva ovu funkciju
     return true;
   } catch (error: unknown) {
-    console.error('Greška pri odjavi system admina:', error);
+    console.error('Greška pri odjavi System Admina:', error);
     return false;
   }
 };

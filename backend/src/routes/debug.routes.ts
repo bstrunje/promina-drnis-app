@@ -344,7 +344,7 @@ router.post('/reset-test-database', async (req, res) => {
       // await client.query(`
       //   UPDATE members 
       //   SET role = 'member'
-      //   WHERE role != 'admin' AND role != 'superuser'
+      //   WHERE role != 'member_administrator' AND role != 'member_superuser'
       // `);
       
       // 2. RESETIRANJE ČLANARINA I PERIODA

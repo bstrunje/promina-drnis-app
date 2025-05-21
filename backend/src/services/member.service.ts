@@ -79,7 +79,7 @@ const memberService = {
         }
     },
 
-    async updateMemberRole(memberId: number, role: 'member' | 'admin' | 'superuser'): Promise<Member> {
+    async updateMemberRole(memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
         try {
             return await memberRepository.updateRole(memberId, role);
         } catch (error: unknown) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
-import { AdminPermissions } from '../shared/types/permissions';
+import { AdminPermissionsModel as AdminPermissions } from '@shared/systemAdmin';
 import { Member } from '@shared/member';
 import { useToast } from '@components/ui/use-toast';
 import api from '../src/utils/api';

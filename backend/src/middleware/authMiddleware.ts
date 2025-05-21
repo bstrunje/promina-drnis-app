@@ -49,8 +49,8 @@ const authenticateToken = async (
 
         // Provjeri tip korisnika - ako je eksplicitno 'system_admin'
         if (decoded.type === 'system_admin') {
-            // Dohvati system admina iz baze - koristi system_admin model s malim početnim slovom
-            const systemAdmin = await prisma.system_admin.findUnique({
+            // Dohvati member administratora iz baze
+            const systemAdmin = await prisma.memberAdministrator.findUnique({
                 where: { id: decoded.id }
             });
 
@@ -62,8 +62,8 @@ const authenticateToken = async (
             // Postavi system_admin podatke na request objekt
             req.user = {
                 id: systemAdmin.id,
-                role: 'system_admin',  
-                role_name: 'system_admin',
+                role: 'member_administrator',  
+                role_name: 'system_admin', // Zadržavamo system_admin za role_name zbog kompatibilnosti
                 is_system_admin: true,
                 user_type: 'system_admin'
             };
@@ -80,15 +80,15 @@ const authenticateToken = async (
                 m.first_name || ' ' || m.last_name as full_name,
                 m.email,
                 CASE 
-                    WHEN m.role = 'admin' THEN 'admin'
-                    WHEN m.role = 'superuser' THEN 'superuser'
+                    WHEN m.role = 'member_administrator' THEN 'member_administrator'
+                    WHEN m.role = 'member_superuser' THEN 'member_superuser'
                     ELSE 'member'
                 END as role_name,
                 m.status = 'registered' as is_active,
                 m.role,
                 m.status
              FROM members m
-             WHERE m.member_id = $1 AND (m.role = 'superuser' OR m.status = 'registered')`,
+             WHERE m.member_id = $1 AND (m.role = 'member_superuser' OR m.status = 'registered')`,
             [decoded.id]
         );
 
@@ -129,13 +129,13 @@ const checkRole = (allowedRoles: string[]) => {
             }
 
             // Superuser također može sve (na razini člana)
-            if (req.user.role_name === 'superuser') {
+            if (req.user.role_name === 'member_superuser') {
                 next();
                 return;
             }
 
             // Za admin, allow both admin and member actions
-            if (req.user.role_name === 'admin' && allowedRoles.includes('admin')) {
+            if (req.user.role_name === 'member_administrator' && allowedRoles.includes('member_administrator')) {
                 next();
                 return;
             }
@@ -189,7 +189,7 @@ const requireSuperUser = async (
             return;
         }
         
-        if (!req.user || req.user.role_name !== 'superuser') {
+        if (!req.user || req.user.role_name !== 'member_superuser') {
             res.status(403).json({ 
                 message: 'Access denied. Super user privileges required.' 
             });
@@ -220,7 +220,7 @@ const checkPermission = (permission: string) => {
             
             // Za obične članove s admin ovlastima, provjeri konkretnu ovlast
             if (req.user.member_id) {
-                const memberPermissions = await prisma.adminPermissions.findUnique({
+                const memberPermissions = await prisma.memberPermissions.findUnique({
                     where: { member_id: req.user.member_id }
                 });
                 
@@ -251,8 +251,8 @@ const checkPermission = (permission: string) => {
 
 // Role-based middleware shortcuts
 const roles = {
-    requireAdmin: checkRole(['admin', 'superuser']),
-    requireMember: checkRole(['member', 'admin', 'superuser']),
+    requireAdmin: checkRole(['member_administrator', 'member_superuser']),
+    requireMember: checkRole(['member', 'member_administrator', 'member_superuser']),
     requireSuperUser,
     requireSystemAdmin
 };

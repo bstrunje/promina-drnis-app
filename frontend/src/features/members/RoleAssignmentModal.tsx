@@ -4,11 +4,11 @@ import { Member } from '@shared/member';
 interface RoleAssignmentModalProps {
   member: Member;
   onClose: () => void;
-  onAssign: (memberId: number, newRole: 'member' | 'admin' | 'superuser') => void;
+  onAssign: (memberId: number, newRole: 'member' | 'member_administrator' | 'member_superuser') => void;
 }
 
 const RoleAssignmentModal: React.FC<RoleAssignmentModalProps> = ({ member, onClose, onAssign }) => {
-  const [selectedRole, setSelectedRole] = useState<'member' | 'admin' | 'superuser'>(member.role);
+  const [selectedRole, setSelectedRole] = useState<'member' | 'member_administrator' | 'member_superuser'>(member.role ?? 'member');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +26,12 @@ const RoleAssignmentModal: React.FC<RoleAssignmentModalProps> = ({ member, onClo
             <label className="block text-sm font-medium text-gray-700">Role</label>
             <select
               value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value as 'member' | 'admin' | 'superuser')}
+              onChange={(e) => setSelectedRole(e.target.value as 'member' | 'member_administrator' | 'member_superuser')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="member">Member</option>
-              <option value="admin">Admin</option>
-              <option value="superuser">Superuser</option>
+              <option value="member_administrator">Admin</option>
+              <option value="member_superuser">Superuser</option>
             </select>
           </div>
           <div className="mt-4 flex justify-end space-x-2">

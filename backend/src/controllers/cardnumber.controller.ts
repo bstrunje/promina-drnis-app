@@ -177,7 +177,7 @@ const cardNumberController = {
   async syncCardNumberStatus(req: Request, res: Response): Promise<void> {
     try {
       // Potrebna je admin/superuser razina pristupa
-      if (req.user?.role !== 'admin' && req.user?.role !== 'superuser') {
+      if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
         res.status(403).json({ message: 'Unauthorized. Only admins and superusers can sync card number status.' });
         return;
       }

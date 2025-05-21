@@ -11,7 +11,7 @@ export interface MemberMessage {
     sender_id: number | null;
     recipient_id: number | null;
     recipient_type: 'admin' | 'member' | 'group' | 'all';
-    sender_type: 'member' | 'admin' | 'superuser';
+    sender_type: 'member' | 'member_administrator' | 'member_superuser';
 }
 
 export interface MemberMessageWithSender extends MemberMessage {
@@ -27,7 +27,7 @@ const memberMessageRepository = {
             message_text: messageText,
             sender_id: memberId,
             sender_type: 'member',
-            recipient_type: 'admin'
+            recipient_type: 'member_administrator'
         }});
         return mapToMemberMessage(raw);
     },
@@ -37,7 +37,7 @@ const memberMessageRepository = {
         recipientId: number | null, 
         messageText: string, 
         recipientType: 'member' | 'group' | 'all' = 'member',
-        senderType: 'admin' | 'superuser' = 'admin'
+        senderType: 'member_administrator' | 'member_superuser' = 'member_administrator'
     ): Promise<MemberMessage> {
         const raw = await prisma.memberMessage.create({ data: {
             message_text: messageText,
@@ -74,7 +74,7 @@ const memberMessageRepository = {
 
     async getMessagesSentByAdmin(adminId: number): Promise<MemberMessageWithSender[]> {
         const raws = await prisma.memberMessage.findMany({
-            where: { sender_id: adminId, sender_type: { in: ['admin', 'superuser'] } },
+            where: { sender_id: adminId, sender_type: { in: ['member_administrator', 'member_superuser'] } },
             orderBy: { created_at: 'desc' }
         });
         const recipientIds = raws.map(r => r.recipient_id).filter(id => id !== null) as number[];
