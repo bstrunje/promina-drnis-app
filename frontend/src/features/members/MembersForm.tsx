@@ -307,7 +307,7 @@ membership_type: mapMembershipTypeToEnum(
               name="role"
               value={formData.role}
               onChange={(e) => {
-                // TypeScript zahtijeva da role bude točno 'member' | 'admin' | 'superuser', nikad undefined
+                // TypeScript zahtijeva da role bude točno 'member' | 'member_administrator' | 'member_superuser', nikad undefined
                 const value = e.target.value;
                 setFormData(prev => ({
                   ...prev,
