@@ -29,7 +29,8 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const checkUnreadMessages = useCallback(async () => {
     try {
       // Dohvati poruke iz API-ja i eksplicitno konvertiraj u tip koji očekuje komponenta
-      const apiMessages = await getAdminMessages();
+      // Postavljamo forceLoad=true jer je korisnik aktivno na admin dijelu aplikacije
+      const apiMessages = await getAdminMessages(true);
       
       // Provjeri ima li nepročitanih poruka - koristimo as unknown pa as AdminMessage
       // kako bismo izbjegli TypeScript grešku o nekompatibilnim tipovima

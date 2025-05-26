@@ -11,8 +11,8 @@ import authRepository from "../repositories/auth.repository.js";
 import auditService from "../services/audit.service.js";
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../config/jwt.config.js';
 import prisma from "../utils/prisma.js";
-import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
-import { 
+import { parseDate, getCurrentDate, formatDate, formatUTCDate, getTokenExpiryDate } from '../utils/dateUtils.js';
+import {
   MAX_FAILED_LOGIN_ATTEMPTS, 
   ACCOUNT_LOCKOUT_DURATION_MINUTES, 
   FAILED_ATTEMPTS_RESET_MINUTES,
@@ -181,17 +181,18 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     console.log(`Ažuriram refresh token u bazi (ID: ${storedToken.id})`);
     
     try {
-      const expiresAt = new Date(getCurrentDate().getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dana
+      // Koristimo novu funkciju za generiranje UTC datuma isteka tokena - 7 dana
+      const expiresAt = getTokenExpiryDate(7);
       
       const updatedToken = await prisma.refresh_tokens.update({
         where: { id: storedToken.id },
         data: {
           token: newRefreshToken,
-          expires_at: expiresAt // <-- ispravljeno
+          expires_at: expiresAt
         }
       });
       
-      console.log(`Token uspješno ažuriran, novi datum isteka: ${expiresAt.toISOString()}`);
+      console.log(`Token uspješno ažuriran, novi datum isteka: ${formatUTCDate(expiresAt)}`);
       
       // Dodatna provjera je li token stvarno ažuriran
       const verifyToken = await prisma.refresh_tokens.findFirst({
@@ -537,7 +538,8 @@ const authController = {
           where: { member_id: member.member_id }
         });
 
-        const expiresAt = new Date(getCurrentDate().getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dana
+        // Koristimo novu funkciju za generiranje UTC datuma isteka tokena - 7 dana
+        const expiresAt = getTokenExpiryDate(7);
         
         if (existingToken) {
           console.log(`Pronađen postojeći token (ID: ${existingToken.id}), ažuriram ga...`);
@@ -546,10 +548,10 @@ const authController = {
             where: { id: existingToken.id },
             data: {
               token: refreshToken,
-              expires_at: expiresAt // <-- ispravljeno
+              expires_at: expiresAt
             }
           });
-          console.log(`Token uspješno ažuriran, novi datum isteka: ${expiresAt.toISOString()}`);
+          console.log(`Token uspješno ažuriran, novi datum isteka: ${formatUTCDate(expiresAt)}`);
         } else {
           console.log('Nije pronađen postojeći token, kreiram novi...');
           // Kreiraj novi token
@@ -557,10 +559,10 @@ const authController = {
             data: {
               token: refreshToken,
               member_id: member.member_id,
-              expires_at: expiresAt // <-- ispravljeno
+              expires_at: expiresAt
             }
           });
-          console.log(`Novi token uspješno kreiran s ID: ${newToken.id}, datum isteka: ${expiresAt.toISOString()}`);
+          console.log(`Novi token uspješno kreiran s ID: ${newToken.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
         }
         
         // Dodatna provjera je li token stvarno spremljen
@@ -764,7 +766,7 @@ const authController = {
       // Provjeri je li date_of_birth samo datum (bez vremena)
       if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.length === 10) {
         // Dodaj vrijeme (T00:00:00.000Z) na kraj datuma
-        formattedDateOfBirth = new Date(`${date_of_birth}T00:00:00.000Z`).toISOString();
+        formattedDateOfBirth = formatDate(parseDate(`${date_of_birth}T00:00:00.000Z`), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
         console.log(`Formatiran datum rođenja: ${formattedDateOfBirth}`);
       }
 

@@ -108,12 +108,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       console.log('Pokušavam osvježiti token...');
       const storedRefreshToken = getStoredRefreshToken();
+      
+      // Ako nema pohranjenog refresh tokena, ne možemo nastaviti
+      if (!storedRefreshToken) {
+        console.warn('Nema pohranjenog refresh tokena za osvježavanje');
+        return null;
+      }
+      
       const requestBody = {
         refreshToken: storedRefreshToken
       };
-      console.log('Slanje zahtjeva za osvježavanje tokena:', {
-        refreshToken: storedRefreshToken
-      });
+      
+      console.log('Slanje zahtjeva za osvježavanje tokena');
+      
       const response = await fetch(getApiUrl('/api/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
@@ -122,16 +129,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         },
         body: JSON.stringify(requestBody)
       });
+      
+      // Provjeravamo specifične kodove greške koji ukazuju na nevažeći token
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+        
+        // Kada refresh token više nije važeći, čistimo lokalno stanje
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRole");
+        clearStoredRefreshToken();
+        
+        // Preusmjeravanje na stranicu za prijavu, ali samo ako nismo već na njoj
+        if (window?.location && window.location.pathname !== '/' && window.location.pathname !== '/login') {
+          console.log('Preusmjeravam na stranicu za prijavu zbog nevažećeg tokena');
+          window.location.href = '/login';
+        }
+        return null;
+      }
+      
+      // Za ostale greške koje nisu vezane za autentikaciju
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      // Obrada uspješnog odgovora
       const data: unknown = await response.json();
       if (typeof data === 'object' && data !== null) {
         const { accessToken, refreshToken } = data as RefreshTokenResponse;
+        
+        // Spremanje novog refresh tokena ako je dobiven
         if (typeof refreshToken === 'string') {
-          console.log('Primljen novi refresh token, spremam ga u lokalno spremište');
+          console.log('Primljen novi refresh token, ažuriram lokalno spremište');
+          // Osiguravamo da se novi token sprema i da je ispravno ažuriran
           storeRefreshToken(refreshToken);
         }
+        
+        // Spremanje novog access tokena
         if (typeof accessToken === 'string') {
           setToken(accessToken);
           localStorage.setItem("token", accessToken);
@@ -142,9 +178,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       return null;
     } catch (error) {
       console.error("Greška pri obnavljanju tokena:", error);
+      
+      // U slučaju neuhvaćene greške, sigurnije je također očistiti stanje
+      // ali ne preusmjeravamo odmah na login jer možda je samo privremeni problem s mrežom
       return null;
     }
-  }, [storeRefreshToken, setToken, getApiUrl]);
+  }, [storeRefreshToken, setToken, getApiUrl, clearStoredRefreshToken]);
 
   // Inicijalizacija stanja iz localStorage i provjera valjanosti tokena
   useEffect(() => {
@@ -240,7 +279,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       (error) => Promise.reject(error instanceof Error ? error : new Error(String(error)))
     );
 
-    // Interceptor za obradu odgovora i automatsko obnavljanje tokena
+      // Interceptor za obradu odgovora i automatsko obnavljanje tokena
     const responseInterceptor = axios.interceptors.response.use(
       (response) => response,
       async (error: unknown) => {
@@ -281,6 +320,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               } else {
                 originalRequest.headers = { Authorization: `Bearer ${newToken}` };
               }
+              
+              // Osvježi korisnički objekt nakon uspješnog osvježavanja tokena
+              // Ovo osigurava da korisnik ostane prijavljen i da su sve komponente učitane
+              try {
+                // Dohvati podatke o trenutnom korisniku iz localStorage-a
+                const savedUser = localStorage.getItem("user");
+                if (savedUser) {
+                  const parsedUser = JSON.parse(savedUser) as Member;
+                  // Postavi user objekt da bismo osvježili kontekst, ali zadrži isti objekt
+                  // kako ne bismo uzrokovali nepotrebna rerenderiranja
+                  setUser(current => current ? { ...parsedUser, registration_completed: true } : null);
+                  console.log('Korisničko stanje osvježeno nakon obnove tokena');
+                }
+              } catch (userRefreshError) {
+                console.error('Greška pri osvježavanju korisničkog stanja:', userRefreshError);
+              }
+              
               return axios(originalRequest);
             }
           } catch (refreshError) {

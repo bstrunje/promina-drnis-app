@@ -10,7 +10,7 @@ import { MembershipPeriod } from '../shared/types/membership.js';
 import authRepository from '../repositories/auth.repository.js';
 import auditService from './audit.service.js';
 import { MembershipTypeEnum } from '../shared/types/member.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
+import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -217,7 +217,7 @@ const memberService = {
                 fee_payment_year: (member as any).fee_payment_year ?? undefined,
                 card_stamp_issued: (member as any).card_stamp_issued ?? undefined,
                 fee_payment_date: (member as any).fee_payment_date
-                    ? new Date((member as any).fee_payment_date).toISOString()
+                    ? formatDate(parseDate((member as any).fee_payment_date), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
                     : undefined,
                 next_year_stamp_issued: (member as any).next_year_stamp_issued ?? undefined,
             };

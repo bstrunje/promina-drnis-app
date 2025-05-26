@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { parseDate, formatDate } from '../utils/dateUtils.js';
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
     const { 
@@ -100,8 +101,8 @@ export const validateActivityCreate = (req: Request, res: Response, next: NextFu
         return res.status(400).json({ message: 'Start and end dates are required' });
     }
 
-    const startDateTime = new Date(start_date);
-    const endDateTime = new Date(end_date);
+    const startDateTime = parseDate(start_date);
+    const endDateTime = parseDate(end_date);
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         return res.status(400).json({ message: 'Valid date format is required' });

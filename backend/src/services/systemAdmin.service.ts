@@ -1,7 +1,7 @@
 // services/systemAdmin.service.ts
 import systemAdminRepository from '../repositories/systemAdmin.repository.js';
 import prisma from '../utils/prisma.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
+import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
 // import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js'; // Može se koristiti za tipizaciju ako je potrebno
 // import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
@@ -129,8 +129,8 @@ const systemAdminService = {
                         can_manage_card_numbers: member.role === 'member_superuser',
                         can_assign_passwords: member.role === 'member_superuser',
                         granted_by: null,
-                        granted_at: new Date(),
-                        updated_at: new Date(),
+                        granted_at: getCurrentDate(),
+                        updated_at: getCurrentDate(),
                         member: {
                             member_id: member.member_id,
                             first_name: member.first_name,
@@ -320,14 +320,14 @@ const systemAdminService = {
                         memberMap.set(member.member_id, {
                             member_id: member.member_id,
                             // Podrazumijevane ovlasti za superuser/admin članove ako ih nemaju eksplicitno dodane
-                            can_view_members: member.role === 'superuser' || member.role === 'admin',
-                            can_edit_members: member.role === 'superuser' || member.role === 'admin',
-                            can_delete_members: member.role === 'superuser',
-                            can_view_activities: member.role === 'superuser' || member.role === 'admin',
-                            can_edit_activities: member.role === 'superuser' || member.role === 'admin',
-                            can_delete_activities: member.role === 'superuser',
-                            can_view_reports: member.role === 'superuser' || member.role === 'admin',
-                            can_manage_settings: member.role === 'superuser',
+                            can_view_members: member.role === 'member_superuser' || member.role === 'member_administrator',
+                            can_edit_members: member.role === 'member_superuser' || member.role === 'member_administrator',
+                            can_delete_members: member.role === 'member_superuser',
+                            can_view_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
+                            can_edit_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
+                            can_delete_activities: member.role === 'member_superuser',
+                            can_view_reports: member.role === 'member_superuser' || member.role === 'member_administrator',
+                            can_manage_settings: member.role === 'member_superuser',
                             member: {
                                 ...member,
                                 full_name: `${member.first_name} ${member.last_name}`
@@ -352,14 +352,14 @@ const systemAdminService = {
                 for (const member of specialRoleMembers) {
                     memberMap.set(member.member_id, {
                         member_id: member.member_id,
-                        can_view_members: member.role === 'superuser' || member.role === 'admin',
-                        can_edit_members: member.role === 'superuser' || member.role === 'admin',
-                        can_delete_members: member.role === 'superuser',
-                        can_view_activities: member.role === 'superuser' || member.role === 'admin',
-                        can_edit_activities: member.role === 'superuser' || member.role === 'admin',
-                        can_delete_activities: member.role === 'superuser',
-                        can_view_reports: member.role === 'superuser' || member.role === 'admin',
-                        can_manage_settings: member.role === 'superuser',
+                        can_view_members: member.role === 'member_superuser' || member.role === 'member_administrator',
+                        can_edit_members: member.role === 'member_superuser' || member.role === 'member_administrator',
+                        can_delete_members: member.role === 'member_superuser',
+                        can_view_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
+                        can_edit_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
+                        can_delete_activities: member.role === 'member_superuser',
+                        can_view_reports: member.role === 'member_superuser' || member.role === 'member_administrator',
+                        can_manage_settings: member.role === 'member_superuser',
                         member: {
                             ...member,
                             full_name: `${member.first_name} ${member.last_name}`
@@ -382,7 +382,7 @@ const systemAdminService = {
     async getMembersWithoutPermissions(): Promise<any[]> {
         try {
             // Dohvaćamo članove koji nemaju zapis u tablici admin_permissions
-            // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'admin', 'superuser' ili 'member'
+            // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'member_administrator', 'member_superuser' ili 'member'
             return db.query(`
                 SELECT 
                     m.member_id, 
@@ -395,7 +395,7 @@ const systemAdminService = {
                     SELECT member_id FROM admin_permissions
                 )
                 AND m.detailed_status = 'registered'
-                AND m.role IN ('admin', 'superuser', 'member')
+                AND m.role IN ('member_administrator', 'member_superuser', 'member')
                 ORDER BY m.last_name, m.first_name
             `).then(result => result.rows);
         } catch (error) {
@@ -437,14 +437,14 @@ const systemAdminService = {
             const now = getCurrentDate();
             // Pronađi početak ovog tjedna (ponedjeljak)
             const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // 0 je nedjelja, želimo 1-7
-            const startOfWeek = new Date(now);
+            const startOfWeek = new Date(now); // Koristimo kopiju trenutnog datuma
             startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
             startOfWeek.setHours(0,0,0,0);
 
             // Generiraj tjedne granice
             const weekStarts: Date[] = [];
             for (let i = NUM_WEEKS - 1; i >= 0; i--) {
-                const d = new Date(startOfWeek);
+                const d = new Date(startOfWeek); // Koristimo kopiju početka tjedna
                 d.setDate(startOfWeek.getDate() - i * 7);
                 weekStarts.push(d);
             }
@@ -464,7 +464,7 @@ const systemAdminService = {
 
             // Grupiraj aktivnosti po tjednima
             const weeklyCounts = weekStarts.map((weekStart, idx) => {
-                const weekEnd = new Date(weekStart);
+                const weekEnd = new Date(weekStart); // Koristimo kopiju početka tjedna
                 weekEnd.setDate(weekEnd.getDate() + 7);
                 const count = activities.filter(a => {
                     return a.start_date >= weekStart && a.start_date < weekEnd;

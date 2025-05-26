@@ -268,9 +268,9 @@ export function formatDate(
  * formatDate(myDate, 'dd.MM.yyyy HH:mm:ss')
  * 
  * // NIKAD NE KORISTITI:
- * // new Date().toLocaleString()
- * // new Date().toISOString()
- * // format(new Date(), 'dd.MM.yyyy')
+ * // getCurrentDate().toLocaleString()
+ * // getCurrentDate().toISOString()
+ * // format(getCurrentDate(), 'dd.MM.yyyy')
  */
 
 /**
@@ -300,7 +300,7 @@ export function hrToIsoFormat(hrDate: string): string {
   
   try {
     // Parse dd.MM.yyyy format to Date object
-    const date = parse(hrDate, 'dd.MM.yyyy', new Date());
+    const date = parse(hrDate, 'dd.MM.yyyy', getCurrentDate());
     
     // Format to ISO date format (YYYY-MM-DD)
     return format(date, 'yyyy-MM-dd');
@@ -341,7 +341,7 @@ export function parseDate(dateString: string | null, dateFormat = 'yyyy-MM-dd'):
     if (isValid(parsedWithIso)) return parsedWithIso;
     
     // Ako to ne uspije, pokušaj s formatom
-    const parsedWithFormat = parse(dateString, dateFormat, new Date());
+    const parsedWithFormat = parse(dateString, dateFormat, getCurrentDate());
     if (isValid(parsedWithFormat)) return parsedWithFormat;
     
     // Ako ni to ne uspije, probaj s konstruktorom

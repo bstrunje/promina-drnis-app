@@ -68,7 +68,7 @@ export const updateSettings = [
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    if (req.user.role_name !== 'superuser') {
+    if (req.user.role_name !== 'member_superuser') {
       return res.status(403).json({ error: 'Unauthorized to update settings' });
     }
 

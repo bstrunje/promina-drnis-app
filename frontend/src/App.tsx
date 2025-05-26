@@ -98,8 +98,10 @@ function AppContent() {
           )}
           {user?.role === 'member_superuser' && (
             <>
-              <Route path="/super-user" element={<SuperUserDashboard member={user} />} />
+              {/* Standardizirana ruta za SuperUser dashboard */}
               <Route path="/superuser/dashboard" element={<SuperUserDashboard member={user} />} />
+              {/* Preusmjeravanje sa stare rute na standardiziranu */}
+              <Route path="/super-user" element={<Navigate to="/superuser/dashboard" replace />} />
             </>
           )}
         </Route>

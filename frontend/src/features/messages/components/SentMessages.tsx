@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight, Users, UserCheck } from "lucide-react";
 import { formatDate } from "../../../utils/dateUtils";
 import { Message, MessageGroup, MessageMember } from '../types/messageTypes';
 import { convertApiMessagesToMessages } from '../utils/messageConverters';
+import { parseDate, getCurrentDate } from '../../../utils/dateUtils';
 
 interface SentMessagesProps {
   userRole: string;
@@ -143,7 +144,11 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
 
     // Sortiraj poruke unutar grupa po datumu (najnovije prvo)
     Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      groups[key].sort((a, b) => {
+        const dateA = parseDate(a.created_at || '') || getCurrentDate();
+        const dateB = parseDate(b.created_at || '') || getCurrentDate();
+        return dateB.getTime() - dateA.getTime(); // Novije prvo
+      });
     });
 
     // Pretvori objekt u niz grupa

@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
 import { getCurrentDate, formatDate } from './utils/dateUtils.js';
+import timezoneService from './services/timezone.service.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -314,6 +315,11 @@ prepareDirectories();
 migrateExistingFiles()
   .then(() => console.log('File migration completed'))
   .catch(err => console.error('Error during file migration:', err));
+
+// Inicijalizacija vremenske zone iz postavki sustava
+timezoneService.initializeTimezone()
+  .then(() => console.log('🌐 Vremenska zona uspješno inicijalizirana iz postavki sustava'))
+  .catch(err => console.error('Greška pri inicijalizaciji vremenske zone:', err));
 
 // Initialize scheduled tasks in production
 if (process.env.NODE_ENV === 'production') {

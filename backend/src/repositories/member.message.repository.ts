@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma.js';
 import { mapToMemberMessage, mapToMemberMessageWithSender } from '../utils/memberMessageMapper.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 export interface MemberMessage {
     message_id: number;
@@ -10,7 +11,7 @@ export interface MemberMessage {
     status: 'unread' | 'read' | 'archived';
     sender_id: number | null;
     recipient_id: number | null;
-    recipient_type: 'admin' | 'member' | 'group' | 'all';
+    recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
     sender_type: 'member' | 'member_administrator' | 'member_superuser';
 }
 
@@ -51,7 +52,7 @@ const memberMessageRepository = {
 
     async getAllForAdmin(): Promise<MemberMessageWithSender[]> {
         const raws = await prisma.memberMessage.findMany({
-            where: { recipient_type: { in: ['admin', 'all'] } },
+            where: { recipient_type: { in: ['member_administrator', 'all'] } },
             include: { member: { select: { first_name: true, last_name: true } } },
             orderBy: { created_at: 'desc' }
         });
@@ -62,7 +63,7 @@ const memberMessageRepository = {
         const raws = await prisma.memberMessage.findMany({
             where: {
                 OR: [
-                    { member_id: memberId, recipient_type: 'admin' },
+                    { member_id: memberId, recipient_type: 'member_administrator' },
                     { recipient_id: memberId, recipient_type: 'member' },
                     { recipient_id: memberId, recipient_type: 'group' }
                 ]
@@ -113,7 +114,7 @@ const memberMessageRepository = {
     },
 
     async markAsRead(messageId: number): Promise<void> {
-        await prisma.memberMessage.update({ where: { message_id: messageId }, data: { status: 'read', read_at: new Date() }});
+        await prisma.memberMessage.update({ where: { message_id: messageId }, data: { status: 'read', read_at: getCurrentDate() }});
     },
 
     async archiveMessage(messageId: number): Promise<void> {

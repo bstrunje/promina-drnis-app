@@ -16,15 +16,15 @@ router.get(
 
 // Add a single card number (admin or superuser only)
 router.post(
-  '/add', 
-  authMiddleware, // Use it directly as middleware
+  '/', 
+  authMiddleware, 
   cardNumberController.addSingle
 );
 
 // Add a range of card numbers (admin or superuser only)
 router.post(
-  '/add-range', 
-  authMiddleware, // Use it directly as middleware
+  '/range', 
+  authMiddleware, 
   cardNumberController.addRange
 );
 
@@ -35,17 +35,16 @@ router.delete(
   cardNumberController.deleteCardNumber
 );
 
-// Add this route
+// Route za dohvat svih brojeva iskaznica (GET /api/card-numbers)
 router.get(
-  '/all', 
+  '/', 
   authMiddleware, 
   cardNumberController.getAllCardNumbers
 );
 
-// Add this route for syncing card number status
-// Important: Use POST method as specified in the frontend
+// Route for syncing card number status
 router.post(
-  '/sync-status',
+  '/sync',
   authMiddleware,
   cardNumberController.syncCardNumberStatus
 );

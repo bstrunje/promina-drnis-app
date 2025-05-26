@@ -1,7 +1,7 @@
 // src/services/membership.service.ts
 import db from "../utils/db.js";
 import membershipRepository from "../repositories/membership.repository.js";
-import {
+import { 
   MembershipDetails,
   MembershipPeriod,
   MembershipEndReason,
@@ -11,7 +11,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";
 import prisma from "../utils/prisma.js";
-import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
+import { parseDate, getCurrentDate, formatDate, getCurrentYear } from '../utils/dateUtils.js';
 
 const membershipService = {
   async processFeePayment(
@@ -28,8 +28,9 @@ const membershipService = {
 
       const renewalStartDay = settings?.renewalStartDay || 31;
 
+      // Koristimo direktno Date objekt umjesto parsiranja, jer već imamo Date
       const validPaymentDate = new Date(paymentDate);
-      validPaymentDate.setHours(12, 0, 0, 0); // Standardize time
+      validPaymentDate.setHours(12, 0, 0, 0); // Standardize time // Standardize time
 
       const member = await memberRepository.findById(memberId);
       if (!member) {
@@ -294,8 +295,8 @@ const membershipService = {
     // Calculate total duration
     let totalDays = 0;
     periods.forEach((period: MembershipPeriod) => {
-      const end = new Date(period.end_date || getCurrentDate());
-      const start = new Date(period.start_date);
+      const end = period.end_date ? parseDate(period.end_date) : getCurrentDate();
+      const start = parseDate(period.start_date);
       totalDays += Math.floor(
         (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
       );

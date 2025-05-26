@@ -1,6 +1,6 @@
 import { PoolClient } from 'pg';
 import db from '../utils/db.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
+import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 import { 
     Activity, 
     ActivityCreateInput, 
@@ -56,8 +56,15 @@ const activityService = {
                 throw new ActivityError('Start and end dates are required', 'VALIDATION_ERROR');
             }
 
-            const startDate = new Date(activityData.start_date);
-            const endDate = new Date(activityData.end_date);
+            // Konverzija ulaznih datuma u Date objekte
+            // parseDate očekuje string, a ne Date objekt
+            const startDate = typeof activityData.start_date === 'string' 
+                ? parseDate(activityData.start_date)
+                : new Date(activityData.start_date);
+                
+            const endDate = typeof activityData.end_date === 'string'
+                ? parseDate(activityData.end_date)
+                : new Date(activityData.end_date);
             
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 throw new ActivityError('Invalid date format', 'VALIDATION_ERROR');
@@ -203,14 +210,20 @@ return {
             }
 
             if (updateData.start_date || updateData.end_date) {
-                const startDate = new Date(updateData.start_date || activity.start_date);
-                const endDate = new Date(updateData.end_date || activity.end_date);
+                // Koristimo operator || za dobavljanje vrijednosti, možda su već Date objekti
+                const startDate = updateData.start_date || activity.start_date;
+                const endDate = updateData.end_date || activity.end_date;
                 
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                // Provjera valjanosti datuma
+                const startDateTime = startDate instanceof Date ? startDate.getTime() : new Date(startDate).getTime();
+                const endDateTime = endDate instanceof Date ? endDate.getTime() : new Date(endDate).getTime();
+                
+                if (isNaN(startDateTime) || isNaN(endDateTime)) {
                     throw new ActivityError('Invalid date format', 'VALIDATION_ERROR');
                 }
 
-                if (startDate > endDate) {
+                // Usporedba datuma kroz njihove timestamp vrijednosti
+                if (startDateTime > endDateTime) {
                     throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
                 }
             }

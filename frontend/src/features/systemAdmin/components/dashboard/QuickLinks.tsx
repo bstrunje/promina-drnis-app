@@ -1,7 +1,7 @@
 // features/systemAdmin/components/dashboard/QuickLinks.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, FileText } from 'lucide-react';
 
 // Komponenta za prikaz brzih prečaca na dashboardu
 const QuickLinks: React.FC = () => {
@@ -25,6 +25,13 @@ const QuickLinks: React.FC = () => {
           className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
         >
           <span>Odobravanje aktivnosti</span>
+          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+        </button>
+        <button
+          onClick={() => navigate("/system-admin/audit-logs")}
+          className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
+        >
+          <span>Revizijski zapisi</span>
           <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
         </button>
       </div>

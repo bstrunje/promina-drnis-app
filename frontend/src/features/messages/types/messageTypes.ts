@@ -15,9 +15,9 @@ export interface Message {
   created_at: string;
   status: 'unread' | 'read' | 'archived';
   sender_id?: number | null;
-  sender_type?: 'admin' | 'member' | 'system';
+  sender_type?: 'member_administrator' | 'member' | 'system';
   recipient_id?: number | null;
-  recipient_type?: 'admin' | 'member' | 'group' | 'all';
+  recipient_type?: 'member_administrator' | 'member' | 'group' | 'all';
 }
 
 /**

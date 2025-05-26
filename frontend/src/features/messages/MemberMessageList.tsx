@@ -19,9 +19,9 @@ interface MemberMessage {
   created_at: string;
   status: 'unread' | 'read' | 'archived';
   sender_id: number | null;
-  sender_type: 'admin' | 'member';
+  sender_type: 'member_administrator' | 'member';
   recipient_id: number | null;
-  recipient_type: 'admin' | 'member' | 'group' | 'all';
+  recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
 }
 
 const MemberMessageList: React.FC = () => {
@@ -42,7 +42,7 @@ const MemberMessageList: React.FC = () => {
       
       // Filtriramo samo poruke koje je admin poslao članu
       const receivedMessages = data.filter(msg => 
-        msg.sender_type === 'admin' && 
+        msg.sender_type === 'member_administrator' && 
         (String(msg.recipient_id) === String(user.member_id) || msg.recipient_type === 'all')
       );
       
@@ -80,7 +80,7 @@ const MemberMessageList: React.FC = () => {
         created_at: msg.timestamp,
         status: msg.read ? ('read' as const) : ('unread' as const),
         sender_id: Number(msg.sender_id) || null,
-        sender_type: msg.sender_type === 'system' ? 'admin' : msg.sender_type,
+        sender_type: msg.sender_type === 'system' ? 'member_administrator' : msg.sender_type,
         recipient_id: Number(msg.recipient_id) || null,
         recipient_type: msg.recipient_type
       }));

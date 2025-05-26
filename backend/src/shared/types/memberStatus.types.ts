@@ -6,6 +6,27 @@
 
 import { MembershipEndReason, MembershipPeriod as OriginalMembershipPeriod } from './membership.js';
 
+// Interne helper funkcije za rad s datumima
+// Definirane su ovdje kako bi shared tipovi bili neovisni
+
+/**
+ * Vraća trenutni datum
+ * @returns Trenutni datum kao Date objekt
+ */
+function getCurrentDate(): Date {
+  return new Date();
+}
+
+/**
+ * Parsira datum iz različitih formata
+ * @param date Datum kao string ili Date objekt
+ * @returns Date objekt
+ */
+function parseDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  return new Date(date);
+}
+
 // Tipovi članstva
 export type MembershipStatus = 'registered' | 'inactive' | 'pending';
 export type ActivityStatus = 'active' | 'passive';

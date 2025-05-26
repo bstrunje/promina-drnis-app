@@ -1,5 +1,5 @@
 import db from '../utils/db.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
+import { getCurrentDate, formatDate } from '../utils/dateUtils.js';
 
 interface StampInventory {
     stamp_type: 'employed' | 'student' | 'pensioner';
@@ -263,7 +263,7 @@ const stampRepository = {
         try {
             // Koristimo simulirani datum iz getCurrentDate funkcije
             const currentDate = getCurrentDate();
-            const formattedDate = currentDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+            const formattedDate = formatDate(currentDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]; // Format YYYY-MM-DD
             
             await db.transaction(async (client) => {
                 // Filtriramo markice samo za zadanu godinu

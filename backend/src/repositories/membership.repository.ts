@@ -294,7 +294,7 @@ const membershipRepository = {
                 LEFT JOIN membership_details md ON m.member_id = md.member_id
                 WHERE md.fee_payment_year < $2
              )`,
-            [new Date(year, 11, 31), year]
+            [getCurrentDate(), year]
         );
         
         // Markice su nepovratne, više ne resetiramo oznake izdanih markica

@@ -1,6 +1,7 @@
 // controllers/systemAdmin.controller.ts
 import { Request, Response } from 'express';
 import systemAdminService from '../services/systemAdmin.service.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 // Koristimo any umjesto specifičnih tipova - privremeno rješenje
 // import { SystemAdmin, SystemAdminLoginData, CreateSystemAdminDto, UpdateMemberPermissionsDto } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
@@ -664,7 +665,7 @@ const systemAdminController = {
                 return;
             }
 
-            // Ažuriranje člana - postavljanje lozinke, statusa 'registered' i uloge 'superuser'
+            // Ažuriranje člana - postavljanje lozinke, statusa 'registered' i uloge 'member_superuser'
             await prisma.member.update({
                 where: { member_id: memberId },
                 data: {
@@ -682,11 +683,11 @@ const systemAdminController = {
             
             // Ako ne postoji, kreiraj osnovni zapis o članstvu
             if (!membershipDetails) {
-                const currentYear = new Date().getFullYear();
+                const currentYear = getCurrentDate().getFullYear();
                 await prisma.membershipDetails.create({
                     data: {
                         member_id: memberId,
-                        fee_payment_date: new Date(), // Datum plaćanja (danas)
+                        fee_payment_date: getCurrentDate(), // Datum plaćanja (danas)
                         fee_payment_year: currentYear // Tekuća godina
                         // Prisma će automatski postaviti ostala polja
                     }

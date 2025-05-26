@@ -33,7 +33,11 @@ router.put(
 // Require admin or superuser role for all routes
 router.use(authenticateToken);
 router.use((req: AuthRequest, res, next) => {
-  if (req.user && (req.user.role === 'member_administrator' || req.user.role === 'member_superuser')) {
+  // Provjera uloga s korištenjem member_ prefiksa
+  if (req.user && (
+    req.user.role === 'member_administrator' || 
+    req.user.role === 'member_superuser'
+  )) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied. Admin privileges required.' });

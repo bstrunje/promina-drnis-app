@@ -1,13 +1,25 @@
 import api from './apiConfig';
 import { ApiAdminMessage, ApiGenericMessage } from './apiTypes';
 import { AxiosResponse } from 'axios';
+import { parseDate, getCurrentDate } from '../../utils/dateUtils';
 
 /**
  * Dohvaćanje poruka za admina
+ * @param forceLoad Opcija za prisilno dohvaćanje (koristi se na admin tabu)
  * @returns Lista poruka za admina
  */
-export const getAdminMessages = async (): Promise<ApiAdminMessage[]> => {
+export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessage[]> => {
   try {
+    // Dohvati ulogu korisnika iz lokalnog storagea
+    const userRole = localStorage.getItem('userRole');
+    
+    // Ako je superuser i forceLoad nije postavljen, vrati prazno polje
+    // (član_superuser ne treba vidjeti admin poruke dok ne uđe na admin tab)
+    if (userRole === 'member_superuser' && !forceLoad) {
+      console.log('Superuser nije na admin tabu - preskačem dohvaćanje admin poruka');
+      return [];
+    }
+    
     const response: AxiosResponse<ApiAdminMessage[]> = await api.get('/messages/admin');
     return response.data;
   } catch (error) {
@@ -61,7 +73,9 @@ export const getGenericMessages = async (): Promise<ApiGenericMessage[]> => {
     
     // Sortiranje poruka po datumu (najnovije prve)
     const sortedMessages = [...response.data].sort((a, b) => {
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      const dateA = parseDate(a.created_at || '') || getCurrentDate();
+      const dateB = parseDate(b.created_at || '') || getCurrentDate();
+      return dateB.getTime() - dateA.getTime(); // Novije prvo
     });
     
     return sortedMessages;

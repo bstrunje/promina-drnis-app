@@ -5,6 +5,7 @@ import useMembersWithPermissions from '../../hooks/useMembersWithPermissions';
 import EditMemberPermissionsModal from './EditMemberPermissionsModal';
 import { removeMemberPermissions } from '../../utils/systemAdminApi';
 import { Member } from '@shared/member';
+import { parseDate } from '../../../../utils/dateUtils';
 
 // Komponenta za prikaz i upravljanje članovima s administratorskim ovlastima
 interface MembersWithPermissionsProps {
@@ -201,7 +202,10 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(memberWithPermissions.granted_at).toLocaleDateString('hr-HR')}
+                    {memberWithPermissions.granted_at ? 
+                      (parseDate(memberWithPermissions.granted_at) ? 
+                        parseDate(memberWithPermissions.granted_at)!.toLocaleDateString('hr-HR') : '-') 
+                      : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button 

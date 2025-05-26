@@ -26,6 +26,37 @@ const CONFIG = {
 
 // Obrasci koje tražimo
 const PATTERNS = {
+  // Računanje datuma isteka tokena sa getTime()
+  tokenExpiryCalculation: {
+    pattern: /new Date\(getCurrentDate\(\)\.getTime\(\) \+ (\d+) \* (\d+) \* (\d+) \* (\d+)\)/g,
+    description: 'Računanje datuma isteka tokena ručno umjesto korištenja getTokenExpiryDate()',
+    importStatement: "import { getTokenExpiryDate } from '../utils/dateUtils';",
+    importStatementRelative: (relativePath) => `import { getTokenExpiryDate } from '${relativePath}utils/dateUtils';`,
+    shouldFix: (line, filePath) => {
+      // Ne mijenjaj u dateUtils.ts
+      if (filePath.includes('dateUtils.ts')) return false;
+      // Ne mijenjaj ako je dio komentara
+      if (line.trim().startsWith('//') || line.trim().startsWith('*')) return false;
+      return true;
+    },
+    customReplacement: (match, line) => {
+      // Izračunaj broj dana iz izraza
+      const regex = /new Date\(getCurrentDate\(\)\.getTime\(\) \+ (\d+) \* (\d+) \* (\d+) \* (\d+)\)/;
+      const matches = regex.exec(match);
+      
+      if (matches && matches.length === 5) {
+        const milliseconds = parseInt(matches[1]);
+        const seconds = parseInt(matches[2]);
+        const minutes = parseInt(matches[3]);
+        const hours = parseInt(matches[4]);
+        const days = (milliseconds * seconds * minutes * hours) / (24 * 60 * 60 * 1000);
+        
+        return `getTokenExpiryDate(${days})`;
+      }
+      
+      return match; // Vrati nepromijenjeno ako ne može parsirati
+    }
+  },
   // Direktno korištenje new Date() umjesto getCurrentDate()
   directDateCreation: {
     pattern: /new Date\(\)/g,

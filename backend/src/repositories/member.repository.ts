@@ -3,6 +3,7 @@ import prisma from '../utils/prisma.js';
 import { mapToMember } from '../utils/memberMapper.js';
 import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSize } from '../shared/types/member.js';
 import { MembershipEndReason } from '../shared/types/membership.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 // Interfaces for data operations
 import { mapMembershipTypeToEnum } from '../services/member.service.js';
@@ -148,7 +149,7 @@ const memberRepository = {
             where: { member_id: memberId },
             data: {
                 profile_image_path: imagePath,
-                profile_image_updated_at: new Date()
+                profile_image_updated_at: getCurrentDate()
             }
         });
     },

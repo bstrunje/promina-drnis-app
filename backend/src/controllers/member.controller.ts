@@ -5,7 +5,7 @@ import memberRepository, {
   MemberCreateData,
   MemberUpdateData,
 } from "../repositories/member.repository.js";
-import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
+import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 import { DatabaseUser } from "../middleware/authMiddleware.js";
 import bcrypt from "bcrypt";
 import authRepository from "../repositories/auth.repository.js";
@@ -93,11 +93,14 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     // Dohvati broj nedavnih aktivnosti
     let recentActivities = 0;
     try {
-      recentActivities = await prisma.activity.count({
+      const thirtyDaysAgo = new Date(getCurrentDate());
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      recentActivities = await (prisma as any).activity.count({
         where: {
           created_by: memberId,
           created_at: {
-            gte: new Date(getCurrentDate().setDate(getCurrentDate().getDate() - 30)) // Aktivnosti u zadnjih 30 dana
+            gte: thirtyDaysAgo // Aktivnosti u zadnjih 30 dana
           }
         }
       });
@@ -144,7 +147,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
           }
           
           const paidYear = paidUntilDate.getFullYear();
-          console.log(`Član ID ${member.member_id} ima plaćeno do: ${paidUntilDate.toISOString()}, godina: ${paidYear}`);
+          console.log(`Član ID ${member.member_id} ima plaćeno do: ${formatDate(paidUntilDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}, godina: ${paidYear}`);
           
           // Provjera je li članarina plaćena za tekuću godinu
           const isPaid = paidYear >= currentYear;
@@ -220,11 +223,21 @@ export const memberController = {
 
         // Ensure date is properly formatted in ISO string format if it exists
         if (member.membership_details?.fee_payment_date) {
-          // Use typeof check instead of instanceof to avoid TypeScript error
-          if (typeof member.membership_details.fee_payment_date === 'object') {
-            // Safely convert to ISO string (works for Date objects)
-            member.membership_details.fee_payment_date = 
-              parseDate(member.membership_details.fee_payment_date).toISOString();
+          // Koristimo sigurnije provjere tipova
+          const paymentDate = member.membership_details.fee_payment_date;
+          
+          // Provjeri ima li objekt getTime metodu (što je specifično za Date objekt)
+          const isDateObject = typeof paymentDate === 'object' && 
+                              paymentDate !== null && 
+                              'getTime' in paymentDate;
+          
+          if (isDateObject) {
+            // Ako objekt ima getTime metodu, vjerojatno je Date objekt, pa ga tretiraj kao takav
+            // TypeScript je zadovoljan s type assertion u ovom slučaju
+            member.membership_details.fee_payment_date = formatDate(paymentDate as Date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+          } else if (typeof paymentDate === 'string') {
+            // Ako je string, prvo ga parsiraj pa formatiraj
+            member.membership_details.fee_payment_date = formatDate(parseDate(paymentDate), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
           }
         }
 
@@ -721,7 +734,7 @@ export const memberController = {
         parsedDate.setHours(12, 0, 0, 0);
 
         console.log("Starting fee payment update");
-        console.log("Processing payment date:", parsedDate.toISOString());
+        console.log("Processing payment date:", formatDate(parsedDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
         
         // Pass the isRenewalPayment flag to the updateMembershipFee function
         await memberService.updateMembershipFee(

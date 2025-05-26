@@ -4,6 +4,24 @@
  */
 
 let mockDate: Date | null = null;
+let systemTimeZone: string = 'Europe/Zagreb'; // Zadana vremenska zona
+
+/**
+ * Postavlja vremensku zonu sustava
+ * @param timeZone Identifikator vremenske zone (npr. 'Europe/Zagreb')
+ */
+export function setSystemTimeZone(timeZone: string): void {
+  systemTimeZone = timeZone;
+  console.log(`🌐 Vremenska zona sustava postavljena na: ${timeZone}`);
+}
+
+/**
+ * Vraća trenutno postavljenu vremensku zonu sustava
+ * @returns Trenutna vremenska zona sustava
+ */
+export function getSystemTimeZone(): string {
+  return systemTimeZone;
+}
 
 /**
  * Vraća trenutni datum, uzimajući u obzir i moguću simulaciju datuma
@@ -14,12 +32,63 @@ export function getCurrentDate(): Date {
 }
 
 /**
+ * Vraća trenutni datum i vrijeme u UTC formatu
+ * Ovo treba koristiti za sve operacije vezane za tokene i bazu podataka
+ * @returns Trenutni UTC datum
+ */
+export function getCurrentUTCDate(): Date {
+  const now = getCurrentDate();
+  return new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds(),
+    now.getUTCMilliseconds()
+  ));
+}
+
+/**
+ * Dodaje određeni broj dana na datum
+ * @param date Polazni datum
+ * @param days Broj dana za dodati
+ * @returns Novi datum s dodanim danima
+ */
+export function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+/**
+ * Dodaje određeni broj sekundi na datum
+ * @param date Polazni datum
+ * @param seconds Broj sekundi za dodati
+ * @returns Novi datum s dodanim sekundama
+ */
+export function addSeconds(date: Date, seconds: number): Date {
+  return new Date(date.getTime() + seconds * 1000);
+}
+
+/**
+ * Generira datum isteka tokena u UTC formatu
+ * @param durationDays Trajanje tokena u danima
+ * @returns Datum isteka tokena u UTC formatu
+ */
+export function getTokenExpiryDate(durationDays: number): Date {
+  // Koristimo UTC format za dosljednost
+  const now = getCurrentUTCDate();
+  return addDays(now, durationDays);
+}
+
+/**
  * Postavlja simulirani datum za testiranje
  * @param date Datum koji želimo simulirati
  */
 export function setMockDate(date: Date): void {
   mockDate = date;
-  console.log(`📅 Mock datum postavljen na: ${formatDate(date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);
+  console.log(`📅 Mock datum postavljen na: ${formatDate(date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);  
 }
 
 /**
@@ -102,6 +171,15 @@ export function formatDate(date: Date, format: string = 'yyyy-MM-dd'): string {
 }
 
 /**
+ * Formatira datum u ISO string (UTC format)
+ * @param date Datum koji želimo formatirati
+ * @returns ISO string u UTC formatu
+ */
+export function formatUTCDate(date: Date): string {
+  return formatDate(date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+}
+
+/**
  * Parsira string u Date objekt
  * @param dateStr String koji želimo parsirati u Date
  * @returns Date objekt
@@ -121,13 +199,57 @@ export function parseDate(dateStr: string): Date {
   return date;
 }
 
+/**
+ * Uspoređuje dva datuma i vraća rezultat usporedbe
+ * @param date1 Prvi datum za usporedbu
+ * @param date2 Drugi datum za usporedbu
+ * @returns -1 ako je date1 < date2, 0 ako su jednaki, 1 ako je date1 > date2
+ */
+export function compareDates(date1: Date, date2: Date): number {
+  const time1 = date1.getTime();
+  const time2 = date2.getTime();
+  
+  if (time1 < time2) return -1;
+  if (time1 > time2) return 1;
+  return 0;
+}
+
+/**
+ * Provjerava je li datum1 prije datuma2
+ * @param date1 Prvi datum
+ * @param date2 Drugi datum
+ * @returns true ako je date1 prije date2
+ */
+export function isDateBefore(date1: Date, date2: Date): boolean {
+  return compareDates(date1, date2) < 0;
+}
+
+/**
+ * Provjerava je li datum istekao (prije trenutnog datuma)
+ * @param date Datum koji provjeravamo
+ * @returns true ako je datum istekao
+ */
+export function isDateExpired(date: Date): boolean {
+  return isDateBefore(date, getCurrentUTCDate());
+}
+
 export default {
   getCurrentDate,
+  getCurrentUTCDate,
+  setSystemTimeZone,
+  getSystemTimeZone,
+  addDays,
+  addSeconds,
+  getTokenExpiryDate,
   setMockDate,
   resetMockDate,
   isMockDateActive,
   getCurrentYear,
   isDateInCurrentYear,
   formatDate,
-  parseDate
+  formatUTCDate,
+  parseDate,
+  compareDates,
+  isDateBefore,
+  isDateExpired
 };

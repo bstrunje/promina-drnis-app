@@ -39,7 +39,8 @@ const fetchMessages = useCallback(async () => {
     return;
   }
   try {
-    const apiData = await getAdminMessages();
+    // Koristi forceLoad=true jer je korisnik aktivno na dijelu aplikacije gdje se prikazuju poruke
+    const apiData = await getAdminMessages(true);
     const convertedData = convertApiMessagesToMessages(apiData);
     setMessages(convertedData);
     setLoading(false);

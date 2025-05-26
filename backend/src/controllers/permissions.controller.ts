@@ -13,7 +13,7 @@ export const permissionsController = {
             const memberId = parseInt(req.params.memberId);
             console.log('Getting permissions for member:', memberId); // Debug log
             
-            if (req.user?.role_name !== 'superuser' && req.user?.id !== memberId) {
+            if (req.user?.role_name !== 'member_superuser' && req.user?.id !== memberId) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
 

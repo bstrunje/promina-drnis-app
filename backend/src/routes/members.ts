@@ -25,7 +25,7 @@ router.post('/', authenticateToken, roles.requireAdmin, memberController.createM
 router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
 router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
 router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
-router.post('/:memberId/card', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
+router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
 router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, memberController.updateMembership);
 router.post(
   '/:memberId/membership/terminate', 

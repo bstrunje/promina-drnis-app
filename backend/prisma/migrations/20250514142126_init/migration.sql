@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "SenderType" AS ENUM ('member', 'admin', 'superuser');
+CREATE TYPE "SenderType" AS ENUM ('member', 'member_administrator', 'member_superuser');
 
 -- CreateTable
 CREATE TABLE "members" (
@@ -138,7 +138,7 @@ CREATE TABLE "member_messages" (
     "status" VARCHAR(20) DEFAULT 'unread',
     "sender_id" INTEGER,
     "recipient_id" INTEGER,
-    "recipient_type" VARCHAR(10) DEFAULT 'admin',
+    "recipient_type" VARCHAR(10) DEFAULT 'member_administrator',
     "sender_type" "SenderType" NOT NULL DEFAULT 'member',
 
     CONSTRAINT "member_messages_pkey" PRIMARY KEY ("message_id")

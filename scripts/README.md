@@ -11,8 +11,9 @@ Ova skripta analizira kod i identificira mjesta gdje se datumi ne koriste prema 
 **Obrasci koje skripta traži:**
 - Direktno korištenje `new Date()` umjesto `getCurrentDate()`
 - Korištenje `toLocaleString('hr-HR')` umjesto `formatDate()`
-- Korištenje `toISOString()` umjesto `formatDate()`
+- Korištenje `toISOString()` umjesto `formatDate()` ili `formatUTCDate()`
 - Direktno parsiranje datuma s `new Date(string)` umjesto `parseDate()`
+- Računanje datuma isteka tokena ručno umjesto korištenja `getTokenExpiryDate()`
 
 **Pokretanje:**
 ```bash
@@ -36,8 +37,10 @@ Ova skripta implementira specifične ispravke za problematične slučajeve koji 
 **Specifični slučajevi koje skripta ispravlja:**
 - Zamjena `new Date()` s `getCurrentDate()` u ključnim komponentama
 - Zamjena `new Date().getFullYear()` s `getCurrentYear()`
-- Zamjena `toLocaleDateString` i `toISOString` s `formatDate`
+- Zamjena `toLocaleDateString` i `toISOString` s `formatDate` ili `formatUTCDate`
 - Dodavanje nedostajućih importa za funkcije iz `dateUtils`
+- Zamjena ručnog računanja vremena isteka tokena s `getTokenExpiryDate()` funkcijom
+- Korištenje UTC vremena za konzistentnost u formatiranju datuma za tokene
 
 **Pokretanje:**
 ```bash

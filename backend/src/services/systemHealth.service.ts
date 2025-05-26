@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import prisma from '../utils/prisma.js';
+import { parseDate } from '../utils/dateUtils.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 /**
  * Tipovi za statuse zdravlja sustava
@@ -52,7 +54,7 @@ const systemHealthService = {
    * Provjera zdravlja sustava
    */
   async checkSystemHealth(): Promise<SystemHealthInfo> {
-    const lastCheck = new Date();
+    const lastCheck = getCurrentDate();
     let dbConnection = true;
     let diskSpace = { available: 0, total: 0, percentUsed: 0 };
     let memory = { available: 0, total: 0, percentUsed: 0 };
@@ -146,7 +148,7 @@ const systemHealthService = {
           
           if (config.lastBackup && config.backupLocation) {
             return {
-              lastBackup: new Date(config.lastBackup),
+              lastBackup: parseDate(config.lastBackup),
               backupSize: config.backupSize || null,
               backupLocation: config.backupLocation,
               status: config.status || 'Success'

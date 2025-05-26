@@ -18,7 +18,7 @@ const SystemAdminDashboard: React.FC = () => {
   const { admin } = useSystemAdmin();
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs'>('dashboard');
   
   // Prilagođeno rukovanje tabovima kroz URL
   useEffect(() => {
@@ -30,6 +30,8 @@ const SystemAdminDashboard: React.FC = () => {
       setActiveTab('settings');
     } else if (path.includes('/system-admin/register-members')) {
       setActiveTab('register-members');
+    } else if (path.includes('/system-admin/audit-logs')) {
+      setActiveTab('audit-logs');
     } else {
       // Default - dashboard
       setActiveTab('dashboard');
@@ -37,7 +39,7 @@ const SystemAdminDashboard: React.FC = () => {
   }, [location.pathname]);
   
   // Handler za promjenu taba koji ažurira URL
-  const handleTabChange = (tab: 'dashboard' | 'members' | 'settings' | 'register-members') => {
+  const handleTabChange = (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => {
     let targetPath = '/system-admin/';
     if (tab === 'members') {
       targetPath = '/system-admin/members';
@@ -45,6 +47,8 @@ const SystemAdminDashboard: React.FC = () => {
       targetPath = '/system-admin/settings';
     } else if (tab === 'register-members') {
       targetPath = '/system-admin/register-members';
+    } else if (tab === 'audit-logs') {
+      targetPath = '/system-admin/audit-logs';
     } else {
       targetPath = '/system-admin/dashboard';
     }

@@ -437,13 +437,13 @@ router.post('/reset-test-database', async (req, res) => {
       message: 'Testna baza podataka uspješno resetirana',
       backupCreated: backupData.timestamp ? true : false,
       backupTimestamp: backupData.timestamp || null,
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   } catch (error) {
     console.error('❌ Greška prilikom resetiranja baze:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   }
 });
@@ -465,13 +465,13 @@ router.post('/recalculate-membership', async (req, res) => {
       mockDate: mockDate || null,
       updatedCount: result.updatedCount,
       errors: result.errors,
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   } catch (error) {
     console.error('❌ Greška prilikom rekalkulacije statusa članstva:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   }
 });
@@ -572,13 +572,13 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
         timestamp: backupData.timestamp,
         tables: Object.keys(backupData)
       },
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   } catch (error) {
     console.error('❌ Greška prilikom vraćanja backupa:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   }
 });
@@ -701,14 +701,14 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
         affectedMembers: uniqueMembers.length,
         memberIds: uniqueMembers
       },
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
     
   } catch (error) {
     console.error('❌ Greška prilikom čišćenja testnih podataka:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   }
 });
@@ -752,7 +752,7 @@ router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req
     } else {
       // Ako nema datuma ni reseta, vrati trenutno stanje
       const currentDate = getCurrentDate();
-      const isMockDate = getCurrentDate().getTime() !== (new Date()).getTime();
+      const isMockDate = getCurrentDate().getTime() !== (getCurrentDate()).getTime();
       
       res.json({
         success: true,
@@ -766,7 +766,7 @@ router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req
     res.status(500).json({ 
       success: false,
       message: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: new Date()
+      timestamp: getCurrentDate()
     });
   }
 });

@@ -66,9 +66,9 @@ export interface ApiAdminMessage {
   content: string;
   sender_id: string;
   sender_name: string;
-  sender_type: 'admin' | 'member' | 'system';
+  sender_type: 'member_administrator' | 'member' | 'system';
   recipient_id: string;
-  recipient_type: 'admin' | 'member' | 'all';
+  recipient_type: 'member_administrator' | 'member' | 'all';
   timestamp: string;
   read: boolean;
   priority: 'normal' | 'high';
@@ -78,6 +78,7 @@ export interface ApiAdminMessage {
  * Generička poruka za API komunikaciju
  */
 export interface ApiGenericMessage {
+  created_at: string;
   id: number;
   content: string;
   sender: string;

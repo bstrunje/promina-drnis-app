@@ -213,7 +213,7 @@ const checkPermission = (permission: string) => {
             }
             
             // System admin i superuser imaju sve ovlasti
-            if (req.user.is_system_admin || req.user.role_name === 'superuser') {
+            if (req.user.is_system_admin || req.user.role_name === 'member_superuser') {
                 next();
                 return;
             }

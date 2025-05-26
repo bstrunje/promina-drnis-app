@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 interface Message {
     id: number;
@@ -20,7 +21,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
             id: Date.now(),
             content: req.body.content,
             sender: req.body.sender,
-            timestamp: new Date()
+            timestamp: getCurrentDate()
         };
         
         messages.push(message);
@@ -32,7 +33,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
                     id: Date.now() + 1,
                     content: `Response to: ${req.body.content}`,
                     sender: 'assistant',
-                    timestamp: new Date()
+                    timestamp: getCurrentDate()
                 };
                 messages.push(aiResponse);
             }, 1000);
