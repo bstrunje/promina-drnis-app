@@ -765,8 +765,9 @@ const authController = {
       
       // Provjeri je li date_of_birth samo datum (bez vremena)
       if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.length === 10) {
-        // Dodaj vrijeme (T00:00:00.000Z) na kraj datuma
-        formattedDateOfBirth = formatDate(parseDate(`${date_of_birth}T00:00:00.000Z`), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+        // Koristi direktno ISO format bez ručnog formatiranja
+        const parsedDate = parseDate(`${date_of_birth}T00:00:00.000Z`);
+        formattedDateOfBirth = parsedDate.toISOString();
         console.log(`Formatiran datum rođenja: ${formattedDateOfBirth}`);
       }
 
