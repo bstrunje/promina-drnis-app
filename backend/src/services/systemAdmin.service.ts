@@ -426,6 +426,11 @@ const systemAdminService = {
     async getDashboardStats(): Promise<{
         weeklyActivityHistory: { weekStart: Date; count: number }[];
         totalActivities: number;
+        totalMembers: number; // Ukupan broj članova
+        registeredMembers: number; // Broj registriranih članova
+        activeMembers: number; // Broj aktivnih članova
+        pendingApprovals: number; // Broj članova na čekanju
+        recentActivities: number; // Nedavne aktivnosti
         systemHealth: string; // Status zdravlja sustava ('Healthy', 'Warning', 'Critical')
         lastBackup: string; // Informacija o zadnjoj sigurnosnoj kopiji
         healthDetails?: SystemHealthInfo; // Detaljne informacije o zdravlju sustava (opciono)
@@ -474,6 +479,30 @@ const systemAdminService = {
 
             // Ukupan broj aktivnosti
             const totalActivities = await prisma.activity.count();
+            
+            // Dohvat informacija o članovima
+            const totalMembers = await prisma.member.count();
+            const registeredMembers = await prisma.member.count({
+                where: { status: 'registered' }
+            });
+            const activeMembers = await prisma.member.count({
+                where: { 
+                    status: 'registered',
+                    last_login: { not: null }
+                }
+            });
+            const pendingApprovals = await prisma.member.count({
+                where: { status: 'pending' }
+            });
+            
+            // Broj nedavnih aktivnosti (zadnjih 24h)
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const recentActivities = await prisma.activity.count({
+                where: {
+                    start_date: { gte: yesterday }
+                }
+            });
 
             // Dohvat stvarnih informacija o zdravlju sustava
             const healthInfo = await systemHealthService.checkSystemHealth();
@@ -487,6 +516,11 @@ const systemAdminService = {
             return {
                 weeklyActivityHistory: weeklyCounts,
                 totalActivities,
+                totalMembers,
+                registeredMembers,
+                activeMembers,
+                pendingApprovals,
+                recentActivities,
                 systemHealth,
                 lastBackup,
                 healthDetails: healthInfo,  // Detaljne informacije ako ih frontend želi prikazati

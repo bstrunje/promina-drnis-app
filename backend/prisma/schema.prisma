@@ -15,7 +15,7 @@ enum SenderType {
 }
 
 model Member {
-  status                   String?                 @default("pending") @db.VarChar(50)
+  status                   String?                 @default("pending") @db.VarChar(50) // Status članstva (registered, inactive, pending)
   date_of_birth            DateTime?               @db.Date
   oib                      String                  @unique @db.VarChar(11)
   cell_phone               String                  @db.VarChar(20)
@@ -44,8 +44,8 @@ model Member {
   failed_login_attempts    Int                     @default(0)
   locked_until             DateTime?               @db.Timestamp(6)
   last_failed_login        DateTime?               @db.Timestamp(6)
-  grantedPermissions       MemberPermissions[]      @relation("grantedByMemberPermissions")
-  permissions              MemberPermissions?       @relation("memberPermissionsRelation")
+  grantedPermissions       MemberPermissions[]     @relation("grantedByMemberPermissions")
+  permissions              MemberPermissions?      @relation("memberPermissionsRelation")
   annual_statistics        AnnualStatistics[]
   affected_audits          AuditLog[]              @relation("AuditAffected")
   performed_audits         AuditLog[]              @relation("AuditPerformer")
@@ -131,7 +131,7 @@ model MembershipDetails {
   card_stamp_issued      Boolean?  @default(false)
   fee_payment_date       DateTime? @db.Timestamp(6)
   next_year_stamp_issued Boolean?  @default(false)
-  status                 String?   @default("active") @db.VarChar(20)
+  status                 String?   @default("active") @db.VarChar(20) // Status aktivnosti člana (active/passive) koji se mapira na membership_status
   active_until           DateTime? @db.Timestamp(6)
   member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -237,44 +237,44 @@ model MemberAdministrator {
 }
 
 model MemberPermissions {
-  permission_id          Int       @id @default(autoincrement())
-  member_id              Int?      @unique
-  
+  permission_id Int  @id @default(autoincrement())
+  member_id     Int? @unique
+
   // Ovlasti za članstvo
-  can_view_members        Boolean?  @default(false)
-  can_edit_members        Boolean?  @default(false)
-  can_add_members         Boolean?  @default(false)
-  can_manage_membership   Boolean?  @default(false)
-  
+  can_view_members      Boolean? @default(false)
+  can_edit_members      Boolean? @default(false)
+  can_add_members       Boolean? @default(false)
+  can_manage_membership Boolean? @default(false)
+
   // Ovlasti za aktivnosti
-  can_view_activities     Boolean?  @default(false)
-  can_create_activities   Boolean?  @default(false)
-  can_approve_activities  Boolean?  @default(false)
-  
+  can_view_activities    Boolean? @default(false)
+  can_create_activities  Boolean? @default(false)
+  can_approve_activities Boolean? @default(false)
+
   // Financije
-  can_view_financials     Boolean?  @default(false)
-  can_manage_financials   Boolean?  @default(false)
-  
+  can_view_financials   Boolean? @default(false)
+  can_manage_financials Boolean? @default(false)
+
   // Poruke
-  can_send_group_messages Boolean?  @default(false)
-  can_manage_all_messages Boolean?  @default(false)
-  
+  can_send_group_messages Boolean? @default(false)
+  can_manage_all_messages Boolean? @default(false)
+
   // Statistika
-  can_view_statistics     Boolean?  @default(false)
-  can_export_data         Boolean?  @default(false)
-  
+  can_view_statistics Boolean? @default(false)
+  can_export_data     Boolean? @default(false)
+
   // Specifične ovlasti
-  can_manage_end_reasons  Boolean?  @default(false)
-  can_manage_card_numbers Boolean?  @default(false)
-  can_assign_passwords    Boolean?  @default(false)
-  
+  can_manage_end_reasons  Boolean? @default(false)
+  can_manage_card_numbers Boolean? @default(false)
+  can_assign_passwords    Boolean? @default(false)
+
   // Sustav
-  granted_by              Int?
-  granted_at              DateTime? @default(now()) @db.Timestamp(6)
-  updated_at              DateTime? @default(now()) @db.Timestamp(6)
-  
-  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
-  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  granted_by Int?
+  granted_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+
+  grantedByMember Member? @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  member          Member? @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([granted_by], map: "idx_member_permissions_granted_by")
   @@index([member_id], map: "idx_member_permissions_member")

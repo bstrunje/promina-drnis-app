@@ -47,7 +47,7 @@ export function mapToMember(raw: any, total_hours: number = 0): Member {
       fee_payment_date: raw.membership_details?.fee_payment_date
         ? formatDate(raw.membership_details.fee_payment_date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]
         : undefined,
-      life_status: raw.membership_details?.status ?? undefined,
+      membership_status: raw.membership_details?.status ?? undefined, // Ispravljeno iz life_status u membership_status
       active_until: raw.membership_details?.active_until
         ? formatDate(raw.membership_details.active_until, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]
         : undefined
