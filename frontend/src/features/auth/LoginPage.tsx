@@ -5,7 +5,7 @@ import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { login, register } from '../../utils/api/apiAuth';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import axios from "axios";
@@ -39,6 +39,8 @@ const genderOptions = [
 const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
@@ -48,6 +50,10 @@ const LoginPage = () => {
   const [message, setMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loginPageMessage, setLoginPageMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
+  const redirectPath = searchParams.get('redirect');
+  const isSoftLogout = searchParams.get('soft') === 'true';
 
   // Inicijalizacija stanja koristi ažurirani MemberLoginData tip
   const [loginData, setLoginData] = useState<MemberLoginData>({
@@ -151,19 +157,36 @@ const LoginPage = () => {
       // Proslijeđujemo i refresh token ako je dostupan (u razvojnom okruženju)
       authLogin(member, data.token, data.refreshToken);
       
-      // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
-      switch(member.role) {
-        case 'member_administrator':
-          navigate("/admin/dashboard");
-          break;
-        case 'member_superuser':
-          navigate("/superuser/dashboard");
-          break;
-        case 'member':
-          navigate("/member/dashboard");
-          break;
-        default:
-          navigate("/profile");
+      // Provjeri postoji li putanja za preusmjeravanje
+      if (redirectPath) {
+        console.log(`Preusmjeravam na spremljenu putanju: ${redirectPath}`);
+        navigate(redirectPath);
+      } else {
+        // Dohvati spremljenu putanju iz sessionStorage ako postoji
+        const savedPath = sessionStorage.getItem('lastPath');
+        if (savedPath) {
+          console.log(`Preusmjeravam na spremljenu putanju iz sessionStorage: ${savedPath}`);
+          // Očisti spremljenu putanju
+          sessionStorage.removeItem('lastPath');
+          navigate(savedPath);
+        } else {
+          // Ako nema spremljene putanje, preusmjeri prema ulozi
+          console.log('Nema spremljene putanje, preusmjeravam prema ulozi');
+          // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
+          switch(member.role) {
+            case 'member_administrator':
+              navigate("/admin/dashboard");
+              break;
+            case 'member_superuser':
+              navigate("/superuser/dashboard");
+              break;
+            case 'member':
+              navigate("/member/dashboard");
+              break;
+            default:
+              navigate("/profile");
+          }
+        }
       }
     } catch (error) {
       console.error("Login error:", error);

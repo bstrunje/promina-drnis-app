@@ -319,8 +319,29 @@ export function formatInputDate(date: Date | string | null = null): string {
   if (!date) return '';
   
   try {
-    const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'yyyy-MM-dd');
+    // Provjeravamo je li string valjan datum prije parsiranja
+    if (typeof date === 'string') {
+      // Ako je string "Invalid Date" ili ima nevažeći format, vratimo prazni string
+      if (date === 'Invalid Date' || isNaN(Date.parse(date))) {
+        console.warn('Invalid date string provided:', date);
+        return '';
+      }
+      // Inače pokušavamo parsirati
+      const d = parseISO(date);
+      // Provjeravamo je li rezultat parsiranja valjan datum
+      if (isNaN(d.getTime())) {
+        console.warn('parseISO returned invalid date for input:', date);
+        return '';
+      }
+      return format(d, 'yyyy-MM-dd');
+    } else {
+      // Ako je Date objekt, provjeravamo je li valjan
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid Date object provided');
+        return '';
+      }
+      return format(date, 'yyyy-MM-dd');
+    }
   } catch (error) {
     console.error('Error formatting input date:', error);
     return '';

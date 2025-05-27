@@ -1,0 +1,127 @@
+/**
+ * Servis za upravljanje autentikacijskim tokenima
+ */
+
+import { withRetry } from './refreshUtils';
+import { tokenStorage } from './tokenStorage';
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken?: string;
+}
+
+/**
+ * Servis za upravljanje autentikacijskim tokenima
+ */
+export class AuthTokenService {
+  /**
+   * Dohvaća API URL ovisno o okruženju
+   */
+  static getApiUrl(endpoint: string): string {
+    // U produkciji koristimo relativne putanje jer su frontend i backend na istoj domeni
+    // U razvoju koristimo direktne putanje jer su frontend i backend na različitim portovima
+    const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+    if (isDevelopment) {
+      return `${window.location.protocol}//${window.location.hostname}:3000${endpoint}`;
+    } else {
+      return endpoint; // U produkciji koristimo relativne putanje
+    }
+  }
+
+  /**
+   * Osvježava token i vraća novi access token
+   */
+  static async refreshToken(): Promise<string | null> {
+    return withRetry(async () => {
+      const storedRefreshToken = tokenStorage.getRefreshToken();
+      
+      if (!storedRefreshToken) {
+        console.warn('Nema pohranjenog refresh tokena za osvježavanje');
+        return null;
+      }
+      
+      const requestBody = {
+        refreshToken: storedRefreshToken
+      };
+      
+      console.log('Slanje zahtjeva za osvježavanje tokena');
+      
+      const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+        return null;
+      }
+      
+      // Za ostale greške koje mogu biti privremene (npr. mrežne greške)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Obrada uspješnog odgovora
+      const data = await response.json() as RefreshTokenResponse;
+      
+      // Spremanje novog refresh tokena ako je dobiven (u localStorage kao backup)
+      if (data.refreshToken) {
+        console.log('Primljen novi refresh token, ažuriram lokalno spremište');
+        tokenStorage.storeRefreshToken(data.refreshToken);
+      }
+      
+      // Spremanje novog access tokena
+      if (data.accessToken) {
+        tokenStorage.storeAccessToken(data.accessToken);
+        console.log("Token uspješno obnovljen");
+        return data.accessToken;
+      }
+      
+      return null;
+    });
+  }
+
+  /**
+   * Pokreće odjavu korisnika - čisti tokene
+   */
+  static async logout(): Promise<void> {
+    try {
+      console.log("Započinjem proces odjave korisnika...");
+      
+      // Poziv backend API-ja za odjavu i poništavanje refresh tokena
+      const response = await fetch(this.getApiUrl('/api/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+      
+      if (response.ok) {
+        console.log("Korisnik uspješno odjavljen na backendu");
+      } else {
+        console.error(`Greška pri odjavi na backendu: HTTP ${response.status}`);
+      }
+      
+      // Dodatno čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
+      }
+      
+      console.log("Kolačići očišćeni na klijentskoj strani");
+    } catch (error) {
+      console.error("Greška pri odjavi na backendu:", error);
+    } finally {
+      // Čistimo sve tokene
+      tokenStorage.clearAllTokens();
+      console.log("Uklonjeni svi tokeni");
+    }
+  }
+}
