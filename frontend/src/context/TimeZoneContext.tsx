@@ -26,8 +26,12 @@ const TimeZoneContext = createContext<TimeZoneContextType>({
 });
 
 // Hook za korištenje konteksta
-// eslint-disable-next-line react-refresh/only-export-components
-export const useTimeZone = () => useContext(TimeZoneContext);
+// Implementirano kao named funkcija za bolju kompatibilnost s Fast Refresh
+function useTimeZoneHook() {
+  return useContext(TimeZoneContext);
+}
+
+export const useTimeZone = useTimeZoneHook;
 
 // Provider komponenta
 export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

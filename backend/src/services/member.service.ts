@@ -133,6 +133,15 @@ const memberService = {
                 ...memberData,
                 membership_type: mapMembershipTypeToEnum(memberData.membership_type) || MembershipTypeEnum.Regular
             };
+
+            // Ako je date_of_birth string u formatu yyyy-MM-dd, konvertiraj ga u Date objekt
+            if (
+                typeof newMemberData.date_of_birth === 'string' &&
+                /^\d{4}-\d{2}-\d{2}$/.test(newMemberData.date_of_birth)
+            ) {
+                newMemberData.date_of_birth = new Date(newMemberData.date_of_birth + 'T00:00:00.000Z').toISOString();
+            }
+
             return await memberRepository.create(newMemberData);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

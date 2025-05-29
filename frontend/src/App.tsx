@@ -16,7 +16,7 @@ import AuditLogsPage from './features/audit/AuditLogsPage';
 import MemberDetailsPage from './features/members/MemberDetailsPage';
 import MessageList from './features/messages/MessageList';
 import Settings from "./features/settings/Settings";
-import DateMockTool from './features/testing/DateMockTool';
+
 import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
 import SystemAdminRoutes from './features/systemAdmin/SystemAdminRoutes';
@@ -118,7 +118,7 @@ function App() {
           <AppContent />
           {import.meta.env.DEV && (
             <div className="fixed bottom-4 right-4 z-50">
-              <DateMockTool />
+
             </div>
           )}
           <Toaster />

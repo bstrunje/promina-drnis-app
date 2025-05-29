@@ -261,7 +261,7 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
   if (refreshToken) {
     try {
       // Ukloni token iz baze
-      await (prisma as any).refresh_tokens.deleteMany({
+      await prisma.refresh_tokens.deleteMany({
         where: { token: refreshToken }
       });
       console.log('RefreshToken uspješno obrisan iz baze');

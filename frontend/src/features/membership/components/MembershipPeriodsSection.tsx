@@ -37,9 +37,9 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
     formatFeePaymentInfo,
     setNewPeriod
   } = useMembershipPeriods(
-    periods, 
-    member.member_id, 
-    feePaymentYear, 
+    periods,
+    member.member_id,
+    feePaymentYear,
     feePaymentDate,
     onUpdatePeriods
   );
@@ -66,7 +66,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
             Povijest članstva
           </CardTitle>
           {canEdit && !isEditing && (
-            <Button 
+            <Button
               onClick={handleEdit}
               className="bg-black hover:bg-blue-500 transition-colors"
             >
@@ -223,7 +223,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
                       <select
                         // Zamijenjeno || s ?? zbog ESLint pravila
-value={newPeriod.end_reason ?? ""}
+                        value={newPeriod.end_reason ?? ""}
                         onChange={(e) =>
                           handleNewPeriodChange(
                             "end_reason",

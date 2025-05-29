@@ -103,7 +103,7 @@ export default function MembershipCardForm({
 
     try {
       // Mora biti string, ne Date, zbog API očekivanja
-const today = formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+      const today = formatDate(getCurrentDate(), 'yyyy-MM-dd');
       
       await updateMembership(memberId, {
         paymentDate: today,

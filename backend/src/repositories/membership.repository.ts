@@ -64,7 +64,7 @@ const membershipRepository = {
               .filter(value => value !== undefined)
               .map(value => {
                 if (value instanceof Date) {
-                  return formatDate(value, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+                  return formatDate(value, 'yyyy-MM-dd');
                 }
                 return value;
               });
@@ -299,7 +299,7 @@ const membershipRepository = {
         
         // Markice su nepovratne, više ne resetiramo oznake izdanih markica
         
-        console.log(`Završena članstva za godinu ${year} (${formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')})`);
+        console.log(`Završena članstva za godinu ${year} (${formatDate(getCurrentDate(), 'yyyy-MM-dd')})`);
     }
 };
 

@@ -9,7 +9,7 @@ interface MembershipHistoryProps {
   feePaymentDate?: string;
   totalDuration?: string;
   currentPeriod?: MembershipPeriod;
-  onUpdate?: (periods: MembershipPeriod[]) => Promise<void>;
+  onUpdatePeriods?: (periods: MembershipPeriod[]) => Promise<void>;
 }
 
 /**
@@ -19,7 +19,7 @@ interface MembershipHistoryProps {
  * Sučelje je zadržano za kompatibilnost s postojećim kodom.
  */
 const MembershipHistory: React.FC<MembershipHistoryProps> = (props) => {
-  return <MembershipHistoryAdapter {...props} />;
+  return <MembershipHistoryAdapter {...props} onUpdatePeriods={props.onUpdatePeriods} />;
 };
 
 export default MembershipHistory;

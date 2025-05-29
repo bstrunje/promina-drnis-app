@@ -55,7 +55,7 @@ export const terminateMembership = async (memberId: number, reason: string): Pro
   try {
     const response: AxiosResponse<ApiTerminateMembershipResult> = await api.post(`/members/${memberId}/membership/terminate`, { 
       reason, 
-      endDate: formatDate(getCurrentDate(), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''), 
+      endDate: formatDate(getCurrentDate(), 'yyyy-MM-dd'), 
     });
     return response.data;
   } catch (error) {

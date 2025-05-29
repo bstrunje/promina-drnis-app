@@ -56,7 +56,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
       card_stamp_issued: undefined,
       next_year_stamp_issued: undefined,
       fee_payment_date: undefined,
-      life_status: undefined
+      membership_status: undefined
     },
     registration_completed: false,
     total_hours: 0
@@ -110,11 +110,9 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
           <input
             type="date"
             name="date_of_birth"
-            value={member.date_of_birth}
+            value={formatInputDate(member.date_of_birth)}
             onChange={handleChange}
             className="mt-2 p-2 w-full border rounded bg-gray-50"
-            placeholder="yyyy-mm-dd"
-            pattern="\d{4}-\d{2}-\d{2}"
             required
           />
           {/* Add gender select after date of birth */}

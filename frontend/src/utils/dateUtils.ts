@@ -4,22 +4,6 @@
 import { format, parseISO, isValid, parse } from 'date-fns';
 import { hr } from 'date-fns/locale';
 
-// Ključevi za localStorage
-const MOCK_DATE_KEY = 'promina_mock_date';
-const ORIGINAL_MOCK_DATE_KEY = 'promina_original_mock_date';
-const HAS_ORIGINAL_STORED_KEY = 'promina_has_original_stored';
-const IS_TEST_MODE_KEY = 'promina_in_test_mode';
-
-// Spremnik za mock datum koji će se koristiti umjesto stvarnog datuma
-let mockDate: Date | null = null;
-
-// Spremnik za originalne mock datume prije resetiranja
-let originalMockDate: Date | null = null;
-let hasOriginalBeenStored = false;
-
-// Zastavica koja označava koristi li se trenutno test način rada
-let inTestMode = false;
-
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
 let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
 
@@ -32,7 +16,7 @@ export function setCurrentTimeZone(timeZone: string): void {
     // Spremamo u globalnu varijablu
     currentTimeZone = timeZone;
     
-    // Spremimo i u localStorage za trajno pohranjivanje
+    // Spremi i u localStorage za trajno pohranjivanje
     localStorage.setItem('promina_app_timezone', timeZone);
   }
 }
@@ -45,142 +29,18 @@ export function getCurrentTimeZone(): string {
   return currentTimeZone;
 }
 
-// Inicijalizacija i učitavanje mock datuma iz localStorage ako postoji
-function initMockDate(): void {
-  const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
-  if (storedMockDate) {
-    try {
-      mockDate = new Date(storedMockDate);
-    } catch {
-      mockDate = null;
-      localStorage.removeItem(MOCK_DATE_KEY);
-      inTestMode = false;
-      localStorage.removeItem(IS_TEST_MODE_KEY);
-    }
-  }
-
-  const storedOriginalMockDate = localStorage.getItem(ORIGINAL_MOCK_DATE_KEY);
-  if (storedOriginalMockDate) {
-    try {
-      originalMockDate = new Date(storedOriginalMockDate);
-    } catch {
-      originalMockDate = null;
-      localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
-    }
-  }
-
-  const storedHasOriginal = localStorage.getItem(HAS_ORIGINAL_STORED_KEY);
-  if (storedHasOriginal) {
-    hasOriginalBeenStored = storedHasOriginal === 'true';
-  }
-  
-  // Učitavanje statusa testnog načina rada
-  const storedTestMode = localStorage.getItem(IS_TEST_MODE_KEY);
-  if (storedTestMode) {
-    inTestMode = storedTestMode === 'true';
-  }
-  
-  // Učitavanje postavljene vremenske zone
-  const storedTimeZone = localStorage.getItem('promina_app_timezone');
-  if (storedTimeZone) {
-    currentTimeZone = storedTimeZone;
-  }
-}
-
-// Pozovi inicijalizaciju odmah
-initMockDate();
-
 /**
- * Vraća trenutni datum - ako je postavljen mock datum, vraća njega, inače stvarni datum
+ * Vraća trenutni datum
  */
 export function getCurrentDate(): Date {
-  if (mockDate) {
-    return mockDate;
-  }
   return new Date();
 }
 
 /**
- * Postavlja mock datum za testiranje
- * @param date - Datum koji će se koristiti umjesto stvarnog
- */
-export function setMockDate(date: Date | null): void {
-  // Spremi originalnu vrijednost ako još nije spremljena
-  if (!hasOriginalBeenStored) {
-    originalMockDate = mockDate;
-    hasOriginalBeenStored = true;
-    
-    // Spremi u localStorage
-    if (originalMockDate) {
-      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, formatDate(originalMockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
-    } else {
-      localStorage.removeItem(ORIGINAL_MOCK_DATE_KEY);
-    }
-    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'true');
-  }
-  
-  mockDate = date;
-  
-  // Postavi zastavicu za testni način rada
-  if (mockDate) {
-    inTestMode = true;
-    localStorage.setItem(IS_TEST_MODE_KEY, 'true');
-  } else {
-    inTestMode = false;
-    localStorage.removeItem(IS_TEST_MODE_KEY);
-  }
-  
-  // Spremi u localStorage za trajnost
-  if (mockDate) {
-    localStorage.setItem(MOCK_DATE_KEY, formatDate(mockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
-  } else {
-    localStorage.removeItem(MOCK_DATE_KEY);
-  }
-}
-
-/**
- * Vraća informaciju je li trenutno aktivan testni način rada
- * @returns true ako je aktivan testni način rada, inače false
- */
-export function isInTestMode(): boolean {
-  return inTestMode;
-}
-
-/**
- * Resetira mock datum na null (vraća korištenje stvarnog sistemskog datuma)
- */
-export function resetMockDate(): void {
-  // Spremi originalnu vrijednost ako još nije spremljena
-  if (!hasOriginalBeenStored) {
-    originalMockDate = mockDate;
-    hasOriginalBeenStored = true;
-    
-    if (originalMockDate) {
-      localStorage.setItem(ORIGINAL_MOCK_DATE_KEY, formatDate(originalMockDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''));
-    }
-    localStorage.setItem(HAS_ORIGINAL_STORED_KEY, 'true');
-  }
-  
-  mockDate = null;
-  inTestMode = false;
-  
-  localStorage.removeItem(MOCK_DATE_KEY);
-  localStorage.removeItem(IS_TEST_MODE_KEY);
-}
-
-/**
- * Vraća trenutnu godinu - bazira se na getCurrentDate()
+ * Vraća trenutnu godinu (npr. 2025)
  */
 export function getCurrentYear(): number {
-  return getCurrentDate().getFullYear();
-}
-
-/**
- * Provjerava je li neki datum unutar tekuće godine
- * @param date - Datum za provjeru
- */
-export function isCurrentYear(date: Date): boolean {
-  return date.getFullYear() === getCurrentYear();
+  return new Date().getFullYear();
 }
 
 /**
@@ -205,13 +65,13 @@ export function formatDate(
     } else if (typeof date === 'number') {
       dateObj = new Date(date);
     } else {
-      dateObj = date;
+      dateObj = date as Date;
     }
-    
+  
     if (!isValid(dateObj)) {
       return '';
     }
-    
+  
     // Koristi Intl.DateTimeFormat za formatiranje s ispravnom vremenskom zonom
     const formatter = new Intl.DateTimeFormat('hr-HR', {
       timeZone: currentTimeZone,
@@ -250,44 +110,32 @@ export function formatDate(
           break;
       }
     }
-    
+  
     return formattedDate;
   } catch (error) {
     console.error('Greška prilikom formatiranja datuma:', error);
     return '';
   }
+  return '';
 }
 
 /**
- * OVAJ KOD SE MOŽE KORISTITI KAO PRIMJER ZA OSTALE KOMPONENTE
- * 
- * // Import funkcije za formatiranje datuma
- * import { formatDate } from "../../utils/dateUtils";
- * 
- * // Pravilno korištenje
- * formatDate(myDate, 'dd.MM.yyyy HH:mm:ss')
- * 
- * // NIKAD NE KORISTITI:
- * // getCurrentDate().toLocaleString()
- * // getCurrentDate().toISOString()
- * // format(getCurrentDate(), 'dd.MM.yyyy')
+ * Formatira datum za HTML <input type="date"> (yyyy-MM-dd)
+ * @param date - Datum (Date objekt ili string)
+ * @returns string u formatu yyyy-MM-dd ili prazan string ako nije valjan
  */
-
-/**
- * Pretvara datum iz ISO formata u hrvatski format za prikaz u input poljima
- * @param isoDate - ISO datum (YYYY-MM-DD)
- * @returns Date string u formatu DD.MM.YYYY
- */
-export function isoToHrFormat(isoDate: string): string {
-  if (!isoDate) return '';
-  
-  try {
-    const date = parseISO(isoDate);
-    return format(date, 'dd.MM.yyyy', { locale: hr });
-  } catch (error) {
-    console.error('Error converting ISO to HR format:', error);
-    return '';
+export function formatDateToIsoDateString(date: Date | string | null): string {
+  if (!date) return '';
+  let dateObj: Date | null = null;
+  if (typeof date === 'string') {
+    dateObj = parseDate(date);
+  } else if (date instanceof Date) {
+    dateObj = date;
   }
+  if (dateObj && isValid(dateObj)) {
+    return format(dateObj, 'yyyy-MM-dd');
+  }
+  return '';
 }
 
 /**
@@ -313,67 +161,127 @@ export function hrToIsoFormat(hrDate: string): string {
 /**
  * Formatira input polje date za prikaz u obrascu
  * @param date - Date object ili string
- * @returns Date string u formatu koji koristi input[type="date"] (YYYY-MM-DD)
+ * @returns Date string u ISO 8601 DateTime formatu (npr. YYYY-MM-DDTHH:mm:ss.sssZ)
  */
+// Formatira datum za prikaz i spremanje bez vremenske zone (npr. za datume rođenja)
 export function formatInputDate(date: Date | string | null = null): string {
   if (!date) return '';
-  
-  try {
-    // Provjeravamo je li string valjan datum prije parsiranja
-    if (typeof date === 'string') {
-      // Ako je string "Invalid Date" ili ima nevažeći format, vratimo prazni string
-      if (date === 'Invalid Date' || isNaN(Date.parse(date))) {
-        console.warn('Invalid date string provided:', date);
-        return '';
-      }
-      // Inače pokušavamo parsirati
-      const d = parseISO(date);
-      // Provjeravamo je li rezultat parsiranja valjan datum
-      if (isNaN(d.getTime())) {
-        console.warn('parseISO returned invalid date for input:', date);
-        return '';
-      }
-      return format(d, 'yyyy-MM-dd');
-    } else {
-      // Ako je Date objekt, provjeravamo je li valjan
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid Date object provided');
-        return '';
-      }
-      return format(date, 'yyyy-MM-dd');
+  let dateObj: Date | null = null;
+  if (typeof date === 'string') {
+    date = date.trim();
+    if (date.startsWith('yyyy-MM-dd')) {
+      date = date.substring(0, 10);
     }
-  } catch (error) {
-    console.error('Error formatting input date:', error);
+    date = date.replace(/[^0-9\-T:.Z]/g, '');
+    if (date.toUpperCase() === 'INVALID DATE') {
+      console.warn('formatInputDate: Primljen je string "Invalid Date". Vraćam prazan string.');
+      return '';
+    }
+    // Ako je već u formatu yyyy-MM-dd, vrati ga takvog
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    dateObj = parseISO(date);
+    if (!isValid(dateObj)) {
+      dateObj = parseDate(date);
+      if (!dateObj || !isValid(dateObj)) {
+        console.warn(`formatInputDate: Neuspješno parsiranje stringa '${date}'. Vraćam prazan string.`);
+        return '';
+      }
+    }
+  } else if (date instanceof Date) {
+    dateObj = date;
+  } else {
+    console.warn('formatInputDate: Primljen nepoznat tip podatka za datum. Vraćam prazan string.');
     return '';
   }
+  if (!dateObj || !isValid(dateObj)) {
+    console.warn('formatInputDate: Kreirani Date objekt nije valjan. Vraćam prazan string.');
+    return '';
+  }
+  // Vrati uvijek yyyy-MM-dd, bez vremena i vremenske zone
+  return format(dateObj, 'yyyy-MM-dd');
 }
+
 
 /**
  * Parsira datum iz stringa u Date objekt
  * @param dateString - String koji sadrži datum
  * @param dateFormat - Format datuma (default: 'yyyy-MM-dd')
+ * @returns Date | null
  */
-export function parseDate(dateString: string | null, dateFormat = 'yyyy-MM-dd'): Date | null {
-  if (!dateString) return null;
-  
-  try {
-    // Pokušaj parsirati s date-fns parseISO (za ISO formate)
-    const parsedWithIso = parseISO(dateString);
-    if (isValid(parsedWithIso)) return parsedWithIso;
-    
-    // Ako to ne uspije, pokušaj s formatom
-    const parsedWithFormat = parse(dateString, dateFormat, getCurrentDate());
-    if (isValid(parsedWithFormat)) return parsedWithFormat;
-    
-    // Ako ni to ne uspije, probaj s konstruktorom
-    const parsedWithConstructor = new Date(dateString);
-    if (isValid(parsedWithConstructor)) return parsedWithConstructor;
-    
-    return null;
-  } catch (error) {
-    console.error('Error parsing date:', error);
+export function parseDate(
+  dateStringInput: string | null,
+  dateFormat = 'yyyy-MM-dd',
+): Date | null {
+  if (!dateStringInput) {
     return null;
   }
+
+  const dateString = dateStringInput.trim(); // Trim string
+
+  let parsedDateInstance: Date | null = null;
+  let consoleWarnMessage = '';
+
+  try {
+    // Prioritetno pokušaj parsirati kao puni ISO string ako nema specifičnog formata
+    if (dateFormat === 'yyyy-MM-dd' && dateString.includes('T')) {
+      const isoParsed = parseISO(dateString);
+      if (isValid(isoParsed)) return isoParsed;
+    }
+
+    // Rukovanje specifičnim formatima uz UTC konverziju
+    if (dateFormat === 'dd.MM.yyyy') {
+      const parts = dateString.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (parts) {
+        const day = parseInt(parts[1], 10);
+        const month = parseInt(parts[2], 10) - 1; // Mjeseci su 0-indeksirani u Date
+        const year = parseInt(parts[3], 10);
+        const utcDate = new Date(Date.UTC(year, month, day));
+        // Provjeri je li datum valjan nakon kreiranja (npr. 31.02. nije valjan)
+        if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
+          parsedDateInstance = utcDate;
+        } else {
+          consoleWarnMessage = `parseDate (dd.MM.yyyy): Nevažeći datum ${dateString}`;
+        }
+      } else {
+        consoleWarnMessage = `parseDate (dd.MM.yyyy): String '${dateString}' ne odgovara formatu.`;
+      }
+    } else if (dateFormat === 'yyyy-MM-dd') {
+      // Ovdje želimo striktno YYYY-MM-DD bez vremena
+      const parts = dateString.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (parts) {
+        const year = parseInt(parts[1], 10);
+        const month = parseInt(parts[2], 10) - 1;
+        const day = parseInt(parts[3], 10);
+        const utcDate = new Date(Date.UTC(year, month, day));
+        if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
+          parsedDateInstance = utcDate;
+        } else {
+          consoleWarnMessage = `parseDate (yyyy-MM-dd): Nevažeći datum ${dateString}`;
+        }
+      } else {
+        // Ako ne odgovara YYYY-MM-DD, ali je možda puni ISO, pokušaj s parseISO
+        const isoDate = parseISO(dateString);
+        if (isValid(isoDate)) {
+          return isoDate; // Vrati kao UTC ako je puni ISO
+        }
+        consoleWarnMessage = `parseDate (yyyy-MM-dd): String '${dateString}' ne odgovara formatu yyyy-MM-dd.`;
+      }
+    } else {
+      // Za sve ostale formate, koristi date-fns/parse
+      // Napomena: parse iz date-fns ne stvara UTC datume po defaultu, nego lokalne.
+      // Ako je potreban UTC za druge formate, ovo treba prilagoditi.
+      const tempDate = parse(dateString, dateFormat, getCurrentDate(), { locale: hr });
+      if (isValid(tempDate)) {
+        parsedDateInstance = tempDate;
+      }
+    }
+  } catch (error) {
+    console.error('Greška prilikom parsiranja datuma:', dateString, dateFormat, error);
+  }
+
+  return parsedDateInstance && isValid(parsedDateInstance) ? parsedDateInstance : null;
 }
 
 /**
@@ -420,31 +328,43 @@ export function validateBirthDate(
   minAge = 0
 ): { isValid: boolean; errorMessage?: string } {
   if (!dateString) {
-    return { isValid: false, errorMessage: 'Datum rođenja je obavezan' };
+    return { isValid: false, errorMessage: 'Datum rođenja je obavezan.' };
   }
 
-  // Parsiramo datum za validaciju
-  const parsedDate = parseDate(dateString);
-  if (!parsedDate) {
-    return { isValid: false, errorMessage: 'Neispravan format datuma' };
+  // dateString bi trebao biti puni ISO string (YYYY-MM-DDTHH:mm:ss.sssZ)
+  let date = parseISO(dateString);
+
+  if (!isValid(date)) {
+    // Ako parseISO ne uspije, pokušaj parsirati s našom parseDate funkcijom
+    // koja podržava više formata uključujući dd.MM.yyyy
+    const parsed = parseDate(dateString, 'dd.MM.yyyy');
+    if (parsed && isValid(parsed)) {
+      date = parsed;
+    } else {
+      return { isValid: false, errorMessage: 'Neispravan format datuma rođenja.' };
+    }
   }
 
-  // Datum ne smije biti u budućnosti
-  const currentDate = getCurrentDate();
-  if (parsedDate > currentDate) {
-    return { isValid: false, errorMessage: 'Datum rođenja ne može biti u budućnosti' };
+  // Provjera je li datum u budućnosti
+  // getCurrentDate() može vraćati mockDate, koji je već Date objekt
+  const today = getCurrentDate(); 
+  // Za usporedbu, normalizirajmo 'today' na početak dana u UTC-u ako već nije Date objekt ili je lokalni
+  const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+
+  // Datum rođenja (date) je već UTC zbog parseISO
+  if (date > todayUTCStart) {
+    return { isValid: false, errorMessage: 'Datum rođenja ne može biti u budućnosti.' };
   }
 
-  // Provjera minimalne starosti ako je navedena
+  // Provjera minimalne dobi ako je postavljena
   if (minAge > 0) {
-    const minAgeDate = new Date(currentDate);
-    minAgeDate.setFullYear(currentDate.getFullYear() - minAge);
-    
-    if (parsedDate > minAgeDate) {
-      return { 
-        isValid: false, 
-        errorMessage: `Osoba mora biti starija od ${minAge} ${minAge === 1 ? 'godine' : 'godina'}` 
-      };
+    let age = todayUTCStart.getUTCFullYear() - date.getUTCFullYear();
+    const m = todayUTCStart.getUTCMonth() - date.getUTCMonth();
+    if (m < 0 || (m === 0 && todayUTCStart.getUTCDate() < date.getUTCDate())) {
+      age--;
+    }
+    if (age < minAge) {
+      return { isValid: false, errorMessage: `Osoba mora imati najmanje ${minAge} godina.` };
     }
   }
 
@@ -453,7 +373,7 @@ export function validateBirthDate(
 
 /**
  * Provjerava je li datum valjan (nije u budućnosti i ima ispravan format)
- * @param dateString - String koji sadrži datum
+ * @param dateString - String koji sadrži datum (očekuje se puni ISO string)
  * @param allowFutureDates - Dozvoljava li se da datum bude u budućnosti
  * @returns Objekt s rezultatom validacije i porukom greške ako nije valjan
  */
@@ -462,20 +382,27 @@ export function validateDate(
   allowFutureDates = false
 ): { isValid: boolean; errorMessage?: string } {
   if (!dateString) {
-    return { isValid: true }; // Prazan string je valjan ako datum nije obavezan
+    return { isValid: false, errorMessage: 'Datum je obavezan.' };
   }
 
-  // Parsiramo datum za validaciju
-  const parsedDate = parseDate(dateString);
-  if (!parsedDate) {
-    return { isValid: false, errorMessage: 'Neispravan format datuma' };
+  // dateString bi trebao biti puni ISO string (YYYY-MM-DDTHH:mm:ss.sssZ)
+  const date = parseISO(dateString);
+
+  if (!isValid(date)) {
+    // Fallback kao u validateBirthDate
+    const parsedFallback = parseDate(dateString, 'dd.MM.yyyy');
+    if (parsedFallback && isValid(parsedFallback)) {
+      console.warn(`validateDate: Primljen dateString '${dateString}' koji nije validan ISO, ali je parsiran kao dd.MM.yyyy.`);
+      return { isValid: false, errorMessage: 'Neispravan format datuma. Očekuje se ISO format.' };
+    }
+    return { isValid: false, errorMessage: 'Neispravan format datuma.' };
   }
 
-  // Datum ne smije biti u budućnosti osim ako je to eksplicitno dozvoljeno
   if (!allowFutureDates) {
-    const currentDate = getCurrentDate();
-    if (parsedDate > currentDate) {
-      return { isValid: false, errorMessage: 'Datum ne može biti u budućnosti' };
+    const today = getCurrentDate();
+    const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    if (date > todayUTCStart) {
+      return { isValid: false, errorMessage: 'Datum ne može biti u budućnosti.' };
     }
   }
 

@@ -263,7 +263,7 @@ const stampRepository = {
         try {
             // Koristimo simulirani datum iz getCurrentDate funkcije
             const currentDate = getCurrentDate();
-            const formattedDate = formatDate(currentDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'').split('T')[0]; // Format YYYY-MM-DD
+            const formattedDate = formatDate(currentDate, 'yyyy-MM-dd').split('T')[0]; // Format YYYY-MM-DD
             
             await db.transaction(async (client) => {
                 // Filtriramo markice samo za zadanu godinu

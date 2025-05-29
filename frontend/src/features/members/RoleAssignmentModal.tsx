@@ -16,7 +16,8 @@ const RoleAssignmentModal: React.FC<RoleAssignmentModalProps> = ({ member, onClo
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    // Dodan z-50 kako bi modal bio iznad ostalih elemenata sučelja
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
           Assign Role to {member.first_name} {member.last_name}
@@ -30,7 +31,7 @@ const RoleAssignmentModal: React.FC<RoleAssignmentModalProps> = ({ member, onClo
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="member">Member</option>
-              <option value="member_administrator">Admin</option>
+              <option value="member_administrator">Administrator</option>
               <option value="member_superuser">Superuser</option>
             </select>
           </div>

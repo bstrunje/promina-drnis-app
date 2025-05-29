@@ -1,7 +1,7 @@
 import React from "react";
 import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
-import { isoToHrFormat } from "../../../utils/dateUtils";
+import { formatDate } from "../../../utils/dateUtils";
 
 import { PeriodFormRowProps } from '../types/membershipTypes';
 
@@ -23,7 +23,7 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
             type="text"
             // Sigurnije: period.start_date je uvijek string prema tipu
             // Prisilno pretvaramo na string zbog tipne sigurnosti
-            value={isoToHrFormat(String(period.start_date))}
+            value={formatDate(String(period.start_date))}
             onChange={(e) =>
               onPeriodChange(
                 index,
@@ -40,7 +40,7 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
             type="text"
             // Sigurnije: period.end_date može biti string ili null
             // Prisilno pretvaramo na string zbog tipne sigurnosti
-            value={period.end_date ? isoToHrFormat(String(period.end_date)) : ""}
+            value={period.end_date ? formatDate(String(period.end_date)) : ""}
             onChange={(e) =>
               onPeriodChange(
                 index,
@@ -83,13 +83,13 @@ onValueChange={(value) =>
         <div className="flex justify-between items-start">
           <div>
             <span className="block text-xs text-gray-500">Od:</span>
-            <span className="font-medium">{isoToHrFormat(period.start_date)}</span>
+            <span className="font-medium">{formatDate(period.start_date)}</span>
           </div>
           <div className="text-right">
             <span className="block text-xs text-gray-500">Do:</span>
             <span className="font-medium">
               {period.end_date 
-                ? isoToHrFormat(period.end_date)
+                ? formatDate(period.end_date)
                 : ""}
             </span>
           </div>

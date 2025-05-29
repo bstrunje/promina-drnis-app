@@ -164,17 +164,11 @@ const memberRepository = {
 
     async delete(memberId: number): Promise<Member> {
         // delete related entities first to maintain referential integrity
-        const deletionOrder = [
-            'membership_details',
-            'membership_periods',
-            'activity_participants',
-            'member_messages',
-            'annual_statistics'
-        ];
-        for (const model of deletionOrder) {
-            // dynamic model access via any to satisfy TS
-            await (prisma as any)[model].deleteMany({ where: { member_id: memberId } });
-        }
+        await prisma.membershipDetails.deleteMany({ where: { member_id: memberId } });
+        await prisma.membershipPeriod.deleteMany({ where: { member_id: memberId } });
+        await prisma.activityParticipant.deleteMany({ where: { member_id: memberId } });
+        await prisma.memberMessage.deleteMany({ where: { member_id: memberId } });
+        await prisma.annualStatistics.deleteMany({ where: { member_id: memberId } });
         const raw = await prisma.member.delete({ where: { member_id: memberId } });
         return mapToMember(raw);
     },

@@ -9,6 +9,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import axios from "axios";
+import { formatInputDate } from "@/utils/dateUtils";
 
 interface SizeOptions {
   value: string;
@@ -450,7 +451,7 @@ const LoginPage = () => {
                   type="date"
                   required
                   className="mt-2 p-2 w-full border rounded bg-gray-50"
-                  value={registerData.date_of_birth}
+                  value={registerData.date_of_birth ? formatInputDate(registerData.date_of_birth) : ""}
                   onChange={(e) =>
                     setRegisterData({
                       ...registerData,

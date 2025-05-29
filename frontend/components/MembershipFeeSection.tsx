@@ -4,7 +4,7 @@ import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
-import { formatDate } from '../src/utils/dateUtils';
+import { formatDate, formatDateToIsoDateString } from '../src/utils/dateUtils';
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
@@ -17,7 +17,7 @@ import {
   Save, 
   X 
 } from 'lucide-react';
-
+import { formatInputDate } from '../src/utils/dateUtils';
 import { useAuth } from '../src/context/AuthContext';
 // Zamijenjeno: koristi novi adapter iz modularnog membership feature-a
 import MembershipCardManagerAdapter from '../src/features/membership/MembershipCardManagerAdapter';
@@ -71,9 +71,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   onMembershipHistoryUpdate,
   cardManagerProps
 }) => {
-  // DEBUG: logiraj cijelog membera i membership_details
-  console.log('DEBUG: member', member);
-  console.log('DEBUG: membership_details', member?.membership_details);
   const { toast } = useToast();
   const { user } = useAuth();
   const [paymentDate, setPaymentDate] = useState('');
@@ -107,8 +104,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   useEffect(() => {
     // Koristi novu funkciju determineFeeStatus za određivanje statusa plaćanja
     const feeStatus = determineFeeStatus(member);
-    console.log('DEBUG: feeStatus iz determineFeeStatus:', feeStatus);
-    console.log('DEBUG: membership_details u useEffect:', member?.membership_details);
     setIsFeeCurrent(feeStatus === 'current');
   }, [member]);
 
@@ -288,7 +283,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
           ...member,
           membership_details: {
             ...(member?.membership_details ?? {}),
-            fee_payment_date: parsedDate.toISOString(),
+            fee_payment_date: formatDateToIsoDateString(parsedDate),
             fee_payment_year: isRenewalPayment ? currentYear + 1 : currentYear
           }
         };
@@ -401,9 +396,6 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 <span className="text-sm text-gray-500">Status uplate:</span>
                 {(() => {
                   const feeStatus = determineFeeStatus(member);
-                  console.log('DEBUG: fee_payment_date:', member.membership_details?.fee_payment_date);
-                  console.log('DEBUG: fee_payment_year:', member.membership_details?.fee_payment_year);
-                  console.log('DEBUG: determineFeeStatus:', feeStatus);
                   return (
                 <span
                   className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${feeStatusColors[isFeeCurrent ? 'current' : 'payment required']}`}
@@ -523,7 +515,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                         <Input
                           type="date"
                           id="paymentDate"
-                          value={paymentDate}
+                          value={formatInputDate(paymentDate) ?? ''}
                           onChange={handleDateChange}
                           className={`${paymentError ? 'border-red-300' : ''}`}
                           required
@@ -661,7 +653,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 <label className="text-xs text-gray-500">Start Date</label>
                                 <Input
                                   type="date"
-                                  value={period.start_date?.toString().split('T')[0] ?? ''}
+                                  value={formatInputDate(period.start_date) ?? ''}
                                   onChange={(e) => handlePeriodChange(index, 'start_date', e.target.value)}
                                 />
                               </div>
@@ -669,7 +661,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 <label className="text-xs text-gray-500">End Date</label>
                                 <Input
                                   type="date"
-                                  value={period.end_date?.toString().split('T')[0] ?? ''}
+                                  value={formatInputDate(period.end_date) ?? ''}
                                   onChange={(e) => handlePeriodChange(index, 'end_date', e.target.value)}
                                 />
                               </div>
@@ -706,7 +698,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               <label className="text-xs text-gray-500">Start Date</label>
                               <Input
                                 type="date"
-                                value={newPeriod?.start_date?.toString().split('T')[0] ?? ''}
+                                value={formatInputDate(newPeriod?.start_date) ?? ''}
                                 onChange={(e) => setNewPeriod({ ...(newPeriod ?? {}), start_date: e.target.value })}
                               />
                             </div>
@@ -714,7 +706,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               <label className="text-xs text-gray-500">End Date</label>
                               <Input
                                 type="date"
-                                value={newPeriod?.end_date?.toString().split('T')[0] ?? ''}
+                                value={formatInputDate(newPeriod?.end_date) ?? ''}
                                 onChange={(e) => setNewPeriod({ ...(newPeriod ?? {}), end_date: e.target.value })}
                               />
                             </div>

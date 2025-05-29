@@ -3,9 +3,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User, ChevronDown, ChevronRight } from "lucide-react";
 import { Member } from "@shared/member";
 
-
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
+import CustomDateInput from '@components/CustomDateInput';
 
 interface MemberBasicInfoProps {
   member: Member;
@@ -169,22 +169,20 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="date_of_birth" className="block text-sm font-medium mb-1">
               Date of Birth
             </label>
             <input
               type="date"
+              id="date_of_birth"
               name="date_of_birth"
-              value={
-                editedMember?.date_of_birth
-                  ? formatInputDate(editedMember.date_of_birth)
-                  : ""
-              }
+              value={editedMember?.date_of_birth ? formatInputDate(editedMember.date_of_birth) : ''}
               onChange={handleChange}
-              className="w-full p-2 border rounded"
+              className={`w-full p-2 border rounded ${validationErrors?.date_of_birth ? 'border-red-500' : 'border-gray-300'}`}
+              required
             />
             {validationErrors?.date_of_birth && (
-              <p className="text-sm text-red-500">{validationErrors.date_of_birth}</p>
+              <p className="text-sm text-red-500 mt-1">{validationErrors.date_of_birth}</p>
             )}
           </div>
           <div>
