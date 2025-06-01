@@ -346,7 +346,7 @@ model refresh_tokens {
   @@index([member_id], map: "idx_refresh_tokens_member_id")
 }
 
-model system_admin {
+model SystemManager {
   id            Int       @id @default(autoincrement())
   username      String    @unique @db.VarChar(50)
   email         String    @unique @db.VarChar(100)
@@ -355,4 +355,6 @@ model system_admin {
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
   last_login    DateTime? @db.Timestamp(6)
+
+  @@map("system_manager")
 }

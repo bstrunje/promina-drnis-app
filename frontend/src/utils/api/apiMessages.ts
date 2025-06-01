@@ -4,9 +4,9 @@ import { AxiosResponse } from 'axios';
 import { parseDate, getCurrentDate } from '../../utils/dateUtils';
 
 /**
- * Dohvaćanje poruka za admina
- * @param forceLoad Opcija za prisilno dohvaćanje (koristi se na admin tabu)
- * @returns Lista poruka za admina
+ * Dohvaćanje poruka
+ * @param forceLoad Opcija za prisilno dohvaćanje (koristi se na member_administrator tabu)
+ * @returns Lista poruka za member_administratora
  */
 export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessage[]> => {
   try {
@@ -14,24 +14,24 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
     const userRole = localStorage.getItem('userRole');
     
     // Ako je superuser i forceLoad nije postavljen, vrati prazno polje
-    // (član_superuser ne treba vidjeti admin poruke dok ne uđe na admin tab)
+    // (member_superuser ne treba vidjeti member_administrator poruke dok ne uđe na member_administrator tab)
     if (userRole === 'member_superuser' && !forceLoad) {
-      console.log('Superuser nije na admin tabu - preskačem dohvaćanje admin poruka');
+      console.log('Superuser nije na Administrator tabu - preskačem dohvaćanje member_administrator poruka');
       return [];
     }
     
-    const response: AxiosResponse<ApiAdminMessage[]> = await api.get('/messages/admin');
+    const response: AxiosResponse<ApiAdminMessage[]> = await api.get('/messages/member_administrator');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to get admin messages');
+    throw new Error('Failed to get messages');
   }
 };
 
 /**
- * Dohvaćanje poruka koje je poslao admin
+ * Dohvaćanje poruka koje je poslao member_administrator
  * @returns Lista poslanih poruka
  */
 export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
@@ -107,13 +107,13 @@ export const sendMemberMessage = async (memberId: number, messageText: string): 
 };
 
 /**
- * Slanje admin poruke članu
+ * Slanje poruke članu
  * @param memberId ID člana
  * @param messageText Tekst poruke
  */
 export const sendAdminMessageToMember = async (memberId: number, messageText: string): Promise<void> => {
   try {
-    await api.post('/messages/admin/to-member', {
+    await api.post('/messages/member_administrator/to-member', {
       recipient_id: memberId,
       content: messageText
     });
@@ -121,18 +121,18 @@ export const sendAdminMessageToMember = async (memberId: number, messageText: st
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to send admin message to member');
+    throw new Error('Failed to send message to member');
   }
 };
 
 /**
- * Slanje admin poruke grupi članova
+ * Slanje poruke grupi članova
  * @param memberIds Lista ID-ova članova
  * @param messageText Tekst poruke
  */
 export const sendAdminMessageToGroup = async (memberIds: number[], messageText: string): Promise<void> => {
   try {
-    await api.post('/messages/admin/to-group', {
+    await api.post('/messages/member_administrator/to-group', {
       recipient_ids: memberIds,
       content: messageText
     });
@@ -140,24 +140,24 @@ export const sendAdminMessageToGroup = async (memberIds: number[], messageText: 
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to send admin message to group');
+    throw new Error('Failed to send message to group');
   }
 };
 
 /**
- * Slanje admin poruke svim članovima
+ * Slanje poruke svim članovima
  * @param messageText Tekst poruke
  */
 export const sendAdminMessageToAll = async (messageText: string): Promise<void> => {
   try {
-    await api.post('/messages/admin/to-all', {
+    await api.post('/messages/member_administrator/to-all', {
       content: messageText
     });
   } catch (error) {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Failed to send admin message to all members');
+    throw new Error('Failed to send message to all members');
   }
 };
 

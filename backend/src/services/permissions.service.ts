@@ -26,6 +26,17 @@ const permissionsService = {
     return this.getMemberPermissions(memberId);
   },
 
+  async getAllMembersWithPermissions() {
+    // Prilagodi upit prema strukturi tvoje baze!
+    const result = await db.query(`
+      SELECT m.member_id, m.first_name, m.last_name, m.email, mp.*
+      FROM members m
+      INNER JOIN member_permissions mp ON m.member_id = mp.member_id
+      ORDER BY m.last_name, m.first_name
+    `);
+    return result.rows;
+  },
+
   async updateMemberPermissions(
     memberId: number, 
     permissions: MemberPermissions,

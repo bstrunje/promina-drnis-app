@@ -33,26 +33,16 @@ export class AuthTokenService {
    */
   static async refreshToken(): Promise<string | null> {
     return withRetry(async () => {
-      const storedRefreshToken = tokenStorage.getRefreshToken();
-      
-      if (!storedRefreshToken) {
-        console.warn('Nema pohranjenog refresh tokena za osvježavanje');
-        return null;
-      }
-      
-      const requestBody = {
-        refreshToken: storedRefreshToken
-      };
-      
-      console.log('Slanje zahtjeva za osvježavanje tokena');
-      
+  
+      console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
       const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        // body: JSON.stringify(requestBody) // makni body ili pošalji '{}'
+        body: JSON.stringify({})
       });
       
       // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
@@ -78,6 +68,8 @@ export class AuthTokenService {
       // Spremanje novog access tokena
       if (data.accessToken) {
         tokenStorage.storeAccessToken(data.accessToken);
+        // Dodano logiranje za debugiranje
+        console.log("Novi access token spremljen u localStorage:", data.accessToken);
         console.log("Token uspješno obnovljen");
         return data.accessToken;
       }

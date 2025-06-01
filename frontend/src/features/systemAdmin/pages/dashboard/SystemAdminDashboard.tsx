@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AdminHeader from '../../components/common/AdminHeader';
 import AdminTabNav from '../../components/common/AdminTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
-import MembersWithPermissions from '../../components/members/MembersWithPermissions';
+import MembersWithPermissions from '../../../members/permissions/MembersWithPermissions';
 import PendingMembersList from '../../components/members/PendingMembersList';
 import SystemAdminSettings from '../settings/SystemAdminSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
@@ -81,9 +81,7 @@ const SystemAdminDashboard: React.FC = () => {
         )}
         
         {/* Tab sadržaj - Upravljanje ovlastima članova */}
-        {activeTab === 'members' && (
-          <MembersWithPermissions activeTab={activeTab} />
-        )}
+        {/* Upravljanje ovlastima članova uklonjeno iz system admin dashboarda prema novoj organizaciji prava */}
         
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (

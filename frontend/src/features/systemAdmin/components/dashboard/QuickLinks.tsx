@@ -14,13 +14,6 @@ const QuickLinks: React.FC = () => {
       <h3 className="text-lg font-medium mb-4">Brzi prečaci</h3>
       <div className="space-y-3">
         <button
-          onClick={() => navigate("/system-admin/members")}
-          className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
-        >
-          <span>Upravljanje članovima</span>
-          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
-        </button>
-        <button
           onClick={() => navigate("/system-admin/activities")}
           className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
         >

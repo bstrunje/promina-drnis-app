@@ -75,11 +75,11 @@ const scheduledService = {
       
       console.log(`🔄 Izvršavam automatsko arhiviranje stanja markica za godinu ${currentYear}...`);
       
-      // Koristi administratorski ID 1 za automatsko arhiviranje
-      const systemAdminId = 1; 
+      // Koristi system manager ID 1 za automatsko arhiviranje
+      const systemManagerId = 1; 
       const notes = `Automatsko arhiviranje na kraju godine ${currentYear}`;
       
-      await stampRepository.archiveStampInventory(currentYear, systemAdminId, notes);
+      await stampRepository.archiveStampInventory(currentYear, systemManagerId, notes);
       
       console.log(`✅ Uspješno arhivirano stanje markica za godinu ${currentYear}`);
     } catch (error) {

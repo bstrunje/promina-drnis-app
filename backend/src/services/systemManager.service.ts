@@ -1,9 +1,9 @@
-// services/systemAdmin.service.ts
-import systemAdminRepository from '../repositories/systemAdmin.repository.js';
+// services/systemManager.service.ts
+import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
 import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
-// import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js'; // Može se koristiti za tipizaciju ako je potrebno
-// import { SystemAdmin, CreateSystemAdminDto, AdminPermissionsModel } from '../shared/types/systemAdmin.js';
+// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js'; // Može se koristiti za tipizaciju ako je potrebno
+// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.config.js';
@@ -20,57 +20,57 @@ interface SystemSettings {
     updatedBy?: string | null;
 }
 
-const systemAdminService = {
-    // Provjera vjerodajnica i prijava administratora
+const systemManagerService = {
+    // Provjera vjerodajnica i prijava managera
     async authenticate(username: string, password: string): Promise<any> {
-        // Dohvat administratora prema korisničkom imenu
-        const admin = await systemAdminRepository.findByUsername(username);
+        // Dohvat managera prema korisničkom imenu
+        const manager = await systemManagerRepository.findByUsername(username);
         
-        // Ako administrator ne postoji ili nema lozinku
-        if (!admin || !(admin as any).password_hash) {
+        // Ako manager ne postoji ili nema lozinku
+        if (!manager || !(manager as any).password_hash) {
             return null;
         }
         
         // Usporedba lozinke s hash-om
-        const passwordMatch = await bcrypt.compare(password, (admin as any).password_hash);
+        const passwordMatch = await bcrypt.compare(password, (manager as any).password_hash);
         
         if (!passwordMatch) {
             return null;
         }
         
         // Ažuriranje vremena zadnje prijave
-        await systemAdminRepository.updateLastLogin((admin as any).id);
+        await systemManagerRepository.updateLastLogin((manager as any).id);
         
-        // Vraćamo administratora bez lozinke
-        const { password_hash, ...adminWithoutPassword } = admin as any;
-        return adminWithoutPassword;
+        // Vraćamo managera bez lozinke
+        const { password_hash, ...managerWithoutPassword } = manager as any;
+        return managerWithoutPassword;
     },
     
-    // Kreiranje JWT tokena za administratora
-    generateToken(admin: any): string {
+    // Kreiranje JWT tokena za managera
+    generateToken(manager: any): string {
         return jwt.sign(
             { 
-                id: admin.id, 
-                type: 'system_admin'  // Označava tip korisnika kao system_admin
+                id: manager.id, 
+                type: 'SystemManager'  // Označava tip korisnika kao SystemManager
             },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
     },
     
-    // Kreiranje novog administratora
-    async createSystemAdmin(adminData: any): Promise<any> {
-        return systemAdminRepository.create(adminData);
+    // Kreiranje novog managera
+    async createSystemManager(managerData: any): Promise<any> {
+        return systemManagerRepository.create(managerData);
     },
     
-    // Provjera postoji li već administrator u sustavu
-    async systemAdminExists(): Promise<boolean> {
-        return await systemAdminRepository.exists();
+    // Provjera postoji li već manager u sustavu
+    async systemManagerExists(): Promise<boolean> {
+        return await systemManagerRepository.exists();
     },
     
-    // Dohvat svih administratora
-    async getAllSystemAdmins(): Promise<any[]> {
-        return systemAdminRepository.findAll();
+    // Dohvat svih managera
+    async getAllSystemManagers(): Promise<any[]> {
+        return systemManagerRepository.findAll();
     },
     
     // Dohvat ovlasti za člana
@@ -313,13 +313,13 @@ const systemAdminService = {
                     }
                 }
                 
-                // Dodaj članove s posebnim ulogama (superuser/admin) ako već nisu dodani
+                // Dodaj članove s posebnim ulogama (superuser/administrator) ako već nisu dodani
                 for (const member of specialRoleMembers) {
                     if (!memberMap.has(member.member_id)) {
                         // Kreiraj objekt koji odgovara formatu za članove s ovlastima
                         memberMap.set(member.member_id, {
                             member_id: member.member_id,
-                            // Podrazumijevane ovlasti za superuser/admin članove ako ih nemaju eksplicitno dodane
+                            // Podrazumijevane ovlasti za superuser/administrator članove ako ih nemaju eksplicitno dodane
                             can_view_members: member.role === 'member_superuser' || member.role === 'member_administrator',
                             can_edit_members: member.role === 'member_superuser' || member.role === 'member_administrator',
                             can_delete_members: member.role === 'member_superuser',
@@ -378,7 +378,7 @@ const systemAdminService = {
         }
     },
     
-    // Dohvat članova koji nemaju administratorske ovlasti
+    // Dohvat članova koji nemaju admin ovlasti
     async getMembersWithoutPermissions(): Promise<any[]> {
         try {
             // Dohvaćamo članove koji nemaju zapis u tablici admin_permissions
@@ -419,7 +419,7 @@ const systemAdminService = {
     },
 
     /**
-     * Dohvaća tjednu povijest aktivnosti i druge ključne statistike za dashboard admina.
+     * Dohvaća tjednu povijest aktivnosti i druge ključne statistike za dashboard managera.
      * Povijest aktivnosti vraća se kao niz objekata po tjednima (zadnjih 8 tjedana).
      * @returns Objekt sa statistikom i poviješću aktivnosti
      */
@@ -736,4 +736,4 @@ const systemAdminService = {
     // ... ostatak koda
 };
 
-export default systemAdminService;
+export default systemManagerService;

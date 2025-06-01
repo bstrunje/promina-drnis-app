@@ -6,4 +6,4 @@ export * from './common.js';
 export * from './member.js';
 export * from './membership.js';
 export * from './settings.js';
-export * from './systemAdmin.js';
+export * from './systemManager.js';

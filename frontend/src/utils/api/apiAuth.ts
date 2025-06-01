@@ -11,7 +11,11 @@ import { AxiosResponse } from 'axios';
 export const login = async ({ email, password }: MemberLoginData): Promise<ApiLoginResponse> => {
   try {
     // Šalje se email umjesto full_name
-    const response: AxiosResponse<ApiLoginResponse> = await api.post<ApiLoginResponse>('/auth/login', { email, password });
+    const response: AxiosResponse<ApiLoginResponse> = await api.post<ApiLoginResponse>(
+      '/auth/login', 
+      { email, password },
+      { withCredentials: true } // Eksplicitno omogućujemo slanje i primanje kolačića
+    );
     // Spremanje role ostaje isto
     if (response.data.member.role) {
       localStorage.setItem('userRole', response.data.member.role);

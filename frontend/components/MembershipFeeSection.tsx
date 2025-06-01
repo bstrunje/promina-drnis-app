@@ -501,7 +501,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               </div>
             )}
 
-            {/* Payment Form - visible only for admins */}
+            {/* Payment Form - visible only for administrators */}
             {canEdit && isEditing && (
               <div className="border-t pt-4">
                 <h3 className="text-lg font-medium mb-3">Process Payment</h3>

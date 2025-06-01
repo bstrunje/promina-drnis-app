@@ -52,7 +52,7 @@ function AppContent() {
     
     switch (user.role) {
       case 'member_administrator':
-        return "/admin/dashboard";
+        return "/administrator/dashboard";
       case 'member_superuser':
         return "/superuser/dashboard";
       case 'member':
@@ -88,8 +88,8 @@ function AppContent() {
           
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <>
-              <Route path="/admin" element={<AdminDashboard member={user} />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard member={user} />} />
+              <Route path="/administrator" element={<AdminDashboard member={user} />} />
+              <Route path="/administrator/dashboard" element={<AdminDashboard member={user} />} />
               {/* Putanja /members je sad već definirana iznad za sve korisnike */}
               <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
               <Route path="/assign-password" element={<AssignPassword />} />

@@ -1,7 +1,7 @@
 // features/systemAdmin/hooks/useMembersWithPermissions.ts
 import { useState, useEffect, useCallback } from 'react';
-import { getMembersWithPermissions } from '../utils/systemAdminApi';
-import { MemberWithPermissions } from '@shared/systemAdmin';
+import { getMembersWithPermissions } from '../api/memberPermissionsApi';
+import { MemberWithPermissions } from '@shared/systemManager';
 
 /**
  * Hook za dohvat i upravljanje članovima s administratorskim ovlastima

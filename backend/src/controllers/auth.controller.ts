@@ -210,17 +210,21 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     }
     
     // Postavi novi refresh token u kolačić s prilagođenim postavkama za cross-origin zahtjeve
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    
+    // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama
     res.cookie('refreshToken', newRefreshToken, { 
       httpOnly: true, 
-      // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
-      // U produkciji uvijek koristimo secure: true
-      secure: process.env.NODE_ENV === 'production',
-      // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
-      // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
-      sameSite: 'none' as const,
+      // U produkciji ili kada koristimo HTTPS, postavimo secure: true
+      secure: !isDevelopment && isHttps,
+      // Prilagođavanje sameSite postavke ovisno o okruženju
+      // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
+      // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
+      sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
       path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-      // Dodajemo domain postavku za dodatnu fleksibilnost
+      // Dodajemo domain postavku samo ako je eksplicitno definirana
       domain: process.env.COOKIE_DOMAIN || undefined
     });
     
@@ -233,7 +237,6 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     });
     
     // Za razvojno okruženje, vraćamo i refresh token u odgovoru kako bi se mogao spremiti u lokalno spremište
-    const isDevelopment = process.env.NODE_ENV !== 'production';
     
     if (isDevelopment) {
       console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
@@ -275,16 +278,19 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
   
   // Ukloni kolačić (uvijek pokušaj obrisati, čak i ako ne postoji)
   // Moramo koristiti iste postavke kao i pri postavljanju kolačića
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
   const cookieOptions = {
     httpOnly: true,
-    // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
-    // U produkciji uvijek koristimo secure: true
-    secure: process.env.NODE_ENV === 'production',
-    // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
-    // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
-    sameSite: 'none' as const,
+    // U produkciji ili kada koristimo HTTPS, postavimo secure: true
+    secure: !isDevelopment && isHttps,
+    // Prilagođavanje sameSite postavke ovisno o okruženju
+    // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
+    // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
+    sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
     path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-    // Dodajemo domain postavku za dodatnu fleksibilnost
+    // Dodajemo domain postavku samo ako je eksplicitno definirana
     domain: process.env.COOKIE_DOMAIN || undefined
   };
   
@@ -577,17 +583,20 @@ const authController = {
         }
 
         // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama za cross-origin zahtjeve
+        const isDevelopment = process.env.NODE_ENV !== 'production';
+        const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        
         const cookieOptions = { 
           httpOnly: true, 
-          // U razvojnom okruženju, ako koristimo različite portove, moramo postaviti secure: false
-          // U produkciji uvijek koristimo secure: true
-          secure: process.env.NODE_ENV === 'production',
-          // U razvojnom okruženju koristimo 'none' za cross-origin zahtjeve između različitih portova
-          // U produkciji također koristimo 'none' jer je to potrebno za cross-origin zahtjeve s secure postavkom
-          sameSite: 'none' as const,
+          // U produkciji ili kada koristimo HTTPS, postavimo secure: true
+          secure: !isDevelopment && isHttps,
+          // Prilagođavanje sameSite postavke ovisno o okruženju
+          // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
+          // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
+          sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
           path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-          // Dodajemo domain postavku za dodatnu fleksibilnost
+          // Dodajemo domain postavku samo ako je eksplicitno definirana
           domain: process.env.COOKIE_DOMAIN || undefined
         };
         

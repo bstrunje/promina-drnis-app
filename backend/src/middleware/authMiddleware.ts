@@ -7,7 +7,7 @@ import prisma from '../utils/prisma.js';
 interface JWTPayload {
     id: number;
     full_name?: string;
-    type?: 'member' | 'system_admin';
+    type?: 'member' | 'SystemManager';
 }
 
 export interface DatabaseUser {
@@ -15,8 +15,8 @@ export interface DatabaseUser {
     role: string;        
     role_name: string;   
     member_id?: number;
-    is_system_admin?: boolean; 
-    user_type: 'member' | 'system_admin'; 
+    is_SystemManager?: boolean; 
+    user_type: 'member' | 'SystemManager'; 
 }
 
 // Extend Express Request type to include user
@@ -47,25 +47,25 @@ const authenticateToken = async (
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
-        // Provjeri tip korisnika - ako je eksplicitno 'system_admin'
-        if (decoded.type === 'system_admin') {
-            // Dohvati system administratora iz ispravne tablice
-            const systemAdmin = await prisma.system_admin.findUnique({
+        // Provjeri tip korisnika - ako je eksplicitno 'SystemManager'
+        if (decoded.type === 'SystemManager') {
+            // Dohvati system managera iz ispravne tablice
+            const systemManager = await prisma.systemManager.findUnique({
                 where: { id: decoded.id }
             });
 
-            if (!systemAdmin) {
-                res.status(401).json({ message: 'System administrator not found' });
+            if (!systemManager) {
+                res.status(401).json({ message: 'System manager not found' });
                 return;
             }
 
-            // Postavi system_admin podatke na request objekt
+            // Postavi SystemManager podatke na request objekt
             req.user = {
-                id: systemAdmin.id,
-                role: 'system_admin',  
-                role_name: 'system_admin', 
-                is_system_admin: true,
-                user_type: 'system_admin'
+                id: systemManager.id,
+                role: 'SystemManager',  
+                role_name: 'SystemManager', 
+                is_SystemManager: true,
+                user_type: 'SystemManager'
             };
             next();
             return;
@@ -80,7 +80,7 @@ const authenticateToken = async (
                 m.first_name || ' ' || m.last_name as full_name,
                 m.email,
                 CASE 
-                    WHEN m.role = 'member_administrator' THEN 'member_administrator'
+                    WHEN m.role = 'member_manager' THEN 'member_manager'
                     WHEN m.role = 'member_superuser' THEN 'member_superuser'
                     ELSE 'member'
                 END as role_name,
@@ -103,7 +103,7 @@ const authenticateToken = async (
             role: result.rows[0].role,  
             role_name: result.rows[0].role_name,
             member_id: result.rows[0].id,
-            is_system_admin: false,
+            is_SystemManager: false,
             user_type: 'member'
         };
         next();
@@ -123,7 +123,7 @@ const checkRole = (allowedRoles: string[]) => {
             }
 
             // System admin ima sve ovlasti
-            if (req.user.is_system_admin) {
+            if (req.user.is_SystemManager) {
                 next();
                 return;
             }
@@ -135,7 +135,7 @@ const checkRole = (allowedRoles: string[]) => {
             }
 
             // Za admin, allow both admin and member actions
-            if (req.user.role_name === 'member_administrator' && allowedRoles.includes('member_administrator')) {
+            if (req.user.role_name === 'member_manager' && allowedRoles.includes('member_manager')) {
                 next();
                 return;
             }
@@ -156,23 +156,23 @@ const checkRole = (allowedRoles: string[]) => {
     };
 };
 
-// Posebni middleware za system admin korisnike
-const requireSystemAdmin = async (
+// Posebni middleware za system manager korisnike
+const requireSystemManager = async (
     req: Request, 
     res: Response, 
     next: NextFunction
 ): Promise<void> => {
     try {
-        if (!req.user || !req.user.is_system_admin) {
+        if (!req.user || !req.user.is_SystemManager) {
             res.status(403).json({ 
-                message: 'Access denied. System administrator privileges required.' 
+                message: 'Access denied. System manager privileges required.' 
             });
             return;
         }
         next();
     } catch (error) {
-        console.error('System admin check error:', error);
-        res.status(500).json({ message: 'Error checking system admin status' });
+        console.error('System manager check error:', error);
+        res.status(500).json({ message: 'Error checking system manager status' });
     }
 };
 
@@ -184,7 +184,7 @@ const requireSuperUser = async (
 ): Promise<void> => {
     try {
         // I system admin i superuser mogu pristupiti
-        if (req.user?.is_system_admin) {
+        if (req.user?.is_SystemManager) {
             next();
             return;
         }
@@ -213,7 +213,7 @@ const checkPermission = (permission: string) => {
             }
             
             // System admin i superuser imaju sve ovlasti
-            if (req.user.is_system_admin || req.user.role_name === 'member_superuser') {
+            if (req.user.is_SystemManager || req.user.role_name === 'member_superuser') {
                 next();
                 return;
             }
@@ -251,11 +251,11 @@ const checkPermission = (permission: string) => {
 
 // Role-based middleware shortcuts
 const roles = {
-    requireAdmin: checkRole(['member_administrator', 'member_superuser']),
-    requireMember: checkRole(['member', 'member_administrator', 'member_superuser']),
+    requireAdmin: checkRole(['member_manager', 'member_superuser']),
+    requireMember: checkRole(['member', 'member_manager', 'member_superuser']),
     requireSuperUser,
-    requireSystemAdmin
+    requireSystemManager
 };
 
 // Export middleware
-export { authenticateToken as authMiddleware, checkRole, checkPermission, roles, requireSystemAdmin };
+export { authenticateToken as authMiddleware, checkRole, checkPermission, roles, requireSystemManager };

@@ -49,7 +49,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
         <CardTitle>
           <div className="flex items-center">
             <MessageSquare className="w-5 h-5 mr-2" />
-            Send Message to Admin
+            Send Message to Administrator
           </div>
         </CardTitle>
       </CardHeader>

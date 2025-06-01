@@ -428,8 +428,8 @@ export async function setupDatabase(): Promise<void> {
     console.log("✅ Database setup completed successfully");
     isInitialized = true;
     
-    // Nakon uspješnog postavljanja baze, provjeri postoji li system administrator
-    await createInitialSystemAdminIfNeeded();
+    // Nakon uspješnog postavljanja baze, provjeri postoji li system manager
+    await createInitialSystemManagerIfNeeded();
   } catch (error) {
     // Rollback transaction on error
     await db.query("ROLLBACK");
@@ -439,34 +439,34 @@ export async function setupDatabase(): Promise<void> {
 }
 
 /**
- * Kreira početnog system administratora ako ne postoji u bazi
+ * Kreira početnog system managera ako ne postoji u bazi
  * Ova funkcija se poziva nakon inicijalizacije baze i automatski kreira
- * system administrator račun ako ne postoji ni jedan u bazi
+ * system manager račun ako ne postoji ni jedan u bazi
  */
-export async function createInitialSystemAdminIfNeeded(): Promise<void> {
+export async function createInitialSystemManagerIfNeeded(): Promise<void> {
   try {
-    // Provjeri postoji li već system administrator u bazi
-    const adminExists = await prisma.system_admin.count() > 0;
+    // Provjeri postoji li već system manager u bazi
+    const managerExists = await prisma.systemManager.count() > 0;
     
-    if (adminExists) {
-      console.log("✅ System administrator already exists, skipping creation");
+    if (managerExists) {
+      console.log("✅ System Manager already exists, skipping creation");
       return;
     }
     
     // Ako ne postoji, kreiraj ga
-    const username = process.env.INITIAL_SYSTEM_ADMIN_USERNAME || 'systemAdministrator';
-    const email = 'admin@promina-drnis.hr';
+    const username = process.env.INITIAL_SYSTEM_MANAGER_USERNAME || 'systemManager';
+    const email = 'manager@promina-drnis.hr';
     // Koristimo display_name kao username bez razmaka ako nije drugačije specificirano
-    const display_name = process.env.INITIAL_SYSTEM_ADMIN_USERNAME || 'System Administrator';
+    const display_name = process.env.INITIAL_SYSTEM_MANAGER_USERNAME || 'System Manager';
     // Koristimo lozinku iz .env datoteke ili defaultnu ako nije definirana
-    const defaultPassword = process.env.INITIAL_SYSTEM_ADMIN_PASSWORD || 'admin123';
+    const defaultPassword = process.env.INITIAL_SYSTEM_MANAGER_PASSWORD || 'manager123';
     
     // Hash lozinke
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(defaultPassword, saltRounds);
     
-    // Kreiranje system administratora
-    const admin = await prisma.system_admin.create({
+    // Kreiranje system managera
+    const manager = await prisma.systemManager.create({
       data: {
         username,
         email,
@@ -475,13 +475,13 @@ export async function createInitialSystemAdminIfNeeded(): Promise<void> {
       }
     });
     
-    console.log(`✅ Initial system administrator created with username: ${username}`);
+    console.log(`✅ Initial system manager created with username: ${username}`);
     console.log(`⚠️  IMPORTANT: Please change the default password after first login!`);
     console.log(`   Username: ${username}`);
     console.log(`   Password: ${defaultPassword}`);
     console.log(`   (Ovi podaci se nalaze u .env datoteci)`);
   } catch (error) {
-    console.error('❌ Error creating initial system administrator:', error);
+    console.error('❌ Error creating initial system manager:', error);
     // Ne bacamo iznimku kako ne bismo srušili aplikaciju ako se ovo ne uspije izvršiti
   }
 }

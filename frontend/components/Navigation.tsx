@@ -33,7 +33,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        let endpoint = '/messages/admin';  
+        let endpoint = '/messages/member_administrator';  
         if (user.role === 'member') {
           endpoint = `/members/${user.member_id}/messages`;
         }
@@ -112,9 +112,9 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             </Link>
             {(user.role === 'member_administrator' || user.role === 'member_superuser') && (
               <>
-                <Link to="/admin" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+                <Link to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Settings size={20} className="inline sm:hidden" />
-                  <span>Admin</span>
+                  <span>Administrator</span>
                 </Link>
                 {!user.registration_completed && (
                   <Link to="/assign-password" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>

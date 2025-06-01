@@ -12,6 +12,7 @@ import { dirname } from 'path';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
 import { getCurrentDate, formatDate } from './utils/dateUtils.js';
 import timezoneService from './services/timezone.service.js';
+import permissionsRouter from './routes/permissions.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -28,7 +29,7 @@ import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
-import systemAdminRoutes from './routes/systemAdmin.js';
+import systemManagerRoutes from './routes/systemManager.js';
 import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import the directory preparation functions
@@ -257,7 +258,7 @@ app.get('/', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/system-admin', systemAdminRoutes); // Registrirana ruta za SystemAdmin
+app.use('/api/system-manager', systemManagerRoutes); // Registrirana ruta za SystemManager
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
@@ -271,6 +272,7 @@ app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes); // Register debug routes
+app.use('/api/members/permissions', permissionsRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
@@ -290,7 +292,7 @@ app.get('/api', (req: Request, res: Response) => {
         generic: '/api/generic-messages'
       },
       settings: '/api/settings',
-      'system-admin': '/api/system-admin',
+      'system-manager': '/api/system-manager',
       debug: '/api/debug'
     }
   });

@@ -1,6 +1,6 @@
-// shared/types/systemAdmin.ts
+// shared/types/systemManager.ts
 
-export interface SystemAdmin {
+export interface SystemManager {
   id: number;
   username: string;
   email: string;
@@ -10,14 +10,14 @@ export interface SystemAdmin {
   updated_at?: string;
 }
 
-export interface SystemAdminLoginData {
+export interface SystemManagerLoginData {
   username: string;
   password: string;
 }
 
-export interface SystemAdminLoginResponse {
+export interface SystemManagerLoginResponse {
   token: string;
-  admin: {
+  manager: {
     id: number;
     username: string;
     display_name: string;

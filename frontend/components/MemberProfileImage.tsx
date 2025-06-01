@@ -25,7 +25,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   // Provjera može li korisnik uređivati sliku
   const canEditImage = user?.role === 'member_administrator' || user?.role === 'member_superuser' || user?.member_id === member.member_id;
 
-  // Provjera je li korisnik admin ili superuser za prikaz naslova
+  // Provjera je li korisnik administrator ili superuser za prikaz naslova
   const isAdminOrSuperuser = user?.role === 'member_administrator' || user?.role === 'member_superuser';
 
   // Puno ime člana
@@ -153,7 +153,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   return (
     <Card>
       <CardHeader>
-        {/* Naslov kartice se prikazuje samo admin i superuser korisnicima */}
+        {/* Naslov kartice se prikazuje samo administrator i superuser korisnicima */}
         {isAdminOrSuperuser ? (
           <CardTitle>
             <User className="h-5 w-5 inline-block mr-2" />

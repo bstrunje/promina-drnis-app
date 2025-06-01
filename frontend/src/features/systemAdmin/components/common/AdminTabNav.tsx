@@ -26,32 +26,6 @@ const AdminTabNav: React.FC<AdminTabNavProps> = ({ activeTab, setActiveTab }) =>
       </button>
       <button
         className={`px-4 py-2 font-medium ${
-          activeTab === 'members'
-            ? 'text-blue-600 border-b-2 border-blue-600'
-            : 'text-gray-600 hover:text-blue-600'
-        }`}
-        onClick={() => { void setActiveTab('members'); }}
-      >
-        <div className="flex items-center">
-          <Users className="h-4 w-4 mr-2" />
-          <span>Upravljanje ovlastima članova</span>
-        </div>
-      </button>
-      <button
-        className={`px-4 py-2 font-medium ${
-          activeTab === 'register-members'
-            ? 'text-blue-600 border-b-2 border-blue-600'
-            : 'text-gray-600 hover:text-blue-600'
-        }`}
-        onClick={() => { void setActiveTab('register-members'); }}
-      >
-        <div className="flex items-center">
-          <UserPlus className="h-4 w-4 mr-2" />
-          <span>Registracija članova</span>
-        </div>
-      </button>
-      <button
-        className={`px-4 py-2 font-medium ${
           activeTab === 'settings'
             ? 'text-blue-600 border-b-2 border-blue-600'
             : 'text-gray-600 hover:text-blue-600'

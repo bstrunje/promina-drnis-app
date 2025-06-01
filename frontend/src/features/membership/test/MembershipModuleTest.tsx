@@ -89,7 +89,7 @@ const MembershipModuleTest: React.FC = () => {
               <MembershipCardManagerAdapter
                 member={member}
                 onUpdate={handleMemberUpdate}
-                userRole="admin"
+                userRole="member_administrator"
               />
             </div>
             <div>
@@ -109,7 +109,7 @@ const MembershipModuleTest: React.FC = () => {
           <MembershipManager
             member={member}
             onUpdate={handleMemberUpdate}
-            userRole="admin"
+            userRole="member_administrator"
           />
         </TabsContent>
       </Tabs>

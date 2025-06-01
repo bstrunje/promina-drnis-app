@@ -8,6 +8,7 @@ const apiInstance = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 sekundi timeout
+  withCredentials: true, // Omogućuje slanje i primanje kolačića u cross-origin zahtjevima
 });
 
 // Interceptor za dodavanje tokena u zaglavlje

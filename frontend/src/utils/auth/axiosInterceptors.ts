@@ -34,9 +34,10 @@ export function setupAxiosInterceptors(
   // Interceptor za dodavanje tokena u zahtjeve
   const requestInterceptor = axios.interceptors.request.use(
     (config) => {
-      // Dodaj token u zaglavlje ako postoji
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      // UVIJEK dohvaćaj svježi token iz localStorage!
+      const latestToken = localStorage.getItem("token");
+      if (latestToken) {
+        config.headers.Authorization = `Bearer ${latestToken}`;
       }
       
       // Osiguraj da se kolačići šalju sa svim zahtjevima

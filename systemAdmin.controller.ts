@@ -1,7 +1,6 @@
 // controllers/systemAdmin.controller.ts
 import { Request, Response } from 'express';
 import systemAdminService from '../services/systemAdmin.service.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
 // Koristimo any umjesto specifičnih tipova - privremeno rješenje
 // import { SystemAdmin, SystemAdminLoginData, CreateSystemAdminDto, UpdateMemberPermissionsDto } from '../shared/types/systemAdmin.js';
 import bcrypt from 'bcrypt';
@@ -33,14 +32,14 @@ export const changePassword = async (req: Request, res: Response) => {
     const adminId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
     const { oldPassword, newPassword } = req.body;
 
-    const admin = await prisma.memberAdministrator.findUnique({ where: { id: adminId } });
+    const admin = await prisma.systemAdmin.findUnique({ where: { id: adminId } });
     if (!admin) return res.status(404).json({ message: 'Admin not found' });
 
     const isMatch = await bcrypt.compare(oldPassword, admin.password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Pogrešna stara lozinka' });
 
     const newHash = await bcrypt.hash(newPassword, 10);
-    await prisma.memberAdministrator.update({
+    await prisma.systemAdmin.update({
         where: { id: adminId },
         data: { password_hash: newHash },
     });
@@ -59,12 +58,12 @@ export const changeUsername = async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Novi username mora imati barem 4 znaka.' });
     }
     // Provjeri je li username već zauzet
-    const existing = await prisma.memberAdministrator.findUnique({ where: { username: newUsername } });
+    const existing = await prisma.systemAdmin.findUnique({ where: { username: newUsername } });
     if (existing) {
         return res.status(409).json({ message: 'Taj username je već zauzet.' });
     }
     // Promijeni username
-    const updated = await prisma.memberAdministrator.update({
+    const updated = await prisma.systemAdmin.update({
         where: { id: adminId },
         data: { username: newUsername },
     });
@@ -117,7 +116,7 @@ const systemAdminController = {
             await auditService.logEvent({
                 event_type: 'SYSTEM_ADMIN_LOGIN',
                 user_id: admin.id,
-                user_type: 'member_administrator',
+                user_type: 'system_admin',
                 ip_address: userIP,
                 details: {
                     username: sanitizedUsername,
@@ -333,7 +332,7 @@ const systemAdminController = {
             await auditService.logEvent({
                 event_type: 'MEMBER_PERMISSIONS_UPDATED',
                 user_id: req.user.id,
-                user_type: 'member_administrator',
+                user_type: 'system_admin',
                 ip_address: req.ip || req.socket.remoteAddress || 'unknown',
                 details: {
                     member_id: memberId,
@@ -385,7 +384,7 @@ const systemAdminController = {
     ): Promise<void> {
         try {
             // Provjera autorizacije: samo system admin ili superuser može dohvatiti ovlasti
-            if (!req.user || (req.user.user_type !== 'system_admin' && req.user.role !== 'member_superuser')) {
+            if (!req.user || (req.user.user_type !== 'system_admin' && req.user.role !== 'superuser')) {
                 res.status(403).json({ message: "Access denied" });
                 return;
             }
@@ -665,14 +664,14 @@ const systemAdminController = {
                 return;
             }
 
-            // Ažuriranje člana - postavljanje lozinke, statusa 'registered' i uloge 'member_superuser'
+            // Ažuriranje člana - postavljanje lozinke, statusa 'registered' i uloge 'superuser'
             await prisma.member.update({
                 where: { member_id: memberId },
                 data: {
                     password_hash: hashedPassword,
                     status: 'registered',
                     registration_completed: true,
-                    role: 'member_superuser', // Postavljanje superuser uloge je ključno za omogućavanje prijave
+                    role: 'superuser', // Postavljanje superuser uloge je ključno za omogućavanje prijave
                 }
             });
             
@@ -683,11 +682,11 @@ const systemAdminController = {
             
             // Ako ne postoji, kreiraj osnovni zapis o članstvu
             if (!membershipDetails) {
-                const currentYear = getCurrentDate().getFullYear();
+                const currentYear = new Date().getFullYear();
                 await prisma.membershipDetails.create({
                     data: {
                         member_id: memberId,
-                        fee_payment_date: getCurrentDate(), // Datum plaćanja (danas)
+                        fee_payment_date: new Date(), // Datum plaćanja (danas)
                         fee_payment_year: currentYear // Tekuća godina
                         // Prisma će automatski postaviti ostala polja
                     }

@@ -18,7 +18,7 @@ const BackToDashboard: React.FC = () => {
     
     switch (user.role) {
       case 'member_administrator':
-        return "/admin/dashboard";
+        return "/administrator/dashboard";
       case 'member_superuser':
         return "/superuser/dashboard";
       case 'member':

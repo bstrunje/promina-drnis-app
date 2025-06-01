@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 
 import { Member } from "@shared/member";
+import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
+import { useState } from "react";
 
 
 import { getMembershipDisplayStatusExternal } from "./memberTableUtils";
@@ -38,7 +40,7 @@ interface MemberTableProps {
   onViewDetails?: (memberId: number) => void;
   onDeleteMember?: (member: Member) => void;
   onAssignPassword?: (member: Member) => void;
-  onAssignRole?: (member: Member) => void;
+
 }
 
 // Komponenta za prikaz tablice članova
@@ -50,7 +52,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
   onDeleteMember,
   onAssignPassword,
-  onAssignRole,
+
 
 
 
@@ -125,6 +127,9 @@ export const MemberTable: React.FC<MemberTableProps> = ({
     );
   }
 
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<MemberWithDetails | null>(null);
+
   const renderActionButtons = (member: MemberWithDetails) => {
     // Dohvati status člana
     const displayStatus = getMembershipDisplayStatus(
@@ -175,9 +180,10 @@ export const MemberTable: React.FC<MemberTableProps> = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                if (onAssignRole) { onAssignRole(member); }
+                setSelectedMember(member);
+                setIsPermissionsModalOpen(true);
               }}
-              title="Manage role"
+              title="Upravljanje ovlastima"
             >
               <UserCog className="w-4 h-4" />
             </Button>
@@ -189,6 +195,16 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
   return (
     <>
+      {isSuperuser && isPermissionsModalOpen && selectedMember && (
+        <EditMemberPermissionsModal
+          member={{
+            ...selectedMember,
+            full_name: selectedMember.full_name ?? `${selectedMember.first_name} ${selectedMember.last_name}`
+          }}
+          onClose={() => setIsPermissionsModalOpen(false)}
+          onSave={() => setIsPermissionsModalOpen(false)}
+        />
+      )}
       <div
         className="overflow-x-auto overflow-y-auto"
         style={{

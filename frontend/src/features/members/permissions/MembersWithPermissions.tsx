@@ -1,11 +1,11 @@
 // features/systemAdmin/components/members/MembersWithPermissions.tsx
 import React, { useState } from 'react';
 import { User, RefreshCw } from 'lucide-react';
-import useMembersWithPermissions from '../../hooks/useMembersWithPermissions';
+import useMembersWithPermissions from './hooks/useMembersWithPermissions';
 import EditMemberPermissionsModal from './EditMemberPermissionsModal';
-import { removeMemberPermissions } from '../../utils/systemAdminApi';
+import { removeMemberPermissions } from './api/memberPermissionsApi';
 import { Member } from '@shared/member';
-import { parseDate } from '../../../../utils/dateUtils';
+import { parseDate } from '../../../utils/dateUtils';
 
 // Komponenta za prikaz i upravljanje članovima s administratorskim ovlastima
 interface MembersWithPermissionsProps {

@@ -77,7 +77,7 @@ const auditRepository = {
                    m2.full_name as affected_name
             FROM audit_logs al
             LEFT JOIN members m1 ON al.performed_by = m1.member_id
-            LEFT JOIN system_admin sa ON al.performed_by = sa.id
+            LEFT JOIN "SystemManager" sa ON al.performed_by = sa.id
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             ORDER BY al.created_at DESC
         `;
@@ -95,7 +95,7 @@ const auditRepository = {
                    m2.full_name as affected_name
             FROM audit_logs al
             LEFT JOIN members m1 ON al.performed_by = m1.member_id
-            LEFT JOIN system_admin sa ON al.performed_by = sa.id
+            LEFT JOIN "SystemManager" sa ON al.performed_by = sa.id
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             WHERE performed_by = ${memberId}
                OR affected_member = ${memberId}

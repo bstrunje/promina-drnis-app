@@ -6,12 +6,6 @@ import { MembershipDetails, MembershipHistory } from './membership.js';
 export type MemberRole = 'member' | 'member_administrator' | 'member_superuser';
 
 /**
- * Stari tip uloga za kompatibilnost s postojećim kodom
- * @deprecated Koristiti nove vrijednosti 'member_administrator' i 'member_superuser'
- */
-export type LegacyMemberRole = 'member' | 'admin' | 'superuser';
-
-/**
  * Membership classification types (UI display only)
  */
 /**
