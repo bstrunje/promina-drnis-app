@@ -25,8 +25,13 @@ const membershipRepository = {
       ): Promise<void> {
         return await db.transaction(async (client) => {
           try {
-            // Check if member exists
-            const memberExists = await db.query(
+            console.log(`Updating membership details for member ID: ${memberId}`);
+            
+            // Optimizacija 1: Koristimo client umjesto db za sve upite unutar transakcije
+            // Ovo osigurava da svi upiti koriste istu konekciju i transakciju
+            
+            // Check if member exists - koristimo client umjesto db
+            const memberExists = await client.query(
               'SELECT 1 FROM members WHERE member_id = $1',
               [memberId]
             );
@@ -35,47 +40,52 @@ const membershipRepository = {
               throw new Error('Member not found');
             }
         
-            // Dodaj logging
-            console.log('Checking for duplicate card number...');
-            
-            // Check for duplicate card number if provided
+            // Optimizacija 2: Provjera duplikata samo ako je potrebno
             if (details.card_number) {
-              const existingCard = await db.query(
-                'SELECT member_id FROM membership_details WHERE card_number = $1',
-                [details.card_number]
+              console.log(`Checking for duplicate card number: ${details.card_number}`);
+              
+              // Optimizacija upita za provjeru duplikata - koristimo client umjesto db
+              const existingCard = await client.query(
+                `SELECT member_id FROM membership_details 
+                 WHERE card_number = $1 AND member_id != $2`,
+                [details.card_number, memberId]
               );
               
-              console.log('Existing card check result:', existingCard.rows);
-              
+              // Optimizacija 3: Pojednostavljena logika provjere duplikata
               if (existingCard.rows.length > 0) {
-                const existingMemberId = existingCard.rows[0].member_id;
-                if (existingMemberId !== memberId) {
-                  throw new Error(`Card number ${details.card_number} is already assigned to another member`);
-                }
+                throw new Error(`Card number ${details.card_number} is already assigned to another member`);
               }
             }
         
-            const setClause = Object.entries(details)
-              .filter(([_, value]) => value !== undefined)
-              .map(([key], index) => `${key} = $${index + 2}`)
+            // Optimizacija 4: Priprema parametara za upit
+            const filteredEntries = Object.entries(details)
+              .filter(([_, value]) => value !== undefined);
+            
+            const keys = filteredEntries.map(([key]) => key);
+            
+            const values = filteredEntries.map(([_, value]) => {
+              if (value instanceof Date) {
+                return formatDate(value, 'yyyy-MM-dd');
+              }
+              return value;
+            });
+            
+            const setClause = keys
+              .map((key, index) => `${key} = $${index + 2}`)
               .join(', ');
-        
-            const values = Object.values(details)
-              .filter(value => value !== undefined)
-              .map(value => {
-                if (value instanceof Date) {
-                  return formatDate(value, 'yyyy-MM-dd');
-                }
-                return value;
-              });
-        
-            await client.query(
-              `INSERT INTO membership_details (member_id, ${Object.keys(details).join(', ')})
-               VALUES ($1, ${values.map((_, i) => `$${i + 2}`).join(', ')})
-               ON CONFLICT (member_id) 
-               DO UPDATE SET ${setClause}`,
-              [memberId, ...values]
-            );
+            
+            console.log(`Executing UPSERT query for membership details with ${keys.length} fields`);
+            
+            // Koristimo prepared statement s eksplicitnim timeout-om kroz konfiguraciju
+            await client.query({
+              text: `INSERT INTO membership_details (member_id, ${keys.join(', ')})
+                     VALUES ($1, ${values.map((_, i) => `$${i + 2}`).join(', ')})
+                     ON CONFLICT (member_id) 
+                     DO UPDATE SET ${setClause}`,
+              values: [memberId, ...values]
+            });
+            
+            console.log(`Successfully updated membership details for member ID: ${memberId}`);
           } catch (error) {
             console.error('Error in updateMembershipDetails:', error);
             throw error;

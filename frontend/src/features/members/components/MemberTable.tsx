@@ -199,10 +199,15 @@ export const MemberTable: React.FC<MemberTableProps> = ({
         <EditMemberPermissionsModal
           member={{
             ...selectedMember,
-            full_name: selectedMember.full_name ?? `${selectedMember.first_name} ${selectedMember.last_name}`
+            full_name: selectedMember.full_name ?? `${selectedMember.first_name} ${selectedMember.last_name}`,
+            role: selectedMember.role // Dodajemo rolu člana
           }}
           onClose={() => setIsPermissionsModalOpen(false)}
-          onSave={() => setIsPermissionsModalOpen(false)}
+          onSave={() => {
+            // Osvježi prikaz nakon promjene ovlasti ili role
+            setIsPermissionsModalOpen(false);
+            // Ovdje bi bilo dobro dodati osvježavanje liste članova ako je implementirano
+          }}
         />
       )}
       <div

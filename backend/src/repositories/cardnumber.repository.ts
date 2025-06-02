@@ -230,7 +230,7 @@ const cardNumberRepository = {
     return rowCount > 0 ? result.rows[0] : null;
   },
 
-  // Nova metoda za sinkronizaciju statusa brojeva iskaznica
+  // Optimizirana metoda za sinkronizaciju statusa brojeva iskaznica korištenjem batch operacija
   async syncCardNumberStatus(): Promise<{ updated: number; message: string }> {
     console.log("Starting card number status synchronization...");
     
@@ -259,49 +259,91 @@ const cardNumberRepository = {
         return { updated: 0, message: "No card numbers needed synchronization" };
       }
       
-      // 3. Ažuriraj statuse u card_numbers tablici
-      let updatedCount = 0;
+      // 3. Optimizirano: Podijeli u dva koraka - update postojećih i insert novih
+      // 3.1 Prvo dohvati sve postojeće brojeve kartica
+      const existingCardNumbers = await client.query<{ card_number: string }>(
+        `SELECT card_number FROM card_numbers WHERE card_number IN (
+          ${assignedCards.map((_, idx) => `$${idx + 1}`).join(', ')}
+        )`,
+        assignedCards.map(card => card.card_number)
+      );
+      
+      // Kreiraj set postojećih brojeva za brzo pretraživanje
+      const existingCardSet = new Set(
+        existingCardNumbers.rows.map(row => row.card_number)
+      );
+      
+      // 3.2 Podijeli na postojeće za update i nove za insert
+      const cardsToUpdate = [];
+      const cardsToInsert = [];
       
       for (const card of assignedCards) {
-        // Provjeri postoji li taj broj u card_numbers tablici
-        const existsCheck = await client.query(
-          `SELECT 1 FROM card_numbers WHERE card_number = $1`,
-          [card.card_number]
-        );
-        
-        // Sigurna provjera za null ili undefined
-        const rowCount = existsCheck?.rowCount ?? 0;
-        
-        if (rowCount === 0) {
-          // Ako broj ne postoji u card_numbers, dodaj ga
-          console.log(`Card number ${card.card_number} not found in card_numbers table, adding it...`);
-          await client.query(
-            `INSERT INTO card_numbers (card_number, status, member_id, assigned_at)
-             VALUES ($1, 'assigned', $2, CURRENT_TIMESTAMP)`,
-            [card.card_number, card.member_id]
-          );
+        if (existingCardSet.has(card.card_number)) {
+          cardsToUpdate.push(card);
         } else {
-          // Ažuriraj postojeći zapis
-          console.log(`Updating card number ${card.card_number} status to assigned...`);
-          await client.query(
-            `UPDATE card_numbers 
-             SET status = 'assigned', member_id = $2, assigned_at = CURRENT_TIMESTAMP
-             WHERE card_number = $1`,
-            [card.card_number, card.member_id]
-          );
+          cardsToInsert.push(card);
         }
-        
-        updatedCount++;
       }
       
-      console.log(`Successfully updated ${updatedCount} card number statuses`);
+      console.log(`Cards to update: ${cardsToUpdate.length}, Cards to insert: ${cardsToInsert.length}`);
+      
+      // 3.3 Batch update postojećih kartica
+      if (cardsToUpdate.length > 0) {
+        // Pripremi parametre za batch update
+        const updateParams: (string | number)[] = [];
+        const updatePlaceholders: string[] = [];
+        
+        cardsToUpdate.forEach((card, idx) => {
+          updateParams.push(card.card_number, card.member_id);
+          updatePlaceholders.push(`($${idx*2+1}, $${idx*2+2})`);
+        });
+        
+        // Izvrši batch update
+        await client.query(`
+          WITH card_data (card_number, member_id) AS (
+            VALUES ${updatePlaceholders.join(', ')}
+          )
+          UPDATE card_numbers c
+          SET 
+            status = 'assigned', 
+            member_id = cd.member_id, 
+            assigned_at = CURRENT_TIMESTAMP
+          FROM card_data cd
+          WHERE c.card_number = cd.card_number
+        `, updateParams);
+        
+        console.log(`Updated ${cardsToUpdate.length} existing card numbers in batch operation`);
+      }
+      
+      // 3.4 Batch insert novih kartica
+      if (cardsToInsert.length > 0) {
+        // Pripremi parametre za batch insert
+        const insertParams: (string | number)[] = [];
+        const insertPlaceholders: string[] = [];
+        
+        cardsToInsert.forEach((card, idx) => {
+          insertParams.push(card.card_number, card.member_id);
+          insertPlaceholders.push(`($${idx*2+1}, 'assigned', $${idx*2+2}, CURRENT_TIMESTAMP)`);
+        });
+        
+        // Izvrši batch insert
+        await client.query(`
+          INSERT INTO card_numbers (card_number, status, member_id, assigned_at)
+          VALUES ${insertPlaceholders.join(', ')}
+        `, insertParams);
+        
+        console.log(`Inserted ${cardsToInsert.length} new card numbers in batch operation`);
+      }
+      
+      const totalUpdated = cardsToUpdate.length + cardsToInsert.length;
+      console.log(`Successfully synchronized ${totalUpdated} card number statuses`);
       
       return { 
-        updated: updatedCount,
-        message: `Uspješno sinkronizirano ${updatedCount} brojeva iskaznica` 
+        updated: totalUpdated,
+        message: `Uspješno sinkronizirano ${totalUpdated} brojeva iskaznica` 
       };
     });
-  }
+  },
 };
 
 export default cardNumberRepository;

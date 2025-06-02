@@ -135,6 +135,10 @@ model MembershipDetails {
   active_until           DateTime? @db.Timestamp(6)
   member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([fee_payment_year], map: "idx_membership_details_fee_payment_year")
+  @@index([fee_payment_date], map: "idx_membership_details_fee_payment_date")
+  @@index([card_stamp_issued], map: "idx_membership_details_card_stamp_issued")
+  @@index([next_year_stamp_issued], map: "idx_membership_details_next_year_stamp_issued")
   @@map("membership_details")
 }
 

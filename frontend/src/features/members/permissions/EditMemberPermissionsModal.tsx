@@ -3,11 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { AdminPermissionsModel, UpdateMemberPermissionsDto } from '@shared/systemManager';
 import { getMemberPermissions, updateMemberPermissions } from './api/memberPermissionsApi';
 import { X } from 'lucide-react';
+import MemberRoleSelector from './components/MemberRoleSelector';
+import { MemberRole } from '@shared/member';
 
 interface Member {
   member_id: number;
   full_name: string;
   email?: string;
+  role?: MemberRole;
 }
 
 interface EditMemberPermissionsModalProps {
@@ -46,6 +49,7 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<boolean>(false);
 
 // Funkcija za grupiranje ovlasti po kategorijama
 function categorizePermissions(permissions: AdminPermissionsModel) {
@@ -288,6 +292,25 @@ const permissionCategories = categorizePermissions(permissions);
 
         {/* Content */}
         <div className="p-4 overflow-y-auto flex-grow">
+          {/* Rola člana - vidljivo samo superuserima */}
+          {member.role && (
+            <MemberRoleSelector
+              memberId={member.member_id}
+              currentRole={member.role}
+              onSuccess={() => {
+                setRoleUpdateSuccess(true);
+                setSuccessMessage('Rola člana je uspješno ažurirana.');
+                // Nakon kratke pauze, zatvori modal i osvježi listu
+                setTimeout(() => {
+                  onSave();
+                  onClose();
+                }, 1500);
+              }}
+              onError={(errorMsg) => {
+                setError(errorMsg);
+              }}
+            />
+          )}
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>

@@ -485,7 +485,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             </div>
 
             {/* Membership Card Management - visible only if fee is current */}
-            {isEditing && cardManagerProps && (
+            {isEditing && isFeeCurrent && cardManagerProps && (
               <div className="border-t pt-4">
                 <h3 className="text-lg font-medium mb-3">Membership Card Management</h3>
                 <MembershipCardManagerAdapter {...cardManagerProps} />

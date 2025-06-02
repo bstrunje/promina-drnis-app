@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemManager';
-import { Member } from '@shared/member';
+import { Member, MemberRole } from '@shared/member';
 
 const memberPermissionsApi = axios.create({
   baseURL: API_BASE_URL,
@@ -9,9 +9,9 @@ const memberPermissionsApi = axios.create({
 });
 
 memberPermissionsApi.interceptors.request.use((config) => {
-  const memberToken = localStorage.getItem('memberToken');
-  if (memberToken) {
-    config.headers.Authorization = `Bearer ${memberToken}`;
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -32,6 +32,17 @@ export const updateMemberPermissions = async (updateData: UpdateMemberPermission
 
 export const removeMemberPermissions = async (memberId: number): Promise<void> => {
   await memberPermissionsApi.delete(`/members/${memberId}/permissions`);
+};
+
+/**
+ * Ažurira rolu člana
+ * @param memberId ID člana
+ * @param role Nova rola (member, member_administrator, member_superuser)
+ * @returns Ažurirani član
+ */
+export const updateMemberRole = async (memberId: number, role: MemberRole): Promise<Member> => {
+  const response = await memberPermissionsApi.put(`/members/${memberId}/role`, { role });
+  return response.data;
 };
 
 export default memberPermissionsApi;

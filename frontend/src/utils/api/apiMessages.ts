@@ -20,8 +20,24 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
       return [];
     }
     
-    const response: AxiosResponse<ApiAdminMessage[]> = await api.get('/messages/member_administrator');
-    return response.data;
+    // Dohvati poruke s backenda
+    const response = await api.get('/messages/member_administrator');
+    
+    // Transformiraj poruke iz backend formata u ApiAdminMessage format
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
+      id: String(msg.message_id),
+      content: msg.message_text,
+      sender_id: String(msg.sender_id),
+      sender_name: msg.sender_name || '',
+      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system',
+      recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
+      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all',
+      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+      read: msg.status === 'read' || !!msg.read_at,
+      priority: 'normal'
+    }));
+    
+    return transformedData;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -94,9 +110,8 @@ export const getGenericMessages = async (): Promise<ApiGenericMessage[]> => {
  */
 export const sendMemberMessage = async (memberId: number, messageText: string): Promise<void> => {
   try {
-    await api.post('/messages/member', {
-      recipient_id: memberId,
-      content: messageText
+    await api.post(`/members/${memberId}/messages`, {
+      messageText: messageText
     });
   } catch (error) {
     if (error instanceof Error) {

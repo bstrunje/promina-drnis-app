@@ -39,7 +39,7 @@ const poolConfig: ExtendedPoolConfig = process.env.DATABASE_URL
         } : undefined,
         connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
-        query_timeout: 20000,
+        query_timeout: 60000,
         // Uklonjen client_encoding jer ga postavljamo nakon konekcije
         max: process.env.NODE_ENV === 'production' ? 20 : 10
     }
@@ -51,7 +51,7 @@ const poolConfig: ExtendedPoolConfig = process.env.DATABASE_URL
         port: parseInt(process.env.DB_PORT || '5432'),
         connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
-        query_timeout: 20000,
+        query_timeout: 60000,
         max: process.env.NODE_ENV === 'production' ? 20 : 10
     };
 
