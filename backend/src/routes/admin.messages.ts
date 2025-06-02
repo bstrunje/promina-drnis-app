@@ -6,6 +6,8 @@ const router = express.Router();
 
 // Member Administrator/Superuser routes za pregled poruka članova
 router.get('/admin', authMiddleware, roles.requireAdmin, memberMessageController.getAdminMessages);
+// Dodatni endpoint za kompatibilnost s frontendnom implementacijom
+router.get('/member_administrator', authMiddleware, roles.requireAdmin, memberMessageController.getAdminMessages);
 router.put('/:messageId/read', authMiddleware, roles.requireAdmin, memberMessageController.markAsRead);
 router.put('/:messageId/archive', authMiddleware, roles.requireAdmin, memberMessageController.archiveMessage);
 router.delete('/:messageId', authMiddleware, roles.requireSuperUser, memberMessageController.deleteMessage);
