@@ -1,9 +1,9 @@
-// features/systemAdmin/components/members/PendingMembersList.tsx
+// features/systemManager/components/members/PendingMembersList.tsx
 import React, { useState, useEffect } from 'react';
-import { User, RefreshCw, UserPlus, Key, Search } from 'lucide-react';
-import { getPendingMembers, assignPasswordToMember, PendingMember } from '../../utils/systemAdminApi';
+import { User, RefreshCw, UserPlus, Key, Search, UserCog } from 'lucide-react';
+import { getPendingMembers, assignPasswordToMember, assignRoleToMember, PendingMember } from '../../utils/systemManagerApi';
 
-// Koristimo tip za člana sa statusom 'pending' iz systemAdminApi
+// Koristimo tip za člana sa statusom 'pending' iz systemManagerApi
 
 // Komponenta za prikaz i upravljanje članovima sa statusom 'pending'
 const PendingMembersList: React.FC = () => {
@@ -20,6 +20,7 @@ const PendingMembersList: React.FC = () => {
   const [cardNumber, setCardNumber] = useState<string>('');
   const [assigningPassword, setAssigningPassword] = useState<boolean>(false);
   const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [assignSuperuserRole, setAssignSuperuserRole] = useState<boolean>(false);
 
   // Dohvat članova sa statusom 'pending' pri pokretanju komponente
   useEffect(() => {
@@ -56,13 +57,14 @@ const PendingMembersList: React.FC = () => {
     return fullName.includes(term) || email.includes(term);
   });
 
-  // Otvaranje modala za dodjeljivanje lozinke
+  // Funkcija za otvaranje modala za dodjelu lozinke
   const openPasswordModal = (member: PendingMember) => {
     setSelectedMember(member);
     setPassword('');
     setConfirmPassword('');
     setCardNumber('');
     setAssignmentMessage(null);
+    setAssignSuperuserRole(false);
     setIsModalOpen(true);
   };
 
@@ -70,6 +72,11 @@ const PendingMembersList: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedMember(null);
+    setPassword('');
+    setConfirmPassword('');
+    setCardNumber('');
+    setAssignmentMessage(null);
+    setAssignSuperuserRole(false);
   };
 
   // Funkcija za dodjeljivanje lozinke
@@ -92,11 +99,25 @@ const PendingMembersList: React.FC = () => {
     
     try {
       setAssigningPassword(true);
-      // Uklanjamo cardNumber iz zahtjeva jer backend ne može postaviti card_number direktno
-      await assignPasswordToMember(selectedMember.member_id, password);
-      setAssignmentMessage({ type: 'success', text: 'Lozinka uspješno dodijeljena' });
+      setAssignmentMessage(null);
       
-      // Nakon uspješne dodjele lozinke, osvježimo listu članova
+      // Poziv API-ja za dodjeljivanje lozinke
+      await assignPasswordToMember(selectedMember.member_id, password);
+      
+      // Ako je označena opcija za dodjelu uloge member_superuser, dodijeli je
+      if (assignSuperuserRole) {
+        await assignRoleToMember(selectedMember.member_id, 'member_superuser');
+      }
+      
+      // Uspješna dodjela
+      setAssignmentMessage({ 
+        type: 'success', 
+        text: assignSuperuserRole 
+          ? 'Lozinka je uspješno dodijeljena i član je dobio ulogu superuser!' 
+          : 'Lozinka je uspješno dodijeljena!'
+      });
+      
+      // Osvježi popis članova i zatvori modal nakon kratke pauze
       setTimeout(() => {
         void fetchPendingMembers();
         closeModal();
@@ -129,6 +150,8 @@ const PendingMembersList: React.FC = () => {
       setCardNumber(tempCardNumber);
     }
   };
+  
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -293,6 +316,20 @@ const PendingMembersList: React.FC = () => {
                   placeholder="Potvrdi lozinku"
                   required
                 />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assignSuperuserRole"
+                  checked={assignSuperuserRole}
+                  onChange={(e) => setAssignSuperuserRole(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="assignSuperuserRole" className="text-sm font-medium text-gray-700 flex items-center">
+                  <UserCog className="h-4 w-4 mr-1 text-gray-500" />
+                  Dodijeli ulogu member_superuser
+                </label>
               </div>
               
               {assignmentMessage && (

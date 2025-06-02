@@ -2,7 +2,8 @@
 import express from 'express';
 import systemManagerController, {
   changePassword,
-  changeUsername
+  changeUsername,
+  refreshToken
 } from '../controllers/systemManager.controller.js';
 import { authMiddleware, roles, requireSystemManager } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
@@ -11,6 +12,7 @@ const router = express.Router();
 
 // Javne rute (bez autentikacije)
 router.post('/login', systemManagerController.login);
+router.post('/refresh-token', refreshToken);
 
 // Provjera postoji li system manager u sustavu (potrebno za inicijalno postavljanje)
 router.get('/exists', systemManagerController.checkSystemManagerExists);
@@ -48,6 +50,7 @@ router.delete('/member-permissions/:memberId', systemManagerController.removeMem
 // Rute za upravljanje članovima sa statusom 'pending'
 router.get('/pending-members', systemManagerController.getPendingMembers);
 router.post('/assign-password', systemManagerController.assignPasswordToMember);
+router.post('/assign-role', systemManagerController.assignRoleToMember);
 
 // Ruta za dohvat profila trenutnog managera
 router.get('/me', systemManagerController.getCurrentSystemManager);

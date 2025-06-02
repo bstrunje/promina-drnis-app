@@ -1,24 +1,25 @@
-// features/systemAdmin/components/dashboard/DashboardStats.tsx
+// features/systemManager/components/dashboard/DashboardStats.tsx
 import React from 'react';
 import { Users, Activity, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { SystemAdminDashboardStats } from '../../utils/systemAdminApi';
+import { SystemManagerDashboardStats } from '../../utils/systemManagerApi';
 import StatisticCard from './StatisticCard';
 
 // Komponenta za prikaz svih statističkih kartica na dashboardu
 interface DashboardStatsProps {
-  stats: SystemAdminDashboardStats;
+  stats: SystemManagerDashboardStats;
   statsLoading: boolean;
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => void;
 }
 
-const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) => {
+const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, setActiveTab }) => {
   const navigate = useNavigate();
 
   // Napomena: Ovaj tip navigacije uzrokuje preusmjeravanje na Login Page
-  // TODO: Prilagoditi navigaciju specifično za System Admin područje
+  // TODO: Prilagoditi navigaciju specifično za System Manager područje
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-      {/* Kartica članova */}
+      {/* Kartica članova - samo informativna */}
       <StatisticCard
         title="Članovi"
         icon={<Users className="h-6 w-6 text-blue-600" />}
@@ -30,7 +31,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) 
             ''}`
         }
         loading={statsLoading}
-        onClick={() => navigate("/members")}
+        // Uklonjen onClick handler da kartica bude samo informativna
       />
 
       {/* Kartica aktivnosti */}
@@ -50,7 +51,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading }) 
         value={stats?.pendingApprovals ?? 0}
         subtitle="Čeka dodjelu lozinke"
         loading={statsLoading}
-        onClick={() => navigate("/members?filter=pending")}
+        onClick={() => { void setActiveTab('register-members'); }}
       />
     </div>
   );

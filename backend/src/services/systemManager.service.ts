@@ -46,7 +46,7 @@ const systemManagerService = {
         return managerWithoutPassword;
     },
     
-    // Kreiranje JWT tokena za managera
+    // Kreiranje JWT access tokena za managera
     generateToken(manager: any): string {
         return jwt.sign(
             { 
@@ -54,7 +54,20 @@ const systemManagerService = {
                 type: 'SystemManager'  // Označava tip korisnika kao SystemManager
             },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1h' } // Kraće trajanje za access token
+        );
+    },
+    
+    // Kreiranje JWT refresh tokena za managera
+    generateRefreshToken(manager: any): string {
+        return jwt.sign(
+            { 
+                id: manager.id, 
+                type: 'SystemManager',
+                tokenType: 'refresh'
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' } // Duže trajanje za refresh token
         );
     },
     

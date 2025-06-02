@@ -1,6 +1,6 @@
-// features/systemAdmin/hooks/useDashboardStats.ts
+// features/systemManager/hooks/useDashboardStats.ts
 import { useState, useEffect, useCallback } from 'react';
-import { getSystemAdminDashboardStats, SystemAdminDashboardStats } from '../utils/systemAdminApi';
+import { getSystemManagerDashboardStats, SystemManagerDashboardStats } from '../utils/systemManagerApi';
 
 /**
  * Hook za dohvat i upravljanje statistikama dashboarda
@@ -8,7 +8,7 @@ import { getSystemAdminDashboardStats, SystemAdminDashboardStats } from '../util
  */
 export const useDashboardStats = (activeTab: string) => {
   // Osnovno stanje statistika
-  const [stats, setStats] = useState<SystemAdminDashboardStats>({
+  const [stats, setStats] = useState<SystemManagerDashboardStats>({
     totalMembers: 0,
     registeredMembers: 0,
     activeMembers: 0,
@@ -26,7 +26,7 @@ export const useDashboardStats = (activeTab: string) => {
   const fetchDashboardStats = useCallback(async () => {
     try {
       setStatsLoading(true);
-      const data = await getSystemAdminDashboardStats();
+      const data = await getSystemManagerDashboardStats();
       setStats(data);
       setStatsError(null);
     } catch (err) {

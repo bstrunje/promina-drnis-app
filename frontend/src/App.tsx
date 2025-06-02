@@ -16,11 +16,10 @@ import AuditLogsPage from './features/audit/AuditLogsPage';
 import MemberDetailsPage from './features/members/MemberDetailsPage';
 import MessageList from './features/messages/MessageList';
 import Settings from "./features/settings/Settings";
-
 import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
-import SystemAdminRoutes from './features/systemAdmin/SystemAdminRoutes';
 import { TimeZoneProvider } from './context/TimeZoneContext';
+import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -66,8 +65,8 @@ function AppContent() {
     <div className="min-h-screen bg-gray-100">
       {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
       <Routes>
-        {/* System Admin rute - potpuno odvojene od postojećeg sustava autentikacije */}
-        <Route path="/system-admin/*" element={<SystemAdminRoutes />} />
+        {/* System Manager rute - potpuno odvojene od postojećeg sustava autentikacije */}
+        <Route path="/system-manager/*" element={<SystemManagerRoutes />} />
         
         <Route path="/" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />

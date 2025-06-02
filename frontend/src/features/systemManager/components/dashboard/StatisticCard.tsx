@@ -1,4 +1,4 @@
-// features/systemAdmin/components/dashboard/StatisticCard.tsx
+// features/systemManager/components/dashboard/StatisticCard.tsx
 import React from 'react';
 
 // Komponenta za prikaz pojedinačne kartice statistike na dashboardu

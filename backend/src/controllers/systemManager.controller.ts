@@ -2,6 +2,8 @@
 import { Request, Response } from 'express';
 import systemManagerService from '../services/systemManager.service.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
+import { JWT_SECRET } from '../config/jwt.config.js';
+import jwt from 'jsonwebtoken';
 // Koristimo any umjesto specifičnih tipova - privremeno rješenje
 // import { SystemManager, SystemManagerLoginData, CreateSystemManagerDto, UpdateMemberPermissionsDto } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
@@ -31,18 +33,18 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
-    const adminId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
+    const managerId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
     const { oldPassword, newPassword } = req.body;
 
-    const admin = await prisma.systemManager.findUnique({ where: { id: adminId } });
-    if (!admin) return res.status(404).json({ message: 'System Manager not found' });
+    const manager = await prisma.systemManager.findUnique({ where: { id: managerId } });
+    if (!manager) return res.status(404).json({ message: 'System Manager not found' });
 
-    const isMatch = await bcrypt.compare(oldPassword, admin.password_hash);
+    const isMatch = await bcrypt.compare(oldPassword, manager.password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Pogrešna stara lozinka' });
 
     const newHash = await bcrypt.hash(newPassword, 10);
     await prisma.systemManager.update({
-        where: { id: adminId },
+        where: { id: managerId },
         data: { password_hash: newHash },
     });
 
@@ -54,31 +56,121 @@ export const changeUsername = async (req: Request, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
-    const adminId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
+    const managerId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
     const { username } = req.body;
 
     // Provjera je li username već zauzet
     const existingAdmin = await prisma.systemManager.findUnique({ where: { username } });
-    if (existingAdmin && existingAdmin.id !== adminId) {
+    if (existingAdmin && existingAdmin.id !== managerId) {
         return res.status(400).json({ message: 'Korisničko ime već postoji' });
     }
 
     // Ažuriranje korisničkog imena
     await prisma.systemManager.update({
-        where: { id: adminId },
+        where: { id: managerId },
         data: { username },
     });
 
     // Zabilježi promjenu u audit log
     await auditService.logAction(
         'update', // action_type
-        adminId,  // performed_by
+        managerId,  // performed_by
         `System manager promijenio korisničko ime u: ${username}`, // action_details
         req,      // req objekt
         'success' // status
     );
 
     return res.json({ message: 'Korisničko ime uspješno promijenjeno', username });
+};
+
+/**
+ * Funkcija za obnavljanje tokena System Managera
+ */
+export const refreshToken = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Dohvat refresh tokena iz kolačića
+        const refreshToken = req.cookies.systemManagerRefreshToken;
+        
+        if (!refreshToken) {
+            res.status(401).json({ message: 'Refresh token nije pronađen' });
+            return;
+        }
+        
+        // Verifikacija refresh tokena
+        try {
+            const decoded = jwt.verify(refreshToken, JWT_SECRET) as { id: number; type: string; tokenType: string };
+            
+            // Provjera je li token zaista refresh token za System Managera
+            if (decoded.type !== 'SystemManager' || decoded.tokenType !== 'refresh') {
+                res.status(403).json({ message: 'Neispravan tip tokena' });
+                return;
+            }
+            
+            // Dohvat managera iz baze
+            const manager = await systemManagerRepository.findById(decoded.id);
+            
+            if (!manager) {
+                res.status(404).json({ message: 'System Manager nije pronađen' });
+                return;
+            }
+            
+            // Generiranje novog access tokena i refresh tokena
+            const token = systemManagerService.generateToken(manager);
+            const newRefreshToken = systemManagerService.generateRefreshToken(manager);
+            
+            // Ažuriranje vremena zadnje prijave
+            await systemManagerRepository.updateLastLogin(manager.id);
+            
+            // Bilježenje uspješne obnove tokena u audit log
+            await auditService.logAction(
+                'token_refresh',
+                manager.id,
+                `System manager ${manager.username} je obnovio token`,
+                req,
+                'success'
+            );
+            
+            // Postavljanje novog refresh tokena kao HTTP-only kolačića
+            const isProduction = process.env.NODE_ENV === 'production';
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+            const secure = isProduction || protocol === 'https';
+            
+            // Dinamičko određivanje sameSite postavke
+            let sameSite: 'strict' | 'lax' | 'none' | undefined = 'strict';
+            if (isProduction) {
+                sameSite = secure ? 'none' : 'strict';
+            } else {
+                sameSite = 'lax'; // Najbolje za razvoj
+            }
+            
+            res.cookie('systemManagerRefreshToken', newRefreshToken, {
+                httpOnly: true,
+                secure: secure,
+                sameSite: sameSite,
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+                path: '/'
+            });
+            
+            // Vraćanje novog tokena
+            res.json({
+                token,
+                manager: {
+                    id: manager.id,
+                    username: manager.username,
+                    email: manager.email,
+                    display_name: manager.display_name,
+                    role: 'SystemManager',
+                    last_login: manager.last_login
+                }
+            });
+        } catch (error) {
+            // Ako je token istekao ili je neispravan
+            res.status(403).json({ message: 'Neispravan ili istekao refresh token' });
+        }
+    } catch (error) {
+        console.error('Greška prilikom obnavljanja tokena:', error);
+        res.status(500).json({ message: 'Interna greška servera' });
+    }
 };
 
 const systemManagerController = {
@@ -97,35 +189,57 @@ const systemManagerController = {
             }
 
             // Autentikacija korisnika
-            const admin = await systemManagerService.authenticate(username, password);
+            const manager = await systemManagerService.authenticate(username, password);
             
-            if (!admin) {
+            if (!manager) {
                 res.status(401).json({ message: 'Neispravno korisničko ime ili lozinka' });
                 return;
             }
 
-            // Generiranje JWT tokena
-            const token = systemManagerService.generateToken(admin);
+            // Generiranje JWT tokena i refresh tokena
+            const token = systemManagerService.generateToken(manager);
+            const refreshToken = systemManagerService.generateRefreshToken(manager);
 
             // Zabilježi prijavu u audit log
             await auditService.logAction(
                 'login', // action_type
-                admin.id, // performed_by
+                manager.id, // performed_by
                 `System manager ${username} se prijavio u sustav`, // action_details
                 req,      // req objekt
                 'success' // status
             );
 
-            // Vrati token i osnovne podatke o korisniku
+            // Postavljanje refresh tokena kao HTTP-only kolačića
+            const isProduction = process.env.NODE_ENV === 'production';
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+            const secure = isProduction || protocol === 'https';
+            
+            // Dinamičko određivanje sameSite postavke
+            let sameSite: 'strict' | 'lax' | 'none' | undefined = 'strict';
+            if (isProduction) {
+                sameSite = secure ? 'none' : 'strict';
+            } else {
+                sameSite = 'lax'; // Najbolje za razvoj
+            }
+            
+            res.cookie('systemManagerRefreshToken', refreshToken, {
+                httpOnly: true,
+                secure: secure,
+                sameSite: sameSite,
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+                path: '/'
+            });
+
+            // Vrati token i osnovne podatke o manageru
             res.json({
                 token,
-                user: {
-                    id: admin.id,
-                    username: admin.username,
-                    email: admin.email,
-                    display_name: admin.display_name,
+                manager: {
+                    id: manager.id,
+                    username: manager.username,
+                    email: manager.email,
+                    display_name: manager.display_name,
                     role: 'SystemManager',
-                    last_login: admin.last_login
+                    last_login: manager.last_login
                 }
             });
         } catch (error) {
@@ -208,16 +322,16 @@ const systemManagerController = {
         res: Response
     ): Promise<void> {
         try {
-            const admins = await systemManagerService.getAllSystemManagers();
+            const managers = await systemManagerService.getAllSystemManagers();
             
             // Vrati listu system managera bez osjetljivih podataka
-            res.json(admins.map(admin => ({
-                id: admin.id,
-                username: admin.username,
-                email: admin.email,
-                display_name: admin.display_name,
-                last_login: admin.last_login,
-                created_at: admin.created_at
+            res.json(managers.map(manager => ({
+                id: manager.id,
+                username: manager.username,
+                email: manager.email,
+                display_name: manager.display_name,
+                last_login: manager.last_login,
+                created_at: manager.created_at
             })));
         } catch (error) {
             console.error('Error fetching system managers:', error);
@@ -309,7 +423,7 @@ const systemManagerController = {
         }
     },
 
-    // Dohvat svih članova s admin ovlastima
+    // Dohvat svih članova s manager ovlastima
     async getMembersWithPermissions(
         req: Request,
         res: Response
@@ -677,7 +791,7 @@ const systemManagerController = {
                 return;
             }
 
-            const admin = await prisma.systemManager.findUnique({
+            const manager = await prisma.systemManager.findUnique({
                 where: { id: req.user.id },
                 select: {
                     id: true,
@@ -690,12 +804,12 @@ const systemManagerController = {
                 }
             });
 
-            if (!admin) {
+            if (!manager) {
                 res.status(404).json({ message: 'System manager not found' });
                 return;
             }
 
-            res.json(admin);
+            res.json(manager);
         } catch (error) {
             console.error('Error fetching current system manager:', error);
             res.status(500).json({ message: 'Došlo je do greške prilikom dohvata profila system managera' });
@@ -737,10 +851,56 @@ const systemManagerController = {
     ): Promise<void> {
         try {
             // Implementacija vraćanja iz sigurnosne kopije
-            res.json({ message: 'Not implemented yet' });
+            res.status(501).json({ message: 'Not implemented yet' });
         } catch (error) {
             console.error('Error restoring system from backup:', error);
             res.status(500).json({ message: 'Došlo je do greške prilikom vraćanja sustava iz sigurnosne kopije' });
+        }
+    },
+
+    // Dodjeljivanje uloge članu (member_superuser)
+    async assignRoleToMember(
+        req: Request<{}, {}, { memberId: number; role: 'member' | 'member_administrator' | 'member_superuser' }>,
+        res: Response
+    ): Promise<void> {
+        try {
+            if (!req.user) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+
+            const { memberId, role } = req.body;
+            
+            // Provjera postoji li član
+            const member = await prisma.member.findUnique({
+                where: { member_id: memberId }
+            });
+            
+            if (!member) {
+                res.status(404).json({ message: 'Član nije pronađen' });
+                return;
+            }
+            
+            // Ažuriranje uloge člana
+            await prisma.member.update({
+                where: { member_id: memberId },
+                data: { role }
+            });
+            
+            // Zabilježi promjenu u audit log
+            await auditService.logAction(
+                'update',
+                req.user.id,
+                `System manager dodijelio ulogu ${role} članu ID: ${memberId}`,
+                req,
+                'success',
+                memberId
+            );
+            
+            res.status(200).json({ message: `Uloga ${role} uspješno dodijeljena članu` });
+        } catch (error) {
+            console.error('Error assigning role to member:', error);
+            res.status(500).json({ message: 'Došlo je do greške prilikom dodjeljivanja uloge članu' });
         }
     }
 };

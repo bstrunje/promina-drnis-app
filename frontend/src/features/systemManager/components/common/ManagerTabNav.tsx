@@ -1,14 +1,14 @@
-// features/systemAdmin/components/common/AdminTabNav.tsx
+// features/systemManager/components/common/ManagerTabNav.tsx
 import React from 'react';
 import { Activity, Users, Settings, UserPlus, FileText } from 'lucide-react';
 
-// Komponenta za navigacijske tabove u System Admin panelu
-interface AdminTabNavProps {
+// Komponenta za navigacijske tabove u System Manager panelu
+interface ManagerTabNavProps {
   activeTab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs';
   setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => void;
 }
 
-const AdminTabNav: React.FC<AdminTabNavProps> = ({ activeTab, setActiveTab }) => {
+const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="flex border-b mb-4">
       <button
@@ -50,8 +50,9 @@ const AdminTabNav: React.FC<AdminTabNavProps> = ({ activeTab, setActiveTab }) =>
           <span>Revizijski zapisi</span>
         </div>
       </button>
+
     </div>
   );
 };
 
-export default AdminTabNav;
+export default ManagerTabNav;

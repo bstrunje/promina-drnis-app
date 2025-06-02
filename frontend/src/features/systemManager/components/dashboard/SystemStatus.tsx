@@ -1,12 +1,12 @@
-// features/systemAdmin/components/dashboard/SystemStatus.tsx
+// features/systemManager/components/dashboard/SystemStatus.tsx
 import React, { useState } from 'react';
-import { SystemAdminDashboardStats } from '../../utils/systemAdminApi';
+import { SystemManagerDashboardStats } from '../../utils/systemManagerApi';
 import { formatDate } from "../../../../utils/dateUtils";
 import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle, HardDrive, Cpu } from 'lucide-react';
 
 // Komponenta za prikaz statusa sustava na dashboardu
 interface SystemStatusProps {
-  stats: SystemAdminDashboardStats;
+  stats: SystemManagerDashboardStats;
   statsLoading: boolean;
 }
 

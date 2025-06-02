@@ -33,15 +33,15 @@ const systemManagerRepository = {
     },
     
     // Kreiranje novog managera
-    async create(adminData: any): Promise<any> {
-        const passwordHash = await hashPassword(adminData.password);
+    async create(managerData: any): Promise<any> {
+        const passwordHash = await hashPassword(managerData.password);
         
         return prisma.systemManager.create({
             data: {
-                username: adminData.username,
-                email: adminData.email,
+                username: managerData.username,
+                email: managerData.email,
                 password_hash: passwordHash,
-                display_name: adminData.display_name
+                display_name: managerData.display_name
             }
         });
     },

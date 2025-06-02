@@ -378,43 +378,46 @@ const authController = {
       }
 
       // 2. Provjera statusa člana - dohvaćamo iz tablice jer member možda nema property status
-      const statusQuery = await db.query('SELECT status, registration_completed FROM members WHERE member_id = $1', [member.member_id]);
+      const statusQuery = await db.query('SELECT status, registration_completed, role FROM members WHERE member_id = $1', [member.member_id]);
       const memberStatus = statusQuery.rows[0];
       
-      if (memberStatus.status !== 'registered' || !memberStatus.registration_completed) {
+      // Ako član nije superuser, provjeri je li potpuno registriran
+      if (memberStatus.role !== 'member_superuser' && (memberStatus.status !== 'registered' || !memberStatus.registration_completed)) {
         // Promijenjeno: logira se email
         console.warn(`Failed login: user "${sanitizedEmail}" is not fully registered (IP: ${userIP})`);
         res.status(401).json({ message: "Account setup incomplete. Please contact an administrator." });
         return;
       }
 
-      // 3. Dodatno provjeri je li članarina plaćena
-      const membershipQuery = await db.query(`
-        SELECT fee_payment_date, fee_payment_year
-        FROM membership_details
-        WHERE member_id = $1
-      `, [member.member_id]);
+      // 3. Ako član nije superuser, dodatno provjeri je li članarina plaćena
+      if (memberStatus.role !== 'member_superuser') {
+        const membershipQuery = await db.query(`
+          SELECT fee_payment_date, fee_payment_year
+          FROM membership_details
+          WHERE member_id = $1
+        `, [member.member_id]);
 
-      // Provjeri postoji li zapis o članstvu
-      if (membershipQuery.rowCount === 0) {
-        console.warn(`Failed login: user "${sanitizedEmail}" has no membership record (IP: ${userIP})`);
-        res.status(401).json({ 
-          message: "Membership information not found. Please contact an administrator."
-        });
-        return;
-      }
-      
-      // Dohvati detalje o članstvu
-      const membershipDetails = membershipQuery.rows[0];
-      const currentYear = getCurrentDate().getFullYear();
-      
-      // Provjeri jesu li plaćeni detalji za tekuću godinu
-      if (membershipDetails.fee_payment_year < currentYear) {
-        console.warn(`Failed login: user "${sanitizedEmail}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
-        res.status(401).json({ 
-          message: "Članstvo ti je isteklo. Za obnovu članstva kontaktiraj administratora."
-        });
-        return;
+        // Provjeri postoji li zapis o članstvu
+        if (membershipQuery.rowCount === 0) {
+          console.warn(`Failed login: user "${sanitizedEmail}" has no membership record (IP: ${userIP})`);
+          res.status(401).json({ 
+            message: "Membership information not found. Please contact an administrator."
+          });
+          return;
+        }
+        
+        // Dohvati detalje o članstvu
+        const membershipDetails = membershipQuery.rows[0];
+        const currentYear = getCurrentDate().getFullYear();
+        
+        // Provjeri jesu li plaćeni detalji za tekuću godinu
+        if (membershipDetails.fee_payment_year < currentYear) {
+          console.warn(`Failed login: user "${sanitizedEmail}" has expired membership (paid for ${membershipDetails.fee_payment_year}, current year ${currentYear}) (IP: ${userIP})`);
+          res.status(401).json({ 
+            message: "Članstvo ti je isteklo. Za obnovu članstva kontaktiraj administratora."
+          });
+          return;
+        }
       }
 
       // 4. Usporedimo lozinku s hashom

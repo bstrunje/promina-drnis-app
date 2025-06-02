@@ -80,7 +80,7 @@ const authenticateToken = async (
                 m.first_name || ' ' || m.last_name as full_name,
                 m.email,
                 CASE 
-                    WHEN m.role = 'member_manager' THEN 'member_manager'
+                    WHEN m.role = 'member_administrator' THEN 'member_administrator'
                     WHEN m.role = 'member_superuser' THEN 'member_superuser'
                     ELSE 'member'
                 END as role_name,
@@ -135,7 +135,7 @@ const checkRole = (allowedRoles: string[]) => {
             }
 
             // Za admin, allow both admin and member actions
-            if (req.user.role_name === 'member_manager' && allowedRoles.includes('member_manager')) {
+            if (req.user.role_name === 'member_administrator' && allowedRoles.includes('member_administrator')) {
                 next();
                 return;
             }
@@ -251,8 +251,8 @@ const checkPermission = (permission: string) => {
 
 // Role-based middleware shortcuts
 const roles = {
-    requireAdmin: checkRole(['member_manager', 'member_superuser']),
-    requireMember: checkRole(['member', 'member_manager', 'member_superuser']),
+    requireAdmin: checkRole(['member_administrator', 'member_superuser']),
+    requireMember: checkRole(['member', 'member_administrator', 'member_superuser']),
     requireSuperUser,
     requireSystemManager
 };

@@ -1,19 +1,20 @@
-// features/systemAdmin/pages/settings/SystemAdminSettings.tsx
+// features/systemManager/pages/settings/SystemManagerSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { Shield, RefreshCw, Save } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
-import { useSystemAdmin } from '../../../../context/SystemAdminContext';
+import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useTimeZone } from '../../../../context/TimeZoneContext'; // Dodana linija
 import { SystemSettings } from '@shared/settings';
 import { getCurrentDate } from '../../../../utils/dateUtils';
-import systemAdminApi, { updateSystemSettings } from '../../utils/systemAdminApi';
+import systemManagerApi, { updateSystemSettings } from '../../utils/systemManagerApi';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  showFixedSuccess?: boolean; // Dodajemo showFixedSuccess kao opcionalni prop
 }
 
 export function ChangePasswordForm() {
@@ -22,24 +23,24 @@ export function ChangePasswordForm() {
   const [confirm, setConfirm] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [message, setMessage] = useState('');
-  const { admin, refreshAdmin } = useSystemAdmin();
+  const { manager, refreshManager } = useSystemManager();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage('');
     let usernameChanged = false;
     try {
-      if (newUsername && newUsername !== admin?.username) {
-        await systemAdminApi.patch('/system-admin/change-username', { newUsername });
+      if (newUsername && newUsername !== manager?.username) {
+        await systemManagerApi.patch('/system-manager/change-username', { newUsername });
         usernameChanged = true;
-        await refreshAdmin(); // automatski osvježi username u UI
+        await refreshManager(); // automatski osvježi username u UI
       }
       if (oldPassword && newPassword) {
         if (newPassword !== confirm) {
           setMessage('Nova lozinka i potvrda nisu iste.');
           return;
         }
-        await systemAdminApi.patch('/system-admin/change-password', { oldPassword, newPassword });
+        await systemManagerApi.patch('/system-manager/change-password', { oldPassword, newPassword });
       }
       setMessage(
         (usernameChanged ? 'Username uspješno promijenjen. ' : '') +
@@ -76,7 +77,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         value={newUsername}
         onChange={e => setNewUsername(e.target.value)}
-        placeholder={admin?.username ?? 'Trenutni username'}
+        placeholder={manager?.username ?? 'Trenutni username'}
       />
       <label htmlFor="oldPassword" className="font-medium">Stara lozinka</label>
       {/* Skriveno polje za username radi accessibility i browser autofill */}
@@ -84,7 +85,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         type="text"
         name="username"
         autoComplete="username"
-        value={admin?.username ?? ''}
+        value={manager?.username ?? ''}
         style={{ display: 'none' }}
         readOnly
         tabIndex={-1}
@@ -135,7 +136,8 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   settings,
   isLoading,
   onChange,
-  onSubmit
+  onSubmit,
+  showFixedSuccess
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -151,7 +153,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             name="cardNumberLength"
             min="1"
             max="10"
-            value={settings.cardNumberLength}
+            value={settings.cardNumberLength ?? 5}
             onChange={onChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
@@ -179,7 +181,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 placeholder="Dan"
                 min="1"
                 max="31"
-                value={settings.renewalStartDay}
+                value={settings.renewalStartDay ?? 1}
                 onChange={onChange}
               />
             </div>
@@ -193,7 +195,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               <select
                 name="renewalStartMonth"
                 className="mt-1 block w-36 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                value={settings.renewalStartMonth}
+                value={settings.renewalStartMonth ?? 11}
                 onChange={onChange}
               >
                 <option value={11}>Prosinac</option>
@@ -224,7 +226,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
               <select
                 name="timeZone"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                value={settings.timeZone ?? 'Europe/Zagreb'} // prefer-nullish-coalescing
+                value={settings.timeZone ?? 'Europe/Zagreb'} // Koristi nullish coalescing operator
                 onChange={onChange}
               >
                 <option value="Europe/Zagreb">Zagreb (UTC+1/UTC+2)</option>
@@ -280,7 +282,16 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
         </div>
       </div>
 
-      <div className="flex justify-end space-x-4">
+      <div className="flex justify-end space-x-4 items-center">
+        {/* Vizualni indikator uspjeha pored gumba */}
+        {showFixedSuccess === true && (
+          <div className="text-green-600 font-medium animate-pulse mr-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Spremljeno!
+          </div>
+        )}
         <button
           type="submit"
           disabled={isLoading}
@@ -303,8 +314,8 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   );
 };
 
-const SystemAdminSettings: React.FC = () => {
-  const { admin } = useSystemAdmin();
+const SystemManagerSettings: React.FC = () => {
+  const { manager } = useSystemManager();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
@@ -319,14 +330,16 @@ const SystemAdminSettings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Stanje za fiksnu poruku o uspjehu
+  const [showFixedSuccess, setShowFixedSuccess] = useState<boolean>(false);
 
   // Učitaj postavke pri inicijalizaciji komponente
   useEffect(() => {
     const loadSettings = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('systemAdminToken');
-        const response = await axios.get(`${API_BASE_URL}/system-admin/settings`, {
+        const token = localStorage.getItem('systemManagerToken');
+        const response = await axios.get(`${API_BASE_URL}/system-manager/settings`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -411,17 +424,24 @@ const SystemAdminSettings: React.FC = () => {
     setSuccessMessage(null);
 
     try {
+      // Dodajemo console.log za debugging
+      console.log('Podaci koji se šalju na backend:', settings);
+      
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
       const updatedSettings = await updateSystemSettings(settings);
       setSettings(updatedSettings);
       setSuccessMessage("Postavke su uspješno ažurirane!");
       
+      // Postavi fiksnu poruku o uspjehu
+      setShowFixedSuccess(true);
+      
       // Osvježi vremensku zonu u kontekstu
       void refreshTimeZone(); // void zbog lint pravila
       
-      // Automatski sakrij poruku uspjeha nakon 8 sekundi
+      // Automatski sakrij poruke uspjeha nakon 8 sekundi
       void setTimeout(() => {
         setSuccessMessage(null);
+        setShowFixedSuccess(false);
       }, 8000); // void zbog lint pravila
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Dogodila se nepoznata greška';
@@ -432,16 +452,35 @@ const SystemAdminSettings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Fiksna poruka o uspjehu na dnu ekrana */}
+      {showFixedSuccess && (
+        <div 
+          className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-600 text-white p-4 rounded-md shadow-lg z-50 flex items-center transition-all duration-500 ease-in-out"
+          style={{
+            maxWidth: '90%',
+            width: '400px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            animation: 'bounce 1s'
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="font-medium text-lg">Postavke su uspješno ažurirane!</span>
+        </div>
+      )}
+      
+
+      
       {/* Header */}
-      <header className="bg-white shadow-md p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Shield className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-800">System Admin Panel</h1>
-          </div>
-          <div className="text-sm text-gray-600">
-            Prijavljeni kao: <span className="font-medium">{admin?.display_name}</span>
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <h1 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Shield className="h-5 w-5 mr-2 text-indigo-600" />
+              System Manager - Postavke
+            </h1>
           </div>
         </div>
       </header>
@@ -470,6 +509,7 @@ const SystemAdminSettings: React.FC = () => {
           isLoading={isLoading}
           onChange={handleChange}
           onSubmit={e => void handleSubmit(e)} // void zbog lint pravila
+          showFixedSuccess={showFixedSuccess}
         />
         <section className="mt-10">
           <h2 className="text-lg font-semibold mb-2">Promjena lozinke</h2>
@@ -480,4 +520,4 @@ const SystemAdminSettings: React.FC = () => {
   );
 };
 
-export default SystemAdminSettings;
+export default SystemManagerSettings;

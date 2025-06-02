@@ -132,8 +132,8 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 </Link>
               </>
             )}
-            {/* System Admin je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
-            {/* Pristup System Admin sučelju moguć je samo direktnim unosom URL-a /system-admin/login */}
+            {/* System Manager je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
+            {/* Pristup System Admin sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
                 {user.first_name} {user.last_name}

@@ -1,11 +1,11 @@
-// features/systemAdmin/pages/login/SystemAdminLoginPage.tsx
+// features/systemManager/pages/login/SystemManagerLoginPage.tsx
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
-import { useSystemAdmin } from '../../../../context/SystemAdminContext';
+import { useSystemManager } from '../../../../context/SystemManagerContext';
 import logoImage from '../../../../assets/images/grbPD_bez_natpisa_pozadina.png';
 
-const SystemAdminLoginPage: React.FC = () => {
-  const { login } = useSystemAdmin(); // 'loading' nije korišten
+const SystemManagerLoginPage: React.FC = () => {
+  const { login } = useSystemManager(); // 'loading' nije korišten
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,11 +44,11 @@ const SystemAdminLoginPage: React.FC = () => {
             <img src={logoImage} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 text-center">
-            System Admin Pristup
+            System Manager Pristup
           </h1>
           <div className="flex items-center mt-2">
             <Shield className="w-5 h-5 text-blue-600 mr-1" />
-            <p className="text-sm text-gray-600">Ograničeni pristup - samo za administratore sustava</p>
+            <p className="text-sm text-gray-600">Ograničeni pristup - samo za managere sustava</p>
           </div>
         </div>
 
@@ -126,7 +126,7 @@ const SystemAdminLoginPage: React.FC = () => {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Ova stranica služi samo za prijavu administratora sustava.
+              Ova stranica služi samo za prijavu managera sustava.
               <br />Za člansku prijavu, molimo posjetite{' '}
               <a href="/login" className="text-blue-600 hover:underline">standardnu prijavu</a>.
             </p>
@@ -137,4 +137,4 @@ const SystemAdminLoginPage: React.FC = () => {
   );
 };
 
-export default SystemAdminLoginPage;
+export default SystemManagerLoginPage;

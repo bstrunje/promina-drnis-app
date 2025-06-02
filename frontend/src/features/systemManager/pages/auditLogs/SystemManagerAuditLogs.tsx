@@ -1,4 +1,4 @@
-// features/systemAdmin/pages/auditLogs/SystemAdminAuditLogs.tsx
+// features/systemManager/pages/auditLogs/SystemManagerAuditLogs.tsx
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
@@ -9,8 +9,8 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { useTimeZone } from '../../../../context/TimeZoneContext';
 
-const SystemAdminAuditLogs: React.FC = () => {
-  // const { admin } = useSystemAdmin(); // Uklonjeno jer nije korišteno
+const SystemManagerAuditLogs: React.FC = () => {
+  // const { manager } = useSystemManager(); // Uklonjeno jer nije korišteno
   const { toast } = useToast();
   const { timeZone } = useTimeZone();
 
@@ -94,17 +94,17 @@ const SystemAdminAuditLogs: React.FC = () => {
     try {
       setLoading(true);
       // Dohvat tokena iz localStorage-a
-      const token = localStorage.getItem('systemAdminToken');
+      const token = localStorage.getItem('systemManagerToken');
       if (!token) {
         toast({
           title: "Greška",
-          description: "Niste prijavljeni kao System Administrator.",
+          description: "Niste prijavljeni kao System Manageristrator.",
           variant: "destructive"
         });
         setLoading(false);
         return;
       }
-      const response = await axios.get(`${API_BASE_URL}/system-admin/audit-logs`, {
+      const response = await axios.get(`${API_BASE_URL}/system-manager/audit-logs`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -220,7 +220,7 @@ const SystemAdminAuditLogs: React.FC = () => {
                 <option value="CREATE">Kreiranje</option>
                 <option value="DELETE">Brisanje</option>
                 <option value="SYSTEM">Sistemska akcija</option>
-                <option value="SYSTEM_ADMIN">System Admin akcija</option>
+                <option value="SYSTEM_ADMIN">System Manager akcija</option>
               </select>
             </div>
             <div>
@@ -389,4 +389,4 @@ const SystemAdminAuditLogs: React.FC = () => {
   );
 };
 
-export default SystemAdminAuditLogs;
+export default SystemManagerAuditLogs;

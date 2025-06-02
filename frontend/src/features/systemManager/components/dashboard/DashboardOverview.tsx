@@ -1,24 +1,26 @@
-// features/systemAdmin/components/dashboard/DashboardOverview.tsx
+// features/systemManager/components/dashboard/DashboardOverview.tsx
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
-import { SystemAdminDashboardStats } from '../../utils/systemAdminApi';
+import { SystemManagerDashboardStats } from '../../utils/systemManagerApi';
 import DashboardStats from './DashboardStats';
 import QuickLinks from './QuickLinks';
 import SystemStatus from './SystemStatus';
 
 // Komponenta za prikaz pregleda sustava (dashboard)
 interface DashboardOverviewProps {
-  stats: SystemAdminDashboardStats;
+  stats: SystemManagerDashboardStats;
   statsLoading: boolean;
   statsError: string | null;
   refreshDashboardStats: () => Promise<void>;
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => void;
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   stats,
   statsLoading,
   statsError,
-  refreshDashboardStats
+  refreshDashboardStats,
+  setActiveTab
 }) => {
   return (
     <div>
@@ -42,7 +44,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       )}
 
       {/* Statistike članova, aktivnosti i registracija */}
-      <DashboardStats stats={stats} statsLoading={statsLoading} />
+      <DashboardStats stats={stats} statsLoading={statsLoading} setActiveTab={setActiveTab} />
       
       {/* Grid za brze prečace i status sustava */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
