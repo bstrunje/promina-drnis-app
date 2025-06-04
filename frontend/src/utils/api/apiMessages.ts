@@ -29,12 +29,13 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
       content: msg.message_text,
       sender_id: String(msg.sender_id),
       sender_name: msg.sender_name || '',
-      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system',
+      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
       recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all',
+      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
       timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
       read: msg.status === 'read' || !!msg.read_at,
-      priority: 'normal'
+      priority: msg.priority || 'normal',
+      read_by: msg.read_by || [] // Dodajemo read_by ako postoji
     }));
     
     return transformedData;
@@ -52,8 +53,22 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
  */
 export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
   try {
-    const response: AxiosResponse<ApiAdminMessage[]> = await api.get('/messages/sent');
-    return response.data;
+    const response = await api.get('/messages/sent');
+    // Transformiraj poruke iz backend formata u ApiAdminMessage format
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
+      id: String(msg.message_id),
+      content: msg.message_text,
+      sender_id: String(msg.sender_id),
+      sender_name: msg.sender_name || '',
+      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+      recipient_id: msg.recipient_id ? String(msg.recipient_id) : (msg.recipient_type === 'all' ? 'all' : ''),
+      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
+      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+      read: msg.status === 'read' || !!msg.read_at, // Pretpostavka za read status
+      read_by: msg.read_by || [], // Dodajemo read_by ako postoji
+      priority: msg.priority || 'normal'
+    }));
+    return transformedData;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -69,8 +84,22 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
  */
 export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessage[]> => {
   try {
-    const response: AxiosResponse<ApiAdminMessage[]> = await api.get(`/messages/member/${memberId}`);
-    return response.data;
+    const response = await api.get(`/members/${memberId}/messages`);
+    // Transformiraj poruke iz backend formata u ApiAdminMessage format
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
+      id: String(msg.message_id),
+      content: msg.message_text,
+      sender_id: String(msg.sender_id),
+      sender_name: msg.sender_name || '',
+      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+      recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
+      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all',
+      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+      read: msg.status === 'read' || !!msg.read_at, // Pretpostavka za read status
+      read_by: msg.read_by || [], // Dodajemo read_by ako postoji
+      priority: msg.priority || 'normal'
+    }));
+    return transformedData;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -83,25 +112,41 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
  * Dohvaćanje generičkih poruka
  * @returns Lista generičkih poruka
  */
+interface GenericMessagesApiResponse {
+  success: boolean;
+  data: ApiGenericMessage[];
+  message?: string;
+}
+
 export const getGenericMessages = async (): Promise<ApiGenericMessage[]> => {
   try {
-    const response: AxiosResponse<ApiGenericMessage[]> = await api.get('/messages/generic');
+    const response: AxiosResponse<GenericMessagesApiResponse> = await api.get('/generic-messages');
     
-    // Sortiranje poruka po datumu (najnovije prve)
-    const sortedMessages = [...response.data].sort((a, b) => {
-      const dateA = parseDate(a.created_at || '') || getCurrentDate();
-      const dateB = parseDate(b.created_at || '') || getCurrentDate();
-      return dateB.getTime() - dateA.getTime(); // Novije prvo
-    });
-    
-    return sortedMessages;
+    // Provjera uspješnosti odgovora i postojanja podataka
+    if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      const messagesArray = response.data.data;
+      // Sortiranje poruka po datumu (najnovije prve)
+      const sortedMessages = [...messagesArray].sort((a, b) => {
+        const dateA = parseDate(a.created_at || '') || new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
+        const dateB = parseDate(b.created_at || '') || new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
+        return dateB.getTime() - dateA.getTime(); // Novije prvo
+      });
+      return sortedMessages;
+    } else {
+      console.error('Failed to fetch generic messages or unexpected format:', response.data?.message || response.data);
+      return []; // Vraćamo prazno polje ako odgovor nije uspješan ili format nije ispravan
+    }
   } catch (error) {
+    // Postojeća error handling logika koja re-throwa error
+    // To će biti uhvaćeno od strane pozivatelja (MemberMessageList.tsx)
     if (error instanceof Error) {
+      console.error('Error in getGenericMessages:', error.message);
       throw error;
     }
     throw new Error('Failed to get generic messages');
   }
 };
+
 
 /**
  * Slanje poruke članu
@@ -128,9 +173,9 @@ export const sendMemberMessage = async (memberId: number, messageText: string): 
  */
 export const sendAdminMessageToMember = async (memberId: number, messageText: string): Promise<void> => {
   try {
-    await api.post('/messages/member_administrator/to-member', {
+    await api.post(`/messages/member/${memberId}`, {
       recipient_id: memberId,
-      content: messageText
+      messageText: messageText
     });
   } catch (error) {
     if (error instanceof Error) {

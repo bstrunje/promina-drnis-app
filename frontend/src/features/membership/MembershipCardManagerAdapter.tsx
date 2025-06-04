@@ -1,6 +1,7 @@
 import React from "react";
 import { Member } from "@shared/member";
 import MembershipCardManagerModular from "./components/MembershipCardManagerModular";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * Adapter za MembershipCardManager komponentu koji koristi modularnu arhitekturu
@@ -28,11 +29,22 @@ const MembershipCardManagerAdapter: React.FC<MembershipCardManagerAdapterProps> 
   isFeeCurrent = true,
   hideTitle = false,
 }) => {
+  // Dohvaćamo korisničku ulogu iz AuthContext-a ako nije eksplicitno proslijeđena
+  const auth = useAuth();
+  
+  // Koristimo userRole iz propsa ako je dostupan, inače koristimo ulogu iz AuthContext-a
+  // Ovo je konačno rješenje koje osigurava da userRole nikad nije undefined
+  const effectiveUserRole = userRole || (auth.user ? auth.user.role : null) || 'member_administrator';
+  
+  // Dijagnostika
+  console.log("MembershipCardManagerAdapter effectiveUserRole:", effectiveUserRole, 
+    "(iz propsa:", userRole, ", iz AuthContext:", auth.user ? auth.user.role : null, ")");
+
   return (
     <MembershipCardManagerModular
       member={member}
       onUpdate={onUpdate}
-      userRole={userRole}
+      userRole={effectiveUserRole}
       isFeeCurrent={isFeeCurrent}
       hideTitle={hideTitle}
     />

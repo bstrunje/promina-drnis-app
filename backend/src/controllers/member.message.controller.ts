@@ -197,27 +197,63 @@ const messageController = {
     async markAsRead(req: Request, res: Response): Promise<void> {
         try {
             const messageId = parseInt(req.params.messageId);
-            await messageService.markMessageAsRead(messageId);
-            
-            if (req.user?.id) {
-                await auditService.logAction(
-                    'MARK_MESSAGE_READ',
-                    req.user.id,
-                    `Message ${messageId} marked as read`,
-                    req,
-                    'success'
-                );
+            const userId = req.user?.id;
+
+            if (!userId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
             }
 
-            res.json({ message: 'Message marked as read' });
+            const message = await messageService.getMessageById(messageId);
+
+            if (!message) {
+                res.status(404).json({ message: 'Message not found' });
+                return;
+            }
+
+            // Provjera da li je korisnik primatelj poruke (za direktne poruke)
+            // Poruke tipa 'all' ili 'group' trenutno nemaju individualno praćenje pročitanosti po korisniku,
+            // pa će ih svatko tko ima pristup moći označiti kao pročitane (što će ih označiti za sve).
+            // Ovo je poznato ograničenje trenutne implementacije.
+            if (message.recipient_type === 'member' && message.recipient_id !== userId) {
+                await auditService.logAction(
+                    'MARK_MESSAGE_AS_READ_FORBIDDEN',
+                    userId,
+                    `User ${userId} attempted to mark message ${messageId} (recipient: ${message.recipient_id}, type: ${message.recipient_type}) as read, but is not the direct recipient.`,
+                    req,
+                    'failure'
+                );
+                res.status(403).json({ message: 'Forbidden: You can only mark messages addressed directly to you as read.' });
+                return;
+            }
+
+            // Ako je provjera prošla (direktna poruka korisniku, ili poruka tipa 'all'/'group' gdje trenutno ne radimo finiju provjeru)
+            await messageService.markMessageAsRead(messageId); // Poziv s jednim argumentom
+            
+            await auditService.logAction(
+                'MARK_MESSAGE_AS_READ',
+                userId,
+                `Message ${messageId} marked as read by user ${userId}`,
+                req,
+                'success'
+            );
+            res.status(200).json({ message: 'Message marked as read' });
         } catch (error) {
             console.error('Error marking message as read:', error);
+            const actorIdForAudit = req.user?.id ?? null;
+            await auditService.logAction(
+                'MARK_MESSAGE_AS_READ_ERROR',
+                actorIdForAudit,
+                `Error marking message ${req.params.messageId} as read. Error: ${error instanceof Error ? error.message : String(error)}`,
+                req,
+                'failure'
+            );
             res.status(500).json({ 
                 message: error instanceof Error ? error.message : 'Failed to mark message as read' 
             });
         }
     },
-
+    
     async archiveMessage(req: Request, res: Response): Promise<void> {
         try {
             const messageId = parseInt(req.params.messageId);

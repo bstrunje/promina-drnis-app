@@ -14,5 +14,11 @@
     "build": "npm run build:shared && npm run build:frontend && npm run build:backend",
     "dev:frontend": "cd frontend && npm run dev",
     "start:backend": "cd backend && npm start"
+  },
+  "devDependencies": {
+    "prisma": "^6.9.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0"
   }
 }

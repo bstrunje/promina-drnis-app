@@ -48,8 +48,8 @@ export interface StampManagementSectionProps extends MembershipComponentProps {
   nextYearStampIssued: boolean;
   isIssuingStamp: boolean;
   isIssuingNextYearStamp: boolean;
-  onStampToggle: (newState: boolean) => Promise<void>;
-  onNextYearStampToggle: (newState: boolean) => Promise<void>;
+  onStampToggle: (newState: boolean, userRole?: string) => Promise<void>;
+  onNextYearStampToggle: (newState: boolean, userRole?: string) => Promise<void>;
 }
 
 export interface MembershipPeriodsSectionProps extends MembershipComponentProps {

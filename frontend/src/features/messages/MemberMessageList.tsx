@@ -19,7 +19,7 @@ interface MemberMessage {
   created_at: string;
   status: 'unread' | 'read' | 'archived';
   sender_id: number | null;
-  sender_type: 'member_administrator' | 'member';
+  sender_type: 'member_administrator' | 'member' | 'member_superuser';
   recipient_id: number | null;
   recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
 }
@@ -42,36 +42,16 @@ const MemberMessageList: React.FC = () => {
       
       // Filtriramo samo poruke koje je admin poslao članu
       const receivedMessages = data.filter(msg => 
-        msg.sender_type === 'member_administrator' && 
+        (msg.sender_type === 'member_administrator' || msg.sender_type === 'member_superuser') && 
         (String(msg.recipient_id) === String(user.member_id) || msg.recipient_type === 'all')
       );
       
       // Sortiramo poruke silazno - od najnovije prema najstarijoj (kao i kod admin prikaza)
-      const sortedMessages = [...receivedMessages].sort(
-        (a, b) => {
-          // Potpuna null provjera
-          const timestampA = a && typeof a === 'object' && a.timestamp ? a.timestamp : '';
-          const timestampB = b && typeof b === 'object' && b.timestamp ? b.timestamp : '';
-          
-          // Siguran pristup getTime
-          let dateA = 0;
-          let dateB = 0;
-          try {
-            const parsedDateA = parseDate(timestampA);
-            if (parsedDateA) {
-              dateA = parsedDateA.getTime();
-            }
-          } catch { /* ignoriramo greške */ }
-          
-          try {
-            const parsedDateB = parseDate(timestampB);
-            if (parsedDateB) {
-              dateB = parsedDateB.getTime();
-            }
-          } catch { /* ignoriramo greške */ }
-          return dateB - dateA;
-        }
-      );
+      const sortedMessages = [...receivedMessages].sort((a, b) => {
+        const dateA = parseDate(a?.timestamp || '')?.getTime() || 0;
+        const dateB = parseDate(b?.timestamp || '')?.getTime() || 0;
+        return dateB - dateA;
+      });
       
       // Konverzija u lokalni tip MemberMessage
       const convertedMessages = sortedMessages.map(msg => ({
@@ -147,9 +127,11 @@ const MemberMessageList: React.FC = () => {
 
   // Učitavanje poruka kad se komponenta montira
   useEffect(() => {
-    void fetchMemberMessages();
+    if (user?.member_id) {
+      void fetchMemberMessages();
+    }
     void fetchGenericMessages();
-  }, [user?.member_id, fetchMemberMessages, fetchGenericMessages]);
+  }, [user?.member_id]); // Ovisimo samo o user.member_id za ponovno dohvaćanje poruka člana
 
   if (loading || loadingGeneric) {
     return <div className="p-4">Učitavanje poruka...</div>;

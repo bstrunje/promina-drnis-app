@@ -48,7 +48,7 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
     nextYearInventoryStatus,
     handleStampToggle,
     handleNextYearStampToggle,
-  } = useStampManagement(member, onUpdate);
+  } = useStampManagement(member, onUpdate, userRole);
 
   return (
     <Card>

@@ -426,3 +426,33 @@ export function getSafeFormattedDate(
   
   return formatDate(parsedDate);
 }
+
+/**
+ * Čisti ISO string od dodatnih navodnika koji mogu biti dodani u formatiranju na backendu.
+ * 
+ * VAŽNO: Ovu funkciju OBAVEZNO koristiti prije formatiranja datuma koji dolaze s backenda,
+ * posebno za datume vezane uz članarine i druge datume koji se formatiraju u member.controller.ts.
+ * 
+ * Problem: Backend ponekad vraća datume u formatu "2025-04-01'T'02:00:00.000'Z'" s dodatnim
+ * navodnicima oko 'T' i 'Z' znakova, što uzrokuje probleme pri parsiranju u frontendu.
+ * 
+ * Primjer korištenja:
+ * ```typescript
+ * // Umjesto ovoga:
+ * formatDate(member.membership_details.fee_payment_date, 'dd.MM.yyyy.')
+ * 
+ * // Koristiti ovo:
+ * formatDate(cleanISODateString(member.membership_details.fee_payment_date), 'dd.MM.yyyy.')
+ * ```
+ * 
+ * @param isoString ISO string datuma koji može sadržavati dodatne navodnike
+ * @returns Očišćeni ISO string bez dodatnih navodnika
+ */
+export function cleanISODateString(isoString: string | null): string {
+  if (!isoString) return '';
+  
+  // Zamjenjuje sve dodatne navodnike oko T i Z znakova
+  return isoString
+    .replace(/\'T\'/g, "T")
+    .replace(/\'Z\'/g, "Z");
+}

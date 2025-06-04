@@ -41,6 +41,10 @@ const messageService = {
         return await memberMessageRepository.getMessagesForAllMembers();
     },
 
+    async getMessageById(messageId: number): Promise<MemberMessage | null> {
+        return await memberMessageRepository.findById(messageId);
+    },
+
     async markMessageAsRead(messageId: number): Promise<void> {
         await memberMessageRepository.markAsRead(messageId);
     },

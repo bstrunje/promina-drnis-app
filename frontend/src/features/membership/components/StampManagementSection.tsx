@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { StampManagementSectionProps } from "../types/membershipTypes";
 import { Label } from "@components/ui/label";
+import { Checkbox } from "@components/ui/checkbox";
 import { RefreshCw } from "lucide-react";
 import { getCurrentYear } from "../../../utils/dateUtils";
 import { getCurrentDate } from '../../../utils/dateUtils';
@@ -86,22 +87,35 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
         
         {/* Provjera je li članarina plaćena za tekuću godinu */}
         {((member?.membership_details?.fee_payment_year === getCurrentYear()) || (member?.membership_details?.card_stamp_issued ?? false)) ? (
-          canEdit && (
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="stamp-toggle"
-                checked={stampIssued}
-                onChange={(e) => { void onStampToggle(e.target.checked); }} // Sigurnosna promjena: void za no-floating-promises
-                disabled={isIssuingStamp || (!stampIssued && inventoryStatus?.remaining === 0)}
-                className="w-4 h-4"
-              />
-              <Label htmlFor="stamp-toggle" className="text-sm font-medium cursor-pointer">
-                Markica izdana
-                {isIssuingStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
-              </Label>
-            </div>
-          )
+          <div className="flex items-center space-x-3">
+            {/* Ako korisnik može uređivati i nije obični član, prikaži checkbox */}
+            {canEdit ? (
+              <>
+                <Checkbox 
+                  id="stamp-checkbox"
+                  checked={stampIssued}
+                  onCheckedChange={(newState) => onStampToggle(newState === true, userRole)}
+                  disabled={isIssuingStamp || 
+                    /* Administrator ne može vratiti markicu nakon što je izdana */
+                    (stampIssued && userRole === 'member_administrator')}
+                />
+                <Label htmlFor="stamp-checkbox" className="text-sm font-medium cursor-pointer">
+                  Markica izdana
+                  {isIssuingStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
+                </Label>
+              </>
+            ) : (
+              /* Za obične članove samo prikaz statusa bez mogućnosti upravljanja */
+              <div className="flex items-center">
+                <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${stampIssued ? 'bg-black text-white' : 'border border-gray-300'}`}>
+                  {stampIssued && '✓'}
+                </div>
+                <span className="text-sm font-medium">
+                  {stampIssued ? 'Markica izdana' : 'Markica nije izdana'}
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="text-sm text-amber-600 italic">
             Članarina za {getCurrentYear()} nije plaćena. Nije moguće upravljati markicom.
@@ -138,22 +152,37 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
           {/* Provjera je li članarina plaćena za sljedeću godinu */}
           {((member?.membership_details?.fee_payment_year === getCurrentYear() + 1) ||
             (member?.membership_details?.next_year_stamp_issued ?? false)) ? (
-            canEdit && (
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="next-year-stamp-toggle"
-                  checked={nextYearStampIssued}
-                  onChange={(e) => { void onNextYearStampToggle(e.target.checked); }} // Sigurnosna promjena: void za no-floating-promises
-                  disabled={isIssuingNextYearStamp || (!nextYearStampIssued && nextYearInventoryStatus?.remaining === 0)}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="next-year-stamp-toggle" className="text-sm font-medium cursor-pointer">
-                  Markica za {getCurrentYear() + 1} izdana
-                  {isIssuingNextYearStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
-                </Label>
-              </div>
-            )
+            <div className="flex items-center space-x-3">
+              {/* Ako korisnik može uređivati i nije obični član, prikaži checkbox */}
+              {canEdit ? (
+                <>
+                  <Checkbox
+                    id="next-year-stamp-checkbox"
+                    checked={nextYearStampIssued}
+                    onCheckedChange={(newState) => onNextYearStampToggle(newState === true, userRole)}
+                    disabled={isIssuingNextYearStamp || 
+                      /* Administrator ne može vratiti markicu nakon što je izdana */
+                      (nextYearStampIssued && userRole === 'member_administrator') || 
+                      /* Onemogući izdavanje ako nema dostupnih markica */
+                      (!nextYearStampIssued && nextYearInventoryStatus?.remaining === 0)}
+                  />
+                  <Label htmlFor="next-year-stamp-checkbox" className="text-sm font-medium cursor-pointer">
+                    Markica za {getCurrentYear() + 1} izdana
+                    {isIssuingNextYearStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
+                  </Label>
+                </>
+              ) : (
+                /* Za obične članove samo prikaz statusa bez mogućnosti upravljanja */
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${nextYearStampIssued ? 'bg-black text-white' : 'border border-gray-300'}`}>
+                    {nextYearStampIssued && '✓'}
+                  </div>
+                  <span className="text-sm font-medium">
+                    {nextYearStampIssued ? `Markica za ${getCurrentYear() + 1} izdana` : `Markica za ${getCurrentYear() + 1} nije izdana`}
+                  </span>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="text-sm text-amber-600 italic">
               Članarina za {getCurrentYear() + 1} nije plaćena. Nije moguće upravljati markicom.

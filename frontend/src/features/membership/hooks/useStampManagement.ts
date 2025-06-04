@@ -6,7 +6,9 @@ import api from '../../../utils/api/apiConfig';
 import { InventoryStatus } from "../types/membershipTypes";
 import { getCurrentYear } from "../../../utils/dateUtils";
 
-export const useStampManagement = (member: Member, onUpdate: (member: Member) => Promise<void>) => {
+export const useStampManagement = (member: Member, onUpdate: (member: Member) => Promise<void>, userRoleFromProps?: string) => {
+  // Spremamo userRole iz propsa u state da bude dostupan u svim funkcijama
+  const [userRole] = useState<string | undefined>(userRoleFromProps);
   const { toast } = useToast();
   
   // Inicijaliziraj stanje iz membership_details (izvor istine)
@@ -92,14 +94,29 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   }, [member.life_status, member, getMemberStampType, toast]);
 
   // Upravljanje izdavanjem markice za tekuću godinu
-  const handleStampToggle = async (newState: boolean, userRole?: string) => {
-    const canReturnStamp = userRole === "member_superuser";
+  const handleStampToggle = async (newState: boolean, providedUserRole?: string) => {
+    // Koristimo userRole iz propsa ako je dostupan, inače koristimo providedUserRole
+    const effectiveUserRole = userRoleFromProps || providedUserRole;
+    
+    // Provjera prava pristupa
+    const canEdit = effectiveUserRole === "member_administrator" || effectiveUserRole === "member_superuser";
+    const canReturnStamp = effectiveUserRole === "member_superuser";
+    
+    // Ako korisnik nema prava uređivanja, odmah prekini
+    if (!canEdit) {
+      toast({
+        title: "Nedovoljna prava",
+        description: "Nemate prava za upravljanje markicama",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Ako korisnik pokušava odznačiti markicu (vratiti u inventar), a nema dozvolu
     if (!newState && !canReturnStamp) {
       toast({
         title: "Nedovoljna prava",
-        description: "Samo superadmin može vratiti markice u inventar",
+        description: "Samo superuser može vratiti markice u inventar",
         variant: "destructive",
       });
       return; 
@@ -186,14 +203,29 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   };
 
   // Upravljanje izdavanjem markice za sljedeću godinu
-  const handleNextYearStampToggle = async (newState: boolean, userRole?: string) => {
-    const canReturnStamp = userRole === "member_superuser";
+  const handleNextYearStampToggle = async (newState: boolean, providedUserRole?: string) => {
+    // Koristimo userRole iz propsa ako je dostupan, inače koristimo providedUserRole
+    const effectiveUserRole = userRoleFromProps || providedUserRole;
+    
+    // Provjera prava pristupa
+    const canEdit = effectiveUserRole === "member_administrator" || effectiveUserRole === "member_superuser";
+    const canReturnStamp = effectiveUserRole === "member_superuser";
+    
+    // Ako korisnik nema prava uređivanja, odmah prekini
+    if (!canEdit) {
+      toast({
+        title: "Nedovoljna prava",
+        description: "Nemate prava za upravljanje markicama",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Ako korisnik pokušava odznačiti markicu (vratiti u inventar), a nema dozvolu
     if (!newState && !canReturnStamp) {
       toast({
         title: "Nedovoljna prava",
-        description: "Samo superadmin može vratiti markice u inventar",
+        description: "Samo superuser može vratiti markice u inventar",
         variant: "destructive",
       });
       return;

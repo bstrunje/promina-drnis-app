@@ -66,12 +66,13 @@ export interface ApiAdminMessage {
   content: string;
   sender_id: string;
   sender_name: string;
-  sender_type: 'member_administrator' | 'member' | 'system';
+  sender_type: 'member_administrator' | 'member' | 'system' | 'member_superuser';
   recipient_id: string;
-  recipient_type: 'member_administrator' | 'member' | 'all';
+  recipient_type: 'member_administrator' | 'member' | 'all' | 'group';
   timestamp: string;
   read: boolean;
   priority: 'normal' | 'high';
+  read_by?: string[];
 }
 
 /**

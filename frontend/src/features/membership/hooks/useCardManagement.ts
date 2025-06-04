@@ -78,11 +78,11 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       const data: { stats: CardStats; cards: CardInfo[] } = await getAllCardNumbers();
       setCardStats(data.stats);
 
-      // Osvježi dostupne brojeve kartica ako je potrebno
-      // Filtriramo sve kartice koje nisu 'available' ili 'assigned', 'retired' ignoriramo jer nije prihvatljiv status
+      // Osvježi dostupne brojeve kartica - samo one sa statusom 'available'
+      // Filtriramo samo kartice koje su dostupne za dodjelu
       setAvailableCardNumbers(
         (data.cards ?? [])
-          .filter((card) => card.status === "available" || card.status === "assigned")
+          .filter((card) => card.status === "available")
           .map((card) => card.card_number)
       );
     } catch (error: unknown) {

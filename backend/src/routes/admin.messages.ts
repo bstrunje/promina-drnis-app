@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/admin', authMiddleware, roles.requireAdmin, memberMessageController.getAdminMessages);
 // Dodatni endpoint za kompatibilnost s frontendnom implementacijom
 router.get('/member_administrator', authMiddleware, roles.requireAdmin, memberMessageController.getAdminMessages);
-router.put('/:messageId/read', authMiddleware, roles.requireAdmin, memberMessageController.markAsRead);
+router.put('/:messageId/read', authMiddleware, memberMessageController.markAsRead);
 router.put('/:messageId/archive', authMiddleware, roles.requireAdmin, memberMessageController.archiveMessage);
 router.delete('/:messageId', authMiddleware, roles.requireSuperUser, memberMessageController.deleteMessage);
 router.delete('/', authMiddleware, roles.requireSuperUser, memberMessageController.deleteAllMessages);

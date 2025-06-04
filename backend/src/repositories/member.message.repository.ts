@@ -22,6 +22,13 @@ export interface MemberMessageWithSender extends MemberMessage {
 // Using shared prisma client
 
 const memberMessageRepository = {
+    async findById(messageId: number): Promise<MemberMessage | null> {
+        const raw = await prisma.memberMessage.findUnique({
+            where: { message_id: messageId },
+        });
+        return raw ? mapToMemberMessage(raw) : null;
+    },
+
     async create(memberId: number, messageText: string): Promise<MemberMessage> {
         const raw = await prisma.memberMessage.create({ data: {
             member_id: memberId,

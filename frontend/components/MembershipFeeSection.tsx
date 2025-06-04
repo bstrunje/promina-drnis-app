@@ -4,7 +4,7 @@ import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
-import { formatDate, formatDateToIsoDateString } from '../src/utils/dateUtils';
+import { formatDate, formatDateToIsoDateString, cleanISODateString } from '../src/utils/dateUtils';
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
@@ -374,16 +374,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
           <div className="space-y-6">
             {/* Display Fee Payment Information */}
             <div>
-              {member.membership_details?.fee_payment_date && (
-                <div className="mb-3">
-                  <span className="text-sm text-gray-500">Last Payment Date:</span>
-                  <p>
-                  {member.membership_details?.fee_payment_date
-                    ? formatDate(member.membership_details.fee_payment_date, 'dd.MM.yyyy.')
-                    : 'Nema podataka o plaćanju za tekuću ili iduću godinu'}
-                  </p>
-                </div>
-              )}
+              <div className="mb-3">
+                <span className="text-sm text-gray-500">Last Payment Date:</span>
+                <p>
+                {member.membership_details?.fee_payment_date
+                  ? formatDate(cleanISODateString(member.membership_details.fee_payment_date), 'dd.MM.yyyy.')
+                  : 'Nema podataka o plaćanju za tekuću ili iduću godinu'}
+                </p>
+              </div>
               
               {member.membership_details?.fee_payment_year && (
                 <div className="mb-3">

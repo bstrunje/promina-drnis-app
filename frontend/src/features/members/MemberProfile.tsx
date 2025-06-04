@@ -4,14 +4,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Clock, Calendar, Award, User, Clipboard } from "lucide-react";
 import { membershipTypeLabels } from "@shared/helpers/membershipDisplay";
 import { MembershipPeriod, MembershipHistory } from "@shared/membership";
-import { Member } from "@shared/member";
+import { Member, MembershipTypeEnum } from "@shared/member";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 // Zamijenjeno prema novoj modularnoj API strukturi
-import api from '../../utils/api/apiConfig'; 
+import api from '../../utils/api/apiConfig';
+import MembershipCardManagerAdapter from '../../features/membership/MembershipCardManagerAdapter';
 
 import { formatDate } from "../../utils/dateUtils";
 import { getCurrentDate } from '../../utils/dateUtils';
+import { IMAGE_BASE_URL } from "@/utils/config";
 
 declare module "@shared/member" {
   interface Member {
@@ -31,7 +33,17 @@ const MemberProfile = () => {
   const [member, setMember] = useState<Member | null>(null);
   const memberId = user?.member_id;
 
+// Placeholder SVG as data URI - a simple user icon
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXVzZXIiPjxwYXRoIGQ9Ik0xOSAyMXYtMmE0IDQgMCAwIDAtNC00SDlhNCA0IDAgMCAwLTQgNHYyIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+';
 
+const getImageUrl = (path: string | null | undefined): string => {
+  if (!path) return PLACEHOLDER_IMAGE;
+  
+  if (path.startsWith('http')) return path;
+  
+  // Use the IMAGE_BASE_URL constant from config
+  return `${IMAGE_BASE_URL}/${path}`;
+};
 
   useEffect(() => {
     if (memberId) {
@@ -46,7 +58,7 @@ const MemberProfile = () => {
               'Expires': '0'
             }
           });
-          
+
           // Sigurna validacija podatka iz API responsa
           const data: unknown = response.data;
           if (isMember(data)) {
@@ -54,14 +66,14 @@ const MemberProfile = () => {
             data.full_name ??= `${data.first_name} ${data.last_name}${data.nickname ? ` - ${data.nickname}` : ''}`;
             setMember(data);
           } else {
-             
+
             console.error('Neispravan format podataka za člana', data);
           }
         } catch (error) {
           console.error('Failed to fetch member details:', error);
         }
       };
-      
+
       void fetchMemberDetails(); // Riješeno no-floating-promises
     }
   }, [memberId]);
@@ -109,11 +121,10 @@ const MemberProfile = () => {
             <p className="opacity-90">Member Profile</p>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-sm ${
-              activityStatus.status === "active"
+            className={`px-3 py-1 rounded-full text-sm ${activityStatus.status === "active"
                 ? "bg-green-500"
                 : "bg-yellow-500"
-            }`}
+              }`}
           >
             {activityStatus.status.charAt(0).toUpperCase() +
               activityStatus.status.slice(1)}{" "}
@@ -220,6 +231,27 @@ const MemberProfile = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Card Management Section - vidljivo samo administratorima i superuserima */}
+        {(user.role === "member_administrator" || user.role === "member_superuser") && member && (
+          <Card className="col-span-1 md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Upravljanje članskom karticom
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MembershipCardManagerAdapter
+                member={member}
+                onUpdate={async (updatedMember) => {
+                  setMember(updatedMember);
+                }}
+                userRole={user.role}
+                isFeeCurrent={true}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Membership History Card */}
         <Card>
