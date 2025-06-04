@@ -44,13 +44,22 @@ model Member {
   failed_login_attempts    Int                     @default(0)
   locked_until             DateTime?               @db.Timestamp(6)
   last_failed_login        DateTime?               @db.Timestamp(6)
+
+  // Postojeća relacija - ovo su poruke gdje je ovaj član naveden u MemberMessage.member_id
+  messages                 MemberMessage[] // Retained, linked via MemberMessage.member_id
+
+  // Poruke koje je ovaj član poslao
+  sent_messages            MemberMessage[]         @relation("MessageSender")
+
+  // Statusi poruka za ovog člana kao primatelja
+  message_statuses         MessageRecipientStatus[] @relation("RecipientMemberStatus")
+
   grantedPermissions       MemberPermissions[]     @relation("grantedByMemberPermissions")
   permissions              MemberPermissions?      @relation("memberPermissionsRelation")
   annual_statistics        AnnualStatistics[]
   affected_audits          AuditLog[]              @relation("AuditAffected")
   performed_audits         AuditLog[]              @relation("AuditPerformer")
   card_numbers             CardNumber[]
-  messages                 MemberMessage[]
   membership_details       MembershipDetails?
   periods                  MembershipPeriod[]
   password_update_queue    password_update_queue[]
@@ -171,18 +180,40 @@ model StampInventory {
 
 model MemberMessage {
   message_id     Int        @id @default(autoincrement())
-  member_id      Int?
+  member_id      Int? // Retained for now, its relation's onDelete changed
   message_text   String
-  created_at     DateTime?  @default(now()) @db.Timestamp(6)
-  read_at        DateTime?  @db.Timestamp(6)
-  status         String?    @default("unread") @db.VarChar(20)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  // read_at and status are removed
+
   sender_id      Int?
   recipient_id   Int?
   recipient_type String?    @default("member_administrator") @db.VarChar(20)
   sender_type    SenderType @default(member)
-  member         Member?    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+
+  member         Member?    @relation(fields: [member_id], references: [member_id], onDelete: SetNull, onUpdate: NoAction) // onDelete changed
+
+  recipient_statuses MessageRecipientStatus[]
+  sender             Member?    @relation(name: "MessageSender", fields: [sender_id], references: [member_id], onDelete: SetNull)
 
   @@map("member_messages")
+}
+
+model MessageRecipientStatus {
+  message_recipient_status_id Int      @id @default(autoincrement())
+  message_id                  Int
+  recipient_member_id         Int
+  status                      String   @default("unread") @db.VarChar(20) // "unread", "read", "archived"
+  read_at                     DateTime? @db.Timestamp(6)
+  created_at                  DateTime @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime @updatedAt @db.Timestamp(6)
+
+  message MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+  member  Member        @relation(name: "RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade)
+
+  @@unique([message_id, recipient_member_id])
+  @@index([message_id])
+  @@index([recipient_member_id])
+  @@map("message_recipient_status")
 }
 
 model AnnualStatistics {

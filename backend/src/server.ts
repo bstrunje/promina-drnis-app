@@ -95,7 +95,16 @@ async function startServer(): Promise<void> {
         }, 12 * 60 * 60 * 1000); // 12 sati u milisekundama
 
         // Inicijaliziraj periodičke zadatke (uključujući ažuriranje statusa članstva)
-        initScheduledTasks();
+        console.log('\n🔔 Pokrećem inicijalizaciju periodičkih zadataka...');
+        try {
+            // Koristimo setTimeout kako bismo osigurali da se logovi pravilno prikazuju nakon inicijalizacije servera
+            setTimeout(() => {
+                initScheduledTasks();
+                console.log('✅ Periodički zadaci uspješno pokrenuti');
+            }, 1000);
+        } catch (error) {
+            console.error('❌ Greška prilikom inicijalizacije periodičkih zadataka:', error);
+        }
         
         return new Promise((resolve, reject) => {
             server = app.listen(port, () => {

@@ -23,7 +23,7 @@ router.get('/:memberId/activities', authenticateToken, memberController.getMembe
 // Protected routes
 router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);
 router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
-router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
+// router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
 router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
 router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
 router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, memberController.updateMembership);

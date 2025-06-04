@@ -21,7 +21,17 @@ interface MemberWithActivities extends Member {
     }[];
 }
 
-export function mapMembershipTypeToEnum(value: any): MembershipTypeEnum {
+// Sučelje za člana s dodatnim poljima koja dolaze iz repozitorija
+interface MemberWithExtendedDetails extends Member {
+    card_number?: string;
+    fee_payment_year?: number;
+    card_stamp_issued?: boolean;
+    fee_payment_date?: string | Date;
+    next_year_stamp_issued?: boolean;
+    calculated_full_name?: string;
+}
+
+export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | undefined): MembershipTypeEnum {
   if (typeof value === 'string') {
     if (value === 'regular') return MembershipTypeEnum.Regular;
     if (value === 'supporting') return MembershipTypeEnum.Supporting;
@@ -149,35 +159,6 @@ const memberService = {
         }
     },
 
-    async deleteMember(memberId: number): Promise<Member | null> {
-        return await db.transaction(async (client) => {
-            try {
-                const member = await memberRepository.findById(memberId);
-                if (!member) {
-                    throw new Error('Member not found');
-                }
-                
-                // Prvo brisanje povezanih zapisa iz password_update_queue
-                await client.query(
-                    `DELETE FROM password_update_queue WHERE member_id = $1`,
-                    [memberId]
-                );
-                
-                // Nastavak s brisanjem člana
-                const deletedMember = await memberRepository.delete(memberId);
-                if (!deletedMember) {
-                    throw new Error('Failed to delete member');
-                }
-    
-                return deletedMember;
-            } catch (error) {
-                console.error('Failed to delete member:', error);
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                throw new DatabaseError(`Failed to delete member: ${errorMessage}`, 500);
-            }
-        });
-    },
-
     async assignPassword(memberId: number, password: string, cardNumber: string): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -221,19 +202,24 @@ const memberService = {
             if (!member) return null;
 
             // Uvijek složi membership_details property iz podataka koje vraća findById
+            const memberTyped = member as MemberWithExtendedDetails;
             const membershipDetails = {
-                card_number: (member as any).card_number ?? undefined,
-                fee_payment_year: (member as any).fee_payment_year ?? undefined,
-                card_stamp_issued: (member as any).card_stamp_issued ?? undefined,
-                fee_payment_date: (member as any).fee_payment_date
-                    ? formatDate(parseDate((member as any).fee_payment_date), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
+                card_number: memberTyped.card_number,
+                fee_payment_year: memberTyped.fee_payment_year,
+                card_stamp_issued: memberTyped.card_stamp_issued,
+                fee_payment_date: memberTyped.fee_payment_date
+                    ? formatDate(
+                        typeof memberTyped.fee_payment_date === 'string' 
+                          ? parseDate(memberTyped.fee_payment_date) 
+                          : memberTyped.fee_payment_date, 
+                        'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
                     : undefined,
-                next_year_stamp_issued: (member as any).next_year_stamp_issued ?? undefined,
+                next_year_stamp_issued: memberTyped.next_year_stamp_issued,
             };
 
             return {
                 ...member,
-                full_name: (member as any).calculated_full_name || member.full_name,
+                full_name: memberTyped.calculated_full_name || member.full_name,
                 membership_details: membershipDetails,
             };
         } catch (error: unknown) {

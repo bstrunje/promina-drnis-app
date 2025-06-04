@@ -80,8 +80,12 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     try {
       unreadMessages = await prisma.memberMessage.count({
         where: {
-          recipient_id: memberId,
-          status: 'unread'
+          recipient_statuses: {
+            some: {
+              recipient_member_id: memberId,
+              status: 'unread'
+            }
+          }
         }
       });
     } catch (error) {
@@ -592,62 +596,6 @@ export const memberController = {
       }
     } catch (error) {
       handleControllerError(error, res);
-    }
-  },
-
-  async deleteMember(
-    req: Request<{ memberId: string }>,
-    res: Response
-  ): Promise<void> {
-    try {
-      const memberId = parseInt(req.params.memberId, 10);
-      if (isNaN(memberId)) {
-        res.status(400).json({ message: "Invalid member ID" });
-        return;
-      }
-
-      const deletedMember = await memberService.deleteMember(memberId);
-
-      if (req.user?.id) {
-        await auditService.logAction(
-          "DELETE_MEMBER",
-          req.user.id,
-          `Member deletion: ${deletedMember?.full_name || memberId}`,
-          req,
-          "success"
-        );
-      }
-
-      res.json({
-        success: true,
-        message: "Member deleted successfully",
-      });
-    } catch (error) {
-      console.error("Member deletion error:", error);
-
-      if (error instanceof Error) {
-        const statusCode = error.message.includes("Member not found")
-          ? 404
-          : 500;
-        res.status(statusCode).json({
-          message: error.message,
-        });
-      } else {
-        res.status(500).json({
-          message: "An unknown error occurred while deleting member",
-        });
-      }
-
-      // Log failed deletion attempt
-      if (req.user?.id) {
-        await auditService.logAction(
-          "DELETE_MEMBER",
-          req.user.id,
-          `Failed member deletion: ${req.params.memberId}`,
-          req,
-          "error"
-        );
-      }
     }
   },
 

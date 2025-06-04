@@ -44,7 +44,7 @@ export default function MemberList(): JSX.Element {
     error,
     addMember,
     updateMember,
-    deleteMember,
+    
     refreshMembers
   } = useMemberData();
 
@@ -107,7 +107,7 @@ export default function MemberList(): JSX.Element {
   // Modalni prozori - stanja
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  
   const [assigningPasswordMember, setAssigningPasswordMember] = useState<Member | null>(null);
   const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
 
@@ -175,14 +175,7 @@ export default function MemberList(): JSX.Element {
     }
   };
 
-  const handleDeleteMember = async () => {
-    if (deletingMember) {
-      const success = await deleteMember(String(deletingMember.member_id));
-      if (success) {
-        setDeletingMember(null);
-      }
-    }
-  };
+  
 
 
   const [filteredMembers, setFilteredMembers] = useState<{
@@ -443,9 +436,7 @@ export default function MemberList(): JSX.Element {
                   filteredMembers={filteredMembers} 
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
-                  onViewDetails={(memberId) => navigate(`/members/${memberId}`)}
-          
-                  onDeleteMember={setDeletingMember}
+                  onViewDetails={(memberId) => navigate(`/members/${memberId}`)}                  
                   onAssignPassword={setAssigningPasswordMember}
                   onAssignRole={setRoleAssignmentMember}
           
@@ -475,14 +466,6 @@ export default function MemberList(): JSX.Element {
           member={editingMember}
           onClose={() => setEditingMember(null)}
           onEdit={(updatedMember) => { void handleEditMember(updatedMember); }}
-        />
-      )}
-
-      {deletingMember && (
-        <ConfirmationModal
-          message={`Jeste li sigurni da želite obrisati člana ${deletingMember.first_name} ${deletingMember.last_name}?`}
-          onConfirm={() => { void handleDeleteMember(); }}
-          onCancel={() => setDeletingMember(null)}
         />
       )}
 

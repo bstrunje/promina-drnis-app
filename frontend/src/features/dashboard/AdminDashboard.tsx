@@ -32,9 +32,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       // Postavljamo forceLoad=true jer je korisnik aktivno na admin dijelu aplikacije
       const apiMessages = await getAdminMessages(true);
       
-      // Provjeri ima li nepročitanih poruka - koristimo as unknown pa as AdminMessage
-      // kako bismo izbjegli TypeScript grešku o nekompatibilnim tipovima
-      setUnreadMessages((apiMessages as unknown as AdminMessage[]).some((message) => message.status === "unread"));
+      // Provjeri ima li nepročitanih poruka - koristimo read polje koje je dodano u backend mapperu
+      // Ako je read === false, poruka je nepročitana
+      setUnreadMessages(apiMessages.some((message) => message.read === false));
     } catch (error) {
       console.error("Error checking messages:", error);
       toast({

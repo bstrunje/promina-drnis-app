@@ -162,17 +162,6 @@ const memberRepository = {
         return result?.profile_image_path || null;
     },
 
-    async delete(memberId: number): Promise<Member> {
-        // delete related entities first to maintain referential integrity
-        await prisma.membershipDetails.deleteMany({ where: { member_id: memberId } });
-        await prisma.membershipPeriod.deleteMany({ where: { member_id: memberId } });
-        await prisma.activityParticipant.deleteMany({ where: { member_id: memberId } });
-        await prisma.memberMessage.deleteMany({ where: { member_id: memberId } });
-        await prisma.annualStatistics.deleteMany({ where: { member_id: memberId } });
-        const raw = await prisma.member.delete({ where: { member_id: memberId } });
-        return mapToMember(raw);
-    },
-
     async updateRole(memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
         const raw = await prisma.member.update({ where: { member_id: memberId }, data: { role } });
         return mapToMember(raw);
@@ -189,6 +178,28 @@ const memberRepository = {
         // reuse findAll and filter by role for Prisma consistency
         const all = await this.findAll();
         return all.filter(member => member.role === role);
+    },
+
+    async findMemberIdsByRoles(roles: string[]): Promise<number[]> {
+        const members = await prisma.member.findMany({
+            where: {
+                role: { in: roles },
+                status: 'registered', // Dodajemo provjeru da su članovi aktivni
+            },
+            select: { member_id: true },
+        });
+        return members.map(m => m.member_id);
+    },
+
+    async findAllActiveMemberIds(excludeSenderId?: number): Promise<number[]> {
+        const members = await prisma.member.findMany({
+            where: {
+                status: 'registered',
+                NOT: excludeSenderId ? { member_id: excludeSenderId } : undefined,
+            },
+            select: { member_id: true },
+        });
+        return members.map(m => m.member_id);
     }
 };
 

@@ -24,19 +24,26 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
     const response = await api.get('/messages/member_administrator');
     
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
-      id: String(msg.message_id),
-      content: msg.message_text,
-      sender_id: String(msg.sender_id),
-      sender_name: msg.sender_name || '',
-      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
-      recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
-      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
-      read: msg.status === 'read' || !!msg.read_at,
-      priority: msg.priority || 'normal',
-      read_by: msg.read_by || [] // Dodajemo read_by ako postoji
-    }));
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
+      // Izvuci ime pošiljatelja iz sender objekta ako postoji
+      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+      
+      return {
+        id: String(msg.message_id),
+        content: msg.message_text,
+        sender_id: String(msg.sender_id),
+        // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
+        sender_name: senderName || msg.sender_name || '',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
+        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
+        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+        // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
+        read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
+        priority: msg.priority || 'normal',
+        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
+      };
+    });
     
     return transformedData;
   } catch (error) {
@@ -55,19 +62,26 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
   try {
     const response = await api.get('/messages/sent');
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
-      id: String(msg.message_id),
-      content: msg.message_text,
-      sender_id: String(msg.sender_id),
-      sender_name: msg.sender_name || '',
-      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
-      recipient_id: msg.recipient_id ? String(msg.recipient_id) : (msg.recipient_type === 'all' ? 'all' : ''),
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
+      // Izvuci ime pošiljatelja iz sender objekta ako postoji
+      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+      
+      return {
+        id: String(msg.message_id),
+        content: msg.message_text,
+        sender_id: String(msg.sender_id),
+        // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
+        sender_name: senderName || msg.sender_name || '',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        recipient_id: msg.recipient_id ? String(msg.recipient_id) : (msg.recipient_type === 'all' ? 'all' : ''),
       recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
       timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
-      read: msg.status === 'read' || !!msg.read_at, // Pretpostavka za read status
+      // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
+      read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
       read_by: msg.read_by || [], // Dodajemo read_by ako postoji
       priority: msg.priority || 'normal'
-    }));
+    };
+  });
     return transformedData;
   } catch (error) {
     if (error instanceof Error) {
@@ -86,19 +100,26 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
   try {
     const response = await api.get(`/members/${memberId}/messages`);
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => ({
-      id: String(msg.message_id),
-      content: msg.message_text,
-      sender_id: String(msg.sender_id),
-      sender_name: msg.sender_name || '',
-      sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
-      recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all',
-      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
-      read: msg.status === 'read' || !!msg.read_at, // Pretpostavka za read status
-      read_by: msg.read_by || [], // Dodajemo read_by ako postoji
-      priority: msg.priority || 'normal'
-    }));
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
+      // Izvuci ime pošiljatelja iz sender objekta ako postoji
+      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+      
+      return {
+        id: String(msg.message_id),
+        content: msg.message_text,
+        sender_id: String(msg.sender_id),
+        // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
+        sender_name: senderName || msg.sender_name || '',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
+        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
+        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+        // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
+        read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
+        priority: msg.priority || 'normal',
+        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
+      };
+    });
     return transformedData;
   } catch (error) {
     if (error instanceof Error) {

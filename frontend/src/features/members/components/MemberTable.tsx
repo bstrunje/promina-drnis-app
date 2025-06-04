@@ -38,8 +38,8 @@ interface MemberTableProps {
   isAdmin?: boolean;
   isSuperuser?: boolean;
   onViewDetails?: (memberId: number) => void;
-  onDeleteMember?: (member: Member) => void;
   onAssignPassword?: (member: Member) => void;
+  onAssignRole?: (member: Member) => void;
 
 }
 
@@ -49,9 +49,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   isAdmin,
   isSuperuser,
   onViewDetails,
-
-  onDeleteMember,
   onAssignPassword,
+  onAssignRole,
 
 
 
@@ -160,19 +159,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             </Button>
           )}
         </div>
-        <div style={{ width: "32px", textAlign: "center" }}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onDeleteMember) { onDeleteMember(member); }
-            }}
-            title="Delete member"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+
         <div style={{ width: "32px", textAlign: "center" }}>
           {isSuperuser && (
             <Button

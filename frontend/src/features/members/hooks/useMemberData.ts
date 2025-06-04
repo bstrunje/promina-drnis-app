@@ -70,27 +70,6 @@ export const useMemberData = () => {
     }
   };
 
-  // Funkcija za brisanje člana
-  const deleteMember = async (memberId: string) => {
-    try {
-      await api.delete(`/members/${memberId}`);
-      toast({
-        title: "Success",
-        description: "Member deleted successfully",
-      });
-      refreshMembers();
-      return true;
-    } catch (error) {
-      console.error('Error deleting member:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete member",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
   useEffect(() => {
     const fetchMembers = async (): Promise<void> => {
       try {
@@ -269,6 +248,6 @@ export const useMemberData = () => {
     refreshMembers,
     addMember,
     updateMember,
-    deleteMember
+   
   };
 };
