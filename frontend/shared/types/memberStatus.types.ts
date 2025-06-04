@@ -195,6 +195,21 @@ export function determineDetailedMembershipStatus(
   periods: MembershipPeriod[],
   currentYear?: number
 ): DetailedMembershipStatus {
+  // Provjeri ima li član ikakve podatke o članstvu
+  const hasMembershipData = (
+    (!!member.membership_details?.card_number || !!member.card_number) || 
+    (!!member.membership_details?.fee_payment_date) || 
+    (!!member.membership_details?.fee_payment_year) ||
+    (periods && periods.length > 0)
+  );
+  
+  // Ako nema nikakve podatke o članstvu, tretiramo ga kao "pending" bez obzira na status u bazi
+  if (!hasMembershipData) {
+    return {
+      status: 'pending',
+      reason: 'Nema podataka o članstvu'
+    };
+  }
   // Ako član ima broj iskaznice, smatra se registriranim članom
   const hasCardNumber = !!member.card_number || !!member.membership_details?.card_number;
   if (hasCardNumber) {
