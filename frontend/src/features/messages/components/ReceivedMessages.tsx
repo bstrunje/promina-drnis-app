@@ -228,17 +228,19 @@ useEffect(() => {
       <div className="space-y-4">
         {filteredMessages.length > 0 ? (
           <>
-            <div className="flex justify-end mb-4">
-              <Button
-                variant="destructive"
-                onClick={() => { void onDeleteAll(); }}
-                className="flex items-center space-x-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Izbriši sve poruke</span>
-                <span className="sm:hidden">Izbriši sve</span>
-              </Button>
-            </div>
+            {userRole === 'member_superuser' && (
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="destructive"
+                  onClick={() => { void onDeleteAll(); }}
+                  className="flex items-center space-x-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Izbriši sve poruke</span>
+                  <span className="sm:hidden">Izbriši sve</span>
+                </Button>
+              </div>
+            )}
 
             {filteredMessages.map((message) => (
               <Card key={message.message_id} className={message.status === 'unread' ? 'border-blue-500' : ''}>
@@ -258,29 +260,41 @@ useEffect(() => {
                           <span className="sm:hidden">Pročitano</span>
                         </Button>
                       )}
+                      {/* Duplicirani gumb za "Označi kao pročitano" - ostavljeno ako je namjerno za drugačiji uvjet prikaza */}
                       {message.status !== 'archived' && (
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => { void onArchive(message.message_id); }}
+                          onClick={() => { void onMarkAsRead(message.message_id); }}
                           className="flex items-center"
                         >
-                          <Archive className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">Arhiviraj</span>
-                          <span className="sm:hidden">Arhiv</span>
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline">Označi kao pročitano</span>
+                          <span className="sm:hidden">Pročitano</span>
                         </Button>
                       )}
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => { void onDelete(message.message_id); }}
-                        className="flex items-center"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Izbriši</span>
-                        <span className="sm:hidden">Izbriši</span>
-                      </Button>
-                    </div>
+                      {message.status !== 'archived' && (
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { void onArchive(message.message_id); }}
+                          title="Arhiviraj poruku"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {userRole === 'member_superuser' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { void onDelete(message.message_id); }}
+                          className="text-red-500 hover:text-red-700"
+                          title="Obriši poruku"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div> {/* Zatvaranje diva s gumbima */} 
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

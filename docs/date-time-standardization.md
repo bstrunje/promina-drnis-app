@@ -28,7 +28,7 @@ Aplikacija koristi globalni pristup za upravljanje vremenskim zonama kroz `TimeZ
 
 1. **TimeZoneContext** (`frontend/src/context/TimeZoneContext.tsx`) pruža globalni kontekst za upravljanje vremenskom zonom
 2. **dateUtils** (`frontend/src/utils/dateUtils.ts`) koristi postavljenu vremensku zonu za formatiranje datuma
-3. Vremenska zona postavlja se kroz administratorske postavke sustava
+3. Vremenska zona postavlja se kroz system-manager postavke sustava
 
 ## Najbolje prakse
 

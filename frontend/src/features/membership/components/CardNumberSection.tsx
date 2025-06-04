@@ -113,10 +113,10 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
         {/* Statistika kartica */}
         {canEdit && cardStats && (
           <div className="mb-3 text-sm">
-            <span className={`text-xs ${bg} px-2 py-1 rounded`}>
-              <span className="hidden sm:inline">Ukupno: <span className={`font-bold ${text}`}>{cardStats.total}</span> &nbsp;|&nbsp;</span> 
-              Dostupno: <span className={`font-bold ${text}`}>{cardStats.available}</span>
-              <span className="hidden sm:inline"> &nbsp;|&nbsp; Dodijeljeno: <span className={`font-bold ${text}`}>{cardStats.assigned}</span></span>
+            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+              <span className="hidden sm:inline">Ukupno: <span className="font-bold">{cardStats.total}</span> &nbsp;|&nbsp;</span> 
+              Dostupno: <span className="font-bold">{cardStats.available}</span>
+              <span className="hidden sm:inline"> &nbsp;|&nbsp; Dodijeljeno: <span className="font-bold">{cardStats.assigned}</span></span>
             </span>
           </div>
         )}
