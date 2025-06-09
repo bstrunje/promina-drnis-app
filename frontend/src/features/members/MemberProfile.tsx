@@ -168,6 +168,17 @@ const getImageUrl = (path: string | null | undefined): string => {
                 )}
               </div>
               <div>
+                <label className="text-sm text-gray-500">Status markice</label>
+                <div className="flex items-center mt-1">
+                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${user.membership_details?.card_stamp_issued ? 'bg-black text-white' : 'border border-gray-300'}`}>
+                    {user.membership_details?.card_stamp_issued && '✓'}
+                  </div>
+                  <span className="text-sm">
+                    {user.membership_details?.card_stamp_issued ? 'Markica izdana' : 'Markica nije izdana'}
+                  </span>
+                </div>
+              </div>
+              <div>
                 <label className="text-sm text-gray-500">Gender</label>
                 <p className="capitalize">{user.gender}</p>
               </div>
@@ -312,6 +323,17 @@ const getImageUrl = (path: string | null | undefined): string => {
               <div>
                 <label className="text-sm text-gray-500">Membership Type</label>
                 <p>{user.membership_type ? membershipTypeLabels[user.membership_type] : 'Nije definirano'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Status markice</label>
+                <div className="flex items-center mt-1">
+                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${user.membership_details?.card_stamp_issued ? 'bg-black text-white' : 'border border-gray-300'}`}>
+                    {user.membership_details?.card_stamp_issued && '✓'}
+                  </div>
+                  <span className="text-sm">
+                    {user.membership_details?.card_stamp_issued ? 'Markica izdana' : 'Markica nije izdana'}
+                  </span>
+                </div>
               </div>
               <div>
                 <label className="text-sm text-gray-500">Role</label>

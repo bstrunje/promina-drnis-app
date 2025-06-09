@@ -11,7 +11,7 @@ import authRepository from "../repositories/auth.repository.js";
 import auditService from "../services/audit.service.js";
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../config/jwt.config.js';
 import prisma from "../utils/prisma.js";
-import { parseDate, getCurrentDate, formatDate, formatUTCDate, getTokenExpiryDate } from '../utils/dateUtils.js';
+import { parseDate, cleanISODateString, getCurrentDate, formatDate, formatUTCDate, getTokenExpiryDate } from '../utils/dateUtils.js';
 import {
   MAX_FAILED_LOGIN_ATTEMPTS, 
   ACCOUNT_LOCKOUT_DURATION_MINUTES, 
@@ -776,11 +776,17 @@ const authController = {
       let formattedDateOfBirth = date_of_birth;
       
       // Provjeri je li date_of_birth samo datum (bez vremena)
-      if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.length === 10) {
-        // Koristi direktno ISO format bez ručnog formatiranja
-        const parsedDate = parseDate(`${date_of_birth}T00:00:00.000Z`);
-        formattedDateOfBirth = parsedDate.toISOString();
-        console.log(`Formatiran datum rođenja: ${formattedDateOfBirth}`);
+      if (date_of_birth && typeof date_of_birth === 'string') {
+        if (date_of_birth.length === 10) {
+          // Koristi direktno ISO format bez ručnog formatiranja
+          const parsedDate = parseDate(`${date_of_birth}T00:00:00.000Z`);
+          formattedDateOfBirth = parsedDate.toISOString();
+          console.log(`Formatiran datum rođenja: ${formattedDateOfBirth}`);
+        } else {
+          // Očisti ISO string od dodatnih navodnika ako postoje
+          formattedDateOfBirth = cleanISODateString(date_of_birth);
+          console.log(`Očišćen datum rođenja: ${formattedDateOfBirth}`);
+        }
       }
 
       // Kreiraj novog člana koristeći Prisma ORM

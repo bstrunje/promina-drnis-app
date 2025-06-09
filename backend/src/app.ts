@@ -31,6 +31,7 @@ import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
 import genericMessagesRouter from './routes/generic.messages.js';
+import adminStatusRoutes from './routes/admin.status.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -270,6 +271,7 @@ app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminStatusRoutes); // Registrirana ruta za sinkronizaciju statusa članova
 app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes); // Register debug routes
 app.use('/api/members/permissions', permissionsRouter);

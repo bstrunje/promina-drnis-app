@@ -19,7 +19,7 @@ import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
-import AssignCardNumberForm from "../../../components/AssignCardNumberForm";
+
 
 interface Props {
   memberId?: number;
@@ -47,7 +47,6 @@ const memberId = useMemo(() => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAssigningPassword, setIsAssigningPassword] = useState<boolean>(false);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -345,19 +344,9 @@ setEditedMember(memberData);
     setError(null);
   };
 
-  const handleAssign = (updatedMember: Member): void => {
-    setMember(updatedMember);
-    void fetchMemberDetails(); // Fetch member details after assigning password
-  };
 
-  const openAssignPasswordModal = (): void => {
-    setIsAssigningPassword(true);
-    // Osvježimo dostupne brojeve iskaznica pri svakom otvaranju modala
-  };
 
-  const closeModal = (): void => {
-    setIsAssigningPassword(false);
-  };
+
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
@@ -444,18 +433,7 @@ setEditedMember(memberData);
           } : undefined}
         />
 
-        {canEdit && !member.password_hash && (
-          <Button onClick={openAssignPasswordModal}>Assign Password</Button>
-        )}
 
-        {isAssigningPassword && (
-          <AssignCardNumberForm
-            member={member}
-            onClose={closeModal}
-            onAssign={handleAssign}
-            key={`assign-card-${getCurrentDate().getTime()}`}
-          />
-        )}
 
         <ActivityHistory
           memberId={member.member_id}

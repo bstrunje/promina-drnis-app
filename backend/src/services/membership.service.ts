@@ -162,63 +162,106 @@ const membershipService = {
 
   async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean | null, req?: Request): Promise<void> {
     try {
-      // Provjera postoji li već zapis za ovog člana
-      const existingCheck = await db.query(
-        `SELECT member_id FROM membership_details WHERE member_id = $1`,
+      console.log('==== MEMBERSHIP CARD UPDATE DETAILS ====');
+      console.log(`Member ID: ${memberId}`);
+      console.log(`Card number: "${cardNumber}"`);
+      console.log(`Stamp issued: ${stampIssued}`);
+      
+      // Dohvati trenutni status člana prije transakcije
+      const memberResult = await db.query(
+        `SELECT status, registration_completed FROM members WHERE member_id = $1`,
         [memberId]
       );
-
-      // Sigurna provjera za rowCount (može biti null)
-      const memberExists = (existingCheck?.rowCount ?? 0) > 0;
-
-      if (!memberExists) {
-        // Ako zapis ne postoji, kreiramo novi sa svim vrijednostima
-        // VAŽNO: Eksplicitno postavljamo card_stamp_issued na FALSE
-        console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
-        await db.query(
-          `INSERT INTO membership_details (member_id, card_number, card_stamp_issued)
-           VALUES ($1, $2, FALSE)`,
-          [memberId, cardNumber || ""]
+      
+      const member = memberResult.rows[0];
+      console.log('Current member status before transaction:', member);
+      
+      // Započinjemo transakciju za osiguranje konzistentnosti podataka
+      await db.transaction(async (client) => {
+        // Prvo ažuriramo status člana na 'registered' i registration_completed na true
+        // ako je dodijeljen broj kartice (preslikavamo ponašanje iz updateMemberWithCardAndPassword)
+        // VAŽNO: Provjeravamo da li je cardNumber stvarno dodijeljen (nije prazan string)
+        if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
+          console.log(`Updating member status for member ${memberId} to: registered and registration_completed: true`);
+          
+          // Eksplicitno ažuriramo status člana
+          const updateResult = await client.query(`
+            UPDATE members
+            SET status = 'registered', registration_completed = true
+            WHERE member_id = $1
+            RETURNING member_id, status, registration_completed
+          `, [memberId]);
+          
+          console.log('Member status update result:', updateResult.rows[0]);
+        } else {
+          console.log(`Card number is empty or undefined, not updating member status`);
+        }
+        
+        // Provjera postoji li već zapis za ovog člana
+        const existingCheck = await client.query(
+          `SELECT member_id, card_number FROM membership_details WHERE member_id = $1`,
+          [memberId]
         );
 
-        // Ako dodajemo novi broj kartice, brišemo sve stare zapise iz password_update_queue
-        if (cardNumber !== undefined && cardNumber !== null && cardNumber !== "") {
-          await db.query(
+        // Sigurna provjera za rowCount (može biti null)
+        const memberExists = (existingCheck?.rowCount ?? 0) > 0;
+        console.log('Membership details exist:', memberExists);
+        if (memberExists) {
+          console.log('Current card number:', existingCheck.rows[0].card_number);
+        }
+        
+        // Zatim ažuriramo broj članske iskaznice
+        if (!memberExists) {
+          // Ako zapis ne postoji, kreiramo novi sa svim vrijednostima
+          // VAŽNO: Eksplicitno postavljamo card_stamp_issued na FALSE
+          console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
+          await client.query(
+            `INSERT INTO membership_details (member_id, card_number, card_stamp_issued)
+             VALUES ($1, $2, FALSE)`,
+            [memberId, cardNumber || ""]
+          );
+        } else {
+          // Ako je proslijeđen broj kartice, ažuriramo ga
+          if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
+            console.log(`Updating card number for member ${memberId} to: ${cardNumber}`);
+            await client.query(
+              `UPDATE membership_details SET card_number = $2 WHERE member_id = $1`,
+              [memberId, cardNumber.trim()]
+            );
+          } else {
+            console.log(`Card number is empty or undefined, not updating card number`);
+          }
+
+          // Ako je proslijeđen status markice, ažuriramo ga u odvojenoj operaciji
+          // SAMO ako je stampIssued eksplicitno postavljen
+          if (stampIssued !== null && stampIssued !== undefined) {
+            console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
+            await client.query(
+              `UPDATE membership_details SET card_stamp_issued = $2 WHERE member_id = $1`,
+              [memberId, stampIssued]
+            );
+          }
+        }
+        
+        // Brišemo sve stare zapise iz password_update_queue za ovog člana
+        // i ostavljamo samo trenutni broj kartice (ako postoji u queue)
+        if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
+          await client.query(
             `DELETE FROM password_update_queue WHERE member_id = $1 AND card_number != $2`,
             [memberId, cardNumber.trim()]
           );
+          
+          console.log('Card number updated successfully');
         }
-
-        return;
-      }
-
-      // Ako zapis postoji, ažuriramo samo ono što je potrebno
-
-      // Ako je proslijeđen broj kartice, ažuriramo ga
-      if (cardNumber !== undefined && cardNumber !== null && cardNumber !== "") {
-        console.log(`Updating card number for member ${memberId} to: ${cardNumber}`);
-        await db.query(
-          `UPDATE membership_details SET card_number = $2 WHERE member_id = $1`,
-          [memberId, cardNumber.trim()]
+        
+        // Na kraju dohvatimo ažurirane podatke o članu za potvrdu
+        const memberAfterUpdate = await client.query(
+          'SELECT member_id, full_name, status, registration_completed FROM members WHERE member_id = $1',
+          [memberId]
         );
-
-        // Brišemo sve stare zapise iz password_update_queue za ovog člana
-        // i ostavljamo samo trenutni broj kartice (ako postoji u queue)
-        await db.query(
-          `DELETE FROM password_update_queue WHERE member_id = $1 AND card_number != $2`,
-          [memberId, cardNumber.trim()]
-        );
-      }
-
-      // Ako je proslijeđen status markice, ažuriramo ga u odvojenoj operaciji
-      // SAMO ako je stampIssued eksplicitno postavljen
-      if (stampIssued !== null && stampIssued !== undefined) {
-        console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
-        await db.query(
-          `UPDATE membership_details SET card_stamp_issued = $2 WHERE member_id = $1`,
-          [memberId, stampIssued]
-        );
-      }
+        
+        console.log('Member after all updates:', memberAfterUpdate.rows[0]);
+      })
     } catch (error) {
       console.error('Error updating card details:', error);
       throw new Error(`Failed to update card details: ${error instanceof Error ? error.message : 'Unknown error'}`);

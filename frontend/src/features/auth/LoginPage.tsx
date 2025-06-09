@@ -2,13 +2,13 @@
 // Uklonjen useCallback iz import-a
 import { FormEvent, useState, useEffect } from "react"; 
 import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
-import axios from "axios";
 import { formatInputDate } from "@/utils/dateUtils";
 
 interface SizeOptions {
@@ -276,16 +276,22 @@ const LoginPage = () => {
         }, 2000);
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      // Za grešku 429 (Too Many Requests) ne prikazujemo nikakvu poruku
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        // Ne radimo ništa - ne prikazujemo poruku i ne logiramo grešku
+        return;
+      }
+      
+      // Za ostale greške možemo logirati i prikazati generičku poruku
       if (error instanceof Error) {
         setMessage({
           type: "error",
-          content: error.message,
+          content: "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
         });
       } else {
         setMessage({
           type: "error",
-          content: "Failed to register. Please try again.",
+          content: "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
         });
       }
     } finally {

@@ -7,7 +7,7 @@ export interface TransformedMessage {
     message_id: number;
     member_id: number | null;
     message_text: string;
-    created_at: Date;
+    created_at: Date | null; // Dopuštamo null vrijednost za created_at
     sender_id: number | null;
     recipient_id: number | null;
     recipient_type: PrismaMemberMessage['recipient_type'];

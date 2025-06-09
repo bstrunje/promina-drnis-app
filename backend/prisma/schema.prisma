@@ -8,60 +8,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SenderType {
-  member
-  member_administrator
-  member_superuser
-}
-
 model Member {
-  status                   String?                 @default("pending") @db.VarChar(50) // Status članstva (registered, inactive, pending)
-  date_of_birth            DateTime?               @db.Date
-  oib                      String                  @unique @db.VarChar(11)
-  cell_phone               String                  @db.VarChar(20)
-  city                     String                  @db.VarChar(100)
-  street_address           String                  @db.VarChar(200)
-  email                    String?                 @db.VarChar(255)
-  first_name               String                  @db.VarChar(100)
-  last_name                String                  @db.VarChar(100)
-  member_id                Int                     @id @default(autoincrement())
-  password_hash            String?                 @db.VarChar(255)
-  role                     String                  @default("member") @db.VarChar(20)
-  last_login               DateTime?               @db.Timestamp(6)
-  full_name                String                  @db.VarChar(100)
-  life_status              String?                 @db.VarChar(25)
-  tshirt_size              String?                 @db.VarChar(4)
-  shell_jacket_size        String?                 @db.VarChar(4)
-  total_hours              Decimal?                @default(0) @db.Decimal(10, 2)
-  gender                   String?                 @db.VarChar(6)
-  registration_completed   Boolean?                @default(false)
-  profile_image_path       String?                 @db.VarChar(255)
-  profile_image_updated_at DateTime?               @db.Timestamp(6)
-  membership_type          String?                 @default("regular") @db.VarChar(20)
-  created_at               DateTime?               @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime?               @default(now()) @db.Timestamptz(6)
-  nickname                 String?                 @db.VarChar(50)
-  failed_login_attempts    Int                     @default(0)
-  locked_until             DateTime?               @db.Timestamp(6)
-  last_failed_login        DateTime?               @db.Timestamp(6)
-
-  // Postojeća relacija - ovo su poruke gdje je ovaj član naveden u MemberMessage.member_id
-  messages                 MemberMessage[] // Retained, linked via MemberMessage.member_id
-
-  // Poruke koje je ovaj član poslao
-  sent_messages            MemberMessage[]         @relation("MessageSender")
-
-  // Statusi poruka za ovog člana kao primatelja
-  message_statuses         MessageRecipientStatus[] @relation("RecipientMemberStatus")
-
-  grantedPermissions       MemberPermissions[]     @relation("grantedByMemberPermissions")
-  permissions              MemberPermissions?      @relation("memberPermissionsRelation")
+  status                   String?                  @default("pending") @db.VarChar(50)
+  date_of_birth            DateTime?                @db.Date
+  oib                      String                   @unique @db.VarChar(11)
+  cell_phone               String                   @db.VarChar(20)
+  city                     String                   @db.VarChar(100)
+  street_address           String                   @db.VarChar(200)
+  email                    String?                  @db.VarChar(255)
+  first_name               String                   @db.VarChar(100)
+  last_name                String                   @db.VarChar(100)
+  member_id                Int                      @id @default(autoincrement())
+  password_hash            String?                  @db.VarChar(255)
+  role                     String                   @default("member") @db.VarChar(20)
+  last_login               DateTime?                @db.Timestamp(6)
+  full_name                String                   @db.VarChar(100)
+  life_status              String?                  @db.VarChar(25)
+  tshirt_size              String?                  @db.VarChar(4)
+  shell_jacket_size        String?                  @db.VarChar(4)
+  total_hours              Decimal?                 @default(0) @db.Decimal(10, 2)
+  gender                   String?                  @db.VarChar(6)
+  registration_completed   Boolean?                 @default(false)
+  profile_image_path       String?                  @db.VarChar(255)
+  profile_image_updated_at DateTime?                @db.Timestamp(6)
+  membership_type          String?                  @default("regular") @db.VarChar(20)
+  created_at               DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime?                @default(now()) @db.Timestamptz(6)
+  nickname                 String?                  @db.VarChar(50)
+  failed_login_attempts    Int                      @default(0)
+  last_failed_login        DateTime?                @db.Timestamp(6)
+  locked_until             DateTime?                @db.Timestamp(6)
   annual_statistics        AnnualStatistics[]
-  affected_audits          AuditLog[]              @relation("AuditAffected")
-  performed_audits         AuditLog[]              @relation("AuditPerformer")
+  affected_audits          AuditLog[]               @relation("AuditAffected")
+  performed_audits         AuditLog[]               @relation("AuditPerformer")
   card_numbers             CardNumber[]
+  messages                 MemberMessage[]
+  sent_messages            MemberMessage[]          @relation("MessageSender")
+  grantedPermissions       MemberPermissions[]      @relation("grantedByMemberPermissions")
+  permissions              MemberPermissions?       @relation("memberPermissionsRelation")
   membership_details       MembershipDetails?
   periods                  MembershipPeriod[]
+  message_statuses         MessageRecipientStatus[] @relation("RecipientMemberStatus")
   password_update_queue    password_update_queue[]
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
@@ -140,7 +127,7 @@ model MembershipDetails {
   card_stamp_issued      Boolean?  @default(false)
   fee_payment_date       DateTime? @db.Timestamp(6)
   next_year_stamp_issued Boolean?  @default(false)
-  status                 String?   @default("active") @db.VarChar(20) // Status aktivnosti člana (active/passive) koji se mapira na membership_status
+  status                 String?   @default("active") @db.VarChar(20)
   active_until           DateTime? @db.Timestamp(6)
   member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -179,36 +166,31 @@ model StampInventory {
 }
 
 model MemberMessage {
-  message_id     Int        @id @default(autoincrement())
-  member_id      Int? // Retained for now, its relation's onDelete changed
-  message_text   String
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
-  // read_at and status are removed
-
-  sender_id      Int?
-  recipient_id   Int?
-  recipient_type String?    @default("member_administrator") @db.VarChar(20)
-  sender_type    SenderType @default(member)
-
-  member         Member?    @relation(fields: [member_id], references: [member_id], onDelete: SetNull, onUpdate: NoAction) // onDelete changed
-
+  message_id         Int                      @id @default(autoincrement())
+  member_id          Int?
+  message_text       String
+  created_at         DateTime?                @default(now()) @db.Timestamp(6)
+  sender_id          Int?
+  recipient_id       Int?
+  recipient_type     String?                  @default("member_administrator") @db.VarChar(20)
+  sender_type        SenderType               @default(member)
+  member             Member?                  @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  sender             Member?                  @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade)
   recipient_statuses MessageRecipientStatus[]
-  sender             Member?    @relation(name: "MessageSender", fields: [sender_id], references: [member_id], onDelete: SetNull)
 
   @@map("member_messages")
 }
 
 model MessageRecipientStatus {
-  message_recipient_status_id Int      @id @default(autoincrement())
+  message_recipient_status_id Int           @id @default(autoincrement())
   message_id                  Int
   recipient_member_id         Int
-  status                      String   @default("unread") @db.VarChar(20) // "unread", "read", "archived"
-  read_at                     DateTime? @db.Timestamp(6)
-  created_at                  DateTime @default(now()) @db.Timestamp(6)
-  updated_at                  DateTime @updatedAt @db.Timestamp(6)
-
-  message MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
-  member  Member        @relation(name: "RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade)
+  status                      String        @default("unread") @db.VarChar(20)
+  read_at                     DateTime?     @db.Timestamp(6)
+  created_at                  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime      @updatedAt @db.Timestamp(6)
+  message                     MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+  member                      Member        @relation("RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade)
 
   @@unique([message_id, recipient_member_id])
   @@index([message_id])
@@ -240,8 +222,8 @@ model AuditLog {
   created_at      DateTime? @default(now()) @db.Timestamptz(6)
   status          String?   @db.VarChar(20)
   affected_member Int?
-  affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onUpdate: NoAction)
-  performer       Member?   @relation("AuditPerformer", fields: [performed_by], references: [member_id], onUpdate: NoAction)
+  affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  performer       Member?   @relation("AuditPerformer", fields: [performed_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("audit_logs")
 }
@@ -272,44 +254,29 @@ model MemberAdministrator {
 }
 
 model MemberPermissions {
-  permission_id Int  @id @default(autoincrement())
-  member_id     Int? @unique
-
-  // Ovlasti za članstvo
-  can_view_members      Boolean? @default(false)
-  can_edit_members      Boolean? @default(false)
-  can_add_members       Boolean? @default(false)
-  can_manage_membership Boolean? @default(false)
-
-  // Ovlasti za aktivnosti
-  can_view_activities    Boolean? @default(false)
-  can_create_activities  Boolean? @default(false)
-  can_approve_activities Boolean? @default(false)
-
-  // Financije
-  can_view_financials   Boolean? @default(false)
-  can_manage_financials Boolean? @default(false)
-
-  // Poruke
-  can_send_group_messages Boolean? @default(false)
-  can_manage_all_messages Boolean? @default(false)
-
-  // Statistika
-  can_view_statistics Boolean? @default(false)
-  can_export_data     Boolean? @default(false)
-
-  // Specifične ovlasti
-  can_manage_end_reasons  Boolean? @default(false)
-  can_manage_card_numbers Boolean? @default(false)
-  can_assign_passwords    Boolean? @default(false)
-
-  // Sustav
-  granted_by Int?
-  granted_at DateTime? @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @default(now()) @db.Timestamp(6)
-
-  grantedByMember Member? @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
-  member          Member? @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  permission_id           Int       @id @default(autoincrement())
+  member_id               Int?      @unique
+  can_manage_end_reasons  Boolean?  @default(false)
+  granted_by              Int?
+  granted_at              DateTime? @default(now()) @db.Timestamp(6)
+  can_add_members         Boolean?  @default(false)
+  can_approve_activities  Boolean?  @default(false)
+  can_assign_passwords    Boolean?  @default(false)
+  can_create_activities   Boolean?  @default(false)
+  can_edit_members        Boolean?  @default(false)
+  can_export_data         Boolean?  @default(false)
+  can_manage_all_messages Boolean?  @default(false)
+  can_manage_card_numbers Boolean?  @default(false)
+  can_manage_financials   Boolean?  @default(false)
+  can_manage_membership   Boolean?  @default(false)
+  can_send_group_messages Boolean?  @default(false)
+  can_view_activities     Boolean?  @default(false)
+  can_view_financials     Boolean?  @default(false)
+  can_view_members        Boolean?  @default(false)
+  can_view_statistics     Boolean?  @default(false)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([granted_by], map: "idx_member_permissions_granted_by")
   @@index([member_id], map: "idx_member_permissions_member")
@@ -323,7 +290,7 @@ model CardNumber {
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   assigned_at DateTime? @db.Timestamptz(6)
   member_id   Int?
-  members     Member?   @relation(fields: [member_id], references: [member_id], onUpdate: NoAction, map: "member_fk")
+  members     Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction, map: "member_fk")
 
   @@index([member_id], map: "idx_card_numbers_member_id")
   @@index([status], map: "idx_card_numbers_status")
@@ -336,7 +303,7 @@ model password_update_queue {
   card_number String    @db.VarChar(20)
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   processed   Boolean?  @default(false)
-  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model stamp_history {
@@ -349,7 +316,7 @@ model stamp_history {
   reset_by      Int?
   notes         String?
   stamp_year    Int
-  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: NoAction, onUpdate: NoAction)
+  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -392,4 +359,10 @@ model SystemManager {
   last_login    DateTime? @db.Timestamp(6)
 
   @@map("system_manager")
+}
+
+enum SenderType {
+  member
+  member_administrator
+  member_superuser
 }

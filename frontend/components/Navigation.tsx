@@ -16,6 +16,22 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   
+  // Pomoćna funkcija za određivanje rute dashboarda na temelju uloge
+  const getDashboardRoute = () => {
+    if (!user) return "/login";
+    
+    switch (user.role) {
+      case 'member_administrator':
+        return "/administrator/dashboard";
+      case 'member_superuser':
+        return "/superuser/dashboard";
+      case 'member':
+        return "/member/dashboard";
+      default:
+        return "/profile";
+    }
+  };
+  
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -38,26 +54,34 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
           endpoint = `/members/${user.member_id}/messages`;
         }
 
-        const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
+        // Dodajemo timestamp kao query parametar da izbjegnemo keširanje
+        const timestamp = new Date().getTime();
+        const response = await axios.get(`${API_BASE_URL}${endpoint}?t=${timestamp}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         // Broj nepročitanih poruka
         const unreadCount = (response.data as { status: string }[]).filter((msg) => msg.status === 'unread').length;
+        console.log(`Dohvaćeno ${response.data.length} poruka, ${unreadCount} nepročitanih`);
         setUnreadMessageCount(unreadCount);
       } catch (error) {
         console.error('Greška pri dohvaćanju nepročitanih poruka:', error);
       }
     };
 
+    // Odmah dohvati nepročitane poruke
     void fetchUnreadMessages();
     
-    // Dohvati nove poruke svakih 60 sekundi
-    const interval = setInterval(() => { void fetchUnreadMessages(); }, 60000);
+    // Dohvati nove poruke svakih 30 sekundi (smanjeno s 60 na 30 sekundi)
+    const interval = setInterval(() => { void fetchUnreadMessages(); }, 30000);
     
     // Slušaj događaj za ažuriranje brojača nepročitanih poruka
     const handleUnreadMessagesUpdated = () => {
-      void fetchUnreadMessages();
+      console.log('Primljen događaj za osvježavanje brojača nepročitanih poruka');
+      // Malo odgodi dohvaćanje da bi backend imao vremena ažurirati status poruka
+      setTimeout(() => {
+        void fetchUnreadMessages();
+      }, 300);
     };
     
     window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
@@ -133,12 +157,16 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               </>
             )}
             {/* System Manager je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
-            {/* Pristup System Admin sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
+            {/* Pristup System Manager sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
-              <span className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'}`}>
+              <Link 
+                to={getDashboardRoute()} 
+                className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'} hover:underline cursor-pointer`}
+                onClick={closeMenu}
+              >
                 {user.first_name} {user.last_name}
                 {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
-              </span>
+              </Link>
               <button
                 onClick={() => {
                   closeMenu();

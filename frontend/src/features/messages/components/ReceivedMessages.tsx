@@ -242,69 +242,101 @@ useEffect(() => {
               </div>
             )}
 
-            {filteredMessages.map((message) => (
-              <Card key={message.message_id} className={message.status === 'unread' ? 'border-blue-500' : ''}>
-                <CardHeader>
-                  <CardTitle className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <span>{message.sender_name}</span>
-                    <div className="flex flex-wrap gap-2">
+            {filteredMessages.map((message) => {
+              // Uzmi prvih 50 znakova poruke za pregled
+              const previewText = message.message_text.length > 50 
+                ? `${message.message_text.substring(0, 50)}...` 
+                : message.message_text;
+                
+              return (
+                <Card 
+                  key={message.message_id} 
+                  className={`${message.status === 'unread' ? 'border-blue-500' : ''} cursor-pointer hover:shadow-md transition-all`}
+                  onClick={() => {
+                    // Samo otvaranje/zatvaranje detalja poruke bez automatskog označavanja kao pročitano
+                    const messageElement = document.getElementById(`admin-message-content-${message.message_id}`);
+                    if (messageElement) {
+                      if (messageElement.classList.contains('hidden')) {
+                        messageElement.classList.remove('hidden');
+                      } else {
+                        messageElement.classList.add('hidden');
+                      }
+                    }
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        {message.status === 'unread' && (
+                          <span className="w-2 h-2 bg-blue-500 rounded-full" title="Nepročitana poruka"></span>
+                        )}
+                        <span>{message.sender_name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {/* Uklonili smo gumbe za označavanje kao pročitano */}
+                        {message.status !== 'archived' && (
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { 
+                              e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
+                              void onArchive(message.message_id); 
+                            }}
+                            title="Arhiviraj poruku"
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {userRole === 'member_superuser' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { 
+                              e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
+                              void onDelete(message.message_id); 
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                            title="Obriši poruku"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-2 text-gray-500 text-sm">
+                      {formatDate(message.created_at)}
+                    </div>
+                    
+                    {/* Pregled poruke */}
+                    <p className="text-sm text-gray-700">{previewText}</p>
+                    
+                    {/* Puni sadržaj poruke - sakriven po defaultu */}
+                    <div id={`admin-message-content-${message.message_id}`} className="mt-3 pt-3 border-t border-gray-200 whitespace-pre-wrap hidden">
+                      <div className="mb-3">{message.message_text}</div>
+                      
                       {message.status === 'unread' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => { void onMarkAsRead(message.message_id); }}
-                          className="flex items-center"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">Označi kao pročitano</span>
-                          <span className="sm:hidden">Pročitano</span>
-                        </Button>
+                        <div className="mt-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
+                              void onMarkAsRead(message.message_id); 
+                            }}
+                            className="flex items-center"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <span>Označi kao pročitano</span>
+                          </Button>
+                        </div>
                       )}
-                      {/* Duplicirani gumb za "Označi kao pročitano" - ostavljeno ako je namjerno za drugačiji uvjet prikaza */}
-                      {message.status !== 'archived' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => { void onMarkAsRead(message.message_id); }}
-                          className="flex items-center"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">Označi kao pročitano</span>
-                          <span className="sm:hidden">Pročitano</span>
-                        </Button>
-                      )}
-                      {message.status !== 'archived' && (
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { void onArchive(message.message_id); }}
-                          title="Arhiviraj poruku"
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {userRole === 'member_superuser' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { void onDelete(message.message_id); }}
-                          className="text-red-500 hover:text-red-700"
-                          title="Obriši poruku"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div> {/* Zatvaranje diva s gumbima */} 
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2 text-gray-500 text-sm">
-                    {formatDate(message.created_at)}
-                  </div>
-                  <p className="whitespace-pre-wrap">{message.message_text}</p>
-                </CardContent>
-              </Card>
-            ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </>
         ) : (
           <div className="text-center p-8 bg-gray-50 rounded-lg">

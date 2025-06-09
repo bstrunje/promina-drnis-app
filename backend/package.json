@@ -16,7 +16,9 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "backup": "node dist/scripts/backupDatabase.js",
+    "restore": "node dist/scripts/restoreDatabase.js"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
@@ -44,7 +46,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.1",
     "nodemailer": "^6.9.16",
     "pg": "^8.13.1",
     "rimraf": "^5.0.5",

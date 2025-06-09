@@ -233,10 +233,23 @@ export function isDateExpired(date: Date): boolean {
   return isDateBefore(date, getCurrentUTCDate());
 }
 
+/**
+ * Čisti ISO string od dodatnih navodnika
+ * @param dateStr ISO string koji može sadržavati dodatne navodnike
+ * @returns Očišćeni ISO string bez dodatnih navodnika
+ */
+export function cleanISODateString(dateStr: string): string {
+  if (!dateStr) return '';
+  
+  // Ukloni sve dodatne navodnike oko T i Z
+  return dateStr.replace(/'/g, '');
+}
+
 export default {
   getCurrentDate,
   getCurrentUTCDate,
   setSystemTimeZone,
+  cleanISODateString,
   getSystemTimeZone,
   addDays,
   addSeconds,

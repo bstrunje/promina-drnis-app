@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import CardNumberManagement from './CardNumberManagement';
+import MemberStatusSync from './MemberStatusSync';
 
 // Mjeseci na hrvatskom ako zatrebaju u budućnosti
 // const MONTHS = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'];
@@ -108,6 +109,9 @@ const Settings: React.FC = () => {
         <h1 className="text-2xl font-bold mb-2">Administrator Card & Permissions Management</h1>
         <p className="opacity-90">Manage membership card numbers and administrator permissions</p>
       </div>
+
+      {/* Komponenta za sinkronizaciju statusa članova - dostupna samo za superusere */}
+      {user?.role === 'member_superuser' && <MemberStatusSync />}
 
       {error && (
         <Alert variant="destructive" className="mb-4">

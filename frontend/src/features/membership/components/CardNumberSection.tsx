@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@components/ui/select";
+import { ScrollArea } from "@components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 const CardNumberSection: React.FC<CardNumberSectionProps> = ({ 
@@ -146,15 +147,18 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                       </SelectItem>
                     )}
 
-                    {/* Filtriraj trenutni broj kartice iz dostupnih brojeva da se izbjegnu duplikati */}
-                    {availableCardNumbers
-                      .filter(number => number !== member.membership_details?.card_number)
-                      .map((number) => (
-                        <SelectItem key={number} value={number}>
-                          {number}
-                        </SelectItem>
-                      ))
-                    }
+                    {/* Koristi ScrollArea za ograničavanje visine i omogućavanje skrolanja */}
+                    <ScrollArea className="h-[200px]">
+                      {/* Filtriraj trenutni broj kartice iz dostupnih brojeva da se izbjegnu duplikati */}
+                      {availableCardNumbers
+                        .filter(number => number !== member.membership_details?.card_number)
+                        .map((number) => (
+                          <SelectItem key={number} value={number}>
+                            {number}
+                          </SelectItem>
+                        ))
+                      }
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               ) : (
