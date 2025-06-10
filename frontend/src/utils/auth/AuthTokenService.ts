@@ -5,6 +5,7 @@
 import { withRetry } from './refreshUtils';
 import { tokenStorage } from './tokenStorage';
 import { API_BASE_URL } from '../config';
+import { jwtDecode } from 'jwt-decode';
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -14,6 +15,12 @@ export interface RefreshTokenResponse {
 /**
  * Servis za upravljanje autentikacijskim tokenima
  */
+// Varijabla za praćenje timera za automatsko osvježavanje
+let refreshTimerId: number | null = null;
+
+// Vrijeme u milisekundama prije isteka tokena kada ćemo ga osvježiti (2 minute)
+const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
+
 export class AuthTokenService {
   /**
    * Dohvaća API URL ovisno o okruženju
@@ -83,10 +90,98 @@ export class AuthTokenService {
   }
 
   /**
-   * Pokreće odjavu korisnika - čisti tokene
+   * Analizira JWT token i vraća vrijeme isteka
+   * @param token JWT token za analizu
+   * @returns Vrijeme isteka tokena u milisekundama ili null ako token nije valjan
+   */
+  static getTokenExpiryTime(token: string | null): number | null {
+    if (!token) return null;
+    
+    try {
+      // Dekodiranje tokena bez verifikacije potpisa
+      const decoded = jwtDecode<{ exp?: number }>(token);
+      
+      if (!decoded.exp) return null;
+      
+      // exp je u sekundama, pretvaramo u milisekunde
+      return decoded.exp * 1000;
+    } catch (error) {
+      console.error('Greška pri dekodiranju tokena:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Provjerava treba li osvježiti token
+   * @returns true ako token treba osvježiti, false ako ne treba ili nema tokena
+   */
+  static shouldRefreshToken(): boolean {
+    const accessToken = tokenStorage.getAccessToken();
+    if (!accessToken) return false;
+    
+    const expiryTime = this.getTokenExpiryTime(accessToken);
+    if (!expiryTime) return false;
+    
+    // Osvježi token ako ističe za manje od REFRESH_THRESHOLD_MS (2 minute)
+    const shouldRefresh = Date.now() + REFRESH_THRESHOLD_MS > expiryTime;
+    
+    if (shouldRefresh) {
+      console.log(`Token će isteći za ${Math.round((expiryTime - Date.now()) / 1000)} sekundi, potrebno osvježavanje`);
+    }
+    
+    return shouldRefresh;
+  }
+  
+  /**
+   * Započinje automatsko osvježavanje tokena
+   * Postavlja interval koji će provjeravati treba li osvježiti token
+   */
+  static startAutoRefresh(): void {
+    // Prvo očisti postojeći timer ako postoji
+    this.stopAutoRefresh();
+    
+    console.log('Započeto automatsko osvježavanje tokena');
+    
+    // Postavi interval koji će provjeravati treba li osvježiti token svakih 30 sekundi
+    refreshTimerId = window.setInterval(async () => {
+      try {
+        if (this.shouldRefreshToken()) {
+          console.log('Automatsko osvježavanje tokena...');
+          const newToken = await this.refreshToken();
+          
+          if (newToken) {
+            console.log('Token uspješno osvježen automatski');
+          } else {
+            console.warn('Automatsko osvježavanje tokena nije uspjelo');
+            // Ako osvježavanje nije uspjelo, zaustavi automatsko osvježavanje
+            this.stopAutoRefresh();
+          }
+        }
+      } catch (error) {
+        console.error('Greška pri automatskom osvježavanju tokena:', error);
+      }
+    }, 30000); // Provjera svakih 30 sekundi
+  }
+  
+  /**
+   * Zaustavlja automatsko osvježavanje tokena
+   */
+  static stopAutoRefresh(): void {
+    if (refreshTimerId !== null) {
+      window.clearInterval(refreshTimerId);
+      refreshTimerId = null;
+      console.log('Zaustavljeno automatsko osvježavanje tokena');
+    }
+  }
+  
+  /**
+   * Pokreće odjavu korisnika - čisti tokene i zaustavlja automatsko osvježavanje
    */
   static async logout(): Promise<void> {
     try {
+      // Zaustavi automatsko osvježavanje tokena
+      this.stopAutoRefresh();
+      
       console.log("Započinjem proces odjave korisnika...");
       
       // Poziv backend API-ja za odjavu i poništavanje refresh tokena

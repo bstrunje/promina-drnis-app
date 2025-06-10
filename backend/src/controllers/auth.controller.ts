@@ -90,7 +90,7 @@ async function validatePassword(
 }
 
 // Funkcija za obnavljanje access tokena pomoću refresh tokena
-async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
+async function refreshTokenHandler(req: Request, res: Response): Promise<void | Response> {
   console.log('Refresh token zahtjev primljen');
   console.log('Origin:', req.headers.origin);
   console.log('Cookies:', JSON.stringify(req.cookies));
@@ -113,8 +113,39 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     // Provjeri valjanost refresh tokena koristeći REFRESH_TOKEN_SECRET
     let decoded;
     try {
-      decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number, role: string };
+      decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { 
+        id: number, 
+        role: string, 
+        fingerprint?: string 
+      };
       console.log('JWT verifikacija uspješna, decoded:', { id: decoded.id, role: decoded.role });
+      
+      // Provjera fingerprinta uređaja ako postoji u tokenu
+      if (decoded.fingerprint) {
+        // Generiranje trenutnog fingerprinta za usporedbu
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const currentFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
+        
+        console.log('Provjera fingerprinta uređaja...');
+        
+        // Usporedba fingerprinta iz tokena s trenutnim fingerprintom
+        if (decoded.fingerprint !== currentFingerprint) {
+          console.error('Fingerprint uređaja ne odgovara pohranjenom fingerprintu');
+          console.log(`Token fingerprint: ${decoded.fingerprint.substring(0, 10)}...`);
+          console.log(`Trenutni fingerprint: ${currentFingerprint.substring(0, 10)}...`);
+          
+          // Ako je produkcija, strože provjeravamo fingerprint
+          // U razvoju dopuštamo razlike zbog lakšeg testiranja
+          if (process.env.NODE_ENV === 'production') {
+            return res.status(401).json({ error: 'Neispravan uređaj za refresh token' });
+          } else {
+            console.warn('Razlika u fingerprintu ignorirana u razvojnom okruženju');
+          }
+        } else {
+          console.log('Fingerprint uređaja uspješno verificiran');
+        }
+      }
     } catch (jwtError) {
       console.error('JWT verifikacija nije uspjela:', jwtError);
       return res.status(401).json({ error: 'Neispravan refresh token' });
@@ -157,6 +188,26 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
       return;
     }
     
+    // Provjera isteka tokena u bazi podataka
+    if (storedToken.expires_at) {
+      const currentDate = new Date();
+      const expiryDate = new Date(storedToken.expires_at);
+      
+      console.log(`Provjera isteka tokena: trenutno vrijeme=${formatUTCDate(currentDate)}, vrijeme isteka=${formatUTCDate(expiryDate)}`);
+      
+      if (currentDate > expiryDate) {
+        console.error(`Refresh token je istekao u bazi podataka: ${formatUTCDate(expiryDate)}`);
+        
+        // Brišemo istekli token iz baze
+        await prisma.refresh_tokens.delete({
+          where: { id: storedToken.id }
+        });
+        
+        res.status(401).json({ error: 'Refresh token je istekao' });
+        return;
+      }
+    }
+    
     // Generiraj novi access token
     const member = await prisma.member.findUnique({ 
       where: { member_id: decoded.id } 
@@ -179,9 +230,24 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     
     console.log('Novi access token generiran');
     
+    // Generiranje fingerprinta uređaja za dodatnu sigurnost
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    
+    // Jednostavan hash za fingerprint - kombinacija user-agent i IP adrese
+    const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
+    
+    console.log('Generiran fingerprint uređaja za token');
+    
     // Implementacija token rotation - generiranje novog refresh tokena koristeći REFRESH_TOKEN_SECRET
+    // Dodajemo fingerprint uređaja u payload tokena za dodatnu sigurnost
     const newRefreshToken = jwt.sign(
-      { id: member.member_id, role: member.role }, 
+      { 
+        id: member.member_id, 
+        role: member.role,
+        fingerprint: deviceFingerprint, // Dodajemo fingerprint u token
+        iat: Math.floor(Date.now() / 1000) // Dodajemo vrijeme izdavanja tokena
+      }, 
       REFRESH_TOKEN_SECRET, 
       { expiresIn: '7d' }
     );
