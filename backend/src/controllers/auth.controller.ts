@@ -210,35 +210,46 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     }
     
     // Postavi novi refresh token u kolačić s prilagođenim postavkama za cross-origin zahtjeve
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const secure = isProduction || protocol === 'https';
     
-    // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama
-    res.cookie('refreshToken', newRefreshToken, { 
-      httpOnly: true, 
-      // U produkciji ili kada koristimo HTTPS, postavimo secure: true
-      secure: !isDevelopment && isHttps,
-      // Prilagođavanje sameSite postavke ovisno o okruženju
-      // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
-      // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
-      sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
+    // Dinamičko određivanje sameSite postavke
+    let sameSite: 'strict' | 'lax' | 'none' | undefined = 'strict';
+    if (isProduction) {
+      sameSite = secure ? 'none' : 'strict';
+    } else {
+      sameSite = 'lax'; // Najbolje za razvoj
+    }
+    
+    // Brisanje systemManagerRefreshToken kolačića ako postoji
+    // kako bi se izbjegao konflikt između dva tipa tokena
+    if (req.cookies.systemManagerRefreshToken) {
+      console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
+      res.clearCookie('systemManagerRefreshToken', { 
+        path: '/api/system-manager' 
+      });
+    }
+    
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: secure,
+      sameSite: sameSite,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-      path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-      // Dodajemo domain postavku samo ako je eksplicitno definirana
-      domain: process.env.COOKIE_DOMAIN || undefined
+      path: '/api/auth' // Ograničeno na /api/auth putanju
     });
     
     console.log('Postavljen novi refresh token kolačić s opcijama:', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'none',
-      path: '/',
+      path: '/api/auth',
       domain: process.env.COOKIE_DOMAIN || undefined
     });
     
     // Za razvojno okruženje, vraćamo i refresh token u odgovoru kako bi se mogao spremiti u lokalno spremište
     
-    if (isDevelopment) {
+    if (isProduction) {
       console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
       res.json({ 
         accessToken,
@@ -256,47 +267,33 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
 
 // Funkcija za odjavu korisnika i poništavanje refresh tokena
 async function logoutHandler(req: Request, res: Response): Promise<void> {
-  // Provjeri postoje li kolačići i refreshToken
-  const refreshToken = req.cookies && req.cookies.refreshToken;
+  const refreshToken = req.cookies.refreshToken;
   
-  console.log('Logout request received, cookies:', req.cookies);
-  
-  if (refreshToken) {
-    try {
-      // Ukloni token iz baze
-      await prisma.refresh_tokens.deleteMany({
-        where: { token: refreshToken }
-      });
-      console.log('RefreshToken uspješno obrisan iz baze');
-    } catch (error) {
-      console.error('Greška pri brisanju refresh tokena:', error);
-      // Nastavljamo s odjavom čak i ako brisanje ne uspije
-    }
-  } else {
-    console.log('RefreshToken nije pronađen u kolačićima');
+  // Ako nema refresh tokena, samo obriši kolačić i vrati uspjeh
+  if (!refreshToken) {
+    res.clearCookie('refreshToken', { path: '/api/auth' });
+    res.status(200).json({ message: 'Uspješna odjava' });
+    return;
   }
   
-  // Ukloni kolačić (uvijek pokušaj obrisati, čak i ako ne postoji)
-  // Moramo koristiti iste postavke kao i pri postavljanju kolačića
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
-  const cookieOptions = {
-    httpOnly: true,
-    // U produkciji ili kada koristimo HTTPS, postavimo secure: true
-    secure: !isDevelopment && isHttps,
-    // Prilagođavanje sameSite postavke ovisno o okruženju
-    // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
-    // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
-    sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
-    path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-    // Dodajemo domain postavku samo ako je eksplicitno definirana
-    domain: process.env.COOKIE_DOMAIN || undefined
-  };
-  
-  console.log('Brišem refresh token kolačić s opcijama:', cookieOptions);
-  res.clearCookie('refreshToken', cookieOptions);
-  res.status(200).json({ message: 'Uspješna odjava' });
+  try {
+    // Provjeri postoji li token u bazi i obriši ga
+    await prisma.refresh_tokens.deleteMany({
+      where: { token: refreshToken }
+    });
+    
+    // Obriši kolačić s ispravnom putanjom
+    res.clearCookie('refreshToken', { path: '/api/auth' });
+    
+    res.status(200).json({ message: 'Uspješna odjava' });
+  } catch (error) {
+    console.error('Greška prilikom odjave:', error);
+    
+    // Obriši kolačić bez obzira na grešku
+    res.clearCookie('refreshToken', { path: '/api/auth' });
+    
+    res.status(500).json({ error: 'Greška prilikom odjave' });
+  }
 }
 
 const authController = {

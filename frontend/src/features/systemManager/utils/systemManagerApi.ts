@@ -276,14 +276,14 @@ export const systemManagerLogout = (): boolean => {
     console.log('Uklonjeni System Manager tokeni iz lokalnog spremišta');
     
     // Čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
-    // Koristimo ispravno ime kolačića koje se koristi u backendu
-    document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Koristimo ispravno ime kolačića i putanju koja se koristi u backendu
+    document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager;";
+    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;";
     
     // Ako smo u produkciji, dodajemo secure i SameSite atribute
     if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
-      document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
-      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
+      document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager; secure; SameSite=None;";
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth; secure; SameSite=None;";
     }
     
     console.log('System Manager uspješno odjavljen');

@@ -422,6 +422,9 @@ Aplikacija koristi robustan JWT refresh token sustav za sigurniju autentikaciju 
    - Potpisan s REFRESH_TOKEN_SECRET ključem (odvojeni ključ za bolju sigurnost)
    - Pohranjuje se u bazi podataka u tablici `refresh_tokens`
    - Šalje se klijentu kao HTTP-only kolačić
+   - Izolirani kolačići za različite tipove korisnika:
+     - `refreshToken` za članove s putanjom `/api/auth`
+     - `systemManagerRefreshToken` za administratore sustava s putanjom `/api/system-manager`
 
 #### Implementacija na backendu
 
@@ -452,10 +455,19 @@ await prisma.refresh_tokens.create({
 // Postavljanje refresh tokena kao HTTP-only kolačića
 res.cookie('refreshToken', refreshToken, { 
   httpOnly: true, 
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dana
+  secure: process.env.NODE_ENV === 'production' || protocol === 'https',
+  sameSite: isDevelopment ? 'lax' : (process.env.COOKIE_DOMAIN ? 'none' : 'strict'),
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+  path: '/api/auth' // Ograničeno na /api/auth putanju
 });
+
+// Brisanje systemManagerRefreshToken kolačića ako postoji
+// kako bi se izbjegao konflikt između dva tipa tokena
+if (req.cookies.systemManagerRefreshToken) {
+  res.clearCookie('systemManagerRefreshToken', { 
+    path: '/api/system-manager' 
+  });
+}
 ```
 
 #### Token rotacija

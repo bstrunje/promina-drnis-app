@@ -106,9 +106,16 @@ export class AuthTokenService {
       }
       
       // Dodatno čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
-      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      // Koristimo ispravnu putanju za kolačiće
+      document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;";
+      
+      // Brisanje systemManagerRefreshToken kolačića ako postoji
+      // kako bi se izbjegao konflikt između dva tipa tokena
+      document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager;";
+      
       if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
-        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; SameSite=None;";
+        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth; secure; SameSite=None;";
+        document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager; secure; SameSite=None;";
       }
       
       console.log("Kolačići očišćeni na klijentskoj strani");

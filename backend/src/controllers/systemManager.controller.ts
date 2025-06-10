@@ -143,12 +143,21 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
                 sameSite = 'lax'; // Najbolje za razvoj
             }
             
+            // Brisanje refreshToken kolačića ako postoji
+            // kako bi se izbjegao konflikt između dva tipa tokena
+            if (req.cookies.refreshToken) {
+                console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
+                res.clearCookie('refreshToken', { 
+                  path: '/api/auth' 
+                });
+            }
+            
             res.cookie('systemManagerRefreshToken', newRefreshToken, {
                 httpOnly: true,
                 secure: secure,
                 sameSite: sameSite,
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-                path: '/'
+                path: '/api/system-manager' // Ograničeno na /api/system-manager putanju
             });
             
             // Vraćanje novog tokena
@@ -222,12 +231,21 @@ const systemManagerController = {
                 sameSite = 'lax'; // Najbolje za razvoj
             }
             
+            // Brisanje refreshToken kolačića ako postoji
+            // kako bi se izbjegao konflikt između dva tipa tokena
+            if (req.cookies.refreshToken) {
+                console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
+                res.clearCookie('refreshToken', { 
+                    path: '/api/auth' 
+                });
+            }
+            
             res.cookie('systemManagerRefreshToken', refreshToken, {
                 httpOnly: true,
                 secure: secure,
                 sameSite: sameSite,
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-                path: '/'
+                path: '/api/system-manager' // Ograničeno na /api/system-manager putanju
             });
 
             // Vrati token i osnovne podatke o manageru
