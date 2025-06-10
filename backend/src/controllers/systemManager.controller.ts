@@ -156,7 +156,19 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
             if (req.cookies.refreshToken) {
                 console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
                 res.clearCookie('refreshToken', { 
-                  path: '/api/auth' 
+                    path: '/api/auth',
+                    secure: secure,
+                    sameSite: sameSite
+                });
+            }
+            
+            // Također provjeravamo i brišemo stari systemManagerRefreshToken ako postoji
+            if (req.cookies.systemManagerRefreshToken) {
+                console.log('Brišem stari systemManagerRefreshToken kolačić prije postavljanja novog');
+                res.clearCookie('systemManagerRefreshToken', { 
+                    path: '/api/system-manager',
+                    secure: secure,
+                    sameSite: sameSite
                 });
             }
             
@@ -252,9 +264,24 @@ const systemManagerController = {
             if (req.cookies.refreshToken) {
                 console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
                 res.clearCookie('refreshToken', { 
-                    path: '/api/auth' 
+                    path: '/api/auth',
+                    secure: secure,
+                    sameSite: sameSite
                 });
             }
+            
+            // Također provjeravamo i brišemo stari systemManagerRefreshToken ako postoji
+            if (req.cookies.systemManagerRefreshToken) {
+                console.log('Brišem stari systemManagerRefreshToken kolačić prije postavljanja novog');
+                res.clearCookie('systemManagerRefreshToken', { 
+                    path: '/api/system-manager',
+                    secure: secure,
+                    sameSite: sameSite
+                });
+            }
+            
+            console.log(`Postavljam systemManagerRefreshToken kolačić sa sameSite=${sameSite}, secure=${secure}`);
+
             
             res.cookie('systemManagerRefreshToken', refreshToken, {
                 httpOnly: true,
@@ -948,5 +975,71 @@ function isValidTimeZone(timeZone: string): boolean {
         return false;
     }
 }
+
+// Funkcija za odjavu system managera i poništavanje refresh tokena
+async function logoutHandler(req: Request, res: Response): Promise<void> {
+    const refreshToken = req.cookies.systemManagerRefreshToken;
+    
+    // Određivanje postavki za kolačiće
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    
+    let secure = isSecure || isProduction;
+    let sameSite: 'strict' | 'lax' | 'none' | undefined;
+    
+    if (isProduction || secure) {
+        sameSite = 'none';
+        if (sameSite === 'none') {
+            secure = true;
+        }
+    } else {
+        sameSite = 'lax';
+    }
+    
+    console.log(`Brisanje kolačića system managera pri odjavi sa sameSite=${sameSite}, secure=${secure}`);
+    
+    // Ako nema refresh tokena, samo obriši kolačiće i vrati uspjeh
+    if (!refreshToken) {
+        // Briši oba tipa kolačića za svaki slučaj
+        res.clearCookie('systemManagerRefreshToken', { 
+            path: '/api/system-manager',
+            secure: secure,
+            sameSite: sameSite
+        });
+        res.clearCookie('refreshToken', { 
+            path: '/api/auth',
+            secure: secure,
+            sameSite: sameSite
+        });
+        res.status(200).json({ message: 'Uspješna odjava system managera' });
+        return;
+    }
+    
+    try {
+        // Provjeri postoji li token u bazi i obriši ga
+        await prisma.refresh_tokens.deleteMany({
+            where: { token: refreshToken }
+        });
+        
+        // Obriši oba tipa kolačića s ispravnim postavkama
+        res.clearCookie('systemManagerRefreshToken', { 
+            path: '/api/system-manager',
+            secure: secure,
+            sameSite: sameSite
+        });
+        res.clearCookie('refreshToken', { 
+            path: '/api/auth',
+            secure: secure,
+            sameSite: sameSite
+        });
+        
+        res.status(200).json({ message: 'Uspješna odjava system managera' });
+    } catch (error) {
+        console.error('Greška pri odjavi system managera:', error);
+        res.status(500).json({ error: 'Došlo je do greške pri odjavi' });
+    }
+}
+
+export { logoutHandler };
 
 export default systemManagerController;

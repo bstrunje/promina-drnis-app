@@ -235,7 +235,19 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     if (req.cookies.systemManagerRefreshToken) {
       console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
       res.clearCookie('systemManagerRefreshToken', { 
-        path: '/api/system-manager' 
+        path: '/api/system-manager',
+        secure: secure,
+        sameSite: sameSite
+      });
+    }
+    
+    // Također provjeravamo i brišemo stari refreshToken ako postoji
+    if (req.cookies.refreshToken) {
+      console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
+      res.clearCookie('refreshToken', { 
+        path: '/api/auth',
+        secure: secure,
+        sameSite: sameSite
       });
     }
     
@@ -277,9 +289,37 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
 async function logoutHandler(req: Request, res: Response): Promise<void> {
   const refreshToken = req.cookies.refreshToken;
   
-  // Ako nema refresh tokena, samo obriši kolačić i vrati uspjeh
+  // Određivanje postavki za kolačiće
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
+  let secure = isSecure || isProduction;
+  let sameSite: 'strict' | 'lax' | 'none' | undefined;
+  
+  if (isProduction || secure) {
+    sameSite = 'none';
+    if (sameSite === 'none') {
+      secure = true;
+    }
+  } else {
+    sameSite = 'lax';
+  }
+  
+  console.log(`Brisanje kolačića pri odjavi sa sameSite=${sameSite}, secure=${secure}`);
+  
+  // Ako nema refresh tokena, samo obriši kolačiće i vrati uspjeh
   if (!refreshToken) {
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    // Briši oba tipa kolačića za svaki slučaj
+    res.clearCookie('refreshToken', { 
+      path: '/api/auth',
+      secure: secure,
+      sameSite: sameSite
+    });
+    res.clearCookie('systemManagerRefreshToken', { 
+      path: '/api/system-manager',
+      secure: secure,
+      sameSite: sameSite
+    });
     res.status(200).json({ message: 'Uspješna odjava' });
     return;
   }
@@ -290,8 +330,18 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
       where: { token: refreshToken }
     });
     
-    // Obriši kolačić s ispravnom putanjom
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    // Obriši oba tipa kolačića s ispravnim postavkama
+    res.clearCookie('refreshToken', { 
+      path: '/api/auth',
+      secure: secure,
+      sameSite: sameSite
+    });
+    // Također obriši systemManagerRefreshToken ako postoji
+    res.clearCookie('systemManagerRefreshToken', { 
+      path: '/api/system-manager',
+      secure: secure,
+      sameSite: sameSite
+    });
     
     res.status(200).json({ message: 'Uspješna odjava' });
   } catch (error) {

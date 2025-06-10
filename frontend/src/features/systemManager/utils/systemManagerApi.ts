@@ -263,12 +263,13 @@ export const systemManagerRefreshToken = async (): Promise<SystemManagerLoginRes
  * Odjava system managera
  * @returns {boolean} Uspješnost odjave
  */
-export const systemManagerLogout = (): boolean => {
+export const systemManagerLogout = async (): Promise<boolean> => {
   try {
     console.log('Započinjem proces odjave System Managera...');
     
-    // Pokušaj poziva backend API-ja za odjavu (ako je potrebno implementirati)
-    // Primjer: await systemManagerApi.post('/system-manager/logout');
+    // Poziv na backend za odjavu i poništavanje refresh tokena
+    await systemManagerApi.post('/system-manager/logout');
+    console.log('Uspješno poslan zahtjev za odjavu na backend');
     
     // Čišćenje System Manager tokena iz localStorage-a
     localStorage.removeItem('systemManagerToken');
@@ -280,13 +281,16 @@ export const systemManagerLogout = (): boolean => {
     
     console.log('Uklonjeni System Manager tokeni i zastarjeli tokeni iz lokalnog spremišta');
     
-    // Čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
-    // Koristimo ispravno ime kolačića i putanju koja se koristi u backendu
+    // Čišćenje kolačića na klijentskoj strani kao dodatna sigurnosna mjera
+    // iako bi backend trebao obrisati kolačiće kroz Set-Cookie zaglavlje
+    const isSecure = process.env.NODE_ENV === 'production' || window.location.protocol === 'https:';
+    
+    // Osnovne postavke za brisanje kolačića
     document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager;";
     document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;";
     
-    // Ako smo u produkciji, dodajemo secure i SameSite atribute
-    if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+    // Ako smo u produkciji ili koristimo HTTPS, dodajemo secure i SameSite atribute
+    if (isSecure) {
       document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager; secure; SameSite=None;";
       document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth; secure; SameSite=None;";
     }

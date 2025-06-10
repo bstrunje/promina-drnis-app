@@ -64,6 +64,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 const app: Express = express();
 
+// Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel, Render)
+app.set('trust proxy', true);
+
 // ES modules compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
