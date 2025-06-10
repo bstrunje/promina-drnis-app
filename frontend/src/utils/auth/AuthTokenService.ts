@@ -113,12 +113,17 @@ export class AuthTokenService {
       // kako bi se izbjegao konflikt između dva tipa tokena
       document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager;";
       
+      // Za HTTPS ili produkciju, dodajemo secure i SameSite=None atribute
       if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
         document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth; secure; SameSite=None;";
         document.cookie = "systemManagerRefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/system-manager; secure; SameSite=None;";
       }
       
-      console.log("Kolačići očišćeni na klijentskoj strani");
+      // Čišćenje zastarjelih tokena iz lokalnog spremišta
+      localStorage.removeItem('systemAdmin'); // Zastarjeli naziv
+      localStorage.removeItem('systemAdminToken'); // Zastarjeli naziv
+      
+      console.log("Kolačići i zastarjeli tokeni očišćeni na klijentskoj strani");
     } catch (error) {
       console.error("Greška pri odjavi na backendu:", error);
     } finally {

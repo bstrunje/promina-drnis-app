@@ -1,4 +1,4 @@
-// features/systemAdmin/components/members/EditMemberPermissionsModal.tsx
+// features/members/permisssions/EditMemberPermissionsModal.tsx
 import React, { useState, useEffect } from 'react';
 import { AdminPermissionsModel, UpdateMemberPermissionsDto } from '@shared/systemManager';
 import { getMemberPermissions, updateMemberPermissions } from './api/memberPermissionsApi';

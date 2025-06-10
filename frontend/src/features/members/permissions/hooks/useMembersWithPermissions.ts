@@ -1,4 +1,4 @@
-// features/systemAdmin/hooks/useMembersWithPermissions.ts
+// features/members/permisssions/hooks/useMembersWithPermissions.ts
 import { useState, useEffect, useCallback } from 'react';
 import { getMembersWithPermissions } from '../api/memberPermissionsApi';
 import { MemberWithPermissions } from '@shared/systemManager';

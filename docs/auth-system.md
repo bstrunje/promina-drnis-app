@@ -500,17 +500,48 @@ router.post('/refresh', authController.refreshToken);
 router.post('/logout', authController.logout);
 ```
 
+#### Izolacija tokena za različite tipove korisnika
+
+Aplikacija podržava dvije vrste korisničkih uloga koje koriste odvojene autentikacijske tokene:
+
+1. **Članovi** (member, member_administrator, member_superuser)
+   - Koriste `refreshToken` kolačić s putanjom `/api/auth`
+   - Endpoint za osvježavanje: `/api/auth/refresh`
+
+2. **Administratori sustava** (SystemManager)
+   - Koriste `systemManagerRefreshToken` kolačić s putanjom `/api/system-manager`
+   - Endpoint za osvježavanje: `/api/system-manager/refresh-token`
+
+**Sprječavanje konflikata tokena:**
+
+- Kolačići su izolirani na različitim putanjama kako bi se spriječilo da se šalju na pogrešne endpointe
+- Prilikom prijave ili osvježavanja tokena jednog tipa korisnika, automatski se briše kolačić drugog tipa korisnika
+- Frontend implementacija briše oba tipa kolačića prilikom odjave
+- Axios instance za različite tipove korisnika koriste odvojene interceptore za osvježavanje tokena
+
+```typescript
+// Primjer brisanja konfliktnih kolačića u auth.controller.ts
+if (req.cookies.systemManagerRefreshToken) {
+  console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
+  res.clearCookie('systemManagerRefreshToken', { 
+    path: '/api/system-manager' 
+  });
+}
+```
+
 #### Prednosti implementacije
 
 1. **Poboljšana sigurnost**
    - Kraće trajanje access tokena smanjuje rizik od zlouporabe ukradenog tokena
    - HTTP-only kolačići za refresh tokene štite od XSS napada
    - Token rotacija onemogućuje korištenje istog refresh tokena više puta
+   - Izolacija tokena sprječava konflikte između različitih tipova korisnika
 
 2. **Bolje korisničko iskustvo**
    - Korisnici se ne moraju često prijavljivati
    - Automatsko obnavljanje tokena u pozadini
    - Sigurna odjava koja poništava refresh token
+   - Mogućnost istovremenog rada s različitim tipovima korisničkih računa
 
 ### Sigurnosna najbolja praksa
 

@@ -133,14 +133,22 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
             // Postavljanje novog refresh tokena kao HTTP-only kolačića
             const isProduction = process.env.NODE_ENV === 'production';
             const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-            const secure = isProduction || protocol === 'https';
+            // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
+            let secure = isProduction || protocol === 'https';
             
             // Dinamičko određivanje sameSite postavke
-            let sameSite: 'strict' | 'lax' | 'none' | undefined = 'strict';
-            if (isProduction) {
-                sameSite = secure ? 'none' : 'strict';
+            // Za cross-site zahtjeve, potrebno je postaviti sameSite na 'none' i secure na true
+            // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
+            let sameSite: 'strict' | 'lax' | 'none' | undefined;
+            
+            if (isProduction || secure) {
+                sameSite = 'none';
+                // Ako koristimo 'none', secure mora biti true
+                if (sameSite === 'none') {
+                    secure = true;
+                }
             } else {
-                sameSite = 'lax'; // Najbolje za razvoj
+                sameSite = 'lax'; // Za lokalni razvoj
             }
             
             // Brisanje refreshToken kolačića ako postoji
@@ -221,14 +229,22 @@ const systemManagerController = {
             // Postavljanje refresh tokena kao HTTP-only kolačića
             const isProduction = process.env.NODE_ENV === 'production';
             const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-            const secure = isProduction || protocol === 'https';
+            // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
+            let secure = isProduction || protocol === 'https';
             
             // Dinamičko određivanje sameSite postavke
-            let sameSite: 'strict' | 'lax' | 'none' | undefined = 'strict';
-            if (isProduction) {
-                sameSite = secure ? 'none' : 'strict';
+            // Za cross-site zahtjeve, potrebno je postaviti sameSite na 'none' i secure na true
+            // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
+            let sameSite: 'strict' | 'lax' | 'none' | undefined;
+            
+            if (isProduction || secure) {
+                sameSite = 'none';
+                // Ako koristimo 'none', secure mora biti true
+                if (sameSite === 'none') {
+                    secure = true;
+                }
             } else {
-                sameSite = 'lax'; // Najbolje za razvoj
+                sameSite = 'lax'; // Za lokalni razvoj
             }
             
             // Brisanje refreshToken kolačića ako postoji

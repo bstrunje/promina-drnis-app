@@ -273,7 +273,12 @@ export const systemManagerLogout = (): boolean => {
     // Čišćenje System Manager tokena iz localStorage-a
     localStorage.removeItem('systemManagerToken');
     localStorage.removeItem('systemManager');
-    console.log('Uklonjeni System Manager tokeni iz lokalnog spremišta');
+    
+    // Čišćenje zastarjelih tokena iz lokalnog spremišta
+    localStorage.removeItem('systemAdmin'); // Zastarjeli naziv
+    localStorage.removeItem('systemAdminToken'); // Zastarjeli naziv
+    
+    console.log('Uklonjeni System Manager tokeni i zastarjeli tokeni iz lokalnog spremišta');
     
     // Čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
     // Koristimo ispravno ime kolačića i putanju koja se koristi u backendu

@@ -1,7 +1,7 @@
-// features/systemAdmin/components/members/AddMemberPermissionsModal.tsx
+// features/members/permissions/AddMemberPermissionsModal.tsx
 import React, { useState, useEffect } from 'react';
 import { X, Search, UserPlus } from 'lucide-react';
-import { getMembersWithoutPermissions } from '../../utils/systemAdminApi';
+import { getMembersWithoutPermissions } from '../../../features/systemManager/utils/systemManagerApi';
 import { Member } from '@shared/member';
 
 interface AddMemberPermissionsModalProps {

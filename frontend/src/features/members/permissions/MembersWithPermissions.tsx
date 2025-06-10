@@ -1,4 +1,4 @@
-// features/systemAdmin/components/members/MembersWithPermissions.tsx
+// features/members/permisssions/MembersWithPermissions.tsx
 import React, { useState } from 'react';
 import { User, RefreshCw } from 'lucide-react';
 import useMembersWithPermissions from './hooks/useMembersWithPermissions';
