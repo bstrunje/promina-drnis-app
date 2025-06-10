@@ -20,6 +20,45 @@ import {
   LOCKOUT_ADMINS
 } from '../config/auth.config.js';
 
+// Funkcija za generiranje konzistentnih opcija kolačića
+function generateCookieOptions(req: Request, userType: 'member' | 'systemManager') {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const origin = req.headers.origin || '';
+  const host = req.headers.host || '';
+  
+  // Provjera je li zahtjev cross-origin
+  const isCrossOrigin = origin && origin !== `${isHttps ? 'https' : 'http'}://${host}`;
+  
+  // Određivanje secure postavke
+  let secure = !isDevelopment || isHttps;
+  
+  // Određivanje sameSite postavke
+  let sameSite: 'strict' | 'lax' | 'none' | undefined;
+  
+  if (isDevelopment) {
+    sameSite = 'lax'; // Za lokalni razvoj
+  } else if (process.env.COOKIE_DOMAIN || isCrossOrigin) {
+    sameSite = 'none'; // Za cross-origin zahtjeve
+    secure = true; // Ako je sameSite 'none', secure mora biti true
+  } else {
+    sameSite = 'strict'; // Za produkciju i same-origin zahtjeve
+  }
+  
+  // Određivanje putanje ovisno o tipu korisnika
+  // Koristimo '/' za sve kolačiće kako bi bili dostupni na svim putanjama
+  const path = '/';
+  
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
+    path,
+    domain: process.env.COOKIE_DOMAIN || undefined
+  };
+}
+
 // Extend Express Request to include user
 declare global {
   namespace Express {
@@ -293,61 +332,27 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     const isCrossOrigin = origin && origin !== `${protocol}://${req.headers.host}`;
     console.log(`Zahtjev je ${isCrossOrigin ? 'cross-origin' : 'same-origin'}, origin: ${origin}, host: ${req.headers.host}`);
     
-    // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
-    let secure = isProduction || protocol === 'https';
-    
-    // Dinamičko određivanje sameSite postavke
-    // Za cross-site zahtjeve, potrebno je postaviti sameSite na 'none' i secure na true
-    // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
-    let sameSite: 'strict' | 'lax' | 'none' | undefined;
-    
-    // Ako smo u produkciji ili koristimo HTTPS ili je zahtjev cross-origin, koristimo 'none'
-    if (isProduction || secure || isCrossOrigin) {
-      sameSite = 'none';
-      // Ako koristimo 'none', secure mora biti true (Firefox zahtjev)
-      secure = true;
-    } else {
-      sameSite = 'lax'; // Za lokalni razvoj i same-origin zahtjeve
-    }
-    
-    console.log(`Postavke kolačića: sameSite=${sameSite}, secure=${secure}, isProduction=${isProduction}, protocol=${protocol}`);
-    
     // Brisanje systemManagerRefreshToken kolačića ako postoji
     // kako bi se izbjegao konflikt između dva tipa tokena
     if (req.cookies.systemManagerRefreshToken) {
       console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
-      res.clearCookie('systemManagerRefreshToken', { 
-        path: '/api/system-manager',
-        secure: secure,
-        sameSite: sameSite
-      });
+      const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
+      res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     }
     
     // Također provjeravamo i brišemo stari refreshToken ako postoji
     if (req.cookies.refreshToken) {
       console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
-      res.clearCookie('refreshToken', { 
-        path: '/api/auth',
-        secure: secure,
-        sameSite: sameSite
-      });
+      const memberCookieOptions = generateCookieOptions(req, 'member');
+      res.clearCookie('refreshToken', memberCookieOptions);
     }
     
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: secure,
-      sameSite: sameSite,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-      path: '/api/auth' // Ograničeno na /api/auth putanju
-    });
+    // Koristimo zajedničku funkciju za generiranje opcija kolačića
+    const cookieOptions = generateCookieOptions(req, 'member');
     
-    console.log('Postavljen novi refresh token kolačić s opcijama:', {
-      httpOnly: true,
-      secure: secure,
-      sameSite: sameSite,
-      path: '/api/auth',
-      domain: process.env.COOKIE_DOMAIN || undefined
-    });
+    res.cookie('refreshToken', newRefreshToken, cookieOptions);
+    
+    console.log('Postavljen novi refresh token kolačić s opcijama:', cookieOptions);
     
     // Za razvojno okruženje, vraćamo i refresh token u odgovoru kako bi se mogao spremiti u lokalno spremište
     
@@ -371,37 +376,16 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
 async function logoutHandler(req: Request, res: Response): Promise<void> {
   const refreshToken = req.cookies.refreshToken;
   
-  // Određivanje postavki za kolačiće
-  const isProduction = process.env.NODE_ENV === 'production';
-  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
-  let secure = isSecure || isProduction;
-  let sameSite: 'strict' | 'lax' | 'none' | undefined;
-  
-  if (isProduction || secure) {
-    sameSite = 'none';
-    if (sameSite === 'none') {
-      secure = true;
-    }
-  } else {
-    sameSite = 'lax';
-  }
-  
-  console.log(`Brisanje kolačića pri odjavi sa sameSite=${sameSite}, secure=${secure}`);
+  console.log(`Brisanje kolačića pri odjavi`);
   
   // Ako nema refresh tokena, samo obriši kolačiće i vrati uspjeh
   if (!refreshToken) {
     // Briši oba tipa kolačića za svaki slučaj
-    res.clearCookie('refreshToken', { 
-      path: '/api/auth',
-      secure: secure,
-      sameSite: sameSite
-    });
-    res.clearCookie('systemManagerRefreshToken', { 
-      path: '/api/system-manager',
-      secure: secure,
-      sameSite: sameSite
-    });
+    const memberCookieOptions = generateCookieOptions(req, 'member');
+    const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
+    
+    res.clearCookie('refreshToken', memberCookieOptions);
+    res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     res.status(200).json({ message: 'Uspješna odjava' });
     return;
   }
@@ -413,24 +397,20 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
     });
     
     // Obriši oba tipa kolačića s ispravnim postavkama
-    res.clearCookie('refreshToken', { 
-      path: '/api/auth',
-      secure: secure,
-      sameSite: sameSite
-    });
+    const memberCookieOptions = generateCookieOptions(req, 'member');
+    const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
+    
+    res.clearCookie('refreshToken', memberCookieOptions);
     // Također obriši systemManagerRefreshToken ako postoji
-    res.clearCookie('systemManagerRefreshToken', { 
-      path: '/api/system-manager',
-      secure: secure,
-      sameSite: sameSite
-    });
+    res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     
     res.status(200).json({ message: 'Uspješna odjava' });
   } catch (error) {
     console.error('Greška prilikom odjave:', error);
     
     // Obriši kolačić bez obzira na grešku
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    const memberCookieOptions = generateCookieOptions(req, 'member');
+    res.clearCookie('refreshToken', memberCookieOptions);
     
     res.status(500).json({ error: 'Greška prilikom odjave' });
   }
@@ -723,22 +703,7 @@ const authController = {
         }
 
         // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama za cross-origin zahtjeve
-        const isDevelopment = process.env.NODE_ENV !== 'production';
-        const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-        
-        const cookieOptions = { 
-          httpOnly: true, 
-          // U produkciji ili kada koristimo HTTPS, postavimo secure: true
-          secure: !isDevelopment && isHttps,
-          // Prilagođavanje sameSite postavke ovisno o okruženju
-          // U razvoju koristimo 'lax' jer je kompatibilniji s većinom browsera
-          // U produkciji koristimo 'strict' ako su frontend i backend na istoj domeni, inače 'none'
-          sameSite: isDevelopment ? 'lax' as const : (process.env.COOKIE_DOMAIN ? 'none' as const : 'strict' as const),
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-          path: '/', // Osigurava da je kolačić dostupan na svim putanjama
-          // Dodajemo domain postavku samo ako je eksplicitno definirana
-          domain: process.env.COOKIE_DOMAIN || undefined
-        };
+        const cookieOptions = generateCookieOptions(req, 'member');
         
         console.log('Postavljam refresh token kolačić s opcijama:', cookieOptions);
         res.cookie('refreshToken', refreshToken, cookieOptions);
