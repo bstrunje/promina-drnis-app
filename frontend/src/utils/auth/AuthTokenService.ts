@@ -4,6 +4,7 @@
 
 import { withRetry } from './refreshUtils';
 import { tokenStorage } from './tokenStorage';
+import { API_BASE_URL } from '../config';
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -18,13 +19,16 @@ export class AuthTokenService {
    * Dohvaća API URL ovisno o okruženju
    */
   static getApiUrl(endpoint: string): string {
-    // U produkciji koristimo relativne putanje jer su frontend i backend na istoj domeni
+    // U produkciji koristimo API_BASE_URL iz config.ts
     // U razvoju koristimo direktne putanje jer su frontend i backend na različitim portovima
     const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
     if (isDevelopment) {
       return `${window.location.protocol}//${window.location.hostname}:3000${endpoint}`;
     } else {
-      return endpoint; // U produkciji koristimo relativne putanje
+      // Koristimo API_BASE_URL iz config.ts i dodajemo endpoint bez /api prefiksa
+      // jer API_BASE_URL već sadrži /api
+      const apiEndpoint = endpoint.startsWith('/api/') ? endpoint.substring(4) : endpoint;
+      return `${API_BASE_URL}${apiEndpoint}`;
     }
   }
 
