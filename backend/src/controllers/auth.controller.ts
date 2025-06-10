@@ -91,30 +91,34 @@ async function validatePassword(
 
 // Funkcija za obnavljanje access tokena pomoću refresh tokena
 async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
-  console.log('Refresh token zahtjev primljen, cookies:', req.cookies);
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
+  console.log('Refresh token zahtjev primljen');
+  console.log('Origin:', req.headers.origin);
+  console.log('Cookies:', JSON.stringify(req.cookies));
+  console.log('User-Agent:', req.headers['user-agent']);
   
-  // Dohvati refresh token iz kolačića ili iz tijela zahtjeva (za razvoj)
-  let refreshToken = req.cookies.refreshToken;
+  // Dohvati refresh token iz kolačića
+  const refreshToken = req.cookies.refreshToken;
   
-  // Ako token nije pronađen u kolačićima, provjeri tijelo zahtjeva (za razvoj)
-  if (!refreshToken && req.body && req.body.refreshToken) {
-    console.log('Refresh token nije pronađen u kolačićima, ali je pronađen u tijelu zahtjeva');
-    refreshToken = req.body.refreshToken;
-  }
+  // Detaljnije logiranje za dijagnostiku
+  console.log('Provjera refresh tokena iz kolačića...');
   
   if (!refreshToken) {
-    console.log('Refresh token nije pronađen ni u kolačićima ni u tijelu zahtjeva');
-    res.status(401).json({ error: 'Refresh token nije pronađen' });
-    return;
+    console.log('Refresh token nije pronađen u kolačiću');
+    return res.status(401).json({ error: 'Refresh token nije pronađen' });
   }
   
-  console.log('Refresh token pronađen, nastavljam s provjerom...');
+  console.log('Refresh token pronađen u kolačiću:', refreshToken.substring(0, 20) + '...');
   
   try {
     // Provjeri valjanost refresh tokena koristeći REFRESH_TOKEN_SECRET
-    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number, role: string };
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number, role: string };
+      console.log('JWT verifikacija uspješna, decoded:', { id: decoded.id, role: decoded.role });
+    } catch (jwtError) {
+      console.error('JWT verifikacija nije uspjela:', jwtError);
+      return res.status(401).json({ error: 'Neispravan refresh token' });
+    }
     
     // Provjeri postoji li RefreshToken model u Prisma klijentu
     if (!prisma.refresh_tokens) {
@@ -159,9 +163,12 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     });
     
     if (!member) {
+      console.error(`Korisnik s ID ${decoded.id} nije pronađen u bazi`);
       res.status(403).json({ error: 'Korisnik nije pronađen' });
       return;
     }
+    
+    console.log(`Korisnik pronađen: ID=${member.member_id}, uloga=${member.role}`);
     
     // Generiraj novi access token koristeći JWT_SECRET
     const accessToken = jwt.sign(
@@ -169,6 +176,8 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
       JWT_SECRET, 
       { expiresIn: '15m' }
     );
+    
+    console.log('Novi access token generiran');
     
     // Implementacija token rotation - generiranje novog refresh tokena koristeći REFRESH_TOKEN_SECRET
     const newRefreshToken = jwt.sign(
@@ -212,6 +221,12 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     // Postavi novi refresh token u kolačić s prilagođenim postavkama za cross-origin zahtjeve
     const isProduction = process.env.NODE_ENV === 'production';
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const origin = req.headers.origin || '';
+    
+    // Provjera je li zahtjev cross-origin
+    const isCrossOrigin = origin && origin !== `${protocol}://${req.headers.host}`;
+    console.log(`Zahtjev je ${isCrossOrigin ? 'cross-origin' : 'same-origin'}, origin: ${origin}, host: ${req.headers.host}`);
+    
     // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
     let secure = isProduction || protocol === 'https';
     
@@ -220,15 +235,16 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void> {
     // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
     let sameSite: 'strict' | 'lax' | 'none' | undefined;
     
-    if (isProduction || secure) {
+    // Ako smo u produkciji ili koristimo HTTPS ili je zahtjev cross-origin, koristimo 'none'
+    if (isProduction || secure || isCrossOrigin) {
       sameSite = 'none';
-      // Ako koristimo 'none', secure mora biti true
-      if (sameSite === 'none') {
-        secure = true;
-      }
+      // Ako koristimo 'none', secure mora biti true (Firefox zahtjev)
+      secure = true;
     } else {
-      sameSite = 'lax'; // Za lokalni razvoj
+      sameSite = 'lax'; // Za lokalni razvoj i same-origin zahtjeve
     }
+    
+    console.log(`Postavke kolačića: sameSite=${sameSite}, secure=${secure}, isProduction=${isProduction}, protocol=${protocol}`);
     
     // Brisanje systemManagerRefreshToken kolačića ako postoji
     // kako bi se izbjegao konflikt između dva tipa tokena
