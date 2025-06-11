@@ -49,7 +49,9 @@ function generateCookieOptions(req: Request, userType: 'member' | 'systemManager
   // Koristimo '/' za sve kolačiće kako bi bili dostupni na svim putanjama
   const path = '/';
   
-  return {
+  // Dodajemo partitioned atribut za Firefox
+  // Ovo rješava upozorenje "Cookie will soon be rejected because it is foreign and does not have the Partitioned attribute"
+  const cookieOptions: any = {
     httpOnly: true,
     secure,
     sameSite,
@@ -57,6 +59,13 @@ function generateCookieOptions(req: Request, userType: 'member' | 'systemManager
     path,
     domain: process.env.COOKIE_DOMAIN || undefined
   };
+  
+  // Dodajemo partitioned atribut za Firefox ako je cross-origin ili imamo COOKIE_DOMAIN
+  if (isCrossOrigin || process.env.COOKIE_DOMAIN) {
+    cookieOptions.partitioned = true;
+  }
+  
+  return cookieOptions;
 }
 
 // Extend Express Request to include user
@@ -201,7 +210,7 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     console.log(`Tražim refresh token u bazi za korisnika ID: ${decoded.id}`);
     
     // Provjeri postoji li token u bazi
-    const storedToken = await prisma.refresh_tokens.findFirst({
+    let storedToken = await prisma.refresh_tokens.findFirst({
       where: { 
         token: refreshToken,
         member_id: decoded.id
@@ -213,18 +222,59 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     if (!storedToken) {
       console.error(`Refresh token nije pronađen u bazi za korisnika ID: ${decoded.id}`);
       
-      // Dodatna dijagnostika - provjeri postoje li uopće tokeni u bazi
-      const allTokens = await prisma.refresh_tokens.findMany({
-        take: 5 // Ograniči na 5 rezultata
+      // Dodatna dijagnostika - provjeri postoje li tokeni za ovog korisnika
+      const userTokens = await prisma.refresh_tokens.findMany({
+        where: { member_id: decoded.id }
       });
       
-      console.log(`Broj tokena u bazi: ${allTokens.length}`);
-      if (allTokens.length > 0) {
-        console.log('Primjeri tokena u bazi:', allTokens.map(t => ({ id: t.id, member_id: t.member_id })));
-      }
+      console.log(`Broj tokena u bazi za korisnika ID ${decoded.id}: ${userTokens.length}`);
       
-      res.status(403).json({ error: 'Refresh token nije valjan' });
-      return;
+      if (userTokens.length > 0) {
+        console.log('Tokeni korisnika u bazi:', userTokens.map(t => ({ 
+          id: t.id, 
+          token_substr: t.token.substring(0, 20) + '...',
+          expires_at: t.expires_at ? formatUTCDate(new Date(t.expires_at)) : 'nije postavljen'
+        })));
+        
+        // Ako je token u kolačiću valjan (prošao JWT verifikaciju) ali nije u bazi,
+        // vjerojatno je korisnik dobio novi token pri prijavi na drugom uređaju
+        // U tom slučaju, kreiramo novi token i dodajemo ga u bazu
+        console.log('Token je valjan ali nije pronađen u bazi - vjerojatno prijava s drugog uređaja');
+        console.log('Kreiram novi token i dodajem ga u bazu...');
+        
+        // Generiranje novog fingerprinta za trenutni uređaj
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
+        
+        // Kreiramo novi token u bazi za ovaj uređaj
+        const expiresAt = getTokenExpiryDate(7); // 7 dana
+        
+        try {
+          // Kreiramo novi zapis u bazi za ovaj token
+          const newToken = await prisma.refresh_tokens.create({
+            data: {
+              token: refreshToken,
+              member_id: decoded.id,
+              expires_at: expiresAt
+            }
+          });
+          
+          console.log(`Novi token uspješno kreiran s ID: ${newToken.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
+          
+          // Postavljamo storedToken na novi token kako bi nastavili s obradom
+          storedToken = newToken;
+        } catch (error) {
+          console.error('Greška pri kreiranju novog tokena:', error);
+          res.status(500).json({ error: 'Interna greška servera pri obradi tokena' });
+          return;
+        }
+      } else {
+        // Ako nema tokena za ovog korisnika, vrati grešku
+        console.error(`Korisnik ID: ${decoded.id} nema aktivnih tokena u bazi`);
+        res.status(403).json({ error: 'Refresh token nije valjan' });
+        return;
+      }
     }
     
     // Provjera isteka tokena u bazi podataka
@@ -260,20 +310,16 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     
     console.log(`Korisnik pronađen: ID=${member.member_id}, uloga=${member.role}`);
     
-    // Generiraj novi access token koristeći JWT_SECRET
+    // Generiranje novog access tokena
     const accessToken = jwt.sign(
-      { id: member.member_id, role: member.role }, 
-      JWT_SECRET, 
+      { id: member.member_id, role: member.role },
+      JWT_SECRET,
       { expiresIn: '15m' }
     );
-    
-    console.log('Novi access token generiran');
     
     // Generiranje fingerprinta uređaja za dodatnu sigurnost
     const userAgent = req.headers['user-agent'] || 'unknown';
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    
-    // Jednostavan hash za fingerprint - kombinacija user-agent i IP adrese
     const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
     
     console.log('Generiran fingerprint uređaja za token');
@@ -640,9 +686,22 @@ const authController = {
         { expiresIn: "15m" } // Smanjeno na 15 minuta za bolju sigurnost
       );
 
-      // Generiraj refresh token
+      // Generiranje fingerprinta uređaja za dodatnu sigurnost
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+      
+      // Jednostavan hash za fingerprint - kombinacija user-agent i IP adrese
+      const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
+      
+      console.log('Generiran fingerprint uređaja za token');
+      
+      // Generiraj refresh token s fingerprintom
       const refreshToken = jwt.sign(
-        { id: member.member_id, role: member.role },
+        { 
+          id: member.member_id, 
+          role: member.role,
+          fingerprint: deviceFingerprint // Dodajemo fingerprint u token
+        },
         REFRESH_TOKEN_SECRET,
         { expiresIn: "7d" } // Refresh token traje 7 dana
       );
