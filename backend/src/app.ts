@@ -36,30 +36,7 @@ import genericMessagesRouter from './routes/generic.messages.js';
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
 
-// Definiramo testModeMiddleware kao običnu funkciju koja se može zamijeniti
-// bez potrebe za importom stvarnog middleware-a
-// Ovo eliminira potrebu za uvjetnim dinamičkim importom tijekom kompilacije
-const testModeMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // U produkciji, ovo će samo proslijediti zahtjev
-  // U razvoju, ovo će biti prepisano stvarnim middleware-om
-  next();
-};
-
-// Samo u razvoju, ako možemo pronaći middleware, koristit ćemo ga
-// Ovo se NE događa tijekom TypeScript kompilacije, nego samo u runtimeu
-if (process.env.NODE_ENV !== 'production') {
-  (async () => {
-    try {
-      const testModeModule = await import('./middleware/test-mode.middleware.js');
-      if (testModeModule && testModeModule.testModeMiddleware) {
-        Object.assign(testModeMiddleware, testModeModule.testModeMiddleware);
-        console.log('Test mode middleware successfully loaded');
-      }
-    } catch {
-      console.log('Test mode middleware not available, using fallback');
-    }
-  })();
-}
+import testModeMiddleware from './middleware/test-mode.middleware.js';
 
 const app: Express = express();
 
