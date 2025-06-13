@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs/promises';
-import config from './config/config.js';
+import _config from './config/config.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
@@ -30,8 +30,8 @@ import adminRoutes from './routes/admin.routes.js';
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
-import genericMessagesRouter from './routes/generic.messages.js';
 import adminStatusRoutes from './routes/admin.status.js';
+import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -48,18 +48,17 @@ const testModeMiddleware = (req: Request, res: Response, next: NextFunction) => 
 // Samo u razvoju, ako možemo pronaći middleware, koristit ćemo ga
 // Ovo se NE događa tijekom TypeScript kompilacije, nego samo u runtimeu
 if (process.env.NODE_ENV !== 'production') {
-  try {
-    // Pokušaj učitati testModeMiddleware korištenjem dinamičkog require-a
-    // Ovo se preskače tijekom TypeScript kompilacije
-    const testModeModule = require('./middleware/test-mode.middleware.js');
-    if (testModeModule && testModeModule.testModeMiddleware) {
-      // @ts-ignore - Namjerno zanemarujemo TS provjeru ovdje
-      Object.assign(testModeMiddleware, testModeModule.testModeMiddleware);
-      console.log('Test mode middleware successfully loaded');
+  (async () => {
+    try {
+      const testModeModule = await import('./middleware/test-mode.middleware.js');
+      if (testModeModule && testModeModule.testModeMiddleware) {
+        Object.assign(testModeMiddleware, testModeModule.testModeMiddleware);
+        console.log('Test mode middleware successfully loaded');
+      }
+    } catch {
+      console.log('Test mode middleware not available, using fallback');
     }
-  } catch (error) {
-    console.log('Test mode middleware not available, using fallback');
-  }
+  })();
 }
 
 const app: Express = express();
@@ -74,12 +73,12 @@ const __dirname = dirname(__filename);
 // Test database connection
 sequelize.authenticate()
   .then(() => console.log('Database connected...'))
-  .catch((err: any) => console.log('Error: ' + err));
+  .catch((err: unknown) => console.log('Error: ' + err));
 
 // Sync database
 sequelize.sync()
   .then(() => console.log('Database synced...'))
-  .catch((err: any) => console.log('Error: ' + err));
+  .catch((err: unknown) => console.log('Error: ' + err));
 
 // Basic middleware setup
 app.use(helmet());
@@ -175,10 +174,10 @@ app.use(cors(corsOptions));
 
 app.use(testModeMiddleware);
 
-// Express middleware za parsiranje JSON-a s UTF-8 kodiranjem
+// Express middleware za parsanje JSON-a s UTF-8 kodiranjem
 app.use(express.json({ 
   limit: '10mb',
-  verify: (req, res, buf, encoding) => {
+  verify: (_req, _res, buf, _encoding) => {
     // Provjera UTF-8 kompatibilnosti
     if (buf && buf.length) {
       try {
@@ -260,24 +259,32 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// API Routes
+// Debug middleware za /api/messages
+app.use('/api/messages', (req, res, next) => {
+  console.log(`🔍 [DEBUG] Messages route: ${req.method} ${req.path}`);
+  console.log(`🔍 [DEBUG] Full URL: ${req.originalUrl}`);
+  next();
+});
+
+// API Routes - KLJUČNO: /api/messages MORA biti PRIJE /api/members
 app.use('/api/auth', authRoutes);
-app.use('/api/system-manager', systemManagerRoutes); // Registrirana ruta za SystemManager
+app.use('/api/system-manager', systemManagerRoutes);
+
+console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
+app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
-app.use('/api/members', authMiddleware, memberMessagesRouter); // Register member messages routes
-// Poruke se šalju članovima po imenu (razlikuju se admini po imenu)
+app.use('/api/members', authMiddleware, memberMessagesRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
-app.use('/api/messages', authMiddleware, adminMessagesRouter); // Register admin messages routes
-app.use('/api/generic-messages', genericMessagesRouter); // Integrate generic message system (no auth for testing)
 app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin', adminStatusRoutes); // Registrirana ruta za sinkronizaciju statusa članova
+app.use('/api/admin', adminStatusRoutes);
 app.use('/api/card-numbers', cardNumberRoutes);
-app.use('/api/debug', debugRoutes); // Register debug routes
+app.use('/api/debug', debugRoutes);
 app.use('/api/members/permissions', permissionsRouter);
+app.use('/api/generic-messages', authMiddleware, genericMessagesRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {
@@ -285,7 +292,6 @@ app.get('/api', (req: Request, res: Response) => {
     message: 'Welcome to Promina Drnis API',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
-    notes: 'Messages are sent to members by name; if multiple admins exist, they are distinguished by name.',
     endpoints: {
       auth: '/api/auth',
       members: '/api/members',
@@ -293,8 +299,7 @@ app.get('/api', (req: Request, res: Response) => {
       audit: '/api/audit',
       messages: {
         member: '/api/members/:memberId/messages',
-        admin: '/api/messages',
-        generic: '/api/generic-messages'
+        admin: '/api/messages'
       },
       settings: '/api/settings',
       'system-manager': '/api/system-manager',
@@ -304,14 +309,14 @@ app.get('/api', (req: Request, res: Response) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('❌ Error occurred:', err);
+app.use((_err: Error, req: Request, res: Response, _next: NextFunction) => {
+  console.error('❌ Error occurred:', _err);
   
   res.status(500).json({
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
+    message: process.env.NODE_ENV === 'development' ? _err.message : 'An unexpected error occurred',
     environment: process.env.NODE_ENV,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    stack: process.env.NODE_ENV === 'development' ? _err.stack : undefined
   });
 });
 
@@ -321,12 +326,12 @@ prepareDirectories();
 // Migrate existing files (keep this commented unless needed)
 migrateExistingFiles()
   .then(() => console.log('File migration completed'))
-  .catch(err => console.error('Error during file migration:', err));
+  .catch((err: unknown) => console.error('Error during file migration:', err));
 
 // Inicijalizacija vremenske zone iz postavki sustava
 timezoneService.initializeTimezone()
   .then(() => console.log('🌐 Vremenska zona uspješno inicijalizirana iz postavki sustava'))
-  .catch(err => console.error('Greška pri inicijalizaciji vremenske zone:', err));
+  .catch((err: unknown) => console.error('Greška pri inicijalizaciji vremenske zone:', err));
 
 // Initialize scheduled tasks in production
 if (process.env.NODE_ENV === 'production') {

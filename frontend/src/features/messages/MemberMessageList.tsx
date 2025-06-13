@@ -6,7 +6,7 @@ import { Bell, CheckCircle, MessageCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 // Zamijenjeno prema novoj modularnoj API strukturi
 // Zamijenjeno prema novoj modularnoj API strukturi
-import { getMemberMessages, markMessageAsRead, getGenericMessages } from '../../utils/api/apiMessages';
+import { getMemberMessages, getMemberSentMessages, markMessageAsRead, getGenericMessages } from '../../utils/api/apiMessages';
 import { ApiGenericMessage } from '../../utils/api/apiTypes';
 import BackToDashboard from "../../../components/BackToDashboard";
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
@@ -28,10 +28,13 @@ const MemberMessageList: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MemberMessage[]>([]);
+  const [sentMessages, setSentMessages] = useState<MemberMessage[]>([]);
   const [genericMessages, setGenericMessages] = useState<ApiGenericMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSent, setLoadingSent] = useState(true);
   const [loadingGeneric, setLoadingGeneric] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
 
   // Dohvaćanje poruka za člana
   const fetchMemberMessages = useCallback(async () => {
@@ -61,7 +64,7 @@ const MemberMessageList: React.FC = () => {
         created_at: msg.timestamp,
         status: msg.read ? ('read' as const) : ('unread' as const),
         sender_id: Number(msg.sender_id) || null,
-        sender_type: msg.sender_type === 'system' ? 'member_administrator' : msg.sender_type,
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
         recipient_id: Number(msg.recipient_id) || null,
         recipient_type: msg.recipient_type
       }));
@@ -75,6 +78,47 @@ const MemberMessageList: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  }, [user?.member_id, toast]);
+
+  // Dohvaćanje poslanih poruka člana
+  const fetchMemberSentMessages = useCallback(async () => {
+    if (!user?.member_id) return;
+    
+    try {
+      setLoadingSent(true);
+      const data = await getMemberSentMessages(user.member_id);
+      
+      // Konverzija u lokalni tip MemberMessage
+      const convertedMessages = data.map(msg => ({
+        message_id: Number(msg.id),
+        message_text: msg.content,
+        created_at: msg.timestamp,
+        status: 'read', // Poslane poruke su uvijek pročitane od strane pošiljatelja
+        sender_id: Number(msg.sender_id) || null,
+        sender_type: msg.sender_type,
+        recipient_id: Number(msg.recipient_id) || null,
+        recipient_type: msg.recipient_type
+      }));
+      
+      // Osiguravamo da status bude jedan od dozvoljenih tipova
+      const typedMessages = convertedMessages
+        .filter(msg => typeof msg.sender_type === 'string' && ['member_administrator', 'member', 'member_superuser'].includes(msg.sender_type)) // Filtriramo poruke s nevaljanim sender_type
+        .map(msg => ({
+          ...msg,
+          // Osiguravamo da sender_type i status budu ispravnog tipa
+          sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
+          status: (msg.status as 'unread' | 'read' | 'archived')
+        }));
+      setSentMessages(typedMessages);
+    } catch (error) {
+      toast({
+        title: "Greška",
+        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poslane poruke',
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingSent(false);
     }
   }, [user?.member_id, toast]);
 
@@ -134,9 +178,10 @@ const MemberMessageList: React.FC = () => {
   useEffect(() => {
     if (user?.member_id) {
       void fetchMemberMessages();
+      void fetchMemberSentMessages();
     }
     void fetchGenericMessages();
-  }, [user?.member_id]); // Ovisimo samo o user.member_id za ponovno dohvaćanje poruka člana
+  }, [user?.member_id, fetchMemberMessages, fetchMemberSentMessages, fetchGenericMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
   
   // Automatsko označavanje otvorenih poruka kao pročitanih kada korisnik napusti stranicu ili promijeni filter
   useEffect(() => {
@@ -198,9 +243,9 @@ const MemberMessageList: React.FC = () => {
           <CardTitle className="flex justify-between items-center">
             <div className="flex items-center">
               <MessageCircle className="mr-2 h-5 w-5" />
-              Poruke od administratora
+              {activeTab === 'received' ? 'Poruke od administratora' : 'Poslane poruke'}
             </div>
-            {unreadCount > 0 && (
+            {activeTab === 'received' && unreadCount > 0 && (
               <div className="flex items-center bg-white text-blue-800 px-2 py-1 rounded-full text-sm">
                 <Bell className="h-4 w-4 mr-1" />
                 {unreadCount} {unreadCount === 1 ? 'nepročitana' : 'nepročitanih'}
@@ -213,61 +258,87 @@ const MemberMessageList: React.FC = () => {
             <BackToDashboard />
           </div>
           
-          {/* Gumbi za filtriranje poruka */}
+          {/* Gumbi za prebacivanje između primljenih i poslanih poruka */}
           <div className="flex space-x-2 mb-4">
             <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilter('all')}
+              variant={activeTab === 'received' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('received')}
               className="flex items-center space-x-2"
               size="sm"
             >
               <MessageCircle className="h-4 w-4 mr-1" />
-              <span>Sve poruke</span>
+              <span>Primljene poruke</span>
             </Button>
             <Button
-              variant={filter === 'unread' ? 'default' : 'outline'}
-              onClick={() => setFilter('unread')}
+              variant={activeTab === 'sent' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('sent')}
               className="flex items-center space-x-2"
               size="sm"
             >
-              <Bell className="h-4 w-4 mr-1" />
-              <span>Nepročitane</span>
-            </Button>
-            <Button
-              variant={filter === 'read' ? 'default' : 'outline'}
-              onClick={() => setFilter('read')}
-              className="flex items-center space-x-2"
-              size="sm"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              <span>Pročitane</span>
+              <MessageCircle className="h-4 w-4 mr-1" />
+              <span>Poslane poruke</span>
             </Button>
           </div>
           
-          {messages.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Nemate poruka od administratora
+          {/* Gumbi za filtriranje poruka - prikazuju se samo za primljene poruke */}
+          {activeTab === 'received' && (
+            <div className="flex space-x-2 mb-4">
+              <Button
+                variant={filter === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilter('all')}
+                className="flex items-center space-x-2"
+                size="sm"
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                <span>Sve poruke</span>
+              </Button>
+              <Button
+                variant={filter === 'unread' ? 'default' : 'outline'}
+                onClick={() => setFilter('unread')}
+                className="flex items-center space-x-2"
+                size="sm"
+              >
+                <Bell className="h-4 w-4 mr-1" />
+                <span>Nepročitane</span>
+              </Button>
+              <Button
+                variant={filter === 'read' ? 'default' : 'outline'}
+                onClick={() => setFilter('read')}
+                className="flex items-center space-x-2"
+                size="sm"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                <span>Pročitane</span>
+              </Button>
             </div>
-          ) : messages.filter(msg => {
-              if (filter === 'all') return true;
-              if (filter === 'unread') return msg.status === 'unread';
-              if (filter === 'read') return msg.status === 'read';
-              return true;
-            }).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Nema {filter === 'unread' ? 'nepročitanih' : filter === 'read' ? 'pročitanih' : ''} poruka
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Filtriraj poruke prema odabranom filteru */}
-              {messages
-                .filter(message => {
-                  if (filter === 'all') return true;
-                  if (filter === 'unread') return message.status === 'unread';
-                  if (filter === 'read') return message.status === 'read';
-                  return true;
-                })
-                .map((message) => {
+          )}
+          
+          {/* Prikaz primljenih poruka */}
+          {activeTab === 'received' && (
+            messages.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Nemate primljenih poruka
+              </div>
+            ) : messages.filter(msg => {
+                if (filter === 'all') return true;
+                if (filter === 'unread') return msg.status === 'unread';
+                if (filter === 'read') return msg.status === 'read';
+                return true;
+              }).length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Nema {filter === 'unread' ? 'nepročitanih' : filter === 'read' ? 'pročitanih' : ''} poruka
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Filtriraj poruke prema odabranom filteru */}
+                {messages
+                  .filter(message => {
+                    if (filter === 'all') return true;
+                    if (filter === 'unread') return message.status === 'unread';
+                    if (filter === 'read') return message.status === 'read';
+                    return true;
+                  })
+                  .map((message) => {
                 // Uzmi prvih 50 znakova poruke za pregled
                 const previewText = message.message_text.length > 50 
                   ? `${message.message_text.substring(0, 50)}...` 
@@ -282,11 +353,16 @@ const MemberMessageList: React.FC = () => {
                         : 'border-gray-200'
                     }`}
                     onClick={() => {
-                      // Samo otvaranje/zatvaranje detalja poruke bez automatskog označavanja kao pročitano
+                      // Otvaranje/zatvaranje detalja poruke
                       const messageElement = document.getElementById(`message-content-${message.message_id}`);
                       if (messageElement) {
                         if (messageElement.classList.contains('hidden')) {
                           messageElement.classList.remove('hidden');
+                          
+                          // Označi poruku kao pročitanu kada korisnik klikne na nju i otvori detalje
+                          if (message.status === 'unread') {
+                            void handleMarkAsRead(message.message_id);
+                          }
                         } else {
                           messageElement.classList.add('hidden');
                         }
@@ -295,9 +371,7 @@ const MemberMessageList: React.FC = () => {
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        {message.status === 'unread' ? (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full" title="Nepročitana poruka"></span>
-                        ) : (
+                        {message.status === 'read' && (
                           <span className="flex items-center text-green-600" title="Pročitana poruka">
                             <CheckCircle className="h-4 w-4 mr-1" />
                           </span>
@@ -333,15 +407,91 @@ const MemberMessageList: React.FC = () => {
                   </div>
                 );
               })}
-              
-              <Button
-                variant="outline"
-                onClick={() => { void fetchMemberMessages(); }}
-                className="w-full"
-              >
-                Osvježi poruke
-              </Button>
-            </div>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => { void fetchMemberMessages(); }}
+                  className="w-full"
+                >
+                  Osvježi poruke
+                </Button>
+              </div>
+            )
+          )}
+          
+          {/* Prikaz poslanih poruka */}
+          {activeTab === 'sent' && (
+            sentMessages.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Nemate poslanih poruka
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sentMessages.map((message) => {
+                  // Uzmi prvih 50 znakova poruke za pregled
+                  const previewText = message.message_text.length > 50 
+                    ? `${message.message_text.substring(0, 50)}...` 
+                    : message.message_text;
+                  
+                  return (
+                    <div 
+                      key={message.message_id} 
+                      className="p-4 rounded-md border cursor-pointer transition-all hover:shadow-md border-gray-200"
+                      onClick={() => {
+                        // Samo otvaranje/zatvaranje detalja poruke
+                        const messageElement = document.getElementById(`sent-message-content-${message.message_id}`);
+                        if (messageElement) {
+                          if (messageElement.classList.contains('hidden')) {
+                            messageElement.classList.remove('hidden');
+                          } else {
+                            messageElement.classList.add('hidden');
+                          }
+                        }
+                      }}
+                    >
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium">
+                            Primatelj: {message.recipient_type === 'member_administrator' ? 'Administrator' : 
+                                       message.recipient_type === 'all' ? 'Svi članovi' : 
+                                       'Korisnik'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-500">
+                            {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
+                          </div>
+                          <div className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                            Poslano
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Pregled poruke */}
+                      <div className="text-sm text-gray-700">{previewText}</div>
+                      
+                      {/* Puni sadržaj poruke - sakriven po defaultu */}
+                      <div id={`sent-message-content-${message.message_id}`} className="mt-3 pt-3 border-t border-gray-200 whitespace-pre-wrap hidden">
+                        <div className="mb-3">{message.message_text}</div>
+                        {message.recipient_type === 'all' && (
+                          <div className="mt-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">
+                            Poslano svim članovima
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                <Button
+                  variant="outline"
+                  onClick={() => { void fetchMemberSentMessages(); }}
+                  className="w-full"
+                >
+                  Osvježi poslane poruke
+                </Button>
+              </div>
+            )
           )}
         </CardContent>
       </Card>

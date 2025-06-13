@@ -30,6 +30,8 @@ apiInstance.interceptors.request.use(
 );
 
 // Response interceptor za rukovanje s 401 greškama
+// Napomena: Glavna logika za osvježavanje tokena je implementirana u axiosInterceptors.ts
+// koji se koristi u AuthContext.tsx. Ovaj interceptor je samo za API pozive koji ne prolaze kroz AuthContext.
 apiInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
@@ -37,11 +39,11 @@ apiInstance.interceptors.response.use(
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     
     // Ako je greška 401 ali NIJE login zahtjev (dakle izgubljena sesija negdje drugdje)
+    // Napomena: Ne pokušavamo osvježiti token ovdje jer to radi axiosInterceptors.ts
     if (error.response?.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-      return Promise.reject(new Error('Session expired. Please login again.'));
+      console.log('401 greška detektirana u apiConfig interceptoru');
+      // Ne radimo ništa posebno ovdje, samo prosljeđujemo grešku
+      // axiosInterceptors.ts će se pobrinuti za osvježavanje tokena
     }
     
     // Za sve ostale greške vraćamo originalnu grešku

@@ -17,6 +17,8 @@ router.delete('/', authMiddleware, roles.requireSuperUser, memberMessageControll
 router.post('/member/:memberId', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToMember);
 router.post('/group', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToMembers);
 router.post('/all', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToAll);
+// Dodatna ruta za kompatibilnost s frontend pozivom
+router.post('/member_administrator/to-all', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToAll);
 
 // Pregled poruka koje je admin poslao
 router.get('/sent', authMiddleware, roles.requireAdmin, memberMessageController.getMessagesSentByAdmin);

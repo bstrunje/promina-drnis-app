@@ -34,7 +34,7 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
         sender_id: String(msg.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
         sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
         recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
         recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
         timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
@@ -72,7 +72,7 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
         sender_id: String(msg.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
         sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
         recipient_id: msg.recipient_id ? String(msg.recipient_id) : (msg.recipient_type === 'all' ? 'all' : ''),
       recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
       timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
@@ -110,7 +110,7 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
         sender_id: String(msg.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
         sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'system' | 'member_superuser',
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
         recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
         recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
         timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
@@ -126,6 +126,44 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
       throw error;
     }
     throw new Error('Failed to fetch member messages');
+  }
+};
+
+/**
+ * Dohvaćanje poslanih poruka člana
+ * @param memberId ID člana
+ * @returns Lista poruka koje je član poslao
+ */
+export const getMemberSentMessages = async (memberId: number): Promise<ApiAdminMessage[]> => {
+  try {
+    // Dodajemo query parametar sent=true za dohvat poslanih poruka
+    const timestamp = new Date().getTime();
+    const response = await api.get(`/members/${memberId}/messages?sent=true&t=${timestamp}`);
+    
+    // Transformiraj poruke iz backend formata u ApiAdminMessage format
+    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
+      // Za poslane poruke, pošiljatelj je uvijek trenutni član
+      return {
+        id: String(msg.message_id),
+        content: msg.message_text,
+        sender_id: String(msg.sender_id),
+        sender_name: 'Vi', // Za poslane poruke prikazujemo "Vi" kao pošiljatelja
+        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
+        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
+        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
+        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+        read: true, // Poslane poruke su uvijek "pročitane" od strane pošiljatelja
+        priority: msg.priority || 'normal',
+        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
+      };
+    });
+    
+    return transformedData;
+  } catch (error) {
+    console.error('Greška pri dohvaćanju poslanih poruka člana:', error);
+    // U slučaju greške, vraćamo prazno polje umjesto bacanja iznimke
+    // kako ne bismo prekinuli rad aplikacije zbog ove funkcionalnosti
+    return [];
   }
 };
 
@@ -232,7 +270,7 @@ export const sendAdminMessageToGroup = async (memberIds: number[], messageText: 
 export const sendAdminMessageToAll = async (messageText: string): Promise<void> => {
   try {
     await api.post('/messages/member_administrator/to-all', {
-      content: messageText
+      messageText: messageText
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -298,5 +336,36 @@ export const deleteAllMessages = async (): Promise<void> => {
       throw error;
     }
     throw new Error('Failed to delete all messages');
+  }
+};
+
+/**
+ * Dohvaćanje broja nepročitanih poruka za trenutnog korisnika
+ * @returns Broj nepročitanih poruka
+ */
+export const getUnreadMessageCount = async (): Promise<number> => {
+  try {
+    // Dodajemo timestamp kao query parametar da izbjegnemo keširanje
+    const timestamp = new Date().getTime();
+    const response = await api.get(`/members/unread-count?t=${timestamp}`);
+    
+    // Ako backend vraća objekt s count svojstvom, koristimo ga
+    if (response.data && typeof response.data.count === 'number') {
+      return response.data.count;
+    }
+    
+    // Ako backend vraća samo broj, koristimo ga direktno
+    if (typeof response.data === 'number') {
+      return response.data;
+    }
+    
+    // Ako ne možemo dobiti broj nepročitanih poruka, vraćamo 0
+    console.warn('Neočekivani format odgovora za broj nepročitanih poruka:', response.data);
+    return 0;
+  } catch (error) {
+    console.error('Greška pri dohvaćanju broja nepročitanih poruka:', error);
+    // U slučaju greške, vraćamo 0 umjesto bacanja iznimke
+    // kako ne bismo prekinuli rad aplikacije zbog ove funkcionalnosti
+    return 0;
   }
 };

@@ -9,5 +9,7 @@ router.post('/:memberId/messages', authMiddleware, memberMessageController.creat
 router.get('/:memberId/messages', authMiddleware, memberMessageController.getMemberMessages);
 // Dodajemo rutu za članove da mogu označiti poruke kao pročitane
 router.put('/:memberId/messages/:messageId/read', authMiddleware, memberMessageController.markMemberMessageAsRead);
+// Dodajemo rutu za dohvaćanje broja nepročitanih poruka
+router.get('/unread-count', authMiddleware, memberMessageController.getUnreadMessageCount);
 
 export default router;

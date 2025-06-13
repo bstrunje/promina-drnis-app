@@ -20,6 +20,7 @@ import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
+import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -113,15 +114,17 @@ function App() {
   return (
     <AuthProvider>
       <TimeZoneProvider>
-        <ToastProvider>
-          <AppContent />
-          {import.meta.env.DEV && (
-            <div className="fixed bottom-4 right-4 z-50">
+        <UnreadMessagesProvider>
+          <ToastProvider>
+            <AppContent />
+            {import.meta.env.DEV && (
+              <div className="fixed bottom-4 right-4 z-50">
 
-            </div>
-          )}
-          <Toaster />
-        </ToastProvider>
+              </div>
+            )}
+            <Toaster />
+          </ToastProvider>
+        </UnreadMessagesProvider>
       </TimeZoneProvider>
     </AuthProvider>
   );

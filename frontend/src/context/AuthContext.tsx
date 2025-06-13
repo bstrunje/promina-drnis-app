@@ -108,6 +108,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     if (refreshToken) {
       tokenStorage.storeRefreshToken(refreshToken);
     }
+    
+    // Pokreni automatsko osvježavanje tokena
+    console.log('Pokrećem automatsko osvježavanje tokena nakon prijave');
+    AuthTokenService.startAutoRefresh();
   }, []);
 
   // Inicijalizacija stanja iz localStorage i provjera valjanosti tokena
@@ -158,6 +162,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               }, 5000);  // Pokušaj ponovno nakon 5 sekundi
             } else {
               console.log('Token je uspješno osvježen pri inicijalizaciji');
+              // Pokreni automatsko osvježavanje tokena
+              console.log('Pokrećem automatsko osvježavanje tokena pri inicijalizaciji');
+              AuthTokenService.startAutoRefresh();
             }
           } catch (refreshError) {
             // Greška pri osvježavanju tokena

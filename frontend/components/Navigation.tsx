@@ -1,11 +1,9 @@
 // frontend/components/Navigation.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
 import { Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/utils/config';
-import { MESSAGE_EVENTS } from '../src/utils/events';
+import { useUnreadMessages } from '../src/contexts/UnreadMessagesContext';
 
 interface NavigationProps {
   user: Member | null;
@@ -14,7 +12,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const { unreadCount: unreadMessageCount } = useUnreadMessages();
   
   // Pomoćna funkcija za određivanje rute dashboarda na temelju uloge
   const getDashboardRoute = () => {
@@ -40,57 +38,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
     setIsMenuOpen(false);
   };
 
-  // Dohvaćanje broja nepročitanih poruka
-  useEffect(() => {
-    const fetchUnreadMessages = async () => {
-      if (!user?.member_id) return;
-      
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        let endpoint = '/messages/member_administrator';  
-        if (user.role === 'member') {
-          endpoint = `/members/${user.member_id}/messages`;
-        }
-
-        // Dodajemo timestamp kao query parametar da izbjegnemo keširanje
-        const timestamp = new Date().getTime();
-        const response = await axios.get(`${API_BASE_URL}${endpoint}?t=${timestamp}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        // Broj nepročitanih poruka
-        const unreadCount = (response.data as { status: string }[]).filter((msg) => msg.status === 'unread').length;
-        console.log(`Dohvaćeno ${response.data.length} poruka, ${unreadCount} nepročitanih`);
-        setUnreadMessageCount(unreadCount);
-      } catch (error) {
-        console.error('Greška pri dohvaćanju nepročitanih poruka:', error);
-      }
-    };
-
-    // Odmah dohvati nepročitane poruke
-    void fetchUnreadMessages();
-    
-    // Dohvati nove poruke svakih 30 sekundi (smanjeno s 60 na 30 sekundi)
-    const interval = setInterval(() => { void fetchUnreadMessages(); }, 30000);
-    
-    // Slušaj događaj za ažuriranje brojača nepročitanih poruka
-    const handleUnreadMessagesUpdated = () => {
-      console.log('Primljen događaj za osvježavanje brojača nepročitanih poruka');
-      // Malo odgodi dohvaćanje da bi backend imao vremena ažurirati status poruka
-      setTimeout(() => {
-        void fetchUnreadMessages();
-      }, 300);
-    };
-    
-    window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
-    };
-  }, [user]);
+  // Brojač nepročitanih poruka se sada dohvaća iz UnreadMessagesContext
   
   if (!user) return null;
   

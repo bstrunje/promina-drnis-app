@@ -76,6 +76,10 @@ const messageService = {
 
     async messageExists(messageId: number): Promise<boolean> {
         return await memberMessageRepository.messageExists(messageId);
+    },
+    
+    async countUnreadMessages(memberId: number): Promise<number> {
+        return await memberMessageRepository.countUnreadMessages(memberId);
     }
 };
 

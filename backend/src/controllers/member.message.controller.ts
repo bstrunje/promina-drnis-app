@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import messageService from '../services/message.service.js';
 import auditService from '../services/audit.service.js';
 import { SenderType } from '@prisma/client';
@@ -336,37 +336,73 @@ const messageController = {
         }
     },
 
-    async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
-        try {
-            const messageId = parseInt(req.params.messageId);
-            const memberId = parseInt(req.params.memberId);
+
+
+async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
+    try {
+        const messageId = parseInt(req.params.messageId);
+        const memberId = parseInt(req.params.memberId);
+
+        // Provjera postoji li poruka
+        const messageExists = await messageService.messageExists(messageId);
+        if (!messageExists) {
+            res.status(404).json({ message: 'Message not found' });
+            return;
+        }
+
+        // Provjera je li korisnik autoriziran za ovu akciju
+        if (req.user?.id !== memberId && req.user?.role_name !== 'member_administrator' && req.user?.role_name !== 'member_superuser') {
+            res.status(403).json({ message: 'Unauthorized to mark this message as read' });
+            return;
+        }
+
+        await messageService.markMessageAsRead(messageId, memberId);
+        
+        if (req.user?.id) {
+            await auditService.logAction(
+                'MARK_MESSAGE_READ',
+                req.user.id,
+                `Message ${messageId} marked as read for member ${memberId}`,
+                req,
+                'success'
+            );
+        }
+
+        res.status(200).json({ message: 'Message marked as read' });
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        res.status(500).json({ message: 'Failed to mark message as read' });
+    }
+},
+
+async getUnreadMessageCount(req: Request, res: Response): Promise<void> {
+    try {
+        // Dohvati ID člana iz parametra ili iz autentificiranog korisnika
+        let memberId: number;
+        
+        if (req.params.memberId) {
+            memberId = parseInt(req.params.memberId);
             
-            // Sigurnosna provjera - korisnik može označiti samo svoje poruke
-            if (req.user?.id !== memberId && req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-                res.status(403).json({ message: 'Nedovoljne ovlasti za označavanje poruka drugih članova' });
+            // Provjera je li korisnik autoriziran za dohvat broja nepročitanih poruka drugog člana
+            if (req.user?.id !== memberId && req.user?.role_name !== 'member_administrator' && req.user?.role_name !== 'member_superuser') {
+                res.status(403).json({ message: 'Unauthorized to get unread message count for this member' });
                 return;
             }
-            
-            await messageService.markMessageAsRead(messageId, memberId);
-            
-            if (req.user?.id) {
-                await auditService.logAction(
-                    'MARK_MESSAGE_READ',
-                    req.user.id,
-                    `Član ${memberId} označio poruku ${messageId} kao pročitanu`,
-                    req,
-                    'success'
-                );
-            }
-
-            res.json({ message: 'Poruka označena kao pročitana' });
-        } catch (error) {
-            console.error('Greška pri označavanju poruke kao pročitane:', error);
-            res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Nije moguće označiti poruku kao pročitanu' 
-            });
+        } else if (req.user?.id) {
+            memberId = req.user.id;
+        } else {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
         }
+
+        const count = await messageService.countUnreadMessages(memberId);
+        
+        res.status(200).json({ count });
+    } catch (error) {
+        console.error('Error getting unread message count:', error);
+        res.status(500).json({ message: 'Failed to get unread message count' });
     }
+}
 };
 
 export default messageController;
