@@ -36,7 +36,7 @@ import genericMessagesRouter from './routes/generic.messages.js';
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
 
-import testModeMiddleware from './middleware/test-mode.middleware.js';
+import { testModeMiddleware } from './middleware/test-mode.middleware.js';
 
 const app: Express = express();
 
