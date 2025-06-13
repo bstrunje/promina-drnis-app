@@ -36,9 +36,22 @@ import genericMessagesRouter from './routes/generic.messages.js';
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
 
-import { testModeMiddleware } from './middleware/test-mode.middleware.js';
+// U produkciji nije potrebno koristiti testModeMiddleware
+// U razvoju ga uvjetno uključujemo zbog simulacije testnog načina rada
+let testModeMiddleware: ((req: Request, res: Response, next: NextFunction) => void) | undefined = undefined;
+if (process.env.NODE_ENV !== 'production') {
+  // Uvjetni require zbog kompatibilnosti s ESM/TS buildom
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  testModeMiddleware = require('./middleware/test-mode.middleware').testModeMiddleware;
+}
 
 const app: Express = express();
+
+// ...
+// Korištenje testModeMiddleware samo u development/test okruženju
+if (testModeMiddleware) {
+  app.use(testModeMiddleware);
+}
 
 // Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel, Render)
 app.set('trust proxy', true);
@@ -149,7 +162,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(testModeMiddleware);
 
 // Express middleware za parsanje JSON-a s UTF-8 kodiranjem
 app.use(express.json({ 
