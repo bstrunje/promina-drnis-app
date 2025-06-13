@@ -39,18 +39,19 @@ import { prepareDirectories, migrateExistingFiles } from './init/prepareDirector
 // U produkciji nije potrebno koristiti testModeMiddleware
 // U razvoju ga uvjetno uključujemo zbog simulacije testnog načina rada
 let testModeMiddleware: ((req: Request, res: Response, next: NextFunction) => void) | undefined = undefined;
-if (process.env.NODE_ENV !== 'production') {
-  // Uvjetni require zbog kompatibilnosti s ESM/TS buildom
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  testModeMiddleware = require('./middleware/test-mode.middleware').testModeMiddleware;
-}
 
 const app: Express = express();
 
-// ...
-// Korištenje testModeMiddleware samo u development/test okruženju
-if (testModeMiddleware) {
-  app.use(testModeMiddleware);
+// Dinamički ESM-safe import middleware-a u development/test okruženju
+if (process.env.NODE_ENV !== 'production') {
+  (async () => {
+    // Dinamički import radi i u ESM okruženju (lokalno i na Renderu)
+    const mod = await import('./middleware/test-mode.middleware.js');
+    testModeMiddleware = mod.testModeMiddleware;
+    if (testModeMiddleware) {
+      app.use(testModeMiddleware);
+    }
+  })();
 }
 
 // Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel, Render)
