@@ -5,5 +5,4 @@ import { Request, Response, NextFunction } from 'express';
  */
 declare module './test-mode.middleware' {
   export function testModeMiddleware(req: Request, res: Response, next: NextFunction): void;
-  export default testModeMiddleware;
 }
