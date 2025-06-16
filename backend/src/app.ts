@@ -44,12 +44,26 @@ const app: Express = express();
 
 // Dinamički ESM-safe import middleware-a u development/test okruženju
 if (process.env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   (async () => {
-    // Dinamički import radi i u ESM okruženju (lokalno i na Renderu)
-    const mod = await import('./middleware/test-mode.middleware.js');
-    testModeMiddleware = mod.testModeMiddleware;
-    if (testModeMiddleware) {
+    // Ovdje koristimo poboljšanu tipizaciju i fallback
+    type MiddlewareModule = {
+      testModeMiddleware?: (req: Request, res: Response, next: NextFunction) => void;
+      default?: { testModeMiddleware?: (req: Request, res: Response, next: NextFunction) => void };
+    };
+    const mod = (await import('./middleware/test-mode.middleware.js')) as MiddlewareModule;
+    // Logiramo rezultat importa za lakši debug u developmentu
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('test-mode.middleware.js dynamic import result:', mod);
+    }
+    // Fallback: koristi named export, a ako ne postoji koristi default.testModeMiddleware
+    testModeMiddleware = mod.testModeMiddleware || mod.default?.testModeMiddleware;
+    if (typeof testModeMiddleware === 'function') {
       app.use(testModeMiddleware);
+    } else if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn('testModeMiddleware nije pronađen ni kao named ni kao default export.');
     }
   })();
 }
