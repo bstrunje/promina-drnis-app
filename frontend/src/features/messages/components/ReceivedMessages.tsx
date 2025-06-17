@@ -46,12 +46,16 @@ const fetchMessages = useCallback(async () => {
     setLoading(false);
     const unreadCount = convertedData.filter(m => m.status === 'unread').length;
     onUnreadCountChange(unreadCount);
-  } catch (error) {
-    toast({
-      title: "Greška",
-      description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poruke',
-      variant: "destructive"
-    });
+  } catch (error: any) {
+    // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
+    if (error?.config?._retry === true) {
+      toast({
+        title: "Greška",
+        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poruke',
+        variant: "destructive"
+      });
+    }
+    // Inače, ne prikazujemo grešku korisniku (tihi retry)
     setLoading(false);
   }
 }, [userRole, toast, onUnreadCountChange]);
