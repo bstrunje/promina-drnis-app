@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { searchMembers } from '../../utils/api/apiAuth';
 // Zamijenjeno prema novoj modularnoj API strukturi
 import {
@@ -22,6 +22,8 @@ import { CornerDownLeft, Send, Users, UserCheck, Mail } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
+  // Ref za automatski fokus na input za pretragu članova
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [messageTab, setMessageTab] = useState('single');
   const [searchTerm, setSearchTerm] = useState('');
@@ -306,6 +308,7 @@ const AdminMessageSender: React.FC = () => {
                 placeholder="Pretraži po imenu ili prezimenu... (najmanje 3 znaka)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                ref={searchInputRef}
               />
 
               {searchResults.length > 0 && (
@@ -314,7 +317,11 @@ const AdminMessageSender: React.FC = () => {
                     <div
                       key={member.member_id}
                       className="flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md"
-                      onClick={() => toggleMemberInGroup(member)}
+                      onClick={() => {
+                        toggleMemberInGroup(member);
+                        setSearchTerm('');
+                        setTimeout(() => searchInputRef.current?.focus(), 0);
+                      }}
                     >
                       <Checkbox
                         id={`member-${member.member_id}`}

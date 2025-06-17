@@ -1,5 +1,6 @@
 // frontend/src/features/dashboard/MemberDashboard.tsx
 import React, { useState, useEffect } from "react";
+import { useUnreadMessages } from "../../contexts/UnreadMessagesContext";
 import { useNavigate } from "react-router-dom";
 import { Users, Activity, Mail, User, RefreshCw, Bell } from "lucide-react";
 import { Member } from "@shared/member";
@@ -31,10 +32,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<MemberStats>({
-    unreadMessages: 0,
+    unreadMessages: 0, // Više se ne koristi, ali ostaje zbog tipa
     recentActivities: 0,
     memberCount: 0,
   });
+  const { unreadCount, refreshUnreadCount } = useUnreadMessages();
 
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -74,17 +76,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
   useEffect(() => {
     void fetchDashboardStats();
-    
-    // Dodajemo slušanje događaja za ažuriranje statistike kad se poruka označi kao pročitana
-    const handleUnreadMessagesUpdated = () => {
-      void fetchDashboardStats();
-    };
-    
-    window.addEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
-    
-    return () => {
-      window.removeEventListener(MESSAGE_EVENTS.UNREAD_UPDATED, handleUnreadMessagesUpdated);
-    };
+    void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
   }, []);
 
   return (
@@ -124,7 +116,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
               <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
             ) : (
               <>
-                <p className="text-2xl font-bold">{stats.unreadMessages}</p>
+                <p className="text-2xl font-bold">{unreadCount}</p>
                 <p className="text-sm text-gray-500">
                   {stats.unreadMessages > 0 ? (
                     <span className="flex items-center text-blue-600">

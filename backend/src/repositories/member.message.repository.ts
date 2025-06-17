@@ -4,6 +4,12 @@ import { Member, MemberMessage as PrismaMemberMessage, Prisma } from '@prisma/cl
 import memberRepository from './member.repository.js';
 
 export interface TransformedMessage {
+    /**
+     * Lista članova koji su pročitali poruku (za admin prikaz)
+     * Svaki objekt sadrži member_id i read_at (ako je pročitao)
+     */
+    read_by?: Array<{ member_id: number, read_at: Date | null }>;
+
     message_id: number;
     member_id: number | null;
     message_text: string;
@@ -283,6 +289,10 @@ const memberMessageRepository = {
             // ako TransformedMessage sučelje to dopušta (opcionalni su).
             return {
                 message_id: msg.message_id,
+                read_by: (msg.recipient_statuses || []).map(rs => ({
+                    member_id: rs.recipient_member_id,
+                    read_at: rs.read_at
+                })),
                 member_id: msg.member_id,
                 message_text: msg.message_text,
                 created_at: msg.created_at,
@@ -456,11 +466,16 @@ const memberMessageRepository = {
         return count > 0;
     },
 
+    // Broji samo nepročitane poruke gdje je član PRIMATELJ, a nije POŠILJATELJ
     async countUnreadMessages(memberId: number): Promise<number> {
         const count = await prisma.messageRecipientStatus.count({
             where: {
                 recipient_member_id: memberId,
                 status: 'unread',
+                // Isključujemo poruke koje je član sam poslao
+                message: {
+                    sender_id: { not: memberId }
+                }
             },
         });
         return count;

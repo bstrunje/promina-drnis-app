@@ -62,6 +62,11 @@ export interface ApiTerminateMembershipResult {
  * Tipovi za poruke
  */
 export interface ApiAdminMessage {
+  /**
+   * Lista članova koji su pročitali poruku (za admin prikaz)
+   * Svaki objekt sadrži member_id i read_at (kao string ili null)
+   */
+  read_by?: { member_id: string; read_at: string | null }[];
   id: string;
   content: string;
   sender_id: string;
@@ -72,7 +77,7 @@ export interface ApiAdminMessage {
   timestamp: string;
   read: boolean;
   priority: 'normal' | 'high';
-  read_by?: string[];
+
 }
 
 /**

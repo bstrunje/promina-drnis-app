@@ -6,19 +6,33 @@ import prisma from '../utils/prisma.js';
 // Funkcija za provjeru nepročitanih poruka
 async function checkUnreadMessages() {
   try {
-    // Dohvati sve članove koji imaju nepročitane poruke
-    const membersWithUnreadMessages = await prisma.messageRecipientStatus.groupBy({
-      by: ['recipient_member_id'],
-      where: {
-        status: 'unread'
-      },
-      _count: {
-        message_id: true
+    // Dohvati sve nepročitane statuse s detaljima o poruci i pošiljatelju
+    const statuses = await prisma.messageRecipientStatus.findMany({
+      where: { status: 'unread' },
+      select: {
+        recipient_member_id: true,
+        message: { select: { sender_id: true } }
       }
     });
-    
-    // Dohvati ukupan broj nepročitanih poruka
-    const totalUnread = membersWithUnreadMessages.reduce((sum, member) => sum + member._count.message_id, 0);
+
+    // Filtriraj statuse gdje član NIJE pošiljatelj
+    const filtered = statuses.filter(
+      s => s.recipient_member_id !== s.message?.sender_id
+    );
+
+    // Grupiraj po recipient_member_id i izračunaj broj
+    const memberUnreadMap: Record<number, number> = {};
+    for (const s of filtered) {
+      memberUnreadMap[s.recipient_member_id] = (memberUnreadMap[s.recipient_member_id] || 0) + 1;
+    }
+    const membersWithUnreadMessages = Object.entries(memberUnreadMap).map(
+      ([recipient_member_id, count]) => ({
+        recipient_member_id: Number(recipient_member_id),
+        count
+      })
+    );
+    const totalUnread = filtered.length;
+
     
     // Ispiši informacije o nepročitanim porukama
     console.log('\n📧 Status nepročitanih poruka:');
@@ -40,7 +54,7 @@ async function checkUnreadMessages() {
           // Ignoriraj grešku ako ne možemo dohvatiti ime člana
         }
         
-        console.log(`   • Član ID ${memberData.recipient_member_id}${memberName ? ` (${memberName})` : ''}: ${memberData._count.message_id} nepročitanih poruka`);
+        console.log(`   • Član ID ${memberData.recipient_member_id}${memberName ? ` (${memberName})` : ''}: ${memberData.count} nepročitanih poruka`);
       }
     } else {
       console.log('   ✅ Nema nepročitanih poruka');

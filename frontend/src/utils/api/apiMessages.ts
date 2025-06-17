@@ -78,7 +78,12 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
       timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
       // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
       read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
-      read_by: msg.read_by || [], // Dodajemo read_by ako postoji
+      read_by: Array.isArray(msg.read_by)
+        ? msg.read_by.map((rb: any) => ({
+            member_id: String(rb.member_id),
+            read_at: rb.read_at ? new Date(rb.read_at).toISOString() : null
+          }))
+        : [],
       priority: msg.priority || 'normal'
     };
   });

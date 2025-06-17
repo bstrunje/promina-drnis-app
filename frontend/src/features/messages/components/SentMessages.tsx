@@ -120,6 +120,17 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
     void fetchSentMessages();
   }, [userRole, fetchSentMessages]);
 
+  // Automatsko periodičko osvježavanje za admina/superusera
+  useEffect(() => {
+    if (userRole !== 'member') {
+      const interval = setInterval(() => {
+        void fetchSentMessages();
+      }, 30000); // 30 sekundi
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [userRole, fetchSentMessages]);
+
   // Funkcija za grupiranje poruka
   const groupMessages = (messages: Message[]): MessageGroup[] => {
     const groups: Record<string, Message[]> = {};
@@ -181,28 +192,57 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
       return `Grupa članova (${group.messages.length})`;
     } else {
       // Pronađi člana po ID-u
-      const member = allMembers.find(m => m.member_id === firstMessage.recipient_id);
+      const member = allMembers.find(m => String(m.member_id) === String(firstMessage.recipient_id));
       return member ? member.full_name : `Član #${firstMessage.recipient_id}`;
     }
   };
 
   // Funkcija za dobivanje broja pročitanih poruka
   const getReadCount = (message: Message) => {
-    // Za poruke svim članovima, prikazujemo broj pročitalo/ukupno
-    if (message.recipient_type === 'all') {
-      // Filtriraj samo redovne članove
-      const regularMembers = allMembers.filter(
-        member => member.membership_type === 'regular' && member.detailed_status === 'registered'
-      );
-      const total = regularMembers.length;
-      // Pretpostavka: message.read_by je niz ID-eva članova koji su pročitali poruku
-      // Ako backend šalje drugačije, prilagodi!
-      const readCount = message.read_by?.length ?? 0;
-      return `${total}/${readCount} pročitano`;
+    // Za poruke svim članovima ili grupama, prikazujemo broj pročitalo/ukupno
+    if (message.recipient_type === 'all' || message.recipient_type === 'group') {
+      // Filtriraj samo redovne članove za 'all', ili sve članove grupe za 'group'
+      let relevantMembers = allMembers;
+      if (message.recipient_type === 'all') {
+        relevantMembers = allMembers.filter(
+          member => member.membership_type === 'regular' && member.detailed_status === 'registered'
+        );
+      }
+      const total = relevantMembers.length;
+      const readCount = Array.isArray(message.read_by)
+        ? message.read_by.filter(rb => rb.read_at).length
+        : 0;
+      return `${readCount}/${total} pročitano`;
     }
-    // Za ostale slučajeve možeš vratiti prazno ili neki drugi format
     return "";
   };
+
+  // Prikaz tooltipa/lista s imenima i vremenom pročitanja
+  const renderReadByList = (message: Message) => {
+    if (!Array.isArray(message.read_by) || message.read_by.length === 0) return null;
+    // Mapiraj member_id na ime
+    const readMembers = message.read_by
+      .filter(rb => rb.read_at)
+      .map(rb => {
+        const member = allMembers.find(m => String(m.member_id) === String(rb.member_id));
+        return {
+          name: member ? member.full_name : `Član #${rb.member_id}`,
+          read_at: rb.read_at
+        };
+      });
+    if (readMembers.length === 0) return null;
+    return (
+      <div className="mt-1 text-xs text-gray-500">
+        <span>Pročitali:</span>
+        <ul className="ml-2 list-disc">
+          {readMembers.map((rm, idx) => (
+            <li key={idx}>{rm.name} ({formatDate(rm.read_at, 'dd.MM.yyyy HH:mm')})</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
 
   return (
     <div>
@@ -212,68 +252,86 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
             <p className="text-gray-500">Učitavanje poslanih poruka...</p>
           </div>
         ) : groupedMessages.length > 0 ? (
-          groupedMessages.map(group => (
-            <Card key={group.key} className="mb-4">
-              <CardHeader className="cursor-pointer" onClick={() => toggleGroupExpansion(group.key)}>
-                <CardTitle className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    {group.messages[0].recipient_type === 'all' ? (
-                      <Users className="h-5 w-5 mr-2" />
-                    ) : (
-                      <UserCheck className="h-5 w-5 mr-2" />
-                    )}
-                    <span>{getGroupName(group)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    {group.messages[0].recipient_type === 'all' && (
-                      <span className="text-sm text-gray-500 mr-2">
-                        {getReadCount(group.messages[0])}
-                      </span>
-                    )}
-                    {group.isExpanded ? (
-                      <ChevronDown className="h-5 w-5" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5" />
-                    )}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-
-              {group.isExpanded && (
-                <CardContent>
-                  {/* Lista primatelja za grupnu poruku */}
-                  {renderRecipientList(group)}
-                  {/* Lista poruka u grupi */}
-                  <div className="space-y-4 mt-4">
-                    {group.messages.map(message => (
-                      <div key={message.message_id} className="border-t pt-4">
-                        <div className="mb-2 text-gray-500 text-sm">
-                          {formatDate(message.created_at)}
+          <>
+            {groupedMessages.map(group => (
+              <Card key={group.key} className="mb-4">
+                <CardHeader className="cursor-pointer" onClick={() => toggleGroupExpansion(group.key)}>
+                  <CardTitle className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      {group.messages[0].recipient_type === 'all' ? (
+                        <Users className="h-5 w-5 mr-2" />
+                      ) : (
+                        <UserCheck className="h-5 w-5 mr-2" />
+                      )}
+                      <span>{getGroupName(group) || ''}</span>
+                    </div>
+                    <div className="flex items-center">
+                      {['all', 'group'].includes(String(group.messages[0].recipient_type)) && (
+                        <span className="text-sm text-gray-500 mr-2">
+                          {getReadCount(group.messages[0])}
+                        </span>
+                      )}
+                      {group.isExpanded ? (
+                        <ChevronDown className="h-5 w-5" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5" />
+                      )}
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                {group.isExpanded && (
+                  <CardContent>
+                    {group.messages.map((message, idx) => (
+                      <div key={message.message_id} className="mb-2 p-2 bg-gray-50 rounded-md">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <span className="font-medium">{formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}</span>
+                            <span className="ml-2 text-xs text-gray-500">ID: {message.message_id}</span>
+                          </div>
+                          <div className="mt-1 sm:mt-0">
+                            {/* Prikaz statusa, broja pročitanih itd. */}
+                            {['member_administrator', 'member_superuser'].includes(userRole) && (
+                              ['all', 'group'].includes(message.recipient_type || '')
+                                ? renderReadByList(message)
+                                : message.recipient_type === 'member' && (() => {
+  const recipientRead = Array.isArray(message.read_by)
+    ? message.read_by.find(rb => String(rb.member_id) === String(message.recipient_id))
+    : undefined;
+  return (
+    <div className="mt-1 text-xs text-gray-500">
+      <span>Pročitano: </span>
+      {recipientRead && recipientRead.read_at ? (
+        <>
+          <span className="text-green-700 font-bold">DA</span>
+          <span className="ml-2">({formatDate(recipientRead.read_at, 'dd.MM.yyyy HH:mm')})</span>
+        </>
+      ) : (
+        <span className="text-red-700 font-bold">NE</span>
+      )}
+    </div>
+  );
+})()
+                            )}
+                          </div>
                         </div>
-                        <p className="whitespace-pre-wrap">{message.message_text}</p>
+                        <div className="mt-1">{message.message_text}</div>
                       </div>
                     ))}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          ))
-        ) : (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Nema poslanih poruka</p>
-          </div>
-        )
-        }
-      </div>
-
-      <div className="mt-4">
-        <Button
-          variant="outline"
-          onClick={() => { void fetchSentMessages(); }}
-          className="w-full"
-        >
-          Osvježi poslane poruke
-        </Button>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </>
+        ) : null}
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            onClick={() => { void fetchSentMessages(); }}
+            className="w-full"
+          >
+            Osvježi poslane poruke
+          </Button>
+        </div>
       </div>
     </div>
   );

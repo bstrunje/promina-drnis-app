@@ -6,8 +6,9 @@
 export interface Message {
   /**
    * Popis članova koji su pročitali poruku (ako je dostupno)
+   * Svaki objekt sadrži member_id i read_at (kao string ili null)
    */
-  read_by?: string[];
+  read_by?: { member_id: string; read_at: string | null }[];
   message_id: number;
   member_id: number;
   sender_name: string;

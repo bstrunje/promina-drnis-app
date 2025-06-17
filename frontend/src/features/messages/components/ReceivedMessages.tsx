@@ -306,8 +306,8 @@ useEffect(() => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-2 text-gray-500 text-sm">
-                      {formatDate(message.created_at)}
-                    </div>
+  {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
+</div>
                     
                     {/* Pregled poruke */}
                     <p className="text-sm text-gray-700">{previewText}</p>
