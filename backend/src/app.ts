@@ -69,7 +69,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel, Render)
-app.set('trust proxy', true);
+app.set('trust proxy', 1); // Vjeruj samo prvom (najbližem) proxy poslužitelju
 
 // ES modules compatibility
 const __filename = fileURLToPath(import.meta.url);

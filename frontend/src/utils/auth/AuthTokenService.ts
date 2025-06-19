@@ -6,6 +6,7 @@ import { withRetry } from './refreshUtils';
 import { tokenStorage } from './tokenStorage';
 import { API_BASE_URL } from '../config';
 import { jwtDecode } from 'jwt-decode';
+import { navigateToLogin } from './navigationHelper';
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -233,7 +234,6 @@ export class AuthTokenService {
       // Komentar: Ovo omogućuje SPA redirect gdje god je moguće
       try {
         console.log('[AuthTokenService.logout] Pokušavam pozvati navigateToLogin...');
-        const { navigateToLogin } = await import('./navigationHelper');
         navigateToLogin();
       } catch (e) {
         console.error('[AuthTokenService.logout] Greška pri importu navigationHelper ili pozivu navigateToLogin:', e);
