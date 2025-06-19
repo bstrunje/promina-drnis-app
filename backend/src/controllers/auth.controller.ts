@@ -19,54 +19,15 @@ import {
   LOGIN_DELAY_MS,
   LOCKOUT_ADMINS
 } from '../config/auth.config.js';
+import {
+  generateCookieOptions,
+  formatMinuteText,
+  getCardNumberLength,
+  validatePassword
+} from './auth/auth.utils.js';
 
-// Funkcija za generiranje konzistentnih opcija kolačića
-function generateCookieOptions(req: Request, userType: 'member' | 'systemManager') {
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  const origin = req.headers.origin || '';
-  const host = req.headers.host || '';
-  
-  // Provjera je li zahtjev cross-origin
-  const isCrossOrigin = origin && origin !== `${isHttps ? 'https' : 'http'}://${host}`;
-  
-  // Određivanje secure postavke
-  let secure = !isDevelopment || isHttps;
-  
-  // Određivanje sameSite postavke
-  let sameSite: 'strict' | 'lax' | 'none' | undefined;
-  
-  if (isDevelopment) {
-    sameSite = 'lax'; // Za lokalni razvoj
-  } else if (process.env.COOKIE_DOMAIN || isCrossOrigin) {
-    sameSite = 'none'; // Za cross-origin zahtjeve
-    secure = true; // Ako je sameSite 'none', secure mora biti true
-  } else {
-    sameSite = 'strict'; // Za produkciju i same-origin zahtjeve
-  }
-  
-  // Određivanje putanje ovisno o tipu korisnika
-  // Koristimo '/' za sve kolačiće kako bi bili dostupni na svim putanjama
-  const path = '/';
-  
-  // Dodajemo partitioned atribut za Firefox
-  // Ovo rješava upozorenje "Cookie will soon be rejected because it is foreign and does not have the Partitioned attribute"
-  const cookieOptions: any = {
-    httpOnly: true,
-    secure,
-    sameSite,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-    path,
-    domain: process.env.COOKIE_DOMAIN || undefined
-  };
-  
-  // Dodajemo partitioned atribut za Firefox ako je cross-origin ili imamo COOKIE_DOMAIN
-  if (isCrossOrigin || process.env.COOKIE_DOMAIN) {
-    cookieOptions.partitioned = true;
-  }
-  
-  return cookieOptions;
-}
+// Globalna varijabla cookieOptions je uklonjena jer se sada koristi generateCookieOptions(req)
+// za dinamičko generiranje opcija kolačića na svim mjestima.
 
 // Extend Express Request to include user
 declare global {
@@ -82,65 +43,11 @@ interface SetPasswordRequest {
   suffix_numbers: string;
 }
 
-/**
- * Pomoćna funkcija za formatiranje teksta za minute u hrvatskom jeziku
- * (pravilno gramatičko sklanjanje riječi "minuta")
- */
-function formatMinuteText(minutes: number): string {
-  if (minutes === 1) return 'minutu';
-  if (minutes >= 2 && minutes <= 4) return 'minute';
-  return 'minuta';
-}
-
-// Pomoćna funkcija za dohvat duljine broja kartice
-async function getCardNumberLength(): Promise<number> {
-  const settings = await prisma.systemSettings.findFirst({
-    where: { id: 'default' }
-  });
-  return settings?.cardNumberLength ?? 5; // Koristi 5 kao fallback ako je null ili undefined
-}
-
-// Ažurirana funkcija za validaciju lozinke
-async function validatePassword(
-  password: string,
-  suffixNumbers?: string
-): Promise<{
-  isValid: boolean;
-  message?: string;
-  formattedPassword?: string;
-}> {
-  if (password.length < 6) {
-    return {
-      isValid: false,
-      message:
-        "Password must be at least 6 characters long before the -isk- suffix",
-    };
-  }
-
-  if (suffixNumbers) {
-    // Dohvati duljinu broja kartice iz postavki
-    const cardNumberLength = await getCardNumberLength();
-    const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
-    
-    if (!cardNumberRegex.test(suffixNumbers)) {
-      return {
-        isValid: false,
-        message: `Suffix must be exactly ${cardNumberLength} digits`,
-      };
-    }
-    return {
-      isValid: true,
-      formattedPassword: `${password}-isk-${suffixNumbers}`, // Add hyphen for consistency
-    };
-  }
-
-  return { isValid: true };
-}
-
 // Funkcija za obnavljanje access tokena pomoću refresh tokena
 async function refreshTokenHandler(req: Request, res: Response): Promise<void | Response> {
   console.log('Refresh token zahtjev primljen');
   console.log('Origin:', req.headers.origin);
+  console.log('Cookies primljeni na backendu:', req.cookies);
   console.log('Cookies:', JSON.stringify(req.cookies));
   console.log('User-Agent:', req.headers['user-agent']);
   
@@ -382,19 +289,19 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     // kako bi se izbjegao konflikt između dva tipa tokena
     if (req.cookies.systemManagerRefreshToken) {
       console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
-      const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
+      const systemManagerCookieOptions = generateCookieOptions(req);
       res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     }
     
     // Također provjeravamo i brišemo stari refreshToken ako postoji
     if (req.cookies.refreshToken) {
       console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
-      const memberCookieOptions = generateCookieOptions(req, 'member');
+      const memberCookieOptions = generateCookieOptions(req);
       res.clearCookie('refreshToken', memberCookieOptions);
     }
     
     // Koristimo zajedničku funkciju za generiranje opcija kolačića
-    const cookieOptions = generateCookieOptions(req, 'member');
+    const cookieOptions = generateCookieOptions(req);
     
     res.cookie('refreshToken', newRefreshToken, cookieOptions);
     
@@ -414,49 +321,61 @@ async function refreshTokenHandler(req: Request, res: Response): Promise<void | 
     }
   } catch (error) {
     console.error('Greška pri obnavljanju tokena:', error);
-    res.status(403).json({ error: 'Refresh token nije valjan' });
+    // Vrati odgovarajuću grešku klijentu ako dođe do problema u refreshTokenHandleru
+    res.status(403).json({ error: 'Refresh token nije valjan ili je došlo do interne greške servera pri obnavljanju tokena.' });
   }
 }
 
 // Funkcija za odjavu korisnika i poništavanje refresh tokena
-async function logoutHandler(req: Request, res: Response): Promise<void> {
-  const refreshToken = req.cookies.refreshToken;
-  
-  console.log(`Brisanje kolačića pri odjavi`);
-  
-  // Ako nema refresh tokena, samo obriši kolačiće i vrati uspjeh
-  if (!refreshToken) {
-    // Briši oba tipa kolačića za svaki slučaj
-    const memberCookieOptions = generateCookieOptions(req, 'member');
-    const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
-    
-    res.clearCookie('refreshToken', memberCookieOptions);
-    res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
-    res.status(200).json({ message: 'Uspješna odjava' });
-    return;
-  }
-  
+async function logoutHandler(req: Request, res: Response): Promise<void | Response> {
+  const { refreshToken, systemManagerRefreshToken } = req.cookies;
+
+  // Uzmi osnovne opcije kolačića (path, domain, secure, httpOnly, sameSite)
+  const baseCookieOptions = generateCookieOptions(req);
+  // Za brisanje, eksplicitno postavi maxAge na 0 da kolačić odmah istekne
+  const cookieOptionsToClear = {
+    ...baseCookieOptions,
+    maxAge: 0, // Ovo osigurava da kolačić odmah istekne
+  };
+  // Uklanjamo maxAge iz baseCookieOptions jer je on relevantan samo za postavljanje, 
+  // a cookieOptionsToClear sada ima svoj maxAge: 0.
+  // Ovo nije strogo nužno ako baseCookieOptions nije korišten nigdje drugdje nakon ovoga za postavljanje.
+  delete baseCookieOptions.maxAge; 
+
+  console.log('Opcije za BRISANJE kolačića:', cookieOptionsToClear);
+
   try {
-    // Provjeri postoji li token u bazi i obriši ga
-    await prisma.refresh_tokens.deleteMany({
-      where: { token: refreshToken }
-    });
-    
-    // Obriši oba tipa kolačića s ispravnim postavkama
-    const memberCookieOptions = generateCookieOptions(req, 'member');
-    const systemManagerCookieOptions = generateCookieOptions(req, 'systemManager');
-    
-    res.clearCookie('refreshToken', memberCookieOptions);
-    // Također obriši systemManagerRefreshToken ako postoji
-    res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
-    
-    res.status(200).json({ message: 'Uspješna odjava' });
+    // Obriši refreshToken ako postoji
+    if (refreshToken) {
+      console.log('Pronađen refreshToken, brišem ga iz baze i šaljem clearCookie.');
+      await prisma.refresh_tokens.deleteMany({
+        where: { token: refreshToken },
+      });
+      res.clearCookie('refreshToken', cookieOptionsToClear);
+    }
+
+    // Obriši systemManagerRefreshToken ako postoji
+    if (systemManagerRefreshToken) {
+      console.log('Pronađen systemManagerRefreshToken, brišem ga iz baze i šaljem clearCookie.');
+      await prisma.refresh_tokens.deleteMany({
+        where: { token: systemManagerRefreshToken },
+      });
+      res.clearCookie('systemManagerRefreshToken', cookieOptionsToClear);
+    }
+
+    // Ako nijedan token nije pronađen, svejedno vrati uspješan odgovor
+    if (!refreshToken && !systemManagerRefreshToken) {
+        console.log('Nije pronađen nijedan token za odjavu, ali se odjava smatra uspješnom.');
+    }
+
+    res.status(200).json({ message: 'Odjava uspješna' });
+
   } catch (error) {
     console.error('Greška prilikom odjave:', error);
-    
-    // Obriši kolačić bez obzira na grešku
-    const memberCookieOptions = generateCookieOptions(req, 'member');
-    res.clearCookie('refreshToken', memberCookieOptions);
+    // Čak i ako dođe do greške s bazom, pokušaj obrisati kolačiće s frontenda
+    // koristeći iste eksplicitne opcije za brisanje
+    if (refreshToken) res.clearCookie('refreshToken', cookieOptionsToClear);
+    if (systemManagerRefreshToken) res.clearCookie('systemManagerRefreshToken', cookieOptionsToClear);
     
     res.status(500).json({ error: 'Greška prilikom odjave' });
   }
@@ -762,7 +681,7 @@ const authController = {
         }
 
         // Postavi refresh token kao HTTP-only kolačić s prilagođenim postavkama za cross-origin zahtjeve
-        const cookieOptions = generateCookieOptions(req, 'member');
+        const cookieOptions = generateCookieOptions(req);
         
         console.log('Postavljam refresh token kolačić s opcijama:', cookieOptions);
         res.cookie('refreshToken', refreshToken, cookieOptions);

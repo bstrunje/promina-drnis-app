@@ -207,7 +207,31 @@ const cardNumberController = {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-  }
+  },
+  /**
+   * Dohvati potrošene kartice (consumed) s imenom člana i podrškom za pretragu
+   * GET /api/card-numbers/consumed?search=...
+   * Dostupno samo adminima i superuserima
+   */
+  async getConsumedCardNumbers(req: Request, res: Response): Promise<void> {
+    try {
+      // Provjeri administratorska prava
+      if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
+        res.status(403).json({ message: 'Unauthorized. Only admins and superusers can access consumed card numbers.' });
+        return;
+      }
+      const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+      const consumedCards = await cardNumberRepository.getConsumedCardNumbers(search);
+      res.json(consumedCards);
+    } catch (error) {
+      console.error('Greška u getConsumedCardNumbers:', error);
+      res.status(500).json({
+        message: 'Neuspješno dohvaćanje potrošenih kartica',
+        error: error instanceof Error ? error.message : 'Nepoznata greška'
+      });
+    }
+  },
+
 };
 
 export default cardNumberController;

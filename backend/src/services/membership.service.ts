@@ -162,6 +162,15 @@ const membershipService = {
 
   async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean | null, req?: Request): Promise<void> {
     try {
+      // Prvo dohvatimo trenutni broj kartice
+      const details = await membershipRepository.getMembershipDetails(memberId);
+      const previousCardNumber = details?.card_number;
+
+      // Ako je član imao staru karticu i mijenja broj, označi staru kao potrošenu
+      if (previousCardNumber && previousCardNumber !== cardNumber && cardNumber.trim() !== "") {
+        const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
+        await cardNumberRepository.markCardNumberConsumed(previousCardNumber, memberId);
+      }
       console.log('==== MEMBERSHIP CARD UPDATE DETAILS ====');
       console.log(`Member ID: ${memberId}`);
       console.log(`Card number: "${cardNumber}"`);

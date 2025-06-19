@@ -6,6 +6,7 @@ import { tokenStorage } from '../utils/auth/tokenStorage';
 import { setupAxiosInterceptors } from '../utils/auth/axiosInterceptors';
 import { AuthTokenService } from '../utils/auth/AuthTokenService';
 import { useNavigate } from 'react-router-dom';
+import { setNavigateInstance } from '../utils/auth/navigationHelper';
 
 interface AuthContextType {
   user: Member | null;
@@ -29,6 +30,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastPath, setLastPath] = useState<string | null>(null);
   const navigate = useNavigate();
+  // Injektiraj navigate u globalni helper za SPA redirect izvan React konteksta
+  React.useEffect(() => { setNavigateInstance(navigate); }, [navigate]);
 
   // Funkcija za odjavu korisnika - koristi AuthTokenService
   // Ne radimo preusmjeravanje ovdje jer to radi App.tsx

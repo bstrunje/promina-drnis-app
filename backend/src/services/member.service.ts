@@ -343,10 +343,20 @@ const memberService = {
         endDate?: Date
     ): Promise<void> {
         try {
+            // Prvo završi članstvo
             await membershipService.endMembership(memberId, reason, endDate);
+
+            // Dohvati trenutni broj kartice (ako postoji)
+            const details = await membershipRepository.getMembershipDetails(memberId);
+            if (details?.card_number) {
+                // Označi broj kao potrošen
+                // issuedAt nije eksplicitno spremljen u membership_details pa ga ne šaljemo
+                const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
+                await cardNumberRepository.markCardNumberConsumed(details.card_number, memberId);
+            }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error('Error terminating membership: ' + errorMessage);
+            throw new Error('Greška prilikom odjave članstva: ' + errorMessage);
         }
     },
 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { useToast } from "../../../components/ui/use-toast";
 import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 // Zamijenjeno prema novoj modularnoj API strukturi
-import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers } from '../../utils/api/apiCards';
+import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers, getConsumedCardNumbers } from '../../utils/api/apiCards';
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {
@@ -42,7 +42,18 @@ export default function CardNumberManagement() {
     member_name?: string;
   }[]>([]);
 
-  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'assigned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'assigned' | 'consumed'>('all');
+
+  // State za potrošene kartice
+  const [consumedCardNumbers, setConsumedCardNumbers] = useState<{
+    card_number: string;
+    member_id: number | null;
+    member_name: string | null;
+    issued_at: string;
+    consumed_at: string;
+  }[]>([]);
+  const [isLoadingConsumed, setIsLoadingConsumed] = useState(false);
+  const [consumedSearch, setConsumedSearch] = useState("");
   
   // UI state for accordion-style sections
   const [activeSection, setActiveSection] = useState<"single" | "range" | "manage" | null>(null);
@@ -193,18 +204,31 @@ export default function CardNumberManagement() {
   };
 
   // Add utility functions to handle pagination and filtering
-  const filteredByStatus = allCardNumbers.filter(card => {
-    if (statusFilter === 'all') return true;
-    return card.status === statusFilter;
-  });
+  // Filtriraj po statusu, osim za potrošene kartice
+  const filteredByStatus = statusFilter === 'consumed'
+    ? []
+    : allCardNumbers.filter(card => {
+        if (statusFilter === 'all') return true;
+        return card.status === statusFilter;
+      });
+
+  // Za prikaz potrošenih kartica koristi zasebno filtriranje
+  const filteredConsumed = consumedCardNumbers.filter(card =>
+    card.card_number.includes(consumedSearch) ||
+    (card.member_name?.toLowerCase().includes(consumedSearch.toLowerCase()) ?? false)
+  );
 
   const filteredCardNumbers = filteredByStatus.filter(card => 
     card.card_number.includes(searchTerm)
   );
 
-  const totalPages = Math.ceil(filteredCardNumbers.length / itemsPerPage);
+  const totalPages = statusFilter === 'consumed'
+    ? Math.ceil(filteredConsumed.length / itemsPerPage)
+    : Math.ceil(filteredCardNumbers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCardNumbers = filteredCardNumbers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedCardNumbers = statusFilter === 'consumed'
+    ? filteredConsumed.slice(startIndex, startIndex + itemsPerPage)
+    : filteredCardNumbers.slice(startIndex, startIndex + itemsPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -236,6 +260,32 @@ export default function CardNumberManagement() {
       setIsLoadingCount(false);
     }
   };
+
+  // Dohvati potrošene kartice
+  const fetchConsumedCardNumbers = async (search?: string) => {
+    setIsLoadingConsumed(true);
+    try {
+      const data = await getConsumedCardNumbers(search);
+      setConsumedCardNumbers(data);
+    } catch (error) {
+      console.error('Error fetching consumed card numbers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load consumed card numbers",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingConsumed(false);
+    }
+  };
+
+  // Automatski dohvat potrošenih kad se prebaci na taj filter
+  useEffect(() => {
+    if (statusFilter === 'consumed') {
+      void fetchConsumedCardNumbers(consumedSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, consumedSearch]);
 
   return (
     <Card className="my-6">
@@ -472,11 +522,85 @@ export default function CardNumberManagement() {
                 >
                   Assigned ({cardStats.assigned})
                 </Button>
+                <Button
+                  variant={statusFilter === 'consumed' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('consumed')}
+                  className="text-gray-600"
+                >
+                  Spent/Consumed
+                </Button>
               </div>
               
-              {isLoadingCount ? (
-                <p className="text-sm text-muted-foreground">Loading card numbers...</p>
-              ) : filteredCardNumbers.length > 0 ? (
+              {/* Prikaz za potrošene kartice */}
+              {statusFilter === 'consumed' ? (
+                <div>
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
+                    <Input
+                      type="text"
+                      placeholder="Pretraži po broju ili imenu člana..."
+                      value={consumedSearch}
+                      onChange={(e) => {
+                        setConsumedSearch(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="max-w-md"
+                    />
+                  </div>
+                  {isLoadingConsumed ? (
+                    <p className="text-sm text-muted-foreground">Učitavanje potrošenih kartica...</p>
+                  ) : filteredConsumed.length > 0 ? (
+                    <>
+                      <div className="mb-2 text-sm text-muted-foreground">
+                        Prikazano {paginatedCardNumbers.length} od {filteredConsumed.length} potrošenih kartica
+                      </div>
+                      <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
+                        {paginatedCardNumbers.map(card => (
+                          <div key={card.card_number} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50">
+                            <div className="flex flex-col">
+                              <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title="Klikni za kopiranje">
+                                {card.card_number}
+                              </span>
+                              <span className="text-xs text-gray-500">Član: {card.member_name || 'N/A'}</span>
+                              <span className="text-xs text-gray-400">Izdana: {card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-'}</span>
+                              <span className="text-xs text-gray-400">Potrošena: {card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : '-'}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-center space-x-2 mt-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={prevPage} 
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => { void nextPage(); }} 
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nema potrošenih kartica za prikaz</p>
+                  )}
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    <p>Ovdje su prikazane sve potrošene (iskorištene) kartice, uključujući člana i datume.</p>
+                  </div>
+                </div>
+              ) : (
+                // Prikaz za ostale statuse
                 <>
                   {/* Stats */}
                   <div className="mb-2 text-sm text-muted-foreground">
@@ -554,10 +678,7 @@ export default function CardNumberManagement() {
                     </div>
                   )}
                 </>
-              ) : (
-                <p className="text-sm text-muted-foreground">No card numbers found</p>
               )}
-              
               <div className="mt-4 text-sm text-muted-foreground">
                 <p>Note: Only unused card numbers can be deleted. Click on a number to copy it.</p>
                 <p>Cards already assigned to members are shown in blue.</p>

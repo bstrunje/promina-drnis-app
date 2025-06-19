@@ -161,6 +161,36 @@ export const syncCardNumberStatus = async (): Promise<ApiSyncCardNumberStatusRes
  * @param cardNumber Broj iskaznice
  * @returns Rezultat dodjeljivanja broja iskaznice
  */
+/**
+ * Dohvaćanje potrošenih (consumed) brojeva iskaznica
+ * @param search (opcionalno) string za pretragu po broju kartice ili imenu člana
+ * @returns Lista potrošenih kartica s imenom člana
+ */
+export const getConsumedCardNumbers = async (search?: string): Promise<{
+  card_number: string;
+  member_id: number | null;
+  member_name: string | null;
+  issued_at: string;
+  consumed_at: string;
+}[]> => {
+  try {
+    const params = search ? { search } : undefined;
+    const response: AxiosResponse<{
+      card_number: string;
+      member_id: number | null;
+      member_name: string | null;
+      issued_at: string;
+      consumed_at: string;
+    }[]> = await api.get('/card-numbers/consumed', { params });
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to fetch consumed card numbers');
+  }
+};
+
 export const assignCardNumber = async (memberId: number, cardNumber: string): Promise<ApiAssignCardNumberResult> => {
   try {
     const response: AxiosResponse<ApiAssignCardNumberResult> = await api.post(`/members/${memberId}/card-number`, { cardNumber });

@@ -52,6 +52,7 @@ model Member {
   password_update_queue    password_update_queue[]
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
+  consumed_card_numbers    ConsumedCardNumber[]
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -163,6 +164,17 @@ model StampInventory {
 
   @@unique([stamp_type, stamp_year], name: "stamp_type_year_unique", map: "stamp_type_year_unique")
   @@map("stamp_inventory")
+}
+
+model ConsumedCardNumber {
+  id          Int      @id @default(autoincrement())
+  card_number String   @unique
+  member_id   Int
+  consumed_at DateTime @default(now())
+  issued_at   DateTime
+  member      Member   @relation(fields: [member_id], references: [member_id])
+
+  @@map("consumed_card_numbers")
 }
 
 model MemberMessage {

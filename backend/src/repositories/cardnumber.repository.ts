@@ -9,40 +9,61 @@ interface CardNumberResult {
 }
 
 const cardNumberRepository = {
-  // Get all available card numbers
+  // Dohvati sve dostupne brojeve kartica (isključuje potrošene)
   async getAvailable(): Promise<string[]> {
-    console.log("Fetching truly available card numbers (checking both tables)");
-    
     try {
-      // Najprije dohvati sve dodijeljene brojeve iz tablice membership_details
-      const assignedResult = await db.query<{ card_number: string }>(
-        `SELECT card_number FROM membership_details WHERE card_number IS NOT NULL`
+      // Dohvati sve potrošene brojeve iz consumed_card_numbers
+      const consumedResult = await db.query<{ card_number: string }>(
+        `SELECT card_number FROM consumed_card_numbers`
       );
-      
-      const assignedNumbers = assignedResult.rows.map(row => row.card_number);
-      console.log("Card numbers already assigned in membership_details:", assignedNumbers);
-      
-      // Zatim dohvati dostupne brojeve iz card_numbers
+      const consumedNumbers = consumedResult.rows.map(row => row.card_number);
+
+      // Dohvati sve brojeve koji su označeni kao available u card_numbers
       const availableResult = await db.query<{ card_number: string }>(
         `SELECT card_number FROM card_numbers WHERE status = 'available'`
       );
-      
       const availableNumbers = availableResult.rows.map(row => row.card_number);
-      console.log("Card numbers marked as available in card_numbers:", availableNumbers);
-      
-      // Filtriraj dostupne brojeve da isključiš one koji su već dodijeljeni
+
+      // Isključi sve koji su potrošeni
       const trulyAvailableNumbers = availableNumbers.filter(
-        num => !assignedNumbers.includes(num)
+        num => !consumedNumbers.includes(num)
       );
-      
-      console.log(`Found ${trulyAvailableNumbers.length} truly available card numbers after filtering`);
-      
       return trulyAvailableNumbers;
     } catch (error) {
-      console.error("Error in getAvailable method:", error);
-      // U slučaju greške vrati praznu listu
+      console.error("Greška u getAvailable (potrošene kartice):", error);
       return [];
     }
+  },
+
+  /**
+   * Označi broj kartice kao potrošen (dodaj u consumed_card_numbers)
+   * @param cardNumber broj kartice koji se troši
+   * @param memberId ID člana kojem je kartica bila dodijeljena
+   * @param issuedAt datum kada je kartica izdana (opcionalno, koristi trenutni ako nije proslijeđen)
+   * @param consumedAt datum kada je potrošena (opcionalno, koristi trenutni ako nije proslijeđen)
+   */
+  async markCardNumberConsumed(cardNumber: string, memberId: number, issuedAt?: Date, consumedAt?: Date): Promise<void> {
+    // Provjeri postoji li već zapis
+    const existing = await db.query<{ id: number }>(
+      `SELECT id FROM consumed_card_numbers WHERE card_number = $1`,
+      [cardNumber]
+    );
+    if (existing.rows.length > 0) {
+      // Već je potrošena
+      return;
+    }
+    // Koristi proslijeđeni issuedAt ili trenutni datum
+    const issued = issuedAt || new Date();
+    // Unesi u consumed_card_numbers
+    await db.query(
+      `INSERT INTO consumed_card_numbers (card_number, member_id, issued_at, consumed_at) VALUES ($1, $2, $3, $4)`,
+      [cardNumber, memberId, issued, consumedAt || new Date()]
+    );
+    // Ažuriraj status u card_numbers (ako postoji)
+    await db.query(
+      `UPDATE card_numbers SET status = 'consumed', member_id = NULL, assigned_at = NULL WHERE card_number = $1`,
+      [cardNumber]
+    );
   },
   
   // Add a single card number
@@ -344,6 +365,41 @@ const cardNumberRepository = {
       };
     });
   },
+  /**
+   * Dohvati potrošene (consumed) brojeve kartica s imenom člana
+   * @param search optional - string za pretragu po broju kartice ili imenu člana (case-insensitive, djelomično podudaranje)
+   * @returns Lista potrošenih kartica s imenom člana
+   */
+  async getConsumedCardNumbers(search?: string): Promise<{
+    card_number: string;
+    member_id: number | null;
+    member_name: string | null;
+    issued_at: Date;
+    consumed_at: Date;
+  }[]> {
+    try {
+      // Pripremi uvjet za pretragu
+      let whereClause = '';
+      let params: any[] = [];
+      if (search && search.trim() !== '') {
+        whereClause = 'WHERE LOWER(c.card_number) LIKE $1 OR LOWER(m.full_name) LIKE $1';
+        params.push(`%${search.toLowerCase()}%`);
+      }
+      const query = `
+        SELECT c.card_number, c.member_id, m.full_name AS member_name, c.issued_at, c.consumed_at
+        FROM consumed_card_numbers c
+        LEFT JOIN members m ON c.member_id = m.member_id
+        ${whereClause}
+        ORDER BY c.consumed_at DESC, c.card_number ASC
+      `;
+      const result = await db.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Greška u getConsumedCardNumbers:', error);
+      throw error;
+    }
+  },
+
 };
 
 export default cardNumberRepository;

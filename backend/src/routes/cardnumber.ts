@@ -49,4 +49,11 @@ router.post(
   cardNumberController.syncCardNumberStatus
 );
 
+// Ruta za dohvat potrošenih kartica (samo admin/superuser)
+router.get(
+  '/consumed',
+  authMiddleware,
+  cardNumberController.getConsumedCardNumbers
+);
+
 export default router;

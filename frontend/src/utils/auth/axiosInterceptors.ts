@@ -112,9 +112,26 @@ export function setupAxiosInterceptors(
             return axios(originalRequest as AxiosRequestConfig);
           }
           
+          // Centralna logika: ako refresh endpoint vrati 401, očisti refresh token iz localStorage i odmah preusmjeri na login
+          // Ovo se izvršava samo ako je refresh endpoint vratio 401, što znači da je refresh token nevažeći
+          if (axiosError.response?.status === 401 && axiosError.config && typeof axiosError.config.url === 'string' && axiosError.config.url.includes('/api/auth/refresh')) {
+            try {
+              localStorage.removeItem('refreshToken'); // Brišemo backup refresh token
+            } catch (e) {
+              // Ignoriramo grešku
+            }
+            console.log('[axiosInterceptors] Pozivam logoutFn zbog konačnog neuspjeha (refresh token nevažeći ili iscrpljeni pokušaji).');
+            await logoutFn();
+            // Nakon odjave korisnika, odmah prekidamo daljnje pokušaje i vraćamo grešku
+            return Promise.reject(error); // Nema više retryja ni refresh pokušaja nakon logouta
+          }
+          
           // Tek nakon što smo iscrpili sve pokušaje, odjavi korisnika
           console.log('Iscrpljeni svi pokušaji obnavljanja tokena, odjavljujem korisnika');
-          void logoutFn();
+          console.log('[axiosInterceptors] Pozivam logoutFn nakon što su iscrpljeni svi pokušaji obnavljanja tokena.');
+          await logoutFn();
+          // Nakon odjave korisnika, odmah prekidamo daljnje pokušaje i vraćamo grešku
+          return Promise.reject(error); // Nema više retryja ni refresh pokušaja nakon logouta
         }
       }
       
