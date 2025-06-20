@@ -66,7 +66,7 @@ export interface ApiAdminMessage {
    * Lista članova koji su pročitali poruku (za admin prikaz)
    * Svaki objekt sadrži member_id i read_at (kao string ili null)
    */
-  read_by?: { member_id: string; read_at: string | null }[];
+  read_by?: { member_id: string; read_at: string | null; full_name?: string }[];
   id: string;
   content: string;
   sender_id: string;

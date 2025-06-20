@@ -1,17 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import { Bell, CheckCircle, MessageCircle } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@components/ui/collapsible';
+import { Separator } from '@components/ui/separator';
+import { Badge } from '@components/ui/badge';
+import { Bell, CheckCircle, MessageCircle, AlertCircle, ChevronDown, ChevronUp, Mail, RefreshCw, Send } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-// Zamijenjeno prema novoj modularnoj API strukturi
-// Zamijenjeno prema novoj modularnoj API strukturi
-import { getMemberMessages, getMemberSentMessages, markMessageAsRead, getGenericMessages } from '../../utils/api/apiMessages';
-import { ApiGenericMessage } from '../../utils/api/apiTypes';
+import { Message as MessageType } from './types/messageTypes';
+import { getMemberMessages, markMessageAsRead, getMemberSentMessages, getGenericMessages } from '../../utils/api/apiMessages';
+import SentMessageCard from './components/SentMessageCard';
+import { ApiAdminMessage, ApiGenericMessage } from '../../utils/api/apiTypes';
 import BackToDashboard from "../../../components/BackToDashboard";
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";
 import { parseDate } from '../../utils/dateUtils';
+
+interface MemberMessageRecipient {
+  member_id: number;
+  read_at: string | null; // Koristimo string jer JSON ne podržava Date objekte direktno
+  full_name?: string; // Ime člana, ako ga backend pošalje
+}
 
 interface MemberMessage {
   message_id: number;
@@ -22,13 +35,39 @@ interface MemberMessage {
   sender_type: 'member_administrator' | 'member' | 'member_superuser';
   recipient_id: number | null;
   recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
+  read_by?: MemberMessageRecipient[]; // Lista primatelja i njihov status čitanja
 }
+
+// Pomoćna funkcija za konverziju API poruka u lokalni format
+const convertApiMessagesToMessages = (apiMessages: ApiAdminMessage[]): MessageType[] => {
+  return apiMessages.map(msg => {
+    const message: MessageType = {
+      message_id: Number(msg.id),
+      member_id: Number(msg.recipient_id) || 0, // Osiguravamo da member_id uvijek postoji
+      sender_name: msg.sender_name || 'Nepoznato', // Osiguravamo da sender_name uvijek postoji
+      message_text: msg.content,
+      created_at: msg.timestamp,
+      status: msg.read ? 'read' : 'unread',
+      sender_id: msg.sender_id ? Number(msg.sender_id) : null,
+      sender_type: msg.sender_type,
+      recipient_id: msg.recipient_id ? Number(msg.recipient_id) : null,
+      recipient_type: msg.recipient_type,
+      read_by: msg.read_by?.map(r => ({
+        member_id: String(r.member_id),
+        read_at: r.read_at ? new Date(r.read_at).toISOString() : null,
+        full_name: r.full_name
+      })) || [],
+    };
+    return message;
+  });
+};
 
 const MemberMessageList: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [messages, setMessages] = useState<MemberMessage[]>([]);
-  const [sentMessages, setSentMessages] = useState<MemberMessage[]>([]);
+  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [openCollapsibleId, setOpenCollapsibleId] = useState<number | null>(null);
+  const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
   const [genericMessages, setGenericMessages] = useState<ApiGenericMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingSent, setLoadingSent] = useState(true);
@@ -37,39 +76,14 @@ const MemberMessageList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
 
   // Dohvaćanje poruka za člana
-  const fetchMemberMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async () => {
     if (!user?.member_id) return;
     
-    try {
+        try {
       setLoading(true);
-      const data = await getMemberMessages(user.member_id);
-      
-      // Filtriramo samo poruke koje je admin poslao članu
-      const receivedMessages = data.filter(msg => 
-        (msg.sender_type === 'member_administrator' || msg.sender_type === 'member_superuser') && 
-        (String(msg.recipient_id) === String(user.member_id) || msg.recipient_type === 'all')
-      );
-      
-      // Sortiramo poruke silazno - od najnovije prema najstarijoj (kao i kod admin prikaza)
-      const sortedMessages = [...receivedMessages].sort((a, b) => {
-        const dateA = parseDate(a?.timestamp || '')?.getTime() || 0;
-        const dateB = parseDate(b?.timestamp || '')?.getTime() || 0;
-        return dateB - dateA;
-      });
-      
-      // Konverzija u lokalni tip MemberMessage
-      const convertedMessages = sortedMessages.map(msg => ({
-        message_id: Number(msg.id),
-        message_text: msg.content,
-        created_at: msg.timestamp,
-        status: msg.read ? ('read' as const) : ('unread' as const),
-        sender_id: Number(msg.sender_id) || null,
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-        recipient_id: Number(msg.recipient_id) || null,
-        recipient_type: msg.recipient_type
-      }));
-      
-      setMessages(convertedMessages);
+      const apiData = await getMemberMessages(user.member_id);
+      const convertedData = convertApiMessagesToMessages(apiData);
+      setMessages(convertedData);
     } catch (error) {
       toast({
         title: "Greška",
@@ -82,61 +96,23 @@ const MemberMessageList: React.FC = () => {
   }, [user?.member_id, toast]);
 
   // Dohvaćanje poslanih poruka člana
-  const fetchMemberSentMessages = useCallback(async () => {
-    if (!user?.member_id) return;
-    
+  const fetchSentMessages = useCallback(async () => {
+    if (!user) return;
+    setLoadingSent(true);
     try {
-      setLoadingSent(true);
-      const data = await getMemberSentMessages(user.member_id);
-      
-      // Konverzija u lokalni tip MemberMessage
-      const convertedMessages = data.map(msg => ({
-        message_id: Number(msg.id),
-        message_text: msg.content,
-        created_at: msg.timestamp,
-        status: 'read', // Poslane poruke su uvijek pročitane od strane pošiljatelja
-        sender_id: Number(msg.sender_id) || null,
-        sender_type: msg.sender_type,
-        recipient_id: Number(msg.recipient_id) || null,
-        recipient_type: msg.recipient_type
-      }));
-      
-      // Osiguravamo da status bude jedan od dozvoljenih tipova
-      const typedMessages = convertedMessages
-        .filter(msg => typeof msg.sender_type === 'string' && ['member_administrator', 'member', 'member_superuser'].includes(msg.sender_type)) // Filtriramo poruke s nevaljanim sender_type
-        .map(msg => ({
-          ...msg,
-          // Osiguravamo da sender_type i status budu ispravnog tipa
-          sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-          status: (msg.status as 'unread' | 'read' | 'archived')
-        }));
-      setSentMessages(typedMessages);
+      const apiData = await getMemberSentMessages(user.member_id);
+      const convertedData = convertApiMessagesToMessages(apiData);
+      setSentMessages(convertedData);
     } catch (error) {
+      console.error("Error fetching sent messages:", error);
       toast({
         title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poslane poruke',
-        variant: "destructive"
+        description: "Nije moguće dohvatiti poslane poruke.",
+        variant: "destructive",
       });
-    } finally {
-      setLoadingSent(false);
     }
-  }, [user?.member_id, toast]);
-
-  const fetchGenericMessages = useCallback(async () => {
-    try {
-      setLoadingGeneric(true);
-      const data = await getGenericMessages();
-      setGenericMessages(data);
-    } catch (error) {
-      toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti sistemske poruke',
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingGeneric(false);
-    }
-  }, [toast]);
+    setLoadingSent(false);
+  }, [user, toast]);
 
   // Označavanje poruke kao pročitane
   const handleMarkAsRead = async (messageId: number) => {
@@ -174,14 +150,32 @@ const MemberMessageList: React.FC = () => {
     }
   };
 
+  const handleRefresh = () => {
+    if (activeTab === 'received') {
+      void fetchMessages();
+    } else {
+      void fetchSentMessages();
+    }
+  };
+
   // Učitavanje poruka kad se komponenta montira
   useEffect(() => {
-    if (user?.member_id) {
-      void fetchMemberMessages();
-      void fetchMemberSentMessages();
+    if (user) {
+      fetchMessages();
+      fetchSentMessages();
+      // fetchGenericMessages(); // Uklonjeno jer uzrokuje greške
     }
-    void fetchGenericMessages();
-  }, [user?.member_id, fetchMemberMessages, fetchMemberSentMessages, fetchGenericMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
+    // Postavljanje intervala za periodično dohvaćanje
+    const interval = setInterval(() => {
+      if (user) {
+        fetchMessages();
+        fetchSentMessages();
+        // fetchGenericMessages(); // Uklonjeno jer uzrokuje greške
+      }
+    }, 30000); // 30 sekundi
+
+    return () => clearInterval(interval);
+  }, [user, fetchMessages, fetchSentMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
   
   // Automatsko označavanje otvorenih poruka kao pročitanih kada korisnik napusti stranicu ili promijeni filter
   useEffect(() => {
@@ -410,7 +404,7 @@ const MemberMessageList: React.FC = () => {
                 
                 <Button
                   variant="outline"
-                  onClick={() => { void fetchMemberMessages(); }}
+                  onClick={() => { void fetchMessages(); }}
                   className="w-full"
                 >
                   Osvježi poruke
@@ -421,77 +415,23 @@ const MemberMessageList: React.FC = () => {
           
           {/* Prikaz poslanih poruka */}
           {activeTab === 'sent' && (
-            sentMessages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Nemate poslanih poruka
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sentMessages.map((message) => {
-                  // Uzmi prvih 50 znakova poruke za pregled
-                  const previewText = message.message_text.length > 50 
-                    ? `${message.message_text.substring(0, 50)}...` 
-                    : message.message_text;
-                  
-                  return (
-                    <div 
+            <div>
+              {loadingSent ? (
+                <div className="text-center p-4">Učitavanje poslanih poruka...</div>
+              ) : sentMessages.length > 0 ? (
+                <div>
+                  {sentMessages.map(message => (
+                    <SentMessageCard 
                       key={message.message_id} 
-                      className="p-4 rounded-md border cursor-pointer transition-all hover:shadow-md border-gray-200"
-                      onClick={() => {
-                        // Samo otvaranje/zatvaranje detalja poruke
-                        const messageElement = document.getElementById(`sent-message-content-${message.message_id}`);
-                        if (messageElement) {
-                          if (messageElement.classList.contains('hidden')) {
-                            messageElement.classList.remove('hidden');
-                          } else {
-                            messageElement.classList.add('hidden');
-                          }
-                        }
-                      }}
-                    >
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">
-                            Primatelj: {message.recipient_type === 'member_administrator' ? 'Administrator' : 
-                                       message.recipient_type === 'all' ? 'Svi članovi' : 
-                                       'Korisnik'}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs text-gray-500">
-                            {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
-                          </div>
-                          <div className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-                            Poslano
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Pregled poruke */}
-                      <div className="text-sm text-gray-700">{previewText}</div>
-                      
-                      {/* Puni sadržaj poruke - sakriven po defaultu */}
-                      <div id={`sent-message-content-${message.message_id}`} className="mt-3 pt-3 border-t border-gray-200 whitespace-pre-wrap hidden">
-                        <div className="mb-3">{message.message_text}</div>
-                        {message.recipient_type === 'all' && (
-                          <div className="mt-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">
-                            Poslano svim članovima
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                <Button
-                  variant="outline"
-                  onClick={() => { void fetchMemberSentMessages(); }}
-                  className="w-full"
-                >
-                  Osvježi poslane poruke
-                </Button>
-              </div>
-            )
+                      message={message as MessageType} 
+                      currentUserId={user?.member_id} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4 text-gray-500">Nema poslanih poruka.</div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

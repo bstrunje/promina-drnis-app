@@ -19,6 +19,7 @@ router.post('/group', authMiddleware, roles.requireAdmin, memberMessageControlle
 router.post('/all', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToAll);
 // Dodatna ruta za kompatibilnost s frontend pozivom
 router.post('/member_administrator/to-all', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToAll);
+router.post('/member_administrator/to-group', authMiddleware, roles.requireAdmin, memberMessageController.sendMessageToMembers);
 
 // Pregled poruka koje je admin poslao
 router.get('/sent', authMiddleware, roles.requireAdmin, memberMessageController.getMessagesSentByAdmin);

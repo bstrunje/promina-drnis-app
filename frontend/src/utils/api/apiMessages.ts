@@ -81,7 +81,8 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
       read_by: Array.isArray(msg.read_by)
         ? msg.read_by.map((rb: any) => ({
             member_id: String(rb.member_id),
-            read_at: rb.read_at ? new Date(rb.read_at).toISOString() : null
+            read_at: rb.read_at ? new Date(rb.read_at).toISOString() : null,
+            full_name: rb.full_name || undefined // Mapiramo full_name ako postoji
           }))
         : [],
       priority: msg.priority || 'normal'
@@ -257,8 +258,8 @@ export const sendAdminMessageToMember = async (memberId: number, messageText: st
 export const sendAdminMessageToGroup = async (memberIds: number[], messageText: string): Promise<void> => {
   try {
     await api.post('/messages/member_administrator/to-group', {
-      recipient_ids: memberIds,
-      content: messageText
+      recipientMemberIds: memberIds,
+      messageText: messageText
     });
   } catch (error) {
     if (error instanceof Error) {

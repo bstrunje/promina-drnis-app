@@ -1,337 +1,88 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAdminSentMessages } from '../../../utils/api/apiMessages';
-import { getAllMembers } from '../../../utils/api/apiMembers';
 import { useToast } from "@components/ui/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { ChevronDown, ChevronRight, Users, UserCheck } from "lucide-react";
-import { formatDate } from "../../../utils/dateUtils";
-import { Message, MessageGroup, MessageMember } from '../types/messageTypes';
+import { Message as MessageType } from '../types/messageTypes';
 import { convertApiMessagesToMessages } from '../utils/messageConverters';
-import { parseDate, getCurrentDate } from '../../../utils/dateUtils';
+import SentMessageCard from './SentMessageCard';
+import { useAuth } from '../../../context/AuthContext';
 
 interface SentMessagesProps {
   userRole: string;
 }
 export default function SentMessages({ userRole }: SentMessagesProps) {
-  // Funkcija za prikaz liste primatelja za grupnu poruku
-  const renderRecipientList = (group: MessageGroup) => {
-    // allMembers je dostupno iz statea, nema potrebe za redefiniranjem ili importom
-    if (group.messages[0].recipient_type === 'all') {
-      // Filtriraj samo redovne članove
-      // 'status' ne postoji na MessageMember, koristi se 'detailed_status' prema tipu
-      const regularMembers = allMembers.filter(
-        member => member.membership_type === 'regular' && member.detailed_status === 'registered'
-      );
-
-      return (
-        <div className="mt-2 p-2 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
-          <div className="text-sm text-gray-500 mb-1">
-            {regularMembers.length ?? 0} članova
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1">
-            {regularMembers.map(member => (
-              <div key={member.member_id} className="text-sm">
-                {member.full_name}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // Za grupne poruke, prikaži listu članova
-    if (group.messages[0].recipient_type === 'group') {
-      // Ovdje bismo trebali dohvatiti članove grupe
-      return (
-        <div className="mt-2 p-2 bg-gray-50 rounded-md">
-          <div className="text-sm text-gray-500">
-            Članovi grupe nisu dostupni
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
   const { toast } = useToast();
-  // const [sentMessages, setSentMessages] = useState<Message[]>([]); // Više se ne koristi
+  const { user } = useAuth();
+  const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
   const [loadingSent, setLoadingSent] = useState(true);
-  const [groupedMessages, setGroupedMessages] = useState<MessageGroup[]>([]);
-  const [allMembers, setAllMembers] = useState<MessageMember[]>([]);
 
-  // Funkcija za dohvaćanje poruka koje je admin poslao članovima
   const fetchSentMessages = useCallback(async (): Promise<void> => {
-    // Ako je običan član, preskačemo API poziv za admin poruke
     if (userRole === 'member') {
       setLoadingSent(false);
       return;
     }
 
+    setLoadingSent(true);
     try {
       const apiData = await getAdminSentMessages();
-
-      // Konvertiraj API podatke u lokalni format
       const convertedData = convertApiMessagesToMessages(apiData);
-
-      // Grupiraj poruke po recipient_type i recipient_id
-      const groupedData = groupMessages(convertedData);
-
-      // setSentMessages(convertedData); // Više se ne koristi
-      setGroupedMessages(groupedData);
-      setLoadingSent(false);
-
-      // Dohvati sve članove za prikaz imena
-      void fetchAllMembers();
+      // Sortiraj poruke, najnovije prvo
+      convertedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setSentMessages(convertedData);
     } catch (error) {
       toast({
         title: "Greška",
         description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poslane poruke',
         variant: "destructive"
       });
+    } finally {
       setLoadingSent(false);
     }
   }, [userRole, toast]);
 
-  // Funkcija za dohvaćanje svih članova
-  const fetchAllMembers = async (): Promise<void> => {
-    try {
-      const members = await getAllMembers();
-
-      // Transformiramo podatke u format koji nam treba
-      const transformedMembers: MessageMember[] = members.map(member => ({
-        member_id: member.member_id,
-        full_name: member.full_name ?? `${member.first_name} ${member.last_name}`,
-        detailed_status: member.status, // Koristimo status umjesto detailed_status
-        membership_type: member.membership_type
-      }));
-
-      // Sortiraj članove po imenu
-      transformedMembers.sort((a, b) => a.full_name.localeCompare(b.full_name));
-
-      setAllMembers(transformedMembers);
-    } catch (error) {
-      console.error('Greška pri dohvaćanju članova:', error);
-    }
-  };
-
-  // Učitaj poslane poruke pri prvom renderiranju
   useEffect(() => {
     void fetchSentMessages();
-  }, [userRole, fetchSentMessages]);
+  }, [fetchSentMessages]);
 
-  // Automatsko periodičko osvježavanje za admina/superusera
   useEffect(() => {
-    if (userRole !== 'member') {
-      const interval = setInterval(() => {
-        void fetchSentMessages();
-      }, 30000); // 30 sekundi
-      return () => clearInterval(interval);
-    }
-    return undefined;
+    if (userRole === 'member') return;
+    const interval = setInterval(() => {
+      void fetchSentMessages();
+    }, 30000); // 30 sekundi
+    // eslint-disable-next-line consistent-return
+    return () => clearInterval(interval);
   }, [userRole, fetchSentMessages]);
-
-  // Funkcija za grupiranje poruka
-  const groupMessages = (messages: Message[]): MessageGroup[] => {
-    const groups: Record<string, Message[]> = {};
-
-    messages.forEach(message => {
-      let key = '';
-
-      if (message.recipient_type === 'all') {
-        key = 'all_members';
-      } else if (message.recipient_type === 'group') {
-        key = `group_${message.recipient_id}`;
-      } else {
-        key = `member_${message.recipient_id}`;
-      }
-
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-
-      groups[key].push(message);
-    });
-
-    // Sortiraj poruke unutar grupa po datumu (najnovije prvo)
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        const dateA = parseDate(a.created_at || '') || getCurrentDate();
-        const dateB = parseDate(b.created_at || '') || getCurrentDate();
-        return dateB.getTime() - dateA.getTime(); // Novije prvo
-      });
-    });
-
-    // Pretvori objekt u niz grupa
-    return Object.keys(groups).map(key => ({
-      key,
-      messages: groups[key],
-      isExpanded: false
-    }));
-  };
-
-  // Funkcija za promjenu stanja proširenja grupe
-  const toggleGroupExpansion = (key: string) => {
-    setGroupedMessages(prevGroups =>
-      prevGroups.map(group =>
-        group.key === key
-          ? { ...group, isExpanded: !group.isExpanded }
-          : group
-      )
-    );
-  };
-
-  // Funkcija za dobivanje naziva grupe
-  const getGroupName = (group: MessageGroup): string => {
-    const firstMessage = group.messages[0];
-
-    if (firstMessage.recipient_type === 'all') {
-      return 'Svi članovi';
-    } else if (firstMessage.recipient_type === 'group') {
-      // Ovdje bismo mogli dodati logiku za dohvaćanje naziva grupe ako postoji
-      return `Grupa članova (${group.messages.length})`;
-    } else {
-      // Pronađi člana po ID-u
-      const member = allMembers.find(m => String(m.member_id) === String(firstMessage.recipient_id));
-      return member ? member.full_name : `Član #${firstMessage.recipient_id}`;
-    }
-  };
-
-  // Funkcija za dobivanje broja pročitanih poruka
-  const getReadCount = (message: Message) => {
-    // Za poruke svim članovima ili grupama, prikazujemo broj pročitalo/ukupno
-    if (message.recipient_type === 'all' || message.recipient_type === 'group') {
-      // Filtriraj samo redovne članove za 'all', ili sve članove grupe za 'group'
-      let relevantMembers = allMembers;
-      if (message.recipient_type === 'all') {
-        relevantMembers = allMembers.filter(
-          member => member.membership_type === 'regular' && member.detailed_status === 'registered'
-        );
-      }
-      const total = relevantMembers.length;
-      const readCount = Array.isArray(message.read_by)
-        ? message.read_by.filter(rb => rb.read_at).length
-        : 0;
-      return `${readCount}/${total} pročitano`;
-    }
-    return "";
-  };
-
-  // Prikaz tooltipa/lista s imenima i vremenom pročitanja
-  const renderReadByList = (message: Message) => {
-    if (!Array.isArray(message.read_by) || message.read_by.length === 0) return null;
-    // Mapiraj member_id na ime
-    const readMembers = message.read_by
-      .filter(rb => rb.read_at)
-      .map(rb => {
-        const member = allMembers.find(m => String(m.member_id) === String(rb.member_id));
-        return {
-          name: member ? member.full_name : `Član #${rb.member_id}`,
-          read_at: rb.read_at
-        };
-      });
-    if (readMembers.length === 0) return null;
-    return (
-      <div className="mt-1 text-xs text-gray-500">
-        <span>Pročitali:</span>
-        <ul className="ml-2 list-disc">
-          {readMembers.map((rm, idx) => (
-            <li key={idx}>{rm.name} ({formatDate(rm.read_at, 'dd.MM.yyyy HH:mm')})</li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
-
 
   return (
     <div>
       <div className="space-y-4">
         {loadingSent ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
+          <div className="text-center p-8">
             <p className="text-gray-500">Učitavanje poslanih poruka...</p>
           </div>
-        ) : groupedMessages.length > 0 ? (
-          <>
-            {groupedMessages.map(group => (
-              <Card key={group.key} className="mb-4">
-                <CardHeader className="cursor-pointer" onClick={() => toggleGroupExpansion(group.key)}>
-                  <CardTitle className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      {group.messages[0].recipient_type === 'all' ? (
-                        <Users className="h-5 w-5 mr-2" />
-                      ) : (
-                        <UserCheck className="h-5 w-5 mr-2" />
-                      )}
-                      <span>{getGroupName(group) || ''}</span>
-                    </div>
-                    <div className="flex items-center">
-                      {['all', 'group'].includes(String(group.messages[0].recipient_type)) && (
-                        <span className="text-sm text-gray-500 mr-2">
-                          {getReadCount(group.messages[0])}
-                        </span>
-                      )}
-                      {group.isExpanded ? (
-                        <ChevronDown className="h-5 w-5" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5" />
-                      )}
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                {group.isExpanded && (
-                  <CardContent>
-                    {group.messages.map((message, idx) => (
-                      <div key={message.message_id} className="mb-2 p-2 bg-gray-50 rounded-md">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <span className="font-medium">{formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}</span>
-                            <span className="ml-2 text-xs text-gray-500">ID: {message.message_id}</span>
-                          </div>
-                          <div className="mt-1 sm:mt-0">
-                            {/* Prikaz statusa, broja pročitanih itd. */}
-                            {['member_administrator', 'member_superuser'].includes(userRole) && (
-                              ['all', 'group'].includes(message.recipient_type || '')
-                                ? renderReadByList(message)
-                                : message.recipient_type === 'member' && (() => {
-  const recipientRead = Array.isArray(message.read_by)
-    ? message.read_by.find(rb => String(rb.member_id) === String(message.recipient_id))
-    : undefined;
-  return (
-    <div className="mt-1 text-xs text-gray-500">
-      <span>Pročitano: </span>
-      {recipientRead && recipientRead.read_at ? (
-        <>
-          <span className="text-green-700 font-bold">DA</span>
-          <span className="ml-2">({formatDate(recipientRead.read_at, 'dd.MM.yyyy HH:mm')})</span>
-        </>
-      ) : (
-        <span className="text-red-700 font-bold">NE</span>
-      )}
-    </div>
-  );
-})()
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-1">{message.message_text}</div>
-                      </div>
-                    ))}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </>
-        ) : null}
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => { void fetchSentMessages(); }}
-            className="w-full"
-          >
-            Osvježi poslane poruke
-          </Button>
-        </div>
+        ) : sentMessages.length > 0 ? (
+          sentMessages.map(message => (
+            <SentMessageCard 
+              key={message.message_id} 
+              message={message} 
+              currentUserId={user?.member_id} 
+            />
+          ))
+        ) : (
+          <div className="text-center p-8">
+            <p className="text-gray-500">Nema poslanih poruka.</p>
+          </div>
+        )}
+      </div>
+      <div className="mt-4">
+        <Button
+          variant="outline"
+          onClick={() => { void fetchSentMessages(); }}
+          className="w-full"
+          disabled={loadingSent}
+        >
+          {loadingSent ? 'Osvježavanje...' : 'Osvježi poslane poruke'}
+        </Button>
       </div>
     </div>
   );

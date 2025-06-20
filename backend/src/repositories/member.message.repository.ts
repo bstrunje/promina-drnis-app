@@ -8,7 +8,7 @@ export interface TransformedMessage {
      * Lista članova koji su pročitali poruku (za admin prikaz)
      * Svaki objekt sadrži member_id i read_at (ako je pročitao)
      */
-    read_by?: Array<{ member_id: number, read_at: Date | null }>;
+    read_by?: Array<{ member_id: number, read_at: Date | null, full_name: string | null }>;
 
     message_id: number;
     member_id: number | null;
@@ -107,27 +107,29 @@ const memberMessageRepository = {
             },
         });
 
-        let resolvedRecipientMemberIds: number[] = [];
+        let finalRecipientIds: number[] = [];
 
-        if (recipientType === 'member') {
-            if (recipientId) {
-                resolvedRecipientMemberIds = [recipientId];
-            }
+        if (recipientType === 'all') {
+            const allMembers = await memberRepository.findAllActiveMemberIds(senderId);
+            finalRecipientIds = allMembers;
         } else if (recipientType === 'group') {
-            if (inputRecipientMemberIds && inputRecipientMemberIds.length > 0) {
-                resolvedRecipientMemberIds = inputRecipientMemberIds;
+            if (!inputRecipientMemberIds || inputRecipientMemberIds.length === 0) {
+                throw new Error('Za grupnu poruku potrebno je navesti primatelje.');
             }
-        } else if (recipientType === 'all') {
-            resolvedRecipientMemberIds = await memberRepository.findAllActiveMemberIds(senderId);
+            finalRecipientIds = inputRecipientMemberIds;
+        } else if (recipientType === 'member' && inputRecipientMemberIds && inputRecipientMemberIds.length > 0) {
+            finalRecipientIds = inputRecipientMemberIds;
+        } else {
+            throw new Error('Nevažeći tip primatelja ili nedostaju ID-evi primatelja.');
         }
 
         // Dodaj pošiljatelja kao primatelja ako već nije u listi
-        if (!resolvedRecipientMemberIds.includes(senderId)) {
-            resolvedRecipientMemberIds.push(senderId);
+        if (!finalRecipientIds.includes(senderId)) {
+            finalRecipientIds.push(senderId);
         }
         
-        if (resolvedRecipientMemberIds.length > 0) {
-            const recipientStatusData = resolvedRecipientMemberIds.map(memberId => ({
+        if (finalRecipientIds.length > 0) {
+            const recipientStatusData = finalRecipientIds.map(memberId => ({
                 message_id: newMessage.message_id,
                 recipient_member_id: memberId,
                 status: 'unread', // Inicijalno nepročitano
@@ -269,7 +271,14 @@ const memberMessageRepository = {
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
-            recipient_statuses: { select: { status: true, read_at: true, recipient_member_id: true } } // Uključujemo radi sukladnosti s TransformedMessage
+            recipient_statuses: { 
+            select: { 
+              status: true, 
+              read_at: true, 
+              recipient_member_id: true,
+              member: { select: { full_name: true } } // Dodano za dohvaćanje imena primatelja
+            } 
+          } // Uključujemo radi sukladnosti s TransformedMessage
           },
         });
         type MessageWithDetails = Prisma.MemberMessageGetPayload<typeof messageWithDetailsPayload>;
@@ -291,7 +300,8 @@ const memberMessageRepository = {
                 message_id: msg.message_id,
                 read_by: (msg.recipient_statuses || []).map(rs => ({
                     member_id: rs.recipient_member_id,
-                    read_at: rs.read_at
+                    read_at: rs.read_at,
+                    full_name: rs.member?.full_name || null // Dodano ime primatelja
                 })),
                 member_id: msg.member_id,
                 message_text: msg.message_text,
