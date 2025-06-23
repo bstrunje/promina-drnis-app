@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   getAdminMessages, 
+  getMemberMessages, 
   markMessageAsRead, 
   archiveMessage, 
   deleteMessage, 
@@ -18,6 +19,7 @@ import {
 import { formatDate } from "../../../utils/dateUtils";
 import { Message } from '../types/messageTypes';
 import { convertApiMessagesToMessages } from '../utils/messageConverters';
+import { useAuth as useAuthHook } from '@/context/AuthContext';
 
 interface ReceivedMessagesProps {
   userRole: string;
@@ -26,6 +28,7 @@ interface ReceivedMessagesProps {
 
 export default function ReceivedMessages({ userRole, onUnreadCountChange }: ReceivedMessagesProps) {
   const { toast } = useToast();
+  const { user } = useAuthHook();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'unread' | 'read' | 'archived'>('unread');
@@ -33,17 +36,20 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
   // Učitaj poruke pri prvom renderiranju
   // Zamotaj fetchMessages u useCallback
 const fetchMessages = useCallback(async () => {
-  // Ako je običan član, preskačemo API poziv za admin poruke
-  if (userRole === 'member') {
-    setLoading(false);
-    return;
-  }
+  setLoading(true);
   try {
-    // Koristi forceLoad=true jer je korisnik aktivno na dijelu aplikacije gdje se prikazuju poruke
-    const apiData = await getAdminMessages(true);
+    let apiData;
+    if (userRole === 'member' && user?.member_id) {
+      // Ako je običan član, dohvati njegove poruke
+      apiData = await getMemberMessages(user.member_id);
+    } else {
+      // Inače, dohvati poruke za admina
+      // Koristi forceLoad=true jer je korisnik aktivno na dijelu aplikacije gdje se prikazuju poruke
+      apiData = await getAdminMessages(true);
+    }
+
     const convertedData = convertApiMessagesToMessages(apiData);
     setMessages(convertedData);
-    setLoading(false);
     const unreadCount = convertedData.filter(m => m.status === 'unread').length;
     onUnreadCountChange(unreadCount);
   } catch (error: any) {
@@ -56,9 +62,10 @@ const fetchMessages = useCallback(async () => {
       });
     }
     // Inače, ne prikazujemo grešku korisniku (tihi retry)
+  } finally {
     setLoading(false);
   }
-}, [userRole, toast, onUnreadCountChange]);
+}, [userRole, user?.member_id, toast, onUnreadCountChange]);
 
 useEffect(() => {
     void fetchMessages();
@@ -208,7 +215,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Bell className="h-4 w-4 mr-1" />
-            <span>Nepročitane</span>
+            <span className="hidden sm:inline">Nepročitane</span>
           </Button>
           <Button
             variant={filter === 'read' ? 'default' : 'outline'}
@@ -216,7 +223,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <CheckCircle className="h-4 w-4 mr-1" />
-            <span>Pročitane</span>
+            <span className="hidden sm:inline">Pročitane</span>
           </Button>
           <Button
             variant={filter === 'archived' ? 'default' : 'outline'}
@@ -224,7 +231,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Archive className="h-4 w-4 mr-1" />
-            <span>Arhivirane</span>
+            <span className="hidden sm:inline">Arhivirane</span>
           </Button>
         </div>
       </div>

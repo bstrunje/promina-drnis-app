@@ -227,15 +227,15 @@ const AdminMessageSender: React.FC = () => {
           <TabsList className="w-full mb-4">
             <TabsTrigger value="single" className="flex items-center">
               <UserCheck className="mr-2 h-4 w-4" />
-              Pojedinačnom članu
+              <span className="hidden sm:inline">Pojedinačnom članu</span>
             </TabsTrigger>
             <TabsTrigger value="group" className="flex items-center">
               <Users className="mr-2 h-4 w-4" />
-              Grupi članova
+              <span className="hidden sm:inline">Grupi članova</span>
             </TabsTrigger>
             <TabsTrigger value="all" className="flex items-center">
               <Mail className="mr-2 h-4 w-4" />
-              Svim članovima
+              <span className="hidden sm:inline">Svim članovima</span>
             </TabsTrigger>
           </TabsList>
 
