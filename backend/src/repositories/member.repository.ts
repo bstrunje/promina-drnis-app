@@ -28,6 +28,8 @@ export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 
 export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'status' | 'role'>> {
     first_name?: string;
     last_name?: string;
+    full_name?: string;
+    password_hash?: string;
     date_of_birth?: string;
     gender?: Gender;
     street_address?: string;
@@ -81,6 +83,8 @@ const memberRepository = {
         const raw = await prisma.member.update({ where: { member_id: memberId }, data: {
             first_name: memberData.first_name,
             last_name: memberData.last_name,
+            full_name: memberData.full_name,
+            password_hash: memberData.password_hash,
             date_of_birth: memberData.date_of_birth,
             gender: memberData.gender,
             street_address: memberData.street_address,

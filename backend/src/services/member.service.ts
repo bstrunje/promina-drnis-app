@@ -65,6 +65,9 @@ const memberService = {
 
     async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member> {
         try {
+            let newFullName: string | undefined = undefined;
+            let hashedPassword: string | undefined = undefined;
+
             if (memberData.total_hours !== undefined) {
                 const currentHours = await db.query(`
                     SELECT COALESCE(SUM(hours_spent), 0) as total_hours
@@ -77,12 +80,37 @@ const memberService = {
                 }
             }
 
+            // Provjera mijenjaju li se ime ili prezime
+            if (memberData.first_name || memberData.last_name) {
+                const currentMember = await memberRepository.findById(memberId);
+                if (!currentMember) {
+                    throw new Error("Member not found for update");
+                }
+
+                // Sastavljanje novog punog imena
+                const firstName = memberData.first_name ?? currentMember.first_name;
+                const lastName = memberData.last_name ?? currentMember.last_name;
+                
+                newFullName = `${firstName} ${lastName}`;
+
+                // Ažuriranje lozinke ako član ima broj iskaznice
+                const membershipDetails = await membershipRepository.getMembershipDetails(memberId);
+                const cardNumber = membershipDetails?.card_number;
+
+                if (cardNumber) {
+                    const newPassword = `${newFullName}-isk-${cardNumber}`;
+                    hashedPassword = await bcrypt.hash(newPassword, 10);
+                }
+            }
+
             return await memberRepository.update(memberId, {
-    ...memberData,
-    membership_type: memberData.membership_type !== undefined
-      ? mapMembershipTypeToEnum(memberData.membership_type)
-      : undefined
-  });
+                ...memberData,
+                full_name: newFullName,
+                password_hash: hashedPassword,
+                membership_type: memberData.membership_type !== undefined
+                ? mapMembershipTypeToEnum(memberData.membership_type)
+                : undefined
+            });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error updating member: ' + errorMessage);
