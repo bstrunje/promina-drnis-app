@@ -14,22 +14,6 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { unreadCount: unreadMessageCount } = useUnreadMessages();
   
-  // Pomoćna funkcija za određivanje rute dashboarda na temelju uloge
-  const getDashboardRoute = () => {
-    if (!user) return "/login";
-    
-    switch (user.role) {
-      case 'member_administrator':
-        return "/administrator/dashboard";
-      case 'member_superuser':
-        return "/superuser/dashboard";
-      case 'member':
-        return "/member/dashboard";
-      default:
-        return "/profile";
-    }
-  };
-  
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -108,13 +92,14 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             {/* Pristup System Manager sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <Link 
-                to={getDashboardRoute()} 
+                to="/member/dashboard" 
                 className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'} hover:underline cursor-pointer`}
                 onClick={closeMenu}
               >
                 {user.first_name} {user.last_name}
                 {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
               </Link>
+
               <button
                 onClick={() => {
                   closeMenu();

@@ -37,6 +37,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     memberCount: 0,
   });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
+  const [fullMember, setFullMember] = useState<Member>(member);
+
+  const getActivityStatus = (totalHours: number | null | undefined) => {
+    return (totalHours ?? 0) >= 20 ? "active" : "passive";
+  };
 
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -77,12 +82,28 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   useEffect(() => {
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
-  }, []);
+
+    const fetchMemberDetails = async () => {
+      if (member?.member_id) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get<Member>(`${API_BASE_URL}/members/${member.member_id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setFullMember(response.data);
+        } catch (err) {
+          console.error("Error fetching full member details:", err);
+        }
+      }
+    };
+
+    void fetchMemberDetails();
+  }, [member?.member_id]);
 
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Dobrodošli, {member.full_name}</h1>
+        <h1 className="text-2xl font-bold mb-2">Dobrodošli, {fullMember.full_name}</h1>
         <p className="opacity-90">Članski Dashboard</p>
       </div>
 
@@ -168,7 +189,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{stats.memberCount}</p>
-                <p className="text-sm text-gray-500">Ukupno članova</p>
+                <p className="text-sm text-gray-500">Ukupno aktivnih članova</p>
               </>
             )}
           </div>
@@ -188,7 +209,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
               <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
             ) : (
               <>
-                <p className="text-2xl font-bold">{member.full_name}</p>
+                <p className="text-2xl font-bold">{fullMember.full_name}</p>
                 <p className="text-sm text-gray-500">Vaš korisnički profil</p>
               </>
             )}
@@ -204,29 +225,29 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Status članstva:</span>
               <span className="font-medium">
-                {member.status === 'registered' ? (
-                  <span className="text-green-600">Aktivno</span>
+                {getActivityStatus(fullMember.total_hours) === 'active' ? (
+                  <span className="text-green-600">Aktivan</span>
                 ) : (
-                  <span className="text-red-600">Neaktivno</span>
+                  <span className="text-yellow-600">Pasivan</span>
                 )}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Godina članarine:</span>
               <span className="font-medium">
-                {member.membership_details?.fee_payment_year ?? "N/A"}
+                {fullMember.membership_details?.fee_payment_year ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Status životne dobi:</span>
+              <span className="text-gray-600">Životni status:</span>
               <span className="font-medium">
-                {member.life_status ?? "N/A"}
+                {fullMember.life_status ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">Godišnja markica:</span>
               <span className="font-medium">
-                {member.membership_details?.card_stamp_issued ? "Izdana" : "Nije izdana"}
+                {fullMember.membership_details?.card_stamp_issued ? "Izdana" : "Nije izdana"}
               </span>
             </div>
           </div>
