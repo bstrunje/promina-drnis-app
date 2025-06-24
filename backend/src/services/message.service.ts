@@ -80,6 +80,10 @@ const messageService = {
     
     async countUnreadMessages(memberId: number): Promise<number> {
         return await memberMessageRepository.countUnreadMessages(memberId);
+    },
+
+    async getSentMessagesByMemberId(memberId: number): Promise<TransformedMessage[]> {
+        return await memberMessageRepository.getSentMessagesByMemberId(memberId);
     }
 };
 

@@ -108,7 +108,7 @@ const authRepository = {
 
     async searchMembers(searchTerm: string): Promise<MemberSearchResult[]> {
         // Osigurajmo da pretraživanje zahtijeva minimalno 3 znaka
-        if (searchTerm.length < 3) {
+        if (searchTerm.length < 2) {
             return [];
         }
         

@@ -11,5 +11,6 @@ router.get('/:memberId/messages', authMiddleware, memberMessageController.getMem
 router.put('/:memberId/messages/:messageId/read', authMiddleware, memberMessageController.markMemberMessageAsRead);
 // Dodajemo rutu za dohvaćanje broja nepročitanih poruka
 router.get('/unread-count', authMiddleware, memberMessageController.getUnreadMessageCount);
+router.get('/sent', authMiddleware, memberMessageController.getSentMessages);
 
 export default router;

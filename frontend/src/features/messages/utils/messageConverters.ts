@@ -36,3 +36,24 @@ export const convertApiMessageToMessage = (apiMessage: ApiAdminMessage): Message
 export const convertApiMessagesToMessages = (apiMessages: ApiAdminMessage[]): Message[] => {
   return apiMessages.map(convertApiMessageToMessage);
 };
+
+/**
+ * Funkcija za konverziju poruke člana iz API-ja u Message format
+ * @param apiMessage Poruka iz API-ja od člana
+ * @returns Poruka u formatu koji koristi komponenta
+ */
+export const convertMemberApiMessageToMessage = (apiMessage: any): Message => {
+  return {
+    message_id: apiMessage.message_id,
+    member_id: apiMessage.member_id,
+    sender_name: apiMessage.sender?.full_name || 'Nepoznato',
+    message_text: apiMessage.message_text,
+    created_at: apiMessage.created_at,
+    status: apiMessage.read ? 'read' : 'unread',
+    sender_id: apiMessage.sender_id,
+    sender_type: apiMessage.sender_type,
+    recipient_id: apiMessage.recipient_id,
+    recipient_type: apiMessage.recipient_type,
+    read_by: apiMessage.read_by || []
+  };
+};

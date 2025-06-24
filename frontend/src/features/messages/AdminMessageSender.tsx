@@ -37,8 +37,8 @@ const AdminMessageSender: React.FC = () => {
   // Pretražujemo članove kad se promijeni searchTerm
   useEffect(() => {
     const fetchMembers = async () => {
-      // Promijenjena logika - ne pokušavamo dohvaćati podatke dok se ne upiše najmanje 3 znaka
-      if (searchTerm.length < 3) {
+      // Promijenjena logika - ne pokušavamo dohvaćati podatke dok se ne upiše najmanje 2 znaka
+      if (searchTerm.length < 2) {
         setSearchResults([]);
         return;
       }
@@ -246,7 +246,7 @@ const AdminMessageSender: React.FC = () => {
               </label>
               <Input
                 id="member-search"
-                placeholder="Pretraži po imenu ili prezimenu... (najmanje 3 znaka)"
+                placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -268,9 +268,9 @@ const AdminMessageSender: React.FC = () => {
                 </div>
               )}
 
-              {searchTerm.length > 0 && searchTerm.length < 3 && (
+              {searchTerm.length > 0 && searchTerm.length < 2 && (
                 <div className="text-sm text-gray-500 mt-1">
-                  Unesite najmanje 3 znaka za pretragu članova
+                  Unesite najmanje 2 znaka za pretragu članova
                 </div>
               )}
             </div>
@@ -305,7 +305,7 @@ const AdminMessageSender: React.FC = () => {
               </label>
               <Input
                 id="group-member-search"
-                placeholder="Pretraži po imenu ili prezimenu... (najmanje 3 znaka)"
+                placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 ref={searchInputRef}
@@ -337,9 +337,9 @@ const AdminMessageSender: React.FC = () => {
                 </div>
               )}
 
-              {searchTerm.length > 0 && searchTerm.length < 3 && (
+              {searchTerm.length > 0 && searchTerm.length < 2 && (
                 <div className="text-sm text-gray-500 mt-1">
-                  Unesite najmanje 3 znaka za pretragu članova
+                  Unesite najmanje 2 znaka za pretragu članova
                 </div>
               )}
             </div>

@@ -55,11 +55,6 @@ const memberMessageRepository = {
         const adminAndSuperUserRoles = ['member_administrator', 'member_superuser'];
         const recipientMemberIds = await memberRepository.findMemberIdsByRoles(adminAndSuperUserRoles);
         
-        // Dodaj i pošiljatelja kao primatelja da može vidjeti svoju poruku
-        if (!recipientMemberIds.includes(memberId)) {
-            recipientMemberIds.push(memberId);
-        }
-
         // 3. Kreiraj MessageRecipientStatus za svakog primatelja
         if (recipientMemberIds.length > 0) {
             const recipientStatusData = recipientMemberIds.map(adminId => ({
@@ -116,18 +111,13 @@ const memberMessageRepository = {
             if (!inputRecipientMemberIds || inputRecipientMemberIds.length === 0) {
                 throw new Error('Za grupnu poruku potrebno je navesti primatelje.');
             }
-            finalRecipientIds = inputRecipientMemberIds;
+            finalRecipientIds = inputRecipientMemberIds.filter(id => id !== senderId);
         } else if (recipientType === 'member' && inputRecipientMemberIds && inputRecipientMemberIds.length > 0) {
             finalRecipientIds = inputRecipientMemberIds;
         } else {
             throw new Error('Nevažeći tip primatelja ili nedostaju ID-evi primatelja.');
         }
 
-        // Dodaj pošiljatelja kao primatelja ako već nije u listi
-        if (!finalRecipientIds.includes(senderId)) {
-            finalRecipientIds.push(senderId);
-        }
-        
         if (finalRecipientIds.length > 0) {
             const recipientStatusData = finalRecipientIds.map(memberId => ({
                 message_id: newMessage.message_id,
@@ -319,6 +309,47 @@ const memberMessageRepository = {
                     full_name: msg.sender.full_name
                 } : null,
                 // recipient_statuses: msg.recipient_statuses // Može se dodati ako je potrebno prikazati statuse svih primatelja
+            };
+        });
+    },
+
+    async getSentMessagesByMemberId(memberId: number): Promise<TransformedMessage[]> {
+        const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
+          include: {
+            sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
+            recipient_statuses: { 
+              select: { status: true, read_at: true, recipient_member_id: true }
+            },
+          },
+        });
+        type MessageWithDetails = Prisma.MemberMessageGetPayload<typeof messageWithDetailsPayload>;
+
+        const messagesData = await prisma.memberMessage.findMany({
+            where: {
+                sender_id: memberId,
+            },
+            include: messageWithDetailsPayload.include,
+            orderBy: { created_at: 'desc' },
+        });
+
+        return (messagesData as MessageWithDetails[]).map((msg): TransformedMessage => {
+            return {
+                message_id: msg.message_id,
+                member_id: msg.member_id,
+                message_text: msg.message_text,
+                created_at: msg.created_at,
+                sender_id: msg.sender_id,
+                recipient_id: msg.recipient_id,
+                recipient_type: msg.recipient_type,
+                sender_type: msg.sender_type,
+                currentUserStatus: undefined,
+                currentUserReadAt: undefined,
+                sender: msg.sender ? {
+                    member_id: msg.sender.member_id,
+                    first_name: msg.sender.first_name,
+                    last_name: msg.sender.last_name,
+                    full_name: msg.sender.full_name
+                } : null,
             };
         });
     },

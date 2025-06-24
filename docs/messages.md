@@ -143,6 +143,58 @@ Frontend implementacija koristi React komponente za prikaz i upravljanje porukam
 4. Backend kreira zapise u `message_recipient_status` tablici za sve članove
 5. Poruka je vidljiva svim članovima u njihovom inboxu
 
+## Rješavanje problema
+
+### Problem: Poslane poruke običnog člana se ne prikazuju ispravno
+
+**Simptomi:**
+Kada se običan član (ne-administrator) prijavi i ode na stranicu s poslanim porukama, poruke se prikazuju bez teksta i vremena slanja. Podaci s backenda stižu ispravno, ali se gube na frontendu.
+
+**Uzrok:**
+Problem je bio u komponenti `frontend/src/features/messages/MemberMessageList.tsx`. Ova komponenta se prikazuje isključivo običnim članovima i imala je nekoliko problema:
+
+1.  Sadržavala je internu, lokalnu funkciju za konverziju API odgovora u format poruke (`convertApiMessagesToMessages`) koja je bila namijenjena samo za poruke koje prima član, a ne za one koje šalje.
+2.  Ta pogrešna funkcija se koristila i za dohvaćanje poslanih poruka, što je uzrokovalo gubitak polja `message_text` i `created_at` jer API za poslane poruke vraća drugačiju strukturu (`content` i `timestamp`).
+3.  Kasnije je otkrivena i pogrešna putanja za uvoz modula `messageConverters` (`../../utils/` umjesto `./utils/`), što je uzrokovalo TypeScript greške.
+
+**Rješenje (koraci za reprodukciju):**
+
+1.  **Identificirati pravu komponentu:** Prepoznati da se za članove učitava `MemberMessageList.tsx`, a ne `SentMessages.tsx` (koja je za administratore).
+
+2.  **Centralizirati logiku konverzije:** U datoteci `frontend/src/features/messages/utils/messageConverters.ts` osigurati postojanje dvije odvojene funkcije:
+    *   `convertApiMessagesToMessages`: Za konverziju primljenih poruka.
+    *   `convertMemberApiMessageToMessage`: Nova funkcija, specifično za konverziju poslanih poruka člana, koja ispravno mapira `content` -> `message_text` i `timestamp` -> `created_at`.
+
+3.  **Očistiti `MemberMessageList.tsx`:**
+    *   Obrisati sve lokalne, pomoćne funkcije za konverziju poruka unutar komponente.
+    *   Ispraviti putanju za uvoz `messageConverters` modula na:
+        ```typescript
+        import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from './utils/messageConverters';
+        ```
+
+4.  **Primijeniti ispravne konvertere:** Unutar `MemberMessageList.tsx`, osigurati da se koriste ispravne funkcije na pravim mjestima:
+    *   U funkciji `fetchMessages` (za primljene poruke) koristiti `convertApiMessagesToMessages`.
+    *   U funkciji `fetchSentMessages` (za poslane poruke) koristiti `apiData.map(convertMemberApiMessageToMessage)`.
+
+Ovim koracima osigurava se da se za svaku vrstu poruke (primljena/poslana) koristi ispravna logika konverzije, čime se problem rješava, a kod ostaje čist i centraliziran.
+
+## Poboljšanja korisničkog iskustva i ispravci logike (Lipanj 2025)
+
+#### 1. Pošiljatelj više ne prima vlastitu poruku
+
+*   **Problem:** Kada bi administrator ili superuser poslao poruku grupi članova ili svim članovima, i sam bi primao tu istu poruku u svoj sandučić "Nepročitane". To je bilo suvišno jer se sve poslane poruke već nalaze u odjeljku "Poslane poruke".
+*   **Rješenje:** Problem je riješen na backendu, u repozitoriju `backend/src/repositories/member.message.repository.ts`.
+    *   Unutar funkcije `createAdminMessage`, uklonjen je blok koda koji je eksplicitno dodavao `senderId` natrag na listu primatelja (`finalRecipientIds`).
+    *   Za grupne poruke (`recipientType === 'group'`), dodan je `.filter(id => id !== senderId)` kako bi se osiguralo da pošiljatelj nikada nije na listi primatelja.
+    *   Za poruke svima (`recipientType === 'all'`), provjereno je da funkcija `findAllActiveMemberIds` već ispravno izuzima pošiljatelja.
+
+#### 2. Poboljšan prikaz poruka za članove
+
+*   **Problem:** Stranica s porukama za članove (`MemberMessageList.tsx`) je po zadanom prikazivala filter "Sve poruke". Bilo je poželjno da se inicijalno prikazuju "Nepročitane" poruke, jer su one najrelevantnije korisniku.
+*   **Rješenje:** Problem je riješen na frontendu, u komponenti `frontend/src/features/messages/MemberMessageList.tsx`.
+    *   Inicijalno stanje za filter promijenjeno je iz `'all'` u `'unread'`: `const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('unread');`
+    *   Redoslijed gumba za filtriranje je promijenjen u JSX-u kako bi vizualno pratio logiku: "Nepročitane", "Pročitane", pa "Sve poruke".
+
 ## Testiranje
 
 Sustav poruka je pokriven testovima:

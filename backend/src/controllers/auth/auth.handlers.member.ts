@@ -9,13 +9,13 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
     const { searchTerm } = req.query;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
-    if (typeof searchTerm !== 'string' || !searchTerm) {
+    if (typeof searchTerm !== 'string' || searchTerm.length < 2) {
       res.status(400).json({ message: 'Valid search term is required' });
       return;
     }
 
-    if (searchTerm.length < 3) {
-      res.status(400).json({ message: 'Search term must be at least 3 characters long' });
+    if (searchTerm.length < 2) {
+      res.status(400).json({ message: 'Search term must be at least 2 characters long' });
       return;
     }
 

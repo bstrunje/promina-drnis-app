@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getAdminSentMessages } from '../../../utils/api/apiMessages';
+import { getAdminSentMessages, getMemberSentMessages } from '../../../utils/api/apiMessages';
 import { useToast } from "@components/ui/use-toast";
 import { Button } from "@components/ui/button";
 import { Message as MessageType } from '../types/messageTypes';
-import { convertApiMessagesToMessages } from '../utils/messageConverters';
+import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from '../utils/messageConverters';
 import SentMessageCard from './SentMessageCard';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -17,15 +17,19 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
   const [loadingSent, setLoadingSent] = useState(true);
 
   const fetchSentMessages = useCallback(async (): Promise<void> => {
-    if (userRole === 'member') {
-      setLoadingSent(false);
-      return;
-    }
-
+    console.log('--- PROVJERA ULOGE --- Trenutna userRole je:', userRole);
     setLoadingSent(true);
     try {
-      const apiData = await getAdminSentMessages();
-      const convertedData = convertApiMessagesToMessages(apiData);
+      let convertedData: MessageType[];
+
+      if (userRole === 'member') {
+        const apiData = await getMemberSentMessages();
+        convertedData = apiData.map(convertMemberApiMessageToMessage);
+      } else {
+        const apiData = await getAdminSentMessages();
+        convertedData = convertApiMessagesToMessages(apiData);
+      }
+      
       // Sortiraj poruke, najnovije prvo
       convertedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setSentMessages(convertedData);

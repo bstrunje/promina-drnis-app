@@ -13,6 +13,8 @@ import { initScheduledTasks } from './utils/scheduledTasks.js';
 import { getCurrentDate, formatDate } from './utils/dateUtils.js';
 import timezoneService from './services/timezone.service.js';
 import permissionsRouter from './routes/permissions.js';
+import memberMessagesRouter from './routes/member.messages.js';
+import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
@@ -20,7 +22,6 @@ import activityRoutes from './routes/activities.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
-import memberMessagesRouter from './routes/member.messages.js';
 import adminMessagesRouter from './routes/admin.messages.js';
 import sequelize from './types/database.js';
 import hoursRoutes from './routes/hours.js';
@@ -31,7 +32,6 @@ import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
 import adminStatusRoutes from './routes/admin.status.js';
-import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -289,6 +289,7 @@ app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/members/permissions', permissionsRouter);
 app.use('/api/generic-messages', authMiddleware, genericMessagesRouter);
+app.use('/api/member-messages', authMiddleware, memberMessagesRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

@@ -195,6 +195,14 @@ const messageController = {
     async getMemberMessages(req: Request, res: Response): Promise<void> {
         try {
             const memberId = parseInt(req.params.memberId);
+
+            // Zaštita od neispravnog ID-a
+            if (isNaN(memberId)) {
+                res.json([]); // Vrati prazan niz ako ID nije broj
+                return;
+            }
+
+
             const messages = await messageService.getMemberMessages(memberId);
             // Mapiramo poruke za frontend
             const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
@@ -204,6 +212,24 @@ const messageController = {
             res.status(500).json({ 
                 message: error instanceof Error ? error.message : 'Failed to fetch messages' 
             });
+        }
+    },
+
+    async getSentMessages(req: Request, res: Response): Promise<void> {
+        try {
+            const memberId = req.user?.id;
+
+            if (!memberId) {
+                res.status(401).json({ message: 'Niste prijavljeni.' });
+                return;
+            }
+
+            const messages = await messageService.getSentMessagesByMemberId(memberId);
+            const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
+            res.json(mappedMessages);
+        } catch (error) {
+            console.error('Greška pri dohvaćanju poslanih poruka:', error);
+            res.status(500).json({ message: 'Greška servera' });
         }
     },
 

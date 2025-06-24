@@ -137,39 +137,15 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
 
 /**
  * Dohvaćanje poslanih poruka člana
- * @param memberId ID člana
- * @returns Lista poruka koje je član poslao
+ * @returns Lista poslanih poruka
  */
-export const getMemberSentMessages = async (memberId: number): Promise<ApiAdminMessage[]> => {
+export const getMemberSentMessages = async (): Promise<any[]> => {
   try {
-    // Dodajemo query parametar sent=true za dohvat poslanih poruka
-    const timestamp = new Date().getTime();
-    const response = await api.get(`/members/${memberId}/messages?sent=true&t=${timestamp}`);
-    
-    // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
-      // Za poslane poruke, pošiljatelj je uvijek trenutni član
-      return {
-        id: String(msg.message_id),
-        content: msg.message_text,
-        sender_id: String(msg.sender_id),
-        sender_name: 'Vi', // Za poslane poruke prikazujemo "Vi" kao pošiljatelja
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
-        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
-        read: true, // Poslane poruke su uvijek "pročitane" od strane pošiljatelja
-        priority: msg.priority || 'normal',
-        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
-      };
-    });
-    
-    return transformedData;
+    const response = await api.get('/member-messages/sent');
+    return response.data;
   } catch (error) {
-    console.error('Greška pri dohvaćanju poslanih poruka člana:', error);
-    // U slučaju greške, vraćamo prazno polje umjesto bacanja iznimke
-    // kako ne bismo prekinuli rad aplikacije zbog ove funkcionalnosti
-    return [];
+    console.error('Error fetching sent member messages:', error);
+    throw error;
   }
 };
 
