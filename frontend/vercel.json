@@ -1,9 +1,4 @@
 {
-  "version": 2,
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -14,7 +9,7 @@
       "destination": "https://promina-drnis-api.onrender.com/uploads/:path*"
     },
     {
-      "source": "/((?!api/|uploads/|assets/).*)",
+      "source": "/((?!api/|uploads/|_next/|static/|favicon.ico|logo.svg).*)",
       "destination": "/index.html"
     }
   ]
