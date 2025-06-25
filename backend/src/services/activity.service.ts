@@ -1,274 +1,108 @@
-import { PoolClient } from 'pg';
-import db from '../utils/db.js';
-import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
-import { 
-    Activity, 
-    ActivityCreateInput, 
-    ActivityParticipant, 
-    ActivityError,
-    ActivityUpdateData,
-    ActivityMember
-} from '../shared/types/index.js';
+import { Prisma } from '@prisma/client';
 import activityRepository from '../repositories/activity.repository.js';
-
+import memberRepository from '../repositories/member.repository.js';
+import { ActivityError } from '../shared/types/index.js';
+import prisma from '../utils/prisma.js';
 
 const activityService = {
-    async getActivityById(id: string | number): Promise<Activity> {
-        try {
-            const numericId = typeof id === 'string' ? parseInt(id) : id;
-            const activity = await activityRepository.findById(numericId);
-            if (!activity) {
-                throw new ActivityError('Activity not found', 'NOT_FOUND');
-            }
-            return activity as Activity;
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error fetching activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'FETCH_ERROR'
-            );
-        }
-    },   
-    
-    async getAllActivities(): Promise<Activity[]> {
-        try {
-            const activities = await activityRepository.findAll();
-            return activities;
-        } catch (error) {
-          throw new ActivityError(
-            `Error fetching activities: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            'FETCH_ALL_ERROR'
-          );
-        }
-    },
+  async getAllActivities() {
+    return activityRepository.getAllActivities();
+  },
 
-
-
-    async createActivity(activityData: ActivityCreateInput): Promise<Activity> {
-        try {
-            if (!activityData.title) {
-                throw new ActivityError('Activity title is required', 'VALIDATION_ERROR');
-            }
-            
-            if (!activityData.start_date || !activityData.end_date) {
-                throw new ActivityError('Start and end dates are required', 'VALIDATION_ERROR');
-            }
-
-            // Konverzija ulaznih datuma u Date objekte
-            // parseDate očekuje string, a ne Date objekt
-            const startDate = typeof activityData.start_date === 'string' 
-                ? parseDate(activityData.start_date)
-                : new Date(activityData.start_date);
-                
-            const endDate = typeof activityData.end_date === 'string'
-                ? parseDate(activityData.end_date)
-                : new Date(activityData.end_date);
-            
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                throw new ActivityError('Invalid date format', 'VALIDATION_ERROR');
-            }
-
-            if (startDate > endDate) {
-                throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
-            }
-
-            const newActivity = await activityRepository.create(activityData as any);
-return {
-    ...newActivity,
-    participants: []  // New activity won't have participants yet
-};
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error creating activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'CREATE_ERROR'
-            );
-        }
-    },
-
-    async addMemberToActivity(
-        activityId: string | number, 
-        memberId: number,
-        hoursSpent: number
-    ): Promise<ActivityParticipant> {
-        try {
-            if (hoursSpent < 0) {
-                throw new ActivityError('Hours spent cannot be negative', 'VALIDATION_ERROR');
-            }
-    
-            const numericActivityId = typeof activityId === 'string' ? parseInt(activityId) : activityId;
-            const activity = await activityRepository.findById(numericActivityId);
-            if (!activity) {
-                throw new ActivityError('Activity not found', 'NOT_FOUND');
-            }
-    
-            if (activity.max_participants) {
-                const currentParticipants = await activityRepository.getParticipantsCount(numericActivityId);
-                if (currentParticipants >= activity.max_participants) {
-                    throw new ActivityError('Activity has reached maximum participants', 'MAX_PARTICIPANTS');
-                }
-            }
-    
-            return await db.transaction(async (client: PoolClient) => {
-                const member = await client.query(`
-                    SELECT first_name, last_name 
-                    FROM members 
-                    WHERE member_id = $1
-                `, [memberId]);
-
-                const participation = await activityRepository.addParticipant(numericActivityId, memberId, hoursSpent);
-                
-                await client.query(`
-                    UPDATE members 
-                    SET total_hours = COALESCE(total_hours, 0) + $1 
-                    WHERE member_id = $2
-                `, [hoursSpent, memberId]);
-    
-                return {
-                    member_id: participation.member_id,
-                    first_name: member.rows[0].first_name,
-                    last_name: member.rows[0].last_name,
-                    hours_spent: participation.hours_spent,
-                    verified: false
-                } as ActivityParticipant;
-            });
-    
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error adding member to activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'ADD_MEMBER_ERROR'
-            );
-        }
-    },
-
-    async removeMemberFromActivity(activityId: string | number, memberId: number): Promise<boolean> {
-        try {
-            const numericActivityId = typeof activityId === 'string' ? parseInt(activityId) : activityId;
-            const activity = await activityRepository.findById(numericActivityId);
-            if (!activity) {
-                throw new ActivityError('Activity not found', 'NOT_FOUND');
-            }
-    
-            const participation = await activityRepository.getParticipation(numericActivityId, memberId);
-            if (!participation) {
-                throw new ActivityError('Member not found in activity', 'NOT_FOUND');
-            }
-    
-            return await db.transaction(async (client: PoolClient) => {
-                await client.query(`
-                    UPDATE members 
-                    SET total_hours = COALESCE(total_hours, 0) - $1 
-                    WHERE member_id = $2
-                `, [participation.hours_spent, memberId]);
-    
-                return await activityRepository.removeParticipant(numericActivityId, memberId);
-            });
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error removing member from activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'REMOVE_MEMBER_ERROR'
-            );
-        }
-    },
-
-    async getMemberActivities(memberId: number): Promise<{
-        activity_id: number;
-        title: string;
-        date: string;
-        hours_spent: number;
-    }[]> {
-        const result = await db.query(`
-            SELECT 
-                a.activity_id,
-                a.title,
-                a.start_date as date,
-                ap.hours_spent
-            FROM activities a
-            JOIN activity_participants ap ON a.activity_id = ap.activity_id
-            WHERE ap.member_id = $1
-            ORDER BY a.start_date DESC
-        `, [memberId]);
-        return result.rows;
-    },
-
-    async updateActivity(id: string | number, updateData: ActivityUpdateData): Promise<Activity> {
-        try {
-            const numericId = typeof id === 'string' ? parseInt(id) : id;
-            const activity = await activityRepository.findById(numericId);
-            if (!activity) {
-                throw new ActivityError('Activity not found', 'NOT_FOUND');
-            }
-
-            if (updateData.start_date || updateData.end_date) {
-                // Koristimo operator || za dobavljanje vrijednosti, možda su već Date objekti
-                const startDate = updateData.start_date || activity.start_date;
-                const endDate = updateData.end_date || activity.end_date;
-                
-                // Provjera valjanosti datuma
-                const startDateTime = startDate instanceof Date ? startDate.getTime() : new Date(startDate).getTime();
-                const endDateTime = endDate instanceof Date ? endDate.getTime() : new Date(endDate).getTime();
-                
-                if (isNaN(startDateTime) || isNaN(endDateTime)) {
-                    throw new ActivityError('Invalid date format', 'VALIDATION_ERROR');
-                }
-
-                // Usporedba datuma kroz njihove timestamp vrijednosti
-                if (startDateTime > endDateTime) {
-                    throw new ActivityError('Start date cannot be after end date', 'VALIDATION_ERROR');
-                }
-            }
-
-            const updatedActivity = await activityRepository.update(numericId, updateData);
-if (!updatedActivity) {
-    throw new ActivityError('Failed to update activity', 'UPDATE_ERROR');
-}
-return {
-    ...updatedActivity,
-    participants: updatedActivity.participants?.map(p => ({
-        ...p,
-        verified: p.verified ?? false
-    }))
-};
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error updating activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'UPDATE_ERROR'
-            );
-        }
-    },
-
-    async deleteActivity(id: string | number): Promise<void> {
-        try {
-            const numericId = typeof id === 'string' ? parseInt(id) : id;
-            const activity = await activityRepository.findById(numericId);
-            if (!activity) {
-                throw new ActivityError('Activity not found', 'NOT_FOUND');
-            }
-
-            await activityRepository.delete(numericId);
-        } catch (error) {
-            if (error instanceof ActivityError) {
-                throw error;
-            }
-            throw new ActivityError(
-                `Error deleting activity: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                'DELETE_ERROR'
-            );
-        }
+  async getActivityById(id: string) {
+    const activity = await activityRepository.getActivityById(id);
+    if (!activity) {
+      throw new ActivityError('Activity not found', 'NOT_FOUND');
     }
+    return activity;
+  },
+
+  async getActivitiesByTypeId(typeId: string) {
+    return activityRepository.getActivitiesByTypeId(typeId);
+  },
+
+  async createActivity(data: Prisma.ActivityUncheckedCreateInput) {
+    if (new Date(data.end_date) < new Date(data.start_date)) {
+      throw new ActivityError('End date cannot be before start date', 'VALIDATION_ERROR');
+    }
+    return activityRepository.createActivity(data);
+  },
+
+  async updateActivity(id: string, data: Prisma.ActivityUncheckedUpdateInput) {
+    const activity = await activityRepository.getActivityById(id);
+    if (!activity) {
+      throw new ActivityError('Activity not found', 'NOT_FOUND');
+    }
+    if (data.start_date && data.end_date && new Date(data.end_date as Date) < new Date(data.start_date as Date)) {
+      throw new ActivityError('End date cannot be before start date', 'VALIDATION_ERROR');
+    }
+    return activityRepository.updateActivity(id, data);
+  },
+
+  async deleteActivity(id: string) {
+    const activity = await activityRepository.getActivityById(id);
+    if (!activity) {
+      throw new ActivityError('Activity not found', 'NOT_FOUND');
+    }
+    return activityRepository.deleteActivity(id);
+  },
+
+  async addMemberToActivity(activityId: string, memberId: number, hoursSpent: number) {
+    return prisma.$transaction(async tx => {
+      const activity = await tx.activity.findUnique({ where: { activity_id: parseInt(activityId, 10) } });
+      if (!activity) {
+        throw new ActivityError('Activity not found', 'NOT_FOUND');
+      }
+
+      const member = await memberRepository.findById(memberId);
+      if (!member) {
+        throw new ActivityError('Member not found', 'NOT_FOUND');
+      }
+
+      const existingParticipation = await activityRepository.findParticipant(activityId, memberId);
+      if (existingParticipation) {
+        throw new ActivityError('Member already in activity', 'VALIDATION_ERROR');
+      }
+
+      const participantsCount = await tx.activityParticipant.count({ where: { activity_id: parseInt(activityId, 10) } });
+      if (activity.max_participants && participantsCount >= activity.max_participants) {
+        throw new ActivityError('Activity has reached its maximum number of participants', 'MAX_PARTICIPANTS');
+      }
+
+      await memberRepository.updateWorkHours(memberId, hoursSpent, tx as any);
+
+      return activityRepository.addParticipant(activityId, memberId, hoursSpent);
+    });
+  },
+
+  async removeMemberFromActivity(activityId: string, memberId: number) {
+    return prisma.$transaction(async tx => {
+      const participation = await activityRepository.findParticipant(activityId, memberId);
+      if (!participation) {
+        throw new ActivityError('Member not in activity', 'NOT_FOUND');
+      }
+
+      await memberRepository.updateWorkHours(memberId, -participation.hours_spent.toNumber(), tx as any);
+
+      return activityRepository.removeParticipant(activityId, memberId);
+    });
+  },
+
+  async getMemberActivities(memberId: number) {
+    return activityRepository.getMemberActivities(memberId);
+  },
+
+  async getAllActivityTypes() {
+    return activityRepository.getAllActivityTypes();
+  },
+
+  async getActivityTypeById(typeId: string) {
+    const activityType = await activityRepository.getActivityTypeById(typeId);
+    if (!activityType) {
+      throw new ActivityError('Activity type not found', 'NOT_FOUND');
+    }
+    return activityType;
+  },
 };
 
 export default activityService;

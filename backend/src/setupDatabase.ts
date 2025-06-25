@@ -252,16 +252,21 @@ export async function setupDatabase(): Promise<void> {
 
     // Insert default activity types
     await db.query(`
-            INSERT INTO activity_types (name, description)
-            VALUES 
-                ('hiking', 'Mountain hiking activities'),
-                ('climbing', 'Rock climbing activities'),
-                ('training', 'Training and educational activities'),
-                ('maintenance', 'Trail and equipment maintenance'),
-                ('social', 'Social gatherings and meetings')
-            ON CONFLICT (name) DO NOTHING;
-        `);
-    console.log("✅ Default activity types created successfully");
+      -- Prvo obriši sve postojeće tipove kako bi se osiguralo čisto stanje
+      DELETE FROM activity_types;
+
+      INSERT INTO activity_types (name, description)
+      VALUES 
+          ('DEŽURSTVA', 'Dežurstva u domu'),
+          ('SASTANCI', 'Sastanci članova i upravnog odbora'),
+          ('AKCIJA DRUŠTVO', 'Radne akcije u organizaciji Društva'),
+          ('AKCIJA TRAIL', 'Radne akcije za Trail'),
+          ('ORGANIZACIJA/PROVOĐENJE IZLETA', 'Organizacija i provođenje izleta'),
+          ('IZLETI', 'Sudjelovanje na izletima'),
+          ('RAZNO', 'Ostale razne aktivnosti')
+      ON CONFLICT (name) DO NOTHING;
+    `);
+    console.log("✅ Default activity types created/updated successfully");
 
     // Add image_profile column to members table
     await db.query(`

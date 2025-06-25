@@ -18,13 +18,12 @@ import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
-import activityRoutes from './routes/activities.js';
+import activityRoutes from './routes/activity.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
 import adminMessagesRouter from './routes/admin.messages.js';
 import sequelize from './types/database.js';
-import hoursRoutes from './routes/hours.js';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
@@ -280,7 +279,6 @@ app.use('/api/activities', authMiddleware, activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
-app.use('/api/hours', hoursRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);

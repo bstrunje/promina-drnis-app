@@ -1,55 +1,47 @@
-//frontend/src/features/activities/ActivitiesList.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity } from 'lucide-react';
-import { Member } from '@shared/member';
+import { Activity, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Alert, AlertDescription } from '@components/ui/alert';
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@components/ui/card';
+import { Button } from '@components/ui/button';
 
-interface ActivityItem {
-  activity_id: number;
-  title: string;
-  description: string;
-  start_date: Date;
-  end_date: Date;
-  location: string;
-  difficulty_level: string;
-  max_participants: number;
-  created_by: Member;
-  participants: Member[];
+interface ActivityType {
+  type_id: number;
+  name: string;
+  description?: string;
 }
 
 const ActivitiesList: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActivities = useCallback(async () => {
+  const fetchActivityTypes = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/activities', {
+      const response = await fetch('/api/activities/types', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch activities');
+      if (!response.ok) throw new Error('Failed to fetch activity types');
       
-      // Eksplicitno definiramo tip podataka iz odgovora
-      const data = await response.json() as ActivityItem[];
-      setActivities(data);
+      const data = await response.json() as ActivityType[];
+      setActivityTypes(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load activities');
+      setError(err instanceof Error ? err.message : 'Failed to load activity types');
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setActivities, setError]);
+  }, []);
 
-  // Pozivamo fetchActivities pri mountanju komponente
   useEffect(() => {
-    void fetchActivities();
-  }, [fetchActivities]);
+    void fetchActivityTypes();
+  }, [fetchActivityTypes]);
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">Učitavanje...</div>;
   }
 
   if (error) {
@@ -63,30 +55,31 @@ const ActivitiesList: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Activities</h1>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          Create Activity
-        </button>
+        <h1 className="text-2xl font-bold">Kategorije aktivnosti</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        {activities.length > 0 ? (
-          <div className="grid gap-4">
-            {activities.map((activity) => (
-              <div 
-                key={activity.activity_id}
-                className="border rounded-lg p-4"
-              >
-                <h3 className="font-medium">{activity.title}</h3>
-                <p className="text-gray-600">{activity.description}</p>
-              </div>
-            ))}
-          </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {activityTypes.length > 0 ? (
+          activityTypes.map((type) => (
+            <Card key={type.type_id} className="flex flex-col">
+              <CardHeader>
+                <CardTitle>{type.name}</CardTitle>
+                {type.description && <CardDescription>{type.description}</CardDescription>}
+              </CardHeader>
+              <CardFooter className="mt-auto">
+                <Button asChild className="w-full">
+                <Link to={`/activities/category/${type.type_id}`}>
+                    Pregledaj akcije <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
         ) : (
-          <div className="flex items-center justify-center h-40 text-gray-500">
+          <div className="col-span-full flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">
               <Activity className="h-12 w-12 mx-auto mb-2" />
-              <p>No activities recorded yet</p>
+              <p>Nema definiranih kategorija aktivnosti.</p>
             </div>
           </div>
         )}

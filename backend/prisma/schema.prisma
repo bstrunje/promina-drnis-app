@@ -53,6 +53,8 @@ model Member {
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
   consumed_card_numbers    ConsumedCardNumber[]
+  activity_participants    ActivityParticipant[]
+  created_activities       Activity[]            @relation("CreatedActivities")
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -79,11 +81,12 @@ model Activity {
   location              String?               @db.VarChar(100)
   difficulty_level      String?               @db.VarChar(20)
   max_participants      Int?
-  created_by            Int?
+  created_by            Int
   created_at            DateTime?             @default(now()) @db.Timestamp(6)
-  activity_type_id      Int?
-  activity_types        ActivityType?         @relation(fields: [activity_type_id], references: [type_id], onDelete: NoAction, onUpdate: NoAction)
-  activity_participants ActivityParticipant[]
+  activity_type_id      Int
+  activity_type         ActivityType          @relation(fields: [activity_type_id], references: [type_id])
+  participants          ActivityParticipant[]
+  creator               Member                @relation("CreatedActivities", fields: [created_by], references: [member_id])
 
   @@index([start_date], map: "idx_activities_date")
   @@index([activity_type_id], map: "idx_activities_type")
@@ -92,17 +95,18 @@ model Activity {
 }
 
 model ActivityParticipant {
-  participation_id      Int       @id @default(autoincrement())
-  activity_id           Int?
-  member_id             Int?
-  hours_spent           Decimal   @db.Decimal(5, 2)
-  role                  String?   @db.VarChar(50)
-  notes                 String?
-  verified_by           Int?
-  verified_at           DateTime? @db.Timestamp(6)
-  verified_by_member_id Int?
-  activities            Activity? @relation(fields: [activity_id], references: [activity_id], onDelete: NoAction, onUpdate: NoAction)
+  participation_id Int       @id @default(autoincrement())
+  activity_id      Int
+  member_id        Int
+  hours_spent      Decimal   @db.Decimal(5, 2)
+  role             String?   @db.VarChar(50)
+  notes            String?
+  verified_by      Int?
+  verified_at      DateTime? @db.Timestamp(6)
+  activity         Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
+  member           Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
+  @@unique([activity_id, member_id])
   @@index([activity_id], map: "idx_activity_participants_activity")
   @@index([hours_spent], map: "idx_activity_participants_hours")
   @@index([member_id], map: "idx_activity_participants_member")
@@ -240,18 +244,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-model Hours {
-  id          Int      @id @default(autoincrement())
-  activity_id Int
-  date        DateTime @db.Timestamptz(6)
-  hours       Int
-  verified    Boolean? @default(false)
-  createdAt   DateTime @db.Timestamptz(6)
-  updatedAt   DateTime @db.Timestamptz(6)
-
-  @@map("Hours")
-}
-
 model MemberAdministrator {
   id            Int       @id @default(autoincrement())
   username      String    @unique @db.VarChar(100)
@@ -329,24 +321,6 @@ model stamp_history {
   notes         String?
   stamp_year    Int
   members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model members_backup {
-  id             Int?
-  name           String?   @db.VarChar(255)
-  status         String?   @db.VarChar(50)
-  date_of_birth  DateTime? @db.Date
-  oib            String?   @db.VarChar(13)
-  cell_phone     String?   @db.VarChar(20)
-  city           String?   @db.VarChar(100)
-  street_address String?   @db.VarChar(200)
-  email          String?   @db.VarChar(255)
-  first_name     String?   @db.VarChar(100)
-  last_name      String?   @db.VarChar(100)
-  member_id      String?   @db.VarChar(1000)
-
-  @@ignore
 }
 
 model refresh_tokens {

@@ -4,6 +4,7 @@ import { mapToMember } from '../utils/memberMapper.js';
 import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSize } from '../shared/types/member.js';
 import { MembershipEndReason } from '../shared/types/membership.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
+import { Prisma } from '@prisma/client';
 
 // Interfaces for data operations
 import { mapMembershipTypeToEnum } from '../services/member.service.js';
@@ -199,12 +200,25 @@ const memberRepository = {
         const members = await prisma.member.findMany({
             where: {
                 status: 'registered',
-                NOT: excludeSenderId ? { member_id: excludeSenderId } : undefined,
+                NOT: {
+                    member_id: excludeSenderId,
+                },
             },
             select: { member_id: true },
         });
         return members.map(m => m.member_id);
-    }
+    },
+
+    async updateWorkHours(memberId: number, hours: number, prismaClient: Prisma.TransactionClient = prisma) {
+        return prismaClient.member.update({
+            where: { member_id: memberId },
+            data: {
+                total_hours: {
+                    increment: hours
+                }
+            }
+        });
+    },
 };
 
 export default memberRepository;

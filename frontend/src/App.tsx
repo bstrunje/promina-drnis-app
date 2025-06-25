@@ -9,6 +9,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import Navigation from '../components/Navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ActivitiesList from './features/activities/ActivitiesList';
+import ActivityCategoryPage from './features/activities/ActivityCategoryPage';
 import EventsList from './features/events/EventsList';
 import HoursLog from './features/hours/HoursLog';
 import AssignPassword from './features/members/AssignPassword';
@@ -75,6 +76,7 @@ function AppContent() {
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<MemberDetailsPage />} />
           <Route path="/activities" element={<ActivitiesList />} />
+          <Route path="/activities/category/:activityTypeId" element={<ActivityCategoryPage />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />

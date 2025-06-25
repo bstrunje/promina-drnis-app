@@ -63,7 +63,7 @@ export interface ActivityMember {
 export class ActivityError extends Error {
     constructor(
         message: string,
-        public code: 'NOT_FOUND' | 'VALIDATION_ERROR' | 'CREATE_ERROR' | 
+        public type: 'NOT_FOUND' | 'VALIDATION_ERROR' | 'CREATE_ERROR' | 
                    'UPDATE_ERROR' | 'DELETE_ERROR' | 'FETCH_ERROR' | 
                    'FETCH_ALL_ERROR' | 'ADD_MEMBER_ERROR' | 'REMOVE_MEMBER_ERROR' |
                    'MAX_PARTICIPANTS'
