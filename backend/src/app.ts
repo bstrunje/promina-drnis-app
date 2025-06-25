@@ -275,7 +275,7 @@ app.use('/api/system-manager', systemManagerRoutes);
 
 console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
-app.use('/api/activities', authMiddleware, activityRoutes);
+app.use('/api/activities', activityRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/members', authMiddleware, memberMessagesRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
