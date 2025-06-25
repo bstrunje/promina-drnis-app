@@ -21,6 +21,7 @@ export * from './api/apiMessages';
 export * from './api/apiStamps';
 export * from './api/apiCards';
 export * from './api/apiMisc';
+export * from './api/apiActivities';
 
 // Izvoz handleApiError funkcije
 export { handleApiError };

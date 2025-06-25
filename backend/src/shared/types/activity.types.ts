@@ -1,3 +1,9 @@
+export interface ActivityType {
+  type_id: number;
+  name: string;
+  description: string | null;
+}
+
 export interface Activity {
   activity_id: number;
   title: string;
