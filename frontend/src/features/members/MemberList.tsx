@@ -135,6 +135,16 @@ export default function MemberList(): JSX.Element {
   // Ova varijabla se koristi u useEffect funkciji za provjeru veličine ekrana
   const [, setIsMobile] = useState(false);
 
+  // Sinkronizacija filtera s URL-om
+  useEffect(() => {
+    const filterFromUrl = searchParams.get('filter');
+    if (filterFromUrl === 'pending') {
+      setActiveFilter('pending');
+    }
+    // Opcionalno: ako želite da se filter vrati na "active" kad parametar nestane,
+    // možete dodati i `else` blok.
+  }, [searchParams]);
+
   // Koristimo custom hook za filtriranje i sortiranje
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
     members,

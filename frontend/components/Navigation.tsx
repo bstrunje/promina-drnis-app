@@ -84,7 +84,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <>
                 <Link to="/super-user" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Shield size={20} className="inline sm:hidden" />
-                  <span>Super User</span>
+                  <span>Superuser</span>
                 </Link>
               </>
             )}

@@ -19,22 +19,19 @@ const cardNumberRepository = {
       const allNumbers = allNumbersResult.rows.map(row => row.card_number);
 
       // 2. Dohvati sve POTROŠENE brojeve (npr. oštećene, izgubljene)
-      const consumedResult = await db.query<{ card_number: string }>(
+      const consumedNumbersResult = await db.query<{ card_number: string }>(
         `SELECT card_number FROM consumed_card_numbers`
       );
       // Koristimo Set za puno bržu pretragu
-      const consumedNumbersSet = new Set(consumedResult.rows.map(row => row.card_number));
+      const consumedNumbers = new Set(consumedNumbersResult.rows.map(row => row.card_number));
 
-      // 3. Dohvati sve brojeve koji su VEĆ DODIJELJENI članovima
-      const assignedResult = await db.query<{ card_number: string }>(
-        `SELECT card_number FROM members WHERE card_number IS NOT NULL`
-      );
-      // Koristimo Set i ovdje
-      const assignedNumbersSet = new Set(assignedResult.rows.map(row => row.card_number));
+      // 3. Dohvati sve brojeve kartica koji su već dodijeljeni članovima iz ispravne tablice
+      const assignedNumbersResult = await db.query<{ card_number: string }>('SELECT card_number FROM membership_details WHERE card_number IS NOT NULL');
+      const assignedNumbers = new Set(assignedNumbersResult.rows.map(row => row.card_number));
 
-      // 4. Filtriraj: vrati samo one brojeve koji NISU ni potrošeni NI dodijeljeni
+      // 4. Filtriraj dostupne brojeve
       const availableNumbers = allNumbers.filter(num => 
-        !consumedNumbersSet.has(num) && !assignedNumbersSet.has(num)
+        !consumedNumbers.has(num) && !assignedNumbers.has(num)
       );
       
       return availableNumbers;

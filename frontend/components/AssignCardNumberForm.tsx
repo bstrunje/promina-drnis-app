@@ -39,7 +39,8 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                 }
                 
                 setLoading(false);
-            } catch {
+            } catch (err) {
+                console.error("Greška pri dohvatu dostupnih brojeva iskaznica u AssignCardNumberForm:", err);
                 setError('Greška pri dohvatu dostupnih brojeva iskaznica');
                 setAvailableCardNumbers([]);
                 setLoading(false);
@@ -99,7 +100,8 @@ const AssignCardNumberForm = ({ member, onClose, onAssign }: Props) => {
                 onAssign(updatedMember);
                 onClose();
             }
-        } catch {
+        } catch (err) {
+            console.error("Greška pri dodjeli broja iskaznice u AssignCardNumberForm:", err);
             setError('Greška pri dodjeli broja iskaznice');
             setLoading(false);
         }
