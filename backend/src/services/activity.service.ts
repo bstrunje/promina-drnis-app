@@ -17,7 +17,7 @@ const activityService = {
     return activity;
   },
 
-  async getActivitiesByTypeId(typeId: string) {
+  async getActivitiesByTypeId(typeId: number) {
     return activityRepository.getActivitiesByTypeId(typeId);
   },
 
@@ -96,12 +96,8 @@ const activityService = {
     return activityRepository.getAllActivityTypes();
   },
 
-  async getActivityTypeById(typeId: string) {
-    const activityType = await activityRepository.getActivityTypeById(typeId);
-    if (!activityType) {
-      throw new ActivityError('Activity type not found', 'NOT_FOUND');
-    }
-    return activityType;
+  async getActivityTypeById(typeId: number) {
+    return activityRepository.getActivityTypeById(typeId);
   },
 };
 

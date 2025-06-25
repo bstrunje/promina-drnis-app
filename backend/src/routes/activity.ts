@@ -11,7 +11,7 @@ router.get('/', authMiddleware, roles.requireMember, activityController.getAllAc
 router.get('/types', authMiddleware, checkRole(['member_administrator', 'member_superuser', 'member']), activityController.getAllActivityTypes);
 
 // Ruta za dohvaćanje specifičnog tipa aktivnosti (kategorije)
-router.get('/types/:typeId(\\d+)', authMiddleware, checkRole(['member_administrator', 'member_superuser', 'member']), activityController.getActivityTypeById);
+router.get('/types/:id', authMiddleware, checkRole(['member_administrator', 'member_superuser', 'member']), activityController.getActivityTypeById);
 
 // Ruta za dohvaćanje svih aktivnosti unutar određene kategorije
 router.get('/category/:typeId(\\d+)', authMiddleware, checkRole(['member_administrator', 'member_superuser', 'member']), activityController.getActivitiesByTypeId);
@@ -20,7 +20,7 @@ router.get('/category/:typeId(\\d+)', authMiddleware, checkRole(['member_adminis
 router.get('/:id(\\d+)', authMiddleware, roles.requireMember, activityController.getActivityById);
 
 // Rute dostupne samo administratorima i super-userima
-router.post('/', authMiddleware, roles.requireAdmin, activityController.createActivity);
+router.post('/', authMiddleware, checkRole(['member_administrator', 'member_superuser']), activityController.createActivity);
 router.put('/:id(\\d+)', authMiddleware, roles.requireAdmin, activityController.updateActivity);
 router.delete('/:id(\\d+)', authMiddleware, roles.requireAdmin, activityController.deleteActivity);
 router.post('/:activityId/participants/:memberId', authMiddleware, roles.requireAdmin, activityController.addMemberToActivity);

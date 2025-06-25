@@ -76,7 +76,7 @@ function AppContent() {
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<MemberDetailsPage />} />
           <Route path="/activities" element={<ActivitiesList />} />
-          <Route path="/activities/category/:activityTypeId" element={<ActivityCategoryPage />} />
+          <Route path="/activities/category/:type_id" element={<ActivityCategoryPage />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />

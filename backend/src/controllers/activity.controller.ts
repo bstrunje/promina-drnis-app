@@ -53,10 +53,14 @@ const activityController = {
     }
   },
 
-  async getActivitiesByTypeId(req: Request<{ typeId: string }>, res: Response): Promise<void> {
+  async getActivitiesByTypeId(req: Request, res: Response) {
     try {
       const { typeId } = req.params;
-      const activities = await activityService.getActivitiesByTypeId(typeId);
+      const numericTypeId = parseInt(typeId, 10);
+      if (isNaN(numericTypeId)) {
+        return res.status(400).json({ message: 'Invalid type ID' });
+      }
+      const activities = await activityService.getActivitiesByTypeId(numericTypeId);
       res.json(activities);
     } catch (error) {
       handleControllerError(res, error);
@@ -127,19 +131,25 @@ const activityController = {
   async getAllActivityTypes(req: Request, res: Response) {
     try {
       const activityTypes = await activityService.getAllActivityTypes();
-      res.status(200).json(activityTypes);
+      res.json(activityTypes);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch activity types' });
+      res.status(500).json({ message: 'Failed to get activity types' });
     }
   },
 
-  async getActivityTypeById(req: Request<{ typeId: string }>, res: Response): Promise<void> {
+  async getActivityTypeById(req: Request, res: Response) {
     try {
-      const { typeId } = req.params;
+      const typeId = parseInt(req.params.id, 10);
+      if (isNaN(typeId)) {
+        return res.status(400).json({ message: 'Invalid type ID' });
+      }
       const activityType = await activityService.getActivityTypeById(typeId);
+      if (!activityType) {
+        return res.status(404).json({ message: 'Activity type not found' });
+      }
       res.json(activityType);
     } catch (error) {
-      handleControllerError(res, error);
+      res.status(500).json({ message: 'Failed to get activity type' });
     }
   },
 

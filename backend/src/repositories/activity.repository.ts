@@ -150,25 +150,21 @@ const activityRepository = {
   },
 
   async getAllActivityTypes() {
-    return prisma.activityType.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    return prisma.activityType.findMany();
   },
 
-  async getActivityTypeById(typeId: string) {
+  async getActivityTypeById(typeId: number) {
     return prisma.activityType.findUnique({
       where: {
-        type_id: parseInt(typeId, 10),
+        type_id: typeId,
       },
     });
   },
 
-  async getActivitiesByTypeId(typeId: string) {
+  async getActivitiesByTypeId(typeId: number) {
     const activities = await prisma.activity.findMany({
       where: {
-        activity_type_id: parseInt(typeId, 10),
+        activity_type_id: typeId,
       },
       include: activityWithDetailsInclude,
       orderBy: {
