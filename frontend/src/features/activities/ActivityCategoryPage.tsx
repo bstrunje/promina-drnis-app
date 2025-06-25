@@ -19,22 +19,15 @@ const ActivityCategoryPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log(`[DEBUG] Fetching data for type_id: ${id}`);
 
-      console.log('[DEBUG] Fetching activity type details...');
       const typeData = await getActivityTypeById(id);
-      console.log('[DEBUG] Fetched activity type details:', typeData);
       setActivityType(typeData);
 
-      console.log('[DEBUG] Fetching activities for this type...');
       const activitiesData = await getActivitiesByTypeId(id);
-      console.log('[DEBUG] Fetched activities:', activitiesData);
       setActivities(activitiesData);
     } catch (err) {
       setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
-      console.error('[DEBUG] Error in fetchData:', err);
     } finally {
-      console.log('[DEBUG] Finished fetching, setting loading to false.');
       setLoading(false);
     }
   }, []);
@@ -42,7 +35,6 @@ const ActivityCategoryPage: React.FC = () => {
   useEffect(() => {
     if (type_id) {
       const numericTypeId = parseInt(type_id, 10);
-      console.log(`[DEBUG] useEffect triggered. type_id: ${type_id}, numericTypeId: ${numericTypeId}`);
       if (!isNaN(numericTypeId)) {
         fetchData(numericTypeId);
       }

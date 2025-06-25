@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   // CalendarDays se ne koristi pa ga uklanjamo
@@ -37,6 +37,8 @@ import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Dobavi članove pomoću custom hooka
   const {
     members,
@@ -117,7 +119,10 @@ export default function MemberList(): JSX.Element {
 
   // Stanja za filtriranje i sortiranje
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid">("active");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid" | "pending">(() => {
+    const filterFromUrl = searchParams.get('filter');
+    return filterFromUrl === 'pending' ? 'pending' : 'active';
+  });
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");

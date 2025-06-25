@@ -558,12 +558,11 @@ export default function CardNumberManagement() {
                         {paginatedCardNumbers.map(card => (
                           <div key={card.card_number} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50">
                             <div className="flex flex-col">
-                              <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title="Klikni za kopiranje">
+                            <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title="Klikni za kopiranje">
                                 {card.card_number}
                               </span>
                               <span className="text-xs text-gray-500">Član: {card.member_name || 'N/A'}</span>
-                              <span className="text-xs text-gray-400">Izdana: {card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-'}</span>
-                              <span className="text-xs text-gray-400">Potrošena: {card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : '-'}</span>
+                              <span className="text-xs text-gray-400">Izdana: {card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : (card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-')}</span>
                             </div>
                           </div>
                         ))}

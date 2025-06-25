@@ -9,28 +9,37 @@ interface CardNumberResult {
 }
 
 const cardNumberRepository = {
-  // Dohvati sve dostupne brojeve kartica (isključuje potrošene)
+  // Dohvati sve istinski dostupne brojeve kartica
   async getAvailable(): Promise<string[]> {
     try {
-      // Dohvati sve potrošene brojeve iz consumed_card_numbers
+      // 1. Dohvati SVE brojeve kartica iz glavne tablice
+      const allNumbersResult = await db.query<{ card_number: string }>(
+        `SELECT card_number FROM card_numbers ORDER BY card_number ASC`
+      );
+      const allNumbers = allNumbersResult.rows.map(row => row.card_number);
+
+      // 2. Dohvati sve POTROŠENE brojeve (npr. oštećene, izgubljene)
       const consumedResult = await db.query<{ card_number: string }>(
         `SELECT card_number FROM consumed_card_numbers`
       );
-      const consumedNumbers = consumedResult.rows.map(row => row.card_number);
+      // Koristimo Set za puno bržu pretragu
+      const consumedNumbersSet = new Set(consumedResult.rows.map(row => row.card_number));
 
-      // Dohvati sve brojeve koji su označeni kao available u card_numbers
-      const availableResult = await db.query<{ card_number: string }>(
-        `SELECT card_number FROM card_numbers WHERE status = 'available'`
+      // 3. Dohvati sve brojeve koji su VEĆ DODIJELJENI članovima
+      const assignedResult = await db.query<{ card_number: string }>(
+        `SELECT card_number FROM members WHERE card_number IS NOT NULL`
       );
-      const availableNumbers = availableResult.rows.map(row => row.card_number);
+      // Koristimo Set i ovdje
+      const assignedNumbersSet = new Set(assignedResult.rows.map(row => row.card_number));
 
-      // Isključi sve koji su potrošeni
-      const trulyAvailableNumbers = availableNumbers.filter(
-        num => !consumedNumbers.includes(num)
+      // 4. Filtriraj: vrati samo one brojeve koji NISU ni potrošeni NI dodijeljeni
+      const availableNumbers = allNumbers.filter(num => 
+        !consumedNumbersSet.has(num) && !assignedNumbersSet.has(num)
       );
-      return trulyAvailableNumbers;
+      
+      return availableNumbers;
     } catch (error) {
-      console.error("Greška u getAvailable (potrošene kartice):", error);
+      console.error("Greška u getAvailable (dostupne kartice):", error);
       return [];
     }
   },

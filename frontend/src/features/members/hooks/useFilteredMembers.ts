@@ -6,7 +6,7 @@ import { parseISO } from 'date-fns';
 interface UseFilteredMembersProps {
   members: MemberWithDetails[];
   searchTerm: string;
-  activeFilter: "all" | "active" | "passive" | "paid" | "unpaid";
+  activeFilter: "all" | "active" | "passive" | "paid" | "unpaid" | "pending";
   ageFilter: "all" | "adults";
   sortCriteria: "name" | "hours";
   sortOrder: "asc" | "desc";
@@ -40,6 +40,7 @@ export const useFilteredMembers = ({
       );
     }
     
+    
     // Apply active/passive filter
     if (activeFilter !== "all") {
       if (activeFilter === "active" || activeFilter === "passive") {
@@ -61,6 +62,9 @@ export const useFilteredMembers = ({
           member.feeStatus === 'payment required' || 
           (!member.membership_details?.fee_payment_year || member.membership_details.fee_payment_year < currentYear)
         );
+      }
+      else if (activeFilter === "pending") {
+        result = result.filter(member => member.detailedStatus?.status === 'pending');
       }
     }
     
