@@ -8,6 +8,17 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://promina-drnis-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://promina-drnis-api.onrender.com/uploads/:path*"
+    },
+    {
+      "source": "/((?!api/|uploads/|assets/).*)",
+      "destination": "/index.html"
+    }
   ]
 }
