@@ -70,14 +70,10 @@ const auditRepository = {
     async getAll(): Promise<AuditLog[]> {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
-                   CASE 
-                     WHEN sa.id IS NOT NULL THEN sa.display_name
-                     ELSE m1.full_name 
-                   END as performer_name,
+                   m1.full_name as performer_name,
                    m2.full_name as affected_name
             FROM audit_logs al
             LEFT JOIN members m1 ON al.performed_by = m1.member_id
-            LEFT JOIN system_manager sa ON al.performed_by = sa.id
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             ORDER BY al.created_at DESC
         `;
@@ -88,14 +84,10 @@ const auditRepository = {
     async getByMemberId(memberId: number): Promise<AuditLog[]> {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
-                   CASE 
-                     WHEN sa.id IS NOT NULL THEN sa.display_name
-                     ELSE m1.full_name 
-                   END as performer_name,
+                   m1.full_name as performer_name,
                    m2.full_name as affected_name
             FROM audit_logs al
             LEFT JOIN members m1 ON al.performed_by = m1.member_id
-            LEFT JOIN system_manager sa ON al.performed_by = sa.id
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             WHERE performed_by = ${memberId}
                OR affected_member = ${memberId}

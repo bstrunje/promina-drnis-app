@@ -62,10 +62,12 @@ const memberRepository = {
                 periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } }
             }
         });
-        const hours = await prisma.activityParticipant.groupBy({
-            by: ['member_id'], where: { verified_at: { not: null } }, _sum: { hours_spent: true }
+        const hours = await prisma.activityParticipation.groupBy({
+            by: ['member_id'],
+            where: { activity: { status: 'COMPLETED' } },
+            _sum: { manual_hours: true }
         });
-        const mapHours = new Map(hours.map(h => [h.member_id!, h._sum.hours_spent?.toNumber() || 0]));
+        const mapHours = new Map(hours.map(h => [h.member_id!, h._sum?.manual_hours ?? 0]));
         return members.map(m => mapToMember(m, mapHours.get(m.member_id) || 0));
     },
 
@@ -75,8 +77,8 @@ const memberRepository = {
             include: { membership_details: true, periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } } }
         });
         if (!raw) return null;
-        const agg = await prisma.activityParticipant.aggregate({ where: { member_id: id, verified_at: { not: null } }, _sum: { hours_spent: true } });
-        const total = agg._sum.hours_spent?.toNumber() || 0;
+        const agg = await prisma.activityParticipation.aggregate({ where: { member_id: id, activity: { status: 'COMPLETED' } }, _sum: { manual_hours: true } });
+        const total = agg._sum?.manual_hours ?? 0;
         return mapToMember(raw, total);
     },
 
@@ -128,19 +130,25 @@ const memberRepository = {
 
     async getStats(memberId: number): Promise<MemberStats> {
         // count total activities and sum hours for member
-        const totalActivities = await prisma.activityParticipant.count({
-            where: { member_id: memberId }
+        const totalActivities = await prisma.activityParticipation.count({
+            where: { 
+                member_id: memberId,
+                activity: { status: 'COMPLETED' } 
+            }
         });
-        const agg = await prisma.activityParticipant.aggregate({
-            where: { member_id: memberId, verified_at: { not: null } },
-            _sum: { hours_spent: true }
+        const agg = await prisma.activityParticipation.aggregate({
+            where: { 
+                member_id: memberId,
+                activity: { status: 'COMPLETED' } 
+            },
+            _sum: { manual_hours: true }
         });
         const member = await prisma.member.findUnique({
             where: { member_id: memberId },
             select: { membership_type: true }
         });
         if (!member) throw new Error('Member not found');
-        const totalHours = agg._sum.hours_spent?.toNumber() || 0;
+        const totalHours = agg._sum?.manual_hours ?? 0;
         return {
             total_activities: totalActivities,
             total_hours: totalHours,

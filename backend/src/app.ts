@@ -13,12 +13,10 @@ import { initScheduledTasks } from './utils/scheduledTasks.js';
 import { getCurrentDate, formatDate } from './utils/dateUtils.js';
 import timezoneService from './services/timezone.service.js';
 import permissionsRouter from './routes/permissions.js';
-import memberMessagesRouter from './routes/member.messages.js';
 import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
-import activityRoutes from './routes/activity.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
@@ -27,10 +25,10 @@ import sequelize from './types/database.js';
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
+import activityRoutes from './routes/activity.routes.js'; // KONAČNI ISPRAVAK
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
-import adminStatusRoutes from './routes/admin.status.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -275,19 +273,17 @@ app.use('/api/system-manager', systemManagerRoutes);
 
 console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
-app.use('/api/activities', activityRoutes);
+app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
 app.use('/api/audit', authMiddleware, auditRoutes);
-app.use('/api/members', authMiddleware, memberMessagesRouter);
+// ISPRAVAK REDOSLIJEDA: Specifične rute moraju ići prije općenitih
+app.use('/api/members/permissions', permissionsRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin', adminStatusRoutes);
 app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes);
-app.use('/api/members/permissions', permissionsRouter);
 app.use('/api/generic-messages', authMiddleware, genericMessagesRouter);
-app.use('/api/member-messages', authMiddleware, memberMessagesRouter);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

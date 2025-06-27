@@ -53,8 +53,8 @@ model Member {
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
   consumed_card_numbers    ConsumedCardNumber[]
-  activity_participants    ActivityParticipant[]
-  created_activities       Activity[]            @relation("CreatedActivities")
+  organized_activities     Activity[]                @relation("OrganizedActivities")
+  participations           ActivityParticipation[]
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -73,44 +73,41 @@ model ActivityType {
 }
 
 model Activity {
-  activity_id           Int                   @id @default(autoincrement())
-  title                 String                @db.VarChar(100)
-  description           String?
-  start_date            DateTime              @db.Timestamp(6)
-  end_date              DateTime              @db.Timestamp(6)
-  location              String?               @db.VarChar(100)
-  difficulty_level      String?               @db.VarChar(20)
-  max_participants      Int?
-  created_by            Int
-  created_at            DateTime?             @default(now()) @db.Timestamp(6)
-  activity_type_id      Int
-  activity_type         ActivityType          @relation(fields: [activity_type_id], references: [type_id])
-  participants          ActivityParticipant[]
-  creator               Member                @relation("CreatedActivities", fields: [created_by], references: [member_id])
+  activity_id            Int                     @id @default(autoincrement())
+  name                   String
+  description            String?
+  type_id                Int
+  activity_type          ActivityType            @relation(fields: [type_id], references: [type_id])
+  organizer_id           Int
+  organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id])
+  status                 ActivityStatus          @default(PLANNED)
+  start_date             DateTime // Planirani datum i vrijeme početka
+  actual_start_time      DateTime? // Stvarno vrijeme početka (za live praćenje)
+  actual_end_time        DateTime? // Stvarno vrijeme završetka (za live praćenje)
+  recognition_percentage Float                   @default(100) // Postotak priznavanja sati za cijelu aktivnost (npr. 50 za 50%)
+  created_at             DateTime                @default(now())
+  updated_at             DateTime                @updatedAt
+  participants           ActivityParticipation[]
 
-  @@index([start_date], map: "idx_activities_date")
-  @@index([activity_type_id], map: "idx_activities_type")
-  @@index([start_date], map: "idx_activities_start_date")
+  @@index([type_id])
+  @@index([start_date])
   @@map("activities")
 }
 
-model ActivityParticipant {
-  participation_id Int       @id @default(autoincrement())
-  activity_id      Int
-  member_id        Int
-  hours_spent      Decimal   @db.Decimal(5, 2)
-  role             String?   @db.VarChar(50)
-  notes            String?
-  verified_by      Int?
-  verified_at      DateTime? @db.Timestamp(6)
-  activity         Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
-  member           Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+model ActivityParticipation {
+  participation_id     Int       @id @default(autoincrement())
+  activity_id          Int
+  activity             Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
+  member_id            Int
+  member               Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  start_time           DateTime? // Individualno vrijeme početka (za live praćenje)
+  end_time             DateTime? // Individualno vrijeme završetka (za live praćenje)
+  manual_hours         Float? // Ručno uneseni sati za povijesne podatke
+  recognition_override Float? // Individualni postotak priznavanja (ako se razlikuje od aktivnosti)
+  created_at           DateTime  @default(now())
 
-  @@unique([activity_id, member_id])
-  @@index([activity_id], map: "idx_activity_participants_activity")
-  @@index([hours_spent], map: "idx_activity_participants_hours")
-  @@index([member_id], map: "idx_activity_participants_member")
-  @@map("activity_participants")
+  @@unique([activity_id, member_id]) // Svaki član može sudjelovati samo jednom po aktivnosti
+  @@map("activity_participations")
 }
 
 model SystemSettings {
@@ -351,4 +348,11 @@ enum SenderType {
   member
   member_administrator
   member_superuser
+}
+
+enum ActivityStatus {
+  PLANNED   // Aktivnost je planirana, članovi se mogu prijaviti
+  ACTIVE    // Aktivnost je u tijeku, vrijeme se bilježi
+  COMPLETED // Aktivnost je završena i arhivirana
+  CANCELLED // Aktivnost je otkazana
 }

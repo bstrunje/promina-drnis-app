@@ -2,6 +2,7 @@
 import express, { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import memberController from '../controllers/member.controller.js';
+import memberMessageController from '../controllers/member.message.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
 import multerConfig from '../config/upload.js';
@@ -15,10 +16,19 @@ const router = express.Router();
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
 router.get('/dashboard/stats', authenticateToken, memberController.getMemberDashboardStats);
 
+// Rute za poruke koje moraju biti prije dinamičke /:memberId rute
+router.get('/unread-count', authenticateToken, memberMessageController.getUnreadMessageCount);
+router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
+
 router.get('/', authenticateToken, memberController.getAllMembers);
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
 router.get('/:memberId/stats', authenticateToken, memberController.getMemberStats);
 router.get('/:memberId/activities', authenticateToken, memberController.getMemberWithActivities);
+
+// Rute za poruke vezane za određenog člana
+router.post('/:memberId/messages', authenticateToken, memberMessageController.createMessage);
+router.get('/:memberId/messages', authenticateToken, memberMessageController.getMemberMessages);
+router.put('/:memberId/messages/:messageId/read', authenticateToken, memberMessageController.markMemberMessageAsRead);
 
 // Protected routes
 router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);

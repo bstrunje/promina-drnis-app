@@ -11,9 +11,9 @@ interface Props {
 
 interface MemberActivity {
   activity_id: number;
-  title: string;
+  name: string;
   date: string;
-  hours_spent: number;
+  hours_spent: number | null;
 }
 
 export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
@@ -67,12 +67,12 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
                 key={activity.activity_id}
                 className="border-l-2 border-blue-500 pl-4 py-2"
               >
-                <div className="font-medium">{activity.title}</div>
+                <div className="font-medium">{activity.name}</div>
                 <div className="text-sm text-gray-600">
                 {formatDate(activity.date)}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Hours: {activity.hours_spent}
+                  Hours: {activity.hours_spent ?? 'N/A'}
                 </div>
               </div>
             ))}

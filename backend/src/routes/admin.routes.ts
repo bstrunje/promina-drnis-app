@@ -1,6 +1,6 @@
 import express, { Response } from 'express';
 import permissionsController from '../controllers/permissions.controller.js';
-import { authMiddleware as authenticateToken, checkRole } from '../middleware/authMiddleware.js';
+import { authMiddleware as authenticateToken, checkRole, roles } from '../middleware/authMiddleware.js';
 import type { Request } from 'express';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
@@ -10,6 +10,7 @@ import { Member as MemberType, MembershipDetails, MembershipPeriod } from '../sh
 import prisma from '../utils/prisma.js';
 import fs from 'fs/promises';
 import path from 'path';
+import memberStatusSyncService from '../services/memberStatusSync.service.js';
 
 interface AuthRequest extends Request {
     user?: DatabaseUser;
@@ -210,5 +211,37 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
     return res.status(500).json({ error: 'Failed to check member statuses' });
   }
 });
+
+// Sinkronizacija statusa članova
+router.post(
+  '/sync-member-statuses',
+  roles.requireAdmin,
+  async (req, res) => {
+    try {
+      const result = await memberStatusSyncService.runSync(req);
+      
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: result.message,
+          updatedCount: result.updatedCount
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: result.message,
+          updatedCount: result.updatedCount
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing member statuses:', error);
+      res.status(500).json({
+        success: false,
+        message: `Greška pri sinkronizaciji statusa članova: ${error instanceof Error ? error.message : 'Nepoznata greška'}`,
+        updatedCount: 0
+      });
+    }
+  }
+);
 
 export default router;

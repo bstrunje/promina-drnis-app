@@ -1,45 +1,43 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { getActivityTypeById, getActivitiesByTypeId } from '@/utils/api';
+import { getActivityTypes, getActivitiesByTypeId } from '@/utils/api/apiActivities';
 import { Activity, ActivityType } from '@shared/activity.types';
 import { format } from 'date-fns';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { type_id } = useParams<{ type_id: string }>();
+  const { activityTypeId } = useParams<{ activityTypeId: string }>();
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (id: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const typeData = await getActivityTypeById(id);
-      setActivityType(typeData);
-
-      const activitiesData = await getActivitiesByTypeId(id);
-      setActivities(activitiesData);
-    } catch (err) {
-      setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (type_id) {
-      const numericTypeId = parseInt(type_id, 10);
-      if (!isNaN(numericTypeId)) {
-        fetchData(numericTypeId);
+    const fetchData = async () => {
+      if (!activityTypeId) return;
+      try {
+        setLoading(true);
+        const types = await getActivityTypes();
+        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
+        setActivityType(currentType || null);
+
+        if (currentType) {
+          const activitiesData = await getActivitiesByTypeId(activityTypeId);
+          setActivities(activitiesData);
+        }
+        setError(null);
+      } catch (err) {
+        setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [type_id, fetchData]);
+    };
+
+    fetchData();
+  }, [activityTypeId]);
 
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
@@ -71,7 +69,7 @@ const ActivityCategoryPage: React.FC = () => {
           activities.map((activity) => (
             <Card key={activity.activity_id}>
               <CardHeader>
-                <CardTitle>{activity.title}</CardTitle>
+                <CardTitle>{activity.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -81,10 +79,6 @@ const ActivityCategoryPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>{activity.location || 'N/A'}</span>
                 </div>
               </CardContent>
               <CardFooter>

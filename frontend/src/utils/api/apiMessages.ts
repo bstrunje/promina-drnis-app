@@ -141,7 +141,7 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
  */
 export const getMemberSentMessages = async (): Promise<any[]> => {
   try {
-    const response = await api.get('/member-messages/sent');
+    const response = await api.get('/members/sent');
     return response.data;
   } catch (error) {
     console.error('Error fetching sent member messages:', error);

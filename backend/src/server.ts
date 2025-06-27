@@ -4,8 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'http';
 import app from './app.js';
-import { setupDatabase } from './setupDatabase.js';
-import db from './utils/db.js';
+import { createInitialSystemManagerIfNeeded } from './setupDatabase.js';
 import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
@@ -63,7 +62,7 @@ export { JWT_SECRET };
 // Database connection check
 async function checkDatabaseConnection(): Promise<boolean> {
     try {
-        await db.query('SELECT 1');
+        await prisma.$queryRaw`SELECT 1`;
         console.log('✅ Database connection successful');
         return true;
     } catch (error) {
@@ -82,8 +81,6 @@ async function startServer(): Promise<void> {
         if (!isConnected) {
             throw new Error('Unable to connect to database');
         }
-
-        await setupDatabase();
 
         // Provjeri i arhiviraj stanje markica ako je zadnji dan u godini
         await scheduledService.checkAndArchiveStamps();
@@ -180,10 +177,10 @@ async function initialize() {
     try {
         prepareDirectories();
         
-        // Prvo pokreni bazu podataka
-        await setupDatabase();
-        console.log('✅ Database setup completed');
-        
+        // Osiguraj da početni system manager postoji
+        await createInitialSystemManagerIfNeeded();
+        console.log('✅ Initial system manager check completed');
+
         // Pokreni server
         await startServer();
     } catch (error) {

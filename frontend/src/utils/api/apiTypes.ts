@@ -136,14 +136,10 @@ export interface ApiUploadProfileImageResult {
  * @see activity.ts iz shared/types za osnovne tipove aktivnosti
  */
 export interface ApiMemberActivity {
-  id: string;
-  member_id: string;
-  activity_type: string;
-  description: string;
+  activity_id: number;
+  name: string;
   date: string;
-  hours: number;
-  status: 'pending' | 'approved' | 'rejected';
-  notes?: string;
+  hours_spent: number | null;
 }
 
 /**

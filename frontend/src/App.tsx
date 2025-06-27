@@ -10,6 +10,7 @@ import Navigation from '../components/Navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ActivitiesList from './features/activities/ActivitiesList';
 import ActivityCategoryPage from './features/activities/ActivityCategoryPage';
+import ActivitiesAdminPage from './features/activities/ActivitiesAdminPage';
 import EventsList from './features/events/EventsList';
 import HoursLog from './features/hours/HoursLog';
 import AssignPassword from './features/members/AssignPassword';
@@ -96,6 +97,7 @@ function AppContent() {
               <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
               <Route path="/assign-password" element={<AssignPassword />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/admin/activities" element={<ActivitiesAdminPage />} /> {/* Nova ruta za administraciju aktivnosti */}
             </>
           )}
           {user?.role === 'member_superuser' && (

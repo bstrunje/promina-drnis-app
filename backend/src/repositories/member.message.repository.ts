@@ -333,6 +333,9 @@ const memberMessageRepository = {
         });
 
         return (messagesData as MessageWithDetails[]).map((msg): TransformedMessage => {
+            // Pronađi status za trenutnog korisnika (pošiljatelja)
+            const currentUserStatus = msg.recipient_statuses.find(rs => rs.recipient_member_id === memberId);
+
             return {
                 message_id: msg.message_id,
                 member_id: msg.member_id,
@@ -342,14 +345,9 @@ const memberMessageRepository = {
                 recipient_id: msg.recipient_id,
                 recipient_type: msg.recipient_type,
                 sender_type: msg.sender_type,
-                currentUserStatus: undefined,
-                currentUserReadAt: undefined,
-                sender: msg.sender ? {
-                    member_id: msg.sender.member_id,
-                    first_name: msg.sender.first_name,
-                    last_name: msg.sender.last_name,
-                    full_name: msg.sender.full_name
-                } : null,
+                currentUserStatus: currentUserStatus ? currentUserStatus.status as ('unread' | 'read' | 'archived' | undefined) : undefined,
+                currentUserReadAt: currentUserStatus ? currentUserStatus.read_at : undefined,
+                sender: msg.sender,
             };
         });
     },

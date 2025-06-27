@@ -1,18 +1,21 @@
 // features/systemManager/pages/auditLogs/SystemManagerAuditLogs.tsx
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
+import { Button } from '@components/ui/button';
 import { AuditLog } from '@shared/audit';
 import { formatDate, parseDate, setCurrentTimeZone } from "../../../../utils/dateUtils";
 import { useToast } from '@components/ui/use-toast';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { useTimeZone } from '../../../../context/TimeZoneContext';
+import { useNavigate } from 'react-router-dom';
 
 const SystemManagerAuditLogs: React.FC = () => {
   // const { manager } = useSystemManager(); // Uklonjeno jer nije korišteno
   const { toast } = useToast();
   const { timeZone } = useTimeZone();
+  const navigate = useNavigate();
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
@@ -178,6 +181,12 @@ const SystemManagerAuditLogs: React.FC = () => {
 
   return (
     <div className="p-6">
+      <div className="mb-4">
+        <Button onClick={() => navigate(-1)} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Povratak
+        </Button>
+      </div>
+
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-lg text-white p-6 mb-6">
         <h1 className="text-2xl font-bold mb-2">Revizijski zapisi sustava</h1>
         <p className="opacity-90">Pregled svih aktivnosti u sustavu</p>

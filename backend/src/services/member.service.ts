@@ -15,9 +15,9 @@ import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 interface MemberWithActivities extends Member {
     activities?: {
         activity_id: number;
-        title: string;
+        name: string;
         date: string;
-        hours_spent: number;
+        hours_spent: number | null;
     }[];
 }
 
@@ -70,9 +70,9 @@ const memberService = {
 
             if (memberData.total_hours !== undefined) {
                 const currentHours = await db.query(`
-                    SELECT COALESCE(SUM(hours_spent), 0) as total_hours
-                    FROM activity_participants
-                    WHERE member_id = $1 AND verified_at IS NOT NULL
+                    SELECT COALESCE(SUM(ap.manual_hours), 0) as total_hours
+                    FROM activity_participations ap
+                    WHERE ap.member_id = $1
                 `, [memberId]);
                 
                 if (memberData.total_hours < parseFloat(currentHours.rows[0].total_hours)) {
@@ -205,11 +205,11 @@ const memberService = {
             const activitiesQuery = await db.query(`
                 SELECT 
                     a.activity_id,
-                    a.title,
+                    a.name,
                     a.start_date as date,
-                    ap.hours_spent
+                    ap.manual_hours as hours_spent
                 FROM activities a
-                JOIN activity_participants ap ON a.activity_id = ap.activity_id
+                JOIN activity_participations ap ON a.activity_id = ap.activity_id
                 WHERE ap.member_id = $1
                 ORDER BY a.start_date DESC
             `, [memberId]);
