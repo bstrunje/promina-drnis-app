@@ -67,10 +67,18 @@ const ActivityCategoryPage: React.FC = () => {
             Sve kategorije
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ActivityIcon className="h-8 w-8" />
-          {activityType?.name || 'Aktivnosti'}
-        </h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <ActivityIcon className="h-8 w-8" />
+            {activityType?.name || 'Aktivnosti'}
+          </h1>
+          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+            <Button onClick={() => setCreateModalOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Kreiraj novu aktivnost
+            </Button>
+          )}
+        </div>
         <p className="text-muted-foreground">{activityType?.description}</p>
       </div>
 
@@ -101,12 +109,6 @@ const ActivityCategoryPage: React.FC = () => {
         ) : (
           <div className="col-span-full text-center text-muted-foreground">
             <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
-            {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
-              <Button onClick={() => setCreateModalOpen(true)} className="mt-4">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Kreiraj novu aktivnost
-              </Button>
-            )}
           </div>
         )}
       </div>

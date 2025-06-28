@@ -41,6 +41,24 @@ export const updateActivity = async (id: number, activityData: Partial<Activity>
   return response.data;
 };
 
+/**
+ * Kreira novu aktivnost.
+ * @param activityData Podaci za kreiranje aktivnosti.
+ * @returns Promise koji razrješava u objekt kreirane aktivnosti.
+ */
+export const createActivity = async (activityData: {
+  name: string;
+  description: string;
+  start_date: Date;
+  actual_start_time: Date | null;
+  actual_end_time: Date | null;
+  activity_type_id: number;
+  recognition_percentage: number;
+}): Promise<Activity> => {
+  const response = await apiInstance.post<Activity>('/activities', activityData);
+  return response.data;
+};
+
 // --- Admin Activity Management ---
 
 export const getAllActivitiesAdmin = async (): Promise<Activity[]> => {
