@@ -23,7 +23,7 @@ export async function withRetry<T>(
 
   while (retryCount <= maxRetries) {
     try {
-      console.log(`Pokušaj ${retryCount + 1}/${maxRetries + 1}...`);
+      // console.log(`Pokušaj ${retryCount + 1}/${maxRetries + 1}...`);
       const result = await callback(retryCount);
       if (result !== null) {
         return result;
@@ -31,11 +31,11 @@ export async function withRetry<T>(
 
       // Ako smo dobili null ali imamo još pokušaja
       if (retryCount < maxRetries) {
-        console.log(`Pokušaj ${retryCount + 1} nije uspio, čekam prije ponovnog pokušaja...`);
+        // console.log(`Pokušaj ${retryCount + 1} nije uspio, čekam prije ponovnog pokušaja...`);
         await delay(delayMs);
         retryCount++;
       } else {
-        console.log(`Svi pokušaji iscrpljeni (${maxRetries + 1}/${maxRetries + 1})`);
+        // console.log(`Svi pokušaji iscrpljeni (${maxRetries + 1}/${maxRetries + 1})`);
         return null;
       }
     } catch (error) {
@@ -43,11 +43,11 @@ export async function withRetry<T>(
       
       // Ako imamo još pokušaja
       if (retryCount < maxRetries) {
-        console.log(`Čekam prije ponovnog pokušaja nakon greške...`);
+        // console.log(`Čekam prije ponovnog pokušaja nakon greške...`);
         await delay(delayMs);
         retryCount++;
       } else {
-        console.log(`Svi pokušaji iscrpljeni nakon greške (${maxRetries + 1}/${maxRetries + 1})`);
+        // console.log(`Svi pokušaji iscrpljeni nakon greške (${maxRetries + 1}/${maxRetries + 1})`);
         throw error;
       }
     }

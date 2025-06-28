@@ -81,7 +81,7 @@ systemManagerApi.interceptors.request.use(
       config.headers.Authorization = `Bearer ${systemManagerToken}`;
       // Dodatno logiranje u development modu
       if (process.env.NODE_ENV === 'development') {
-        console.log('System Manager API koristi token:', systemManagerToken.substring(0, 15) + '...');
+        // console.log('System Manager API koristi token:', systemManagerToken.substring(0, 15) + '...');
       }
     } else {
       // Upozorenje ako nedostaje System Manager token
@@ -217,7 +217,7 @@ export const systemManagerLogin = async ({ username, password }: SystemManagerLo
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('refreshToken');
-    console.log('Uklonjeni tokeni regularnog člana prilikom prijave kao System Manager');
+    // console.log('Uklonjeni tokeni regularnog člana prilikom prijave kao System Manager');
     
     // Spremanje ID-a i tokena System Manager u localStorage
     localStorage.setItem('systemManagerToken', response.data.token);
@@ -238,7 +238,7 @@ export const systemManagerLogin = async ({ username, password }: SystemManagerLo
  */
 export const systemManagerRefreshToken = async (): Promise<SystemManagerLoginResponse> => {
   try {
-    console.log('Pokušavam osvježiti System Manager token...');
+    // console.log('Pokušavam osvježiti System Manager token...');
     
     // Poziv na backend endpoint za osvježavanje tokena
     // Kolačić s refresh tokenom će biti automatski poslan zbog withCredentials: true
@@ -248,7 +248,7 @@ export const systemManagerRefreshToken = async (): Promise<SystemManagerLoginRes
     localStorage.setItem('systemManagerToken', response.data.token);
     localStorage.setItem('systemManager', JSON.stringify(response.data.manager));
     
-    console.log('System Manager token uspješno osvježen');
+    // console.log('System Manager token uspješno osvježen');
     return response.data;
   } catch (error: unknown) {
     console.error('Greška prilikom osvježavanja tokena:', error);
@@ -265,11 +265,11 @@ export const systemManagerRefreshToken = async (): Promise<SystemManagerLoginRes
  */
 export const systemManagerLogout = async (): Promise<boolean> => {
   try {
-    console.log('Započinjem proces odjave System Managera...');
+    // console.log('Započinjem proces odjave System Managera...');
     
     // Poziv na backend za odjavu i poništavanje refresh tokena
     await systemManagerApi.post('/system-manager/logout');
-    console.log('Uspješno poslan zahtjev za odjavu na backend');
+    // console.log('Uspješno poslan zahtjev za odjavu na backend');
     
     // Čišćenje System Manager tokena iz localStorage-a
     localStorage.removeItem('systemManagerToken');
@@ -279,7 +279,7 @@ export const systemManagerLogout = async (): Promise<boolean> => {
     localStorage.removeItem('systemAdmin'); // Zastarjeli naziv
     localStorage.removeItem('systemAdminToken'); // Zastarjeli naziv
     
-    console.log('Uklonjeni System Manager tokeni i zastarjeli tokeni iz lokalnog spremišta');
+    // console.log('Uklonjeni System Manager tokeni i zastarjeli tokeni iz lokalnog spremišta');
     
     // Čišćenje kolačića na klijentskoj strani kao dodatna sigurnosna mjera
     // iako bi backend trebao obrisati kolačiće kroz Set-Cookie zaglavlje
@@ -295,7 +295,7 @@ export const systemManagerLogout = async (): Promise<boolean> => {
       document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth; secure; SameSite=None;";
     }
     
-    console.log('System Manager uspješno odjavljen');
+    // console.log('System Manager uspješno odjavljen');
     // Ne preusmjeravamo ovdje, prepuštamo to komponenti koja poziva ovu funkciju
     return true;
   } catch (error: unknown) {
@@ -449,7 +449,7 @@ export const updateMemberPermissions = async (updateData: UpdateMemberPermission
       permissions: updateData.permissions
     };
     
-    console.log('Sending update data:', JSON.stringify(formattedData, null, 2));
+    // console.log('Sending update data:', JSON.stringify(formattedData, null, 2));
     await systemManagerApi.post('/system-manager/update-permissions', formattedData);
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
@@ -530,10 +530,10 @@ export const getSystemManagerDashboardStats = async (): Promise<SystemManagerDas
  */
 export const updateSystemSettings = async (settings: SystemSettings): Promise<SystemSettings> => {
   try {
-    console.log('Šaljem PUT zahtjev na:', `${API_BASE_URL}/system-manager/settings`);
-    console.log('Podaci:', settings);
+    // console.log('Šaljem PUT zahtjev na:', `${API_BASE_URL}/system-manager/settings`);
+    // console.log('Podaci:', settings);
     const response = await systemManagerApi.put<SystemSettings>('/system-manager/settings', settings);
-    console.log('Odgovor:', response.data);
+    // console.log('Odgovor:', response.data);
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {

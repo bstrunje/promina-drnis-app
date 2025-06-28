@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Funkcija za obnavljanje tokena - koristi AuthTokenService s retry mehanizmom
   const refreshToken = React.useCallback(async (): Promise<string | null> => {
     try {
-      console.log('Pokušavam osvježiti token...');
+      // console.log('Pokušavam osvježiti token...');
       const newToken = await AuthTokenService.refreshToken();
       
       if (newToken) {
@@ -113,7 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
     
     // Pokreni automatsko osvježavanje tokena
-    console.log('Pokrećem automatsko osvježavanje tokena nakon prijave');
+    // console.log('Pokrećem automatsko osvježavanje tokena nakon prijave');
     AuthTokenService.startAutoRefresh();
   }, []);
 
@@ -152,28 +152,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           
           // Pokušaj osvježiti token kako bi provjerili je li još valjan
           try {
-            console.log('Provjera valjanosti tokena pri inicijalizaciji...');
+            //console.log('Provjera valjanosti tokena pri inicijalizaciji...');
             const newToken = await refreshToken();
             
             if (!newToken) {
-              console.log('Token nije mogao biti osvježen, ali nećemo odmah odjaviti korisnika');
+              // console.log('Token nije mogao biti osvježen, ali nećemo odmah odjaviti korisnika');
               // VAŽNA PROMJENA: Ne čistimo odmah stanje korisnika, postavljamo timer
               // koji će pokušati ponovno osvježiti token kasnije
               setTimeout(() => {
-                console.log('Pokušavam ponovno osvježiti token nakon odgode...');
+                // console.log('Pokušavam ponovno osvježiti token nakon odgode...');
                 void refreshToken();
               }, 5000);  // Pokušaj ponovno nakon 5 sekundi
             } else {
-              console.log('Token je uspješno osvježen pri inicijalizaciji');
+              // console.log('Token je uspješno osvježen pri inicijalizaciji');
               // Pokreni automatsko osvježavanje tokena
-              console.log('Pokrećem automatsko osvježavanje tokena pri inicijalizaciji');
+              // console.log('Pokrećem automatsko osvježavanje tokena pri inicijalizaciji');
               AuthTokenService.startAutoRefresh();
             }
           } catch (refreshError) {
             // Greška pri osvježavanju tokena
             console.error('Greška pri provjeri tokena:', refreshError);
             // VAŽNA PROMJENA: Ne čistimo odmah stanje, postavljamo flag da je token možda nevažeći
-            console.log('Token je možda nevažeći, ali zadržavamo stanje korisnika');
+            // console.log('Token je možda nevažeći, ali zadržavamo stanje korisnika');
           }
         }
       } catch (error) {

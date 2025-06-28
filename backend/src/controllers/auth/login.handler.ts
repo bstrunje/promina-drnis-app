@@ -17,6 +17,7 @@ import {
   formatMinuteText,
 } from './auth.utils.js';
 import auditService from "../../services/audit.service.js";
+import { Prisma, PerformerType } from "@prisma/client";
 
 // Funkcija za prijavu korisnika
 export async function loginHandler(
@@ -195,6 +196,7 @@ export async function loginHandler(
     const cookieOptions = generateCookieOptions(req);
     res.cookie("refreshToken", refreshToken, cookieOptions);
 
+    // Zabilježi uspješnu prijavu u audit log
     auditService.logAction(
       'LOGIN_SUCCESS',
       member.member_id,
@@ -202,10 +204,9 @@ export async function loginHandler(
       req,
       'success',
       member.member_id,
+      PerformerType.MEMBER
     );
 
-    console.log(`Successful login for member: ${member.member_id}. Role: ${member.role}`);
-    
     const permissions = member.permissions ? {
       can_view_members: member.permissions.can_view_members || false,
       can_edit_members: member.permissions.can_edit_members || false,

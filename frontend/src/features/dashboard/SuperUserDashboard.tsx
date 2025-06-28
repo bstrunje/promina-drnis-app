@@ -34,7 +34,7 @@ interface DashboardStatsResponse {
 }
 
 const SuperUserDashboard: React.FC<Props> = ({ member }) => {
-  console.log('Rendering SuperUserDashboard for:', member.full_name);
+  // console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

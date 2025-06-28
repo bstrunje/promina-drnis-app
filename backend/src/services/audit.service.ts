@@ -2,6 +2,7 @@
 import { Request } from 'express';
 import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
+import { PerformerType } from '@prisma/client';
 
 interface LogEventParams {
     event_type: string;
@@ -11,6 +12,10 @@ interface LogEventParams {
     details: Record<string, any>;
 }
 
+interface AuditLogDetails {
+    user_id: number | null;
+}
+
 const auditService = {
     async logAction(
         action_type: string,
@@ -18,7 +23,8 @@ const auditService = {
         action_details: string,
         req: Request,
         status: string = 'success',
-        affected_member?: number
+        affected_member?: number,
+        performer_type?: PerformerType | null
     ): Promise<void> {
         try {
             const ip_address = req.ip || req.socket.remoteAddress || 'unknown';
@@ -30,7 +36,8 @@ const auditService = {
                 action_details,
                 ip_address,
                 status,
-                affected_member
+                affected_member,
+                performer_type
             );
         } catch (error) {
             console.error('Error logging audit action:', error);

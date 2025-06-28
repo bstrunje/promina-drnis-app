@@ -230,6 +230,7 @@ model AuditLog {
   log_id          Int       @id @default(autoincrement())
   action_type     String    @db.VarChar(50)
   performed_by    Int?
+  performer_type  PerformerType?
   action_details  String
   ip_address      String?   @db.VarChar(45)
   created_at      DateTime? @default(now()) @db.Timestamptz(6)
@@ -242,7 +243,7 @@ model AuditLog {
 }
 
 model MemberAdministrator {
-  id            Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   username      String    @unique @db.VarChar(100)
   email         String    @unique @db.VarChar(255)
   display_name  String    @db.VarChar(100)
@@ -348,6 +349,11 @@ enum SenderType {
   member
   member_administrator
   member_superuser
+}
+
+enum PerformerType {
+  MEMBER
+  SYSTEM_MANAGER
 }
 
 enum ActivityStatus {

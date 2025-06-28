@@ -46,7 +46,7 @@ export class AuthTokenService {
   static async refreshToken(): Promise<string | null> {
     return withRetry(async () => {
 
-      console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
+      // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
       const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
@@ -73,7 +73,7 @@ export class AuthTokenService {
 
       // Spremanje novog refresh tokena ako je dobiven (u localStorage kao backup)
       if (data.refreshToken) {
-        console.log('Primljen novi refresh token, ažuriram lokalno spremište');
+        // console.log('Primljen novi refresh token, ažuriram lokalno spremište');
         tokenStorage.storeRefreshToken(data.refreshToken);
       }
 
@@ -81,8 +81,8 @@ export class AuthTokenService {
       if (data.accessToken) {
         tokenStorage.storeAccessToken(data.accessToken);
         // Dodano logiranje za debugiranje
-        console.log("Novi access token spremljen u localStorage:", data.accessToken);
-        console.log("Token uspješno obnovljen");
+        // console.log("Novi access token spremljen u localStorage:", data.accessToken);
+        // console.log("Token uspješno obnovljen");
         return data.accessToken;
       }
 
@@ -127,7 +127,7 @@ export class AuthTokenService {
     const shouldRefresh = Date.now() + REFRESH_THRESHOLD_MS > expiryTime;
 
     if (shouldRefresh) {
-      console.log(`Token će isteći za ${Math.round((expiryTime - Date.now()) / 1000)} sekundi, potrebno osvježavanje`);
+      // console.log(`Token će isteći za ${Math.round((expiryTime - Date.now()) / 1000)} sekundi, potrebno osvježavanje`);
     }
 
     return shouldRefresh;
@@ -141,17 +141,17 @@ export class AuthTokenService {
     // Prvo očisti postojeći timer ako postoji
     this.stopAutoRefresh();
 
-    console.log('Započeto automatsko osvježavanje tokena');
+    // console.log('Započeto automatsko osvježavanje tokena');
 
     // Postavi interval koji će provjeravati treba li osvježiti token svakih 30 sekundi
     refreshTimerId = window.setInterval(async () => {
       try {
         if (this.shouldRefreshToken()) {
-          console.log('Automatsko osvježavanje tokena...');
+          // console.log('Automatsko osvježavanje tokena...');
           const newToken = await this.refreshToken();
 
           if (newToken) {
-            console.log('Token uspješno osvježen automatski');
+            // console.log('Token uspješno osvježen automatski');
           } else {
             console.warn('Automatsko osvježavanje tokena nije uspjelo. Pokrećem odjavu korisnika.');
             // Ako osvježavanje nije uspjelo, zaustavi automatsko osvježavanje i odjavi korisnika
@@ -172,7 +172,7 @@ export class AuthTokenService {
     if (refreshTimerId !== null) {
       window.clearInterval(refreshTimerId);
       refreshTimerId = null;
-      console.log('Zaustavljeno automatsko osvježavanje tokena');
+      // console.log('Zaustavljeno automatsko osvježavanje tokena');
     }
   }
 
@@ -180,12 +180,12 @@ export class AuthTokenService {
    * Pokreće odjavu korisnika - čisti tokene i zaustavlja automatsko osvježavanje
    */
   static async logout(): Promise<void> {
-    console.log('[AuthTokenService.logout] Logout pozvan.');
+    // console.log('[AuthTokenService.logout] Logout pozvan.');
     try {
       // Zaustavi automatsko osvježavanje tokena
       this.stopAutoRefresh();
 
-      console.log("Započinjem proces odjave korisnika...");
+      // console.log("Započinjem proces odjave korisnika...");
 
       // Poziv backend API-ja za odjavu i poništavanje refresh tokena
       const response = await fetch(this.getApiUrl('/api/auth/logout'), {
@@ -198,7 +198,7 @@ export class AuthTokenService {
       });
 
       if (response.ok) {
-        console.log("Korisnik uspješno odjavljen na backendu");
+        // console.log("Korisnik uspješno odjavljen na backendu");
       } else {
         console.error(`Greška pri odjavi na backendu: HTTP ${response.status}`);
       }
@@ -221,13 +221,13 @@ export class AuthTokenService {
       localStorage.removeItem('systemAdmin'); // Zastarjeli naziv
       localStorage.removeItem('systemAdminToken'); // Zastarjeli naziv
 
-      console.log("Kolačići i zastarjeli tokeni očišćeni na klijentskoj strani");
+      // console.log("Kolačići i zastarjeli tokeni očišćeni na klijentskoj strani");
     } catch (error) {
       console.error("Greška pri odjavi na backendu:", error);
     } finally {
       // Čistimo sve tokene
       tokenStorage.clearAllTokens();
-      console.log("Uklonjeni svi tokeni");
+      // console.log("Uklonjeni svi tokeni");
       // Preusmjeri korisnika na login stranicu
       // Preusmjeravanje na login koristeći globalni navigate helper (ako je dostupan)
       // ili window.location.replace kao fallback
@@ -237,7 +237,7 @@ export class AuthTokenService {
         navigateToLogin();
       } catch (e) {
         console.error('[AuthTokenService.logout] Greška pri importu navigationHelper ili pozivu navigateToLogin:', e);
-        console.log('[AuthTokenService.logout] Fallback: window.location.replace("/login")');
+        // console.log('[AuthTokenService.logout] Fallback: window.location.replace("/login")');
         // Ako helper nije dostupan, koristimo klasični redirect
         window.location.replace('/login');
       }

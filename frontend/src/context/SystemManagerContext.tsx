@@ -43,7 +43,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   // Provjera postojeće sesije prilikom učitavanja
   useEffect(() => {
     const checkAuth = () => {
-      console.log('Provjeravam System Manager autentikaciju...');
+      // console.log('Provjeravam System Manager autentikaciju...');
       
       const systemManagerToken = localStorage.getItem('systemManagerToken');
       const storedManager = localStorage.getItem('systemManager');
@@ -57,7 +57,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         localStorage.removeItem('user');
         localStorage.removeItem('userRole');
         localStorage.removeItem('refreshToken');
-        console.log('Uklonjeni regularni tokeni za korisnika koji uzrokuju konflikt');
+        // console.log('Uklonjeni regularni tokeni za korisnika koji uzrokuju konflikt');
       }
 
       if (systemManagerToken && storedManager) {
@@ -72,14 +72,14 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
           };
           setManager(parsedManager);
           setIsAuthenticated(true);
-          console.log('System Manager autentikacija uspješna');
+          // console.log('System Manager autentikacija uspješna');
         } catch (e) {
           console.error('Greška pri parsiranju podataka system managera:', e);
           localStorage.removeItem('systemManagerToken');
           localStorage.removeItem('systemManager');
         }
       } else {
-        console.log('System Manager nije prijavljen');
+        // console.log('System Manager nije prijavljen');
       }
       setLoading(false);
     };
@@ -89,7 +89,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
 
   // Funkcija za osvježavanje podataka managera
   const refreshManager = React.useCallback(async () => {
-    console.log('Osvježavam podatke System Managera...');
+    // console.log('Osvježavam podatke System Managera...');
     
     const systemManagerToken = localStorage.getItem('systemManagerToken');
     const storedManager = localStorage.getItem('systemManager');
@@ -103,7 +103,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
       localStorage.removeItem('refreshToken');
-      console.log('Uklonjeni regularni tokeni zbog konflikta tijekom osvježavanja');
+      // console.log('Uklonjeni regularni tokeni zbog konflikta tijekom osvježavanja');
     }
     
     // Provjera postoji li System Manager token
@@ -125,7 +125,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         };
         setManager(parsedManager);
         setIsAuthenticated(true);
-        console.log('Podaci System Managera uspješno osvježeni');
+        // console.log('Podaci System Managera uspješno osvježeni');
       } catch (e) {
         console.error('Greška pri parsiranju podataka System Managera:', e);
         localStorage.removeItem('systemManagerToken');
@@ -166,7 +166,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   // Funkcija za odjavu
   const logout = React.useCallback(() => {
     try {
-      console.log('Započinjem odjavu system managera...');
+      // console.log('Započinjem odjavu system managera...');
       
       // Pozivamo API funkciju za odjavu
       void systemManagerLogout();
@@ -175,7 +175,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       setManager(null);
       setIsAuthenticated(false);
       
-      console.log('System manager uspješno odjavljen');
+      // console.log('System manager uspješno odjavljen');
       
       // Koristimo replace: true kako bismo spriječili povratak na dashboard nakon odjave
       navigate('/system-manager/login', { replace: true });
@@ -195,7 +195,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   // Funkcija za osvježavanje tokena
   const refreshToken = React.useCallback(async () => {
     try {
-      console.log('Pokušavam osvježiti System Manager token iz konteksta...');
+      // console.log('Pokušavam osvježiti System Manager token iz konteksta...');
       const response = await systemManagerRefreshToken();
       
       // Ažuriranje podataka o manageru u kontekstu
@@ -206,7 +206,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       setManager(managerData);
       setIsAuthenticated(true);
       
-      console.log('System Manager token uspješno osvježen iz konteksta');
+      // console.log('System Manager token uspješno osvježen iz konteksta');
     } catch (error) {
       console.error('Greška prilikom osvježavanja tokena iz konteksta:', error);
       

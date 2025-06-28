@@ -102,7 +102,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
       
       recentActivities = await (prisma as any).activity.count({
         where: {
-          created_by: memberId,
+          organizer_id: memberId,
           created_at: {
             gte: thirtyDaysAgo // Aktivnosti u zadnjih 30 dana
           }

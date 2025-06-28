@@ -12,9 +12,10 @@ import auditService from '../services/audit.service.js';
 import auditRepository from '../repositories/audit.repository.js';
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
+import { Prisma, PerformerType } from '@prisma/client';
 
 // Privremena definicija tipova dok se ne implementira potpuno rješenje
-type SystemManagerLoginData = {
+interface SystemManagerLoginData {
     username: string;
     password: string;
 };
@@ -117,18 +118,19 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
             // Generiranje novog access tokena i refresh tokena
             const token = systemManagerService.generateToken(manager);
             const newRefreshToken = systemManagerService.generateRefreshToken(manager);
-            
-            // Ažuriranje vremena zadnje prijave
-            await systemManagerRepository.updateLastLogin(manager.id);
-            
-            // Bilježenje uspješne obnove tokena u audit log
+
             await auditService.logAction(
                 'token_refresh',
                 manager.id,
                 `System manager ${manager.username} je obnovio token`,
                 req,
-                'success'
+                'success',
+                undefined,
+                PerformerType.SYSTEM_MANAGER
             );
+            
+            // Ažuriranje vremena zadnje prijave
+            await systemManagerRepository.updateLastLogin(manager.id);
             
             // Postavljanje novog refresh tokena kao HTTP-only kolačića
             const isProduction = process.env.NODE_ENV === 'production';
@@ -154,7 +156,6 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
             // Brisanje refreshToken kolačića ako postoji
             // kako bi se izbjegao konflikt između dva tipa tokena
             if (req.cookies.refreshToken) {
-                console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
                 res.clearCookie('refreshToken', { 
                     path: '/api/auth',
                     secure: secure,
@@ -164,7 +165,6 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
             
             // Također provjeravamo i brišemo stari systemManagerRefreshToken ako postoji
             if (req.cookies.systemManagerRefreshToken) {
-                console.log('Brišem stari systemManagerRefreshToken kolačić prije postavljanja novog');
                 res.clearCookie('systemManagerRefreshToken', { 
                     path: '/api/system-manager',
                     secure: secure,
@@ -226,16 +226,17 @@ const systemManagerController = {
             }
 
             // Generiranje JWT tokena i refresh tokena
-            const token = systemManagerService.generateToken(manager);
-            const refreshToken = systemManagerService.generateRefreshToken(manager);
+            const token = jwt.sign({ id: manager.id, type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+            const refreshToken = jwt.sign({ id: manager.id, type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
 
-            // Zabilježi prijavu u audit log
             await auditService.logAction(
                 'login', // action_type
                 manager.id, // performed_by
                 `System manager ${username} se prijavio u sustav`, // action_details
                 req,      // req objekt
-                'success' // status
+                'success', // status
+                undefined, // affected_member
+                PerformerType.SYSTEM_MANAGER
             );
 
             // Postavljanje refresh tokena kao HTTP-only kolačića
@@ -262,7 +263,6 @@ const systemManagerController = {
             // Brisanje refreshToken kolačića ako postoji
             // kako bi se izbjegao konflikt između dva tipa tokena
             if (req.cookies.refreshToken) {
-                console.log('Brišem refreshToken kolačić za izbjegavanje konflikta');
                 res.clearCookie('refreshToken', { 
                     path: '/api/auth',
                     secure: secure,
@@ -272,16 +272,12 @@ const systemManagerController = {
             
             // Također provjeravamo i brišemo stari systemManagerRefreshToken ako postoji
             if (req.cookies.systemManagerRefreshToken) {
-                console.log('Brišem stari systemManagerRefreshToken kolačić prije postavljanja novog');
                 res.clearCookie('systemManagerRefreshToken', { 
                     path: '/api/system-manager',
                     secure: secure,
                     sameSite: sameSite
                 });
             }
-            
-            console.log(`Postavljam systemManagerRefreshToken kolačić sa sameSite=${sameSite}, secure=${secure}`);
-
             
             res.cookie('systemManagerRefreshToken', refreshToken, {
                 httpOnly: true,
@@ -995,8 +991,6 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
     } else {
         sameSite = 'lax';
     }
-    
-    console.log(`Brisanje kolačića system managera pri odjavi sa sameSite=${sameSite}, secure=${secure}`);
     
     // Ako nema refresh tokena, samo obriši kolačiće i vrati uspjeh
     if (!refreshToken) {
