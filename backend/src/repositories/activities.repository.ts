@@ -41,8 +41,32 @@ export const findActivityById = async (activity_id: number) => {
           },
         },
       },
+      _count: {
+        select: { participants: true },
+      },
     },
   });
+};
+
+export const findActivitiesByTypeId = async (type_id: number) => {
+  const activities = await prisma.activity.findMany({
+    where: {
+      activity_type: {
+        type_id: type_id,
+      },
+    },
+    include: {
+      activity_type: true,
+      organizer: {
+        select: { member_id: true, first_name: true, last_name: true },
+      },
+      _count: {
+        select: { participants: true },
+      },
+    },
+    orderBy: { start_date: 'desc' },
+  });
+  return activities;
 };
 
 export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput) => {

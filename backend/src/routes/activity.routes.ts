@@ -1,6 +1,6 @@
 import express from 'express';
 import * as activityController from '../controllers/activities.controller.js';
-import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import { authMiddleware as authenticateToken, roles, canEditActivity } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -8,6 +8,9 @@ const router = express.Router();
 
 // Dohvati sve tipove aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/types', authenticateToken, activityController.getActivityTypes);
+
+// Dohvati aktivnosti po tipu (dostupno svim prijavljenim korisnicima)
+router.get('/type/:typeId', authenticateToken, activityController.getActivitiesByTypeId);
 
 // Dohvati sve aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/', authenticateToken, activityController.getAllActivities);
@@ -18,8 +21,8 @@ router.get('/:activityId', authenticateToken, activityController.getActivityById
 // Kreiraj novu aktivnost (samo admin i superuser)
 router.post('/', authenticateToken, roles.requireAdmin, activityController.createActivity);
 
-// Ažuriraj aktivnost (samo admin i superuser)
-router.put('/:activityId', authenticateToken, roles.requireAdmin, activityController.updateActivity);
+// Ažuriraj aktivnost (samo organizator i superuser)
+router.put('/:activityId', authenticateToken, canEditActivity, activityController.updateActivity);
 
 // Obriši aktivnost (samo superuser)
 router.delete('/:activityId', authenticateToken, roles.requireSuperUser, activityController.deleteActivity);

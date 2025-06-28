@@ -10,6 +10,8 @@ import Navigation from '../components/Navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ActivitiesList from './features/activities/ActivitiesList';
 import ActivityCategoryPage from './features/activities/ActivityCategoryPage';
+import ActivityDetailPage from './features/activities/ActivityDetailPage';
+import EditActivityPage from './features/activities/EditActivityPage';
 import ActivitiesAdminPage from './features/activities/ActivitiesAdminPage';
 import EventsList from './features/events/EventsList';
 import HoursLog from './features/hours/HoursLog';
@@ -23,6 +25,7 @@ import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
+import Clock from './components/common/Clock';
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -78,6 +81,8 @@ function AppContent() {
           <Route path="/profile" element={<MemberDetailsPage />} />
           <Route path="/activities" element={<ActivitiesList />} />
           <Route path="/activities/category/:type_id" element={<ActivityCategoryPage />} />
+          <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+          <Route path="/activities/:activityId/edit" element={<EditActivityPage />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
@@ -120,6 +125,7 @@ function App() {
       <TimeZoneProvider>
         <UnreadMessagesProvider>
           <ToastProvider>
+            <Clock /> {/* Dodajem komponentu sata */}
             <AppContent />
             {import.meta.env.DEV && (
               <div className="fixed bottom-4 right-4 z-50">

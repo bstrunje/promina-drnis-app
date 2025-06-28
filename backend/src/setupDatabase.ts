@@ -52,3 +52,58 @@ export async function createInitialSystemManagerIfNeeded(): Promise<void> {
     // Ne bacamo iznimku kako ne bismo srušili aplikaciju ako se ovo ne uspije izvršiti
   }
 }
+
+/**
+ * Postavlja osnovne vrste aktivnosti ako ne postoje u bazi.
+ */
+export async function setupActivityTypes(): Promise<void> {
+  try {
+    console.log('Inicijalizacija vrsta aktivnosti...');
+
+    const activityTypes = [
+      {
+        name: 'AKCIJA DRUŠTVO',
+        description: 'Radne akcije u organizaciji Društva',
+      },
+      {
+        name: 'AKCIJA TRAIL',
+        description: 'Radne akcije za Trail',
+      },
+      {
+        name: 'DEŽURSTVA',
+        description: 'Dežurstva u domu',
+      },
+      {
+        name: 'IZLETI',
+        description: 'Sudjelovanje na izletima',
+      },
+      {
+        name: 'ORGANIZACIJA i VOĐENJE IZLETA',
+        description: 'Organizacija i vođenje izleta',
+      },
+      {
+        name: 'RAZNO',
+        description: 'Ostale razne aktivnosti',
+      },
+      {
+        name: 'SASTANCI',
+        description: 'Sastanci članova i upravnog odbora',
+      },
+    ];
+
+    for (const type of activityTypes) {
+      await prisma.activityType.upsert({
+        where: { name: type.name },
+        update: { description: type.description },
+        create: {
+          name: type.name,
+          description: type.description,
+        },
+      });
+    }
+
+    console.log('✅ Vrste aktivnosti uspješno postavljene.');
+  } catch (error) {
+    console.error('❌ Greška prilikom postavljanja vrsta aktivnosti:', error);
+  }
+}

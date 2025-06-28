@@ -15,9 +15,12 @@ const ActivitiesList: React.FC = () => {
   const fetchActivityTypes = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Pozivam getActivityTypes API...');
       const data = await getActivityTypes();
+      console.log('Odgovor od getActivityTypes API:', data);
       setActivityTypes(data);
     } catch (err) {
+      console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
       setError(err instanceof Error ? err.message : 'Failed to load activity types');
     } finally {
       setLoading(false);

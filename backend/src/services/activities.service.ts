@@ -14,9 +14,24 @@ export const getActivityTypesServiceNew = async () => {
 
 // --- Aktivnosti --- //
 
-export const createActivityService = async (data: Prisma.ActivityUncheckedCreateInput) => {
-  // Ovdje se može dodati dodatna poslovna logika, npr. provjera datuma
-  return activityRepository.createActivity(data);
+export const createActivityService = async (data: any, organizer_id: number) => {
+  const { activity_type_id, ...rest } = data;
+
+  if (!activity_type_id) {
+    throw new Error('Activity type ID is required.');
+  }
+
+  const activityData = {
+    ...rest,
+    organizer: {
+      connect: { member_id: organizer_id },
+    },
+    activity_type: {
+      connect: { type_id: activity_type_id },
+    },
+  };
+
+  return activityRepository.createActivity(activityData);
 };
 
 export const getAllActivitiesService = async () => {
@@ -29,6 +44,10 @@ export const getActivityByIdService = async (activity_id: number) => {
     throw new NotFoundError('Aktivnost nije pronađena.');
   }
   return activity;
+};
+
+export const getActivitiesByTypeIdService = async (type_id: number) => {
+  return activityRepository.findActivitiesByTypeId(type_id);
 };
 
 export const updateActivityService = async (activity_id: number, data: Prisma.ActivityUncheckedUpdateInput) => {

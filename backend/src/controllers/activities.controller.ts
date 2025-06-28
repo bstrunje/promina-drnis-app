@@ -16,7 +16,12 @@ export const getActivityTypes = async (req: Request, res: Response, next: NextFu
 
 export const createActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const activity = await activityService.createActivityService(req.body);
+    const organizer_id = req.user?.id;
+    if (!organizer_id) {
+      return res.status(401).json({ message: 'Unauthorized: User ID is missing.' });
+    }
+
+    const activity = await activityService.createActivityService(req.body, organizer_id);
     res.status(201).json(activity);
   } catch (error) {
     next(error);
@@ -37,6 +42,16 @@ export const getActivityById = async (req: Request, res: Response, next: NextFun
     const id = parseInt(req.params.activityId, 10);
     const activity = await activityService.getActivityByIdService(id);
     res.status(200).json(activity);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getActivitiesByTypeId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const typeId = parseInt(req.params.typeId, 10);
+    const activities = await activityService.getActivitiesByTypeIdService(typeId);
+    res.status(200).json(activities);
   } catch (error) {
     next(error);
   }

@@ -24,6 +24,24 @@ export interface Activity {
   recognition_percentage: number;
   created_at: Date | string;
   updated_at: Date | string;
+
+  // Relational fields for detailed views
+  activity_type?: ActivityType;
+  organizer?: {
+    member_id: number;
+    first_name: string;
+    last_name: string;
+  };
+  participants?: Array<ActivityParticipation & { 
+    member: { 
+      member_id: number; 
+      first_name: string; 
+      last_name: string; 
+    } 
+  }>;
+  _count?: {
+    participants: number;
+  };
 }
 
 export interface ActivityParticipation {

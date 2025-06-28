@@ -20,6 +20,27 @@ export const getActivitiesByTypeId = async (typeId: string): Promise<Activity[]>
   return response.data;
 };
 
+/**
+ * Dohvaća jednu aktivnost po njenom ID-u.
+ * @param activityId ID aktivnosti.
+ * @returns Promise koji razrješava u objekt aktivnosti.
+ */
+export const getActivityById = async (activityId: string): Promise<Activity> => {
+  const response = await apiInstance.get<Activity>(`/activities/${activityId}`);
+  return response.data;
+};
+
+/**
+ * Ažurira postojeću aktivnost.
+ * @param id ID aktivnosti.
+ * @param activityData Podaci za ažuriranje.
+ * @returns Promise koji razrješava u ažurirani objekt aktivnosti.
+ */
+export const updateActivity = async (id: number, activityData: Partial<Activity>): Promise<Activity> => {
+  const response = await apiInstance.put<Activity>(`/activities/${id}`, activityData);
+  return response.data;
+};
+
 // --- Admin Activity Management ---
 
 export const getAllActivitiesAdmin = async (): Promise<Activity[]> => {

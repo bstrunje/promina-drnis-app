@@ -1,43 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin } from 'lucide-react';
+import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { getActivityTypes, getActivitiesByTypeId } from '@/utils/api/apiActivities';
 import { Activity, ActivityType } from '@shared/activity.types';
 import { format } from 'date-fns';
+import { useAuth } from '@/context/AuthContext';
+import CreateActivityModal from './CreateActivityModal';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { activityTypeId } = useParams<{ activityTypeId: string }>();
+  const { type_id: activityTypeId } = useParams<{ type_id: string }>();
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!activityTypeId) return;
+    try {
+      setLoading(true);
+      const types = await getActivityTypes();
+      const currentType = types.find(t => t.type_id.toString() === activityTypeId);
+      setActivityType(currentType || null);
+
+      if (currentType) {
+        const activitiesData = await getActivitiesByTypeId(activityTypeId);
+        setActivities(activitiesData);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Greška prilikom dohvaćanja podataka:', err);
+      setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
+    } finally {
+      setLoading(false);
+    }
+  }, [activityTypeId]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!activityTypeId) return;
-      try {
-        setLoading(true);
-        const types = await getActivityTypes();
-        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
-        setActivityType(currentType || null);
+    void fetchData();
+  }, [fetchData]);
 
-        if (currentType) {
-          const activitiesData = await getActivitiesByTypeId(activityTypeId);
-          setActivities(activitiesData);
-        }
-        setError(null);
-      } catch (err) {
-        setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [activityTypeId]);
+  const handleActivityCreated = () => {
+    setCreateModalOpen(false);
+    void fetchData();
+  };
 
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
@@ -91,9 +101,24 @@ const ActivityCategoryPage: React.FC = () => {
         ) : (
           <div className="col-span-full text-center text-muted-foreground">
             <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
+            {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+              <Button onClick={() => setCreateModalOpen(true)} className="mt-4">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Kreiraj novu aktivnost
+              </Button>
+            )}
           </div>
         )}
       </div>
+
+      {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+        <CreateActivityModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onActivityCreated={handleActivityCreated}
+          activityTypeId={activityTypeId ? parseInt(activityTypeId, 10) : undefined}
+        />
+      )}
     </div>
   );
 };

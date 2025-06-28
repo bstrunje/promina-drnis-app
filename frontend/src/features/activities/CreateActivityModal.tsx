@@ -9,21 +9,19 @@ interface CreateActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onActivityCreated: () => void;
+  activityTypeId?: number;
 }
 
-const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated }) => {
-  const [title, setTitle] = useState('');
+const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
+  const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [maxParticipants, setMaxParticipants] = useState<number | ''>('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -35,13 +33,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title,
+          name,
           description,
           start_date: new Date(startDate).toISOString(),
-          end_date: new Date(endDate).toISOString(),
-          location,
-          max_participants: maxParticipants ? Number(maxParticipants) : null,
-          activity_type_id: 1, // Privremeno, dok ne dodamo selektor tipa aktivnosti
+          activity_type_id: activityTypeId,
         }),
       });
 
@@ -55,7 +50,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -67,8 +62,8 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="title">Naziv</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <Label htmlFor="name">Naziv</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div>
             <Label htmlFor="description">Opis</Label>
@@ -78,25 +73,15 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             <Label htmlFor="startDate">Datum početka</Label>
             <Input id="startDate" type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
           </div>
-          <div>
-            <Label htmlFor="endDate">Datum završetka</Label>
-            <Input id="endDate" type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
-          </div>
-          <div>
-            <Label htmlFor="location">Lokacija</Label>
-            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="maxParticipants">Maks. sudionika</Label>
-            <Input id="maxParticipants" type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value === '' ? '' : Number(e.target.value))} />
-          </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>Odustani</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Spremanje...' : 'Spremi'}
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>
+              Odustani
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Spremanje...' : 'Spremi'}
             </Button>
           </DialogFooter>
         </form>

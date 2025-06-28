@@ -150,8 +150,8 @@ const checkRole = (allowedRoles: string[]) => {
                 message: `Access denied. Required role: ${allowedRoles.join(' or ')}`
             });
         } catch (error) {
-            console.error('Role checking error:', error);
-            res.status(500).json({ message: 'Error checking user role' });
+            console.error('Role check error:', error);
+            res.status(500).json({ message: 'Internal server error' });
         }
     };
 };
@@ -249,9 +249,45 @@ const checkPermission = (permission: string) => {
     };
 };
 
+// Middleware koji provjerava da li je korisnik superuser ili organizator aktivnosti
+export const canEditActivity = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { activityId } = req.params;
+        const user = req.user;
+
+        if (!user || !user.member_id) {
+            return res.status(401).json({ message: 'Authentication required.' });
+        }
+
+        // Superuser can always edit
+        if (user.role === 'member_superuser') {
+            return next();
+        }
+
+        // Check if the user is the organizer of the activity
+        const activity = await prisma.activity.findUnique({
+            where: { activity_id: parseInt(activityId, 10) },
+            select: { organizer_id: true },
+        });
+
+        if (!activity) {
+            return res.status(404).json({ message: 'Activity not found.' });
+        }
+
+        if (activity.organizer_id === user.member_id) {
+            return next();
+        }
+
+        return res.status(403).json({ message: 'Access denied. You are not the organizer of this activity.' });
+    } catch (error) {
+        console.error('canEditActivity middleware error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 // Role-based middleware shortcuts
 const roles = {
-    requireAdmin: checkRole(['member_administrator', 'member_superuser']),
+    requireAdmin: checkRole(['member_administrator']),
     requireMember: checkRole(['member', 'member_administrator', 'member_superuser']),
     requireSuperUser,
     requireSystemManager
