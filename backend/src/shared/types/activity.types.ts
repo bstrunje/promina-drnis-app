@@ -11,6 +11,14 @@ export enum ActivityStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export interface Member {
+  member_id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  total_minutes?: number; // Dodano za ukupan zbroj minuta
+}
+
 export interface Activity {
   activity_id: number;
   name: string;
@@ -24,20 +32,13 @@ export interface Activity {
   recognition_percentage: number;
   created_at: Date | string;
   updated_at: Date | string;
+  cancellation_reason: string | null;
 
   // Relational fields for detailed views
   activity_type?: ActivityType;
-  organizer?: {
-    member_id: number;
-    first_name: string;
-    last_name: string;
-  };
+  organizer?: Member;
   participants?: Array<ActivityParticipation & { 
-    member: { 
-      member_id: number; 
-      first_name: string; 
-      last_name: string; 
-    } 
+    member: Member; 
   }>;
   _count?: {
     participants: number;
