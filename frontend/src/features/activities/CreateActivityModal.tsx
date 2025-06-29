@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createActivity } from '@/utils/api/apiActivities';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
@@ -8,6 +8,7 @@ import { Textarea } from '@components/ui/textarea';
 import { useToast } from '@components/ui/use-toast';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
+import { MemberSelect } from './MemberSelect';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const [actualStartTime, setActualStartTime] = useState('');
   const [actualEndTime, setActualEndTime] = useState('');
   const [recognitionPercentage, setRecognitionPercentage] = useState('100');
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -50,6 +52,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
         actual_end_time: actualEndTime ? new Date(actualEndTime) : null,
         activity_type_id: Number(activityTypeId),
         recognition_percentage: Number(recognitionPercentage),
+        participant_ids: participantIds.map(id => Number(id)),
       });
       toast({
         title: 'Uspjeh',
@@ -63,6 +66,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       setActualStartTime('');
       setActualEndTime('');
       setRecognitionPercentage('100');
+      setParticipantIds([]);
       onClose(); // Zatvori modal nakon uspješnog kreiranja
     } catch (err) {
       console.error('Greška prilikom kreiranja aktivnosti:', err);
@@ -79,18 +83,29 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle>Kreiraj novu aktivnost</DialogTitle>
+          <DialogDescription>
+            Ispunite obrazac za kreiranje nove aktivnosti. Odaberite sudionike i unesite sve potrebne detalje.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="name">Naziv</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Naziv
+            </Label>
+            <div className="col-span-3">
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="description">Opis</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="description" className="text-right">
+              Opis
+            </Label>
+            <div className="col-span-3">
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
           </div>
           
           {/* Polje za datum početka */}
@@ -169,6 +184,16 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             </div>
           </div>
 
+          {/* Odabir sudionika */}
+          <div className="grid grid-cols-4 items-start gap-4 pt-2">
+            <Label className="text-right pt-2">
+              Sudionici
+            </Label>
+            <div className="col-span-3">
+              <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
+            </div>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <DialogFooter>
@@ -179,7 +204,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
               {isLoading ? 'Spremanje...' : 'Spremi'}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

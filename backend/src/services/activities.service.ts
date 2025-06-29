@@ -15,20 +15,21 @@ export const getActivityTypesServiceNew = async () => {
 // --- Aktivnosti --- //
 
 export const createActivityService = async (data: any, organizer_id: number) => {
-  const { activity_type_id, ...rest } = data;
+  const { activity_type_id, participant_ids, ...rest } = data;
 
   if (!activity_type_id) {
     throw new Error('Activity type ID is required.');
   }
 
-  const activityData = {
+  const activityData: Prisma.ActivityUncheckedCreateInput = {
     ...rest,
-    organizer: {
-      connect: { member_id: organizer_id },
-    },
-    activity_type: {
-      connect: { type_id: activity_type_id },
-    },
+    organizer_id,
+    type_id: activity_type_id,
+    participants: participant_ids && participant_ids.length > 0 ? {
+      create: participant_ids.map((id: number) => ({
+        member_id: id,
+      })),
+    } : undefined,
   };
 
   return activityRepository.createActivity(activityData);
@@ -50,9 +51,9 @@ export const getActivitiesByTypeIdService = async (type_id: number) => {
   return activityRepository.findActivitiesByTypeId(type_id);
 };
 
-export const updateActivityService = async (activity_id: number, data: Prisma.ActivityUncheckedUpdateInput) => {
-  await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
-  return activityRepository.updateActivity(activity_id, data);
+export const updateActivityService = async (activityId: number, data: any) => {
+  await getActivityByIdService(activityId); // Prvo provjeravamo postoji li aktivnost
+  return activityRepository.updateActivity(activityId, data);
 };
 
 export const deleteActivityService = async (activity_id: number) => {

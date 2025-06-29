@@ -189,10 +189,20 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
 export const memberController = {
   async getAllMembers(req: Request, res: Response) {
     try {
-      const members = await memberRepository.findAll();
+      const activeOnly = req.query.status === 'active';
+      const members = await memberRepository.findAll(activeOnly);
       res.json(members);
     } catch (error) {
       // Error handling
+      if (error instanceof Error) {
+        if (error.message.includes("not found")) {
+          res.status(404).json({ message: error.message });
+        } else {
+          res.status(500).json({ message: error.message });
+        }
+      } else {
+        res.status(500).json({ message: "Unknown error" });
+      }
     }
   },
 

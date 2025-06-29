@@ -20,6 +20,22 @@ export const getAllMembers = async (): Promise<Member[]> => {
 };
 
 /**
+ * Dohvaćanje samo aktivnih članova
+ * @returns Lista aktivnih članova
+ */
+export const getActiveMembers = async (): Promise<Member[]> => {
+  try {
+    const response: AxiosResponse<Member[]> = await api.get('/members?status=active');
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Nije moguće dohvatiti popis aktivnih članova');
+  }
+};
+
+/**
  * Upload profilne slike člana
  * @param memberId ID člana
  * @param imageFile Datoteka slike

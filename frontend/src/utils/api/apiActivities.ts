@@ -54,6 +54,7 @@ export const createActivity = async (activityData: {
   actual_end_time: Date | null;
   activity_type_id: number;
   recognition_percentage: number;
+  participant_ids?: number[];
 }): Promise<Activity> => {
   const response = await apiInstance.post<Activity>('/activities', activityData);
   return response.data;

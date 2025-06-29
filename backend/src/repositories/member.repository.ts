@@ -54,8 +54,18 @@ export interface MemberStats {
 }
 
 const memberRepository = {
-    async findAll(): Promise<Member[]> {
+    async findAll(activeOnly = false): Promise<Member[]> {
+        const whereClause: Prisma.MemberWhereInput = {};
+        if (activeOnly) {
+            whereClause.periods = {
+                some: {
+                    end_date: null,
+                },
+            };
+        }
+
         const members = await prisma.member.findMany({
+            where: whereClause,
             orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
             include: {
                 membership_details: true,
