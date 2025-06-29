@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'http';
 import app from './app.js';
-import { createInitialSystemManagerIfNeeded, setupActivityTypes } from './setupDatabase.js';
+import { setupDatabase } from './setupDatabase.js';
 import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
@@ -177,12 +177,8 @@ async function initialize() {
     try {
         prepareDirectories();
 
-        // Osiguraj da početni system manager postoji
-        await createInitialSystemManagerIfNeeded();
-        console.log('✅ Initial system manager check completed');
-
-        // Postavi osnovne vrste aktivnosti
-        await setupActivityTypes();
+        // Inicijalizacija baze podataka i početnih podataka
+        await setupDatabase();
 
         // Pokreni server
         await startServer();
