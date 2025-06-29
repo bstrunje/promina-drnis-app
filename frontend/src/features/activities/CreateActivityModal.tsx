@@ -1,113 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { createActivity } from '@/utils/api/apiActivities';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
-import { Textarea } from '@components/ui/textarea';
 import { useToast } from '@components/ui/use-toast';
-import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
+import RecognitionPercentageInput from '@components/RecognitionPercentageInput';
 import { MemberSelect } from './MemberSelect';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onActivityCreated: () => void;
-  activityTypeId?: number;
+  activityTypeId: string | null;
 }
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
-  const [name, setName] = useState('');
+  const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [actualStartDate, setActualStartDate] = useState('');
   const [actualStartTime, setActualStartTime] = useState('');
+  const [actualEndDate, setActualEndDate] = useState('');
   const [actualEndTime, setActualEndTime] = useState('');
-  const [recognitionPercentage, setRecognitionPercentage] = useState('100');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [recognitionPercentage, setRecognitionPercentage] = useState('100');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const now = format(new Date(), "yyyy-MM-dd'T'HH:mm");
+  const startTimeRef = useRef<HTMLInputElement>(null);
+  const actualStartTimeRef = useRef<HTMLInputElement>(null);
+  const actualEndTimeRef = useRef<HTMLInputElement>(null);
 
-  const handleSetNow = (setter: React.Dispatch<React.SetStateAction<string>>) => {
-    setter(now);
+  const handleSetNow = (
+    dateSetter: React.Dispatch<React.SetStateAction<string>>,
+    timeSetter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const now = new Date();
+    dateSetter(format(now, 'yyyy-MM-dd'));
+    timeSetter(format(now, 'HH:mm'));
   };
 
   const handleSubmit = async () => {
-    if (!name || !startDate || !activityTypeId) {
-      setError('Naziv, datum početka i tip aktivnosti su obavezni.');
+    if (!description || !startDate || !startTime || !activityTypeId) {
+      setError('Opis, datum početka i tip aktivnosti su obavezni.');
       return;
     }
     setIsLoading(true);
     setError(null);
 
+    const activityName = description.length > 20 ? `${description.substring(0, 20)}...` : description;
+
+    const combinedStartDate = `${startDate}T${startTime}`;
+    const combinedActualStartTime = actualStartDate && actualStartTime ? `${actualStartDate}T${actualStartTime}` : null;
+    const combinedActualEndTime = actualEndDate && actualEndTime ? `${actualEndDate}T${actualEndTime}` : null;
+
     try {
       await createActivity({
-        name,
+        name: activityName,
         description,
-        start_date: new Date(startDate),
-        actual_start_time: actualStartTime ? new Date(actualStartTime) : null,
-        actual_end_time: actualEndTime ? new Date(actualEndTime) : null,
+        start_date: new Date(combinedStartDate),
+        actual_start_time: combinedActualStartTime ? new Date(combinedActualStartTime) : null,
+        actual_end_time: combinedActualEndTime ? new Date(combinedActualEndTime) : null,
         activity_type_id: Number(activityTypeId),
         recognition_percentage: Number(recognitionPercentage),
         participant_ids: participantIds.map(id => Number(id)),
       });
-      toast({
-        title: 'Uspjeh',
-        description: 'Aktivnost je uspješno kreirana.',
-        variant: 'success',
-      });
+      toast({ title: 'Uspjeh', description: 'Aktivnost je uspješno kreirana.' });
       onActivityCreated();
-      setName('');
+      // Reset form
       setDescription('');
       setStartDate('');
+      setStartTime('');
+      setActualStartDate('');
       setActualStartTime('');
+      setActualEndDate('');
       setActualEndTime('');
       setRecognitionPercentage('100');
       setParticipantIds([]);
-      onClose(); // Zatvori modal nakon uspješnog kreiranja
+      onClose();
     } catch (err) {
       console.error('Greška prilikom kreiranja aktivnosti:', err);
       setError('Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno.');
-      toast({
-        title: 'Greška',
-        description: 'Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno.',
-        variant: 'destructive',
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Kreiraj novu aktivnost</DialogTitle>
-          <DialogDescription>
-            Ispunite obrazac za kreiranje nove aktivnosti. Odaberite sudionike i unesite sve potrebne detalje.
-          </DialogDescription>
+          <DialogDescription>Ispunite detalje za novu aktivnost.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Opis aktivnosti */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Naziv
-            </Label>
-            <div className="col-span-3">
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="description" className="text-right">
               Opis
             </Label>
-            <div className="col-span-3">
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            </div>
+            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" required />
           </div>
-          
+
           {/* Polje za datum početka */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="startDate" className="text-right">
@@ -116,13 +118,28 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             <div className="col-span-3 flex items-center gap-2">
               <Input
                 id="startDate"
-                type="datetime-local"
+                type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => {
+                  setStartDate(e.target.value);
+                  // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
+                  if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
+                    startTimeRef.current?.focus();
+                  }
+                }}
+                className="w-auto"
                 required
-                className="col-span-3"
               />
-              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setStartDate)} className="mt-6">
+              <Input
+                id="startTime"
+                type="time"
+                ref={startTimeRef}
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+                className="w-auto"
+                required
+              />
+              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setStartDate, setStartTime)}>
                 <Clock className="h-4 w-4" />
               </Button>
             </div>
@@ -130,18 +147,32 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           {/* Polje za stvarni početak */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="actualStartTime" className="text-right">
+            <Label htmlFor="actualStartDate" className="text-right">
               Stvarni početak
             </Label>
             <div className="col-span-3 flex items-center gap-2">
               <Input
-                id="actualStartTime"
-                type="datetime-local"
-                value={actualStartTime}
-                onChange={(e) => setActualStartTime(e.target.value)}
-                className="col-span-3"
+                id="actualStartDate"
+                type="date"
+                value={actualStartDate}
+                onChange={e => {
+                  setActualStartDate(e.target.value);
+                  // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
+                  if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
+                    actualStartTimeRef.current?.focus();
+                  }
+                }}
+                className="w-auto"
               />
-              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualStartTime)}>
+              <Input
+                id="actualStartTime"
+                type="time"
+                ref={actualStartTimeRef}
+                value={actualStartTime}
+                onChange={e => setActualStartTime(e.target.value)}
+                className="w-auto"
+              />
+              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualStartDate, setActualStartTime)}>
                 <Clock className="h-4 w-4" />
               </Button>
             </div>
@@ -149,52 +180,59 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           {/* Polje za stvarni završetak */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="actualEndTime" className="text-right">
+            <Label htmlFor="actualEndDate" className="text-right">
               Stvarni završetak
             </Label>
             <div className="col-span-3 flex items-center gap-2">
               <Input
-                id="actualEndTime"
-                type="datetime-local"
-                value={actualEndTime}
-                onChange={(e) => setActualEndTime(e.target.value)}
-                className="col-span-3"
+                id="actualEndDate"
+                type="date"
+                value={actualEndDate}
+                onChange={e => {
+                  setActualEndDate(e.target.value);
+                  // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
+                  if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
+                    actualEndTimeRef.current?.focus();
+                  }
+                }}
+                className="w-auto"
               />
-              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualEndTime)}>
+              <Input
+                id="actualEndTime"
+                type="time"
+                ref={actualEndTimeRef}
+                value={actualEndTime}
+                onChange={e => setActualEndTime(e.target.value)}
+                className="w-auto"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleSetNow(setActualEndDate, setActualEndTime)}
+              >
                 <Clock className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
           {/* Postotak priznavanja */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="recognitionPercentage" className="text-right">
-              Priznavanje (%)
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="recognitionPercentage"
-                type="number"
-                value={recognitionPercentage}
-                onChange={(e) => setRecognitionPercentage(e.target.value)}
-                required
-                min="0"
-                max="100"
-              />
-            </div>
-          </div>
+          {user?.role === 'member_superuser' && (
+            <RecognitionPercentageInput
+              value={recognitionPercentage}
+              onChange={e => setRecognitionPercentage(e.target.value)}
+            />
+          )}
 
           {/* Odabir sudionika */}
-          <div className="grid grid-cols-4 items-start gap-4 pt-2">
-            <Label className="text-right pt-2">
-              Sudionici
-            </Label>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right pt-2">Sudionici</Label>
             <div className="col-span-3">
               <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="col-span-4 text-red-500 text-sm">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>

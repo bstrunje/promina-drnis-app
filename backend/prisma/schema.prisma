@@ -74,7 +74,7 @@ model ActivityType {
 }
 
 model Activity {
-  activity_id            Int                     @id @default(autoincrement())
+  activity_id            Int      @id @default(autoincrement())
   name                   String
   description            String?
   type_id                Int
@@ -82,10 +82,11 @@ model Activity {
   organizer_id           Int
   organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id])
   status                 ActivityStatus          @default(PLANNED)
-  start_date             DateTime // Planirani datum i vrijeme početka
-  actual_start_time      DateTime? // Stvarno vrijeme početka (za live praćenje)
+  start_date             DateTime 
+  actual_start_time      DateTime? 
   actual_end_time        DateTime? // Stvarno vrijeme završetka (za live praćenje)
   recognition_percentage Float                   @default(100) // Postotak priznavanja sati za cijelu aktivnost (npr. 50 za 50%)
+  cancellation_reason    String? // Razlog otkazivanja aktivnosti
   created_at             DateTime                @default(now())
   updated_at             DateTime                @updatedAt
   participants           ActivityParticipation[]
@@ -101,13 +102,13 @@ model ActivityParticipation {
   activity             Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
   member_id            Int
   member               Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
-  start_time           DateTime? // Individualno vrijeme početka (za live praćenje)
-  end_time             DateTime? // Individualno vrijeme završetka (za live praćenje)
-  manual_hours         Float? // Ručno uneseni sati za povijesne podatke
-  recognition_override Float? // Individualni postotak priznavanja (ako se razlikuje od aktivnosti)
+  start_time           DateTime? 
+  end_time             DateTime? 
+  manual_hours         Float? 
+  recognition_override Float? 
   created_at           DateTime  @default(now())
 
-  @@unique([activity_id, member_id]) // Svaki član može sudjelovati samo jednom po aktivnosti
+  @@unique([activity_id, member_id]) 
   @@map("activity_participations")
 }
 

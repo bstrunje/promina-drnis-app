@@ -32,12 +32,22 @@ export const findActivityById = async (activity_id: number) => {
     include: {
       activity_type: true,
       organizer: {
-        select: { member_id: true, first_name: true, last_name: true },
+        select: {
+          member_id: true,
+          first_name: true,
+          last_name: true,
+          full_name: true, // Eksplicitno dohvaćanje
+        },
       },
       participants: {
         include: {
           member: {
-            select: { member_id: true, first_name: true, last_name: true },
+            select: {
+              member_id: true,
+              first_name: true,
+              last_name: true,
+              full_name: true, // Eksplicitno dohvaćanje
+            },
           },
         },
       },
@@ -73,7 +83,7 @@ export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput) 
   return prisma.activity.create({ data });
 };
 
-export const updateActivity = async (activity_id: number, data: Prisma.ActivityUncheckedUpdateInput) => {
+export const updateActivity = async (activity_id: number, data: Prisma.ActivityUpdateInput) => {
   return prisma.activity.update({
     where: { activity_id },
     data,

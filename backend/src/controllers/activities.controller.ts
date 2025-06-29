@@ -67,6 +67,22 @@ export const updateActivity = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const cancelActivity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const activity_id = parseInt(req.params.activityId, 10);
+    const { cancellation_reason } = req.body;
+
+    if (!cancellation_reason) {
+      return res.status(400).json({ message: 'Cancellation reason is required.' });
+    }
+
+    const updatedActivity = await activityService.cancelActivityService(activity_id, cancellation_reason);
+    res.status(200).json(updatedActivity);
+  } catch (error: any) {
+    next(error);
+  }
+};
+
 export const deleteActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);

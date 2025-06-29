@@ -5,10 +5,11 @@ import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { getActivityTypes, getActivitiesByTypeId } from '@/utils/api/apiActivities';
-import { Activity, ActivityType } from '@shared/activity.types';
-import { format } from 'date-fns';
+import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
+import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import CreateActivityModal from './CreateActivityModal';
+import { Badge } from '@components/ui/badge';
 
 const ActivityCategoryPage: React.FC = () => {
   const { type_id: activityTypeId } = useParams<{ type_id: string }>();
@@ -49,6 +50,32 @@ const ActivityCategoryPage: React.FC = () => {
     void fetchData();
   };
 
+  const calculateDuration = (
+    start: string | Date | null,
+    end: string | Date | null
+  ): string => {
+    if (!start || !end) return '0h 0m';
+    const startDate = typeof start === 'string' ? new Date(start) : start;
+    const endDate = typeof end === 'string' ? new Date(end) : end;
+    const diff = endDate.getTime() - startDate.getTime();
+    if (diff <= 0) return '0h 0m';
+
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}h ${minutes}m`;
+  };
+
+  const totalCompletedHours = activities
+    .filter(activity => activity.status === 'COMPLETED' && activity.actual_start_time && activity.actual_end_time)
+    .reduce((total, activity) => {
+      const startTime = new Date(activity.actual_start_time!);
+      const endTime = new Date(activity.actual_end_time!);
+      const diff = endTime.getTime() - startTime.getTime();
+      return total + (diff > 0 ? diff / (1000 * 60 * 60) : 0);
+    }, 0);
+
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
     <div className="p-6">
@@ -82,30 +109,48 @@ const ActivityCategoryPage: React.FC = () => {
         <p className="text-muted-foreground">{activityType?.description}</p>
       </div>
 
+      <div className="mb-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Ukupno odrađenih sati u kategoriji</CardTitle>
+            <Badge variant="secondary" className="text-lg">{totalCompletedHours.toFixed(1)} h</Badge>
+          </CardHeader>
+        </Card>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {activities.length > 0 ? (
-          activities.map((activity) => (
-            <Card key={activity.activity_id}>
-              <CardHeader>
-                <CardTitle>{activity.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{format(new Date(activity.start_date), 'dd.MM.yyyy.')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button asChild className="w-full">
-                  <Link to={`/activities/${activity.activity_id}`}>Detalji</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
+          activities.map(activity => {
+            return (
+              <Link to={`/activities/${activity.activity_id}`} key={activity.activity_id} className="block">
+                <Card className="h-full transition-colors hover:bg-muted/50">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <CardTitle>{activity.name}</CardTitle>
+                      {activity.status === 'COMPLETED' && (
+                        <Badge variant="outline">
+                          {calculateDuration(
+                            activity.actual_start_time,
+                            activity.actual_end_time
+                          )}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{format(new Date(activity.start_date), 'dd.MM.yyyy.')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })
         ) : (
           <div className="col-span-full text-center text-muted-foreground">
             <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
@@ -118,7 +163,7 @@ const ActivityCategoryPage: React.FC = () => {
           isOpen={isCreateModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onActivityCreated={handleActivityCreated}
-          activityTypeId={activityTypeId ? parseInt(activityTypeId, 10) : undefined}
+          activityTypeId={activityTypeId || null}
         />
       )}
     </div>

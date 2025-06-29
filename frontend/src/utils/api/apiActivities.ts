@@ -21,6 +21,15 @@ export const getActivitiesByTypeId = async (typeId: string): Promise<Activity[]>
 };
 
 /**
+ * Dohvaća sve aktivnosti.
+ * @returns Promise koji razrješava u polje aktivnosti.
+ */
+export const getAllActivities = async (): Promise<Activity[]> => {
+  const response = await apiInstance.get('/activities');
+  return response.data;
+};
+
+/**
  * Dohvaća jednu aktivnost po njenom ID-u.
  * @param activityId ID aktivnosti.
  * @returns Promise koji razrješava u objekt aktivnosti.
@@ -97,5 +106,10 @@ export const removeParticipantAdmin = async (activityId: number, memberId: numbe
 
 export const updateParticipationAdmin = async (participationId: number, data: Partial<ActivityParticipation>): Promise<ActivityParticipation> => {
   const response = await apiInstance.put<ActivityParticipation>(`/activities-management/participants/${participationId}`, data);
+  return response.data;
+};
+
+export const cancelActivity = async (activityId: number, cancellation_reason: string) => {
+  const response = await apiInstance.patch(`/activities/${activityId}/cancel`, { cancellation_reason });
   return response.data;
 };

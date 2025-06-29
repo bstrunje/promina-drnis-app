@@ -24,6 +24,9 @@ router.post('/', authenticateToken, roles.requireAdmin, activityController.creat
 // Ažuriraj aktivnost (samo organizator i superuser)
 router.put('/:activityId', authenticateToken, canEditActivity, activityController.updateActivity);
 
+// Otkazivanje aktivnosti
+router.patch('/:activityId/cancel', authenticateToken, canEditActivity, activityController.cancelActivity);
+
 // Obriši aktivnost (samo superuser)
 router.delete('/:activityId', authenticateToken, roles.requireSuperUser, activityController.deleteActivity);
 
