@@ -16,7 +16,7 @@ export interface Member {
   first_name: string;
   last_name: string;
   full_name: string;
-  total_minutes?: number;
+  total_minutes?: number; // Dodano za ukupan zbroj minuta
 }
 
 export interface Activity {
