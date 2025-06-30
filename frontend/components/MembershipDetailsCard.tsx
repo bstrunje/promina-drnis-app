@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
 import { Clock, CreditCard } from 'lucide-react';
 import { useAuth } from "../src/context/AuthContext";
+import { formatMinutesToHoursAndMinutes } from "../src/utils/dateUtils";
 
 interface MembershipDetailsCardProps {
   member: Member;
@@ -104,7 +105,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
               <div>
                 <label className="text-sm text-gray-500">Total Hours</label>
                 <p className="text-2xl font-bold">
-                  {member?.total_hours ?? 0}
+                  {formatMinutesToHoursAndMinutes(member?.total_hours ?? 0)}
                 </p>
               </div>
               {getActivityStatus(Number(member?.total_hours ?? 0)) === "passive" && (

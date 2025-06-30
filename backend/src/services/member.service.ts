@@ -12,6 +12,11 @@ import auditService from './audit.service.js';
 import { MembershipTypeEnum } from '../shared/types/member.js';
 import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 import { differenceInMinutes } from 'date-fns';
+import prisma from '../utils/prisma.js';
+import type { PrismaClient, Prisma } from '@prisma/client';
+
+// Tip za Prisma transakcijski klijent
+type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -47,40 +52,62 @@ export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | und
 
 /**
  * Izračunava ukupne sate (u minutama) za člana i sprema ih u bazu.
+ * Prioritet za izračun:
+ * 1. manual_hours ako postoji (pretvoreno u minute)
+ * 2. razlika između actual_start_time i actual_end_time ako manual_hours ne postoji
+ * 
  * @param memberId ID člana
+ * @param prismaClient Opcionalni Prisma transakcijski klijent za izvršavanje unutar transakcije
  */
-export async function updateMemberTotalHours(memberId: number): Promise<void> {
+export const updateMemberTotalHours = async (memberId: number, prismaClient: TransactionClient = prisma): Promise<void> => {
   try {
-    const participationsQuery = await db.query(
-      `
-      SELECT 
-          a.actual_start_time,
-          a.actual_end_time
-      FROM activity_participations ap
-      JOIN activities a ON ap.activity_id = a.activity_id
-      WHERE ap.member_id = $1 AND a.status = 'COMPLETED' AND a.actual_start_time IS NOT NULL AND a.actual_end_time IS NOT NULL
-  `,
-      [memberId]
-    );
+    // Koristimo Prisma umjesto direktnog SQL upita
+    const participations = await prismaClient.activityParticipation.findMany({
+      where: {
+        member_id: memberId,
+        activity: {
+          status: 'COMPLETED'
+        }
+      },
+      include: {
+        activity: {
+          select: {
+            actual_start_time: true,
+            actual_end_time: true
+          }
+        }
+      }
+    });
 
-    const totalMinutes = participationsQuery.rows.reduce((acc, p) => {
-      if (p.actual_start_time && p.actual_end_time) {
+    const totalMinutes = participations.reduce((acc: number, p: any) => {
+      // Prioritet imaju manual_hours ako su postavljeni
+      if (p.manual_hours !== null && p.manual_hours !== undefined) {
+        // Pretvaramo manual_hours iz sati u minute (manual_hours se sprema kao float u satima)
+        return acc + Math.round(p.manual_hours * 60);
+      } 
+      // Ako manual_hours nije postavljen, računamo iz actual_start_time i actual_end_time
+      else if (p.activity.actual_start_time && p.activity.actual_end_time) {
         const minutes = differenceInMinutes(
-          new Date(p.actual_end_time),
-          new Date(p.actual_start_time)
+          new Date(p.activity.actual_end_time),
+          new Date(p.activity.actual_start_time)
         );
         return acc + (minutes > 0 ? minutes : 0);
       }
       return acc;
     }, 0);
 
-    // Ažuriraj polje total_hours u tablici članova
-    await memberRepository.update(memberId, {
-      total_hours: totalMinutes,
+    // Ažuriraj polje total_hours u tablici članova koristeći isti prismaClient
+    await prismaClient.member.update({
+      where: { member_id: memberId },
+      data: {
+        total_hours: totalMinutes
+      }
     });
+    
+    console.log(`Ažurirano ukupno sati za člana ${memberId}: ${totalMinutes} minuta`);
   } catch (error) {
     console.error(`Greška prilikom ažuriranja ukupnih sati za člana ${memberId}:`, error);
-    // Ne prekidamo izvršavanje, ali logiramo grešku
+    throw error; // Propagiramo grešku kako bi transakcija bila poništena
   }
 }
 
@@ -255,21 +282,76 @@ const memberService = {
             const member = await this.getMemberById(memberId);
             if (!member) return null;
 
+            // Modificirani upit koji dohvaća sve potrebne podatke za izračun sati po aktivnosti
             const activitiesQuery = await db.query(`
                 SELECT 
                     a.activity_id,
                     a.name,
                     a.start_date as date,
-                    ap.manual_hours as hours_spent
+                    ap.manual_hours,
+                    a.actual_start_time,
+                    a.actual_end_time
                 FROM activities a
                 JOIN activity_participations ap ON a.activity_id = ap.activity_id
                 WHERE ap.member_id = $1
                 ORDER BY a.start_date DESC
             `, [memberId]);
 
+            /**
+             * VAŽNA NAPOMENA:
+             * -------------------
+             * Transformacija između polja u bazi i API odgovora:
+             * 
+             * Baza podataka:
+             * - U tablici activity_participations imamo kolonu manual_hours (DOUBLE PRECISION)
+             * - U tablici members imamo kolonu total_hours (ukupni sati aktivnosti u minutama)
+             * 
+             * Frontend/API očekuje:
+             * - hours_spent polje po aktivnosti (umjesto manual_hours)
+             * - total_hours za ukupne sate člana
+             * 
+             * Transformacija:
+             * 1. hours_spent je virtualno/izračunato polje za frontend koje se generira iz:
+             *    - manual_hours ako postoje (prioritet)
+             *    - ili iz razlike actual_start_time i actual_end_time ako nije unesen manual_hours
+             * 
+             * 2. total_hours se odvojeno agregira preko updateMemberTotalHours funkcije koja također 
+             *    koristi obje metode računanja, sekvencijalno za svaku aktivnost člana
+             * 
+             * Svrha: Da bi podržali i ručni unos sati i automatski izračun iz vremena aktivnosti
+             */
+
+            // Procesiramo rezultate kako bi izračunali hours_spent za svaku aktivnost
+            const activitiesWithHours = activitiesQuery.rows.map(activity => {
+                let hours_spent = null;
+                
+                // Prvo provjerimo postoji li manual_hours
+                if (activity.manual_hours !== null && activity.manual_hours !== undefined) {
+                    hours_spent = activity.manual_hours;
+                }
+                // Ako nema manual_hours, a postoje vremena početka i kraja, izračunaj razliku
+                else if (activity.actual_start_time && activity.actual_end_time) {
+                    const minutesDiff = differenceInMinutes(
+                        new Date(activity.actual_end_time),
+                        new Date(activity.actual_start_time)
+                    );
+                    if (minutesDiff > 0) {
+                        // Pretvori minute u sate s decimalama (npr. 90 minuta = 1.5 sati)
+                        hours_spent = Number((minutesDiff / 60).toFixed(2));
+                    }
+                }
+                
+                return {
+                    activity_id: activity.activity_id,
+                    name: activity.name,
+                    date: activity.date,
+                    hours_spent
+                };
+            });
+
             return {
                 ...member,
-                activities: activitiesQuery.rows
+                activities: activitiesWithHours
             };
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

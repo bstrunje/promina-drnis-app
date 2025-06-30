@@ -124,6 +124,13 @@ export const removeParticipantFromActivity = async (req: Request, res: Response,
 export const updateParticipationDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.participationId, 10);
+    
+    // DEBUG: Logiranje payloada koji dolazi s frontenda
+    console.log('DEBUG updateParticipationDetails: participationId=', id);
+    console.log('DEBUG updateParticipationDetails: req.body=', JSON.stringify(req.body, null, 2));
+    console.log('DEBUG updateParticipationDetails: start_time tip=', typeof req.body.start_time);
+    console.log('DEBUG updateParticipationDetails: start_time vrijednost=', req.body.start_time);
+    
     const updatedParticipation = await activityService.updateParticipationService(id, req.body);
     res.status(200).json(updatedParticipation);
   } catch (error) {

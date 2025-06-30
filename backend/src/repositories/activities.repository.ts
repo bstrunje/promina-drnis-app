@@ -1,5 +1,8 @@
 import prisma from '../utils/prisma.js';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+
+// Tip za Prisma transakcijski klijent
+type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 // --- Tipovi Aktivnosti ---
 
@@ -79,19 +82,19 @@ export const findActivitiesByTypeId = async (type_id: number) => {
   return activities;
 };
 
-export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput) => {
-  return prisma.activity.create({ data });
+export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activity.create({ data });
 };
 
-export const updateActivity = async (activity_id: number, data: Prisma.ActivityUpdateInput) => {
-  return prisma.activity.update({
+export const updateActivity = async (activity_id: number, data: Prisma.ActivityUpdateInput, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activity.update({
     where: { activity_id },
     data,
   });
 };
 
-export const deleteActivity = async (activity_id: number) => {
-  return prisma.activity.delete({ where: { activity_id } });
+export const deleteActivity = async (activity_id: number, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activity.delete({ where: { activity_id } });
 };
 
 // --- Sudionici (Participants) --- //
@@ -107,8 +110,8 @@ export const findParticipation = async (activity_id: number, member_id: number) 
   });
 };
 
-export const addParticipant = async (activity_id: number, member_id: number) => {
-  return prisma.activityParticipation.create({
+export const addParticipant = async (activity_id: number, member_id: number, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activityParticipation.create({
     data: {
       activity_id,
       member_id,
@@ -116,8 +119,8 @@ export const addParticipant = async (activity_id: number, member_id: number) => 
   });
 };
 
-export const removeParticipant = async (activity_id: number, member_id: number) => {
-  return prisma.activityParticipation.delete({
+export const removeParticipant = async (activity_id: number, member_id: number, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activityParticipation.delete({
     where: {
       activity_id_member_id: {
         activity_id,
@@ -129,9 +132,10 @@ export const removeParticipant = async (activity_id: number, member_id: number) 
 
 export const updateParticipation = async (
   participation_id: number,
-  data: Prisma.ActivityParticipationUpdateInput
+  data: Prisma.ActivityParticipationUpdateInput,
+  prismaClient: TransactionClient = prisma
 ) => {
-  return prisma.activityParticipation.update({
+  return prismaClient.activityParticipation.update({
     where: { participation_id },
     data,
   });

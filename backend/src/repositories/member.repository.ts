@@ -64,6 +64,7 @@ const memberRepository = {
             };
         }
 
+        // Dohvati sve članove s osnovnim podacima
         const members = await prisma.member.findMany({
             where: whereClause,
             orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
@@ -71,14 +72,16 @@ const memberRepository = {
                 membership_details: true,
                 periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } }
             }
+            // Ne možemo istovremeno koristiti include i select u Prisma upitu
+            // total_hours je već dostupan kao osnovno polje na member entitetu
         });
-        const hours = await prisma.activityParticipation.groupBy({
-            by: ['member_id'],
-            where: { activity: { status: 'COMPLETED' } },
-            _sum: { manual_hours: true }
+
+        // Koristimo total_hours direktno iz baze podataka
+        return members.map(m => {
+            // Konverzija iz Decimal u number
+            const totalHours = m.total_hours ? Number(m.total_hours) : 0;
+            return mapToMember(m, totalHours);
         });
-        const mapHours = new Map(hours.map(h => [h.member_id!, h._sum?.manual_hours ?? 0]));
-        return members.map(m => mapToMember(m, mapHours.get(m.member_id) || 0));
     },
 
     async findById(id: number): Promise<Member | null> {
@@ -87,9 +90,19 @@ const memberRepository = {
             include: { membership_details: true, periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } } }
         });
         if (!raw) return null;
-        const agg = await prisma.activityParticipation.aggregate({ where: { member_id: id, activity: { status: 'COMPLETED' } }, _sum: { manual_hours: true } });
-        const total = agg._sum?.manual_hours ?? 0;
-        return mapToMember(raw, total);
+        
+        // Dohvati aktualnu vrijednost total_hours iz baze
+        // Ovo će uvijek biti ažurno jer updateMemberTotalHours ažurira ovo polje
+        const member = await prisma.member.findFirst({
+            where: { member_id: id },
+            select: { total_hours: true }
+        });
+        
+        // Ako postoji vrijednost total_hours u bazi, koristi nju, inače 0
+        // Konverzija iz Decimal u number za izbjegavanje TypeScript greške
+        const totalMinutes = member?.total_hours ? Number(member.total_hours) : 0;
+        
+        return mapToMember(raw, totalMinutes);
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {

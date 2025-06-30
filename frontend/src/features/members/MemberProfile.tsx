@@ -87,7 +87,9 @@ const getImageUrl = (path: string | null | undefined): string => {
   }
 
   const getActivityStatus = () => {
-    const totalMinutes = user.total_hours ?? 0;
+    // Prioritet ima member objekt koji se dohvaća sa servera zbog točnosti podataka
+    // Ako member objekt nije dostupan, koristimo total_hours iz user objekta
+    const totalMinutes = member?.total_hours ?? user?.total_hours ?? 0;
     const formattedHours = formatMinutesToHoursAndMinutes(totalMinutes);
     const minutesNeeded = 20 * 60;
     const remainingMinutes = Math.max(0, minutesNeeded - totalMinutes);

@@ -27,6 +27,7 @@ const EditActivityPage: React.FC = () => {
   const [actualStartTime, setActualStartTime] = useState('');
   const [actualEndDate, setActualEndDate] = useState('');
   const [actualEndTime, setActualEndTime] = useState('');
+  const [manualHours, setManualHours] = useState<string>('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
 
   // Refovi za fokus
@@ -66,6 +67,12 @@ const EditActivityPage: React.FC = () => {
         setActualEndDate(actualEnd.date);
         setActualEndTime(actualEnd.time);
 
+        // Dodajemo dohvaćanje manual_hours vrijednosti
+        const participantsWithManualHours = data.participants?.find(p => p.manual_hours !== null && p.manual_hours !== undefined);
+        if (participantsWithManualHours?.manual_hours) {
+          setManualHours(participantsWithManualHours.manual_hours.toString());
+        }
+
         setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) || []);
 
       } catch (err) {
@@ -101,9 +108,11 @@ const EditActivityPage: React.FC = () => {
         name,
         description,
         start_date: combineDateTime(startDate, startTime),
-        actual_start_time: combineDateTime(actualStartDate, actualStartTime),
-        actual_end_time: combineDateTime(actualEndDate, actualEndTime),
+        actual_start_time: manualHours ? null : combineDateTime(actualStartDate, actualStartTime),
+        actual_end_time: manualHours ? null : combineDateTime(actualEndDate, actualEndTime),
         participant_ids: participantIds.map(id => Number(id)),
+        // Dodajemo manual_hours za ažuriranje - backend će ga primijeniti na sve sudionike
+        manual_hours: manualHours ? Number(manualHours) : null,
     };
 
     try {
@@ -149,9 +158,49 @@ const EditActivityPage: React.FC = () => {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="actualStartDate" className="text-right">Stvarni početak</Label>
                 <div className="col-span-3 flex items-center gap-2">
-                  <Input id="actualStartDate" type="date" value={actualStartDate} onChange={e => { setActualStartDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualStartTimeRef.current?.focus(); }} />
-                  <Input id="actualStartTime" type="time" ref={actualStartTimeRef} value={actualStartTime} onChange={e => setActualStartTime(e.target.value)} />
-                  <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualStartDate, setActualStartTime)}><Clock className="h-4 w-4" /></Button>
+                  <Input 
+                    id="actualStartDate" 
+                    type="date" 
+                    value={actualStartDate} 
+                    onChange={e => { 
+                      // Ako se dodaje stvarni početak, resetirati ručni unos sati
+                      if (e.target.value && manualHours) {
+                        setManualHours('');
+                      }
+                      setActualStartDate(e.target.value); 
+                      if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualStartTimeRef.current?.focus();
+                    }} 
+                    disabled={!!manualHours}
+                  />
+                  <Input 
+                    id="actualStartTime" 
+                    type="time" 
+                    ref={actualStartTimeRef} 
+                    value={actualStartTime} 
+                    onChange={e => {
+                      // Ako se dodaje stvarni početak, resetirati ručni unos sati
+                      if (e.target.value && manualHours) {
+                        setManualHours('');
+                      }
+                      setActualStartTime(e.target.value);
+                    }}
+                    disabled={!!manualHours}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => {
+                      // Resetirati ručni unos sati prije postavljanja stvarnog vremena
+                      if (manualHours) {
+                        setManualHours('');
+                      }
+                      handleSetNow(setActualStartDate, setActualStartTime);
+                    }}
+                    disabled={!!manualHours}
+                  >
+                    <Clock className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
@@ -159,9 +208,77 @@ const EditActivityPage: React.FC = () => {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="actualEndDate" className="text-right">Stvarni završetak</Label>
                 <div className="col-span-3 flex items-center gap-2">
-                  <Input id="actualEndDate" type="date" value={actualEndDate} onChange={e => { setActualEndDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualEndTimeRef.current?.focus(); }} />
-                  <Input id="actualEndTime" type="time" ref={actualEndTimeRef} value={actualEndTime} onChange={e => setActualEndTime(e.target.value)} />
-                  <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualEndDate, setActualEndTime)}><Clock className="h-4 w-4" /></Button>
+                  <Input 
+                    id="actualEndDate" 
+                    type="date" 
+                    value={actualEndDate} 
+                    onChange={e => { 
+                      // Ako se dodaje stvarni završetak, resetirati ručni unos sati
+                      if (e.target.value && manualHours) {
+                        setManualHours('');
+                      }
+                      setActualEndDate(e.target.value); 
+                      if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualEndTimeRef.current?.focus(); 
+                    }} 
+                    disabled={!!manualHours}
+                  />
+                  <Input 
+                    id="actualEndTime" 
+                    type="time" 
+                    ref={actualEndTimeRef} 
+                    value={actualEndTime} 
+                    onChange={e => {
+                      // Ako se dodaje stvarni završetak, resetirati ručni unos sati
+                      if (e.target.value && manualHours) {
+                        setManualHours('');
+                      }
+                      setActualEndTime(e.target.value);
+                    }}
+                    disabled={!!manualHours}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => {
+                      // Resetirati ručni unos sati prije postavljanja stvarnog vremena
+                      if (manualHours) {
+                        setManualHours('');
+                      }
+                      handleSetNow(setActualEndDate, setActualEndTime);
+                    }}
+                    disabled={!!manualHours}
+                  >
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Polje za ručni unos sati */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="manualHours" className="text-right">Ručni unos sati</Label>
+                <div className="col-span-3">
+                  <Input
+                    id="manualHours"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="Npr. 2.5 za 2 sata i 30 minuta"
+                    value={manualHours}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setManualHours(value);
+                      
+                      // Ako se unose ručni sati, resetirati vremena početka i završetka
+                      if (value) {
+                        setActualStartDate('');
+                        setActualStartTime('');
+                        setActualEndDate('');
+                        setActualEndTime('');
+                      }
+                    }}
+                    className="w-full"
+                  />
                 </div>
               </div>
 

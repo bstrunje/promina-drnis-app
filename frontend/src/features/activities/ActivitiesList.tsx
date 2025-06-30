@@ -36,6 +36,13 @@ const ActivitiesList: React.FC = () => {
     void fetchData();
   }, [fetchData]);
 
+  // Funkcija za formatiranje decimalnih sati u format hh:mm
+  const formatHoursToHHMM = (decimalHours: number): string => {
+    const hours = Math.floor(decimalHours);
+    const minutes = Math.round((decimalHours - hours) * 60);
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+  };
+
   const totalCompletedHours = allActivities
     .filter(activity => activity.status === 'COMPLETED' && activity.actual_start_time && activity.actual_end_time)
     .reduce((total, activity) => {
@@ -65,7 +72,7 @@ const ActivitiesList: React.FC = () => {
           <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Ukupno odrađenih sati</CardTitle>
-                  <Badge variant="secondary" className="text-lg">{totalCompletedHours.toFixed(1)} h</Badge>
+                  <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
               </CardHeader>
           </Card>
       </div>

@@ -29,6 +29,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const [actualEndTime, setActualEndTime] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [recognitionPercentage, setRecognitionPercentage] = useState('100');
+  const [manualHours, setManualHours] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -65,8 +66,9 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
         name: activityName,
         description,
         start_date: new Date(combinedStartDate),
-        actual_start_time: combinedActualStartTime ? new Date(combinedActualStartTime) : null,
-        actual_end_time: combinedActualEndTime ? new Date(combinedActualEndTime) : null,
+        // Ako su uneseni ručni sati, ne šaljemo stvarna vremena
+        actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
+        actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
         activity_type_id: Number(activityTypeId),
         recognition_percentage: Number(recognitionPercentage),
         participant_ids: participantIds.map(id => Number(id)),
@@ -81,6 +83,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       setActualStartTime('');
       setActualEndDate('');
       setActualEndTime('');
+      setManualHours('');
       setRecognitionPercentage('100');
       setParticipantIds([]);
       onClose();
@@ -156,6 +159,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 type="date"
                 value={actualStartDate}
                 onChange={e => {
+                  // Ako se dodaje stvarni početak, resetirati ručni unos sati
+                  if (e.target.value && manualHours) {
+                    setManualHours('');
+                  }
                   setActualStartDate(e.target.value);
                   // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
                   if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
@@ -163,16 +170,36 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   }
                 }}
                 className="w-auto"
+                disabled={!!manualHours}
               />
               <Input
                 id="actualStartTime"
                 type="time"
                 ref={actualStartTimeRef}
                 value={actualStartTime}
-                onChange={e => setActualStartTime(e.target.value)}
+                onChange={e => {
+                  // Ako se dodaje stvarni početak, resetirati ručni unos sati
+                  if (e.target.value && manualHours) {
+                    setManualHours('');
+                  }
+                  setActualStartTime(e.target.value);
+                }}
                 className="w-auto"
+                disabled={!!manualHours}
               />
-              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setActualStartDate, setActualStartTime)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="icon" 
+                onClick={() => {
+                  // Resetirati ručni unos sati prije postavljanja stvarnog vremena
+                  if (manualHours) {
+                    setManualHours('');
+                  }
+                  handleSetNow(setActualStartDate, setActualStartTime);
+                }}
+                disabled={!!manualHours}
+              >
                 <Clock className="h-4 w-4" />
               </Button>
             </div>
@@ -189,6 +216,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 type="date"
                 value={actualEndDate}
                 onChange={e => {
+                  // Ako se dodaje stvarni završetak, resetirati ručni unos sati
+                  if (e.target.value && manualHours) {
+                    setManualHours('');
+                  }
                   setActualEndDate(e.target.value);
                   // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
                   if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
@@ -196,23 +227,68 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   }
                 }}
                 className="w-auto"
+                disabled={!!manualHours}
               />
               <Input
                 id="actualEndTime"
                 type="time"
                 ref={actualEndTimeRef}
                 value={actualEndTime}
-                onChange={e => setActualEndTime(e.target.value)}
+                onChange={e => {
+                  // Ako se dodaje stvarni završetak, resetirati ručni unos sati
+                  if (e.target.value && manualHours) {
+                    setManualHours('');
+                  }
+                  setActualEndTime(e.target.value);
+                }}
                 className="w-auto"
+                disabled={!!manualHours}
               />
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => handleSetNow(setActualEndDate, setActualEndTime)}
+                onClick={() => {
+                  // Resetirati ručni unos sati prije postavljanja stvarnog vremena
+                  if (manualHours) {
+                    setManualHours('');
+                  }
+                  handleSetNow(setActualEndDate, setActualEndTime);
+                }}
+                disabled={!!manualHours}
               >
                 <Clock className="h-4 w-4" />
               </Button>
+            </div>
+          </div>
+
+          {/* Polje za ručni unos sati */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="manualHours" className="text-right">
+              Ručni unos sati
+            </Label>
+            <div className="col-span-3 flex items-center gap-2">
+              <Input
+                id="manualHours"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="Npr. 2.5 za 2 sata i 30 minuta"
+                value={manualHours}
+                onChange={e => {
+                  const value = e.target.value;
+                  setManualHours(value);
+                  
+                  // Ako se unose ručni sati, resetirati vremena početka i završetka
+                  if (value) {
+                    setActualStartDate('');
+                    setActualStartTime('');
+                    setActualEndDate('');
+                    setActualEndTime('');
+                  }
+                }}
+                className="w-full"
+              />
             </div>
           </div>
 

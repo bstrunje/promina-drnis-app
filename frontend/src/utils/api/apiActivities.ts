@@ -45,7 +45,18 @@ export const getActivityById = async (activityId: string): Promise<Activity> => 
  * @param activityData Podaci za ažuriranje.
  * @returns Promise koji razrješava u ažurirani objekt aktivnosti.
  */
-export const updateActivity = async (id: number, activityData: Partial<Activity>): Promise<Activity> => {
+// Definiramo tip koji isključuje manual_hours iz ActivityData
+type ActivityUpdateData = Partial<Omit<Activity, 'participants'>> & {
+  participant_ids?: number[];
+};
+
+/**
+ * Ažurira postojeću aktivnost.
+ * @param id ID aktivnosti.
+ * @param activityData Podaci za ažuriranje (ne uključuje manual_hours jer to nije dio Activity modela).
+ * @returns Promise koji razrješava u ažurirani objekt aktivnosti.
+ */
+export const updateActivity = async (id: number, activityData: ActivityUpdateData): Promise<Activity> => {
   const response = await apiInstance.put<Activity>(`/activities/${id}`, activityData);
   return response.data;
 };
@@ -64,6 +75,7 @@ export const createActivity = async (activityData: {
   activity_type_id: number;
   recognition_percentage: number;
   participant_ids?: number[];
+  manual_hours?: number | null; // Dodano - bit će primijenjeno na sudionike aktivnosti
 }): Promise<Activity> => {
   const response = await apiInstance.post<Activity>('/activities', activityData);
   return response.data;
@@ -111,5 +123,10 @@ export const updateParticipationAdmin = async (participationId: number, data: Pa
 
 export const cancelActivity = async (activityId: number, cancellation_reason: string) => {
   const response = await apiInstance.patch(`/activities/${activityId}/cancel`, { cancellation_reason });
+  return response.data;
+};
+
+export const deleteActivity = async (activityId: number) => {
+  const response = await apiInstance.delete(`/activities/${activityId}`);
   return response.data;
 };

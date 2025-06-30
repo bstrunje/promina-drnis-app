@@ -72,6 +72,7 @@ const ActivitiesAdminPage: React.FC = () => {
         actual_start_time: null,
         actual_end_time: null,
         recognition_percentage: 100,
+        cancellation_reason: null,
       };
 
       const created = await createActivityAdmin(activityToCreate);

@@ -45,7 +45,12 @@ export const useFilteredMembers = ({
     if (activeFilter !== "all") {
       if (activeFilter === "active" || activeFilter === "passive") {
         const isActive = activeFilter === "active";
-        result = result.filter(member => member.isActive === isActive);
+        // Aktivni su članovi koji imaju 20 ili više sati aktivnosti
+        const requiredHoursForActive = 20 * 60; // 20 sati u minutama
+        result = result.filter(member => {
+          const totalHours = member.total_hours ?? 0;
+          return isActive ? (totalHours >= requiredHoursForActive) : (totalHours < requiredHoursForActive);
+        });
       } 
       else if (activeFilter === "paid") {
         // Filtriraj članove koji su platili članarinu (feeStatus je 'current' ili fee_payment_year odgovara trenutnoj godini)
