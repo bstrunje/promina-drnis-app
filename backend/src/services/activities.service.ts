@@ -139,8 +139,14 @@ export const updateActivityService = async (activity_id: number, data: any) => {
     ...activityData,
   };
 
-  // Automatsko postavljanje statusa na temelju datuma
-  updatePayload.status = determineActivityStatus(finalStartTime, finalEndTime);
+  // Automatsko postavljanje statusa na temelju datuma ili manual_hours
+  if (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) {
+    // Ako su uneseni ručni sati, aktivnost je već obavljena
+    updatePayload.status = 'COMPLETED';
+  } else {
+    // Inače određujemo status na temelju datuma
+    updatePayload.status = determineActivityStatus(finalStartTime, finalEndTime);
+  }
 
   // Čuvamo IDs svih sudionika prije ažuriranja za kasnije ažuriranje njihovih total_hours
   const existingParticipants = existingActivity.participants.map(p => p.member.member_id);
