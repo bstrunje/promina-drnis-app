@@ -2,6 +2,7 @@ import { ActivityStatus, Prisma } from '@prisma/client';
 import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
+import { updateMemberTotalHours } from './member.service.js';
 
 const determineActivityStatus = (
   startTime: string | Date | null | undefined,
@@ -53,7 +54,16 @@ export const createActivityService = async (data: any, organizer_id: number) => 
     } : undefined,
   };
 
-  return activityRepository.createActivity(activityData);
+  const createdActivity = await activityRepository.createActivity(activityData);
+  
+  // Ažuriranje ukupnih sati za sve sudionike koji su dodani
+  if (participant_ids && participant_ids.length > 0) {
+    for (const memberId of participant_ids) {
+      await updateMemberTotalHours(memberId);
+    }
+  }
+
+  return createdActivity;
 };
 
 export const getAllActivitiesService = async () => {
@@ -118,6 +128,9 @@ export const updateActivityService = async (activity_id: number, data: any) => {
   // Automatsko postavljanje statusa na temelju datuma
   updatePayload.status = determineActivityStatus(finalStartTime, finalEndTime);
 
+  // Čuvamo IDs svih sudionika prije ažuriranja za kasnije ažuriranje njihovih total_hours
+  const existingParticipants = existingActivity.participants.map(p => p.member.member_id);
+  
   // Ako su poslani sudionici, obriši stare i dodaj nove
   if (participant_ids && Array.isArray(participant_ids)) {
     updatePayload.participants = {
@@ -148,6 +161,17 @@ export const updateActivityService = async (activity_id: number, data: any) => {
         end_time: updatedActivity.actual_end_time,
       },
     });
+    
+    // Ažuriraj ukupne sate za sve postojeće sudionike
+    for (const memberId of existingParticipants) {
+      await updateMemberTotalHours(memberId);
+    }
+  } else if (participant_ids && Array.isArray(participant_ids)) {
+    // Ažuriraj sate i za stare i za nove sudionike
+    const allParticipantIds = new Set([...existingParticipants, ...participant_ids]);
+    for (const memberId of allParticipantIds) {
+      await updateMemberTotalHours(memberId);
+    }
   }
 
   // Vrati ažuriranu aktivnost s potencijalno novim podacima
@@ -156,19 +180,38 @@ export const updateActivityService = async (activity_id: number, data: any) => {
 
 export const cancelActivityService = async (activity_id: number, cancellation_reason: string) => {
   // Prvo provjeravamo postoji li aktivnost
-  await getActivityByIdService(activity_id);
+  const activity = await getActivityByIdService(activity_id);
 
   const updatePayload: Prisma.ActivityUpdateInput = {
     status: 'CANCELLED',
     cancellation_reason,
   };
 
-  return activityRepository.updateActivity(activity_id, updatePayload);
+  const updatedActivity = await activityRepository.updateActivity(activity_id, updatePayload);
+  
+  // Ažuriraj sate za sve sudionike kad je aktivnost otkazana
+  for (const participant of activity.participants) {
+    await updateMemberTotalHours(participant.member.member_id);
+  }
+
+  return updatedActivity;
 };
 
 export const deleteActivityService = async (activity_id: number) => {
-  await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
-  return activityRepository.deleteActivity(activity_id);
+  const activity = await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
+  
+  // Zapamti sudionike prije brisanja
+  const participantIds = activity.participants.map(p => p.member.member_id);
+  
+  // Izbriši aktivnost
+  const result = await activityRepository.deleteActivity(activity_id);
+  
+  // Ažuriraj sate za sve sudionike koji su bili dio izbrisane aktivnosti
+  for (const memberId of participantIds) {
+    await updateMemberTotalHours(memberId);
+  }
+  
+  return result;
 };
 
 // --- Sudionici (Participants) --- //
@@ -183,7 +226,12 @@ export const addParticipantToActivityService = async (activity_id: number, membe
     throw new ConflictError('Član je već prijavljen na ovu aktivnost.');
   }
 
-  return activityRepository.addParticipant(activity_id, member_id);
+  const result = await activityRepository.addParticipant(activity_id, member_id);
+  
+  // Ažuriraj ukupne sate za člana
+  await updateMemberTotalHours(member_id);
+  
+  return result;
 };
 
 export const removeParticipantFromActivityService = async (activity_id: number, member_id: number) => {
@@ -191,7 +239,13 @@ export const removeParticipantFromActivityService = async (activity_id: number, 
   if (!participation) {
     throw new NotFoundError('Član nije pronađen kao sudionik na ovoj aktivnosti.');
   }
-  return activityRepository.removeParticipant(activity_id, member_id);
+  
+  const result = await activityRepository.removeParticipant(activity_id, member_id);
+  
+  // Ažuriraj ukupne sate za člana nakon uklanjanja
+  await updateMemberTotalHours(member_id);
+  
+  return result;
 };
 
 export const updateParticipationService = async (
@@ -199,5 +253,12 @@ export const updateParticipationService = async (
   data: Prisma.ActivityParticipationUncheckedUpdateInput
 ) => {
   // Ovdje se može dodati provjera da li zapis o sudjelovanju postoji
-  return activityRepository.updateParticipation(participation_id, data);
+  const result = await activityRepository.updateParticipation(participation_id, data);
+  
+  // Ažuriraj ukupne sate za člana nakon ažuriranja sudjelovanja
+  if (result && result.member_id) {
+    await updateMemberTotalHours(result.member_id);
+  }
+  
+  return result;
 };

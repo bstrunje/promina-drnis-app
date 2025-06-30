@@ -16,6 +16,7 @@ export interface Member {
   first_name: string;
   last_name: string;
   full_name: string;
+  total_minutes?: number;
 }
 
 export interface Activity {

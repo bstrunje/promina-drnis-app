@@ -22,7 +22,7 @@ import {
 import { Member } from "@shared/member";
 import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
 import { useState } from "react";
-
+import { formatMinutesToHoursAndMinutes } from '../../../utils/dateUtils';
 
 import { getMembershipDisplayStatusExternal } from "./memberTableUtils";
 
@@ -327,7 +327,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       </span>
                     </td>
                     <td className="px-3 py-4 border-r border-gray-200 text-center">
-                      {member.total_hours ?? 0}
+                      {formatMinutesToHoursAndMinutes(member.total_hours)}
                     </td>
                     {isSuperuser && (
                       <td className="px-3 py-4 text-center print:hidden">
@@ -397,7 +397,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       </span>
                     </td>
                     <td className="px-3 py-4 border-r border-gray-200 text-center">
-                      {member.total_hours ?? 0}
+                      {formatMinutesToHoursAndMinutes(member.total_hours)}
                     </td>
                     {isSuperuser && (
                       <td className="px-3 py-4 text-center print:hidden">
@@ -464,7 +464,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     </div>
                   </td>
                   <td className="px-3 py-4 border-r border-gray-200 text-center">
-                    {member.total_hours ?? 0}
+                    {formatMinutesToHoursAndMinutes(member.total_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-200">
                     {/* Polje za potpis */}
@@ -504,7 +504,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     </div>
                   </td>
                   <td className="px-3 py-4 border-r border-gray-200 text-center">
-                    {member.total_hours ?? 0}
+                    {formatMinutesToHoursAndMinutes(member.total_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-200">
                     {/* Polje za potpis */}

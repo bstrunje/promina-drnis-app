@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import api from '../../utils/api/apiConfig';
 import MembershipCardManagerAdapter from '../../features/membership/MembershipCardManagerAdapter';
 
-import { formatDate } from "../../utils/dateUtils";
+import { formatDate, formatMinutesToHoursAndMinutes } from "../../utils/dateUtils";
 import { getCurrentDate } from '../../utils/dateUtils';
 import { IMAGE_BASE_URL } from "@/utils/config";
 
@@ -87,25 +87,32 @@ const getImageUrl = (path: string | null | undefined): string => {
   }
 
   const getActivityStatus = () => {
-    const hours = user.total_hours ?? 0;
+    const totalMinutes = user.total_hours ?? 0;
+    const formattedHours = formatMinutesToHoursAndMinutes(totalMinutes);
+    const minutesNeeded = 20 * 60;
+    const remainingMinutes = Math.max(0, minutesNeeded - totalMinutes);
+
     return {
-      status: hours >= 20 ? "active" : "passive",
-      hours: hours,
+      status: totalMinutes >= minutesNeeded ? 'active' : 'passive',
+      displayHours: formattedHours,
+      remainingMessage: `Potrebno još ${formatMinutesToHoursAndMinutes(
+        remainingMinutes
+      )} za status aktivnog člana`,
     };
   };
 
   const activityStatus = getActivityStatus();
 
-  const getStatusColor = (status: Member["life_status"]) => {
+  const getStatusColor = (status: Member['life_status']) => {
     switch (status) {
-      case "employed/unemployed":
-        return "bg-blue-600 text-white";
-      case "child/pupil/student":
-        return "bg-green-600 text-white";
-      case "pensioner":
-        return "bg-red-600 text-white";
+      case 'employed/unemployed':
+        return 'bg-blue-600 text-white';
+      case 'child/pupil/student':
+        return 'bg-green-600 text-white';
+      case 'pensioner':
+        return 'bg-red-600 text-white';
       default:
-        return "bg-gray-600 text-white";
+        return 'bg-gray-600 text-white';
     }
   };
 
@@ -213,13 +220,11 @@ const getImageUrl = (path: string | null | undefined): string => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Total Hours</label>
-                <p className="text-2xl font-bold">{activityStatus.hours ?? 0}</p>
+                <p className="text-2xl font-bold">{activityStatus.displayHours}</p>
               </div>
-              {activityStatus.status === "passive" && (
+              {activityStatus.status === 'passive' && (
                 <div className="text-yellow-600">
-                  <p>
-                    Need {20 - activityStatus.hours} more hours to become active
-                  </p>
+                  <p>{activityStatus.remainingMessage}</p>
                 </div>
               )}
               <div>

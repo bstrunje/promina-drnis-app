@@ -11,6 +11,7 @@ import authRepository from '../repositories/auth.repository.js';
 import auditService from './audit.service.js';
 import { MembershipTypeEnum } from '../shared/types/member.js';
 import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
+import { differenceInMinutes } from 'date-fns';
 
 interface MemberWithActivities extends Member {
     activities?: {
@@ -31,6 +32,10 @@ interface MemberWithExtendedDetails extends Member {
     calculated_full_name?: string;
 }
 
+interface MemberWithTotalHours extends Member {
+    total_hours: number;
+}
+
 export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | undefined): MembershipTypeEnum {
   if (typeof value === 'string') {
     if (value === 'regular') return MembershipTypeEnum.Regular;
@@ -38,6 +43,45 @@ export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | und
     if (value === 'honorary') return MembershipTypeEnum.Honorary;
   }
   return value as MembershipTypeEnum;
+}
+
+/**
+ * Izračunava ukupne sate (u minutama) za člana i sprema ih u bazu.
+ * @param memberId ID člana
+ */
+export async function updateMemberTotalHours(memberId: number): Promise<void> {
+  try {
+    const participationsQuery = await db.query(
+      `
+      SELECT 
+          a.actual_start_time,
+          a.actual_end_time
+      FROM activity_participations ap
+      JOIN activities a ON ap.activity_id = a.activity_id
+      WHERE ap.member_id = $1 AND a.status = 'COMPLETED' AND a.actual_start_time IS NOT NULL AND a.actual_end_time IS NOT NULL
+  `,
+      [memberId]
+    );
+
+    const totalMinutes = participationsQuery.rows.reduce((acc, p) => {
+      if (p.actual_start_time && p.actual_end_time) {
+        const minutes = differenceInMinutes(
+          new Date(p.actual_end_time),
+          new Date(p.actual_start_time)
+        );
+        return acc + (minutes > 0 ? minutes : 0);
+      }
+      return acc;
+    }, 0);
+
+    // Ažuriraj polje total_hours u tablici članova
+    await memberRepository.update(memberId, {
+      total_hours: totalMinutes,
+    });
+  } catch (error) {
+    console.error(`Greška prilikom ažuriranja ukupnih sati za člana ${memberId}:`, error);
+    // Ne prekidamo izvršavanje, ali logiramo grešku
+  }
 }
 
 const memberService = {
@@ -52,14 +96,23 @@ const memberService = {
 
     async getMemberById(memberId: number): Promise<Member | null> {
         try {
+            // Sada samo dohvaćamo člana, jer su sati već izračunati i spremljeni u bazi.
             const member = await memberRepository.findById(memberId);
-            if (!member) {
-                return null;
-            }
             return member;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching member: ' + errorMessage);
+        }
+    },
+
+    async getMemberDashboardStats(memberId: number) {
+        try {
+            // I ovdje samo dohvaćamo člana, jer su sati već spremljeni u bazi.
+            const member = await this.getMemberById(memberId);
+            return member;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member dashboard stats: ' + errorMessage);
         }
     },
 

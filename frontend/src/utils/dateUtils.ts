@@ -456,3 +456,19 @@ export function cleanISODateString(isoString: string | null): string {
     .replace(/\'T\'/g, "T")
     .replace(/\'Z\'/g, "Z");
 }
+
+/**
+ * Formatira ukupan broj minuta u sate i minute
+ * @param totalMinutes Ukupan broj minuta
+ * @returns string u formatu 'Xh Ym'
+ */
+export const formatMinutesToHoursAndMinutes = (totalMinutes: number | null | undefined): string => {
+  if (totalMinutes === null || totalMinutes === undefined || totalMinutes < 0) {
+    return '0h 0m';
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${minutes}m`;
+};
