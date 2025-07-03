@@ -73,6 +73,19 @@ export const findActivitiesByTypeId = async (type_id: number) => {
       organizer: {
         select: { member_id: true, first_name: true, last_name: true },
       },
+      // Dohvaćamo i podatke o sudionicima kako bismo imali pristup manual_hours
+      participants: {
+        include: {
+          member: {
+            select: {
+              member_id: true,
+              first_name: true,
+              last_name: true,
+              full_name: true, 
+            },
+          },
+        },
+      },
       _count: {
         select: { participants: true },
       },

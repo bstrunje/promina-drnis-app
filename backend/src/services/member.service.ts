@@ -80,10 +80,12 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
     });
 
     const totalMinutes = participations.reduce((acc: number, p: any) => {
+      let minuteValue = 0;
+      
       // Prioritet imaju manual_hours ako su postavljeni
       if (p.manual_hours !== null && p.manual_hours !== undefined) {
         // Pretvaramo manual_hours iz sati u minute (manual_hours se sprema kao float u satima)
-        return acc + Math.round(p.manual_hours * 60);
+        minuteValue = Math.round(p.manual_hours * 60);
       } 
       // Ako manual_hours nije postavljen, računamo iz actual_start_time i actual_end_time
       else if (p.activity.actual_start_time && p.activity.actual_end_time) {
@@ -91,9 +93,15 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
           new Date(p.activity.actual_end_time),
           new Date(p.activity.actual_start_time)
         );
-        return acc + (minutes > 0 ? minutes : 0);
+        minuteValue = minutes > 0 ? minutes : 0;
       }
-      return acc;
+      
+      // Primjeni recognition_override ako postoji
+      if (minuteValue > 0 && p.recognition_override !== null && p.recognition_override !== undefined) {
+        minuteValue = minuteValue * (p.recognition_override / 100);
+      }
+      
+      return acc + minuteValue;
     }, 0);
 
     // Ažuriraj polje total_hours u tablici članova koristeći isti prismaClient
@@ -150,7 +158,12 @@ const memberService = {
 
             if (memberData.total_hours !== undefined) {
                 const currentHours = await db.query(`
-                    SELECT COALESCE(SUM(ap.manual_hours), 0) as total_hours
+                    SELECT COALESCE(SUM(
+                        CASE 
+                            WHEN ap.recognition_override IS NOT NULL THEN ap.manual_hours * (ap.recognition_override / 100)
+                            ELSE ap.manual_hours
+                        END
+                    ), 0) as total_hours
                     FROM activity_participations ap
                     WHERE ap.member_id = $1
                 `, [memberId]);

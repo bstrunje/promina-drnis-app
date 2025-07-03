@@ -8,8 +8,10 @@ interface MemberActivityStatusProps {
 }
 
 const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) => {
-  const getActivityStatus = (totalHours: number) => {
-    return totalHours >= 20 ? "active" : "passive";
+  const getActivityStatus = (totalMinutes: number) => {
+    // Pretvaramo minute u sate za usporedbu
+    const hoursValue = totalMinutes / 60;
+    return hoursValue >= 20 ? "active" : "passive";
   };
 
   return (
@@ -31,7 +33,7 @@ const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) =
           {getActivityStatus(Number(member?.total_hours) || 0) === "passive" && (
             <div className="text-yellow-600">
               <p>
-                Need {20 - (Number(member?.total_hours) || 0)} more
+                Need {Math.ceil(20 - ((Number(member?.total_hours) || 0) / 60))} more
                 hours to become active
               </p>
             </div>

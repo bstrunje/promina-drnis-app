@@ -2,6 +2,7 @@ export interface ActivityType {
   type_id: number;
   name: string;
   description: string | null;
+  key: string;
 }
 
 export enum ActivityStatus {

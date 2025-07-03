@@ -936,7 +936,7 @@ export const memberController = {
             : "Error deleting profile image",
       });
     }
-  },
+  }
 };
 
 export default memberController;

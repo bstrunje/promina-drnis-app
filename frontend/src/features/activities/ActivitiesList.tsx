@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
-import { getActivityTypes, getAllActivities } from '@/utils/api/apiActivities';
+import { getActivityTypes, getAllActivities, getActivityById } from '@/utils/api/apiActivities';
 import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
 import { parseISO } from 'date-fns';
-import { Activity as ActivityIcon } from 'lucide-react';
+import { Activity as ActivityIcon, Clock } from 'lucide-react';
+import { calculateGrandTotalHours, calculateTotalActivityHours, formatHoursToHHMM } from '@/utils/activityHours';
 
 const ActivitiesList: React.FC = () => {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
@@ -17,12 +18,40 @@ const ActivitiesList: React.FC = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [types, activities] = await Promise.all([
+      // 1. Prvo dohvaćamo tipove i osnovne podatke o aktivnostima
+      const [types, basicActivities] = await Promise.all([
         getActivityTypes(),
         getAllActivities(),
       ]);
       setActivityTypes(types);
-      setAllActivities(activities);
+      
+      // 2. Za svaku završenu aktivnost dohvaćamo detalje s podacima o sudionicima
+      const completedActivities = basicActivities.filter(activity => 
+        activity.status === 'COMPLETED'
+      );
+      
+      // 3. Za svaku aktivnost dohvaćamo detalje kako bismo dobili točne podatke o sudionicima
+      const detailedActivitiesPromises = completedActivities.map(activity => 
+        getActivityById(activity.activity_id.toString())
+      );
+      
+      // 4. Čekamo da se dohvate svi detalji
+      const detailedActivities = await Promise.all(detailedActivitiesPromises);
+      
+      // 5. Spajamo osnovne aktivnosti s detaljnima (za završene aktivnosti)
+      const enhancedActivities = basicActivities.map(basicActivity => {
+        // Ako je ova aktivnost dovršena, nađi njene detalje
+        if (basicActivity.status === 'COMPLETED') {
+          const detailedActivity = detailedActivities.find(
+            detailedAct => detailedAct.activity_id === basicActivity.activity_id
+          );
+          return detailedActivity || basicActivity;
+        }
+        return basicActivity;
+      });
+      
+      console.log('Enhancing activities with detailed participant data', enhancedActivities);
+      setAllActivities(enhancedActivities);
       setError(null);
     } catch (err) {
       console.error('Greška prilikom dohvaćanja podataka:', err);
@@ -36,21 +65,33 @@ const ActivitiesList: React.FC = () => {
     void fetchData();
   }, [fetchData]);
 
-  // Funkcija za formatiranje decimalnih sati u format hh:mm
-  const formatHoursToHHMM = (decimalHours: number): string => {
-    const hours = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  const totalCompletedHours = allActivities
-    .filter(activity => activity.status === 'COMPLETED' && activity.actual_start_time && activity.actual_end_time)
-    .reduce((total, activity) => {
-      const startTime = new Date(activity.actual_start_time!);
-      const endTime = new Date(activity.actual_end_time!);
-      const diff = endTime.getTime() - startTime.getTime();
-      return total + (diff > 0 ? diff / (1000 * 60 * 60) : 0);
-    }, 0);
+  // Računamo ukupan broj sati iz svih kategorija
+  // Prvo računamo sate po kategoriji i spremimo ih u mapu
+  const categoryHoursMap: Record<number, number> = {};
+  
+  // Filtriramo samo završene aktivnosti
+  const completedActivities = allActivities.filter(activity => activity.status === 'COMPLETED');
+  
+  // Detaljni debug log
+  console.log('Sve aktivnosti:', allActivities);
+  console.log('Završene aktivnosti:', completedActivities);
+  console.log('Imaju li aktivnosti podatke o sudionicima?', completedActivities.map(a => a.participants?.length || 0));
+  
+  // Direktno računamo ukupne sate svih aktivnosti, uključujući sve sudionike
+  const totalCompletedHours = calculateGrandTotalHours(completedActivities);
+  console.log('Izračunati ukupni sati:', totalCompletedHours);
+  
+  // Računamo sate po kategoriji za prikaz u karticama
+  activityTypes.forEach(type => {
+    // Filtriramo samo završene aktivnosti ove kategorije
+    const typeActivities = completedActivities.filter(activity => activity.type_id === type.type_id);
+    
+    // Koristimo centralnu funkciju za izračun ukupnih sati za ovu kategoriju
+    const categoryTotal = calculateGrandTotalHours(typeActivities);
+    
+    // Spremamo izračunate sate za ovu kategoriju
+    categoryHoursMap[type.type_id] = categoryTotal;
+  });
 
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
@@ -79,19 +120,36 @@ const ActivitiesList: React.FC = () => {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {activityTypes.length > 0 ? (
-          activityTypes.map((type) => (
-            <Link to={`/activities/category/${type.type_id}`} key={type.type_id}>
-              <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ActivityIcon className="h-6 w-6" />
-                    {type.name}
-                  </CardTitle>
-                  {type.description && <CardDescription>{type.description}</CardDescription>}
-                </CardHeader>
-              </Card>
-            </Link>
-          ))
+          activityTypes.map((type) => {
+            // Računamo ukupne sate za aktivnosti ove kategorije
+            const typeActivities = allActivities.filter(activity => 
+              activity.type_id === type.type_id && activity.status === 'COMPLETED'
+            );
+            const categoryHours = calculateGrandTotalHours(typeActivities);
+            
+            return (
+              <Link to={`/activities/category/${type.type_id}`} key={type.type_id}>
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ActivityIcon className="h-6 w-6" />
+                      {type.name}
+                    </CardTitle>
+                    {type.description && <CardDescription>{type.description}</CardDescription>}
+                  </CardHeader>
+                  {categoryHours > 0 && (
+                    <CardFooter className="pt-0 flex justify-between text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4" />
+                        <span>Ukupno sati:</span>
+                      </div>
+                      <Badge variant="outline">{formatHoursToHHMM(categoryHours)} h</Badge>
+                    </CardFooter>
+                  )}
+                </Card>
+              </Link>
+            );
+          })
         ) : (
           <div className="col-span-full flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">

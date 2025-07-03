@@ -10,6 +10,7 @@ import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import CreateActivityModal from './CreateActivityModal';
 import { Badge } from '@components/ui/badge';
+import { calculateActivityHours, calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';
 import {
   Dialog,
   DialogContent,
@@ -92,38 +93,17 @@ const ActivityCategoryPage: React.FC = () => {
     setActivityToDelete(null);
   };
 
-  const calculateDuration = (
-    start: string | Date | null,
-    end: string | Date | null
-  ): string => {
-    if (!start || !end) return '0h 0m';
-    const startDate = typeof start === 'string' ? new Date(start) : start;
-    const endDate = typeof end === 'string' ? new Date(end) : end;
-    const diff = endDate.getTime() - startDate.getTime();
-    if (diff <= 0) return '0h 0m';
-
-    const totalMinutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}h ${minutes}m`;
+  // Formatiranje sati u oblik hh:mm za prikaz u UI
+  const formatDuration = (hours: number): string => {
+    const hoursInt = Math.floor(hours);
+    const minutesInt = Math.round((hours - hoursInt) * 60);
+    return `${hoursInt}h ${minutesInt.toString().padStart(2, '0')}m`;
   };
 
-  // Funkcija za formatiranje decimalnih sati u format hh:mm
-  const formatHoursToHHMM = (decimalHours: number): string => {
-    const hours = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  const totalCompletedHours = activities
-    .filter(activity => activity.status === 'COMPLETED' && activity.actual_start_time && activity.actual_end_time)
-    .reduce((total, activity) => {
-      const startTime = new Date(activity.actual_start_time!);
-      const endTime = new Date(activity.actual_end_time!);
-      const diff = endTime.getTime() - startTime.getTime();
-      return total + (diff > 0 ? diff / (1000 * 60 * 60) : 0);
-    }, 0);
+  // Računamo ukupne sate za kategoriju, uključujući sate svih sudionika
+  const totalCompletedHours = calculateGrandTotalHours(
+    activities.filter(activity => activity.status === 'COMPLETED')
+  );
 
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
@@ -179,10 +159,7 @@ const ActivityCategoryPage: React.FC = () => {
                         <CardTitle>{activity.name}</CardTitle>
                         {activity.status === 'COMPLETED' && (
                           <Badge variant="outline">
-                            {calculateDuration(
-                              activity.actual_start_time,
-                              activity.actual_end_time
-                            )}
+                            {formatDuration(calculateActivityHours(activity))}
                           </Badge>
                         )}
                       </div>
