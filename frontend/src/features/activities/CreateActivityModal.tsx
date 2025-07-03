@@ -1,15 +1,17 @@
-import React, { useState, useRef } from 'react';
-import { createActivity } from '@/utils/api/apiActivities';
+import React, { useState, useRef, useEffect } from 'react';
+import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import RecognitionPercentageInput from '@components/RecognitionPercentageInput';
 import { MemberSelect } from './MemberSelect';
+import { ActivityType } from '@shared/activity.types';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -33,10 +35,40 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Dodajemo stanje za tipove aktivnosti i odabrani tip
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
+  const [selectedTypeId, setSelectedTypeId] = useState<string>(activityTypeId || '');
+  const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
 
   const startTimeRef = useRef<HTMLInputElement>(null);
   const actualStartTimeRef = useRef<HTMLInputElement>(null);
   const actualEndTimeRef = useRef<HTMLInputElement>(null);
+
+  // Dohvaćanje tipova aktivnosti
+  useEffect(() => {
+    if (isOpen) {
+      const fetchActivityTypes = async () => {
+        setLoadingTypes(true);
+        try {
+          const types = await getActivityTypes();
+          setActivityTypes(types);
+          
+          // Ako nije prethodno odabran tip, postavi prvi kao defaultni
+          if (!selectedTypeId && types.length > 0) {
+            setSelectedTypeId(String(types[0].type_id));
+          }
+        } catch (err) {
+          console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
+          setError('Nije uspjelo dohvaćanje tipova aktivnosti.');
+        } finally {
+          setLoadingTypes(false);
+        }
+      };
+      
+      void fetchActivityTypes();
+    }
+  }, [isOpen, selectedTypeId]);
 
   const handleSetNow = (
     dateSetter: React.Dispatch<React.SetStateAction<string>>,
@@ -48,7 +80,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   };
 
   const handleSubmit = async () => {
-    if (!description || !startDate || !startTime || !activityTypeId) {
+    if (!description || !startDate || !startTime || !selectedTypeId) {
       setError('Opis, datum početka i tip aktivnosti su obavezni.');
       return;
     }
@@ -69,7 +101,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
         // Ako su uneseni ručni sati, ne šaljemo stvarna vremena
         actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
         actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
-        activity_type_id: Number(activityTypeId),
+        activity_type_id: Number(selectedTypeId),
         recognition_percentage: Number(recognitionPercentage),
         participant_ids: participantIds.map(id => Number(id)),
       });
@@ -105,6 +137,28 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           <DialogDescription>Ispunite detalje za novu aktivnost.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Odabir tipa aktivnosti */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="activityType" className="text-right">
+              Tip aktivnosti
+            </Label>
+            <div className="col-span-3">
+              <Select value={selectedTypeId} onValueChange={setSelectedTypeId} disabled={loadingTypes}>
+                <SelectTrigger id="activityType">
+                  <SelectValue placeholder="Odaberite tip aktivnosti" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activityTypes.map((type) => (
+                    <SelectItem key={type.type_id} value={String(type.type_id)}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {loadingTypes && <p className="text-sm text-muted-foreground mt-1">Učitavanje tipova aktivnosti...</p>}
+            </div>
+          </div>
+            
           {/* Opis aktivnosti */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right">

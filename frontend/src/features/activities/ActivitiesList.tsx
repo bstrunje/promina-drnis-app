@@ -5,15 +5,23 @@ import { Alert, AlertDescription } from '@components/ui/alert';
 import { getActivityTypes, getAllActivities, getActivityById } from '@/utils/api/apiActivities';
 import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
-import { parseISO } from 'date-fns';
-import { Activity as ActivityIcon, Clock } from 'lucide-react';
+import { Button } from '@components/ui/button';
+import { parseISO, format } from 'date-fns';
+import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
 import { calculateGrandTotalHours, calculateTotalActivityHours, formatHoursToHHMM } from '@/utils/activityHours';
+import { useAuth } from '@/context/AuthContext';
+import CreateActivityModal from './CreateActivityModal';
 
 const ActivitiesList: React.FC = () => {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Dodajemo stanje za godine koje će biti prikazane
+  const [activityYears, setActivityYears] = useState<number[]>([]);
+  // Dodajemo stanje za modalni prozor za kreiranje aktivnosti
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const { user } = useAuth();
 
   const fetchData = useCallback(async () => {
     try {
@@ -65,33 +73,45 @@ const ActivitiesList: React.FC = () => {
     void fetchData();
   }, [fetchData]);
 
-  // Računamo ukupan broj sati iz svih kategorija
-  // Prvo računamo sate po kategoriji i spremimo ih u mapu
-  const categoryHoursMap: Record<number, number> = {};
-  
+  // Učitavanje dostupnih godina kada se učitaju aktivnosti
+  useEffect(() => {
+    if (allActivities.length > 0) {
+      // Izdvajamo jedinstvene godine iz svih aktivnosti
+      const years = allActivities.map(activity => {
+        const date = new Date(activity.start_date);
+        return date.getFullYear();
+      });
+      
+      // Sortiramo godine silazno (od najnovije prema starijima)
+      const uniqueYears = Array.from(new Set(years)).sort((a, b) => b - a);
+      setActivityYears(uniqueYears);
+    }
+  }, [allActivities]);
+
   // Filtriramo samo završene aktivnosti
   const completedActivities = allActivities.filter(activity => activity.status === 'COMPLETED');
   
-  // Detaljni debug log
-  console.log('Sve aktivnosti:', allActivities);
-  console.log('Završene aktivnosti:', completedActivities);
-  console.log('Imaju li aktivnosti podatke o sudionicima?', completedActivities.map(a => a.participants?.length || 0));
-  
   // Direktno računamo ukupne sate svih aktivnosti, uključujući sve sudionike
   const totalCompletedHours = calculateGrandTotalHours(completedActivities);
-  console.log('Izračunati ukupni sati:', totalCompletedHours);
   
-  // Računamo sate po kategoriji za prikaz u karticama
-  activityTypes.forEach(type => {
-    // Filtriramo samo završene aktivnosti ove kategorije
-    const typeActivities = completedActivities.filter(activity => activity.type_id === type.type_id);
+  // Računamo sate po godini za prikaz u karticama
+  const yearHoursMap: Record<number, number> = {};
+  activityYears.forEach(year => {
+    const yearActivities = completedActivities.filter(activity => {
+      const activityYear = new Date(activity.start_date).getFullYear();
+      return activityYear === year;
+    });
     
-    // Koristimo centralnu funkciju za izračun ukupnih sati za ovu kategoriju
-    const categoryTotal = calculateGrandTotalHours(typeActivities);
-    
-    // Spremamo izračunate sate za ovu kategoriju
-    categoryHoursMap[type.type_id] = categoryTotal;
+    const yearTotal = calculateGrandTotalHours(yearActivities);
+    yearHoursMap[year] = yearTotal;
   });
+
+  // Handler za osvježavanje aktivnosti nakon kreiranja nove
+  const handleActivityCreated = () => {
+    setCreateModalOpen(false);
+    // Ponovno dohvaćanje aktivnosti
+    void fetchData();
+  };
 
   if (loading) return <div className="p-6">Učitavanje...</div>;
   if (error) return (
@@ -106,7 +126,15 @@ const ActivitiesList: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Aktivnosti</h1>
-        <p className="text-muted-foreground">Pregledajte i sudjelujte u nadolazećim aktivnostima.</p>
+        <div className="flex items-center gap-4">
+          <p className="text-muted-foreground hidden md:block">Pregledajte i sudjelujte u nadolazećim aktivnostima.</p>
+          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+            <Button onClick={() => setCreateModalOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova aktivnost
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mb-6">
@@ -118,32 +146,34 @@ const ActivitiesList: React.FC = () => {
           </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {activityTypes.length > 0 ? (
-          activityTypes.map((type) => {
-            // Računamo ukupne sate za aktivnosti ove kategorije
-            const typeActivities = allActivities.filter(activity => 
-              activity.type_id === type.type_id && activity.status === 'COMPLETED'
-            );
-            const categoryHours = calculateGrandTotalHours(typeActivities);
+      <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+        {activityYears.length > 0 ? (
+          activityYears.map((year) => {
+            // Računamo ukupne sate za aktivnosti ove godine
+            const yearActivities = allActivities.filter(activity => {
+              const activityYear = new Date(activity.start_date).getFullYear();
+              return activityYear === year && activity.status === 'COMPLETED';
+            });
+            const yearHours = calculateGrandTotalHours(yearActivities);
             
+            // Link bi vodio na posebnu stranicu za pregled aktivnosti po godini
+            // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
             return (
-              <Link to={`/activities/category/${type.type_id}`} key={type.type_id}>
+              <Link to={`/activities/year/${year}`} key={year}>
                 <Card className="hover:bg-muted/50 transition-colors">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ActivityIcon className="h-6 w-6" />
-                      {type.name}
+                    <CardTitle className="flex items-center gap-2 justify-center">
+                      <Calendar className="h-6 w-6" />
+                      {year}
                     </CardTitle>
-                    {type.description && <CardDescription>{type.description}</CardDescription>}
                   </CardHeader>
-                  {categoryHours > 0 && (
+                  {yearHours > 0 && (
                     <CardFooter className="pt-0 flex justify-between text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-4 w-4" />
                         <span>Ukupno sati:</span>
                       </div>
-                      <Badge variant="outline">{formatHoursToHHMM(categoryHours)} h</Badge>
+                      <Badge variant="outline">{formatHoursToHHMM(yearHours)} h</Badge>
                     </CardFooter>
                   )}
                 </Card>
@@ -153,12 +183,22 @@ const ActivitiesList: React.FC = () => {
         ) : (
           <div className="col-span-full flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">
-              <ActivityIcon className="h-12 w-12 mx-auto mb-2" />
-              <p>Nema definiranih kategorija aktivnosti.</p>
+              <Calendar className="h-12 w-12 mx-auto mb-2" />
+              <p>Nema aktivnosti za prikaz.</p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal za kreiranje aktivnosti */}
+      {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+        <CreateActivityModal 
+          isOpen={isCreateModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onActivityCreated={handleActivityCreated}
+          activityTypeId={activityTypes.length > 0 ? String(activityTypes[0].type_id) : null}
+        />
+      )}
     </div>
   );
 };

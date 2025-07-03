@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { getActivityTypes, getActivitiesByTypeId, deleteActivity } from '@/utils/api/apiActivities';
+import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -22,9 +22,16 @@ import {
 import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { type_id: activityTypeId } = useParams<{ type_id: string }>();
+  // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
+  const { type_id: activityTypeId, year: yearParam } = useParams<{ type_id?: string; year?: string }>();
+  const location = useLocation();
+  
+  // Određujemo način prikaza na temelju URL-a (po kategoriji ili po godini)
+  const isYearView = location.pathname.includes('/activities/year/');
+  
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -32,19 +39,61 @@ const ActivityCategoryPage: React.FC = () => {
   const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Pretvaramo year parametar u broj
+  const year = yearParam ? parseInt(yearParam, 10) : null;
 
   const fetchData = useCallback(async () => {
-    if (!activityTypeId) return;
     try {
       setLoading(true);
+      
+      // Uvijek dohvaćamo tipove aktivnosti
       const types = await getActivityTypes();
-      const currentType = types.find(t => t.type_id.toString() === activityTypeId);
-      setActivityType(currentType || null);
+      setActivityTypes(types);
+      
+      // Način dohvata ovisi o tome prikazujemo li po kategoriji ili po godini
+      if (isYearView && yearParam) {
+        // U prikazu po godini, želimo prikazati kategorije a ne aktivnosti
+        // Tako da trebamo samo tipove koje već imamo
+        
+        // Dohvaćamo aktivnosti te godine za računanje statistike
+        const allActivities = await getAllActivities();
+        
+        // Filtriranje aktivnosti po godini
+        const filteredActivities = allActivities.filter(activity => {
+          const activityDate = new Date(activity.start_date);
+          return activityDate.getFullYear() === parseInt(yearParam, 10);
+        });
+        
+        setActivities(filteredActivities);
+        setActivityType(null); // Nema specifičnog tipa aktivnosti u prikazu po godini
+        
+      } else if (isYearView && activityTypeId && yearParam) {
+        // Prikaz aktivnosti za određeni tip unutar godine
+        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
+        setActivityType(currentType || null);
+        
+        // Dohvaćamo sve aktivnosti pa filtriramo po godini i tipu
+        const allActivities = await getAllActivities();
+        const filteredActivities = allActivities.filter(activity => {
+          const activityDate = new Date(activity.start_date);
+          return activityDate.getFullYear() === parseInt(yearParam, 10) && 
+                 activity.type_id.toString() === activityTypeId;
+        });
+        
+        setActivities(filteredActivities);
+        
+      } else if (activityTypeId) {
+        // Standardni dohvat po kategoriji (bez filtriranja po godini)
+        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
+        setActivityType(currentType || null);
 
-      if (currentType) {
-        const activitiesData = await getActivitiesByTypeId(activityTypeId);
-        setActivities(activitiesData);
+        if (currentType) {
+          const activitiesData = await getActivitiesByTypeId(activityTypeId);
+          setActivities(activitiesData);
+        }
       }
+      
       setError(null);
     } catch (err) {
       console.error('Greška prilikom dohvaćanja podataka:', err);
@@ -52,7 +101,7 @@ const ActivityCategoryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activityTypeId]);
+  }, [isYearView, activityTypeId, yearParam]);
 
   useEffect(() => {
     void fetchData();
@@ -120,13 +169,22 @@ const ActivityCategoryPage: React.FC = () => {
         <Button asChild variant="outline" className="mb-4">
           <Link to="/activities">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Sve kategorije
+            {isYearView ? 'Sve godine' : 'Sve kategorije'}
           </Link>
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ActivityIcon className="h-8 w-8" />
-            {activityType?.name || 'Aktivnosti'}
+            {isYearView ? (
+              <>
+                <Calendar className="h-8 w-8" />
+                {yearParam} - Aktivnosti
+              </>
+            ) : (
+              <>
+                <ActivityIcon className="h-8 w-8" />
+                {activityType?.name || 'Aktivnosti'}
+              </>
+            )}
           </h1>
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <Button onClick={() => setCreateModalOpen(true)}>
@@ -135,71 +193,134 @@ const ActivityCategoryPage: React.FC = () => {
             </Button>
           )}
         </div>
-        <p className="text-muted-foreground">{activityType?.description}</p>
+        {!isYearView && <p className="text-muted-foreground">{activityType?.description}</p>}
       </div>
 
       <div className="mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Ukupno odrađenih sati u kategoriji</CardTitle>
+            <CardTitle>
+              {isYearView 
+                ? `Ukupno odrađenih sati u ${yearParam}. godini` 
+                : 'Ukupno odrađenih sati u kategoriji'}
+            </CardTitle>
             <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
           </CardHeader>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {activities.length > 0 ? (
-          activities.map(activity => {
-            return (
-              <div key={activity.activity_id} className="relative">
-                <Link to={`/activities/${activity.activity_id}`} className="block">
+      {isYearView && !activityTypeId ? (
+        // Prikaz kategorija kada gledamo po godini
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {activityTypes.length > 0 ? (
+            activityTypes.map(type => {
+              // Za svaki tip aktivnosti, filtriraj aktivnosti te godine koje pripadaju tom tipu
+              const activitiesForType = activities.filter(activity => 
+                activity.type_id === type.type_id
+              );
+              
+              // Računamo sate za ovaj tip aktivnosti u odabranoj godini
+              const typeHours = calculateGrandTotalHours(
+                activitiesForType.filter(activity => activity.status === 'COMPLETED')
+              );
+              
+              return (
+                <Link 
+                  to={`/activities/type/${type.type_id}?year=${yearParam}`} 
+                  key={type.type_id}
+                  className="block"
+                >
                   <Card className="h-full transition-colors hover:bg-muted/50">
                     <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle>{activity.name}</CardTitle>
-                        {activity.status === 'COMPLETED' && (
-                          <Badge variant="outline">
-                            {formatDuration(calculateActivityHours(activity))}
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <ActivityIcon className="h-5 w-5" />
+                        <CardTitle>{type.name}</CardTitle>
                       </div>
+                      {type.description && (
+                        <p className="text-sm text-muted-foreground">{type.description}</p>
+                      )}
                     </CardHeader>
-                    <CardContent className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{format(new Date(activity.start_date), 'dd.MM.yyyy.')}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
-                      </div>
-                    </CardContent>
-                    
-                    {/* Gumb za brisanje aktivnosti - vidljiv samo superuserima */}
-                    {user?.role === 'member_superuser' && (
-                      <CardFooter className="pt-0">
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          className="w-full" 
-                          onClick={(e) => handleDeleteClick(activity, e)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Obriši aktivnost
-                        </Button>
+                    {typeHours > 0 && (
+                      <CardFooter className="pt-0 flex justify-between">
+                        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                          <Clock className="h-4 w-4" />
+                          <span>Ukupno sati:</span>
+                        </div>
+                        <Badge variant="outline">{formatHoursToHHMM(typeHours)} h</Badge>
                       </CardFooter>
                     )}
                   </Card>
                 </Link>
-              </div>
-            );
-          })
-        ) : (
-          <div className="col-span-full text-center text-muted-foreground">
-            <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
-          </div>
-        )}
-      </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full text-center text-muted-foreground">
+              <p>Učitavanje kategorija aktivnosti...</p>
+            </div>
+          )}
+          
+          {activityTypes.length > 0 && activities.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground">
+              <p>Nema aktivnosti u {yearParam}. godini.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Prikaz aktivnosti (standard ili filtrirano po godini i tipu)
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {activities.length > 0 ? (
+            activities.map(activity => {
+              return (
+                <div key={activity.activity_id} className="relative">
+                  <Link to={`/activities/${activity.activity_id}`} className="block">
+                    <Card className="h-full transition-colors hover:bg-muted/50">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <CardTitle>{activity.name}</CardTitle>
+                          {activity.status === 'COMPLETED' && (
+                            <Badge variant="outline">
+                              {formatDuration(calculateActivityHours(activity))}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>{format(new Date(activity.start_date), 'dd.MM.yyyy.')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
+                        </div>
+                      </CardContent>
+                      
+                      {/* Gumb za brisanje aktivnosti - vidljiv samo superuserima */}
+                      {user?.role === 'member_superuser' && (
+                        <CardFooter className="pt-0">
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="w-full" 
+                            onClick={(e) => handleDeleteClick(activity, e)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Obriši aktivnost
+                          </Button>
+                        </CardFooter>
+                      )}
+                    </Card>
+                  </Link>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full text-center text-muted-foreground">
+              <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
         <CreateActivityModal

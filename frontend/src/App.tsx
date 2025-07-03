@@ -81,6 +81,7 @@ function AppContent() {
           <Route path="/profile" element={<MemberDetailsPage />} />
           <Route path="/activities" element={<ActivitiesList />} />
           <Route path="/activities/category/:type_id" element={<ActivityCategoryPage />} />
+          <Route path="/activities/year/:year" element={<ActivityCategoryPage />} />
           <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
           <Route path="/activities/:activityId/edit" element={<EditActivityPage />} />
           <Route path="/events" element={<EventsList />} />
