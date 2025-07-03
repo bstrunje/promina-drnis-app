@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import './activities.css';
 import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
@@ -131,18 +132,18 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Kreiraj novu aktivnost</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Kreiraj novu aktivnost</DialogTitle>
           <DialogDescription>Ispunite detalje za novu aktivnost.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
           {/* Odabir tipa aktivnosti */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="activityType" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="activityType" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Tip aktivnosti
             </Label>
-            <div className="col-span-3">
+            <div className="sm:col-span-3">
               <Select value={selectedTypeId} onValueChange={setSelectedTypeId} disabled={loadingTypes}>
                 <SelectTrigger id="activityType">
                   <SelectValue placeholder="Odaberite tip aktivnosti" />
@@ -160,19 +161,19 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           </div>
             
           {/* Opis aktivnosti */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="description" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Opis
             </Label>
-            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" required />
+            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3" required />
           </div>
 
           {/* Polje za datum početka */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startDate" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="startDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Datum početka
             </Label>
-            <div className="col-span-3 flex items-center gap-2">
+            <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
                 id="startDate"
                 type="date"
@@ -203,11 +204,11 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           </div>
 
           {/* Polje za stvarni početak */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="actualStartDate" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="actualStartDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Stvarni početak
             </Label>
-            <div className="col-span-3 flex items-center gap-2">
+            <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
                 id="actualStartDate"
                 type="date"
@@ -260,11 +261,11 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           </div>
 
           {/* Polje za stvarni završetak */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="actualEndDate" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="actualEndDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Stvarni završetak
             </Label>
-            <div className="col-span-3 flex items-center gap-2">
+            <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
                 id="actualEndDate"
                 type="date"
@@ -317,11 +318,11 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           </div>
 
           {/* Polje za ručni unos sati */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="manualHours" className="text-right">
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="manualHours" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
               Ručni unos sati
             </Label>
-            <div className="col-span-3 flex items-center gap-2">
+            <div className="sm:col-span-3 flex items-center gap-2">
               <Input
                 id="manualHours"
                 type="number"
@@ -355,20 +356,20 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           )}
 
           {/* Odabir sudionika */}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">Sudionici</Label>
-            <div className="col-span-3">
+          <div className="grid sm:grid-cols-4 items-start gap-1 sm:gap-4">
+            <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">Sudionici</Label>
+            <div className="sm:col-span-3">
               <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
             </div>
           </div>
 
           {error && <p className="col-span-4 text-red-500 text-sm">{error}</p>}
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>
+          <DialogFooter className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
               Odustani
             </Button>
-            <Button type="button" onClick={handleSubmit} disabled={isLoading}>
+            <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
               {isLoading ? 'Spremanje...' : 'Spremi'}
             </Button>
           </DialogFooter>

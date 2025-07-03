@@ -86,7 +86,6 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         </div>
         
         <div className="flex flex-col">
-          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Filteri članova</span>
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
             <Select value={activeFilter} onValueChange={(value: string) => onActiveFilterChange(value)}>
               <SelectTrigger className="w-full md:w-[180px]">
@@ -115,24 +114,25 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         </div>
         
         <div className="flex flex-col">
-          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Sortiranje</span>
-          <div className="flex flex-wrap md:flex-row flex-col gap-2">
-            <Select value={sortCriteria} onValueChange={(value: string) => onSortCriteriaChange(value)}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Sortiraj po" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Sortiraj po imenu</SelectItem>
-                <SelectItem value="hours">Sortiraj po satima</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <Select value={sortCriteria} onValueChange={(value: string) => onSortCriteriaChange(value)}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Sortiraj po" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Sortiraj po imenu</SelectItem>
+                  <SelectItem value="hours">Sortiraj po satima</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
             <Button
               variant="outline"
               size="sm"
               onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
               title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
-              className="w-10 h-10 p-0"
+              className="w-10 h-10 p-0 flex-shrink-0"
             >
               {sortOrder === "asc" ? (
                 <SortAsc className="h-4 w-4" />
@@ -144,16 +144,15 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         </div>
         
         <div className="flex flex-col">
-          <span className="text-xs text-gray-500 font-medium mb-1 px-1 md:hidden">Prikaz</span>
-          <div className="flex flex-wrap md:flex-row flex-col gap-2">
+          <div className="flex gap-2">
             <Button
               variant={groupType ? "default" : "outline"}
               size="sm"
               onClick={() => onGroupTypeChange(groupType ? "" : "true")}
               title={groupType ? "Disable grouping" : "Group by member type"}
-              className="min-w-[50px] md:min-w-[130px]"
+              className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
             >
-              <span>Grupiraj</span>
+              <span className="whitespace-nowrap">Grupiraj</span>
             </Button>
             
             {onToggleColoredRows && (
@@ -162,10 +161,10 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 size="sm"
                 onClick={onToggleColoredRows}
                 title={showOnlyColored ? "Prikaži sve članove" : "Prikaži samo obojane retke"}
-                className="min-w-[50px] md:min-w-[130px]"
+                className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
               >
                 <Palette className="h-4 w-4 mr-1" />
-                <span>Obojani</span>
+                <span className="whitespace-nowrap">Obojani</span>
               </Button>
             )}
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import './activities.css';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
@@ -7,7 +8,7 @@ import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { parseISO, format } from 'date-fns';
-import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
+import { Activity as ActivityIcon, Clock, Calendar, PlusCircle, AlertCircle, CheckCircle2, PlayCircle } from 'lucide-react';
 import { calculateGrandTotalHours, calculateTotalActivityHours, formatHoursToHHMM } from '@/utils/activityHours';
 import { useAuth } from '@/context/AuthContext';
 import CreateActivityModal from './CreateActivityModal';
@@ -33,29 +34,24 @@ const ActivitiesList: React.FC = () => {
       ]);
       setActivityTypes(types);
       
-      // 2. Za svaku završenu aktivnost dohvaćamo detalje s podacima o sudionicima
-      const completedActivities = basicActivities.filter(activity => 
-        activity.status === 'COMPLETED'
-      );
+      // 2. Za svaku aktivnost dohvaćamo detalje s podacima o sudionicima
+      // Sada dohvaćamo sve aktivnosti bez obzira na status
       
       // 3. Za svaku aktivnost dohvaćamo detalje kako bismo dobili točne podatke o sudionicima
-      const detailedActivitiesPromises = completedActivities.map(activity => 
+      const detailedActivitiesPromises = basicActivities.map(activity => 
         getActivityById(activity.activity_id.toString())
       );
       
       // 4. Čekamo da se dohvate svi detalji
       const detailedActivities = await Promise.all(detailedActivitiesPromises);
       
-      // 5. Spajamo osnovne aktivnosti s detaljnima (za završene aktivnosti)
+      // 5. Spajamo osnovne aktivnosti s detaljnima za sve aktivnosti
       const enhancedActivities = basicActivities.map(basicActivity => {
-        // Ako je ova aktivnost dovršena, nađi njene detalje
-        if (basicActivity.status === 'COMPLETED') {
-          const detailedActivity = detailedActivities.find(
-            detailedAct => detailedAct.activity_id === basicActivity.activity_id
-          );
-          return detailedActivity || basicActivity;
-        }
-        return basicActivity;
+        // Tražimo detalje za svaku aktivnost
+        const detailedActivity = detailedActivities.find(
+          detailedAct => detailedAct.activity_id === basicActivity.activity_id
+        );
+        return detailedActivity || basicActivity;
       });
       
       console.log('Enhancing activities with detailed participant data', enhancedActivities);
@@ -78,8 +74,21 @@ const ActivitiesList: React.FC = () => {
     if (allActivities.length > 0) {
       // Izdvajamo jedinstvene godine iz svih aktivnosti
       const years = allActivities.map(activity => {
-        const date = new Date(activity.start_date);
-        return date.getFullYear();
+        // Provjera ima li aktivnost datum početka
+        if (!activity.start_date) return new Date().getFullYear(); // Defaultno trenutna godina
+        
+        // Izvlačimo godinu iz ISO formata ili direktno iz datuma
+        let year;
+        if (typeof activity.start_date === 'string') {
+          // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
+          year = parseInt(activity.start_date.substring(0, 4), 10);
+        } else {
+          // Ako je Date objekt
+          const date = new Date(activity.start_date);
+          year = date.getFullYear();
+        }
+        
+        return year;
       });
       
       // Sortiramo godine silazno (od najnovije prema starijima)
@@ -88,7 +97,7 @@ const ActivitiesList: React.FC = () => {
     }
   }, [allActivities]);
 
-  // Filtriramo samo završene aktivnosti
+  // Dohvaćamo aktivnosti po statusu (ali zadržavamo sve aktivnosti u memoriji)
   const completedActivities = allActivities.filter(activity => activity.status === 'COMPLETED');
   
   // Direktno računamo ukupne sate svih aktivnosti, uključujući sve sudionike
@@ -124,14 +133,14 @@ const ActivitiesList: React.FC = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Aktivnosti</h1>
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Aktivnosti</h1>
         <div className="flex items-center gap-4">
           <p className="text-muted-foreground hidden md:block">Pregledajte i sudjelujte u nadolazećim aktivnostima.</p>
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
-            <Button onClick={() => setCreateModalOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nova aktivnost
+            <Button size="sm" className="sm:size-md" onClick={() => setCreateModalOpen(true)}>
+              <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Kreiraj</span>
             </Button>
           )}
         </div>
@@ -139,20 +148,55 @@ const ActivitiesList: React.FC = () => {
 
       <div className="mb-6">
           <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Ukupno odrađenih sati</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between py-3 sm:py-6">
+                  <CardTitle>
+                    <span className="hidden sm:inline">Ukupno odrađenih sati</span>
+                    <span className="inline sm:hidden">Ukupno sati</span>
+                  </CardTitle>
                   <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
               </CardHeader>
           </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {activityYears.length > 0 ? (
           activityYears.map((year) => {
-            // Računamo ukupne sate za aktivnosti ove godine
+            // Računamo ukupne sate za aktivnosti ove godine (samo COMPLETED aktivnosti računamo u sate)
             const yearActivities = allActivities.filter(activity => {
-              const activityYear = new Date(activity.start_date).getFullYear();
+              // Provjera ima li aktivnost datum početka
+              if (!activity.start_date) return false;
+              
+              // Izvlačimo godinu iz ISO formata ili direktno iz datuma
+              let activityYear;
+              if (typeof activity.start_date === 'string') {
+                // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
+                activityYear = parseInt(activity.start_date.substring(0, 4), 10);
+              } else {
+                // Ako je Date objekt
+                const date = new Date(activity.start_date);
+                activityYear = date.getFullYear();
+              }
+              
               return activityYear === year && activity.status === 'COMPLETED';
+            });
+            
+            // Računamo ukupni broj aktivnosti u toj godini (sve aktivnosti, bez obzira na status)
+            const totalYearActivities = allActivities.filter(activity => {
+              // Provjera ima li aktivnost datum početka
+              if (!activity.start_date) return false;
+              
+              // Izvlačimo godinu iz ISO formata ili direktno iz datuma
+              let activityYear;
+              if (typeof activity.start_date === 'string') {
+                // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
+                activityYear = parseInt(activity.start_date.substring(0, 4), 10);
+              } else {
+                // Ako je Date objekt
+                const date = new Date(activity.start_date);
+                activityYear = date.getFullYear();
+              }
+              
+              return activityYear === year;
             });
             const yearHours = calculateGrandTotalHours(yearActivities);
             
@@ -160,22 +204,34 @@ const ActivitiesList: React.FC = () => {
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
             return (
               <Link to={`/activities/year/${year}`} key={year}>
-                <Card className="hover:bg-muted/50 transition-colors">
+                <Card className="hover:bg-muted/50 transition-colors activity-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 justify-center">
-                      <Calendar className="h-6 w-6" />
-                      {year}
+                    <CardTitle className="flex items-center gap-1 sm:gap-2 justify-center">
+                      <Calendar className="h-4 w-4 sm:h-6 sm:w-6" />
+                      <span className="text-lg sm:text-xl">{year}</span>
                     </CardTitle>
                   </CardHeader>
-                  {yearHours > 0 && (
-                    <CardFooter className="pt-0 flex justify-between text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-4 w-4" />
-                        <span>Ukupno sati:</span>
-                      </div>
-                      <Badge variant="outline">{formatHoursToHHMM(yearHours)} h</Badge>
-                    </CardFooter>
-                  )}
+                  <CardFooter className="pt-0 pb-3 px-3 sm:px-6 sm:pb-6 flex flex-col gap-1 sm:gap-2">
+                     {/* Broj aktivnosti u godini */}
+                     <div className="flex justify-between text-muted-foreground w-full">
+                       <div className="flex items-center gap-1 sm:gap-1.5">
+                         <ActivityIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                         <span className="text-xs sm:text-sm">Aktivnosti:</span>
+                       </div>
+                       <Badge variant="secondary" className="text-xs sm:text-sm">{totalYearActivities.length}</Badge>
+                     </div>
+                     
+                     {/* Ukupni sati - prikazuju se samo ako ima dovršenih aktivnosti */}
+                     {yearHours > 0 && (
+                       <div className="flex justify-between text-muted-foreground w-full">
+                         <div className="flex items-center gap-1 sm:gap-1.5">
+                           <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                           <span className="text-xs sm:text-sm">Ukupno sati:</span>
+                         </div>
+                         <Badge variant="outline" className="text-xs sm:text-sm">{formatHoursToHHMM(yearHours)} h</Badge>
+                       </div>
+                     )}
+                   </CardFooter>
                 </Card>
               </Link>
             );

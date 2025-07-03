@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import './activities.css'; // Dodajemo CSS za custom stilove
+import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
@@ -23,8 +24,13 @@ import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
-  const { type_id: activityTypeId, year: yearParam } = useParams<{ type_id?: string; year?: string }>();
+  const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  
+  // Dohvat godine iz URL parametra ili query stringa
+  const yearQueryParam = searchParams.get('year');
+  const yearParam = yearUrlParam || yearQueryParam;
   
   // Određujemo način prikaza na temelju URL-a (po kategoriji ili po godini)
   const isYearView = location.pathname.includes('/activities/year/');
@@ -61,8 +67,19 @@ const ActivityCategoryPage: React.FC = () => {
         
         // Filtriranje aktivnosti po godini
         const filteredActivities = allActivities.filter(activity => {
-          const activityDate = new Date(activity.start_date);
-          return activityDate.getFullYear() === parseInt(yearParam, 10);
+          // Provjera ima li aktivnost datum
+          if (!activity.start_date) return false;
+          
+          // Izvlačimo godinu direktno iz ISO stringa za konzistentnost
+          let activityYear;
+          if (typeof activity.start_date === 'string') {
+            activityYear = parseInt(activity.start_date.substring(0, 4), 10);
+          } else {
+            const activityDate = new Date(activity.start_date);
+            activityYear = activityDate.getFullYear();
+          }
+          
+          return activityYear === parseInt(yearParam, 10);
         });
         
         setActivities(filteredActivities);
@@ -76,8 +93,19 @@ const ActivityCategoryPage: React.FC = () => {
         // Dohvaćamo sve aktivnosti pa filtriramo po godini i tipu
         const allActivities = await getAllActivities();
         const filteredActivities = allActivities.filter(activity => {
-          const activityDate = new Date(activity.start_date);
-          return activityDate.getFullYear() === parseInt(yearParam, 10) && 
+          // Provjera ima li aktivnost datum
+          if (!activity.start_date) return false;
+          
+          // Izvlačimo godinu direktno iz ISO stringa za konzistentnost
+          let activityYear;
+          if (typeof activity.start_date === 'string') {
+            activityYear = parseInt(activity.start_date.substring(0, 4), 10);
+          } else {
+            const activityDate = new Date(activity.start_date);
+            activityYear = activityDate.getFullYear();
+          }
+          
+          return activityYear === parseInt(yearParam, 10) && 
                  activity.type_id.toString() === activityTypeId;
         });
         
@@ -167,17 +195,17 @@ const ActivityCategoryPage: React.FC = () => {
     <div className="p-6">
       <div className="mb-6">
         <Button asChild variant="outline" className="mb-4">
-          <Link to="/activities">
+          <Link to={yearParam && !isYearView ? `/activities/year/${yearParam}` : "/activities"}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {isYearView ? 'Sve godine' : 'Sve kategorije'}
+            {isYearView ? 'Sve godine' : (yearParam ? `Aktivnosti ${yearParam}` : 'Sve kategorije')}
           </Link>
         </Button>
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
             {isYearView ? (
               <>
-                <Calendar className="h-8 w-8" />
-                {yearParam} - Aktivnosti
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
+                <span className="text-xl sm:text-3xl">{yearParam} - Aktivnosti</span>
               </>
             ) : (
               <>
@@ -187,9 +215,9 @@ const ActivityCategoryPage: React.FC = () => {
             )}
           </h1>
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
-            <Button onClick={() => setCreateModalOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Kreiraj novu aktivnost
+            <Button onClick={() => setCreateModalOpen(true)} size="sm" className="sm:text-base sm:px-4 sm:py-2">
+              <PlusCircle className="mr-1 sm:mr-2 h-4 w-4" />
+              <span>Kreiraj</span>
             </Button>
           )}
         </div>
@@ -200,9 +228,16 @@ const ActivityCategoryPage: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
-              {isYearView 
-                ? `Ukupno odrađenih sati u ${yearParam}. godini` 
-                : 'Ukupno odrađenih sati u kategoriji'}
+              <span className="hidden sm:inline">
+                {isYearView 
+                  ? `Ukupno odrađenih sati u ${yearParam}. godini` 
+                  : 'Ukupno odrađenih sati u kategoriji'}
+              </span>
+              <span className="inline sm:hidden">
+                {isYearView 
+                  ? `Sati u ${yearParam}.` 
+                  : 'Sati u kategoriji'}
+              </span>
             </CardTitle>
             <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
           </CardHeader>
@@ -224,31 +259,44 @@ const ActivityCategoryPage: React.FC = () => {
                 activitiesForType.filter(activity => activity.status === 'COMPLETED')
               );
               
+              // Ukupan broj aktivnosti u ovoj kategoriji
+              const totalActivitiesCount = activitiesForType.length;
+              
               return (
                 <Link 
-                  to={`/activities/type/${type.type_id}?year=${yearParam}`} 
+                  to={`/activities/category/${type.type_id}${yearParam ? `?year=${yearParam}` : ''}`} 
                   key={type.type_id}
                   className="block"
                 >
-                  <Card className="h-full transition-colors hover:bg-muted/50">
-                    <CardHeader>
+                   <Card className="h-full transition-colors hover:bg-muted/50 activity-card">
+                    <CardHeader className="activity-card-header">
                       <div className="flex items-center gap-2">
-                        <ActivityIcon className="h-5 w-5" />
-                        <CardTitle>{type.name}</CardTitle>
+                        <ActivityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <CardTitle className="text-base sm:text-lg">{type.name}</CardTitle>
                       </div>
                       {type.description && (
-                        <p className="text-sm text-muted-foreground">{type.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{type.description}</p>
                       )}
                     </CardHeader>
-                    {typeHours > 0 && (
-                      <CardFooter className="pt-0 flex justify-between">
-                        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                          <Clock className="h-4 w-4" />
-                          <span>Ukupno sati:</span>
+                    <CardFooter className="pt-2 flex flex-col gap-2 activity-card-footer">
+                      <div className="w-full space-y-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm">
+                            <ActivityIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Ukupno:</span>
+                          </div>
+                          <Badge variant="secondary">{totalActivitiesCount}</Badge>
                         </div>
-                        <Badge variant="outline">{formatHoursToHHMM(typeHours)} h</Badge>
-                      </CardFooter>
-                    )}
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Sati:</span>
+                          </div>
+                          <Badge variant="outline">{formatHoursToHHMM(typeHours)} h</Badge>
+                        </div>
+                      </div>
+                    </CardFooter>
                   </Card>
                 </Link>
               );
@@ -272,7 +320,7 @@ const ActivityCategoryPage: React.FC = () => {
             activities.map(activity => {
               return (
                 <div key={activity.activity_id} className="relative">
-                  <Link to={`/activities/${activity.activity_id}`} className="block">
+                  <Link to={`/activities/${activity.activity_id}${yearParam ? `?year=${yearParam}` : ''}`} className="block">
                     <Card className="h-full transition-colors hover:bg-muted/50">
                       <CardHeader>
                         <div className="flex justify-between items-start">

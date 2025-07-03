@@ -118,7 +118,7 @@ const EditActivityPage: React.FC = () => {
     try {
       await updateActivity(Number(activityId), dataToUpdate);
       toast({ title: 'Uspjeh', description: 'Aktivnost je uspješno ažurirana.' });
-      navigate(`/activities/details/${activityId}`);
+      navigate(`/activities/${activityId}`);
     } catch (error) {
       toast({ title: 'Greška', description: 'Nije moguće ažurirati aktivnost.', variant: 'destructive' });
     }

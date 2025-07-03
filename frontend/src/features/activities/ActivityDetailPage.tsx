@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import './activities.css';
+import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getActivityById, cancelActivity as apiCancelActivity } from '../../utils/api/apiActivities';
 import { Activity } from '@shared/activity.types';
 import { useAuth } from '../../context/AuthContext';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
-import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban, AlertCircle, CheckCircle2, PlayCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
@@ -28,6 +29,11 @@ const ActivityDetailPage: React.FC = () => {
   const [cancellationReason, setCancellationReason] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Provjeravamo dolazimo li iz prikaza po godini
+  const yearParam = searchParams.get('year') || '';
 
   const fetchActivity = async () => {
     if (!activityId) return;
@@ -80,13 +86,33 @@ const ActivityDetailPage: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PLANNED':
-        return <Badge variant="default">Planirano</Badge>;
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            Planirana
+          </Badge>
+        );
       case 'ACTIVE':
-        return <Badge variant="secondary">Aktivno</Badge>;
+        return (
+          <Badge variant="default" className="flex items-center gap-1 bg-blue-600">
+            <PlayCircle className="h-3.5 w-3.5" />
+            U tijeku
+          </Badge>
+        );
       case 'COMPLETED':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Završeno</Badge>;
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Završena
+          </Badge>
+        );
       case 'CANCELLED':
-        return <Badge variant="destructive">Otkazano</Badge>;
+        return (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Otkazana
+          </Badge>
+        );
       default:
         return <Badge>{status}</Badge>;
     }
@@ -101,15 +127,35 @@ const ActivityDetailPage: React.FC = () => {
   const minutes = totalMinutes % 60;
 
   return (
-    <div className="container mx-auto p-4">
-      <Button onClick={() => navigate(-1)} variant="ghost" className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Povratak
-      </Button>
+    <div className="container mx-auto p-3 sm:p-4">
+      {activity && (
+        <Button 
+          asChild 
+          variant="ghost" 
+          className="mb-4"
+        >
+          {yearParam ? (
+            // Ako imamo parametar godine, vodimo na pregled kategorija za tu godinu
+            <Link to={activity.type_id 
+              ? `/activities/category/${activity.type_id}?year=${yearParam}` 
+              : `/activities/year/${yearParam}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> 
+              {activity.type_id ? 'Natrag na kategoriju' : 'Natrag na kategorije'}
+            </Link>
+          ) : (
+            // Ako nemamo parametar godine, standardni povratak na kategoriju
+            <Link to={activity.type_id ? `/activities/category/${activity.type_id}` : "/activities"}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> 
+              {activity.type_id ? 'Sve kategorije' : 'Natrag'}
+            </Link>
+          )}
+        </Button>
+      )}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl mb-2">{activity.name}</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl mb-2">{activity.name}</CardTitle>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 {getStatusBadge(activity.status)}
                 
@@ -139,15 +185,22 @@ const ActivityDetailPage: React.FC = () => {
               </div>
             </div>
             {canEdit && !isCancelled && (
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-2 sm:mt-0">
                 <Link to={`/activities/${activity.activity_id}/edit`}>
-                  <Button variant="outline">
-                    <Edit className="mr-2 h-4 w-4" /> Uredi
+                  <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
+                    <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                    <span className="text-xs sm:text-sm">Uredi</span>
                   </Button>
                 </Link>
                 {!isCompleted && (
-                  <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)}>
-                    <Ban className="mr-2 h-4 w-4" /> Otkaži
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="sm:size-md w-full sm:w-auto"
+                    onClick={() => setIsCancelModalOpen(true)}
+                  >
+                    <Ban className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                    <span className="text-xs sm:text-sm">Otkaži</span>
                   </Button>
                 )}
               </div>
@@ -161,36 +214,38 @@ const ActivityDetailPage: React.FC = () => {
               <p className="text-red-700">{activity.cancellation_reason}</p>
             </div>
           )}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-4">
               <div className="flex items-start">
-                <Info className="h-5 w-5 mr-3 mt-1 text-gray-500" />
+                <Info className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>
-                  <h3 className="font-semibold">Opis</h3>
-                  <p className="text-gray-600">{activity.description}</p>
+                  <h3 className="font-semibold text-sm sm:text-base">Opis</h3>
+                  <p className="text-gray-600 text-sm sm:text-base">{activity.description}</p>
                 </div>
               </div>
 
               <div className="flex items-start">
-                <Calendar className="h-5 w-5 mr-3 mt-1 text-gray-500" />
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>
-                  <h3 className="font-semibold">Vrijeme održavanja</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">Vrijeme održavanja</h3>
                   
                   {/* Provjera ima li ručnog unosa sati */}
                   {activity.participants && activity.participants.some(p => p.manual_hours) ? (
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 text-sm sm:text-base">
                       <span className="font-medium">Ručni unos</span>
                     </p>
                   ) : (
                     <>
-                      <p className="text-gray-600">
-                        Početak:{' '}
+                      <p className="text-gray-600 text-sm sm:text-base">
+                        <span className="hidden sm:inline">Početak:{' '}</span>
+                        <span className="inline sm:hidden">Od:{' '}</span>
                         {activity.actual_start_time
                           ? format(new Date(activity.actual_start_time), 'dd.MM.yyyy HH:mm')
                           : 'Nije definirano'}
                       </p>
-                      <p className="text-gray-600">
-                        Završetak:{' '}
+                      <p className="text-gray-600 text-sm sm:text-base">
+                        <span className="hidden sm:inline">Završetak:{' '}</span>
+                        <span className="inline sm:hidden">Do:{' '}</span>
                         {activity.actual_end_time
                           ? format(new Date(activity.actual_end_time), 'dd.MM.yyyy HH:mm')
                           : 'Nije definirano'}
@@ -201,8 +256,8 @@ const ActivityDetailPage: React.FC = () => {
                   {/* Prikaz postotka priznavanja sati samo ako nije tip SASTANCI ili ako je postotak različit od 100% */}
                   {(!isMeetingType || (activity.recognition_percentage && activity.recognition_percentage < 100)) && (
                     <div className="mt-2 border-t border-gray-100 pt-2">
-                      <p className="text-gray-600">
-                        <span className="font-medium">Postotak priznavanja sati:</span>{' '}
+                      <p className="text-gray-600 text-sm sm:text-base">
+                        <span className="font-medium">Postotak priznavanja:</span>{' '}
                         <span className={activity.recognition_percentage < 100 ? 'text-amber-600 font-semibold' : ''}>
                           {activity.recognition_percentage || 100}%
                         </span>
@@ -217,20 +272,20 @@ const ActivityDetailPage: React.FC = () => {
               {/* Prikaz organizatora samo ako nije tip SASTANCI */}
               {!isMeetingType && (
                 <div className="flex items-start">
-                  <User className="h-5 w-5 mr-3 mt-1 text-gray-500" />
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                   <div>
-                    <h3 className="font-semibold">Organizator</h3>
-                    <p className="text-gray-600">{activity.organizer?.full_name || 'N/A'}</p>
+                    <h3 className="font-semibold text-sm sm:text-base">Organizator</h3>
+                    <p className="text-gray-600 text-sm sm:text-base">{activity.organizer?.full_name || 'N/A'}</p>
                   </div>
                 </div>
               )}
 
               <div className="flex items-start">
-                <Users className="h-5 w-5 mr-3 mt-1 text-gray-500" />
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>
-                  <h3 className="font-semibold">Sudionici ({activity.participants?.length || 0})</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">Sudionici ({activity.participants?.length || 0})</h3>
                   {activity.participants && activity.participants.length > 0 ? (
-                    <ul className="list-disc list-outside ml-5 text-gray-600">
+                    <ul className="list-disc list-outside ml-5 text-gray-600 text-xs sm:text-sm">
                       {activity.participants.map((p) => (
                         <li key={p.member.member_id}>
                           <div className="flex flex-col">
