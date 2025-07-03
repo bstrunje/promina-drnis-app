@@ -29,6 +29,37 @@ export const findAllActivities = async () => {
   });
 };
 
+/**
+ * Dohvaća sve aktivnosti s detaljima sudionika (za izračun sati)
+ * Ova funkcija je specijalizirana verzija findAllActivities koja uključuje i podatke o sudionicima
+ */
+export const findAllActivitiesWithParticipants = async () => {
+  return prisma.activity.findMany({
+    include: {
+      activity_type: true,
+      organizer: {
+        select: { member_id: true, first_name: true, last_name: true },
+      },
+      participants: {
+        include: {
+          member: {
+            select: {
+              member_id: true,
+              first_name: true,
+              last_name: true,
+              full_name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: { participants: true },
+      },
+    },
+    orderBy: { start_date: 'desc' },
+  });
+};
+
 export const findActivityById = async (activity_id: number) => {
   return prisma.activity.findUnique({
     where: { activity_id },

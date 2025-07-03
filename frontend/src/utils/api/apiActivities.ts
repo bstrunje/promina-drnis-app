@@ -27,9 +27,19 @@ export const getActivitiesByTypeId = async (typeId: string): Promise<Activity[]>
  * @returns Promise koji razrješava u polje aktivnosti.
  */
 export const getAllActivities = async (): Promise<Activity[]> => {
-  // Dodajemo include=participants query parametar kako bismo dobili i podatke o sudionicima
-  // potrebne za izračun ukupnih sati
-  const response = await apiInstance.get('/activities?include=participants');
+  // Standardna funkcija za dohvaćanje svih aktivnosti, koristi se gdje nije potreban
+  // detaljan izračun sati s uključenim podacima o sudionicima
+  const response = await apiInstance.get('/activities');
+  return response.data;
+};
+
+/**
+ * Dohvaća sve aktivnosti s potpunim detaljima o sudionicima (za izračun sati)
+ * @returns Promise koji razrješava u polje aktivnosti s potpunim detaljima sudionika
+ */
+export const getAllActivitiesWithParticipants = async (): Promise<Activity[]> => {
+  // Koristi novu specijaliziranu rutu koja vraća potpune podatke o sudionicima
+  const response = await apiInstance.get('/activities/with-participants');
   return response.data;
 };
 

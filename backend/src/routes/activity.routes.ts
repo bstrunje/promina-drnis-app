@@ -15,6 +15,10 @@ router.get('/type/:typeId', authenticateToken, activityController.getActivitiesB
 // Dohvati sve aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/', authenticateToken, activityController.getAllActivities);
 
+// VAŽNO: Specifične rute moraju doći prije parametarskih ruta!
+// Dohvati sve aktivnosti s detaljima o sudionicima (za izračun sati - dostupno svim prijavljenim korisnicima)
+router.get('/with-participants', authenticateToken, activityController.getAllActivitiesWithParticipants);
+
 // Dohvati jednu aktivnost po ID-u (dostupno svim prijavljenim korisnicima)
 router.get('/:activityId', authenticateToken, activityController.getActivityById);
 

@@ -5,7 +5,7 @@ import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircl
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities } from '@/utils/api/apiActivities';
+import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -62,8 +62,9 @@ const ActivityCategoryPage: React.FC = () => {
         // U prikazu po godini, želimo prikazati kategorije a ne aktivnosti
         // Tako da trebamo samo tipove koje već imamo
         
-        // Dohvaćamo aktivnosti te godine za računanje statistike
-        const allActivities = await getAllActivities();
+        // Dohvaćamo aktivnosti te godine za računanje statistike s detaljima o sudionicima
+        // Koristimo novu funkciju koja dohvaća sve podatke o sudionicima za pravilni izračun sati
+        const allActivities = await getAllActivitiesWithParticipants();
         
         // Filtriranje aktivnosti po godini
         const filteredActivities = allActivities.filter(activity => {
@@ -90,8 +91,8 @@ const ActivityCategoryPage: React.FC = () => {
         const currentType = types.find(t => t.type_id.toString() === activityTypeId);
         setActivityType(currentType || null);
         
-        // Dohvaćamo sve aktivnosti pa filtriramo po godini i tipu
-        const allActivities = await getAllActivities();
+        // Dohvaćamo sve aktivnosti s detaljima o sudionicima pa filtriramo po godini i tipu
+        const allActivities = await getAllActivitiesWithParticipants();
         const filteredActivities = allActivities.filter(activity => {
           // Provjera ima li aktivnost datum
           if (!activity.start_date) return false;

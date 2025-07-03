@@ -83,6 +83,14 @@ export const getAllActivitiesService = async () => {
   return activityRepository.findAllActivities();
 };
 
+/**
+ * Dohvaća sve aktivnosti s detaljima o sudionicima (koristi se za izračun sati)
+ * @returns Promise<Activity[]> Lista aktivnosti s uključenim sudionicima
+ */
+export const getAllActivitiesWithParticipantsService = async () => {
+  return activityRepository.findAllActivitiesWithParticipants();
+};
+
 export const getActivityByIdService = async (activity_id: number) => {
   const activity = await prisma.activity.findUnique({
     where: { activity_id },

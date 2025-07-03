@@ -37,6 +37,19 @@ export const getAllActivities = async (req: Request, res: Response, next: NextFu
   }
 };
 
+/**
+ * Dohvaća sve aktivnosti s detaljima o sudionicima
+ * @route GET /api/activities/with-participants
+ */
+export const getAllActivitiesWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const activities = await activityService.getAllActivitiesWithParticipantsService();
+    res.status(200).json(activities);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getActivityById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);
