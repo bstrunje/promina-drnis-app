@@ -33,7 +33,14 @@ export const getActivityTypesServiceNew = async () => {
 // --- Aktivnosti --- //
 
 export const createActivityService = async (data: any, organizer_id: number) => {
-  const { activity_type_id, participant_ids, recognition_percentage, manual_hours, ...rest } = data;
+  const { 
+    activity_type_id, 
+    participant_ids, 
+    participations, // Novi parametar za sudionike s ulogama i priznavanjem
+    recognition_percentage, 
+    manual_hours, 
+    ...rest 
+  } = data;
 
   if (!activity_type_id) {
     throw new Error('Activity type ID is required.');
@@ -46,12 +53,27 @@ export const createActivityService = async (data: any, organizer_id: number) => 
   const recognitionValue = recognition_percentage !== undefined ? recognition_percentage : 100;
   console.log('Recognition value being set:', recognitionValue); // Logging za debug
 
-  const activityData: Prisma.ActivityUncheckedCreateInput = {
-    ...rest,
-    organizer_id,
-    type_id: activity_type_id,
-    status, // Postavljanje statusa
-    participants: participant_ids && participant_ids.length > 0 ? {
+  let participantsData;
+  let memberIdsForUpdate: number[] = [];
+
+  // Provjeri imamo li podatke o sudionicima s ulogama (za izlete)
+  if (participations && participations.length > 0) {
+    participantsData = {
+      create: participations.map((p: { member_id: number; recognition_override: number }) => ({
+        member_id: p.member_id,
+        // Automatsko popunjavanje vremena sudionika ili manual_hours ako je uneseno
+        start_time: rest.actual_start_time ? new Date(rest.actual_start_time) : null,
+        end_time: rest.actual_end_time ? new Date(rest.actual_end_time) : null,
+        // Dodajemo manual_hours za sve sudionike ako je uneseno
+        manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
+        recognition_override: p.recognition_override, // Individualni postotak priznavanja na temelju uloge
+      })),
+    };
+    memberIdsForUpdate = participations.map((p: { member_id: number }) => p.member_id);
+  } 
+  // Standardni način s običnim ID-ovima sudionika
+  else if (participant_ids && participant_ids.length > 0) {
+    participantsData = {
       create: participant_ids.map((id: number) => ({
         member_id: id,
         // Automatsko popunjavanje vremena sudionika ili manual_hours ako je uneseno
@@ -61,7 +83,16 @@ export const createActivityService = async (data: any, organizer_id: number) => 
         manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
         recognition_override: recognitionValue, // Koristimo vrijednost iz requesta
       })),
-    } : undefined,
+    };
+    memberIdsForUpdate = participant_ids;
+  }
+
+  const activityData: Prisma.ActivityUncheckedCreateInput = {
+    ...rest,
+    organizer_id,
+    type_id: activity_type_id,
+    status,
+    participants: participantsData
   };
 
   // Koristi transakciju za stvaranje aktivnosti i ažuriranje ukupnih sati sudionika
@@ -69,8 +100,8 @@ export const createActivityService = async (data: any, organizer_id: number) => 
     const createdActivity = await activityRepository.createActivity(activityData, tx);
     
     // Ažuriranje ukupnih sati za sve sudionike koji su dodani unutar iste transakcije
-    if (participant_ids && participant_ids.length > 0) {
-      for (const memberId of participant_ids) {
+    if (memberIdsForUpdate.length > 0) {
+      for (const memberId of memberIdsForUpdate) {
         await updateMemberTotalHours(memberId, tx);
       }
     }

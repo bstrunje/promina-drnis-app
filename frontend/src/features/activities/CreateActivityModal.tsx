@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import RecognitionPercentageInput from '@components/RecognitionPercentageInput';
 import { MemberSelect } from './MemberSelect';
+import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { ActivityType } from '@shared/activity.types';
 
 interface CreateActivityModalProps {
@@ -31,6 +32,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const [actualEndDate, setActualEndDate] = useState('');
   const [actualEndTime, setActualEndTime] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [participantsWithRoles, setParticipantsWithRoles] = useState<MemberWithRole[]>([]);
   const [recognitionPercentage, setRecognitionPercentage] = useState('100');
   const [manualHours, setManualHours] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +72,13 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       void fetchActivityTypes();
     }
   }, [isOpen, selectedTypeId]);
+  
+  // Efekt koji prati promjenu tipa aktivnosti
+  useEffect(() => {
+    // Resetiranje sudionika kad se promijeni tip aktivnosti
+    setParticipantIds([]);
+    setParticipantsWithRoles([]);
+  }, [selectedTypeId]);
 
   const handleSetNow = (
     dateSetter: React.Dispatch<React.SetStateAction<string>>,
@@ -93,19 +102,48 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     const combinedStartDate = `${startDate}T${startTime}`;
     const combinedActualStartTime = actualStartDate && actualStartTime ? `${actualStartDate}T${actualStartTime}` : null;
     const combinedActualEndTime = actualEndDate && actualEndTime ? `${actualEndDate}T${actualEndTime}` : null;
-
+    
+    // Provjeri je li odabrani tip aktivnosti "izleti"
+    const isExcursionActivity = activityTypes.find(type => type.type_id === Number(selectedTypeId))?.key === 'izleti';
+    
     try {
-      await createActivity({
-        name: activityName,
-        description,
-        start_date: new Date(combinedStartDate),
-        // Ako su uneseni ručni sati, ne šaljemo stvarna vremena
-        actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
-        actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
-        activity_type_id: Number(selectedTypeId),
-        recognition_percentage: Number(recognitionPercentage),
-        participant_ids: participantIds.map(id => Number(id)),
-      });
+      if (isExcursionActivity && participantsWithRoles.length > 0) {
+        // Za izlete trebamo stvoriti aktivnost za svakog sudionika s njegovim postotkom priznavanja
+        const participationsWithRecognition = participantsWithRoles.map(participant => {
+          // Izračunaj postotak priznavanja na temelju uloge
+          const recognitionForRole = rolesToRecognitionPercentage[participant.role];
+          return {
+            member_id: Number(participant.memberId),
+            // Ako postoji ručni unos postotka priznavanja, koristi njega, inače koristi postotak za ulogu
+            recognition_override: participant.manualRecognition ?? recognitionForRole
+          };
+        });
+        
+        // Stvori aktivnost s posebnim postavkama za izlete
+        await createActivity({
+          name: activityName,
+          description,
+          start_date: new Date(combinedStartDate),
+          actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
+          actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
+          activity_type_id: Number(selectedTypeId),
+          recognition_percentage: Number(recognitionPercentage),
+          participations: participationsWithRecognition,
+        });
+      } else {
+        // Za ostale tipove aktivnosti koristimo standardni način
+        await createActivity({
+          name: activityName,
+          description,
+          start_date: new Date(combinedStartDate),
+          // Ako su uneseni ručni sati, ne šaljemo stvarna vremena
+          actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
+          actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
+          activity_type_id: Number(selectedTypeId),
+          recognition_percentage: Number(recognitionPercentage),
+          participant_ids: participantIds.map(id => Number(id)),
+        });
+      }
       toast({ title: 'Uspjeh', description: 'Aktivnost je uspješno kreirana.' });
       onActivityCreated();
       // Reset form
@@ -359,7 +397,18 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           <div className="grid sm:grid-cols-4 items-start gap-1 sm:gap-4">
             <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">Sudionici</Label>
             <div className="sm:col-span-3">
-              <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
+              {/* Prikazujemo različite komponente ovisno o tipu aktivnosti */}
+              {activityTypes.find(type => type.type_id === Number(selectedTypeId))?.key === 'izleti' ? (
+                <MemberRoleSelect 
+                  selectedMembers={participantsWithRoles} 
+                  onSelectionChange={setParticipantsWithRoles} 
+                />
+              ) : (
+                <MemberSelect 
+                  selectedMemberIds={participantIds} 
+                  onSelectionChange={setParticipantIds} 
+                />
+              )}
             </div>
           </div>
 

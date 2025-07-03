@@ -19,6 +19,24 @@ import {
 } from '@components/ui/dialog';
 import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
+import { ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
+
+// Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
+const getRoleNameByPercentage = (percentage: number): string => {
+  // Obrnuta mapa postotaka u uloge
+  switch (percentage) {
+    case rolesToRecognitionPercentage[ParticipantRole.GUIDE]:
+      return 'Vodič';
+    case rolesToRecognitionPercentage[ParticipantRole.ASSISTANT_GUIDE]:
+      return 'Pomoćni vodič';
+    case rolesToRecognitionPercentage[ParticipantRole.DRIVER]:
+      return 'Vozač';
+    case rolesToRecognitionPercentage[ParticipantRole.REGULAR]:
+      return 'Izletnik';
+    default:
+      return `${percentage}%`;
+  }
+};
 
 const ActivityDetailPage: React.FC = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -80,8 +98,9 @@ const ActivityDetailPage: React.FC = () => {
   const isCancelled = activity.status === 'CANCELLED';
   const isCompleted = activity.status === 'COMPLETED';
   
-  // Provjera je li aktivnost tipa SASTANCI prema ključu (key) - stabilniji identifikator
+  // Provjera je li aktivnost tipa SASTANCI ili IZLETI prema ključu (key) - stabilniji identifikator
   const isMeetingType = activity.activity_type?.key === 'sastanci';
+  const isExcursionType = activity.activity_type?.key === 'izleti';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -296,8 +315,14 @@ const ActivityDetailPage: React.FC = () => {
                                 <span className="text-amber-600 font-medium ml-1">({p.recognition_override}%)</span>
                               )}
                             </div>
+                            {/* Za IZLETI, prikazujemo samo ulogu i postotak */}
+                            {isExcursionType && p.recognition_override && (
+                              <div className="text-sm text-amber-600 font-medium">
+                                {getRoleNameByPercentage(p.recognition_override)}
+                              </div>
+                            )}
                             {/* Za ostale tipove aktivnosti, prikazujemo postotak u novom redu ako je različit od activity.recognition_percentage */}
-                            {!isMeetingType && p.recognition_override && p.recognition_override !== activity.recognition_percentage && (
+                            {!isMeetingType && !isExcursionType && p.recognition_override && p.recognition_override !== activity.recognition_percentage && (
                               <div className="text-sm text-amber-600 font-medium">
                                 Postotak priznavanja: {p.recognition_override}%
                               </div>
