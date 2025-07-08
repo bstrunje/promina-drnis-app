@@ -117,30 +117,31 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
 
     // Dohvati broj članova koji imaju plaćenu članarinu za tekuću godinu
     const currentYear = getCurrentDate().getFullYear();
-    
+
     let memberCount = 0;
     try {
-      // Detaljno logiranje za razumijevanje upita
-      console.log(`Trenutna godina: ${currentYear}`);
-      
+      // KORISTIMO ISPRAVNU I JEDNOSTAVNU LOGIKU ZA BROJANJE ČLANOVA
       const members = await prisma.member.findMany({
-        where: {
-          status: 'registered'
-        },
+        where: { status: 'registered' },
         include: {
-          membership_details: true
-        }
+          membership_details: true,
+        },
       });
-      
+
       console.log(`Ukupno aktivnih članova: ${members.length}`);
-      
+
       // Filtriraj članove koji imaju plaćenu članarinu
       const membersWithPaidFees = members.filter(member => {
-        if (!member.membership_details || !member.membership_details.active_until) {
-          console.log(`Član ID ${member.member_id} nema membership_details ili active_until`);
+        if (
+          !member.membership_details ||
+          !member.membership_details.active_until
+        ) {
+          console.log(
+            `Član ID ${member.member_id} nema membership_details ili active_until`
+          );
           return false;
         }
-        
+
         // Parsiraj datum
         let paidUntilDate: Date;
         try {
@@ -148,32 +149,128 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
           if (member.membership_details.active_until instanceof Date) {
             paidUntilDate = member.membership_details.active_until;
           } else {
-            paidUntilDate = parseDate(member.membership_details.active_until as string);
+            paidUntilDate = parseDate(
+              member.membership_details.active_until as string
+            );
           }
-          
+
           const paidYear = paidUntilDate.getFullYear();
-          console.log(`Član ID ${member.member_id} ima plaćeno do: ${formatDate(paidUntilDate, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}, godina: ${paidYear}`);
-          
+          console.log(
+            `Član ID ${member.member_id} ima plaćeno do: ${formatDate(
+              paidUntilDate,
+              "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+            )}, godina: ${paidYear}`
+          );
+
           // Provjera je li članarina plaćena za tekuću godinu
           const isPaid = paidYear >= currentYear;
-          console.log(`Član ID ${member.member_id} ima plaćenu članarinu za tekuću godinu: ${isPaid}`);
+          console.log(
+            `Član ID ${member.member_id} ima plaćenu članarinu za tekuću godinu: ${isPaid}`
+          );
           return isPaid;
         } catch (parseError) {
-          console.error(`Greška kod parsiranja datuma za člana ${member.member_id}:`, parseError);
+          console.error(
+            `Greška kod parsiranja datuma za člana ${member.member_id}:`,
+            parseError
+          );
           return false;
         }
       });
-      
-      memberCount = membersWithPaidFees.length;
-      console.log(`Broj članova s plaćenom članarinom za tekuću godinu: ${memberCount}`);
-      console.log(`Detalji članova s plaćenom članarinom:`, membersWithPaidFees.map(m => ({
-        id: m.member_id,
-        name: `${m.first_name} ${m.last_name}`,
-        paidUntil: m.membership_details?.active_until
-      })));
-    } catch (error) {
-      console.error("Greška kod dohvaćanja članova s plaćenom članarinom:", error);
-      // Nastavi s izvršavanjem, koristimo default vrijednost 0
+
+      memberCount = members.length; // ISPRAVAK: Koristimo ukupan broj registriranih članova
+      console.log(
+        `Broj članova s plaćenom članarinom za tekuću godinu: ${memberCount}`
+      );
+      console.log(
+        `Detalji članova s plaćenom članarinom:`,
+        membersWithPaidFees.map(m => ({
+          id: m.member_id,
+          name: `${m.first_name} ${m.last_name}`,
+          paidUntil: m.membership_details?.active_until,
+        }))
+      );
+    } catch (e) {
+      console.error('Greška pri brojanju članova, fallback na staru logiku', e);
+      // U slučaju greške, pokušaj sa starom logikom
+      try {
+        // Detaljno logiranje za razumijevanje upita
+        console.log(`Trenutna godina: ${currentYear}`);
+
+        const members = await prisma.member.findMany({
+          where: { status: 'registered' },
+          include: {
+            membership_details: true,
+          },
+        });
+
+        console.log(`Ukupno aktivnih članova: ${members.length}`);
+
+        // Filtriraj članove koji imaju plaćenu članarinu
+        const membersWithPaidFees = members.filter(member => {
+          if (
+            !member.membership_details ||
+            !member.membership_details.active_until
+          ) {
+            console.log(
+              `Član ID ${member.member_id} nema membership_details ili active_until`
+            );
+            return false;
+          }
+
+          // Parsiraj datum
+          let paidUntilDate: Date;
+          try {
+            // Provjeri je li active_until već Date objekt ili string
+            if (member.membership_details.active_until instanceof Date) {
+              paidUntilDate = member.membership_details.active_until;
+            } else {
+              paidUntilDate = parseDate(
+                member.membership_details.active_until as string
+              );
+            }
+
+            const paidYear = paidUntilDate.getFullYear();
+            console.log(
+              `Član ID ${member.member_id} ima plaćeno do: ${formatDate(
+                paidUntilDate,
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+              )}, godina: ${paidYear}`
+            );
+
+            // Provjera je li članarina plaćena za tekuću godinu
+            const isPaid = paidYear >= currentYear;
+            console.log(
+              `Član ID ${member.member_id} ima plaćenu članarinu za tekuću godinu: ${isPaid}`
+            );
+            return isPaid;
+          } catch (parseError) {
+            console.error(
+              `Greška kod parsiranja datuma za člana ${member.member_id}:`,
+              parseError
+            );
+            return false;
+          }
+        });
+
+        memberCount = membersWithPaidFees.length;
+        console.log(
+          `Broj članova s plaćenom članarinom za tekuću godinu: ${memberCount}`
+        );
+        console.log(
+          `Detalji članova s plaćenom članarinom:`,
+          membersWithPaidFees.map(m => ({
+            id: m.member_id,
+            name: `${m.first_name} ${m.last_name}`,
+            paidUntil: m.membership_details?.active_until,
+          }))
+        );
+      } catch (error) {
+        console.error(
+          'Greška kod dohvaćanja članova s plaćenom članarinom:',
+          error
+        );
+        // Nastavi s izvršavanjem, koristimo default vrijednost 0
+      }
     }
 
     // Vrati statistike
@@ -839,10 +936,7 @@ export const memberController = {
 
       res.json({ message: "Membership terminated successfully" });
     } catch (error) {
-      console.error("Controller error:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      handleControllerError(error, res);
     }
   },
 

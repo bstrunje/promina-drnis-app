@@ -76,25 +76,21 @@ router.get('/dashboard/stats', async (req, res) => {
     });
     
     // Get recent activities 
-    const twentyFourHoursAgo = getCurrentDate();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     let recentActivities = 0;
     try {
-      // If you have an Activity model, uncomment and modify this
-      // recentActivities = await prisma.activity.count({
-      //   where: {
-      //     created_at: {
-      //       gte: twentyFourHoursAgo
-      //     }
-      //   }
-      // });
-      
-      // For now, just return a dummy count
-      recentActivities = Math.floor(Math.random() * 20);
+      recentActivities = await prisma.activity.count({
+        where: {
+          created_at: {
+            gte: thirtyDaysAgo,
+          },
+        },
+      });
     } catch (err) {
       console.error('Error getting activity count:', err);
-      recentActivities = 0;
+      recentActivities = 0; // Fallback to 0 in case of error
     }
     
     // Get system health and backup info

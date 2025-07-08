@@ -152,7 +152,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{stats.recentActivities}</p>
-                <p className="text-sm text-gray-500">In the last 24 hours</p>
+                <p className="text-sm text-gray-500">U zadnjih 30 dana</p>
               </>
             )}
           </div>
