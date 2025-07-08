@@ -3,6 +3,7 @@ import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
 import { updateMemberTotalHours } from './member.service.js';
+import { updateAnnualStatistics } from './statistics.service.js';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -164,6 +165,14 @@ export const getActivitiesByTypeIdService = async (type_id: number) => {
   return activityRepository.findActivitiesByTypeId(type_id);
 };
 
+export const getActivitiesByMemberIdService = async (member_id: number) => {
+  return activityRepository.findActivitiesByParticipantId(member_id);
+};
+
+export const getParticipationsByMemberIdAndYearService = async (member_id: number, year: number) => {
+  return activityRepository.findParticipationsByMemberIdAndYear(member_id, year);
+};
+
 export const updateActivityService = async (activity_id: number, data: any) => {
   const existingActivity = await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
 
@@ -235,15 +244,23 @@ export const updateActivityService = async (activity_id: number, data: any) => {
         },
       });
       
-      // Ažuriraj ukupne sate za sve postojeće sudionike unutar transakcije
+      // Ažuriraj ukupne sate i godišnju statistiku za sve postojeće sudionike unutar transakcije
       for (const memberId of existingParticipants) {
         await updateMemberTotalHours(memberId, tx);
+        if (updatedActivity.start_date) {
+          const year = new Date(updatedActivity.start_date).getFullYear();
+          await updateAnnualStatistics(memberId, year, tx);
+        }
       }
     } else if (participant_ids && Array.isArray(participant_ids)) {
       // Ažuriraj sate i za stare i za nove sudionike unutar transakcije
       const allParticipantIds = new Set([...existingParticipants, ...participant_ids]);
       for (const memberId of allParticipantIds) {
         await updateMemberTotalHours(memberId, tx);
+        if (updatedActivity.start_date) {
+          const year = new Date(updatedActivity.start_date).getFullYear();
+          await updateAnnualStatistics(memberId, year, tx);
+        }
       }
     }
 
@@ -289,9 +306,13 @@ export const deleteActivityService = async (activity_id: number) => {
     // Izbriši aktivnost unutar transakcije
     const result = await activityRepository.deleteActivity(activity_id, tx);
     
-    // Ažuriraj sate za sve sudionike koji su bili dio izbrisane aktivnosti unutar transakcije
+    // Ažuriraj sate i godišnju statistiku za sve sudionike koji su bili dio izbrisane aktivnosti unutar transakcije
     for (const memberId of participantIds) {
       await updateMemberTotalHours(memberId, tx);
+      if (activity.start_date) {
+        const year = new Date(activity.start_date).getFullYear();
+        await updateAnnualStatistics(memberId, year, tx);
+      }
     }
     
     return result;
@@ -347,8 +368,22 @@ export const removeParticipantFromActivityService = async (activity_id: number, 
   
   // Koristi transakciju za uklanjanje sudionika i ažuriranje ukupnih sati
   return prisma.$transaction(async (tx: TransactionClient) => {
+    // Dohvati aktivnost prije uklanjanja sudionika kako bismo znali godinu
+    const participation = await activityRepository.findParticipation(activity_id, member_id);
+    if (!participation) {
+      throw new NotFoundError('Član nije pronađen kao sudionik na ovoj aktivnosti.');
+    }
+    const activity = await activityRepository.findActivityByIdSimple(activity_id);
+    if (!activity) {
+      throw new NotFoundError('Aktivnost nije pronađena.');
+    }
+
     await activityRepository.removeParticipant(activity_id, member_id, tx);
     await updateMemberTotalHours(member_id, tx);
+    if (activity.start_date) {
+      const year = new Date(activity.start_date).getFullYear();
+      await updateAnnualStatistics(member_id, year, tx);
+    }
     
     return;
   });
@@ -436,6 +471,23 @@ export const updateParticipationService = async (
     await activityRepository.updateParticipation(participation_id, processedUpdateData, tx);
     await updateMemberTotalHours(memberId, tx);
     
-    return;
+    // Dohvati ažurirano sudjelovanje s podacima o aktivnosti
+    const updatedParticipationWithActivity = await (tx as PrismaClient).activityParticipation.findUnique({
+      where: { participation_id },
+      include: { activity: true },
+    });
+
+    if (!updatedParticipationWithActivity) {
+      throw new NotFoundError('Participation record not found after update.');
+    }
+
+    // Nakon ažuriranja, ponovno izračunaj ukupne sate i godišnju statistiku za tog člana
+    await updateMemberTotalHours(memberId, tx);
+    if (updatedParticipationWithActivity.activity.start_date) {
+      const year = new Date(updatedParticipationWithActivity.activity.start_date).getFullYear();
+      await updateAnnualStatistics(memberId, year, tx);
+    }
+
+    return updatedParticipationWithActivity;
   });
 };

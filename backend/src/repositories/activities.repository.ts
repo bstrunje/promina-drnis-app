@@ -93,10 +93,67 @@ export const findActivityById = async (activity_id: number) => {
 };
 
 export const findActivitiesByTypeId = async (type_id: number) => {
-  const activities = await prisma.activity.findMany({
+  return prisma.activity.findMany({ where: { type_id } });
+};
+
+export const findActivitiesByParticipantId = async (member_id: number) => {
+  return prisma.activityParticipation.findMany({
     where: {
-      activity_type: {
-        type_id: type_id,
+      member_id: member_id,
+    },
+    include: {
+      activity: { // Uključujemo podatke o samoj aktivnosti
+        include: {
+          activity_type: true, // I tip aktivnosti
+        }
+      }
+    },
+    orderBy: {
+      activity: {
+        start_date: 'desc'
+      }
+    }
+  });
+};
+
+export const findParticipationsByMemberIdAndYear = async (member_id: number, year: number) => {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  return prisma.activityParticipation.findMany({
+    where: {
+      member_id: member_id,
+      activity: {
+        start_date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    },
+    include: {
+      activity: {
+        include: {
+          activity_type: true,
+        },
+      },
+    },
+    orderBy: {
+      activity: {
+        start_date: 'desc',
+      },
+    },
+  });
+};
+
+export const findActivityByIdSimple = async (activity_id: number) => {
+  return prisma.activity.findUnique({ where: { activity_id } });
+};
+
+export const findActivitiesByMemberId = async (member_id: number) => {
+  return prisma.activity.findMany({
+    where: {
+      organizer: {
+        member_id: member_id,
       },
     },
     include: {
@@ -104,26 +161,12 @@ export const findActivitiesByTypeId = async (type_id: number) => {
       organizer: {
         select: { member_id: true, first_name: true, last_name: true },
       },
-      // Dohvaćamo i podatke o sudionicima kako bismo imali pristup manual_hours
-      participants: {
-        include: {
-          member: {
-            select: {
-              member_id: true,
-              first_name: true,
-              last_name: true,
-              full_name: true, 
-            },
-          },
-        },
-      },
       _count: {
         select: { participants: true },
       },
     },
     orderBy: { start_date: 'desc' },
   });
-  return activities;
 };
 
 export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput, prismaClient: TransactionClient = prisma) => {

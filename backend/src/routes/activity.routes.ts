@@ -22,6 +22,12 @@ router.get('/with-participants', authenticateToken, activityController.getAllAct
 // Dohvati jednu aktivnost po ID-u (dostupno svim prijavljenim korisnicima)
 router.get('/:activityId', authenticateToken, activityController.getActivityById);
 
+// Dohvati sve aktivnosti za člana (dostupno svim prijavljenim korisnicima)
+router.get('/member/:memberId', authenticateToken, activityController.getActivitiesByMemberId);
+
+// Dohvati sve aktivnosti za člana za određenu godinu (dostupno svim prijavljenim korisnicima)
+router.get('/member/:memberId/:year', authenticateToken, activityController.getParticipationsByMemberIdAndYear);
+
 // Kreiraj novu aktivnost (samo admin i superuser)
 router.post('/', authenticateToken, roles.requireAdmin, activityController.createActivity);
 

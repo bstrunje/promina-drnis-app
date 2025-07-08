@@ -1,7 +1,7 @@
 // frontend/src/features/dashboard/MemberDashboard.tsx
 import React, { useState, useEffect } from "react";
 import { useUnreadMessages } from "../../contexts/UnreadMessagesContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Users, Activity, Mail, User, RefreshCw, Bell } from "lucide-react";
 import { Member } from "@shared/member";
 import { API_BASE_URL } from "@/utils/config";
@@ -14,8 +14,14 @@ interface Props {
 
 interface MemberStats {
   unreadMessages: number;
-  recentActivities: number;
+  recentActivities: number; // Ovo polje se više neće direktno koristiti za prikaz
   memberCount: number;
+}
+
+interface AnnualStat {
+  year: number;
+  total_hours: number;
+  total_activities: number;
 }
 
 /**
@@ -36,6 +42,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     recentActivities: 0,
     memberCount: 0,
   });
+  const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
   const [fullMember, setFullMember] = useState<Member>(member);
 
@@ -83,6 +90,32 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
+    const fetchAnnualStats = async () => {
+      if (member?.member_id) {
+        try {
+          console.log('Fetching annual stats for member ID:', member.member_id);
+          const token = localStorage.getItem('token');
+          const response = await axios.get<AnnualStat[]>(`${API_BASE_URL}/members/${member.member_id}/annual-stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          console.log('Received annual stats data:', response.data);
+
+          const totals = response.data.reduce((acc, stat) => {
+            acc.activities += stat.total_activities;
+            acc.hours += parseFloat(stat.total_hours as any) || 0; // Pretvaramo string u broj
+            return acc;
+          }, { activities: 0, hours: 0 });
+
+          console.log('Calculated totals:', totals);
+          setActivityTotals(totals);
+        } catch (err) {
+          console.error("Error fetching annual stats:", err);
+          // Ovdje ne postavljamo globalnu grešku da ne bi blokiralo ostatak dashboarda
+        }
+      }
+    };
+
     const fetchMemberDetails = async () => {
       if (member?.member_id) {
         try {
@@ -98,6 +131,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     };
 
     void fetchMemberDetails();
+    void fetchAnnualStats();
   }, [member?.member_id]);
 
   return (
@@ -154,25 +188,34 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         {/* Aktivnosti Sekcija */}
-        <div
-          onClick={() => navigate("/activities")}
-          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        <Link
+          to={`/members/${member.member_id}/activities-overview`}
+          className="block bg-white p-6 rounded-lg shadow-sm border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Aktivnosti</h3>
+            <h3 className="text-gray-600 font-medium">Sve moje aktivnosti</h3>
             <Activity className="h-6 w-6 text-green-600" />
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-4 text-center">
             {loading ? (
-              <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+              <>
+                <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+                <div className="h-8 bg-gray-200 animate-pulse rounded-md"></div>
+              </>
             ) : (
               <>
-                <p className="text-2xl font-bold">{stats.recentActivities}</p>
-                <p className="text-sm text-gray-500">Nedavne aktivnosti</p>
+                <div>
+                  <p className="text-2xl font-bold">{activityTotals.activities}</p>
+                  <p className="text-sm text-gray-500">Ukupno aktivnosti</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{Math.round(activityTotals.hours)}</p>
+                  <p className="text-sm text-gray-500">Ukupno sati</p>
+                </div>
               </>
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Members Sekcija */}
         <div

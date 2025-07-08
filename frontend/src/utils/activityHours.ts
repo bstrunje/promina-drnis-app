@@ -137,6 +137,36 @@ const calculateParticipantHours = (activity: Activity, participant: any): number
 };
 
 /**
+ * Izračunava sate za pojedinog sudionika samo na temelju zapisa o sudjelovanju (bez priznavanja).
+ * Koristi se za jednostavne prikaze gdje kontekst cijele aktivnosti nije dostupan.
+ * @param participation - Objekt sudjelovanja koji sadrži vremena i/ili ručne sate.
+ * @returns Broj sati kao decimalni broj.
+ */
+export const calculateSimpleHours = (
+  participation: {
+    start_time?: string | null;
+    end_time?: string | null;
+    manual_hours?: number | null;
+  }
+): number => {
+  if (participation.manual_hours != null && participation.manual_hours > 0) {
+    return participation.manual_hours;
+  }
+
+  if (participation.start_time && participation.end_time) {
+    const start = new Date(participation.start_time);
+    const end = new Date(participation.end_time);
+    const diffMs = end.getTime() - start.getTime();
+
+    if (diffMs > 0) {
+      return diffMs / (1000 * 60 * 60);
+    }
+  }
+
+  return 0;
+};
+
+/**
  * Izračunava ukupne sate za jednu aktivnost, uključujući sve sudionike
  * @param activity Aktivnost za koju se računaju sati
  * @returns Ukupni sati kao decimalni broj

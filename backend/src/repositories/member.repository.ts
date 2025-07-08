@@ -250,6 +250,13 @@ const memberRepository = {
             }
         });
     },
+
+    async getAnnualStats(memberId: number) {
+        return prisma.annualStatistics.findMany({
+            where: { member_id: memberId },
+            orderBy: { year: 'desc' },
+        });
+    },
 };
 
 export default memberRepository;

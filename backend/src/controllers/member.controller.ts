@@ -1,6 +1,7 @@
 // backend/src/controllers/member.controller.ts
 import { Request, Response } from "express";
 import memberService from "../services/member.service.js";
+import { NotFoundError } from '../utils/errors.js';
 import memberRepository, {
   MemberCreateData,
   MemberUpdateData,
@@ -935,6 +936,20 @@ export const memberController = {
             ? error.message
             : "Error deleting profile image",
       });
+    }
+  },
+
+  async getMemberAnnualStats(req: Request<{ memberId: string }>, res: Response): Promise<void> {
+    try {
+      const { memberId } = req.params;
+      const stats = await memberService.getMemberAnnualStats(parseInt(memberId, 10));
+      res.json(stats);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        res.status(404).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: 'Greška prilikom dohvaćanja godišnje statistike.' });
+      }
     }
   }
 };

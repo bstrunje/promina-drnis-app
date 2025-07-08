@@ -70,6 +70,27 @@ export const getActivitiesByTypeId = async (req: Request, res: Response, next: N
   }
 };
 
+export const getActivitiesByMemberId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const memberId = parseInt(req.params.memberId, 10);
+    const activities = await activityService.getActivitiesByMemberIdService(memberId);
+    res.status(200).json(activities);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getParticipationsByMemberIdAndYear = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const memberId = parseInt(req.params.memberId, 10);
+    const year = parseInt(req.params.year, 10);
+    const participations = await activityService.getParticipationsByMemberIdAndYearService(memberId, year);
+    res.status(200).json(participations);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);

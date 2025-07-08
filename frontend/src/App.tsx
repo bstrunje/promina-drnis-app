@@ -11,6 +11,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ActivitiesList from './features/activities/ActivitiesList';
 import ActivityCategoryPage from './features/activities/ActivityCategoryPage';
 import ActivityDetailPage from './features/activities/ActivityDetailPage';
+import ActivityOverviewPage from './features/activities/ActivityOverviewPage';
+import ActivityYearPage from './features/activities/ActivityYearPage';
 import EditActivityPage from './features/activities/EditActivityPage';
 import ActivitiesAdminPage from './features/activities/ActivitiesAdminPage';
 import EventsList from './features/events/EventsList';
@@ -84,6 +86,8 @@ function AppContent() {
           <Route path="/activities/year/:year" element={<ActivityCategoryPage />} />
           <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
           <Route path="/activities/:activityId/edit" element={<EditActivityPage />} />
+          <Route path="/members/:memberId/activities-overview" element={<ActivityOverviewPage />} />
+          <Route path="/members/:memberId/activities/:year" element={<ActivityYearPage />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />

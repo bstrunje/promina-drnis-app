@@ -14,6 +14,7 @@ import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
 import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
 import type { PrismaClient, Prisma } from '@prisma/client';
+import { updateAnnualStatistics } from './statistics.service.js';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -404,7 +405,19 @@ const memberService = {
         }
     },
 
-    // Add to existing member service methods
+    async getMemberAnnualStats(memberId: number): Promise<any> {
+        try {
+            const stats = await memberRepository.getAnnualStats(memberId);
+            if (!stats) {
+                throw new Error('Statistika nije pronađena za ovog člana.');
+            }
+            return stats;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error('Error fetching member annual statistics: ' + errorMessage);
+        }
+    },
+
     async updateMembershipFee(
         memberId: number,
         paymentDate: Date,

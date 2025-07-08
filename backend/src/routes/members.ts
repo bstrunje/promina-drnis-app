@@ -23,6 +23,7 @@ router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
 router.get('/', authenticateToken, memberController.getAllMembers);
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
 router.get('/:memberId/stats', authenticateToken, memberController.getMemberStats);
+router.get('/:memberId/annual-stats', authenticateToken, memberController.getMemberAnnualStats);
 router.get('/:memberId/activities', authenticateToken, memberController.getMemberWithActivities);
 
 // Rute za poruke vezane za određenog člana
