@@ -233,30 +233,7 @@ const memberService = {
         }
     },
 
-    async updatePeriodEndReason(
-        memberId: number,
-        periodId: number,
-        endReason: 'withdrawal' | 'non_payment' | 'expulsion' | 'death'
-      ): Promise<void> {
-        try {
-          const member = await memberRepository.findById(memberId);
-          if (!member) throw new Error("Member not found");
-      
-          // Get the period to ensure it exists and belongs to this member
-          const periods = await membershipRepository.getMembershipPeriods(memberId);
-          const periodToUpdate = periods.find(p => p.period_id === periodId);
-          
-          if (!periodToUpdate) {
-            throw new Error("Membership period not found");
-          }
-          
-          // Update just the end reason
-          await membershipRepository.updatePeriodEndReason(periodId, endReason);
-        } catch (error) {
-          console.error("Error updating membership period end reason:", error);
-          throw error;
-        }
-      },
+
 
     async createMember(memberData: MemberCreateData): Promise<Member> {
         try {
@@ -525,44 +502,6 @@ const memberService = {
             throw new Error('Error updating card details: ' + errorMessage);
         }
     },
-
-    async terminateMembership(
-        memberId: number, 
-        reason: 'withdrawal' | 'non_payment' | 'expulsion' | 'death', 
-        endDate?: Date
-    ): Promise<void> {
-        try {
-            // Prvo završi članstvo
-            await membershipService.endMembership(memberId, reason, endDate);
-
-            // Dohvati trenutni broj kartice (ako postoji)
-            const details = await membershipRepository.getMembershipDetails(memberId);
-            if (details?.card_number) {
-                // Označi broj kao potrošen
-                // issuedAt nije eksplicitno spremljen u membership_details pa ga ne šaljemo
-                const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
-                await cardNumberRepository.markCardNumberConsumed(details.card_number, memberId);
-            }
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error('Greška prilikom odjave članstva: ' + errorMessage);
-        }
-    },
-
-    async updateMembershipHistory(
-        memberId: number,
-        periods: MembershipPeriod[]
-      ): Promise<void> {
-        try {
-          const member = await memberRepository.findById(memberId);
-          if (!member) throw new Error("Member not found");
-      
-          await membershipRepository.updateMembershipPeriods(memberId, periods);
-        } catch (error) {
-          console.error("Error updating membership history:", error);
-          throw error;
-        }
-      },
 
     async getMemberWithCardDetails(memberId: number) {
         // Always get card info from membership_details, not the members table

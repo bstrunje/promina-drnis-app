@@ -1,6 +1,6 @@
 import express from 'express';
 import cardNumberController from '../controllers/cardnumber.controller.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -54,6 +54,15 @@ router.get(
   '/consumed',
   authMiddleware,
   cardNumberController.getConsumedCardNumbers
+);
+
+
+// Assign card number to a member
+router.post(
+  '/:memberId/assign',
+  authMiddleware,
+  roles.requireAdmin,
+  cardNumberController.assignCardNumber
 );
 
 export default router;

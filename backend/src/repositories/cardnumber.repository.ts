@@ -206,7 +206,7 @@ const cardNumberRepository = {
             WHEN cn.status = 'assigned' THEN 'assigned'
             ELSE cn.status
           END as status,
-          COALESCE(ac.member_id, cn.member_id) as member_id,
+          COALESCE(ac.member_id, cn.member_id)::integer as member_id,
           ac.member_name
         FROM 
           card_numbers cn
@@ -219,7 +219,7 @@ const cardNumberRepository = {
         SELECT 
           ac.card_number, 
           'assigned' as status,
-          ac.member_id,
+          ac.member_id::integer,
           ac.member_name
         FROM 
           assigned_cards ac

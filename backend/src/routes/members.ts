@@ -1,7 +1,10 @@
 // backend/src/routes/members.ts
 import express, { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
-import memberController from '../controllers/member.controller.js';
+import { memberController, getMemberDashboardStats } from '../controllers/member.controller.js';
+import memberProfileController from '../controllers/memberProfile.controller.js';
+import cardNumberController from '../controllers/cardnumber.controller.js';
+import memberStatsController from '../controllers/memberStats.controller.js';
 import memberMessageController from '../controllers/member.message.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
@@ -14,7 +17,7 @@ const router = express.Router();
 
 // Public routes
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
-router.get('/dashboard/stats', authenticateToken, memberController.getMemberDashboardStats);
+router.get('/dashboard/stats', authenticateToken, getMemberDashboardStats);
 
 // Rute za poruke koje moraju biti prije dinamičke /:memberId rute
 router.get('/unread-count', authenticateToken, memberMessageController.getUnreadMessageCount);
@@ -22,9 +25,9 @@ router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
 
 router.get('/', authenticateToken, memberController.getAllMembers);
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
-router.get('/:memberId/stats', authenticateToken, memberController.getMemberStats);
-router.get('/:memberId/annual-stats', authenticateToken, memberController.getMemberAnnualStats);
-router.get('/:memberId/activities', authenticateToken, memberController.getMemberWithActivities);
+router.get('/:memberId/stats', authenticateToken, memberStatsController.getMemberStats);
+router.get('/:memberId/annual-stats', authenticateToken, memberStatsController.getMemberAnnualStats);
+router.get('/:memberId/activities', authenticateToken, memberStatsController.getMemberWithActivities);
 
 // Rute za poruke vezane za određenog člana
 router.post('/:memberId/messages', authenticateToken, memberMessageController.createMessage);
@@ -32,121 +35,15 @@ router.get('/:memberId/messages', authenticateToken, memberMessageController.get
 router.put('/:memberId/messages/:messageId/read', authenticateToken, memberMessageController.markMemberMessageAsRead);
 
 // Protected routes
-router.post('/', authenticateToken, roles.requireAdmin, memberController.createMember);
-router.put('/:memberId', authenticateToken, roles.requireAdmin, memberController.updateMember);
+router.post('/', authenticateToken, roles.requireAdmin, memberProfileController.createMember);
+router.put('/:memberId', authenticateToken, roles.requireAdmin, memberProfileController.updateMember);
 // router.delete('/:memberId', authenticateToken, roles.requireSuperUser, memberController.deleteMember);
-router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberController.updateMemberRole);
-router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, memberController.assignCardNumber);
-router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, memberController.updateMembership);
-router.post(
-  '/:memberId/membership/terminate', 
-  authenticateToken, 
-  roles.requireAdmin, 
-  memberController.terminateMembership
-);
-router.put(
-  '/:memberId/membership-history', 
-  authenticateToken, 
-  roles.requireAdmin, 
-  memberController.updateMembershipHistory
-);
+router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberProfileController.updateMemberRole);
 
-router.put(
-  '/:memberId/membership-periods/:periodId/end-reason',
-  authenticateToken,
-  roles.requireAdmin,
-  async (req: Request, res: Response) => {
-    try {
-      const { memberId, periodId } = req.params;
-      const { endReason } = req.body;
+// Dodjela broja iskaznice i generiranje lozinke - preusmjereno na ispravan kontroler
+router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, cardNumberController.assignCardNumber);
 
-      // Add validation
-      if (!memberId || !periodId || !endReason) {
-        return res.status(400).json({ 
-          error: 'Missing required parameters' 
-        });
-      }
 
-      const updatedPeriod = await prisma.membershipPeriod.update({
-        where: {
-          period_id: parseInt(periodId)
-        },
-        data: {
-          end_reason: endReason
-        }
-      });
-
-      res.json(updatedPeriod);
-    } catch (error) {
-      console.error('Error updating end reason:', error);
-      res.status(500).json({ error: 'Failed to update end reason' });
-    }
-  }
-);
-
-// Issue stamp - add parameter for next year
-router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (req, res) => {
-  try {
-    const memberId = parseInt(req.params.memberId);
-    const { forNextYear = false } = req.body; // Get parameter from request body
-    
-    // Get member to determine stamp type
-    const member = await memberService.getMemberById(memberId);
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-    
-    // Determine stamp type based on life status
-    const stampType = 
-      member.life_status === "employed/unemployed" ? "employed" :
-      member.life_status === "child/pupil/student" ? "student" :
-      member.life_status === "pensioner" ? "pensioner" : "employed";
-    
-    // Issue stamp with the new parameter
-    await stampService.issueStamp(memberId, stampType, forNextYear);
-    
-    // Update member record for current year stamps only (prisma limitation)
-    if (!forNextYear) {
-      // Ažuriraj samo u membership_details tablici jer card_stamp_issued više nije polje na Memberu
-      await prisma.membershipDetails.upsert({
-        where: { member_id: memberId },
-        update: { card_stamp_issued: true },
-        create: { 
-          member_id: memberId, 
-          card_stamp_issued: true
-        }
-      });
-    } else {
-      // Za markice za sljedeću godinu, spremi u membership_details tablicu
-      await prisma.membershipDetails.upsert({
-        where: { member_id: memberId },
-        update: { next_year_stamp_issued: true },
-        create: { 
-          member_id: memberId, 
-          next_year_stamp_issued: true
-        }
-      });
-      console.log(`Issuing next year stamp for member ${memberId} - Stored in database`);
-    }
-    
-    // Get updated member to return
-    const updatedMember = await memberService.getMemberById(memberId);
-    
-    // next_year_stamp_issued se više ne postavlja ručno na Member objekt - koristi se membership_details
-    // (Ovdje nije potreban manualni patch jer frontend koristi membership_details.next_year_stamp_issued)
-    
-    
-    res.json({ 
-      message: forNextYear ? "Stamp for next year issued successfully" : "Stamp issued successfully",
-      member: updatedMember
-    });
-  } catch (error) {
-    console.error("Error issuing stamp:", error);
-    res.status(500).json({ 
-      message: error instanceof Error ? error.message : "Failed to issue stamp" 
-    });
-  }
-});
 
 // For returning stamps to inventory - only superuser can do this
 router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser, async (req, res) => {
@@ -212,13 +109,13 @@ router.post(
       next();
     });
   },
-  memberController.uploadProfileImage
+  memberProfileController.uploadProfileImage
 );
 
 router.delete(
   '/:memberId/profile-image',
   authenticateToken,
-  memberController.deleteProfileImage
+  memberProfileController.deleteProfileImage
 );
 
 router.get('/test', (req, res) => {

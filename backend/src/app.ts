@@ -17,6 +17,7 @@ import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
 import memberRoutes from './routes/members.js';
+import membershipRoutes from './routes/membership.routes.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
@@ -278,6 +279,7 @@ app.use('/api/audit', authMiddleware, auditRoutes);
 // ISPRAVAK REDOSLIJEDA: Specifične rute moraju ići prije općenitih
 app.use('/api/members/permissions', permissionsRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
+app.use('/api/members/:memberId', authMiddleware, membershipRoutes);
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);

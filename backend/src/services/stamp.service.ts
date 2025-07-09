@@ -1,5 +1,7 @@
 import stampRepository from "../repositories/stamp.repository.js";
 import membershipRepository from "../repositories/membership.repository.js";
+import memberRepository from "../repositories/member.repository.js";
+import auditService from "./audit.service.js";
 import { DatabaseError } from "../utils/errors.js";
 import { getCurrentDate } from '../utils/dateUtils.js';
 
@@ -54,7 +56,7 @@ const stampService = {
   },
 
   // Helper function to safely map life status to stamp type
-  getStampTypeFromLifeStatus(lifeStatus: string): string {
+  getStampTypeFromLifeStatus(lifeStatus: string | undefined): string {
     if (!lifeStatus) {
       return "employed"; // Default if missing
     }
@@ -130,6 +132,45 @@ const stampService = {
     } catch (error) {
       throw new DatabaseError(
         "Error returning stamp: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
+
+  async issueStampToMember(memberId: number, userId: number, forNextYear: boolean = false): Promise<void> {
+    try {
+      const member = await memberRepository.findById(memberId);
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
+      const stampType = this.getStampTypeFromLifeStatus(member.life_status);
+
+      // Poziv postojeće metode za ažuriranje inventara
+      await this.issueStamp(memberId, stampType, forNextYear);
+
+      // Ažuriranje detalja članstva
+      const fieldToUpdate = forNextYear
+        ? 'next_year_stamp_issued'
+        : 'card_stamp_issued';
+
+      await membershipRepository.updateMembershipDetails(memberId, { 
+        [fieldToUpdate]: true 
+      });
+
+      // Logiranje akcije
+      const stampYear = forNextYear ? getCurrentDate().getFullYear() + 1 : getCurrentDate().getFullYear();
+      await auditService.logAction(
+        'ISSUE_STAMP',
+        userId,
+        `Issued ${stampType} stamp to member ${memberId} for year ${stampYear}`,
+        undefined, // req is now optional
+        'success',
+        memberId
+      );
+    } catch (error) {
+      throw new DatabaseError(
+        "Error issuing stamp to member: " +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }

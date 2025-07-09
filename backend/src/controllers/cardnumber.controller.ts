@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import cardNumberRepository from '../repositories/cardnumber.repository.js';
 import auditService from '../services/audit.service.js';
 import prisma from "../utils/prisma.js";
+import memberRepository from '../repositories/member.repository.js';
+import db from '../utils/db.js';
+import bcrypt from 'bcrypt';
+import membershipService from '../services/membership.service.js';
+import { handleControllerError } from '../utils/controllerUtils.js';
 
 const cardNumberController = {
   // Get all available card numbers
@@ -229,6 +234,109 @@ const cardNumberController = {
         message: 'Neuspješno dohvaćanje potrošenih kartica',
         error: error instanceof Error ? error.message : 'Nepoznata greška'
       });
+    }
+  },
+
+  async assignCardNumber(
+    req: Request<{ memberId: string }>,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { memberId } = req.params;
+      const { cardNumber } = req.body;
+
+      // Dohvati postavke sustava za validaciju duljine broja kartice
+      const settings = await prisma.systemSettings.findFirst({
+        where: { id: 'default' }
+      });
+      const cardNumberLength = settings?.cardNumberLength || 5;
+
+      // Dinamička validacija broja iskaznice prema postavkama
+      const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
+      if (!cardNumberRegex.test(cardNumber)) {
+        res.status(400).json({ message: `Card number must be exactly ${cardNumberLength} digits` });
+        return;
+      }
+
+      // Dohvati podatke o članu
+      const member = await memberRepository.findById(parseInt(memberId));
+      if (!member) {
+        res.status(404).json({ message: "Member not found" });
+        return;
+      }
+
+      // Provjeri je li broj iskaznice već dodijeljen drugom članu
+      const existingCardCheck = await db.query(`
+        SELECT m.member_id, m.full_name
+        FROM membership_details md
+        JOIN members m ON md.member_id = m.member_id
+        WHERE md.card_number = $1 AND md.member_id != $2
+      `, [cardNumber, memberId]);
+
+      if (existingCardCheck && existingCardCheck.rowCount && existingCardCheck.rowCount > 0) {
+        const existingMember = existingCardCheck.rows[0];
+        res.status(400).json({ 
+          message: `Card number ${cardNumber} is already assigned to member: ${existingMember.full_name}`,
+          existingMember: {
+            member_id: existingMember.member_id,
+            full_name: existingMember.full_name
+          }
+        });
+        return;
+      }
+
+      // Provjeri je li član već registriran
+      if (member.registration_completed) {
+        res.status(400).json({ message: "Can only assign card number for pending members" });
+        return;
+      }
+
+      // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
+      const settingsForPassword = settings || await prisma.systemSettings.findFirst({
+        where: { id: 'default' }
+      });
+      const passwordCardNumberLength = settingsForPassword?.cardNumberLength || 5;
+
+      // Automatski generiraj lozinku prema dogovorenom formatu s dinamičkom duljinom kartice
+      const password = `${member.full_name}-isk-${cardNumber.padStart(passwordCardNumberLength, '0')}`;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Pokreni transakciju za ažuriranje člana
+      await db.transaction(async (client) => {
+        // Ažuriraj podatke o članu - dodaj broj iskaznice
+        await membershipService.updateCardDetails(
+          parseInt(memberId),
+          cardNumber,
+          false // Markica se NE izdaje automatski
+        );
+
+        // Ažuriraj lozinku člana i status registracije
+        await client.query(
+          'UPDATE members SET password_hash = $1, registration_completed = TRUE, status = \'registered\' WHERE member_id = $2',
+          [hashedPassword, memberId]
+        );
+
+        // Označi broj iskaznice kao potrošen
+        await client.query(
+          'UPDATE card_numbers SET status = $1 WHERE card_number = $2',
+          ['consumed', cardNumber]
+        );
+      });
+
+      if (req.user?.id) {
+        await auditService.logAction(
+          'ASSIGN_CARD_NUMBER',
+          req.user.id,
+          `Assigned card number ${cardNumber} to member ${member.full_name}`,
+          req,
+          'success',
+          parseInt(memberId)
+        );
+      }
+
+      res.status(200).json({ message: "Card number assigned and member registered successfully" });
+    } catch (error) {
+      handleControllerError(error, res);
     }
   },
 

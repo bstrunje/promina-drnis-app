@@ -12,12 +12,21 @@ import auditService from "./audit.service.js";
 import { Request } from "express";
 import prisma from "../utils/prisma.js";
 import { parseDate, getCurrentDate, formatDate, getCurrentYear } from '../utils/dateUtils.js';
+import { updateAnnualStatistics } from './statistics.service.js';
+
+// Definicija tipa za tijelo zahtjeva za ažuriranje članstva
+interface MembershipUpdatePayload {
+  paymentDate?: string;
+  cardNumber?: string;
+  stampIssued?: boolean;
+  isRenewalPayment?: boolean;
+}
 
 const membershipService = {
   async processFeePayment(
     memberId: number,
     paymentDate: Date,
-    req?: Request,
+    userId?: number,
     isRenewalPayment?: boolean
   ): Promise<Member | null> {
     try {
@@ -104,19 +113,18 @@ const membershipService = {
         }
       });
 
-      // Logiraj plaćanje članarine sa sigurnosnom provjerom req objekta
-      if (req) {
+      if (userId) {
         await auditService.logAction(
           "MEMBERSHIP_FEE_PAYMENT",
-          memberId,
+          userId,
           `Membership fee paid for ${paymentYear}`,
-          req,
-          "success"
+          undefined, // req is now optional
+          "success",
+          memberId
         );
-      } else {
-        // Ako req nije dostupan, logiranje preskačemo u pozivima koji ne dolaze iz HTTP konteksta
-        console.log(`[Audit skip] Membership fee payment logged for member ${memberId}, year ${paymentYear}`);
       }
+
+      await updateAnnualStatistics(memberId, paymentYear);
 
       return await memberRepository.findById(memberId);
     } catch (error) {
@@ -160,14 +168,14 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string, stampIssued: boolean | null, req?: Request): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, userId?: number): Promise<void> {
     try {
       // Prvo dohvatimo trenutni broj kartice
       const details = await membershipRepository.getMembershipDetails(memberId);
       const previousCardNumber = details?.card_number;
 
       // Ako je član imao staru karticu i mijenja broj, označi staru kao potrošenu
-      if (previousCardNumber && previousCardNumber !== cardNumber && cardNumber.trim() !== "") {
+      if (previousCardNumber && cardNumber !== undefined && previousCardNumber !== cardNumber && cardNumber.trim() !== "") {
         const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
         await cardNumberRepository.markCardNumberConsumed(previousCardNumber, memberId);
       }
@@ -280,7 +288,7 @@ const membershipService = {
   async updateMembershipHistory(
     memberId: number,
     periods: MembershipPeriod[],
-    req?: Request,
+    userId?: number,
     updateMemberStatus: boolean = false
   ): Promise<void> {
     try {
@@ -301,13 +309,12 @@ const membershipService = {
             data: { status: 'registered' }
           });
           
-          // Logiraj promjenu
-          if (req?.user?.id) {
+          if (userId) {
             await auditService.logAction(
-              "UPDATE_MEMBER_STATUS",
-              req.user.id,
-              `Automatically updated member ${memberId} status to 'registered' based on active period`,
-              req,
+              "UPDATE_MEMBER_HISTORY",
+              userId,
+              `Updated membership history for member ${memberId}`,
+              undefined, // req is now optional
               "success",
               memberId
             );
@@ -320,21 +327,108 @@ const membershipService = {
     }
   },
 
-  async endMembership(
+  async updateMembership(
     memberId: number,
-    reason: MembershipEndReason,
-    endDate: Date = getCurrentDate(),
-    req?: Request
-  ): Promise<void> {
-    const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
-    if (currentPeriod) {
-      await membershipRepository.endMembershipPeriod(
-        currentPeriod.period_id,
-        endDate,
-        reason
+    payload: MembershipUpdatePayload,
+    userId?: number
+  ): Promise<Member | null> {
+    const { paymentDate, cardNumber, stampIssued, isRenewalPayment } = payload;
+
+    if (paymentDate) {
+      await this.processFeePayment(
+        memberId,
+        parseDate(paymentDate),
+        userId,
+        isRenewalPayment
       );
     }
+
+    if (typeof cardNumber !== 'undefined' || typeof stampIssued !== 'undefined') {
+        await this.updateCardDetails(memberId, cardNumber, stampIssued, userId);
+    }
+
+    return memberRepository.findById(memberId);
   },
+
+  async terminateMembership(
+    memberId: number,
+    reason: MembershipEndReason,
+    userId?: number,
+    endDateStr?: string
+  ): Promise<void> {
+    try {
+        const endDate = endDateStr ? parseDate(endDateStr) : getCurrentDate();
+        const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
+        if (currentPeriod) {
+            await membershipRepository.endMembershipPeriod(
+                currentPeriod.period_id,
+                endDate,
+                reason
+            );
+        }
+
+        await prisma.member.update({
+          where: { member_id: memberId },
+          data: { status: 'former_member' },
+        });
+
+        const details = await membershipRepository.getMembershipDetails(memberId);
+        if (details?.card_number) {
+            const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
+            await cardNumberRepository.markCardNumberConsumed(details.card_number, memberId);
+        }
+
+        if (userId) {
+          await auditService.logAction(
+            'TERMINATE_MEMBERSHIP',
+            userId,
+            `Terminated membership for member ${memberId} with reason: ${reason}`,
+            undefined, // req is now optional
+            'success',
+            memberId
+          );
+        }
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error('Error terminating membership: ' + errorMessage);
+    }
+  },
+
+  async updateMembershipEndReason(
+    memberId: number,
+    periodId: number,
+    endReason: MembershipEndReason,
+    userId?: number
+  ): Promise<void> {
+    try {
+      const member = await memberRepository.findById(memberId);
+      if (!member) throw new Error("Member not found");
+  
+      const periods = await membershipRepository.getMembershipPeriods(memberId);
+      const periodToUpdate = periods.find(p => p.period_id === periodId);
+      
+      if (!periodToUpdate) {
+        throw new Error("Membership period not found");
+      }
+      
+      await membershipRepository.updatePeriodEndReason(periodId, endReason);
+
+      if (userId) {
+        await auditService.logAction(
+          'UPDATE_MEMBERSHIP_END_REASON',
+          userId,
+          `Updated end reason for period ${periodId} for member ${memberId}`,
+          undefined,
+          'success',
+          memberId
+        );
+      }
+    } catch (error) {
+      console.error("Error updating membership period end reason:", error);
+      throw error;
+    }
+  },
+
 
   async getMembershipHistory(memberId: number, req?: Request): Promise<{
     periods: MembershipPeriod[];
