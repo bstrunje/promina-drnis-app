@@ -198,26 +198,20 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
                   <div className="flex items-center gap-2">
                     <Select 
                       value={memberWithRole.role}
-                      onValueChange={(value) => handleRoleChange(memberWithRole.memberId, value as ParticipantRole)}
+                      onValueChange={(value) => handleRoleChange(member.member_id.toString(), value as ParticipantRole)}
                     >
-                      <SelectTrigger className="w-32 h-8 text-xs">
-                        <SelectValue />
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Uloga" />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.values(ParticipantRole).map((role) => (
                           <SelectItem key={role} value={role}>
-                            {roleLabels[role]} ({rolesToRecognitionPercentage[role]}%)
+                            {roleLabels[role]}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleRemoveMember(memberWithRole.memberId)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveMember(member.member_id.toString())}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>

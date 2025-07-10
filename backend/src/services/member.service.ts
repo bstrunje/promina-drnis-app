@@ -74,7 +74,8 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
         activity: {
           select: {
             actual_start_time: true,
-            actual_end_time: true
+            actual_end_time: true,
+            recognition_percentage: true // Dohvaćamo i postotak priznavanja s aktivnosti
           }
         }
       }
@@ -82,10 +83,9 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
 
     const totalMinutes = participations.reduce((acc: number, p: any) => {
       let minuteValue = 0;
-      
+
       // Prioritet imaju manual_hours ako su postavljeni
       if (p.manual_hours !== null && p.manual_hours !== undefined) {
-        // Pretvaramo manual_hours iz sati u minute (manual_hours se sprema kao float u satima)
         minuteValue = Math.round(p.manual_hours * 60);
       } 
       // Ako manual_hours nije postavljen, računamo iz actual_start_time i actual_end_time
@@ -96,13 +96,15 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
         );
         minuteValue = minutes > 0 ? minutes : 0;
       }
+
+      // Odredi koji postotak primijeniti. Prioritet ima `recognition_override` s pojedinog sudjelovanja (za izlete).
+      // Ako on ne postoji, koristi se `recognition_percentage` s cijele aktivnosti (za sastanke itd.).
+      // Ako ni on ne postoji, default je 100%.
+      const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
       
-      // Primjeni recognition_override ako postoji
-      if (minuteValue > 0 && p.recognition_override !== null && p.recognition_override !== undefined) {
-        minuteValue = minuteValue * (p.recognition_override / 100);
-      }
-      
-      return acc + minuteValue;
+      const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+
+      return acc + recognizedMinutes;
     }, 0);
 
     // Ažuriraj polje total_hours u tablici članova koristeći isti prismaClient

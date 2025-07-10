@@ -1,12 +1,17 @@
 // frontend/src/features/dashboard/MemberDashboard.tsx
-import React, { useState, useEffect } from "react";
-import { useUnreadMessages } from "../../contexts/UnreadMessagesContext";
-import { useNavigate, Link } from "react-router-dom";
-import { Users, Activity, Mail, User, RefreshCw, Bell } from "lucide-react";
-import { Member } from "@shared/member";
-import { API_BASE_URL } from "@/utils/config";
-import axios from "axios";
-import { MESSAGE_EVENTS } from "../../utils/events";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+
+import { useUnreadMessages } from '../../contexts/UnreadMessagesContext';
+import { formatHoursToHHMM } from '../../utils/activityHours';
+import { Users, Activity as ActivityIcon, Mail, User, RefreshCw, Bell, Calendar } from 'lucide-react';
+import { Member } from '@shared/member';
+import { Activity } from '@shared/activity.types';
+import { getActivitiesByStatus } from '../../utils/api/apiActivities';
+import { API_BASE_URL } from '@/utils/config';
+import axios from 'axios';
+import { MESSAGE_EVENTS } from '../../utils/events';
+import { formatInputDate } from '../../utils/dateUtils';
 
 interface Props {
   member: Member;
@@ -45,6 +50,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
   const [fullMember, setFullMember] = useState<Member>(member);
+  const [plannedActivities, setPlannedActivities] = useState<Activity[]>([]);
 
   const getActivityStatus = (totalHours: number | null | undefined) => {
     return (totalHours ?? 0) >= 20 ? "active" : "passive";
@@ -86,6 +92,16 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     }
   };
 
+  const fetchPlannedActivities = async () => {
+    try {
+      const activities = await getActivitiesByStatus('PLANNED');
+      setPlannedActivities(activities);
+    } catch (err) {
+      console.error('Failed to fetch planned activities:', err);
+      // Ovdje ne postavljamo opću grešku da ne bismo prekinuli prikaz ostatka dashboarda
+    }
+  };
+
   useEffect(() => {
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
@@ -117,17 +133,29 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     };
 
     const fetchMemberDetails = async () => {
-      if (member?.member_id) {
+      const fetchMemberData = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await axios.get<Member>(`${API_BASE_URL}/members/${member.member_id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+          const response = await axios.get(`${API_BASE_URL}/members/${member.member_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
           setFullMember(response.data);
-        } catch (err) {
-          console.error("Error fetching full member details:", err);
+        } catch (error) {
+          console.error('Failed to fetch full member data:', error);
         }
-      }
+      };
+
+      const fetchPlannedActivities = async () => {
+        try {
+          const activities = await getActivitiesByStatus('PLANNED');
+          setPlannedActivities(activities);
+        } catch (err) {
+          console.error('Failed to fetch planned activities:', err);
+        }
+      };
+
+      void fetchMemberData();
+      void fetchPlannedActivities();
     };
 
     void fetchMemberDetails();
@@ -194,7 +222,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">Sve moje aktivnosti</h3>
-            <Activity className="h-6 w-6 text-green-600" />
+            <ActivityIcon className="h-6 w-6 text-green-600" />
           </div>
           <div className="grid grid-cols-2 gap-4 text-center">
             {loading ? (
@@ -209,7 +237,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                   <p className="text-sm text-gray-500">Ukupno aktivnosti</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{Math.round(activityTotals.hours)}</p>
+                  <p className="text-2xl font-bold">{formatHoursToHHMM(activityTotals.hours)}</p>
                   <p className="text-sm text-gray-500">Ukupno sati</p>
                 </div>
               </>
@@ -297,10 +325,28 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium mb-4">Nadolazeći događaji</h3>
-          <div className="text-gray-600 text-center py-6">
-            <p>Trenutno nema nadolazećih događaja.</p>
-          </div>
+          <h3 className="text-lg font-medium mb-4 flex items-center">
+            <Calendar className="mr-2 h-5 w-5 text-gray-500" />
+            Nadolazeći događaji
+          </h3>
+          {plannedActivities.length > 0 ? (
+            <ul className="space-y-3">
+              {plannedActivities.map(activity => (
+                <li key={activity.activity_id} className="p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+                  <Link to={`/activities/${activity.activity_id}`} className="block">
+                    <p className="font-semibold text-gray-800">{activity.name}</p>
+                    <p className="text-sm text-gray-600">
+                      {formatInputDate(activity.start_date)} - {activity.activity_type?.name}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-600 text-center py-6">
+              <p>Trenutno nema nadolazećih događaja.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

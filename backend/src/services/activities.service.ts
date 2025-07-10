@@ -3,6 +3,7 @@ import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
 import { updateMemberTotalHours } from './member.service.js';
+import { differenceInMinutes } from 'date-fns';
 import { updateAnnualStatistics } from './statistics.service.js';
 
 // Tip za Prisma transakcijski klijent
@@ -72,17 +73,16 @@ export const createActivityService = async (data: any, organizer_id: number) => 
     };
     memberIdsForUpdate = participations.map((p: { member_id: number }) => p.member_id);
   } 
-  // Standardni način s običnim ID-ovima sudionika
+  // Standardni način s običnim ID-ovima sudionika (za aktivnosti koje nisu izleti)
   else if (participant_ids && participant_ids.length > 0) {
     participantsData = {
       create: participant_ids.map((id: number) => ({
         member_id: id,
-        // Automatsko popunjavanje vremena sudionika ili manual_hours ako je uneseno
         start_time: rest.actual_start_time ? new Date(rest.actual_start_time) : null,
         end_time: rest.actual_end_time ? new Date(rest.actual_end_time) : null,
-        // Dodajemo manual_hours za sve sudionike ako je uneseno
         manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
-        recognition_override: recognitionValue, // Koristimo vrijednost iz requesta
+        // Za aktivnosti koje nisu izleti, override je null jer se koristi percentage s aktivnosti
+        recognition_override: null, 
       })),
     };
     memberIdsForUpdate = participant_ids;
@@ -158,25 +158,112 @@ export const getActivityByIdService = async (activity_id: number) => {
     throw new NotFoundError('Aktivnost nije pronađena.');
   }
 
-  return activity;
+  // Izračunaj priznate sate za svakog sudionika
+  const participantsWithRecognizedHours = activity.participants.map(p => {
+    let minuteValue = 0;
+
+    if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      minuteValue = Math.round(p.manual_hours * 60);
+    } else if (activity.actual_start_time && activity.actual_end_time) {
+      const minutes = differenceInMinutes(
+        new Date(activity.actual_end_time),
+        new Date(activity.actual_start_time)
+      );
+      minuteValue = minutes > 0 ? minutes : 0;
+    }
+
+    const finalRecognitionPercentage = p.recognition_override ?? activity.recognition_percentage ?? 100;
+    const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    const recognizedHours = recognizedMinutes / 60;
+
+    return {
+      ...p,
+      recognized_hours: recognizedHours,
+    };
+  });
+
+  return {
+    ...activity,
+    participants: participantsWithRecognizedHours,
+  };
 };
 
-export const getActivitiesByTypeIdService = async (type_id: number) => {
-  return activityRepository.findActivitiesByTypeId(type_id);
+export const getActivitiesByTypeIdService = async (type_id: number, year?: number) => {
+  const activities = await activityRepository.getActivitiesByTypeId(type_id, year);
+
+  // Kreiramo novi tip koji proširuje postojeći tip aktivnosti s opcionalnim manual_hours
+  type ActivityWithManualHours = (typeof activities)[0] & { manual_hours?: number | null };
+
+  const activitiesWithManualHours: ActivityWithManualHours[] = activities.map(activity => {
+    // Pronalazimo prvog sudionika koji ima definirane manual_hours
+    const participantWithManualHours = activity.participants.find(
+      p => p.manual_hours !== null && p.manual_hours !== undefined
+    );
+
+    // Ako takav sudionik postoji, dodajemo manual_hours na objekt aktivnosti
+    if (participantWithManualHours) {
+      return {
+        ...activity,
+        manual_hours: participantWithManualHours.manual_hours,
+      };
+    }
+
+    return activity;
+  });
+
+  return activitiesWithManualHours;
+};
+
+export const getActivitiesByStatusService = async (status: string) => {
+  // Validacija da li je prosljeđeni status validan član ActivityStatus enuma
+  const activityStatus = status.toUpperCase() as ActivityStatus;
+  if (!Object.values(ActivityStatus).includes(activityStatus)) {
+    throw new Error(`Invalid activity status: ${status}`);
+  }
+
+  return activityRepository.findActivitiesByStatus(activityStatus);
 };
 
 export const getActivitiesByMemberIdService = async (member_id: number) => {
   return activityRepository.findActivitiesByParticipantId(member_id);
 };
 
+
+
 export const getParticipationsByMemberIdAndYearService = async (member_id: number, year: number) => {
-  return activityRepository.findParticipationsByMemberIdAndYear(member_id, year);
+  const participations = await activityRepository.findParticipationsByMemberIdAndYear(member_id, year);
+
+  // Izračunaj priznate sate za svako sudjelovanje
+  const participationsWithRecognizedHours = participations.map(p => {
+    let minuteValue = 0;
+
+    if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      minuteValue = Math.round(p.manual_hours * 60);
+    } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+      const minutes = differenceInMinutes(
+        new Date(p.activity.actual_end_time),
+        new Date(p.activity.actual_start_time)
+      );
+      minuteValue = minutes > 0 ? minutes : 0;
+    }
+
+    const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
+    const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    const recognizedHours = recognizedMinutes / 60;
+
+    return {
+      ...p,
+      recognized_hours: recognizedHours, // Dodajemo novo polje
+    };
+  });
+
+  return participationsWithRecognizedHours;
 };
 
 export const updateActivityService = async (activity_id: number, data: any) => {
   const existingActivity = await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
 
-  const { participant_ids, manual_hours, ...activityData } = data;
+  const { participant_ids, manual_hours, participations, ...activityData } = data;
 
   // Rješavanje konačnih vrijednosti za vremena kako bi se izbjegle greške u tipovima
   const finalStartTime = activityData.actual_start_time ?? existingActivity.actual_start_time;
@@ -205,24 +292,34 @@ export const updateActivityService = async (activity_id: number, data: any) => {
     memberRecognitionMap.set(p.member.member_id, p.recognition_override || 100);
   });
   
-  // Ako su poslani sudionici, obriši stare i dodaj nove
-  if (participant_ids && Array.isArray(participant_ids)) {
-    updatePayload.participants = {
-      deleteMany: {},
-      create: participant_ids.map((id: number) => ({
-        member: {
-          connect: {
-            member_id: id,
-          },
-        },
-        // Postavljanje vremena za nove sudionike s ispravnim tipom
+  // Ako je poslan novi popis sudionika (ili s ulogama ili bez)
+  if ((participations && Array.isArray(participations)) || (participant_ids && Array.isArray(participant_ids))) {
+    let createPayload;
+
+    if (participations) {
+      // Slučaj za izlete s ulogama
+      createPayload = participations.map((p: { member_id: number; recognition_override: number }) => ({
+        member: { connect: { member_id: p.member_id } },
         start_time: finalStartTime ? new Date(finalStartTime) : null,
         end_time: finalEndTime ? new Date(finalEndTime) : null,
-        // Dodajemo manual_hours za sve sudionike ako je uneseno
         manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
-        // Ako je član već bio sudionik, zadrži njegov postotak, inače postavi 100%
-        recognition_override: memberRecognitionMap.has(id) ? memberRecognitionMap.get(id) : 100,
-      })),
+        recognition_override: p.recognition_override,
+      }));
+    } else {
+      // Slučaj za ostale aktivnosti (koje nisu izleti)
+      createPayload = participant_ids.map((id: number) => ({
+        member: { connect: { member_id: id } },
+        start_time: finalStartTime ? new Date(finalStartTime) : null,
+        end_time: finalEndTime ? new Date(finalEndTime) : null,
+        manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
+        // Za aktivnosti koje nisu izleti, override je null jer se koristi percentage s aktivnosti
+        recognition_override: null,
+      }));
+    }
+
+    updatePayload.participants = {
+      deleteMany: {},
+      create: createPayload,
     };
   }
 
@@ -230,42 +327,14 @@ export const updateActivityService = async (activity_id: number, data: any) => {
   return prisma.$transaction(async (tx: TransactionClient) => {
     const updatedActivity = await activityRepository.updateActivity(activity_id, updatePayload, tx);
 
-    // Ako nisu poslani novi sudionici, ali su se vremena ili ručni sati promijenili,
-    // ažuriraj podatke za sve postojeće sudionike unutar transakcije
-    const timesChanged = 'actual_start_time' in activityData || 'actual_end_time' in activityData;
-    const hasManualHours = manual_hours !== undefined;
-    if ((timesChanged || hasManualHours) && !(participant_ids && Array.isArray(participant_ids))) {
-      await tx.activityParticipation.updateMany({
-        where: { activity_id },
-        data: {
-          start_time: updatedActivity.actual_start_time ? new Date(updatedActivity.actual_start_time) : null,
-          end_time: updatedActivity.actual_end_time ? new Date(updatedActivity.actual_end_time) : null,
-          manual_hours: (hasManualHours && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : undefined, // Postavljamo manual_hours samo ako je stvarno > 0
-        },
-      });
-      
-      // Ažuriraj ukupne sate i godišnju statistiku za sve postojeće sudionike unutar transakcije
-      for (const memberId of existingParticipants) {
-        await updateMemberTotalHours(memberId, tx);
-        if (updatedActivity.start_date) {
-          const year = new Date(updatedActivity.start_date).getFullYear();
-          await updateAnnualStatistics(memberId, year, tx);
-        }
-      }
-    } else if (participant_ids && Array.isArray(participant_ids)) {
-      // Ažuriraj sate i za stare i za nove sudionike unutar transakcije
-      const allParticipantIds = new Set([...existingParticipants, ...participant_ids]);
-      for (const memberId of allParticipantIds) {
-        await updateMemberTotalHours(memberId, tx);
-        if (updatedActivity.start_date) {
-          const year = new Date(updatedActivity.start_date).getFullYear();
-          await updateAnnualStatistics(memberId, year, tx);
-        }
-      }
+    const newParticipantIds = participations ? participations.map((p: any) => p.member_id) : (participant_ids || []);
+    const allParticipantIds = new Set([...existingParticipants, ...newParticipantIds]);
+
+    for (const memberId of allParticipantIds) {
+      await updateMemberTotalHours(memberId, tx);
     }
 
-    // Vrati ažuriranu aktivnost s potencijalno novim podacima
-    return getActivityByIdService(activity_id);
+    return updatedActivity;
   });
 };
 
@@ -282,7 +351,10 @@ export const cancelActivityService = async (activity_id: number, cancellation_re
   return prisma.$transaction(async (tx: TransactionClient) => {
     const cancelledActivity = await activityRepository.updateActivity(
       activity_id,
-      { status: 'CANCELLED' },
+      {
+        status: 'CANCELLED',
+        cancellation_reason,
+      },
       tx
     );
     
@@ -321,42 +393,50 @@ export const deleteActivityService = async (activity_id: number) => {
 
 // --- Sudionici (Participants) --- //
 
-export const addParticipantToActivityService = async (activity_id: number, member_id: number) => {
-  // Provjera postoji li aktivnost
-  const activity = await getActivityByIdService(activity_id);
+export const addParticipantService = async (activity_id: number, member_id: number) => {
+  // 1. Dohvati aktivnost s detaljima o tipu
+  const activity = await activityRepository.findActivityById(activity_id);
+  if (!activity) {
+    throw new NotFoundError('Aktivnost nije pronađena.');
+  }
 
-  // Provjera postoji li član već kao sudionik
+  // 2. Provjeri da li je član već prijavljen
   const existingParticipation = await activityRepository.findParticipation(activity_id, member_id);
   if (existingParticipation) {
     throw new ConflictError('Član je već prijavljen na ovu aktivnost.');
   }
 
-  // Koristi transakciju za dodavanje sudionika i ažuriranje ukupnih sati
-  return prisma.$transaction(async (tx: TransactionClient) => {
-    // Dodaj sudionika
-    await activityRepository.addParticipant(activity_id, member_id, tx);
+  // 3. Odredi postotak priznavanja na temelju tipa aktivnosti
+  // Ako je tip 'TRIP', član je 'Izletnik' i dobiva 10%. Inače 100%.
+    const recognitionValue = activity.activity_type.key === 'izleti' ? 10 : 100;
 
-    // Ako aktivnost ima stvarna vremena, ažuriramo ih i za sudionika
+  // 4. Koristi transakciju za dodavanje sudionika i ažuriranje ukupnih sati
+  return prisma.$transaction(async (tx: TransactionClient) => {
+    // Dodaj sudionika s odgovarajućim postotkom priznavanja
+    const newParticipation = await activityRepository.addParticipant(
+      activity_id,
+      member_id,
+      recognitionValue,
+      tx
+    );
+
+    // Ako aktivnost ima stvarna vremena, ažuriramo ih i za novog sudionika
     if (activity.actual_start_time || activity.actual_end_time) {
       await tx.activityParticipation.update({
         where: {
-          activity_id_member_id: {
-            activity_id,
-            member_id
-          }
+          participation_id: newParticipation.participation_id,
         },
         data: {
           start_time: activity.actual_start_time ? new Date(activity.actual_start_time) : null,
           end_time: activity.actual_end_time ? new Date(activity.actual_end_time) : null,
-          recognition_override: 100, // Ako nije već postavljeno
         },
       });
     }
-    
+
     // Ažuriraj ukupne sate za člana
     await updateMemberTotalHours(member_id, tx);
-    
-    return;
+
+    return newParticipation;
   });
 };
 

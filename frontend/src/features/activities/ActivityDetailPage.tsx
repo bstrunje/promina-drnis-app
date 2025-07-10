@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import './activities.css';
 import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { getActivityById, cancelActivity as apiCancelActivity } from '../../utils/api/apiActivities';
+import { getActivityById, cancelActivity as apiCancelActivity, joinActivity } from '../../utils/api/apiActivities';
 import { Activity } from '@shared/activity.types';
 import { useAuth } from '../../context/AuthContext';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
+import { formatHoursToHHMM } from '@/utils/activityHours';
 import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban, AlertCircle, CheckCircle2, PlayCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
@@ -21,22 +22,23 @@ import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
 import { ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 
-// Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
-const getRoleNameByPercentage = (percentage: number): string => {
-  // Obrnuta mapa postotaka u uloge
-  switch (percentage) {
-    case rolesToRecognitionPercentage[ParticipantRole.GUIDE]:
-      return 'Vodič';
-    case rolesToRecognitionPercentage[ParticipantRole.ASSISTANT_GUIDE]:
-      return 'Pomoćni vodič';
-    case rolesToRecognitionPercentage[ParticipantRole.DRIVER]:
-      return 'Vozač';
-    case rolesToRecognitionPercentage[ParticipantRole.REGULAR]:
-      return 'Izletnik';
-    default:
-      return `${percentage}%`;
-  }
+const roleLabels: { [key in ParticipantRole]: string } = {
+  [ParticipantRole.GUIDE]: 'Vodič',
+  [ParticipantRole.ASSISTANT_GUIDE]: 'Pomoćni vodič',
+  [ParticipantRole.DRIVER]: 'Vozač',
+  [ParticipantRole.REGULAR]: 'Izletnik',
 };
+
+// Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
+const getRoleNameByPercentage = (percentage: number): string | null => {
+  const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
+  if (roleEntry) {
+    return roleLabels[roleEntry[0] as ParticipantRole];
+  }
+  return null; // Vraća null ako nema definirane uloge
+};
+
+
 
 const ActivityDetailPage: React.FC = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -90,13 +92,33 @@ const ActivityDetailPage: React.FC = () => {
     }
   };
 
+  const handleJoinActivity = async () => {
+    if (!activityId) return;
+    try {
+      await joinActivity(parseInt(activityId, 10));
+      toast.success('Uspješno ste se prijavili za aktivnost!');
+      fetchActivity(); // Osvježi podatke da se prikaže novi sudionik
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Došlo je do greške prilikom prijave.';
+      toast.error(errorMessage);
+      console.error(error);
+    }
+  };
+
   if (loading) return <div className="text-center p-4">Učitavanje...</div>;
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">Aktivnost nije pronađena.</div>;
 
   const canEdit = user?.role === 'member_superuser' || user?.member_id === activity.organizer?.member_id;
+  const isParticipant = activity.participants?.some(p => p.member_id === user?.member_id);
+  const canJoin = activity.status === 'PLANNED' && !isParticipant && user;
   const isCancelled = activity.status === 'CANCELLED';
   const isCompleted = activity.status === 'COMPLETED';
+
+  const totalMinutes =
+    activity.actual_start_time && activity.actual_end_time
+      ? differenceInMinutes(new Date(activity.actual_end_time), new Date(activity.actual_start_time))
+      : 0;
   
   // Provjera je li aktivnost tipa SASTANCI ili IZLETI prema ključu (key) - stabilniji identifikator
   const isMeetingType = activity.activity_type?.key === 'sastanci';
@@ -137,13 +159,7 @@ const ActivityDetailPage: React.FC = () => {
     }
   };
 
-  const totalMinutes =
-    activity.actual_start_time && activity.actual_end_time
-      ? differenceInMinutes(new Date(activity.actual_end_time), new Date(activity.actual_start_time))
-      : 0;
 
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
 
   return (
     <div className="container mx-auto p-3 sm:p-4">
@@ -174,53 +190,45 @@ const ActivityDetailPage: React.FC = () => {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-xl sm:text-2xl mb-2">{activity.name}</CardTitle>
+
+              
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 {getStatusBadge(activity.status)}
-                
-                {/* Prikaz ručnog unosa ili trajanja aktivnosti u plavoj oznaci */}
-                {isCompleted && (
-                  <Badge variant="default" className="bg-blue-500 text-white">
-                    {activity.participants && activity.participants.some(p => p.manual_hours)
-                      ? (() => {
-                          // Izračunaj ukupne sate iz ručnog unosa prvog sudionika
-                          const firstParticipantWithManualHours = activity.participants?.find(p => p.manual_hours);
-                          if (firstParticipantWithManualHours?.manual_hours) {
-                            const hours = Math.floor(firstParticipantWithManualHours.manual_hours);
-                            const minutes = Math.round((firstParticipantWithManualHours.manual_hours - hours) * 60);
-                            return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-                          }
-                          return '0h 00m';
-                        })()
-                      : totalMinutes > 0
-                        ? (() => {
-                            const hours = Math.floor(totalMinutes / 60);
-                            const minutes = totalMinutes % 60;
-                            return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-                          })()
-                        : null}
+                {isCompleted && totalMinutes > 0 && (
+                  <Badge variant="default" className="bg-blue-500 text-white font-mono text-sm">
+                    {formatHoursToHHMM(totalMinutes / 60)}
                   </Badge>
                 )}
               </div>
             </div>
-            {canEdit && !isCancelled && (
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-2 sm:mt-0">
-                <Link to={`/activities/${activity.activity_id}/edit`}>
-                  <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
-                    <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                    <span className="text-xs sm:text-sm">Uredi</span>
+            {(canJoin || (canEdit && !isCancelled)) && (
+              <div className="flex flex-wrap items-start gap-2 mt-2 sm:mt-0">
+                {canJoin && (
+                  <Button onClick={handleJoinActivity} className="bg-primary hover:bg-primary/90 text-white">
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Pridruži se
                   </Button>
-                </Link>
-                {!isCompleted && (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="sm:size-md w-full sm:w-auto"
-                    onClick={() => setIsCancelModalOpen(true)}
-                  >
-                    <Ban className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                    <span className="text-xs sm:text-sm">Otkaži</span>
-                  </Button>
+                )}
+                {canEdit && !isCancelled && (
+                  <>
+                    <Link to={`/activities/${activity.activity_id}/edit`}>
+                      <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
+                        <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                        <span className="text-xs sm:text-sm">Uredi</span>
+                      </Button>
+                    </Link>
+                    {!isCompleted && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="sm:size-md w-full sm:w-auto"
+                        onClick={() => setIsCancelModalOpen(true)}
+                      >
+                        <Ban className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                        <span className="text-xs sm:text-sm">Otkaži</span>
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -304,30 +312,22 @@ const ActivityDetailPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base">Sudionici ({activity.participants?.length || 0})</h3>
                   {activity.participants && activity.participants.length > 0 ? (
-                    <ul className="list-disc list-outside ml-5 text-gray-600 text-xs sm:text-sm">
+                    <ul className="list-disc list-outside ml-5 text-gray-600 text-xs sm:text-sm space-y-1">
                       {activity.participants.map((p) => (
                         <li key={p.member.member_id}>
-                          <div className="flex flex-col">
-                            <div>
-                              {p.member.full_name}
-                              {/* Za SASTANCI, prikazujemo postotak u zagradi samo ako je različit od 100% */}
-                              {isMeetingType && p.recognition_override && p.recognition_override !== 100 && (
-                                <span className="text-amber-600 font-medium ml-1">({p.recognition_override}%)</span>
-                              )}
-                            </div>
-                            {/* Za IZLETI, prikazujemo samo ulogu i postotak */}
-                            {isExcursionType && p.recognition_override && (
-                              <div className="text-sm text-amber-600 font-medium">
-                                {getRoleNameByPercentage(p.recognition_override)}
-                              </div>
-                            )}
-                            {/* Za ostale tipove aktivnosti, prikazujemo postotak u novom redu ako je različit od activity.recognition_percentage */}
-                            {!isMeetingType && !isExcursionType && p.recognition_override && p.recognition_override !== activity.recognition_percentage && (
-                              <div className="text-sm text-amber-600 font-medium">
-                                Postotak priznavanja: {p.recognition_override}%
-                              </div>
-                            )}
-                            {/* Uklonjen prikaz ručnog unosa sati kod sudionika */}
+                          {p.member.full_name}
+                          {/* Prikaz uloge samo za izlete */}
+                          {activity?.activity_type?.key === 'izleti' && p.recognition_override !== null && p.recognition_override !== undefined && (() => {
+                            const roleName = getRoleNameByPercentage(p.recognition_override);
+                            return roleName ? (
+                              <Badge variant="outline" className="ml-2 border-amber-300 text-amber-700 bg-amber-50 text-xs">
+                                {roleName}
+                              </Badge>
+                            ) : null;
+                          })()}
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>Priznato: {formatHoursToHHMM(p.recognized_hours)}</span>
                           </div>
                         </li>
                       ))}

@@ -89,6 +89,8 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     timeSetter(format(now, 'HH:mm'));
   };
 
+  const isExcursion = activityTypes.find(type => type.type_id.toString() === activityTypeId)?.key === 'izleti';
+
   const handleSubmit = async () => {
     if (!description || !startDate || !startTime || !selectedTypeId) {
       setError('Opis, datum početka i tip aktivnosti su obavezni.');
@@ -385,12 +387,22 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             </div>
           </div>
 
-          {/* Postotak priznavanja */}
-          {user?.role === 'member_superuser' && (
-            <RecognitionPercentageInput
-              value={recognitionPercentage}
-              onChange={e => setRecognitionPercentage(e.target.value)}
-            />
+          {/* Postotak priznavanja - prikazuje se samo ako NIJE izlet */}
+          {!isExcursion && (
+            <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+              <Label htmlFor="recognition_percentage" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
+                Postotak priznavanja
+              </Label>
+              <div className="sm:col-span-3">
+                <Input
+                  id="recognition_percentage"
+                  type="number"
+                  value={recognitionPercentage}
+                  onChange={(e) => setRecognitionPercentage(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
           )}
 
           {/* Odabir sudionika */}

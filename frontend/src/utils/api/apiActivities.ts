@@ -15,10 +15,26 @@ export const getActivityTypes = async (): Promise<ActivityType[]> => {
  * @param typeId ID tipa aktivnosti.
  * @returns Promise koji razrješava u polje aktivnosti.
  */
-export const getActivitiesByTypeId = async (typeId: string): Promise<Activity[]> => {
+export const getActivitiesByTypeId = async (typeId: string, year?: number): Promise<Activity[]> => {
+  const params = new URLSearchParams();
   // Dodajemo include=participants parametar za dohvat podataka o sudionicima
   // potrebne za izračun ukupnih sati
-  const response = await apiInstance.get<Activity[]>(`/activities/type/${typeId}?include=participants`);
+  params.append('include', 'participants');
+  if (year) {
+    params.append('year', year.toString());
+  }
+
+  const response = await apiInstance.get<Activity[]>(`/activities/type/${typeId}`, { params });
+  return response.data;
+};
+
+/**
+ * Dohvaća aktivnosti prema statusu.
+ * @param status Status aktivnosti (npr. 'PLANNED', 'ACTIVE', 'COMPLETED').
+ * @returns Promise koji razrješava u polje aktivnosti.
+ */
+export const getActivitiesByStatus = async (status: string): Promise<Activity[]> => {
+  const response = await apiInstance.get<Activity[]>(`/activities/by-status/${status}`);
   return response.data;
 };
 
@@ -153,5 +169,15 @@ export const cancelActivity = async (activityId: number, cancellation_reason: st
 
 export const deleteActivity = async (activityId: number) => {
   const response = await apiInstance.delete(`/activities/${activityId}`);
+  return response.data;
+};
+
+/**
+ * Prijavljuje trenutnog korisnika na aktivnost.
+ * @param activityId ID aktivnosti.
+ * @returns Promise koji razrješava u objekt sudjelovanja.
+ */
+export const joinActivity = async (activityId: number): Promise<ActivityParticipation> => {
+  const response = await apiInstance.post<ActivityParticipation>(`/activities/${activityId}/join`);
   return response.data;
 };

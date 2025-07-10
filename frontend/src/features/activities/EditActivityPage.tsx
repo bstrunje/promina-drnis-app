@@ -10,6 +10,7 @@ import { Label } from '@components/ui/label';
 import { useToast } from '@components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import { Clock } from 'lucide-react';
+import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { MemberSelect } from './MemberSelect';
 
 const EditActivityPage: React.FC = () => {
@@ -29,6 +30,9 @@ const EditActivityPage: React.FC = () => {
   const [actualEndTime, setActualEndTime] = useState('');
   const [manualHours, setManualHours] = useState<string>('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [participantsWithRoles, setParticipantsWithRoles] = useState<MemberWithRole[]>([]);
+  const [recognitionPercentage, setRecognitionPercentage] = useState('100');
+  const [isExcursion, setIsExcursion] = useState(false);
 
   // Refovi za fokus
   const startTimeRef = useRef<HTMLInputElement>(null);
@@ -73,7 +77,27 @@ const EditActivityPage: React.FC = () => {
           setManualHours(participantsWithManualHours.manual_hours.toString());
         }
 
-        setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) || []);
+        const isExcursionActivity = data.activity_type?.key === 'izleti';
+        setIsExcursion(isExcursionActivity);
+
+        if (isExcursionActivity) {
+          const getRoleByPercentage = (percentage: number | null | undefined): ParticipantRole => {
+            if (percentage === null || percentage === undefined) return ParticipantRole.REGULAR;
+            const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
+            return (roleEntry ? roleEntry[0] : ParticipantRole.REGULAR) as ParticipantRole;
+          };
+
+          const initialParticipants = data.participants?.map(p => ({
+            memberId: p.member.member_id.toString(),
+            fullName: p.member.full_name,
+            role: getRoleByPercentage(p.recognition_override),
+            manualRecognition: !Object.values(rolesToRecognitionPercentage).includes(p.recognition_override ?? -1) ? p.recognition_override ?? undefined : undefined,
+          })) || [];
+          setParticipantsWithRoles(initialParticipants);
+        } else {
+          setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) || []);
+          setRecognitionPercentage(data.recognition_percentage?.toString() || '100');
+        }
 
       } catch (err) {
         toast({ title: 'Greška', description: 'Nije moguće dohvatiti podatke o aktivnosti.', variant: 'destructive' });
@@ -110,7 +134,14 @@ const EditActivityPage: React.FC = () => {
         start_date: combineDateTime(startDate, startTime),
         actual_start_time: manualHours ? null : combineDateTime(actualStartDate, actualStartTime),
         actual_end_time: manualHours ? null : combineDateTime(actualEndDate, actualEndTime),
-        participant_ids: participantIds.map(id => Number(id)),
+        recognition_percentage: !isExcursion ? Number(recognitionPercentage) : undefined,
+        participations: isExcursion
+          ? participantsWithRoles.map(p => ({
+              member_id: Number(p.memberId),
+              recognition_override: p.manualRecognition ?? rolesToRecognitionPercentage[p.role],
+            }))
+          : undefined,
+        participant_ids: !isExcursion ? participantIds.map(id => Number(id)) : undefined,
         // Dodajemo manual_hours za ažuriranje - backend će ga primijeniti na sve sudionike
         manual_hours: manualHours ? Number(manualHours) : null,
     };
@@ -282,11 +313,33 @@ const EditActivityPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Postotak priznavanja - prikazuje se samo ako NIJE izlet */}
+              {!isExcursion && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="recognition_percentage" className="text-right">
+                    Postotak priznavanja
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="recognition_percentage"
+                      type="number"
+                      value={recognitionPercentage}
+                      onChange={(e) => setRecognitionPercentage(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Odabir sudionika */}
               <div className="grid grid-cols-4 items-start gap-4">
                 <Label className="text-right pt-2">Sudionici</Label>
                 <div className="col-span-3">
-                  <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
+                  {isExcursion ? (
+                    <MemberRoleSelect selectedMembers={participantsWithRoles} onSelectionChange={setParticipantsWithRoles} />
+                  ) : (
+                    <MemberSelect selectedMemberIds={participantIds} onSelectionChange={setParticipantIds} />
+                  )}
                 </div>
               </div>
 

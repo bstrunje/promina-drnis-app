@@ -19,6 +19,9 @@ router.get('/', authenticateToken, activityController.getAllActivities);
 // Dohvati sve aktivnosti s detaljima o sudionicima (za izračun sati - dostupno svim prijavljenim korisnicima)
 router.get('/with-participants', authenticateToken, activityController.getAllActivitiesWithParticipants);
 
+// Dohvati aktivnosti po statusu (dostupno svim prijavljenim korisnicima)
+router.get('/by-status/:status', authenticateToken, activityController.getActivitiesByStatus);
+
 // Dohvati jednu aktivnost po ID-u (dostupno svim prijavljenim korisnicima)
 router.get('/:activityId', authenticateToken, activityController.getActivityById);
 
@@ -41,6 +44,10 @@ router.patch('/:activityId/cancel', authenticateToken, canEditActivity, activity
 router.delete('/:activityId', authenticateToken, roles.requireSuperUser, activityController.deleteActivity);
 
 // --- Rute za Sudionike (Participants) --- //
+
+// Član se pridružuje aktivnosti (samo prijavljeni korisnik za sebe)
+router.post('/:activityId/join', authenticateToken, activityController.joinActivity);
+
 
 // Dodaj sudionika na aktivnost (samo admin i superuser)
 router.post(

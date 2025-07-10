@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as activityService from '../services/activities.service.js';
 
+
 // --- Tipovi Aktivnosti ---
 
 export const getActivityTypes = async (req: Request, res: Response, next: NextFunction) => {
@@ -63,7 +64,8 @@ export const getActivityById = async (req: Request, res: Response, next: NextFun
 export const getActivitiesByTypeId = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const typeId = parseInt(req.params.typeId, 10);
-    const activities = await activityService.getActivitiesByTypeIdService(typeId);
+    const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+    const activities = await activityService.getActivitiesByTypeIdService(typeId, year);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -74,6 +76,16 @@ export const getActivitiesByMemberId = async (req: Request, res: Response, next:
   try {
     const memberId = parseInt(req.params.memberId, 10);
     const activities = await activityService.getActivitiesByMemberIdService(memberId);
+    res.status(200).json(activities);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getActivitiesByStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.params;
+    const activities = await activityService.getActivitiesByStatusService(status);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -129,10 +141,26 @@ export const deleteActivity = async (req: Request, res: Response, next: NextFunc
 
 // --- Sudionici (Participants) --- //
 
+export const joinActivity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const activity_id = parseInt(req.params.activityId, 10);
+    const member_id = req.user?.member_id;
+
+    if (!member_id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const participation = await activityService.addParticipantService(activity_id, member_id);
+    res.status(201).json(participation);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const addParticipantToActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;
-    const participation = await activityService.addParticipantToActivityService(
+    const participation = await activityService.addParticipantService(
       parseInt(activityId, 10),
       parseInt(memberId, 10)
     );

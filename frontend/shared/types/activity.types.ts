@@ -20,6 +20,18 @@ export interface Member {
   total_minutes?: number;
 }
 
+export interface ActivityParticipation {
+  participation_id: number;
+  member_id: number;
+  activity_id: number;
+  recognition_override?: number | null;
+  manual_hours?: number | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+  member: Member;
+  recognized_hours: number;
+}
+
 export interface Activity {
   activity_id: number;
   name: string;
@@ -38,21 +50,8 @@ export interface Activity {
   // Relational fields for detailed views
   activity_type?: ActivityType;
   organizer?: Member;
-  participants?: Array<ActivityParticipation & { 
-    member: Member; 
-  }>;
+  participants?: ActivityParticipation[];
   _count?: {
     participants: number;
   };
-}
-
-export interface ActivityParticipation {
-  participation_id: number;
-  activity_id: number;
-  member_id: number;
-  start_time?: Date | string | null;
-  end_time?: Date | string | null;
-  manual_hours?: number | null;
-  recognition_override?: number | null;
-  created_at: Date | string;
 }

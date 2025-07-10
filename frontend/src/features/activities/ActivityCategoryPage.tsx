@@ -118,7 +118,7 @@ const ActivityCategoryPage: React.FC = () => {
         setActivityType(currentType || null);
 
         if (currentType) {
-          const activitiesData = await getActivitiesByTypeId(activityTypeId);
+          const activitiesData = await getActivitiesByTypeId(activityTypeId, year || undefined);
           setActivities(activitiesData);
         }
       }
@@ -341,6 +341,22 @@ const ActivityCategoryPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
                           <span>{format(new Date(activity.start_date), 'HH:mm')}</span>
+                        </div>
+                        <div className="pt-2 text-right">
+                          {(() => {
+                            switch (activity.status) {
+                              case 'PLANNED':
+                                return <span className="font-semibold text-red-500">Najavljeno</span>;
+                              case 'ACTIVE':
+                                return <span className="font-semibold text-blue-500">U tijeku</span>;
+                              case 'COMPLETED':
+                                return <span className="font-semibold text-green-600">Završena</span>;
+                              case 'CANCELLED':
+                                return <span className="font-semibold text-gray-500">Otkazana</span>;
+                              default:
+                                return null;
+                            }
+                          })()}
                         </div>
                       </CardContent>
                       

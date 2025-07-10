@@ -3,20 +3,18 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/config';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
-import { calculateSimpleHours } from '@/utils/activityHours';
+import { formatHoursToHHMM } from '@/utils/activityHours';
 
 // Sučelja za podatke
 interface Activity {
   activity_id: number;
-  title: string;
+  name: string;
   start_date: string;
 }
 
 interface ActivityParticipation {
   activity: Activity;
-  start_time?: string;
-  end_time?: string;
-  manual_hours?: number;
+  recognized_hours: number;
 }
 
 const ActivityYearPage: React.FC = () => {
@@ -76,7 +74,6 @@ const ActivityYearPage: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {participations.map(participation => {
-              const hours = calculateSimpleHours(participation);
               return (
                 <Link 
                   to={`/activities/${participation.activity.activity_id}`} 
@@ -84,10 +81,10 @@ const ActivityYearPage: React.FC = () => {
                   className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 >
                   <div className="flex justify-between items-center">
-                    <p className="font-semibold text-gray-700">{participation.activity.title}</p>
+                    <p className="font-semibold text-gray-700">{participation.activity.name}</p>
                     <div className="flex items-center text-sm text-gray-500 space-x-4">
                       <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" />{new Date(participation.activity.start_date).toLocaleDateString('hr-HR')}</span>
-                      <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{hours.toFixed(2)} h</span>
+                      <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{formatHoursToHHMM(participation.recognized_hours)}</span>
                     </div>
                   </div>
                 </Link>

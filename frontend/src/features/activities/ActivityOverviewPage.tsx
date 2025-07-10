@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/utils/config';
 import { Calendar, ChevronRight } from 'lucide-react';
 import BackToDashboard from '@components/BackToDashboard';
+import { formatHoursToHHMM } from '@/utils/activityHours';
 
 // Sučelje za člana ostaje isto
 interface Member {
@@ -95,7 +96,7 @@ const ActivityOverviewPage: React.FC = () => {
                       <p className="font-bold text-xl text-gray-800">{stat.year}.</p>
                       <div className="flex space-x-4 text-sm text-gray-500">
                         <span>Aktivnosti: <span className="font-semibold">{stat.total_activities}</span></span>
-                        <span>Sati: <span className="font-semibold">{Math.round(stat.total_hours)}</span></span>
+                        <span>Sati: <span className="font-semibold">{formatHoursToHHMM(stat.total_hours)}</span></span>
                       </div>
                     </div>
                   </div>

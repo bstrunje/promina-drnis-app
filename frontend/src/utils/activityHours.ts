@@ -73,28 +73,20 @@ export const calculateActivityHours = (activity: Activity): number => {
   if (activity.status !== 'COMPLETED') {
     return 0;
   }
-  
-  // 0. Provjeri ručni unos sudionika (manual_hours)
-  if (activity.participants && activity.participants.length > 0) {
-    const participantWithManualHours = activity.participants.find(p => p.manual_hours);
-    if (participantWithManualHours?.manual_hours) {
-      return participantWithManualHours.manual_hours;
-    }
+
+  // Prioritet 1: Ručni unos iz naziva aktivnosti
+  const hoursFromName = getHoursFromActivityName(activity);
+  if (hoursFromName !== null) {
+    return hoursFromName;
   }
-  
-  // 1. Provjeri ručni unos u nazivu aktivnosti
-  const manualHours = getHoursFromActivityName(activity);
-  if (manualHours !== null) {
-    return manualHours;
+
+  // Prioritet 3: Stvarno vrijeme početka i završetka
+  const hoursFromTimes = getHoursFromActivityTimes(activity);
+  if (hoursFromTimes !== null) {
+    return hoursFromTimes;
   }
-  
-  // 2. Provjeri stvarno vrijeme početka i završetka
-  const timeHours = getHoursFromActivityTimes(activity);
-  if (timeHours !== null) {
-    return timeHours;
-  }
-  
-  return 0; // Nema podataka za izračun sati
+
+  return 0; // Vraća 0 ako se sati ne mogu izračunati
 };
 
 /**

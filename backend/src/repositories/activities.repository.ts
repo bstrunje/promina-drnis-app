@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma.js';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, ActivityStatus } from '@prisma/client';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -92,9 +92,49 @@ export const findActivityById = async (activity_id: number) => {
   });
 };
 
-export const findActivitiesByTypeId = async (type_id: number) => {
-  return prisma.activity.findMany({ where: { type_id } });
+export const getActivitiesByTypeId = (type_id: number, year?: number) => {
+  const whereClause: any = { type_id };
+
+  if (year) {
+    whereClause.start_date = {
+      gte: new Date(`${year}-01-01T00:00:00.000Z`),
+      lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
+    };
+  }
+
+  return prisma.activity.findMany({
+    where: whereClause,
+    include: {
+      activity_type: true,
+      participants: {
+        include: {
+          member: true,
+        },
+      },
+    },
+    orderBy: {
+      start_date: 'desc',
+    },
+  });
 };
+
+export const findActivitiesByStatus = async (status: ActivityStatus) => {
+  return prisma.activity.findMany({
+    where: { status },
+    include: {
+      activity_type: true,
+      organizer: {
+        select: { member_id: true, first_name: true, last_name: true },
+      },
+      _count: {
+        select: { participants: true },
+      },
+    },
+    orderBy: { start_date: 'asc' },
+  });
+};
+
+
 
 export const findActivitiesByParticipantId = async (member_id: number) => {
   return prisma.activityParticipation.findMany({
@@ -118,7 +158,7 @@ export const findActivitiesByParticipantId = async (member_id: number) => {
 
 export const findParticipationsByMemberIdAndYear = async (member_id: number, year: number) => {
   const startDate = new Date(year, 0, 1);
-  const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+  const endDate = new Date(year + 1, 0, 1);
 
   return prisma.activityParticipation.findMany({
     where: {
@@ -126,16 +166,12 @@ export const findParticipationsByMemberIdAndYear = async (member_id: number, yea
       activity: {
         start_date: {
           gte: startDate,
-          lte: endDate,
+          lt: endDate,
         },
       },
     },
     include: {
-      activity: {
-        include: {
-          activity_type: true,
-        },
-      },
+      activity: true, // Uključujemo cijeli objekt aktivnosti
     },
     orderBy: {
       activity: {
@@ -197,11 +233,17 @@ export const findParticipation = async (activity_id: number, member_id: number) 
   });
 };
 
-export const addParticipant = async (activity_id: number, member_id: number, prismaClient: TransactionClient = prisma) => {
+export const addParticipant = async (
+  activity_id: number,
+  member_id: number,
+  recognition_override?: number,
+  prismaClient: TransactionClient = prisma
+) => {
   return prismaClient.activityParticipation.create({
     data: {
       activity_id,
       member_id,
+      recognition_override,
     },
   });
 };

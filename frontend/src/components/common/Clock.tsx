@@ -14,7 +14,7 @@ const Clock = () => {
   }, []);
 
   return (
-    <div className="hidden md:block fixed top-4 right-4 bg-gray-900 bg-opacity-80 text-white p-2 rounded-lg shadow-lg z-[9999] backdrop-blur-sm">
+    <div className="hidden md:block fixed top-4 right-4 bg-gray-900 bg-opacity-20 text-white p-2 rounded-lg shadow-lg z-[9999] backdrop-blur-sm pointer-events-none">
       <span className="font-mono text-base tracking-wider">
         {time.toLocaleTimeString('hr-HR', {
           hour: '2-digit',
