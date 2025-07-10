@@ -227,10 +227,17 @@ const memberRepository = {
         return members.map(m => m.member_id);
     },
 
-    async findAllActiveMemberIds(excludeSenderId?: number): Promise<number[]> {
+    async findAllReceivableMemberIds(excludeSenderId?: number): Promise<number[]> {
         const members = await prisma.member.findMany({
             where: {
-                status: 'registered',
+                status: {
+                    not: 'pending',
+                },
+                periods: {
+                    some: {
+                        end_date: null,
+                    },
+                },
                 NOT: {
                     member_id: excludeSenderId,
                 },

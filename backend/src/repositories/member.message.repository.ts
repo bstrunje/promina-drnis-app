@@ -105,15 +105,15 @@ const memberMessageRepository = {
         let finalRecipientIds: number[] = [];
 
         if (recipientType === 'all') {
-            const allMembers = await memberRepository.findAllActiveMemberIds(senderId);
+            const allMembers = await memberRepository.findAllReceivableMemberIds(senderId);
             finalRecipientIds = allMembers;
         } else if (recipientType === 'group') {
             if (!inputRecipientMemberIds || inputRecipientMemberIds.length === 0) {
                 throw new Error('Za grupnu poruku potrebno je navesti primatelje.');
             }
             finalRecipientIds = inputRecipientMemberIds.filter(id => id !== senderId);
-        } else if (recipientType === 'member' && inputRecipientMemberIds && inputRecipientMemberIds.length > 0) {
-            finalRecipientIds = inputRecipientMemberIds;
+        } else if (recipientType === 'member' && recipientId) {
+            finalRecipientIds = [recipientId];
         } else {
             throw new Error('Nevažeći tip primatelja ili nedostaju ID-evi primatelja.');
         }
