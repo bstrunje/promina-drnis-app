@@ -18,7 +18,7 @@ import {
 // Import iz @components/ui/select nije potreban
 import { useToast } from '@components/ui/use-toast';
 import { Checkbox } from '@components/ui/checkbox';
-import { CornerDownLeft, Send, Users, UserCheck, Mail } from 'lucide-react';
+import { CornerDownLeft, Send, Users, UserCheck, Mail, XCircle } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
@@ -240,37 +240,51 @@ const AdminMessageSender: React.FC = () => {
           </TabsList>
 
           <TabsContent value="single" className="space-y-4">
-            <div className="space-y-2">
+                        <div className="space-y-2">
               <label htmlFor="member-search" className="text-sm font-medium">
-                Pretraži člana:
+                {selectedMember ? 'Primatelj:' : 'Pretraži člana:'}
               </label>
-              <Input
-                id="member-search"
-                placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-
-              {searchResults.length > 0 && (
-                <div className="border rounded-md p-2 max-h-60 overflow-y-auto mt-2">
-                  {searchResults.map((member) => (
-                    <div
-                      key={member.member_id}
-                      className={`flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md ${selectedMember?.member_id === member.member_id ? 'bg-blue-50 border border-blue-200' : ''
-                        }`}
-                      onClick={() => setSelectedMember(member)}
-                    >
-                      <div className="font-medium">
-                        {member.full_name}
-                      </div>
+              {!selectedMember ? (
+                <>
+                  <Input
+                    id="member-search"
+                    placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchResults.length > 0 && (
+                    <div className="border rounded-md p-2 max-h-60 overflow-y-auto mt-2">
+                      {searchResults.map((member) => (
+                        <div
+                          key={member.member_id}
+                          className="flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md"
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setSearchTerm(''); // Očisti pretragu nakon odabira
+                          }}
+                        >
+                          <div className="font-medium">{member.full_name}</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {searchTerm.length > 0 && searchTerm.length < 2 && (
-                <div className="text-sm text-gray-500 mt-1">
-                  Unesite najmanje 2 znaka za pretragu članova
+                  )}
+                  {searchTerm.length > 0 && searchTerm.length < 2 && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      Unesite najmanje 2 znaka za pretragu članova
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between p-2 border rounded-md bg-blue-100 text-blue-800">
+                  <span className="font-bold">{selectedMember.full_name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full hover:bg-red-100"
+                    onClick={() => setSelectedMember(null)}
+                  >
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  </Button>
                 </div>
               )}
             </div>

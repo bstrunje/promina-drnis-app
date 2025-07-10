@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
@@ -44,6 +44,7 @@ const MemberMessageList: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [openCollapsibleId, setOpenCollapsibleId] = useState<number | null>(null);
+  const openedMessageIdsRef = useRef<Set<number>>(new Set());
   const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
   const [genericMessages, setGenericMessages] = useState<ApiGenericMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +93,7 @@ const MemberMessageList: React.FC = () => {
   }, [user, toast]);
 
   // Označavanje poruke kao pročitane
-  const handleMarkAsRead = async (messageId: number) => {
+  const handleMarkAsRead = useCallback(async (messageId: number) => {
     try {
       // Poziv API-ja za označavanje poruke kao pročitane
       await markMessageAsRead(messageId);
@@ -125,7 +126,22 @@ const MemberMessageList: React.FC = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
+
+  // Efekt koji se pokreće samo jednom, prilikom napuštanja komponente
+  useEffect(() => {
+    // Vraća funkciju za čišćenje (cleanup function) koja se poziva na unmount
+    return () => {
+      // Prođi kroz sve poruke čiji su ID-jevi spremljeni u ref i označi ih kao pročitane
+      openedMessageIdsRef.current.forEach(messageId => {
+        // Ovdje ne možemo direktno provjeriti status iz 'messages' state-a jer je closure star.
+        // API poziv će se pobrinuti da ne radi ništa ako je poruka već pročitana.
+        void handleMarkAsRead(messageId);
+      });
+    };
+  // Prazan niz ovisnosti osigurava da se ovaj efekt pokrene samo na mount, a cleanup na unmount.
+  // handleMarkAsRead je uključen jer je vanjski scope, ali je stabiliziran sa useCallback.
+  }, [handleMarkAsRead]);
 
   const handleRefresh = () => {
     if (activeTab === 'received') {
@@ -152,38 +168,9 @@ const MemberMessageList: React.FC = () => {
     }, 30000); // 30 sekundi
 
     return () => clearInterval(interval);
-  }, [user, fetchMessages, fetchSentMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
+  }, [activeTab, fetchMessages, fetchSentMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
 
-  // Automatsko označavanje otvorenih poruka kao pročitanih kada korisnik napusti stranicu ili promijeni filter
-  useEffect(() => {
-    // Funkcija za čišćenje koja se poziva kada korisnik napusti komponentu ili promijeni filter
-    return () => {
-      // Pronađi sve nepročitane poruke koje su otvorene (vidljive)
-      const openedMessages = messages.filter(message => {
-        const messageElement = document.getElementById(`message-content-${message.message_id}`);
-        return messageElement && !messageElement.classList.contains('hidden') && message.status === 'unread';
-      });
 
-      // Označi sve otvorene nepročitane poruke kao pročitane
-      // Koristimo Promise.all za paralelno izvršavanje svih zahtjeva
-      if (openedMessages.length > 0) {
-        console.log(`Označavanje ${openedMessages.length} poruka kao pročitane pri napuštanju stranice`);
-
-        // Izvrši sve zahtjeve za označavanje poruka kao pročitane
-        Promise.all(openedMessages.map(message => markMessageAsRead(message.message_id)))
-          .then(() => {
-            // Nakon što su sve poruke označene kao pročitane, emitiraj događaj za osvježavanje brojača
-            window.dispatchEvent(new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED));
-
-            // Dodatna provjera - malo odgodi i ponovno emitiraj događaj za osvježavanje brojača
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED));
-            }, 1000);
-          })
-          .catch(error => console.error('Greška pri označavanju poruka kao pročitane:', error));
-      }
-    };
-  }, [messages, filter]);
 
   if (loading) {
     return <div className="p-4">Učitavanje poruka...</div>;
@@ -322,19 +309,12 @@ const MemberMessageList: React.FC = () => {
                             : 'border-gray-200'
                           }`}
                         onClick={() => {
-                          // Otvaranje/zatvaranje detalja poruke
                           const messageElement = document.getElementById(`message-content-${message.message_id}`);
-                          if (messageElement) {
-                            if (messageElement.classList.contains('hidden')) {
-                              messageElement.classList.remove('hidden');
+                          messageElement?.classList.toggle('hidden');
 
-                              // Označi poruku kao pročitanu kada korisnik klikne na nju i otvori detalje
-                              if (message.status === 'unread') {
-                                void handleMarkAsRead(message.message_id);
-                              }
-                            } else {
-                              messageElement.classList.add('hidden');
-                            }
+                          // Ako je poruka nepročitana i upravo je otvorena, dodaj njen ID u ref
+                          if (message.status === 'unread' && !messageElement?.classList.contains('hidden')) {
+                            openedMessageIdsRef.current.add(message.message_id);
                           }
                         }}
                       >
