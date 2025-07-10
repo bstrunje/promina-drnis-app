@@ -64,6 +64,27 @@ const getHoursFromActivityTimes = (activity: Activity): number | null => {
 };
 
 /**
+ * Dohvaća maksimalne sate iz ručnih unosa sudionika
+ * @param activity Aktivnost sa sudionicima
+ * @returns Maksimalni broj sati ili null ako nema ručnih unosa
+ */
+const getHoursFromManualInputs = (activity: Activity): number | null => {
+  if (!activity.participants || activity.participants.length === 0) {
+    return null;
+  }
+
+  const manualHours = activity.participants
+    .map(p => p.manual_hours)
+    .filter((h): h is number => h !== null && h !== undefined && h > 0);
+
+  if (manualHours.length === 0) {
+    return null;
+  }
+
+  return Math.max(...manualHours);
+};
+
+/**
  * Izračunava sate za pojedinačnu aktivnost (bez množenja s brojem sudionika)
  * @param activity Aktivnost za koju se računaju sati
  * @returns Sati kao decimalni broj (npr. 2.5h = 2h 30min)
@@ -74,7 +95,13 @@ export const calculateActivityHours = (activity: Activity): number => {
     return 0;
   }
 
-  // Prioritet 1: Ručni unos iz naziva aktivnosti
+  // Prioritet 1: Ručni unos sati sudionika
+  const hoursFromManual = getHoursFromManualInputs(activity);
+  if (hoursFromManual !== null) {
+    return hoursFromManual;
+  }
+
+  // Prioritet 2: Ručni unos iz naziva aktivnosti
   const hoursFromName = getHoursFromActivityName(activity);
   if (hoursFromName !== null) {
     return hoursFromName;

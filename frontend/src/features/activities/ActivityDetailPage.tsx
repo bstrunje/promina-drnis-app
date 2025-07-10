@@ -5,7 +5,7 @@ import { getActivityById, cancelActivity as apiCancelActivity, joinActivity } fr
 import { Activity } from '@shared/activity.types';
 import { useAuth } from '../../context/AuthContext';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
-import { formatHoursToHHMM } from '@/utils/activityHours';
+import { formatHoursToHHMM, calculateActivityHours } from '@/utils/activityHours';
 import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban, AlertCircle, CheckCircle2, PlayCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
@@ -115,10 +115,7 @@ const ActivityDetailPage: React.FC = () => {
   const isCancelled = activity.status === 'CANCELLED';
   const isCompleted = activity.status === 'COMPLETED';
 
-  const totalMinutes =
-    activity.actual_start_time && activity.actual_end_time
-      ? differenceInMinutes(new Date(activity.actual_end_time), new Date(activity.actual_start_time))
-      : 0;
+
   
   // Provjera je li aktivnost tipa SASTANCI ili IZLETI prema ključu (key) - stabilniji identifikator
   const isMeetingType = activity.activity_type?.key === 'sastanci';
@@ -194,9 +191,9 @@ const ActivityDetailPage: React.FC = () => {
               
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 {getStatusBadge(activity.status)}
-                {isCompleted && totalMinutes > 0 && (
+                {isCompleted && calculateActivityHours(activity) > 0 && (
                   <Badge variant="default" className="bg-blue-500 text-white font-mono text-sm">
-                    {formatHoursToHHMM(totalMinutes / 60)}
+                    {formatHoursToHHMM(calculateActivityHours(activity))}
                   </Badge>
                 )}
               </div>

@@ -33,6 +33,7 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
         select: {
           actual_start_time: true,
           actual_end_time: true,
+          recognition_percentage: true, // Dohvaćamo i postotak priznavanja s aktivnosti
         },
       },
     },
@@ -53,8 +54,11 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
       minuteValue = minutes > 0 ? minutes : 0;
     }
 
-    const recognition = p.recognition_override ?? 100;
-    const recognizedMinutes = minuteValue * (recognition / 100);
+    // Odredi koji postotak primijeniti. Prioritet ima `recognition_override` s pojedinog sudjelovanja.
+    // Ako on ne postoji, koristi se `recognition_percentage` s cijele aktivnosti.
+    // Ako ni on ne postoji, default je 100%.
+    const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
+    const recognizedMinutes = minuteValue * (finalRecognitionPercentage / 100);
 
     return acc + recognizedMinutes;
   }, 0) / 60; // Vraćamo natrag u sate
