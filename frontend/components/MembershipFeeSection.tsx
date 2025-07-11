@@ -413,58 +413,79 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               {/* Prikaz statusa članstva (active/inactive) */}
               {/* Uvijek prikazujemo status članstva */}
               {(() => {
-                // Koristi nove funkcije za određivanje statusa
+                const lastPeriod = membershipHistory?.periods?.[membershipHistory.periods.length - 1];
+
+                if (lastPeriod && lastPeriod.end_date && lastPeriod.end_reason) {
+                  const today = getCurrentDate();
+                  const currentMonth = today.getMonth(); // 0 = Siječanj, 1 = Veljača
+
+                  let statusInfo = {
+                    text: 'Članstvo završeno',
+                    className: 'bg-red-100 text-red-800',
+                  };
+
+                  if (lastPeriod.end_reason === 'non_payment' && (currentMonth === 0 || currentMonth === 1)) {
+                    statusInfo = {
+                      text: 'Članstvo isteklo',
+                      className: 'bg-yellow-100 text-yellow-800',
+                    };
+                  }
+
+                  return (
+                    <div className="mb-4">
+                      <h3 className="text-sm text-gray-500 mb-1">Member Status:</h3>
+                      <div className="flex items-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
+                          {statusInfo.text}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Fallback na postojeću logiku ako gornji uvjeti nisu zadovoljeni
                 const hasPaidFee = hasPaidMembershipFee(member);
-                
-                // Potrebna je tipski sigurna provjera za "active" status koji dolazi iz baze
-                const memberStatus = member.status as string; // Eksplicitno tretiramo kao string za provjeru
+                const memberStatus = member.status as string;
                 const isRegisteredOrActive = memberStatus === 'registered' || memberStatus === 'active';
-                
-                // Određivanje statusa članstva prema prioritetima
-                const detailedMembershipStatus = membershipHistory?.periods 
+
+                const detailedMembershipStatus = membershipHistory?.periods
                   ? determineDetailedMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
                   : {
-                      // Ako je član već registriran u bazi ili ima "active" status iz membership_details, 
-                      // tretiramo ga kao registriranog člana čak i ako još nema plaćenu članarinu
                       status: isRegisteredOrActive ? 'registered' : (hasPaidFee ? 'registered' : (member.status ?? 'pending')),
                       reason: isRegisteredOrActive ? 'Registrirani član' : (hasPaidFee ? 'Aktivan član s plaćenom članarinom' : 'Status na čekanju'),
                       date: null,
-                      endReason: null
+                      endReason: null,
                     };
-                
-                // Za kompatibilnost s postojećim kodom
-                const membershipStatus = detailedMembershipStatus.status;
-                 
-                // Aktivan član ima plaćenu članarinu i ima aktivan period
-                
-                
+
+                const finalMembershipStatus = detailedMembershipStatus.status;
+
+                const getMembershipDisplay = (status: string) => {
+                  if (status === 'registered') {
+                    return { text: 'Članstvo važeće', className: 'bg-green-100 text-green-800' };
+                  } else if (status === 'inactive') {
+                    return { text: 'Neaktivan', className: 'bg-red-100 text-red-800' };
+                  } else {
+                    return { text: 'Na čekanju', className: 'bg-yellow-100 text-yellow-800' };
+                  }
+                };
+
+                const display = getMembershipDisplay(finalMembershipStatus);
+
                 return (
                   <div className="mb-4">
                     <h3 className="text-sm text-gray-500 mb-1">Member Status:</h3>
                     <div className="flex items-center">
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${
-                          membershipStatus === 'registered' 
-                            ? 'bg-green-100 text-green-800' 
-                            : membershipStatus === 'inactive' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {membershipStatus === 'registered' ? 'Članstvo važeće' : membershipStatus === 'inactive' ? 'Neaktivan' : 'Na čekanju'}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${display.className}`}>
+                        {display.text}
                       </span>
                     </div>
-                    
-                    {/* Prikazujemo detalje statusa članstva samo ako nisu dupliranje glavnog statusa */}
-                    {detailedMembershipStatus.reason && 
-                     membershipStatus !== 'registered' && 
-                     !(membershipStatus === 'inactive' && ['Isključen iz članstva', 'Smrt člana', 'Dobrovoljno povlačenje'].includes(detailedMembershipStatus.reason)) && (
-                      <p className="text-sm text-gray-700 mt-1">
-                        {detailedMembershipStatus.reason}
-                      </p>
-                    )}
-                    
-                    {/* Prikaži datum završetka i razlog ako postoji */}
+                    {detailedMembershipStatus.reason &&
+                      finalMembershipStatus !== 'registered' &&
+                      !(finalMembershipStatus === 'inactive' && ['Isključen iz članstva', 'Smrt člana', 'Dobrovoljno povlačenje'].includes(detailedMembershipStatus.reason)) && (
+                        <p className="text-sm text-gray-700 mt-1">
+                          {detailedMembershipStatus.reason}
+                        </p>
+                      )}
                     {detailedMembershipStatus.date && detailedMembershipStatus.status === 'inactive' && (
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">
