@@ -18,7 +18,7 @@ import {
 // Import iz @components/ui/select nije potreban
 import { useToast } from '@components/ui/use-toast';
 import { Checkbox } from '@components/ui/checkbox';
-import { CornerDownLeft, Send, Users, UserCheck, Mail, XCircle } from 'lucide-react';
+import { CornerDownLeft, Send, Users, UserCheck, Mail, X } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
@@ -63,6 +63,17 @@ const AdminMessageSender: React.FC = () => {
 
     void fetchMembers();
   }, [searchTerm, toast]);
+
+  // Funkcija za slanje poruke pojedinačnom članu
+    const handleSelectMember = (member: MemberSearchResult) => {
+    setSelectedMember(member);
+    setSearchTerm('');
+    setSearchResults([]);
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedMember(null);
+  };
 
   // Funkcija za slanje poruke pojedinačnom članu
   const handleSendToSingle = async () => {
@@ -242,10 +253,17 @@ const AdminMessageSender: React.FC = () => {
           <TabsContent value="single" className="space-y-4">
                         <div className="space-y-2">
               <label htmlFor="member-search" className="text-sm font-medium">
-                {selectedMember ? 'Primatelj:' : 'Pretraži člana:'}
+                Primatelj:
               </label>
-              {!selectedMember ? (
-                <>
+              {selectedMember ? (
+                <div className="flex items-center justify-between p-2 border rounded-md bg-blue-100 text-blue-800">
+                  <span className="font-medium">{selectedMember.full_name}</span>
+                  <Button variant="ghost" size="sm" onClick={handleCancelSelection} className="text-blue-800 hover:bg-blue-200 hover:text-blue-900">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div>
                   <Input
                     id="member-search"
                     placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
@@ -257,13 +275,12 @@ const AdminMessageSender: React.FC = () => {
                       {searchResults.map((member) => (
                         <div
                           key={member.member_id}
-                          className="flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded-md"
-                          onClick={() => {
-                            setSelectedMember(member);
-                            setSearchTerm(''); // Očisti pretragu nakon odabira
-                          }}
+                          className="flex items-center p-2 hover:bg-slate-100 cursor-pointer rounded-md"
+                          onClick={() => handleSelectMember(member)}
                         >
-                          <div className="font-medium">{member.full_name}</div>
+                          <div className="font-medium">
+                            {member.full_name}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -273,18 +290,6 @@ const AdminMessageSender: React.FC = () => {
                       Unesite najmanje 2 znaka za pretragu članova
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="flex items-center justify-between p-2 border rounded-md bg-blue-100 text-blue-800">
-                  <span className="font-bold">{selectedMember.full_name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 rounded-full hover:bg-red-100"
-                    onClick={() => setSelectedMember(null)}
-                  >
-                    <XCircle className="h-5 w-5 text-red-500" />
-                  </Button>
                 </div>
               )}
             </div>
