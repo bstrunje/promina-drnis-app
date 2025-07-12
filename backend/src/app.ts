@@ -139,7 +139,8 @@ const corsOptions = {
     const allowedOrigins = [
       'https://promina-drnis-app.vercel.app',  // Production frontend
       'http://localhost:5173',                 // Development frontend
-      'http://localhost:3000'                  // Development backend
+      'http://localhost:3000',                 // Development backend
+      'https://promina-drnis-api.onrender.com' // Production backend
     ];
     
     // Allow all Vercel preview deployments
