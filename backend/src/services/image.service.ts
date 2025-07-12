@@ -29,9 +29,10 @@ const imageService = {
     ): Promise<string> {
         try {
             // Use hardcoded paths instead of __dirname
-            const uploadsDir = process.env.NODE_ENV === 'production' 
-                ? '/app/uploads'
-                : './uploads'; // Koristi relativnu putanju
+            // Prioritize UPLOADS_DIR for persistent storage (e.g., Render Disks)
+            const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
+                ? '/app/uploads' // Fallback for legacy or non-disk setups
+                : './uploads'); // Koristi relativnu putanju
             
             const profileImagesDir = path.join(uploadsDir, 'profile_images');
             
@@ -84,10 +85,10 @@ const imageService = {
             // Extract filename from path
             const filename = path.basename(member.profile_image_path);
             
-            // Use relative path for accessing the uploads directory
-            const uploadsDir = process.env.NODE_ENV === 'production' 
-                ? '/app/uploads'
-                : './uploads';
+            // Prioritize UPLOADS_DIR for persistent storage (e.g., Render Disks)
+            const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
+                ? '/app/uploads' // Fallback for legacy or non-disk setups
+                : './uploads');
             
             const profileImagesDir = path.join(uploadsDir, 'profile_images');
             const filePath = path.join(profileImagesDir, filename);

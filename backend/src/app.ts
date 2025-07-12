@@ -97,9 +97,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
 
 // Set up static file serving with better error handling
-const uploadsDir = process.env.NODE_ENV === 'production'
-  ? '/app/uploads'
-  : path.resolve(__dirname, '..', 'uploads');
+// Set up static file serving with better error handling
+// Prioritize UPLOADS_DIR for persistent storage (e.g., Render Disks)
+const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
+  ? '/app/uploads' // Fallback for legacy or non-disk setups
+  : path.resolve(__dirname, '..', 'uploads'));
   
 console.log(`Serving static files from: ${uploadsDir}`);
 
