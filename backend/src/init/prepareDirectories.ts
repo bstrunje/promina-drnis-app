@@ -8,9 +8,11 @@ const __dirname = dirname(__filename);
 
 export function prepareDirectories() {
   // For Render deployment, use the absolute path
-  const baseUploadsDir = process.env.NODE_ENV === 'production'
-    ? '/app/uploads'
-    : path.join(__dirname, '..', '..', 'uploads');
+  // Prioritize UPLOADS_DIR for persistent storage, with fallbacks for other environments
+  const baseUploadsDir = process.env.UPLOADS_DIR || 
+    (process.env.NODE_ENV === 'production'
+      ? '/app/uploads' // Legacy fallback for production
+      : path.join(__dirname, '..', '..', 'uploads')); // Development fallback
     
   const profileImagesDir = path.join(baseUploadsDir, 'profile_images');
   
@@ -36,8 +38,16 @@ export function prepareDirectories() {
 
 // Export a function to move old files to the new structure if needed
 export async function migrateExistingFiles() {
+  // This migration is for local development when structure changes.
+  // It should not run or crash in production if the old directory doesn't exist.
   const baseUploadsDir = path.join(__dirname, '..', '..', 'uploads');
   const profileImagesDir = path.join(baseUploadsDir, 'profile_images');
+
+  // First, check if the source directory even exists. If not, do nothing.
+  if (!fs.existsSync(baseUploadsDir)) {
+    console.log(`Skipping file migration: Source directory ${baseUploadsDir} not found.`);
+    return;
+  }
   
   try {
     const files = await fs.promises.readdir(baseUploadsDir);
