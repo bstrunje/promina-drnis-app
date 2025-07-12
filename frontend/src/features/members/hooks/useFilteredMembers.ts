@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MemberWithDetails } from '@shared/memberDetails.types';
+import { hasActiveMembershipPeriod } from '@shared/memberStatus.types';
 import { getCurrentDate, getCurrentYear, getMonth, getDate } from '../../../utils/dateUtils';
 import { parseISO } from 'date-fns';
 
@@ -48,6 +49,16 @@ export const useFilteredMembers = ({
         // Aktivni su članovi koji imaju 20 ili više sati aktivnosti
         const requiredHoursForActive = 20 * 60; // 20 sati u minutama
         result = result.filter(member => {
+          // Logika za filtriranje mora biti identična logici za prikaz (getMembershipDisplayStatusExternal)
+          // Član je kandidat za aktivnog/pasivnog samo ako NIJE 'Bivši član'.
+
+          const isFormerMember = member.detailedStatus?.status === 'inactive' || 
+                                 (member.periods && !hasActiveMembershipPeriod(member.periods));
+
+          if (isFormerMember || member.detailedStatus?.status === 'pending') {
+            return false; // Izbaci bivše članove i one na čekanju
+          }
+
           const totalHours = member.total_hours ?? 0;
           return isActive ? (totalHours >= requiredHoursForActive) : (totalHours < requiredHoursForActive);
         });

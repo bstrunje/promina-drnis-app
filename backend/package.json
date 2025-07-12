@@ -65,6 +65,7 @@
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "@types/sinonjs__fake-timers": "^8.1.5",
     "@vitest/ui": "^3.1.3",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
@@ -73,6 +74,7 @@
     "prisma": "^6.11.1",
     "supertest": "^7.1.1",
     "typescript-eslint": "^8.32.1",
-    "vitest": "^3.1.3"
+    "vitest": "^3.1.3",
+    "@sinonjs/fake-timers": "^11.2.2"
   }
 }

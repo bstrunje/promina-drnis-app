@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: promina-test-db
+    restart: always
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: testdb
+    ports:
+      # Port na hostu : Port u kontejneru
+      # Koristimo 5433 da izbjegnemo konflikt s vašom postojećom bazom na 5432
+      - "5433:5432"
+    volumes:
+      # Ovaj volumen će osigurati da se podaci u bazi sačuvaju između pokretanja
+      # Možemo ga lako obrisati ako želimo potpuno svježi start
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: promina-test-backend
+    restart: always
+    depends_on:
+      - db
+    ports:
+      # Izlažemo backend na portu 3001
+      - "3001:3001"
+    environment:
+      # Povezujemo backend s novom bazom podataka unutar Docker mreže
+      # Host 'db' je naziv servisa baze definiran iznad
+      DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
+      # Postavljamo port na kojem backend sluša
+      PORT: 3001
+      NODE_ENV: development
+    volumes:
+      # Mapiramo lokalni backups direktorij u kontejner kako bi skripte imale pristup
+      - ./backend/backups:/usr/src/app/backups
+
+
+volumes:
+  postgres_data:

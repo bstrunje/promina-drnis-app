@@ -293,23 +293,44 @@ const membershipRepository = {
     },
 
     async endExpiredMemberships(year: number): Promise<void> {
-        // 1. Završimo razdoblja članstva
-        await db.query(
-            `UPDATE membership_periods 
-             SET end_date = $1, end_reason = 'non_payment'
-             WHERE end_date IS NULL 
-             AND member_id IN (
-                SELECT m.member_id 
-                FROM members m
-                LEFT JOIN membership_details md ON m.member_id = md.member_id
-                WHERE md.fee_payment_year < $2
-             )`,
-            [getCurrentDate(), year]
-        );
-        
-        // Markice su nepovratne, više ne resetiramo oznake izdanih markica
-        
-        console.log(`Završena članstva za godinu ${year} (${formatDate(getCurrentDate(), 'yyyy-MM-dd')})`);
+        await db.transaction(async (client) => {
+            // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
+            //    i koji su trenutno 'registered'.
+            const expiredMembersResult = await client.query<{ member_id: number }>(
+                `SELECT m.member_id 
+                 FROM members m
+                 LEFT JOIN membership_details md ON m.member_id = md.member_id
+                 WHERE m.status = 'registered' AND (md.fee_payment_year < $1 OR md.fee_payment_year IS NULL)`,
+                [year]
+            );
+
+            const memberIdsToExpire = expiredMembersResult.rows.map(row => row.member_id);
+
+            if (memberIdsToExpire.length === 0) {
+                console.log(`Nema članova s isteklim članstvom za godinu ${year}.`);
+                return;
+            }
+
+            console.log(`Pronađeno ${memberIdsToExpire.length} članova kojima ističe članarina:`, memberIdsToExpire);
+
+            // 2. Ažuriraj status i sate za te članove u tablici `members`
+            await client.query(
+                `UPDATE members
+                 SET status = 'inactive', total_hours = 0
+                 WHERE member_id = ANY($1::int[])`,
+                [memberIdsToExpire]
+            );
+
+            // 3. Završi njihova aktivna razdoblja članstva u `membership_periods`
+            await client.query(
+                `UPDATE membership_periods 
+                 SET end_date = $1, end_reason = 'non_payment'
+                 WHERE end_date IS NULL AND member_id = ANY($2::int[])`,
+                [getCurrentDate(), memberIdsToExpire]
+            );
+
+            console.log(`Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive' i sati resetirani.`);
+        });
     }
 };
 

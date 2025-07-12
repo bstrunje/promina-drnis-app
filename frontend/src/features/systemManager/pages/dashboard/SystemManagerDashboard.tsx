@@ -10,6 +10,7 @@ import MembersWithPermissions from '../../../members/permissions/MembersWithPerm
 import PendingMembersList from '../../components/members/PendingMembersList';
 import SystemManagerSettings from '../settings/SystemManagerSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
+import TimeTravel from '../../../../../components/admin/TimeTravel';
 
 /**
  * Glavna komponenta System Manager dashboarda
@@ -69,6 +70,9 @@ const SystemManagerDashboard: React.FC = () => {
 
       {/* Glavni sadržaj */}
       <main className="container mx-auto p-4">
+        {/* Razvojni alati - vidljivi samo u development modu */}
+        {import.meta.env.DEV && <TimeTravel />}
+
         {/* Navigacija između tabova */}
         <ManagerTabNav activeTab={activeTab} setActiveTab={handleTabChange} />
 

@@ -1,3 +1,5 @@
+
+
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -30,9 +32,12 @@ import activityRoutes from './routes/activity.routes.js'; // KONAČNI ISPRAVAK
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
+import devRoutes from './routes/dev.routes.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
+
+
 
 // U produkciji nije potrebno koristiti testModeMiddleware
 // U razvoju ga uvjetno uključujemo zbog simulacije testnog načina rada
@@ -271,6 +276,12 @@ app.use('/api/messages', (req, res, next) => {
 // API Routes - KLJUČNO: /api/messages MORA biti PRIJE /api/members
 app.use('/api/auth', authRoutes);
 app.use('/api/system-manager', systemManagerRoutes);
+
+// Registriraj dev rute samo u razvojnom okruženju
+if (process.env.NODE_ENV && process.env.NODE_ENV.trim() === 'development') {
+  app.use('/api/dev', devRoutes);
+  console.log('🔧 Dev routes registered at /api/dev');
+}
 
 console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);

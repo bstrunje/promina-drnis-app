@@ -9,6 +9,7 @@ import config from './config/config.js';
 import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
+
 // import { runAllMigrations } from './runMigrations.js';
 import scheduledService from './services/scheduled.service.js';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
@@ -135,6 +136,9 @@ startPasswordUpdateJob();
 
 // Register routes
 app.use('/api/debug', debugRoutes);
+
+
+
 
 async function stopServer(): Promise<void> {
     return new Promise((resolve) => {

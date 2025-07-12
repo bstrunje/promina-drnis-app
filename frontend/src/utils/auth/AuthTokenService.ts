@@ -27,17 +27,13 @@ export class AuthTokenService {
    * Dohvaća API URL ovisno o okruženju
    */
   static getApiUrl(endpoint: string): string {
-    // U produkciji koristimo API_BASE_URL iz config.ts
-    // U razvoju koristimo direktne putanje jer su frontend i backend na različitim portovima
-    const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
-    if (isDevelopment) {
-      return `${window.location.protocol}//${window.location.hostname}:3000${endpoint}`;
-    } else {
-      // Koristimo API_BASE_URL iz config.ts i dodajemo endpoint bez /api prefiksa
-      // jer API_BASE_URL već sadrži /api
-      const apiEndpoint = endpoint.startsWith('/api/') ? endpoint.substring(4) : endpoint;
-      return `${API_BASE_URL}${apiEndpoint}`;
+    // U razvojnom okruženju, Vite proxy rješava preusmjeravanje. Koristimo relativnu putanju.
+    if (import.meta.env.DEV) {
+      return endpoint;
     }
+    // U produkciji, koristimo punu putanju definiranu u konfiguraciji.
+    const apiEndpoint = endpoint.startsWith('/api/') ? endpoint.substring(4) : endpoint;
+    return `${API_BASE_URL}${apiEndpoint}`;
   }
 
   /**

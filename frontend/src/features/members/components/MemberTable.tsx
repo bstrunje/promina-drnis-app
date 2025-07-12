@@ -93,13 +93,13 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
       switch (lifeStatus) {
         case "employed/unemployed":
-          baseClass = "bg-blue-50 hover:bg-blue-100";
+          baseClass = "bg-blue-100 hover:bg-blue-200";
           break;
         case "child/pupil/student":
-          baseClass = "bg-green-50 hover:bg-green-100";
+          baseClass = "bg-green-100 hover:bg-green-200";
           break;
         case "pensioner":
-          baseClass = "bg-red-50 hover:bg-red-100";
+          baseClass = "bg-red-100 hover:bg-red-200";
           break;
       }
     }

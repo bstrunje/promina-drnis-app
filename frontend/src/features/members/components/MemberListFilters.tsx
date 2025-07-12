@@ -87,7 +87,15 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         
         <div className="flex flex-col">
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
-            <Select value={activeFilter} onValueChange={(value: string) => onActiveFilterChange(value)}>
+            <Select
+              value={activeFilter}
+              onValueChange={(value: string) => {
+                onActiveFilterChange(value);
+                if (onCloseFilters) {
+                  onCloseFilters();
+                }
+              }}
+            >
               <SelectTrigger className="w-full md:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Status aktivnosti" />
@@ -116,7 +124,15 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <div className="flex-1">
-              <Select value={sortCriteria} onValueChange={(value: string) => onSortCriteriaChange(value)}>
+              <Select
+                value={sortCriteria}
+                onValueChange={(value: string) => {
+                  onSortCriteriaChange(value);
+                  if (onCloseFilters) {
+                    onCloseFilters();
+                  }
+                }}
+              >
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Sortiraj po" />
                 </SelectTrigger>
@@ -171,18 +187,7 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
         </div>
       </div>
       
-      {/* Gumb za zatvaranje filtera na malim ekranima */}
-      <div className="md:hidden mt-4 flex justify-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onCloseFilters}
-          className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 w-full max-w-md"
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          <span>Spremi filtriranje</span>
-        </Button>
-      </div>
+      {/* Gumb za spremanje filtera je uklonjen. Filteri se sada primjenjuju odmah pri odabiru. */}
     </div>
   );
 };
