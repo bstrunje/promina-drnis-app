@@ -24,7 +24,7 @@ import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import auditRoutes from './routes/audit.js';
 import adminMessagesRouter from './routes/admin.messages.js';
-import sequelize from './types/database.js';
+
 import stampRoutes from './routes/stamp.js';
 import settingsRouter from './routes/settings.js';
 import adminRoutes from './routes/admin.routes.js';
@@ -77,16 +77,6 @@ app.set('trust proxy', 1); // Vjeruj samo prvom (najbližem) proxy poslužitelju
 // ES modules compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Test database connection
-sequelize.authenticate()
-  .then(() => console.log('Database connected...'))
-  .catch((err: unknown) => console.log('Error: ' + err));
-
-// Sync database
-sequelize.sync()
-  .then(() => console.log('Database synced...'))
-  .catch((err: unknown) => console.log('Error: ' + err));
 
 // Basic middleware setup
 app.use(helmet());
