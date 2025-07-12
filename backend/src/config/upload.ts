@@ -18,8 +18,12 @@ export const PROFILE_IMAGE_CONFIG = {
 
 const storage = multer.diskStorage({
   destination: (_req: any, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    // Koristi relativnu putanju umjesto __dirname
-    cb(null, './uploads');
+    // Prioritize UPLOADS_DIR for persistent storage, with fallbacks for other environments
+    const uploadPath = process.env.UPLOADS_DIR || 
+      (process.env.NODE_ENV === 'production'
+        ? '/app/uploads' // Legacy fallback for production
+        : './uploads');   // Development fallback
+    cb(null, uploadPath);
   },
   
   filename: (_req: any, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
