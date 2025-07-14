@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
 import { Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/UnreadMessagesContext';
+import { useTranslation } from 'react-i18next';
 
 interface NavigationProps {
   user: Member | null;
@@ -13,6 +14,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { unreadCount: unreadMessageCount } = useUnreadMessages();
+  const { t } = useTranslation();
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -32,8 +34,8 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex w-full sm:w-auto items-center justify-between mb-4 sm:mb-0">
             <Link to="/profile" className="text-xl font-bold text-blue-600" onClick={closeMenu}>
-              <span className="hidden md:inline">Planinarsko društvo "Promina" Drniš</span>
-              <span className="md:hidden">PD "Promina" Drniš</span>
+              <span className="hidden md:inline">{t('navigation.title')}</span>
+              <span className="md:hidden">{t('navigation.titleShort')}</span>
             </Link>
             <button 
               onClick={toggleMenu} 
@@ -45,16 +47,16 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
           <div className={`${isMenuOpen ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row w-full sm:w-auto items-center gap-4 justify-center`}>
             <Link to="/profile" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <User size={20} className="inline sm:hidden" />
-              <span>Profile</span>
+              <span>{t('navigation.profile')}</span>
             </Link>
             <Link to="/activities" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Activity size={20} className="inline sm:hidden" />
-              <span>Activities</span>
+              <span>{t('navigation.activities')}</span>
             </Link>
             {/* Dodana poveznica na poruke za sve korisnike */}
             <Link to="/messages" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 relative" onClick={closeMenu}>
               <MessageCircle size={20} className="inline sm:hidden" />
-              <span>Poruke</span>
+              <span>{t('navigation.messages')}</span>
               {unreadMessageCount > 0 && (
                 <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center absolute -top-2 -right-2">
                   {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
@@ -64,18 +66,18 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             {/* Omogući svim članovima pristup listi članova */}
             <Link to="/members" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Users size={20} className="inline sm:hidden" />
-              <span>Members</span>
+              <span>{t('navigation.members')}</span>
             </Link>
             {(user.role === 'member_administrator' || user.role === 'member_superuser') && (
               <>
                 <Link to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Settings size={20} className="inline sm:hidden" />
-                  <span>Administrator</span>
+                  <span>{t('navigation.administrator')}</span>
                 </Link>
                 {!user.registration_completed && (
                   <Link to="/assign-password" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                     <Shield size={20} className="inline sm:hidden" />
-                    <span>Assign Passwords</span>
+                    <span>{t('navigation.assignPasswords')}</span>
                   </Link>
                 )}
               </>
@@ -84,7 +86,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <>
                 <Link to="/super-user" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Shield size={20} className="inline sm:hidden" />
-                  <span>Superuser</span>
+                  <span>{t('navigation.superuser')}</span>
                 </Link>
               </>
             )}
@@ -108,7 +110,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
               >
                 <LogOut size={16} className="inline sm:hidden" />
-                <span>Logout</span>
+                <span>{t('navigation.logout')}</span>
               </button>
             </div>
           </div>
