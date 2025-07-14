@@ -21,6 +21,9 @@ export interface SystemManagerLoginResponse {
     id: number;
     username: string;
     display_name: string;
+    email: string;
+    role?: string;
+    last_login?: string;
   };
 }
 

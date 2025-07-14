@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma.js';
 import { SystemSettings } from '../shared/types/settings.types.js';
 import { validateSettings } from '../utils/validation.js';
-import { createAuditLog } from '../utils/auditLog.js';
 import { sanitizeInput } from '../utils/sanitization.js';
 import { createRateLimit } from '../middleware/rateLimit.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
+import { PerformerType } from '@prisma/client';
+import auditService from '../services/audit.service.js';
 
 declare global {
   namespace Express {
@@ -68,9 +69,12 @@ export const updateSettings = [
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    if (req.user.role_name !== 'member_superuser') {
+    // Dozvoli pristup ako je korisnik SystemManager ILI member_superuser
+    if (!req.user.is_SystemManager && req.user.role_name !== 'member_superuser') {
       return res.status(403).json({ error: 'Unauthorized to update settings' });
     }
+
+    const user = req.user;
 
     try {
       await prisma.$transaction(async (prisma) => {
@@ -80,25 +84,47 @@ export const updateSettings = [
             cardNumberLength: sanitizedInput.cardNumberLength!,
             renewalStartDay: sanitizedInput.renewalStartDay!,
             renewalStartMonth: sanitizedInput.renewalStartMonth!,
-            updatedBy: req.user!.id.toString()
+            updatedBy: user.id
           },
           create: {
             id: 'default',
             cardNumberLength: sanitizedInput.cardNumberLength!,
             renewalStartDay: sanitizedInput.renewalStartDay!,
             renewalStartMonth: sanitizedInput.renewalStartMonth!,
-            updatedBy: req.user!.id.toString()
+            updatedBy: user.id
           }
         });
 
         console.log('Updated settings:', settings);
 
-        await createAuditLog({
-          action: 'UPDATE_SETTINGS',
-          performedBy: req.user?.id || null,
-          details: JSON.stringify(sanitizedInput),
-          ipAddress: req.ip || 'unknown',
+        const changes = Object.fromEntries(
+          Object.entries(sanitizedInput).filter(([key, value]) => value !== undefined)
+        );
+
+        // Dodana dijagnostika za req.user
+        console.log('DEBUG - req.user u settings.controller:', {
+          id: req.user!.id,
+          is_SystemManager: req.user!.is_SystemManager,
+          role: req.user!.role,
+          user_type: req.user!.user_type
         });
+
+        const performerId = req.user!.id;
+        const performerType = req.user?.is_SystemManager ? PerformerType.SYSTEM_MANAGER : PerformerType.MEMBER;
+        
+        // Dodana dijagnostika za performer_type
+        console.log('DEBUG - određeni performerType:', performerType);
+
+        // Logiranje promjene
+        await auditService.logAction(
+          'update',
+          performerId,
+          `Ažurirane sistemske postavke: ${Object.entries(changes).map(([key, value]) => `${key}: ${value}`).join(', ')}`,
+          req,
+          'success',
+          undefined, // affected_member
+          performerType
+        );
 
         return res.json(settings);
       });

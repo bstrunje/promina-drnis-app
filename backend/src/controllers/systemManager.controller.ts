@@ -78,7 +78,9 @@ export const changeUsername = async (req: Request, res: Response) => {
         managerId,  // performed_by
         `System manager promijenio korisničko ime u: ${username}`, // action_details
         req,      // req objekt
-        'success' // status
+        'success', // status
+        undefined,
+        PerformerType.SYSTEM_MANAGER
     );
 
     return res.json({ message: 'Korisničko ime uspješno promijenjeno', username });
@@ -226,8 +228,8 @@ const systemManagerController = {
             }
 
             // Generiranje JWT tokena i refresh tokena
-            const token = jwt.sign({ id: manager.id, type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
-            const refreshToken = jwt.sign({ id: manager.id, type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+            const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+            const refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
 
             await auditService.logAction(
                 'login', // action_type
@@ -570,13 +572,13 @@ const systemManagerController = {
     async getDashboardStats(
         req: Request,
         res: Response
-    ): Promise<void> {
+    ): Promise<any> { // Ispravak povratnog tipa
         try {
             const stats = await systemManagerService.getDashboardStats();
-            res.json(stats);
+            return res.json(stats);
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            res.status(500).json({ message: 'Došlo je do greške prilikom dohvata statistika za dashboard' });
+            return res.status(500).json({ message: 'Došlo je do greške prilikom dohvata statistika za dashboard' });
         }
     },
 
@@ -600,6 +602,13 @@ const systemManagerController = {
         res: Response
     ): Promise<void> {
         try {
+            console.log('--- USER OBJECT IN updateSystemSettings ---', req.user);
+
+            if (!req.user) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+
             const { id, cardNumberLength, renewalStartMonth, renewalStartDay, timeZone } = req.body;
             
             // Validacija ulaznih podataka
@@ -646,7 +655,7 @@ const systemManagerController = {
                 renewalStartMonth: renewalStartMonth !== undefined ? parseInt(renewalStartMonth) : undefined,
                 renewalStartDay: renewalStartDay !== undefined ? parseInt(renewalStartDay) : undefined,
                 timeZone
-            });
+            }, req.user.id);
             
             // Zabilježi promjenu u audit log
             if (req.user) {
@@ -681,14 +690,7 @@ const systemManagerController = {
         res: Response
     ): Promise<void> {
         try {
-            const { page = 1, limit = 50, entity_type, action, user_type } = req.query;
-            
-            const pageNum = parseInt(page as string);
-            const limitNum = parseInt(limit as string);
-            
-            // Koristimo getAll metodu iz auditRepository
-            const logs = await auditRepository.getAll();
-            
+            const logs = await auditService.getAllLogs();
             res.json(logs);
         } catch (error) {
             console.error('Error fetching audit logs:', error);

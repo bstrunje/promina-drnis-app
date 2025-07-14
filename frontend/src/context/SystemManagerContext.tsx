@@ -152,11 +152,19 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         ...response.manager,
         email: response.manager.email || '' // Dodajemo email polje ako ga nema u odgovoru
       };
+
+      // KLJUČAN ISPRAVAK: Spremanje tokena i podataka u localStorage
+      localStorage.setItem('systemManagerToken', response.token);
+      localStorage.setItem('systemManager', JSON.stringify(managerData));
+
       setManager(managerData);
       setIsAuthenticated(true);
       navigate('/system-manager/dashboard');
     } catch (error) {
       console.error('Greška prilikom prijave:', error);
+      // Osiguravamo čišćenje u slučaju neuspjele prijave
+      localStorage.removeItem('systemManagerToken');
+      localStorage.removeItem('systemManager');
       throw error;
     } finally {
       setLoading(false);

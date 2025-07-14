@@ -1,23 +1,10 @@
 // features/systemManager/systemManagerApi.ts
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../../../utils/config';
-import { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemManager';
+import { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto, SystemManagerLoginResponse } from '@shared/systemManager';
 import { SystemSettings } from '@shared/settings';
 import { Member } from '@shared/member';
 import { navigateToSystemManagerPath } from '../hooks/useSystemManagerNavigation';
-
-// Definicija odgovora nakon prijave
-export interface SystemManagerLoginResponse {
-  manager: {
-    id: number;
-    username: string;
-    display_name: string;
-    email: string;
-    role?: string;
-    last_login?: string;
-  };
-  token: string;
-}
 
 // Tipovi za praćenje zdravlja sustava
 export type SystemHealthStatus = 'Healthy' | 'Warning' | 'Critical';

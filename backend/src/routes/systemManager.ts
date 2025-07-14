@@ -19,11 +19,11 @@ router.post('/logout', logoutHandler);
 // Provjera postoji li system manager u sustavu (potrebno za inicijalno postavljanje)
 router.get('/exists', systemManagerController.checkSystemManagerExists);
 
-// Rute dostupne superuser korisnicima
-router.get('/audit-logs', authMiddleware, roles.requireSuperUser, systemManagerController.getAuditLogs);
-
 // Zaštićene rute - zahtijevaju SystemManager autentikaciju
 router.use(authMiddleware, roles.requireSystemManager);
+
+// Rute za dohvat logova
+router.get('/audit-logs', systemManagerController.getAuditLogs);
 
 // Rute za promjenu lozinke i username-a (PATCH)
 router.patch('/change-password', changePassword);

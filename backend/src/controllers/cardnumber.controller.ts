@@ -7,6 +7,7 @@ import db from '../utils/db.js';
 import bcrypt from 'bcrypt';
 import membershipService from '../services/membership.service.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
+import { PerformerType } from '@prisma/client';
 
 const cardNumberController = {
   // Get all available card numbers
@@ -130,12 +131,17 @@ const cardNumberController = {
         return;
       }
       
+      const performerId = req.user?.id || null;
+      const performerType = req.user?.is_SystemManager ? PerformerType.SYSTEM_MANAGER : PerformerType.MEMBER;
+
       await auditService.logAction(
         'CARD_NUMBER_DELETED',
-        req.user?.id || null,
+        performerId,
         `Deleted card number: ${cardNumber}`,
         req,
-        'success'
+        'success',
+        undefined, // affected_member
+        performerType
       );
       
       res.status(200).json({ 

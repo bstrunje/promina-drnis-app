@@ -57,6 +57,7 @@ export async function loginHandler(
         req,
         'failure',
         member ? member.member_id : undefined,
+        PerformerType.MEMBER
       );
       return res.status(403).json({ message: "Account not active. Please contact administrator." });
     }
@@ -70,7 +71,8 @@ export async function loginHandler(
         `Pokušaj prijave na zaključani račun: ${member.email}. Preostalo vrijeme zaključavanja: ${lockoutTimeLeft} ${formatMinuteText(lockoutTimeLeft)}.`, 
         req, 
         'failed',
-        member.member_id
+        member.member_id,
+        PerformerType.MEMBER
       );
       return res.status(403).json({ message: `Račun je zaključan. Molimo pokušajte ponovno nakon ${member.locked_until.toLocaleTimeString()}.` });
     }
@@ -104,6 +106,7 @@ export async function loginHandler(
         req,
         'failure',
         member.member_id,
+        PerformerType.MEMBER
       );
 
       if (currentFailedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
@@ -122,7 +125,8 @@ export async function loginHandler(
             `Račun zaključan za: ${member.email} na ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.`, 
             req, 
             'success', 
-            member.member_id
+            member.member_id,
+            PerformerType.MEMBER
           );
           return res.status(403).json({ message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.` });
         } else {
@@ -133,7 +137,8 @@ export async function loginHandler(
               `Admin račun ${member.email} dosegao maksimalan broj neuspješnih prijava, ali zaključavanje nije aktivno za administratore.`,
               req, 
               'warning',
-              member.member_id
+              member.member_id,
+              PerformerType.MEMBER
           );
         }
       }

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { PerformerType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.js';
 
 export interface AuditLog {
     log_id: number;
@@ -42,14 +40,23 @@ const auditRepository = {
         performer_type?: PerformerType | null
     ): Promise<void> {
         try {
-            // Eksplicitno pretvaranje enuma u string ili null
-            const performerTypeString = performer_type ? performer_type.toString() : null;
+            // Osiguravamo da performer_type nije null ako je performed_by = 1 (System Manager ID)
+            let finalPerformerType = performer_type;
+            if (performed_by === 1 && !performer_type) {
+                finalPerformerType = PerformerType.SYSTEM_MANAGER;
+            }
 
-            await prisma.$executeRaw`
-                INSERT INTO audit_logs 
-                (action_type, performed_by, performer_type, action_details, ip_address, status, affected_member) 
-                VALUES (${action_type}, ${performed_by}, CAST(${performerTypeString} AS "PerformerType"), ${action_details}, ${ip_address}, ${status}, ${affected_member || null})
-            `;
+            await prisma.auditLog.create({
+                data: {
+                    action_type,
+                    performed_by,
+                    action_details,
+                    ip_address,
+                    status,
+                    affected_member: affected_member || null,
+                    performer_type: finalPerformerType || null,
+                },
+            });
         } catch (error) {
             console.error('GREŠKA PRILIKOM KREIRANJA AUDIT LOGA:', error);
             // U produkciji možda ne želite baciti grešku koja će srušiti zahtjev
@@ -61,12 +68,13 @@ const auditRepository = {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
                    CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN sm.display_name
-                     ELSE m1.full_name 
+                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN COALESCE(sm.display_name, 'System Manager')
+                     WHEN al.performer_type = 'MEMBER' THEN m1.full_name
+                     ELSE 'Nepoznati izvršitelj'
                    END as performer_name,
                    m2.full_name as affected_name
             FROM audit_logs al
-            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND (al.performer_type = 'MEMBER' OR al.performer_type IS NULL)
+            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND al.performer_type = 'MEMBER'
             LEFT JOIN system_manager sm ON al.performed_by = sm.id AND al.performer_type = 'SYSTEM_MANAGER'
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
             ORDER BY al.created_at DESC
@@ -79,15 +87,16 @@ const auditRepository = {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
                    CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN sm.display_name
-                     ELSE m1.full_name 
+                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN COALESCE(sm.display_name, 'System Manager')
+                     WHEN al.performer_type = 'MEMBER' THEN m1.full_name
+                     ELSE 'Nepoznati izvršitelj'
                    END as performer_name,
                    m2.full_name as affected_name
             FROM audit_logs al
-            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND (al.performer_type = 'MEMBER' OR al.performer_type IS NULL)
+            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND al.performer_type = 'MEMBER'
             LEFT JOIN system_manager sm ON al.performed_by = sm.id AND al.performer_type = 'SYSTEM_MANAGER'
             LEFT JOIN members m2 ON al.affected_member = m2.member_id
-            WHERE (al.performed_by = ${memberId} AND (al.performer_type = 'MEMBER' OR al.performer_type IS NULL))
+            WHERE (al.performed_by = ${memberId} AND al.performer_type = 'MEMBER')
                OR al.affected_member = ${memberId}
             ORDER BY al.created_at DESC
         `;

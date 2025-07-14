@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
 });
 
 // Add new PUT route for general settings
-router.put('/', authMiddleware, roles.requireSuperUser, updateSettings);
+router.put('/', authMiddleware, roles.requireSystemManager, updateSettings);
 
 // Postojeće rute
 router.get('/card-length', async (req, res) => {
@@ -44,7 +44,7 @@ router.get('/card-length', async (req, res) => {
   }
 });
 
-router.put('/card-length', authMiddleware, roles.requireAdmin, async (req, res) => {
+router.put('/card-length', authMiddleware, roles.requireSystemManager, async (req, res) => {
   const { length } = req.body;
   try {
     const settings = await prisma.systemSettings.upsert({

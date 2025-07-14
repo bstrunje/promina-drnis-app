@@ -51,7 +51,8 @@ const systemManagerService = {
         return jwt.sign(
             { 
                 id: manager.id, 
-                type: 'SystemManager'  // Označava tip korisnika kao SystemManager
+                type: 'SystemManager',  // Označava tip korisnika kao SystemManager
+                role: 'SystemManager'
             },
             JWT_SECRET,
             { expiresIn: '1h' } // Kraće trajanje za access token
@@ -64,6 +65,7 @@ const systemManagerService = {
             { 
                 id: manager.id, 
                 type: 'SystemManager',
+                role: 'SystemManager',
                 tokenType: 'refresh'
             },
             JWT_SECRET,
@@ -598,7 +600,7 @@ const systemManagerService = {
         renewalStartMonth?: number | null;
         renewalStartDay?: number | null;
         timeZone?: string | null;
-    }): Promise<SystemSettings> {
+    }, updatedBy: number): Promise<SystemSettings> { 
         try {
             // Provjeri postoje li postavke direktnim SQL upitom
             const existingSettingsResult = await prisma.$queryRaw`
@@ -630,14 +632,16 @@ const systemManagerService = {
                         renewal_start_month, 
                         renewal_start_day, 
                         time_zone,
-                        updated_at
+                        updated_at,
+                        updated_by
                     ) VALUES (
                         ${data.id}, 
                         ${data.cardNumberLength || 5}, 
                         ${data.renewalStartMonth || 11}, 
                         ${data.renewalStartDay || 1}, 
                         ${data.timeZone || 'Europe/Zagreb'},
-                        ${now}
+                        ${now},
+                        ${updatedBy}
                     )
                 `;
                 
@@ -702,7 +706,8 @@ const systemManagerService = {
                         renewal_start_month = ${renewalStartMonth},
                         renewal_start_day = ${renewalStartDay},
                         time_zone = ${timeZone},
-                        updated_at = ${now}
+                        updated_at = ${now},
+                        updated_by = ${updatedBy}
                     WHERE id = ${data.id}
                 `;
                 

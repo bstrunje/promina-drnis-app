@@ -8,6 +8,7 @@ interface JWTPayload {
     id: number;
     full_name?: string;
     type?: 'member' | 'SystemManager';
+    role?: string;
 }
 
 export interface DatabaseUser {
@@ -48,65 +49,61 @@ const authenticateToken = async (
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
         // Provjeri tip korisnika - ako je eksplicitno 'SystemManager'
-        if (decoded.type === 'SystemManager') {
-            // Dohvati system managera iz ispravne tablice
-            const systemManager = await prisma.systemManager.findUnique({
-                where: { id: decoded.id }
-            });
+        if (decoded.type === 'SystemManager' && decoded.role === 'SystemManager') {
+            const systemManager = await prisma.systemManager.findUnique({ where: { id: decoded.id } });
 
-            if (!systemManager) {
-                res.status(401).json({ message: 'System manager not found' });
+            if (systemManager) {
+                req.user = {
+                    id: systemManager.id,
+                    role: 'SystemManager',
+                    role_name: 'SystemManager', // Dodano nedostajuće polje
+                    is_SystemManager: true,
+                    user_type: 'SystemManager'
+                };
+                next(); // KLJUČNI ISPRAVAK: Prosljeđivanje zahtjeva dalje
+            } else {
+                // Ako manager nije pronađen, prekini zahtjev
+                res.status(401).json({ message: 'Invalid token: System Manager not found' });
+                return; // Ispravak povratnog tipa
+            }
+        } else {
+            // Za članove - postojeća logika
+            // Get member from database
+            const result = await db.query<DatabaseUser>(
+                `SELECT 
+                    m.member_id as id, 
+                    m.member_id as user_id,
+                    m.first_name || ' ' || m.last_name as full_name,
+                    m.email,
+                    CASE 
+                        WHEN m.role = 'member_administrator' THEN 'member_administrator'
+                        WHEN m.role = 'member_superuser' THEN 'member_superuser'
+                        ELSE 'member'
+                    END as role_name,
+                    m.status = 'registered' as is_active,
+                    m.role,
+                    m.status
+                 FROM members m
+                 WHERE m.member_id = $1 AND (m.role = 'member_superuser' OR m.status = 'registered')`,
+                [decoded.id]
+            );
+
+            if (result.rows.length === 0) {
+                res.status(401).json({ message: 'Member not found or inactive' });
                 return;
             }
 
-            // Postavi SystemManager podatke na request objekt
+            // Attach member to request object
             req.user = {
-                id: systemManager.id,
-                role: 'SystemManager',  
-                role_name: 'SystemManager', 
-                is_SystemManager: true,
-                user_type: 'SystemManager'
+                id: result.rows[0].id,
+                role: result.rows[0].role,  
+                role_name: result.rows[0].role_name,
+                member_id: result.rows[0].id,
+                is_SystemManager: false,
+                user_type: 'member'
             };
-            next();
-            return;
+            next(); // Poziv za članove ostaje ovdje
         }
-
-        // Za članove - postojeća logika
-        // Get member from database
-        const result = await db.query<DatabaseUser>(
-            `SELECT 
-                m.member_id as id, 
-                m.member_id as user_id,
-                m.first_name || ' ' || m.last_name as full_name,
-                m.email,
-                CASE 
-                    WHEN m.role = 'member_administrator' THEN 'member_administrator'
-                    WHEN m.role = 'member_superuser' THEN 'member_superuser'
-                    ELSE 'member'
-                END as role_name,
-                m.status = 'registered' as is_active,
-                m.role,
-                m.status
-             FROM members m
-             WHERE m.member_id = $1 AND (m.role = 'member_superuser' OR m.status = 'registered')`,
-            [decoded.id]
-        );
-
-        if (result.rows.length === 0) {
-            res.status(401).json({ message: 'Member not found or inactive' });
-            return;
-        }
-
-        // Attach member to request object
-        req.user = {
-            id: result.rows[0].id,
-            role: result.rows[0].role,  
-            role_name: result.rows[0].role_name,
-            member_id: result.rows[0].id,
-            is_SystemManager: false,
-            user_type: 'member'
-        };
-        next();
     } catch (error) {
         console.error('Authentication error:', error);
         res.status(401).json({ message: 'Token is not valid' });
