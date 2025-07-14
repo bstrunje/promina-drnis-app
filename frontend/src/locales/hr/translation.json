@@ -63,6 +63,11 @@
     "loading": "Učitavanje podataka o članu...",
     "fetchError": "Dohvaćanje podataka o članu nije uspjelo",
     "invalidBirthDate": "Neispravan datum rođenja",
+    "invalidDateFormat": "Neispravan format datuma",
+    "memberNotFound": "Član nije pronađen",
+    "membershipHistoryUpdated": "Povijest članstva je uspješno ažurirana",
+    "membershipHistoryUpdateError": "Ažuriranje povijesti članstva nije uspjelo",
+    "memberUpdated": "Podaci člana uspješno ažurirani",
     "personalInfo": {
       "title": "Osobni podaci",
       "editTitle": "Uredi osobne podatke",

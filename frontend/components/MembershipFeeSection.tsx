@@ -8,6 +8,7 @@ import { formatDate, formatDateToIsoDateString, cleanISODateString } from '../sr
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
+import { useTranslation } from 'react-i18next';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -73,6 +74,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
@@ -786,7 +788,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
                 {membershipHistory?.totalDuration && (
                   <div>
-                    <p className="text-sm text-gray-500">Total Membership Duration</p>
+                    <p className="text-sm text-gray-500">{t('memberProfile.feeSection.totalDuration')}</p>
                     <p className="font-medium">{membershipHistory.totalDuration}</p>
                   </div>
                 )}

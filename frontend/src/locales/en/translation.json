@@ -59,6 +59,10 @@
     "loading": "Loading member data...",
     "fetchError": "Failed to fetch member details",
     "invalidBirthDate": "Invalid date of birth",
+    "invalidDateFormat": "Invalid date format",
+    "memberNotFound": "Member not found",
+    "membershipHistoryUpdated": "Membership history updated successfully",
+    "membershipHistoryUpdateError": "Failed to update membership history",
     "personalInfo": {
       "title": "Personal Information",
       "editTitle": "Edit Personal Information",

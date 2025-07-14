@@ -3,7 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
-import './i18n' // Inicijalizacija i18n prije importa App
+import './i18n'
 import App from './App.tsx'
 
 const rootElement = document.getElementById('root');

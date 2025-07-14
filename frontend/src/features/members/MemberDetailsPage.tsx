@@ -11,7 +11,7 @@ import api from "../../utils/api/apiConfig";
 // import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
 import { getCurrentDate, getCurrentYear, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
 import { parseISO } from "date-fns";
-
+import { useTranslation } from "react-i18next"; // Dodajemo useTranslation hook
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
 import MembershipFeeSection from "../../../components/MembershipFeeSection";
@@ -34,6 +34,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   // Ako id nije definiran, koristi user.member_id ili fallback na "0" (default)
 const memberId = useMemo(() => {
   if (id) return parseInt(id, 10);
@@ -122,7 +123,7 @@ setEditedMember(memberData);
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to fetch member details"
+          : t('memberProfile.fetchError')
       );
     } finally {
       setIsLoading(false);
@@ -154,7 +155,24 @@ setEditedMember(memberData);
     const months = Math.floor((totalDays % 365) / 30);
     const days = totalDays % 30;
 
-    return `${years} years, ${months} months, ${days} days`;
+    // Korištenje i18n za prikaz trajanja
+    const formattedYears = years > 0 ? t('navigation.duration.years', { count: years }) : '';
+    const formattedMonths = months > 0 ? t('navigation.duration.months', { count: months }) : '';
+    const formattedDays = days > 0 ? t('navigation.duration.days', { count: days }) : '';
+    
+    // Spajanje dijelova trajanja, preskačući one koji su 0
+    const durationParts = [
+      formattedYears,
+      formattedMonths,
+      formattedDays
+    ].filter(part => part !== '');
+    
+    // Ako nema dijelova, vrati poruku da nema podataka o trajanju
+    if (durationParts.length === 0) {
+      return t('navigation.duration.noDuration');
+    }
+    
+    return durationParts.join(', ');
   };
 
   useEffect(() => {
@@ -186,7 +204,7 @@ setEditedMember(memberData);
         if (!validation.isValid) {
           setValidationErrors(prev => ({
             ...prev,
-            [name]: validation.errorMessage ?? 'Neispravan datum rođenja'
+            [name]: validation.errorMessage ?? t('memberProfile.invalidBirthDate')
           }));
         } else {
           setValidationErrors(prev => {
@@ -208,7 +226,7 @@ setEditedMember(memberData);
       console.error("Invalid date format:", value);
       setValidationErrors(prev => ({
         ...prev,
-        [name]: 'Neispravan format datuma'
+        [name]: t('memberProfile.invalidDateFormat')
       }));
       
       setEditedMember((prev) =>
@@ -245,14 +263,14 @@ setEditedMember(memberData);
       await fetchMemberDetails();
 
       toast({
-        title: "Success",
-        description: "Membership history updated successfully",
+        title: t('memberProfile.updateSuccessTitle'),
+        description: t('memberProfile.membershipHistoryUpdated'),
       });
     } catch (error) {
       console.error("Failed to update membership history:", error);
       toast({
-        title: "Error",
-        description: "Failed to update membership history",
+        title: t('memberProfile.updateErrorTitle'),
+        description: t('memberProfile.membershipHistoryUpdateError'),
         variant: "destructive",
       });
     }
@@ -266,25 +284,25 @@ setEditedMember(memberData);
         );
         
         toast({
-          title: "Success",
-          description: "Member updated successfully",
+          title: t('memberProfile.updateSuccessTitle'),
+          description: t('memberProfile.memberUpdated'),
           variant: "success",
         });
       } else {
         await fetchMemberDetails(true);
         
         toast({
-          title: "Success",
-          description: "Member updated successfully",
+          title: t('memberProfile.updateSuccessTitle'),
+          description: t('memberProfile.memberUpdated'),
           variant: "success",
         });
       }
     } catch (error) {
       console.error("Failed to update member:", error);
-      setError("Failed to update member");
+      setError(t('memberProfile.updateErrorDescription'));
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update member",
+        title: t('memberProfile.updateErrorTitle'),
+        description: error instanceof Error ? error.message : t('memberProfile.updateErrorDescription'),
         variant: "destructive",
       });
     }
@@ -309,8 +327,8 @@ setEditedMember(memberData);
         setMember(response.data as Member);
         setIsEditing(false);
         toast({
-          title: "Success",
-          description: "Member details updated successfully",
+          title: t('memberProfile.updateSuccessTitle'),
+          description: t('memberProfile.updateSuccessDescription'),
           variant: "success",
         });
         if (onUpdate) {
@@ -319,13 +337,13 @@ setEditedMember(memberData);
         void fetchMemberDetails(); // Fetch member details after saving
       }
     } catch (error) {
-      setError("Failed to save member details");
+      setError(t('memberProfile.updateErrorDescription'));
       toast({
-        title: "Error",
+        title: t('memberProfile.updateErrorTitle'),
         description:
           error instanceof Error
             ? error.message
-            : "Failed to update member details",
+            : t('memberProfile.updateErrorDescription'),
         variant: "destructive",
       });
     } finally {
@@ -349,11 +367,11 @@ setEditedMember(memberData);
 
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('common.loading')}</div>;
   }
 
   if (!member) {
-    return <div className="p-6">Member not found</div>;
+    return <div className="p-6">{t('memberProfile.memberNotFound')}</div>;
   }
 
   return (
@@ -361,7 +379,7 @@ setEditedMember(memberData);
       {/* Header Section */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold mb-2">Member Profile</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('memberProfile.title')}</h1>
           {/* Show edit button only for admins and superusers, not for regular members */}
           {canEdit && (
             <div>
@@ -373,20 +391,20 @@ setEditedMember(memberData);
                     disabled={isSubmitting}
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {isSubmitting ? "Saving..." : "Save"}
+                    {isSubmitting ? t('memberProfile.saving') : t('memberProfile.saveChanges')}
                   </Button>
                   <Button
                     onClick={handleCancel}
                     className="bg-gray-500 hover:bg-gray-600"
                   >
                     <X className="w-4 h-4 mr-2" />
-                    Cancel
+                    {t('memberProfile.cancel')}
                   </Button>
                 </div>
               ) : (
                 <Button onClick={handleEdit}>
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Profile
+                  {t('memberProfile.editProfile')}
                 </Button>
               )}
             </div>
