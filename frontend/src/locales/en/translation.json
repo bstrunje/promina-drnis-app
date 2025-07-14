@@ -20,7 +20,26 @@
     "alreadyMember": "Already a member? Sign in"
   },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "close": "Close",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "toggleDebug": "Toggle debug mode"
   },
   "navigation": {
     "title": "Mountaineering Club \"Promina\" Drniš",
@@ -127,7 +146,11 @@
       "uploading": "Uploading...",
       "previewAlt": "Preview",
       "profileAlt": "Profile",
-      "uploadButton": "Upload Image"
+      "uploadButton": "Upload Image",
+      "imagePath": "Image path",
+      "imageUrl": "Image URL",
+      "failedToLoad": "Failed to load",
+      "lastUpdated": "Last updated"
     },
     "feeSection": {
       "title": "Membership Fee Status",

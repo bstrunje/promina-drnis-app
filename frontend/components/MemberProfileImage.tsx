@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
 import { formatDate } from '../src/utils/dateUtils';
 import { useAuth } from '../src/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   member: Member;
@@ -15,6 +16,7 @@ interface Props {
 const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -71,8 +73,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
     // Validate file type
     if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
       toast({
-        title: "Error",
-        description: "Only JPG, PNG and GIF formats are supported",
+        title: t('memberProfile.profileImage.uploadErrorTitle'),
+        description: t('memberProfile.profileImage.unsupportedFormat'),
         variant: "destructive",
       });
       return;
@@ -116,15 +118,15 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
       setImgKey(Date.now());
 
       toast({
-        title: "Success",
-        description: "Profile image updated successfully",
+        title: t('memberProfile.profileImage.uploadSuccessTitle'),
+        description: t('memberProfile.profileImage.uploadSuccessDescription'),
         variant: "success",
       });
     } catch (error) {
       console.error('Image upload error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to upload image",
+        title: t('memberProfile.profileImage.uploadErrorTitle'),
+        description: error instanceof Error ? error.message : t('memberProfile.profileImage.uploadFailed'),
         variant: "destructive",
       });
     } finally {
@@ -157,14 +159,14 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
         {isAdminOrSuperuser ? (
           <CardTitle>
             <User className="h-5 w-5 inline-block mr-2" />
-            Profile Image
+            {t('memberProfile.profileImage.title')}
           </CardTitle>
         ) : null}
         <button
           onClick={() => setDebugMode(!debugMode)}
           className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
-          title="Toggle debug mode"
-          aria-label="Toggle debug mode"
+          title={t('common.toggleDebug')}
+          aria-label={t('common.toggleDebug')}
           style={{ opacity: 0 }}
         >
           <Info className="h-4 w-4" />
@@ -182,13 +184,14 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt="Preview"
+                alt={t('memberProfile.profileImage.previewAlt')}
                 className="w-full h-full object-cover"
               />
             ) : displayImageSrc ? (
               <img
+                key={imgKey}
                 src={displayImageSrc}
-                alt="Profile"
+                alt={t('memberProfile.profileImage.profileAlt')}
                 className="w-full h-full object-cover"
                 onError={handleImageError}
                 crossOrigin="anonymous"
@@ -214,21 +217,21 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
               />
 
               <label
-                htmlFor="image-upload"
+                htmlFor={`profileImageUpload-${member.member_id}`}
                 className={`px-4 py-2 bg-black text-white rounded cursor-pointer hover:bg-blue-700 transition-colors ${isUploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
               >
-                {isUploading ? "Uploading..." : "Upload New Image"}
+                {isUploading ? t('memberProfile.profileImage.uploading') : t('memberProfile.profileImage.uploadButton')}
               </label>
             </>
           )}
 
-          {debugMode && (
+{debugMode && (
             <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">
-              <p>Image path: {imagePath ?? 'none'}</p>
-              <p>Image URL: {displayImageSrc ?? 'none'}</p>
-              <p>Failed to load: {imageFailed ? 'Yes' : 'No'}</p>
-              <p>Last updated: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
+              <p>{t('memberProfile.profileImage.imagePath')}: {imagePath ?? 'none'}</p>
+              <p>{t('memberProfile.profileImage.imageUrl')}: {displayImageSrc ?? 'none'}</p>
+              <p>{t('memberProfile.profileImage.failedToLoad')}: {imageFailed ? t('common.yes') : t('common.no')}</p>
+              <p>{t('memberProfile.profileImage.lastUpdated')}: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
             </div>
           )}
         </div>

@@ -20,7 +20,26 @@
     "alreadyMember": "Već jesi član? Prijavi se"
   },
   "common": {
-    "loading": "Učitavanje..."
+    "loading": "Učitavam...",
+    "close": "Zatvori",
+    "submit": "Pošalji",
+    "cancel": "Odustani",
+    "save": "Spremi",
+    "delete": "Izbriši",
+    "edit": "Uredi",
+    "add": "Dodaj",
+    "view": "Pregled",
+    "search": "Pretraži",
+    "filter": "Filtriraj",
+    "clear": "Očisti",
+    "reset": "Resetiraj",
+    "confirm": "Potvrdi",
+    "back": "Natrag",
+    "next": "Dalje",
+    "yes": "Da",
+    "no": "Ne",
+    "ok": "U redu",
+    "toggleDebug": "Uključi/isključi debug mod"
   },
   "navigation": {
     "title": "Planinarsko društvo \"Promina\" Drniš",
@@ -133,7 +152,11 @@
       "uploading": "Učitavanje...",
       "previewAlt": "Pregled",
       "profileAlt": "Profilna slika",
-      "uploadButton": "Učitaj sliku"
+      "uploadButton": "Učitaj sliku",
+      "imagePath": "Putanja slike",
+      "imageUrl": "URL slike",
+      "failedToLoad": "Neuspjelo učitavanje",
+      "lastUpdated": "Zadnja izmjena"
     },
     "feeSection": {
       "title": "Status članarine",
