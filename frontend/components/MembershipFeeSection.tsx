@@ -8,7 +8,7 @@ import { formatDate, formatDateToIsoDateString, cleanISODateString } from '../sr
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';											   
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -32,7 +32,7 @@ import {
   adaptMembershipPeriods,
   determineDetailedMembershipStatus} from '@shared/memberStatus.types';
 import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
-import { feeStatusLabels, feeStatusColors } from "@shared/helpers/membershipDisplay"; // Centralizirane labele i boje
+import { feeStatusColors } from "@shared/helpers/membershipDisplay"; // Centralizirane labele i boje
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -74,7 +74,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation();								 
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
@@ -111,7 +111,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
   const validatePaymentDate = useCallback((dateString: string): boolean => {
     if (!dateString) {
-      setPaymentError("Date is required");
+      setPaymentError(t('memberProfile.feeSection.paymentDateRequired'));
       setIsValidPayment(false);
       return false;
     }
@@ -126,7 +126,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const date = parseISO(dateString);
 
       if (!isValidDate(date)) {
-        setPaymentError("Invalid date format");
+        setPaymentError(t('memberProfile.feeSection.invalidDate'));
         setIsValidPayment(false);
         return false;
       }
@@ -134,7 +134,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // DODANO: Validacija godine
       const year = date.getFullYear();
       if (year < 1850 || year > 2850) {
-        setPaymentError("Godina mora biti između 1850 i 2850");
+        setPaymentError(t('memberProfile.feeSection.invalidYear'));
         setIsValidPayment(false);
         return false;
       }
@@ -143,7 +143,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // kako bismo podržali simulirani datum
       const currentDate = getCurrentDate();
       if (date > currentDate) {
-        setPaymentError("Payment date cannot be in the future");
+        setPaymentError(t('memberProfile.feeSection.futureDate'));
         setIsValidPayment(false);
         return false;
       }
@@ -163,14 +163,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         // Prikaži odgovarajuću toast poruku o plaćanju u studenom/prosincu
         if (isNewMember) {
           toast({
-            title: "Info",
-            description: "Za nove članove, članarina plaćena u studenom/prosincu vrijedi za tekuću godinu.",
+            title: t('common.info'),
+            description: t('memberProfile.feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
         } else {
           toast({
-            title: "Info",
-            description: "Članarina plaćena u studenom/prosincu bit će uračunata za sljedeću godinu.",
+            title: t('common.info'),
+            description: t('memberProfile.feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
         }
@@ -249,14 +249,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         
         if (!isNewMember) {
           toast({
-            title: "Info",
-            description: "Payment will be counted for next year's membership",
+            title: t('common.info'),
+            description: t('memberProfile.feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
         } else {
           toast({
-            title: "Info",
-            description: "For new members, payment is counted for current year membership",
+            title: t('common.info'),
+            description: t('memberProfile.feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
         }
@@ -270,8 +270,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
 
       toast({
-        title: "Success",
-        description: "Membership fee payment processed successfully",
+        title: t('memberProfile.feeSection.success'),
+        description: t('memberProfile.feeSection.paymentProcessed'),
         variant: "success"
       });
 
@@ -295,8 +295,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     } catch (error) {
       console.error("Error updating membership:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process membership fee payment",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('memberProfile.feeSection.paymentFailed'),
         variant: "destructive"
       });
     } finally {
@@ -313,14 +313,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       await onMembershipHistoryUpdate(editedPeriods);
       setIsEditingHistory(false);
       toast({
-        title: "Success",
-        description: "Membership history updated successfully",
+        title: t('common.success'),
+        description: t('memberProfile.feeSection.historyUpdated'),
         variant: "success"
       });
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update membership history",
+        title: t('common.error'),
+        description: t('memberProfile.feeSection.historyUpdateFailed'),
         variant: "destructive"
       });
     } finally {
@@ -368,7 +368,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="w-5 h-5 mr-2" />
-            Membership Fee Status
+            {t('memberProfile.feeSection.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -377,30 +377,34 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Display Fee Payment Information */}
             <div>
               <div className="mb-3">
-                <span className="text-sm text-gray-500">Last Payment Date:</span>
+                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.lastPaymentDate')}:</span>
                 <p>
                 {member.membership_details?.fee_payment_date
                   ? formatDate(cleanISODateString(member.membership_details.fee_payment_date), 'dd.MM.yyyy.')
-                  : 'Nema podataka o plaćanju za tekuću ili iduću godinu'}
+                  : t('memberProfile.feeSection.noPaymentData')}
                 </p>
               </div>
               
               {member.membership_details?.fee_payment_year && (
                 <div className="mb-3">
-                  <span className="text-sm text-gray-500">Godina uplate:</span>
+                  <span className="text-sm text-gray-500">{t('memberProfile.feeSection.paymentYear')}:</span>
                   <p>{member.membership_details.fee_payment_year}</p>
                 </div>
               )}
               
               <div className="mb-3">
-                <span className="text-sm text-gray-500">Status uplate:</span>
+                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.paymentStatus')}:</span>
                 {(() => {
                   const feeStatus = determineFeeStatus(member);
                   return (
                 <span
-                  className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${feeStatusColors[isFeeCurrent ? 'current' : 'payment required']}`}
+                  className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${
+                    feeStatusColors[isFeeCurrent ? 'current' : 'payment required']
+                  }`}
                 >
-                  {feeStatusLabels[isFeeCurrent ? 'current' : 'payment required']}
+                  {isFeeCurrent
+                    ? t('memberProfile.feeSection.statusCurrent')
+                    : t('memberProfile.feeSection.statusPaymentRequired')}
                 </span>
                   );
                 })()}
@@ -508,16 +512,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Membership Card Management - visible only if fee is current */}
             {isEditing && isFeeCurrent && cardManagerProps && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">Membership Card Management</h3>
+                <h3 className="text-lg font-medium mb-3">{t('memberProfile.feeSection.membershipCardManagement')}</h3>
                 <MembershipCardManagerAdapter {...cardManagerProps} />
               </div>
             )}
             
             {isEditing && !isFeeCurrent && cardManagerProps && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3 text-amber-700">Membership Card Management</h3>
+                <h3 className="text-lg font-medium mb-3 text-amber-700">{t('memberProfile.feeSection.membershipCardManagement')}</h3>
                 <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
-                  <p>Upravljanje članskom karticom bit će dostupno nakon plaćanja godišnje članarine.</p>
+                  <p>{t('memberProfile.feeSection.membershipCardManagementInfo')}</p>
                 </div>
               </div>
             )}
@@ -525,7 +529,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Payment Form - visible only for administrators */}
             {canEdit && isEditing && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">Process Payment</h3>
+                <h3 className="text-lg font-medium mb-3">{t('memberProfile.feeSection.processPayment')}</h3>
                 <form onSubmit={(e) => { void handleFeePayment(e); } }>
                   <div className="space-y-4">
                     <div>
@@ -555,8 +559,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           : 'bg-amber-600 text-white'
                       }`}>
                         {isNewMemberPayment
-                          ? "Za nove članove, članarina plaćena u studenom/prosincu vrijedi za tekuću godinu."
-                          : "Članarina plaćena u studenom/prosincu bit će uračunata za sljedeću godinu."}
+                          ? t('memberProfile.feeSection.newMemberNovDecPayment')
+                          : t('memberProfile.feeSection.novDecPaymentNextYear')}
                       </div>
                     )}
 
@@ -618,14 +622,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 <ChevronRight className="w-5 h-5 mr-2" />
               )}
               <Clock className="w-5 h-5 mr-2" />
-              Membership History
+              {t('memberProfile.feeSection.membershipHistory')}
             </button>
 
             {showHistory && (
               <div className="mt-4 space-y-4">
-                {/* Display membership history */}
-                <div className="flex justify-between items-center">
-                  <h4 className="text-sm font-medium">Membership Periods</h4>
+                {/* Header with Title and Buttons */}
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-medium">{t('memberProfile.feeSection.membershipPeriods')}</h4>
                   {canEdit && !isEditingHistory && (
                     <Button
                       size="sm"
@@ -633,7 +637,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       onClick={() => setIsEditingHistory(true)}
                     >
                       <Edit className="h-4 w-4 mr-1" />
-                      Edit History
+                      {t('memberProfile.feeSection.editHistory')}
                     </Button>
                   )}
                   {canEdit && isEditingHistory && (
@@ -645,7 +649,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                         disabled={isSubmittingHistory}
                       >
                         <Save className="h-4 w-4 mr-1" />
-                        Save
+                        {t('memberProfile.feeSection.saveHistory')}
                       </Button>
                       <Button
                         size="sm"
@@ -656,7 +660,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                         }}
                       >
                         <X className="h-4 w-4 mr-1" />
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   )}
@@ -786,10 +790,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   <p className="text-gray-500 italic">No membership history available</p>
                 )}
 
+                {/* Prikaz ukupnog trajanja članstva */}
                 {membershipHistory?.totalDuration && (
-                  <div>
-                    <p className="text-sm text-gray-500">{t('memberProfile.feeSection.totalDuration')}</p>
-                    <p className="font-medium">{membershipHistory.totalDuration}</p>
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm font-medium">{t('memberProfile.feeSection.totalDuration')}:</p>
+                    <p className="font-semibold text-lg">{membershipHistory.totalDuration}</p>
                   </div>
                 )}
               </div>

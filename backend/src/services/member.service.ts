@@ -357,27 +357,16 @@ const memberService = {
             const member = await memberRepository.findById(memberId);
             if (!member) return null;
 
-            // Uvijek složi membership_details property iz podataka koje vraća findById
-            const memberTyped = member as MemberWithExtendedDetails;
-            const membershipDetails = {
-                card_number: memberTyped.card_number,
-                fee_payment_year: memberTyped.fee_payment_year,
-                card_stamp_issued: memberTyped.card_stamp_issued,
-                fee_payment_date: memberTyped.fee_payment_date
-                    ? formatDate(
-                        typeof memberTyped.fee_payment_date === 'string' 
-                          ? parseDate(memberTyped.fee_payment_date) 
-                          : memberTyped.fee_payment_date, 
-                        'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
-                    : undefined,
-                next_year_stamp_issued: memberTyped.next_year_stamp_issued,
+            const periods = await membershipRepository.getMembershipPeriods(memberId);
+            const currentPeriod = await membershipRepository.getCurrentPeriod(memberId);
+            
+            // Frontend će sam izračunati trajanje na temelju perioda
+            member.membership_history = {
+                periods,
+                current_period: currentPeriod ?? undefined,
             };
 
-            return {
-                ...member,
-                full_name: memberTyped.calculated_full_name || member.full_name,
-                membership_details: membershipDetails,
-            };
+            return member;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching member with details: ' + errorMessage);

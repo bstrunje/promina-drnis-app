@@ -53,19 +53,25 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     return groups;
   }, [members]);
 
+  // Filtriramo samo članove s važećim članstvom za statistiku aktivnosti
+  const currentMembers = useMemo(
+    () => members.filter(m => m.membershipStatus === 'registered'),
+    [members]
+  );
+
   return (
     <div className="space-y-6 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Ukupno članova: {members.length}</h3>
+          <h3 className="text-lg font-semibold mb-4">Ukupno članova: {currentMembers.length}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Aktivni članovi:</span>
-              <span>{members.filter(m => m.isActive).length}</span>
+              <span>{currentMembers.filter(m => m.isActive).length}</span>
             </div>
             <div className="flex justify-between">
               <span>Pasivni članovi:</span>
-              <span>{members.filter(m => !m.isActive).length}</span>
+              <span>{currentMembers.filter(m => !m.isActive).length}</span>
             </div>
           </div>
         </div>

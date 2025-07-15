@@ -37,7 +37,6 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   const getActivityStatus = (totalMinutes: number) => {
     // Pretvaramo minute u sate za usporedbu
     const hoursValue = totalMinutes / 60;
-    console.log('MembershipDetailsCard - Total minutes:', totalMinutes, 'Hours:', hoursValue, 'Status:', hoursValue >= 20 ? "active" : "passive");
     return hoursValue >= 20 ? "active" : "passive";
   };
 

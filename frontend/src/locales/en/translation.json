@@ -158,7 +158,7 @@
       "noPaymentData": "No payment data for the current or next year",
       "paymentYear": "Payment Year:",
       "paymentStatus": "Payment Status:",
-      "statusPaid": "Paid",
+      "statusCurrent": "Paid",
       "statusPaymentRequired": "Payment Required",
       "paidForYear": "Paid for year",
       "processPayment": "Process Payment",
@@ -209,7 +209,16 @@
       "paymentDate": "Payment Date",
       "membershipPeriods": "Membership Periods",
       "selectReason": "Select a reason",
-      "noHistory": "No membership history available"
+      "noHistory": "No membership history available",
+      "endReasons": {
+        "withdrawal": "Withdrawal",
+        "non_payment": "Non-payment of membership fee",
+        "expulsion": "Expulsion",
+        "death": "Death"
+      },
+      "addPeriod": "Add Period",
+      "noMembershipHistory": "No membership history available",
+      "membershipFeeStatus": "Membership Fee Status"
     },
     "membershipDetailsCard": {
       "title": "Membership Details",

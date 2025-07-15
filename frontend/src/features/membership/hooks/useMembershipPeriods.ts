@@ -6,6 +6,7 @@ import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 // Ispravno deklariran interface, koristi isključivo tipove
 export interface UseMembershipPeriodsReturn {
@@ -16,7 +17,6 @@ export interface UseMembershipPeriodsReturn {
   canEdit: boolean;
   canManageEndReasons: boolean;
   canSeeEndReason: boolean;
-  calculateTotalDuration: (periods: MembershipPeriod[]) => string;
   handleEndReasonChange: (periodId: number, reason: string) => void;
   handleEdit: () => void;
   handleCancel: () => void;
@@ -38,6 +38,7 @@ export const useMembershipPeriods = (
   feePaymentDate?: string,
   onUpdate?: (periods: MembershipPeriod[]) => Promise<void>
 ) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -58,26 +59,6 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
   const canSeeEndReason = 
     user?.role === 'member_superuser' || 
     (user?.role === 'member_administrator' && memberPermissions?.can_manage_end_reasons);
-
-  // Izračunaj ukupno trajanje članstva
-  const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
-    const totalDays = periods.reduce((total, period) => {
-      const start = typeof period.start_date === 'string' ? parseISO(period.start_date) : period.start_date;
-      const end = period.end_date 
-        ? (typeof period.end_date === 'string' ? parseISO(period.end_date) : period.end_date)
-        : getCurrentDate();
-      return (
-        total +
-        Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      );
-    }, 0);
-
-    const years = Math.floor(totalDays / 365);
-    const months = Math.floor((totalDays % 365) / 30);
-    const days = totalDays % 30;
-
-    return `${years} years, ${months} months, ${days} days`;
-  }, []);
 
   // Efekt za sinkronizaciju periods prop-a sa lokalnim stanjem
   useEffect(() => {
@@ -497,7 +478,6 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
     canEdit,
     canManageEndReasons,
     canSeeEndReason,
-    calculateTotalDuration,
     handleEndReasonChange,
     handleEdit,
     handleCancel,

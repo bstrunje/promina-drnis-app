@@ -129,10 +129,22 @@ export const useMemberData = () => {
           try {
             const memberDetailsPromises = membersWithDetails.map((member) => {
               try {
-                // Pravilno adaptiraj periods bez obzira na backend strukturu
-                const periods = Array.isArray(member.membership_history)
+                let periods = Array.isArray(member.membership_history)
                   ? member.membership_history
                   : (member.membership_history?.periods ?? []);
+
+                // Ako nema perioda, a postoji uplata za tekuću godinu, kreiraj novi period
+                // Ovo je ključno za prikazivanje statusa za nove članove
+                if (periods.length === 0 && member.membership_details?.fee_payment_date) {
+                  periods.push({
+                    period_id: 0, // Privremeni ID za novi period
+                    member_id: member.member_id,
+                    start_date: member.membership_details.fee_payment_date,
+                    end_date: undefined, // Aktivni period
+                    end_reason: undefined
+                  });
+                }
+
                 const adaptedPeriods = adaptMembershipPeriods(periods);
                 // Izračunaj detaljan status članstva
                 const detailedStatus = determineDetailedMembershipStatus(

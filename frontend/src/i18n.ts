@@ -21,7 +21,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'hr', // Koristi hrvatski ako detektirani jezik nije dostupan
-    debug: process.env.NODE_ENV === 'development', // Uključuje logiranje u konzolu samo u razvoju
+    debug: import.meta.env.DEV, // Uključuje logiranje u konzolu samo u razvoju
     interpolation: {
       escapeValue: false // React sam po sebi štiti od XSS napada
     }

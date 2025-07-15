@@ -10,7 +10,7 @@ import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
 // import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
 import { getCurrentDate, getCurrentYear, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
-import { parseISO } from "date-fns";
+import { parseISO, isValid, isBefore } from "date-fns";
 import { useTranslation } from "react-i18next"; // Dodajemo useTranslation hook
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -66,6 +66,64 @@ const memberId = useMemo(() => {
     return paymentYear >= currentYear;
   }, [member?.membership_details?.fee_payment_year]);
 
+  // Helper function to calculate total duration
+  const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
+    if (!Array.isArray(periods) || periods.length === 0) return "";
+
+    const totalDays = periods.reduce((total, period) => {
+      const start = parseISO(period.start_date.toString());
+      const end = period.end_date ? parseISO(period.end_date.toString()) : getCurrentDate();
+      
+      if (!isValid(start) || !isValid(end) || isBefore(end, start)) {
+        return total;
+      }
+
+      return (
+        total +
+        Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      );
+    }, 0);
+
+    if (totalDays < 0) return "";
+
+    const years = Math.floor(totalDays / 365);
+    const months = Math.floor((totalDays % 365) / 30);
+    const days = (totalDays % 365) % 30;
+
+    const parts: string[] = [];
+
+    if (years > 0) {
+      parts.push(t('navigation.duration.years', { count: years }));
+    }
+    if (months > 0) {
+      parts.push(t('navigation.duration.months', { count: months }));
+    }
+    if (days > 0) {
+      parts.push(t('navigation.duration.days', { count: days }));
+    }
+
+    if (parts.length === 0 && totalDays >= 0) {
+      return t('navigation.duration.days', { count: 0 });
+    }
+
+    return parts.join(', ');
+  }, [t]);
+
+  // Izračunaj ukupno trajanje i pripremi propse za pod-komponentu
+  const membershipHistoryForChild = useMemo(() => {
+    if (!member) {
+      return { periods: [], totalDuration: '' };
+    }
+    const periods = (member.membership_history?.periods ?? []).slice().sort((a, b) => 
+      new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+    );
+    const totalDuration = calculateTotalDuration(periods);
+    return {
+      ...member.membership_history,
+      periods,
+      totalDuration,
+    };
+  }, [member, calculateTotalDuration]);
 
   const fetchMemberDetails = useCallback(async (preserveScroll = true): Promise<void> => {
     if (preserveScroll) {
@@ -88,33 +146,18 @@ const response = await api.get<Member>(`/members/${memberId}?t=${timestamp}`, {
         },
       });
 
-      // Dodaj default vrijednosti prema schema.prisma
-const data = response.data as Member | (Member & { membership_history?: unknown });
+      const data = response.data;
 
-// Sigurno dohvaćanje periods polja
-let periods: MembershipPeriod[] = [];
-if (Array.isArray(data.membership_history)) {
-  periods = data.membership_history as MembershipPeriod[];
-} else if (
-  data.membership_history &&
-  typeof data.membership_history === 'object' &&
-  Array.isArray((data.membership_history as { periods?: unknown }).periods)
-) {
-  periods = (data.membership_history as { periods: MembershipPeriod[] }).periods;
-}
-
-const memberData: Member = {
-  ...data,
-  status: data.status ?? 'pending',
-  role: data.role ?? 'member',
-  membership_type: data.membership_type ?? MembershipTypeEnum.Regular, // koristi enum za tip
-  registration_completed: data.registration_completed ?? false,
-  total_hours: data.total_hours ?? 0,
-  membership_history: {
-    periods,
-    total_duration: calculateTotalDuration(periods),
-  },
-};
+      // Osiguravamo da su osnovna polja uvijek prisutna
+      const memberData: Member = {
+        ...data,
+        status: data.status ?? 'pending',
+        role: data.role ?? 'member',
+        membership_type: data.membership_type ?? MembershipTypeEnum.Regular,
+        registration_completed: data.registration_completed ?? false,
+        total_hours: data.total_hours ?? 0,
+        membership_history: data.membership_history ?? { periods: [] },
+      };
 
       setMember(memberData);
 setEditedMember(memberData);
@@ -135,46 +178,6 @@ setEditedMember(memberData);
     }
   }, [memberId, savedScrollPosition]);
   
-  // Helper function to calculate total duration
-  const calculateTotalDuration = (periods: MembershipPeriod[]): string => {
-    if (!Array.isArray(periods) || periods.length === 0) return "";
-
-    const totalDays = periods.reduce(
-      (total: number, period: MembershipPeriod) => {
-        const start = parseISO(period.start_date.toString());
-        const end = period.end_date ? parseISO(period.end_date.toString()) : getCurrentDate();
-        return (
-          total +
-          Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-        );
-      },
-      0
-    );
-
-    const years = Math.floor(totalDays / 365);
-    const months = Math.floor((totalDays % 365) / 30);
-    const days = totalDays % 30;
-
-    // Korištenje i18n za prikaz trajanja
-    const formattedYears = years > 0 ? t('navigation.duration.years', { count: years }) : '';
-    const formattedMonths = months > 0 ? t('navigation.duration.months', { count: months }) : '';
-    const formattedDays = days > 0 ? t('navigation.duration.days', { count: days }) : '';
-    
-    // Spajanje dijelova trajanja, preskačući one koji su 0
-    const durationParts = [
-      formattedYears,
-      formattedMonths,
-      formattedDays
-    ].filter(part => part !== '');
-    
-    // Ako nema dijelova, vrati poruku da nema podataka o trajanju
-    if (durationParts.length === 0) {
-      return t('navigation.duration.noDuration');
-    }
-    
-    return durationParts.join(', ');
-  };
-
   useEffect(() => {
   if (memberId) {
     void fetchMemberDetails(false); // Označi kao floating promise
@@ -279,9 +282,15 @@ setEditedMember(memberData);
   const handleMemberUpdate = async (updatedData?: Partial<Member>): Promise<void> => {
     try {
       if (updatedData && Object.keys(updatedData).length) {
-        setMember((currentMember) => 
-          currentMember ? { ...currentMember, ...updatedData } : null
-        );
+        setMember(prevMember => {
+          if (!prevMember) return updatedData as Member;
+          // Ispravno spajanje: čuva postojeći history i gazi ga samo ako dođe novi
+          return {
+            ...prevMember,
+            ...updatedData,
+            membership_history: updatedData.membership_history ?? prevMember.membership_history,
+          };
+        });
         
         toast({
           title: t('memberProfile.updateSuccessTitle'),
@@ -436,11 +445,7 @@ setEditedMember(memberData);
           isEditing={isEditing && canEdit}
           isFeeCurrent={isFeeCurrent}
           onUpdate={(updatedMember: Member) => { void handleMemberUpdate(updatedMember); }}
-          membershipHistory={{
-            periods: member?.membership_history?.periods ?? [],
-            totalDuration: member?.membership_history?.total_duration,
-            currentPeriod: member?.membership_history?.current_period
-          }}
+          membershipHistory={membershipHistoryForChild} // Koristi novi objekt s totalDuration
           memberId={memberId}
           onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
           cardManagerProps={canEdit ? {

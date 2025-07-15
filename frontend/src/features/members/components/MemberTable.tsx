@@ -206,7 +206,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
         }}
       >
         {/* Standardna tablica za prikaz na ekranu */}
-        <table className="w-full min-w-[650px] border-collapse border border-gray-200 table-fixed print:hidden">
+        <table className="w-full min-w-[650px] border-collapse border border-gray-300 table-fixed print:hidden">
           <colgroup>
             <col className="hidden print:table-column print:w-[10%]" />
             <col className="w-1/3 print:w-[45%]" />
@@ -215,18 +215,18 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             {isSuperuser && <col className="w-1/6 print:hidden" />}
             <col className="hidden print:table-column print:w-[30%]" />
           </colgroup>
-          <thead className="bg-gray-100 border-b border-gray-200 print:bg-white">
+          <thead className="bg-gray-100 border-b border-gray-300 print:bg-white">
             <tr>
-              <th className="hidden print:table-cell px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="hidden print:table-cell px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 BR.
               </th>
-              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 ČLAN
               </th>
-              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center print:hidden">
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center print:hidden">
                 ČLANSTVO
               </th>
-              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 SATI
               </th>
               {isSuperuser && (
@@ -288,24 +288,22 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 ...activeMembers.map((member: MemberWithDetails) => (
                   <tr
                     key={member.member_id}
-                    className={`${getLifeStatusColor(
-                      member
-                    )} cursor-pointer transition-colors border-b border-gray-200 print:bg-white print:text-black`}
+                    className={`cursor-pointer transition-colors border-b border-gray-300 print:bg-white print:text-black hover:bg-gray-50`}
                     onClick={() =>
                       onViewDetails && onViewDetails(Number(member.member_id))
                     }
                   >
-                    <td className="hidden print:table-cell px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`hidden print:table-cell px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {activeCounter++}
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       <div className="font-medium text-gray-900">
                         {member.full_name ??
                           `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                           }`}
                       </div>
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center print:hidden">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center print:hidden ${getLifeStatusColor(member)}`}>
                       <span
                         className={`${getMembershipStatusColor(
                           getMembershipDisplayStatus(
@@ -326,15 +324,15 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                         )}
                       </span>
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {formatMinutesToHoursAndMinutes(member.total_hours)}
                     </td>
                     {isSuperuser && (
-                      <td className="px-3 py-4 text-center print:hidden">
+                      <td className={`px-3 py-4 text-center print:hidden ${getLifeStatusColor(member)}`}>
                         {renderActionButtons(member)}
                       </td>
                     )}
-                    <td className="hidden print:table-cell px-3 py-4 border-r border-gray-200">
+                    <td className={`hidden print:table-cell px-3 py-4 border-r border-gray-300 ${getLifeStatusColor(member)}`}>
                       {/* Polje za potpis */}
                     </td>
                   </tr>
@@ -343,7 +341,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 // Naslov za neaktivne članove (samo za print)
                 ...(inactiveMembers.length > 0
                   ? [
-                    <tr key="inactive-header" className="hidden print:hidden">
+                    <tr key="inactive-header-print" className="hidden print:table-row">
                       <td
                         colSpan={isSuperuser ? 6 : 4}
                         className="px-6 py-2 font-medium text-center"
@@ -358,24 +356,22 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 ...inactiveMembers.map((member: MemberWithDetails) => (
                   <tr
                     key={member.member_id}
-                    className={`${getLifeStatusColor(
-                      member
-                    )} cursor-pointer transition-colors border-b border-gray-200 print:bg-white print:text-black`}
+                    className={`cursor-pointer transition-colors border-b border-gray-300 print:bg-white print:text-black hover:bg-gray-50`}
                     onClick={() =>
                       onViewDetails && onViewDetails(Number(member.member_id))
                     }
                   >
-                    <td className="hidden print:table-cell px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`hidden print:table-cell px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {inactiveCounter++}
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       <div className="font-medium text-gray-900">
                         {member.full_name ??
                           `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                           }`}
                       </div>
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center print:hidden">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center print:hidden ${getLifeStatusColor(member)}`}>
                       <span
                         className={`${getMembershipStatusColor(
                           getMembershipDisplayStatus(
@@ -396,15 +392,15 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                         )}
                       </span>
                     </td>
-                    <td className="px-3 py-4 border-r border-gray-200 text-center">
+                    <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {formatMinutesToHoursAndMinutes(member.total_hours)}
                     </td>
                     {isSuperuser && (
-                      <td className="px-3 py-4 text-center print:hidden">
+                      <td className={`px-3 py-4 text-center print:hidden ${getLifeStatusColor(member)}`}>
                         {renderActionButtons(member)}
                       </td>
                     )}
-                    <td className="hidden print:table-cell px-3 py-4 border-r border-gray-200">
+                    <td className={`hidden print:table-cell px-3 py-4 border-r border-gray-300 ${getLifeStatusColor(member)}`}>
                       {/* Polje za potpis */}
                     </td>
                   </tr>
@@ -415,22 +411,22 @@ export const MemberTable: React.FC<MemberTableProps> = ({
         </table>
 
         {/* Posebna tablica samo za printanje, bez kompleksne strukture */}
-        <table className="hidden print:!table w-full min-w-[650px] border-collapse border border-gray-200 table-fixed print-table">
+        <table className="hidden print:!table w-full min-w-[650px] border-collapse border border-gray-300 table-fixed print-table">
           <colgroup>
             <col className="w-[10%]" />
             <col className="w-[45%]" />
             <col className="w-[15%]" />
             <col className="w-[30%]" />
           </colgroup>
-          <thead className="bg-white border-b border-gray-200">
+          <thead className="bg-white border-b border-gray-300">
             <tr>
-              <th className="px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 BR.
               </th>
-              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 ČLAN
               </th>
-              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 text-center">
+              <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
                 SATI
               </th>
               <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
@@ -451,22 +447,22 @@ export const MemberTable: React.FC<MemberTableProps> = ({
               .map((member, index) => (
                 <tr
                   key={`print-active-${member.member_id}`}
-                  className="border-b border-gray-200 bg-white"
+                  className="border-b border-gray-300 bg-white"
                 >
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     {index + 1}
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     <div className="font-medium text-gray-900">
                       {member.full_name ??
                         `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                         }`}
                     </div>
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     {formatMinutesToHoursAndMinutes(member.total_hours)}
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200">
+                  <td className="px-3 py-4 border-r border-gray-300">
                     {/* Polje za potpis */}
                   </td>
                 </tr>
@@ -491,22 +487,22 @@ export const MemberTable: React.FC<MemberTableProps> = ({
               .map((member, index) => (
                 <tr
                   key={`print-inactive-${member.member_id}`}
-                  className="border-b border-gray-200 bg-white"
+                  className="border-b border-gray-300 bg-white"
                 >
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     {index + 1}
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     <div className="font-medium text-gray-900">
                       {member.full_name ??
                         `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ""
                         }`}
                     </div>
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200 text-center">
+                  <td className="px-3 py-4 border-r border-gray-300 text-center">
                     {formatMinutesToHoursAndMinutes(member.total_hours)}
                   </td>
-                  <td className="px-3 py-4 border-r border-gray-200">
+                  <td className="px-3 py-4 border-r border-gray-300">
                     {/* Polje za potpis */}
                   </td>
                 </tr>

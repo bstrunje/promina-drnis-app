@@ -204,53 +204,35 @@ const membershipRepository = {
         periodId: number,
         endDate: Date,
         endReason: MembershipEndReason
-    ): Promise<void> {
-        // Prvo dohvati member_id iz period_id
-        const periodResult = await db.query(
-            'SELECT member_id FROM membership_periods WHERE period_id = $1',
-            [periodId]
-        );
-        
-        // Ažuriraj period članstva
-        await db.query(
+    ): Promise<MembershipPeriod> {
+        // Ažuriraj period članstva i vrati ažurirani redak
+        const result = await db.query(
             `UPDATE membership_periods 
              SET end_date = $1, end_reason = $2 
-             WHERE period_id = $3`,
+             WHERE id = $3
+             RETURNING *`,
             [endDate, endReason, periodId]
         );
-        
-        // Ako je pronađen član, ažuriraj status člana na 'inactive'
-        if (periodResult.rows.length > 0) {
-            const memberId = periodResult.rows[0].member_id;
-            
-            // Provjeri ima li član aktivnih perioda članstva
-            const activePeriodsResult = await db.query(
-                `SELECT COUNT(*) as active_count 
-                 FROM membership_periods 
-                 WHERE member_id = $1 AND end_date IS NULL`,
-                [memberId]
-            );
-            
-            console.log(`DEBUG [endMembershipPeriod]: Active periods count for member ${memberId}:`, activePeriodsResult.rows[0].active_count);
-            
-            // Preciznija obrada rezultata COUNT - može doći u različitim formatima ovisno o PostgreSQL driveru
-            let activeCount = 0;
-            
-            if (typeof activePeriodsResult.rows[0].active_count === 'string') {
-              activeCount = parseInt(activePeriodsResult.rows[0].active_count);
-            } else {
-              activeCount = Number(activePeriodsResult.rows[0].active_count);
-            }
-            
-            console.log(`DEBUG [endMembershipPeriod]: Processed activeCount (after conversion):`, activeCount);
-            
-            // Ako nema drugih aktivnih perioda, član je izvedeno 'inactive' (ali status se NE zapisuje u tablicu)
-            if (activeCount === 0) {
-                console.log(`Member ${memberId} is now logically INACTIVE (no active membership periods). Status in DB remains unchanged.`);
-                // Status 'inactive' se ne zapisuje u tablicu members!
-                // Odluka: status 'inactive' je izveden i koristi se samo u helper funkcijama i prikazu.
-            }
+        const updatedPeriod = result.rows[0];
+
+        const memberId = updatedPeriod.member_id;
+
+        // Provjeri ima li član drugih aktivnih perioda članstva
+        const activePeriodsResult = await db.query(
+            `SELECT COUNT(*) as active_count 
+             FROM membership_periods 
+             WHERE member_id = $1 AND end_date IS NULL`,
+            [memberId]
+        );
+
+        const activeCount = parseInt(activePeriodsResult.rows[0].active_count, 10) || 0;
+
+        // Ako nema drugih aktivnih perioda, član je logički 'inactive'
+        if (activeCount === 0) {
+            console.log(`Član ${memberId} je sada logički NEAKTIVAN (nema aktivnih perioda članstva). Status u bazi ostaje nepromijenjen.`);
         }
+
+        return updatedPeriod;
     },
 
     async getMembershipPeriods(memberId: number): Promise<MembershipPeriod[]> {

@@ -25,7 +25,6 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
     canEdit,
     canManageEndReasons,
     canSeeEndReason,
-    calculateTotalDuration,
     handleEndReasonChange,
     handleEdit,
     handleCancel,
@@ -80,7 +79,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
         <div className="space-y-4">
           <div className="text-sm">
             <span className="font-medium">Ukupno trajanje: </span>
-            {totalDuration ?? calculateTotalDuration(periods)} // Sigurnosna promjena: koristi se nullish coalescing operator
+            {totalDuration}
           </div>
 
           <div className="text-sm">

@@ -24,6 +24,5 @@ export interface MembershipDetails {
 
 export interface MembershipHistory {
     periods: MembershipPeriod[];
-    total_duration?: string; // Calculated field
     current_period?: MembershipPeriod;
 }

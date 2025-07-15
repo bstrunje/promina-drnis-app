@@ -16,7 +16,7 @@ import memberService from '../services/member.service.js';
 // Import membership service
 import membershipService from '../services/membership.service.js';
 
-import { getCurrentDate, setMockDate, resetMockDate, parseDate } from '../utils/dateUtils.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 
 const execPromise = util.promisify(exec);
 
@@ -448,34 +448,6 @@ router.post('/reset-test-database', async (req, res) => {
   }
 });
 
-// Endpoint za rekalkulaciju statusa članstva nakon promjene datuma
-router.post('/recalculate-membership', async (req, res) => {
-  try {
-    // Provjeri ima li poslani mockDate u tijelu zahtjeva
-    const mockDate = req.body.mockDate;
-    console.log(`🔄 Rekalkulacija statusa članstva${mockDate ? ` s mock datumom: ${mockDate}` : ' na temelju trenutnog datuma'}...`);
-    
-    // Koristi centraliziranu funkciju iz membership servisa i proslijedi mock datum ako postoji
-    const result = await membershipService.updateAllMembershipStatuses(req, mockDate ? parseDate(mockDate) : undefined);
-    
-    res.json({ 
-      success: true, 
-      message: 'Status članstva uspješno rekalkuliran',
-      mockDateUsed: !!mockDate,
-      mockDate: mockDate || null,
-      updatedCount: result.updatedCount,
-      errors: result.errors,
-      timestamp: getCurrentDate()
-    });
-  } catch (error) {
-    console.error('❌ Greška prilikom rekalkulacije statusa članstva:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: getCurrentDate()
-    });
-  }
-});
-
 // Endpoint za vraćanje podataka iz backup-a
 router.post('/restore-from-backup/:filename', async (req, res) => {
   // Dozvoljavamo vraćanje backupa samo u development okruženju
@@ -708,64 +680,6 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
     console.error('❌ Greška prilikom čišćenja testnih podataka:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Nepoznata greška',
-      timestamp: getCurrentDate()
-    });
-  }
-});
-
-// Endpoint za postavljanje simuliranog datuma
-router.post('/set-mock-date', authMiddleware, roles.requireSuperUser, async (req, res) => {
-  try {
-    const { date, reset } = req.body;
-    
-    if (reset) {
-      // Ako je reset=true, resetiraj simulirani datum na trenutni stvarni datum
-      resetMockDate();
-      console.log('📅 Simulirani datum resetiran, koristi se stvarni datum');
-      
-      res.json({
-        success: true,
-        message: 'Simulirani datum je resetiran',
-        currentDate: getCurrentDate(),
-        isMockDate: false
-      });
-    } else if (date) {
-      // Postavi simulirani datum
-      const mockDate = parseDate(date);
-      
-      if (isNaN(mockDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Neispravan format datuma'
-        });
-      }
-      
-      setMockDate(mockDate);
-      console.log(`📅 Simulirani datum postavljen na: ${mockDate.toISOString()}`);
-      
-      res.json({
-        success: true,
-        message: 'Simulirani datum je postavljen',
-        currentDate: mockDate,
-        isMockDate: true
-      });
-    } else {
-      // Ako nema datuma ni reseta, vrati trenutno stanje
-      const currentDate = getCurrentDate();
-      const isMockDate = getCurrentDate().getTime() !== (getCurrentDate()).getTime();
-      
-      res.json({
-        success: true,
-        message: 'Trenutni datum sustava',
-        currentDate,
-        isMockDate
-      });
-    }
-  } catch (error) {
-    console.error('❌ Greška prilikom postavljanja simuliranog datuma:', error);
-    res.status(500).json({ 
-      success: false,
-      message: error instanceof Error ? error.message : 'Nepoznata greška',
       timestamp: getCurrentDate()
     });
   }

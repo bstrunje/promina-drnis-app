@@ -17,7 +17,6 @@ interface MembershipHistoryAdapterProps {
   memberId: number;
   feePaymentYear?: number;
   feePaymentDate?: string;
-  totalDuration?: string;
   currentPeriod?: MembershipPeriod;
   onUpdate?: (member: Member) => Promise<void>;
   onUpdatePeriods?: (periods: MembershipPeriod[]) => Promise<void>;
@@ -31,7 +30,6 @@ const MembershipHistoryAdapter: React.FC<MembershipHistoryAdapterProps> = ({
   memberId,
   feePaymentYear,
   feePaymentDate,
-  totalDuration,
   currentPeriod,
   onUpdate,
   onUpdatePeriods,
@@ -58,7 +56,6 @@ const MembershipHistoryAdapter: React.FC<MembershipHistoryAdapterProps> = ({
     // Pravilno strukturiranje membership_history objekta
     membership_history: {
       periods: periods || [],
-      total_duration: totalDuration,
       current_period: currentPeriod
     },
   };
@@ -69,7 +66,6 @@ const MembershipHistoryAdapter: React.FC<MembershipHistoryAdapterProps> = ({
       periods={periods ?? []} // Sigurnosna promjena: nullish coalescing za tipnu sigurnost
       feePaymentYear={feePaymentYear}
       feePaymentDate={feePaymentDate}
-      totalDuration={totalDuration}
       onUpdatePeriods={onUpdatePeriods}
       onUpdate={onUpdate ?? (async () => Promise.resolve())} // dummy funkcija za tipnu kompatibilnost bez unused var
       userRole={user?.role}

@@ -50,12 +50,15 @@
     "members": "Članovi",
     "memberSince": "Član od",
     "duration": {
+      "years": "{{count}} godina",
       "years_one": "{{count}} godina",
       "years_paucal": "{{count}} godine",
       "years_other": "{{count}} godina",
+      "months": "{{count}} mjesec",
       "months_one": "{{count}} mjesec",
       "months_paucal": "{{count}} mjeseca",
       "months_other": "{{count}} mjeseci",
+      "days": "{{count}} dan",
       "days_one": "{{count}} dan",
       "days_paucal": "{{count}} dana",
       "days_other": "{{count}} dana",
@@ -159,13 +162,14 @@
       "lastUpdated": "Zadnja izmjena"
     },
     "feeSection": {
-      "title": "Status članarine",
+      "title": "Članarina i status članstva",
+      "paymentStatus": "Status uplate",
+      "statusCurrent": "Plaćeno",
+      "statusPaymentRequired": "Potrebna uplata",
       "lastPaymentDate": "Datum zadnje uplate:",
       "noPaymentData": "Nema podataka o plaćanju za tekuću ili iduću godinu",
       "paymentYear": "Godina uplate:",
-      "paymentStatus": "Status uplate:",
       "statusPaid": "Plaćeno",
-      "statusPaymentRequired": "Potrebno platiti",
       "paidForYear": "Plaćeno za",
       "processPayment": "Procesuiraj uplatu",
       "processPaymentTitle": "Procesuiraj uplatu",
@@ -214,7 +218,16 @@
       "paymentDate": "Datum uplate",
       "membershipPeriods": "Periodi članstva",
       "selectReason": "Odaberite razlog",
-      "noHistory": "Nema dostupne povijesti članstva"
+      "noHistory": "Nema dostupne povijesti članstva",
+      "endReasons": {
+        "withdrawal": "Istupanje",
+        "non_payment": "Neplaćanje članarine",
+        "expulsion": "Isključenje",
+        "death": "Smrt"
+      },
+      "addPeriod": "Dodaj period",
+      "noMembershipHistory": "Nema dostupne povijesti članstva",
+      "membershipFeeStatus": "Status članarine"
     },
     "membershipDetailsCard": {
       "title": "Detalji članstva",

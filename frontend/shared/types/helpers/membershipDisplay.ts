@@ -29,12 +29,6 @@ export const activityStatusLabels: Record<string, string> = {
   passive: "Pasivan"
 };
 
-// Centralizirani prikaz statusa članarine
-export const feeStatusLabels: Record<string, string> = {
-  current: "Plaćeno",
-  "payment required": "Potrebna uplata"
-};
-
 // Centralizirane boje za status članarine
 export const feeStatusColors: Record<string, string> = {
   current: "bg-green-100 text-green-800",
