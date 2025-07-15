@@ -61,6 +61,13 @@ type UnifiedMembershipPeriod = MembershipPeriod & {
   end_reason?: MembershipEndReason | null;
 };
 
+const endReasonOptions: MembershipEndReason[] = [
+  'withdrawal',
+  'non_payment',
+  'expulsion',
+  'death',
+];
+
 const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   member,
   isEditing,
@@ -185,7 +192,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
     } catch (error) {
       console.error("Error validating date:", error);
-      setPaymentError("Failed to validate payment date");
+      setPaymentError(t('memberProfile.feeSection.validationError'));
       setIsValidPayment(false);
       return false;
     }
@@ -296,7 +303,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       console.error("Error updating membership:", error);
       toast({
         title: t('common.error'),
-        description: error instanceof Error ? error.message : t('memberProfile.feeSection.paymentFailed'),
+        description: t('memberProfile.feeSection.paymentError'),
         variant: "destructive"
       });
     } finally {
@@ -377,21 +384,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Display Fee Payment Information */}
             <div>
               <div className="mb-3">
-                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.lastPaymentDate')}:</span>
+                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.lastPaymentDate')}</span>
                 <p>
                 {member.membership_details?.fee_payment_date
                   ? formatDate(cleanISODateString(member.membership_details.fee_payment_date), 'dd.MM.yyyy.')
                   : t('memberProfile.feeSection.noPaymentData')}
                 </p>
               </div>
-              
-              {member.membership_details?.fee_payment_year && (
-                <div className="mb-3">
-                  <span className="text-sm text-gray-500">{t('memberProfile.feeSection.paymentYear')}:</span>
-                  <p>{member.membership_details.fee_payment_year}</p>
-                </div>
-              )}
-              
+                            
               <div className="mb-3">
                 <span className="text-sm text-gray-500">{t('memberProfile.feeSection.paymentStatus')}:</span>
                 {(() => {
@@ -411,7 +411,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
                 {member.membership_details?.fee_payment_year && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Paid for year: {member.membership_details.fee_payment_year}
+                    {t('memberProfile.feeSection.paidForYear')}: {member.membership_details.fee_payment_year}
                   </p>
                 )}
               </div>
@@ -426,25 +426,23 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   const currentMonth = today.getMonth(); // 0 = Siječanj, 1 = Veljača
 
                   let statusInfo = {
-                    text: 'Članstvo završeno',
+                    text: t('memberProfile.feeSection.membershipEnded'),
                     className: 'bg-red-100 text-red-800',
                   };
 
                   if (lastPeriod.end_reason === 'non_payment' && (currentMonth === 0 || currentMonth === 1)) {
                     statusInfo = {
-                      text: 'Članstvo isteklo',
+                      text: t('memberProfile.feeSection.membershipExpired'),
                       className: 'bg-yellow-100 text-yellow-800',
                     };
                   }
 
                   return (
-                    <div className="mb-4">
-                      <h3 className="text-sm text-gray-500 mb-1">Member Status:</h3>
-                      <div className="flex items-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
-                          {statusInfo.text}
-                        </span>
-                      </div>
+                    <div className="flex items-center mb-4">
+                      <span className="text-sm text-gray-500 mr-2">{t('memberProfile.feeSection.memberStatus')}:</span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
+                        {statusInfo.text}
+                      </span>
                     </div>
                   );
                 }
@@ -467,11 +465,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
                 const getMembershipDisplay = (status: string) => {
                   if (status === 'registered') {
-                    return { text: 'Članstvo važeće', className: 'bg-green-100 text-green-800' };
+                    return { text: t('memberProfile.feeSection.validMembership'), className: 'bg-green-100 text-green-800' };
                   } else if (status === 'inactive') {
-                    return { text: 'Neaktivan', className: 'bg-red-100 text-red-800' };
+                    return { text: t('memberProfile.feeSection.inactive'), className: 'bg-red-100 text-red-800' };
                   } else {
-                    return { text: 'Na čekanju', className: 'bg-yellow-100 text-yellow-800' };
+                    return { text: t('memberProfile.feeSection.pending'), className: 'bg-yellow-100 text-yellow-800' };
                   }
                 };
 
@@ -479,15 +477,15 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
                 return (
                   <div className="mb-4">
-                    <h3 className="text-sm text-gray-500 mb-1">Member Status:</h3>
                     <div className="flex items-center">
+                      <span className="text-sm text-gray-500 mr-2">{t('memberProfile.feeSection.memberStatus')}:</span>
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${display.className}`}>
                         {display.text}
                       </span>
                     </div>
                     {detailedMembershipStatus.reason &&
                       finalMembershipStatus !== 'registered' &&
-                      !(finalMembershipStatus === 'inactive' && ['Isključen iz članstva', 'Smrt člana', 'Dobrovoljno povlačenje'].includes(detailedMembershipStatus.reason)) && (
+                      !(finalMembershipStatus === 'inactive' && [t('memberProfile.history.reasons.expulsion'), t('memberProfile.history.reasons.death'), t('memberProfile.history.reasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
                         <p className="text-sm text-gray-700 mt-1">
                           {detailedMembershipStatus.reason}
                         </p>
@@ -495,11 +493,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                     {detailedMembershipStatus.date && detailedMembershipStatus.status === 'inactive' && (
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">
-                          End date: {new Date(detailedMembershipStatus.date).toLocaleDateString('hr-HR')}
+                          {t('memberProfile.history.endDate')}: {new Date(detailedMembershipStatus.date).toLocaleDateString('hr-HR')}
                         </p>
                         {detailedMembershipStatus.endReason && (
                           <p className="text-sm text-gray-500">
-                            Reason: {translateEndReason(detailedMembershipStatus.endReason)}
+                            {t('memberProfile.history.endReason')}: {translateEndReason(detailedMembershipStatus.endReason, )}
                           </p>
                         )}
                       </div>
@@ -675,7 +673,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           <div key={period.period_id ?? index} className="p-3 border rounded-md bg-gray-50">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-xs text-gray-500">Start Date</label>
+                                <label className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</label>
                                 <Input
                                   type="date"
                                   value={formatInputDate(period.start_date) ?? ''}
@@ -683,7 +681,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-gray-500">End Date</label>
+                                <label className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</label>
                                 <Input
                                   type="date"
                                   value={formatInputDate(period.end_date) ?? ''}
@@ -691,17 +689,18 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-gray-500">End Reason</label>
+                                <label className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</label>
                                 <select
                                   className="w-full p-2 border rounded"
                                   value={period.end_reason ?? ''}
                                   onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value as MembershipEndReason)}
                                 >
-                                  <option value="">Odaberite razlog</option>
-                                  <option value="withdrawal">Istupanje</option>
-                                  <option value="non_payment">Neplaćanje članarine</option>
-                                  <option value="expulsion">Isključenje</option>
-                                  <option value="death">Smrt</option>
+                                  <option value="">{t('memberProfile.history.selectReason')}</option>
+                                  {endReasonOptions.map(reason => (
+                                    <option key={reason} value={reason}>
+                                      {t(`memberProfile.history.reasons.${reason}`)}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                               <Button
@@ -710,17 +709,17 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 onClick={() => handleDeletePeriod(index)}
                               >
                                 <X className="h-4 w-4 mr-1" />
-                                Delete
+                                {t('memberProfile.history.delete')}
                               </Button>
                             </div>
                           </div>
                         ))}
                         {/* Add new period */}
                         <div className="p-3 border rounded-md bg-gray-50 border-dashed">
-                          <h5 className="text-sm font-medium mb-2">Add New Period</h5>
+                          <h5 className="text-sm font-medium mb-2">{t('memberProfile.history.addNewPeriod')}</h5>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="text-xs text-gray-500">Start Date</label>
+                              <label className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</label>
                               <Input
                                 type="date"
                                 value={formatInputDate(newPeriod?.start_date) ?? ''}
@@ -728,7 +727,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500">End Date</label>
+                              <label className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</label>
                               <Input
                                 type="date"
                                 value={formatInputDate(newPeriod?.end_date) ?? ''}
@@ -736,17 +735,18 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-xs text-gray-500">End Reason</label>
+                              <label className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</label>
                               <select
                                 className="w-full p-2 border rounded"
                                 value={newPeriod?.end_reason ?? ""}
                                 onChange={(e) => setNewPeriod({ ...(newPeriod ?? {}), end_reason: e.target.value as MembershipEndReason })}
                               >
-                                <option value="">Odaberite razlog</option>
-                                <option value="withdrawal">Istupanje</option>
-                                <option value="non_payment">Neplaćanje članarine</option>
-                                <option value="expulsion">Isključenje</option>
-                                <option value="death">Smrt</option>
+                                <option value="">{t('memberProfile.history.selectReason')}</option>
+                                {endReasonOptions.map(reason => (
+                                  <option key={reason} value={reason}>
+                                    {t(`memberProfile.history.reasons.${reason}`)}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                             <Button
@@ -755,7 +755,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               onClick={handleAddPeriod}
                               disabled={!newPeriod?.start_date}
                             >
-                              Add Period
+                              {t('memberProfile.history.addPeriod')}
                             </Button>
                           </div>
                         </div>
@@ -767,16 +767,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           <div key={period.period_id ?? index} className="p-3 border rounded-md bg-gray-50">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <p className="text-xs text-gray-500">Start Date</p>
+                                <p className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</p>
                                 <p>{format(new Date(period.start_date), 'dd.MM.yyyy')}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">End Date</p>
+                                <p className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</p>
                                 <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : ''}</p>
                               </div>
                               {period.end_reason && (
                                 <div className="col-span-2">
-                                  <p className="text-xs text-gray-500">End Reason</p>
+                                  <p className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</p>
                                   <p>{translateEndReason(period.end_reason)}</p>
                                 </div>
                               )}
@@ -787,7 +787,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                     )}
                   </div>
                 ) : (
-                  <p className="text-gray-500 italic">No membership history available</p>
+                  <p className="text-gray-500 italic">{t('memberProfile.history.noHistory')}</p>
                 )}
 
                 {/* Prikaz ukupnog trajanja članstva */}

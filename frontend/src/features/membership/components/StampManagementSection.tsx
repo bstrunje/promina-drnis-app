@@ -50,11 +50,6 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   // Dohvati stilove za trenutnog člana
   const { bg, text } = getStatusColors();
   
-  // Dijagnostika - pratimo dostupnost inventoryStatus
-  useEffect(() => {
-    console.log("Current inventoryStatus:", inventoryStatus);
-    console.log("Next year inventoryStatus:", nextYearInventoryStatus);
-  }, [inventoryStatus, nextYearInventoryStatus]);
   
   return (
     <div className="space-y-4">

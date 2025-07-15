@@ -1,89 +1,72 @@
 // frontend/components/ActivityHistory.tsx
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { getMemberActivities } from '../src/utils/api';
-import { formatDate } from "../src/utils/dateUtils";
-import { History } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { History } from 'lucide-react'; // Mijenjamo ikonu
+import { useTranslation } from 'react-i18next';
+import { getMemberAnnualStats } from '../src/utils/api';
 
 interface Props {
   memberId: number;
 }
 
-interface MemberActivity {
-  activity_id: number;
-  name: string;
-  date: string;
-  hours_spent: number | null;
+interface AnnualStat {
+  year: number;
+  total_hours: number;
+  total_activities: number;
 }
 
 export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
-  const [activities, setActivities] = useState<MemberActivity[]>([]);
+  const { t } = useTranslation();
+  const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Dodaj useMemo za stabilnost reference
-  const fetchActivities = useCallback(async () => {
+  const fetchAnnualStats = useCallback(async () => {
     if (!memberId) return;
-    
+    setLoading(true);
     try {
-      const data = await getMemberActivities(memberId) as MemberActivity[];
-      setActivities(data);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      setError(error instanceof Error ? error.message : 'Error fetching activities');
+      const stats = await getMemberAnnualStats(memberId);
+      const totals = stats.reduce((acc, stat) => {
+        acc.activities += stat.total_activities;
+        // Sate i dalje dohvaćamo, ali ih nećemo prikazati
+        acc.hours += parseFloat(stat.total_hours as any) || 0;
+        return acc;
+      }, { activities: 0, hours: 0 });
+
+      setActivityTotals(totals);
+    } catch (err) {
+      console.error("Error fetching annual stats for component:", err);
     } finally {
       setLoading(false);
     }
   }, [memberId]);
 
-  // Koristi useEffect s dependency listom
   useEffect(() => {
-    void fetchActivities();
-  }, [fetchActivities]);
-
-  if (loading) {
-    return <div>Loading activities...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
+    void fetchAnnualStats();
+  }, [fetchAnnualStats]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <div className="flex items-center">
-            <History className="w-5 h-5 mr-2" />
-            Activity History
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {activities.length > 0 ? (
-          <div className="space-y-4">
-            {activities.map((activity) => (
-              <div 
-                key={activity.activity_id}
-                className="border-l-2 border-blue-500 pl-4 py-2"
-              >
-                <div className="font-medium">{activity.name}</div>
-                <div className="text-sm text-gray-600">
-                {formatDate(activity.date)}
-                </div>
-                <div className="text-sm text-gray-600">
-                  Hours: {activity.hours_spent ?? 'N/A'}
-                </div>
-              </div>
-            ))}
-          </div>
+    <Link
+      to={`/members/${memberId}/activities-overview`}
+      className="block bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+    >
+      {/* Naslov s ikonom na lijevoj strani */}
+      <div className="flex items-center mb-4">
+        <History className="h-5 w-5 mr-3 text-gray-500" />
+        <h3 className="text-gray-700 font-semibold">{t('memberProfile.activityHistory.title')}</h3>
+      </div>
+      
+      {/* Prikaz samo ukupnog broja aktivnosti */}
+      <div className="text-center">
+        {loading ? (
+          <div className="h-8 bg-gray-200 animate-pulse rounded-md w-1/2 mx-auto"></div>
         ) : (
-          <div className="text-gray-500 text-center py-4">
-            No activities recorded yet
+          <div>
+            <p className="text-3xl font-bold text-gray-800">{activityTotals.activities}</p>
+            <p className="text-sm text-gray-500">{t('memberProfile.activityHistory.totalActivities')}</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Link>
   );
 };
 

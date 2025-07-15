@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getActivityById, updateActivity } from '../../utils/api/apiActivities';
-import { Activity } from '@shared/activity.types';
+import { Activity, ActivityStatus } from '@shared/activity.types';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Input } from '@components/ui/input';
@@ -9,7 +9,7 @@ import { Textarea } from '@components/ui/textarea';
 import { Label } from '@components/ui/label';
 import { useToast } from '@components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { Clock, X } from 'lucide-react';
 import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { MemberSelect } from './MemberSelect';
 
@@ -33,6 +33,7 @@ const EditActivityPage: React.FC = () => {
   const [participantsWithRoles, setParticipantsWithRoles] = useState<MemberWithRole[]>([]);
   const [recognitionPercentage, setRecognitionPercentage] = useState('100');
   const [isExcursion, setIsExcursion] = useState(false);
+  const [status, setStatus] = useState<ActivityStatus | null>(null);
 
   // Refovi za fokus
   const startTimeRef = useRef<HTMLInputElement>(null);
@@ -49,6 +50,7 @@ const EditActivityPage: React.FC = () => {
         // Popunjavanje stanja forme s postojećim podacima
         setName(data.name || '');
         setDescription(data.description || '');
+        setStatus(data.status);
 
         const formatDate = (dateInput: Date | string | null | undefined) => {
           if (!dateInput) return { date: '', time: '' };
@@ -176,22 +178,23 @@ const EditActivityPage: React.FC = () => {
               </div>
 
               {/* Polje za datum početka */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="startDate" className="text-right">Datum početka</Label>
-                <div className="col-span-3 flex items-center gap-2">
-                  <Input id="startDate" type="date" value={startDate} onChange={e => { setStartDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) startTimeRef.current?.focus(); }} required />
-                  <Input id="startTime" type="time" ref={startTimeRef} value={startTime} onChange={e => setStartTime(e.target.value)} required />
-                  <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setStartDate, setStartTime)}><Clock className="h-4 w-4" /></Button>
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                <Label htmlFor="startDate" className="md:text-right">Datum početka</Label>
+                <div className="md:col-span-3 flex items-center gap-2">
+                  <Input id="startDate" type="date" className="w-40 hide-date-time-icons" value={startDate} onChange={e => { setStartDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) startTimeRef.current?.focus(); }} required />
+                  <Input id="startTime" type="time" ref={startTimeRef} className="w-28 hide-date-time-icons" value={startTime} onChange={e => setStartTime(e.target.value)} required />
+                  <Button type="button" variant="secondary" size="icon" onClick={() => handleSetNow(setStartDate, setStartTime)}><Clock className="h-4 w-4" /></Button>
                 </div>
               </div>
 
               {/* Polje za stvarni početak */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="actualStartDate" className="text-right">Stvarni početak</Label>
-                <div className="col-span-3 flex items-center gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                <Label htmlFor="actualStartDate" className="md:text-right">Početak</Label>
+                <div className="md:col-span-3 flex items-center gap-2">
                   <Input 
                     id="actualStartDate" 
                     type="date" 
+                    className="w-40 hide-date-time-icons"
                     value={actualStartDate} 
                     onChange={e => { 
                       // Ako se dodaje stvarni početak, resetirati ručni unos sati
@@ -199,7 +202,7 @@ const EditActivityPage: React.FC = () => {
                         setManualHours('');
                       }
                       setActualStartDate(e.target.value); 
-                      if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualStartTimeRef.current?.focus();
+                      if (parseInt(e.target.value.substring(0, 4), 10) > 1000) actualStartTimeRef.current?.focus(); 
                     }} 
                     disabled={!!manualHours}
                   />
@@ -207,6 +210,7 @@ const EditActivityPage: React.FC = () => {
                     id="actualStartTime" 
                     type="time" 
                     ref={actualStartTimeRef} 
+                    className="w-28 hide-date-time-icons"
                     value={actualStartTime} 
                     onChange={e => {
                       // Ako se dodaje stvarni početak, resetirati ručni unos sati
@@ -219,7 +223,7 @@ const EditActivityPage: React.FC = () => {
                   />
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="secondary" 
                     size="icon" 
                     onClick={() => {
                       // Resetirati ručni unos sati prije postavljanja stvarnog vremena
@@ -232,16 +236,30 @@ const EditActivityPage: React.FC = () => {
                   >
                     <Clock className="h-4 w-4" />
                   </Button>
+                  {(status === 'PLANNED' || status === 'ACTIVE') && actualStartDate && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => {
+                        setActualStartDate('');
+                        setActualStartTime('');
+                      }}
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Polje za stvarni završetak */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="actualEndDate" className="text-right">Stvarni završetak</Label>
-                <div className="col-span-3 flex items-center gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                <Label htmlFor="actualEndDate" className="md:text-right">Završetak</Label>
+                <div className="md:col-span-3 flex items-center gap-2">
                   <Input 
                     id="actualEndDate" 
                     type="date" 
+                    className="w-40 hide-date-time-icons"
                     value={actualEndDate} 
                     onChange={e => { 
                       // Ako se dodaje stvarni završetak, resetirati ručni unos sati
@@ -257,6 +275,7 @@ const EditActivityPage: React.FC = () => {
                     id="actualEndTime" 
                     type="time" 
                     ref={actualEndTimeRef} 
+                    className="w-28 hide-date-time-icons"
                     value={actualEndTime} 
                     onChange={e => {
                       // Ako se dodaje stvarni završetak, resetirati ručni unos sati
@@ -269,7 +288,7 @@ const EditActivityPage: React.FC = () => {
                   />
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="secondary" 
                     size="icon" 
                     onClick={() => {
                       // Resetirati ručni unos sati prije postavljanja stvarnog vremena
@@ -282,13 +301,26 @@ const EditActivityPage: React.FC = () => {
                   >
                     <Clock className="h-4 w-4" />
                   </Button>
+                  {(status === 'PLANNED' || status === 'ACTIVE') && actualEndDate && (
+                   <Button
+                     type="button"
+                     variant="destructive"
+                     size="icon"
+                     onClick={() => {
+                       setActualEndDate('');
+                       setActualEndTime('');
+                     }}
+                   >
+                     <X className="h-4 w-4 text-red-500" />
+                   </Button>
+                  )}
                 </div>
               </div>
 
               {/* Polje za ručni unos sati */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="manualHours" className="text-right">Ručni unos sati</Label>
-                <div className="col-span-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                <Label htmlFor="manualHours" className="md:text-right">Ručni unos sati</Label>
+                <div className="md:col-span-3">
                   <Input
                     id="manualHours"
                     type="number"
@@ -315,11 +347,11 @@ const EditActivityPage: React.FC = () => {
 
               {/* Postotak priznavanja - prikazuje se samo ako NIJE izlet */}
               {!isExcursion && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="recognition_percentage" className="text-right">
+                <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                  <Label htmlFor="recognition_percentage" className="md:text-right">
                     Postotak priznavanja
                   </Label>
-                  <div className="col-span-3">
+                  <div className="md:col-span-3">
                     <Input
                       id="recognition_percentage"
                       type="number"
@@ -332,9 +364,9 @@ const EditActivityPage: React.FC = () => {
               )}
 
               {/* Odabir sudionika */}
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label className="text-right pt-2">Sudionici</Label>
-                <div className="col-span-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
+                <Label className="md:text-right pt-2">Sudionici</Label>
+                <div className="md:col-span-3">
                   {isExcursion ? (
                     <MemberRoleSelect selectedMembers={participantsWithRoles} onSelectionChange={setParticipantsWithRoles} />
                   ) : (

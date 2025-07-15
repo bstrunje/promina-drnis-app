@@ -135,7 +135,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
               value={inputValue}
               onValueChange={setInputValue}
               onFocus={() => setIsFocused(true)}
-              className={cn(isFocused ? 'ring-2 ring-ring ring-offset-2' : '')}
+              className="border-2 border-input ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
             {isFocused && (
               <div className="absolute top-full mt-1 w-full rounded-md border bg-popover p-0 text-popover-foreground shadow-md z-[100]">
@@ -164,7 +164,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
           </Command>
         </div>
 
-        <div className="w-40">
+        <div className="w-36">
           <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as ParticipantRole)}>
             <SelectTrigger>
               <SelectValue placeholder="Uloga" />

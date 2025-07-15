@@ -1,5 +1,8 @@
+/* @tailwind directive */
 @tailwind base;
+/* @tailwind directive */
 @tailwind components;
+/* @tailwind directive */
 @tailwind utilities;
 
 @layer base {
@@ -56,13 +59,13 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%
   }
-}
 
-@layer base {
   * {
+    /* @apply directive */
     @apply border-border;
   }
   body {
+    /* @apply directive */
     @apply bg-background text-foreground;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -70,5 +73,12 @@
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .hide-date-time-icons::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
@@ -12,6 +13,7 @@ interface MemberMessagesSectionProps {
 }
 
 const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member }) => {
+  const { t } = useTranslation();
   const [comment, setComment] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -25,14 +27,14 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
       await sendMemberMessage(member.member_id, comment);
       setComment('');
       toast({
-        title: "Success",
-        description: "Message sent successfully",
+        title: t('common.success'),
+        description: t('memberProfile.messages.sendSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('memberProfile.messages.sendError'),
         variant: "destructive"
       });
     }
@@ -49,7 +51,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
         <CardTitle>
           <div className="flex items-center">
             <MessageSquare className="w-5 h-5 mr-2" />
-            Send Message to Administrator
+            {t('memberProfile.messages.title')}
           </div>
         </CardTitle>
       </CardHeader>
@@ -60,10 +62,10 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
             onChange={(e) => setComment(e.target.value)}
             className="w-full p-2 border rounded-md mb-4"
             rows={4}
-            placeholder="Type your message here..."
+            placeholder={t('memberProfile.messages.placeholder')}
           />
           <Button type="submit" className="px-4 py-2 bg-black text-white rounded hover:bg-blue-700">
-            Send Message
+            {t('memberProfile.messages.sendButton')}
           </Button>
         </form>
       </CardContent>

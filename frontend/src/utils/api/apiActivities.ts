@@ -181,3 +181,13 @@ export const joinActivity = async (activityId: number): Promise<ActivityParticip
   const response = await apiInstance.post<ActivityParticipation>(`/activities/${activityId}/join`);
   return response.data;
 };
+
+/**
+ * Dohvaća godišnju statistiku aktivnosti za određenog člana.
+ * @param memberId ID člana.
+ * @returns Promise koji razrješava u polje godišnjih statistika.
+ */
+export const getMemberAnnualStats = async (memberId: number) => {
+  const response = await apiInstance.get(`/members/${memberId}/annual-stats`);
+  return response.data;
+};

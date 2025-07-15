@@ -39,6 +39,7 @@
     "yes": "Yes",
     "no": "No",
     "ok": "OK",
+    "error": "Error",
     "toggleDebug": "Toggle debug mode"
   },
   "navigation": {
@@ -218,7 +219,24 @@
       },
       "addPeriod": "Add Period",
       "noMembershipHistory": "No membership history available",
-      "membershipFeeStatus": "Membership Fee Status"
+      "membershipFeeStatus": "Membership Fee Status",
+      "delete":"Delete"
+    },
+    "history": {
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "endReason": "End Reason",
+      "selectReason": "Select a reason",
+      "delete": "Delete",
+      "addNewPeriod": "Add New Period",
+      "addPeriod": "Add Period",
+      "noHistory": "No membership history available",
+      "reasons": {
+        "withdrawal": "Withdrawal",
+        "non_payment": "Non-payment of membership fee",
+        "expulsion": "Expulsion",
+        "death": "Death"
+      }
     },
     "membershipDetailsCard": {
       "title": "Membership Details",
@@ -237,6 +255,19 @@
       "status": "Status",
       "active": "Active",
       "passive": "Passive"
+    },
+    "memberUpdated": "Member data updated successfully",
+    "activityHistory": {
+      "title": "Activity History",
+      "totalActivities": "Total Activities",
+      "totalHours": "Total Hours"
+    },
+    "messages": {
+      "title": "Send Message to Administrator",
+      "placeholder": "Type your message here...",
+      "sendButton": "Send Message",
+      "sendSuccess": "Message sent successfully.",
+      "sendError": "Error sending message."
     }
   },
   "membershipType": {

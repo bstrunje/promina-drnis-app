@@ -39,6 +39,7 @@
     "yes": "Da",
     "no": "Ne",
     "ok": "U redu",
+    "error": "Greška",
     "toggleDebug": "Uključi/isključi debug mod"
   },
   "navigation": {
@@ -90,6 +91,18 @@
     "membershipHistoryUpdated": "Povijest članstva je uspješno ažurirana",
     "membershipHistoryUpdateError": "Ažuriranje povijesti članstva nije uspjelo",
     "memberUpdated": "Podaci člana uspješno ažurirani",
+    "activityHistory": {
+      "title": "Povijest aktivnosti",
+      "totalActivities": "Ukupno aktivnosti",
+      "totalHours": "Ukupno sati"
+    },
+    "messages": {
+      "title": "Pošalji poruku administratoru",
+      "placeholder": "Upišite vašu poruku ovdje...",
+      "sendButton": "Pošalji poruku",
+      "sendSuccess": "Poruka je uspješno poslana.",
+      "sendError": "Greška prilikom slanja poruke."
+    },
     "personalInfo": {
       "title": "Osobni podaci",
       "editTitle": "Uredi osobne podatke",
@@ -227,7 +240,24 @@
       },
       "addPeriod": "Dodaj period",
       "noMembershipHistory": "Nema dostupne povijesti članstva",
-      "membershipFeeStatus": "Status članarine"
+      "membershipFeeStatus": "Status članarine",
+      "delete": "Izbriši"
+    },
+    "history": {
+      "startDate": "Datum početka",
+      "endDate": "Datum završetka",
+      "endReason": "Razlog prestanka",
+      "selectReason": "Odaberite razlog",
+      "delete": "Izbriši",
+      "addNewPeriod": "Dodaj novi period",
+      "addPeriod": "Dodaj period",
+      "noHistory": "Nema dostupne povijesti članstva",
+      "reasons": {
+        "withdrawal": "Istupanje",
+        "non_payment": "Neplaćanje članarine",
+        "expulsion": "Isključenje",
+        "death": "Smrt"
+      }
     },
     "membershipDetailsCard": {
       "title": "Detalji članstva",
