@@ -40,4 +40,4 @@ EXPOSE 3001
 
 # Naredba za pokretanje: prvo migracije, zatim start aplikacije
 # Koristimo 'node_modules/.bin/prisma' za direktno pozivanje
-CMD [ "sh", "-c", "npx prisma migrate deploy && npm start" ]
+CMD [ "sh", "-c", "npx prisma migrate deploy && npm run prisma:seed && npm start" ]
