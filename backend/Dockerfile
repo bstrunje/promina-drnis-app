@@ -23,20 +23,17 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Kopiramo package.json i package-lock.json
+# Kopiramo package.json i package-lock.json (dobra praksa, može zatrebati za pokretanje skripti)
 COPY package*.json ./
 
-# Kopiramo Prisma shemu PRIJE instalacije, jer je potrebna za 'postinstall' skriptu
-COPY --from=builder /usr/src/app/prisma ./prisma
-
-# Instaliramo SAMO produkcijske ovisnosti
-RUN npm install
+# Kopiramo SVE instalirane ovisnosti iz 'builder' faze umjesto ponovne instalacije
+COPY --from=builder /usr/src/app/node_modules ./node_modules
 
 # Kopiramo izgrađenu aplikaciju iz 'builder' faze
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Kopiramo node_modules za Prisma client koji je potreban u runtime-u
-COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
+# Kopiramo Prisma shemu i migracije za 'prisma migrate deploy'
+COPY --from=builder /usr/src/app/prisma ./prisma
 
 # Izlažemo port
 EXPOSE 3001
