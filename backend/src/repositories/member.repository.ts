@@ -44,6 +44,8 @@ export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'st
     total_hours?: number;
     membership_type?: Member['membership_type'];
     nickname?: string;
+    skills?: Member['skills'];
+    other_skills?: Member['other_skills'];
 }
 
 export interface MemberStats {
@@ -87,21 +89,22 @@ const memberRepository = {
     async findById(id: number): Promise<Member | null> {
         const raw = await prisma.member.findFirst({
             where: { member_id: id },
-            include: { membership_details: true, periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } } }
+            include: {
+                membership_details: true,
+                periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } },
+                skills: { // Dodano dohvaćanje vještina
+                    include: {
+                        skill: true // Uključujući i detalje o samoj vještini
+                    }
+                }
+            }
         });
+
         if (!raw) return null;
-        
-        // Dohvati aktualnu vrijednost total_hours iz baze
-        // Ovo će uvijek biti ažurno jer updateMemberTotalHours ažurira ovo polje
-        const member = await prisma.member.findFirst({
-            where: { member_id: id },
-            select: { total_hours: true }
-        });
-        
-        // Ako postoji vrijednost total_hours u bazi, koristi nju, inače 0
+
         // Konverzija iz Decimal u number za izbjegavanje TypeScript greške
-        const totalMinutes = member?.total_hours ? Number(member.total_hours) : 0;
-        
+        const totalMinutes = raw.total_hours ? Number(raw.total_hours) : 0;
+
         return mapToMember(raw, totalMinutes);
     },
 

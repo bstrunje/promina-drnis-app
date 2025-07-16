@@ -27,6 +27,8 @@ services:
     ports:
       # Izlažemo backend na portu 3001
       - "3001:3001"
+    env_file:
+      - ./backend/.env
     environment:
       # Povezujemo backend s novom bazom podataka unutar Docker mreže
       # Host 'db' je naziv servisa baze definiran iznad

@@ -155,60 +155,96 @@ const memberService = {
     },
 
     async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member> {
+        const { skills, ...basicMemberData } = memberData;
+
         try {
-            let newFullName: string | undefined = undefined;
-            let hashedPassword: string | undefined = undefined;
+            const updatedMember = await prisma.$transaction(async (tx) => {
+                // 1. Ažuriranje osnovnih podataka o članu
+                const memberToUpdate: Partial<MemberUpdateData> = { ...basicMemberData };
 
-            if (memberData.total_hours !== undefined) {
-                const currentHours = await db.query(`
-                    SELECT COALESCE(SUM(
-                        CASE 
-                            WHEN ap.recognition_override IS NOT NULL THEN ap.manual_hours * (ap.recognition_override / 100)
-                            ELSE ap.manual_hours
-                        END
-                    ), 0) as total_hours
-                    FROM activity_participations ap
-                    WHERE ap.member_id = $1
-                `, [memberId]);
-                
-                if (memberData.total_hours < parseFloat(currentHours.rows[0].total_hours)) {
-                    throw new Error('Cannot set total hours less than verified activity hours');
-                }
-            }
+                if (basicMemberData.first_name || basicMemberData.last_name) {
+                    const currentMember = await tx.member.findUnique({ where: { member_id: memberId } });
+                    if (!currentMember) throw new Error("Member not found for update");
 
-            // Provjera mijenjaju li se ime ili prezime
-            if (memberData.first_name || memberData.last_name) {
-                const currentMember = await memberRepository.findById(memberId);
-                if (!currentMember) {
-                    throw new Error("Member not found for update");
+                    const firstName = basicMemberData.first_name ?? currentMember.first_name;
+                    const lastName = basicMemberData.last_name ?? currentMember.last_name;
+                    memberToUpdate.full_name = `${firstName} ${lastName}`;
+
+                                        const membershipDetails = await tx.membershipDetails.findUnique({ where: { member_id: memberId } });
+                    if (membershipDetails?.card_number) {
+                        const newPassword = `${memberToUpdate.full_name}-isk-${membershipDetails.card_number}`;
+                        memberToUpdate.password_hash = await bcrypt.hash(newPassword, 10);
+                    }
                 }
 
-                // Sastavljanje novog punog imena
-                const firstName = memberData.first_name ?? currentMember.first_name;
-                const lastName = memberData.last_name ?? currentMember.last_name;
-                
-                newFullName = `${firstName} ${lastName}`;
+                const updatedCoreMember = await tx.member.update({
+                    where: { member_id: memberId },
+                    data: {
+                        first_name: memberToUpdate.first_name,
+                        last_name: memberToUpdate.last_name,
+                        full_name: memberToUpdate.full_name,
+                        nickname: memberToUpdate.nickname,
+                        date_of_birth: memberToUpdate.date_of_birth,
+                        gender: memberToUpdate.gender,
+                        street_address: memberToUpdate.street_address,
+                        city: memberToUpdate.city,
+                        oib: memberToUpdate.oib,
+                        cell_phone: memberToUpdate.cell_phone,
+                        email: memberToUpdate.email,
+                        life_status: memberToUpdate.life_status,
+                        tshirt_size: memberToUpdate.tshirt_size,
+                        shell_jacket_size: memberToUpdate.shell_jacket_size,
+                        membership_type: memberToUpdate.membership_type ? mapMembershipTypeToEnum(memberToUpdate.membership_type) : undefined,
+                        other_skills: memberToUpdate.other_skills, // Dodano polje koje je nedostajalo
+                        password_hash: memberToUpdate.password_hash,
+                    },
+                });
 
-                // Ažuriranje lozinke ako član ima broj iskaznice
-                const membershipDetails = await membershipRepository.getMembershipDetails(memberId);
-                const cardNumber = membershipDetails?.card_number;
+                // 2. Ažuriranje vještina (skills)
+                if (skills) {
+                    // Prvo obriši sve postojeće vještine za ovog člana
+                    await tx.memberSkill.deleteMany({
+                        where: { member_id: memberId },
+                    });
 
-                if (cardNumber) {
-                    const newPassword = `${newFullName}-isk-${cardNumber}`;
-                    hashedPassword = await bcrypt.hash(newPassword, 10);
+                    // Zatim dodaj nove vještine
+                    if (skills.length > 0) {
+                        const memberSkillsData = skills.map(skill => ({
+                            member_id: memberId,
+                            skill_id: skill.skill_id,
+                            is_instructor: skill.is_instructor,
+                        }));
+
+                        await tx.memberSkill.createMany({
+                            data: memberSkillsData,
+                        });
+                    }
                 }
-            }
 
-            return await memberRepository.update(memberId, {
-                ...memberData,
-                full_name: newFullName,
-                password_hash: hashedPassword,
-                membership_type: memberData.membership_type !== undefined
-                ? mapMembershipTypeToEnum(memberData.membership_type)
-                : undefined
+                // 3. Vrati puni objekt člana nakon svih ažuriranja
+                const finalUpdatedMember = await tx.member.findUnique({
+                    where: { member_id: memberId },
+                    include: {
+                        membership_details: true,
+                        skills: {
+                            include: {
+                                skill: true,
+                            },
+                        },
+                    },
+                });
+
+                if (!finalUpdatedMember) {
+                    throw new Error("Failed to fetch updated member details after transaction.");
+                }
+
+                return finalUpdatedMember as unknown as Member;
             });
+
+            return updatedMember;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error updating member ${memberId}:`, errorMessage);
             throw new Error('Error updating member: ' + errorMessage);
         }
     },

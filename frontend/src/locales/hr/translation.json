@@ -287,5 +287,17 @@
     "member": "Član",
     "member_administrator": "Administrator",
     "member_superuser": "Nad administrator"
+  },
+  "skills": {
+    "title": "Vještine i osposobljenosti",
+    "description": "Odaberite vještine koje član posjeduje. Za vještine koje nisu na popisu, upišite ih u polje Ostalo."
+  },
+  "skillsSelector": {
+    "title": "Odabir vještina",
+    "instructor": "Instruktor",
+    "other": "Ostale vještine (ako nisu na popisu)",
+    "errors": {
+      "fetchError": "Greška pri dohvaćanju vještina."
+    }
   }
 }

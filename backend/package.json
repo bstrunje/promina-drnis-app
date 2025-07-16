@@ -10,6 +10,7 @@
     "build": "prisma generate && tsc",
     "render-build": "npm install typescript && prisma migrate deploy && tsc -p tsconfig.production.json",
     "postinstall": "prisma generate",
+    "prisma:seed": "rimraf dist/seed && tsc prisma/seed.ts --outDir dist/seed --module NodeNext --moduleResolution NodeNext --target ES2020 --esModuleInterop true --resolveJsonModule true && node dist/seed/seed.js",
     "setup-db": "node dist/setupDatabase.js",
     "test": "vitest run",
     "test:ui": "vitest",
@@ -21,7 +22,7 @@
     "restore": "node dist/scripts/restoreDatabase.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.11.1",
+    "@prisma/client": "^6.12.0",
     "@types/bcrypt": "^5.0.0",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.8",
@@ -55,26 +56,27 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tsconfig": "^7.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "ts-node": "^10.9.2",
+    "prisma": "^6.12.0"
   },
   "devDependencies": {
     "@eslint/js": "^8.56.0",
     "@faker-js/faker": "^9.7.0",
+    "@sinonjs/fake-timers": "^11.2.2",
     "@types/express": "^4.17.17",
+    "@types/sinonjs__fake-timers": "^8.1.5",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
-    "@types/sinonjs__fake-timers": "^8.1.5",
     "@vitest/ui": "^3.1.3",
     "eslint": "^9.27.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-node": "^11.1.0",
     "globals": "^16.1.0",
-    "prisma": "^6.11.1",
     "supertest": "^7.1.1",
     "typescript-eslint": "^8.32.1",
-    "vitest": "^3.1.3",
-    "@sinonjs/fake-timers": "^11.2.2"
+    "vitest": "^3.1.3"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"

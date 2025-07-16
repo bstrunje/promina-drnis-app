@@ -60,6 +60,12 @@ export function mapToMember(raw: any, total_hours: number = 0): Member {
         end_date: p.end_date ? formatDate(p.end_date, 'yyyy-MM-dd') : undefined,
         end_reason: p.end_reason as MembershipEndReason
       }))
-    }
+    },
+    skills: (raw.skills || []).map((ms: any) => ({
+      skill_id: ms.skill.id,
+      name: ms.skill.name,
+      is_instructor: ms.is_instructor
+    })),
+    other_skills: raw.other_skills ?? undefined
   };
 }

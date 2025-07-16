@@ -54,6 +54,8 @@ model Member {
   consumed_card_numbers    ConsumedCardNumber[]
   organized_activities     Activity[]                @relation("OrganizedActivities")
   participations           ActivityParticipation[]
+  skills                   MemberSkill[]
+  other_skills             String?                  @db.VarChar(500)
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -109,6 +111,29 @@ model ActivityParticipation {
 
   @@unique([activity_id, member_id]) 
   @@map("activity_participations")
+}
+
+model Skill {
+  id                     Int           @id @default(autoincrement())
+  name                   String        @unique @db.VarChar(255)
+  is_instructor_possible Boolean       @default(false)
+  created_at             DateTime      @default(now())
+  member_skills          MemberSkill[]
+
+  @@map("skills")
+}
+
+model MemberSkill {
+  member_id     Int
+  skill_id      Int
+  is_instructor Boolean   @default(false)
+  assigned_at   DateTime  @default(now())
+
+  member Member @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  skill  Skill  @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@id([member_id, skill_id])
+  @@map("member_skills")
 }
 
 model SystemSettings {

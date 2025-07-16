@@ -2,9 +2,10 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
-import { Clock, CreditCard } from 'lucide-react';
+import { Clock, CreditCard, Star } from 'lucide-react';
 import { useAuth } from "../src/context/AuthContext";
 import { formatMinutesToHoursAndMinutes } from "../src/utils/dateUtils";
+import SkillsSelector from './SkillsSelector';
 
 interface MembershipDetailsCardProps {
   member: Member;
@@ -98,6 +99,21 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
             <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.role')}</label>
             <p>{t(`roles.${member.role}`)}</p>
           </div>
+
+          {(member.skills && member.skills.length > 0) || (member.other_skills && member.other_skills.trim() !== '') ? (
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <Star className="w-5 h-5 mr-2" />
+                {t('skills.title', 'Vještine i osposobljenosti')}
+              </h3>
+              <SkillsSelector
+                value={member.skills ?? []}
+                otherSkills={member.other_skills ?? ''}
+                onChange={() => {}}
+                isEditing={false}
+              />
+            </div>
+          ) : null}
 
           {/* Activity Status section */}
           <div className="mt-6 pt-4 border-t">

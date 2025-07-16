@@ -1,15 +1,17 @@
 // frontend/src/features/auth/LoginPage.tsx
 // Uklonjen useCallback iz import-a
 import { FormEvent, useState, useEffect } from "react"; 
-import { Eye, EyeOff, LogIn, FileText, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, LogIn, FileText, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Member, MemberLoginData, MembershipTypeEnum, MemberRole } from "@shared/member"; // Sada koristi ažurirani tip
+import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import { formatInputDate } from "@/utils/dateUtils";
+import SkillsSelector from '@components/SkillsSelector';
+import { useTranslation } from 'react-i18next';
 
 interface SizeOptions {
   value: string;
@@ -38,6 +40,7 @@ const genderOptions = [
 ];
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -51,6 +54,7 @@ const LoginPage = () => {
   const [message, setMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loginPageMessage, setLoginPageMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
   
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
@@ -83,7 +87,9 @@ const LoginPage = () => {
     membership_details: {
       card_stamp_issued: false,
       card_number: ""
-    }
+    },
+    skills: [],
+    other_skills: ''
   });
 
   useEffect(() => {
@@ -204,6 +210,14 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkillsChange = (update: { skills: MemberSkill[]; other_skills: string }) => {
+    setRegisterData(prev => ({
+      ...prev,
+      skills: update.skills,
+      other_skills: update.other_skills,
+    }));
   };
 
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
@@ -650,7 +664,34 @@ const LoginPage = () => {
                 </select>
               </div>
 
-              <div className="flex space-x-4">
+                            {/* Skills Selector */}
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowSkills(!showSkills)}
+                  className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <span>{t('skills.title')}</span>
+                  {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+                {showSkills && (
+                  <div className="mt-2">
+                    <SkillsSelector
+                      value={registerData.skills ?? []}
+                      otherSkills={registerData.other_skills ?? ''}
+                      onChange={(skills, other_skills) => {
+                        handleSkillsChange({ skills, other_skills });
+                      }}
+                      isEditing={true}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('skills.description', 'Odaberite vještine koje član posjeduje.')}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-4 mt-4">
                 <button
                   type="button"
                   onClick={() => {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Member, MembershipTypeEnum } from '@shared/member';
-import { Save, X } from 'lucide-react';
+import SkillsSelector, { SelectedSkill } from '../../../components/SkillsSelector';
+import { Save, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Helper za backward kompatibilnost - premješten nakon importa
 /**
@@ -42,6 +43,8 @@ interface MemberFormData {
   total_hours: number;
   role: 'member' | 'member_administrator' | 'member_superuser';
   gender: 'male' | 'female';
+  skills: SelectedSkill[];
+  other_skills: string;
 }
 
 interface SizeOptions {
@@ -63,6 +66,7 @@ const sizeOptions: SizeOptions[] = [
 
 export default function MemberForm({ member, onSubmit, onCancel }: MemberFormProps) {
   const { t } = useTranslation();
+  const [showSkills, setShowSkills] = useState(false);
 
   const lifeStatusOptions = [
     { value: 'employed/unemployed', label: t('memberProfile.personalInfo.employed') },
@@ -92,7 +96,9 @@ membership_type: mapMembershipTypeToEnum(
     registration_completed: member?.registration_completed ?? false,
     role: member?.role ?? 'member',
     total_hours: member?.total_hours ?? 0,
-    gender: member?.gender ?? 'male'
+    gender: member?.gender ?? 'male',
+    skills: member?.skills ?? [],
+    other_skills: member?.other_skills ?? ''
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -143,7 +149,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {t('memberProfile.personalInfo.lastName')}
+              {t('memberProfile.personalInfo.PrezimelastName')}
             </label>
             <input
               type="text"
@@ -345,6 +351,29 @@ membership_type: mapMembershipTypeToEnum(
               <option value={MembershipTypeEnum.Honorary}>{t('membershipType.honorary')}</option>
             </select>
           </div>
+        </div>
+
+        {/* Sekcija za odabir vještina */}
+        <div className="col-span-1 md:col-span-2">
+            <button
+                type="button"
+                onClick={() => setShowSkills(!showSkills)}
+                className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+                <span>{t('skills.title')}</span>
+                {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {showSkills && (
+                <div className="mt-2">
+                    <SkillsSelector 
+                        value={formData.skills}
+                        otherSkills={formData.other_skills}
+                        onChange={(selected, other) => {
+                          setFormData(prev => ({ ...prev, skills: selected, other_skills: other }));
+                        }}
+                    />
+                </div>
+            )}
         </div>
 
         <div className="flex justify-end gap-4">

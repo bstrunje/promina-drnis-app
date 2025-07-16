@@ -32,7 +32,8 @@ import activityRoutes from './routes/activity.routes.js'; // KONAČNI ISPRAVAK
 import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
-import devRoutes from './routes/dev.routes.js';
+
+import skillRoutes from './routes/skillRoutes.js';
 
 // Import the directory preparation functions
 import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
@@ -269,11 +270,18 @@ app.use('/api/messages', (req, res, next) => {
 // API Routes - KLJUČNO: /api/messages MORA biti PRIJE /api/members
 app.use('/api/auth', authRoutes);
 app.use('/api/system-manager', systemManagerRoutes);
+app.use('/api/skills', skillRoutes);
 
-// Registriraj dev rute samo u razvojnom okruženju
-if (process.env.NODE_ENV && process.env.NODE_ENV.trim() === 'development') {
-  app.use('/api/dev', devRoutes);
-  console.log('🔧 Dev routes registered at /api/dev');
+// Učitaj dev rute samo u ne-produkcijskom okruženju
+if (process.env.NODE_ENV !== 'production') {
+  import('./routes/dev.routes.js')
+    .then(devRoutesModule => {
+      app.use('/dev', devRoutesModule.default);
+      console.log('Development routes loaded.');
+    })
+    .catch(err => {
+      console.error('Failed to load development routes:', err);
+    });
 }
 
 console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
@@ -290,6 +298,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/generic-messages', authMiddleware, genericMessagesRouter);
+app.use('/api/skills', skillRoutes);
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

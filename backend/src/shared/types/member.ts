@@ -46,6 +46,15 @@ export type LifeStatus = 'employed/unemployed' | 'child/pupil/student' | 'pensio
 export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
 
 /**
+ * Represents a skill a member has, including instructor status.
+ */
+export interface MemberSkill {
+  skill_id: number;
+  is_instructor: boolean;
+}
+
+
+/**
  * Main Member interface representing a society member
  */
 export interface Member {
@@ -96,6 +105,10 @@ export interface Member {
     // fee_payment_year?: number;
     // next_year_stamp_issued?: boolean;
     membership_history?: MembershipHistory;
+
+    // Member skills and qualifications
+    skills?: MemberSkill[];
+    other_skills?: string;
 }
 
 /**

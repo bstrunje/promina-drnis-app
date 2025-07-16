@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Edit, Save, X } from "lucide-react";
 import { Button } from "@components/ui/button";
 import { Alert, AlertDescription } from "@components/ui/alert";
-import { Member, MembershipTypeEnum } from "@shared/member";
+import { Member, MemberSkill, MembershipTypeEnum } from "@shared/member";
 import { MembershipPeriod } from "@shared/membership";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
@@ -50,6 +50,10 @@ const memberId = useMemo(() => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const handleSkillsChange = useCallback(({ skills, other_skills }: { skills: MemberSkill[], other_skills: string }) => {
+    setEditedMember(prev => prev ? { ...prev, skills, other_skills } : null);
+  }, []);
 
   // Check if user can edit - only admins and superusers can
   const canEdit = user?.role === "member_administrator" || user?.role === "member_superuser";
@@ -317,20 +321,34 @@ setEditedMember(memberData);
     }
   };
 
+
+
   const handleSave = async (): Promise<void> => {
     if (!editedMember) return;
     setIsSubmitting(true);
     try {
       // Priprema podataka za slanje - osiguravanje formatiranja datuma u ISO formatu
-      const formattedMember = { ...editedMember };
-      
-      // Ako je date_of_birth u formatu godine-mjesec-dan (input format), 
-      // dodaj 'T00:00:00Z' da bismo dobili ISO string
-      if (formattedMember.date_of_birth && !formattedMember.date_of_birth.includes('T')) {
-        formattedMember.date_of_birth = `${formattedMember.date_of_birth}T00:00:00Z`;
-      }
-      
-      const response = await api.put(`/members/${memberId}`, formattedMember);
+      // Kreiramo novi objekt koji sadrži samo polja koja se smiju ažurirati
+      const updateData = {
+        first_name: editedMember.first_name,
+        last_name: editedMember.last_name,
+        oib: editedMember.oib,
+        email: editedMember.email,
+        cell_phone: editedMember.cell_phone,
+        street_address: editedMember.street_address,
+        city: editedMember.city,
+        date_of_birth: editedMember.date_of_birth && !editedMember.date_of_birth.includes('T') 
+          ? `${editedMember.date_of_birth}T00:00:00Z` 
+          : editedMember.date_of_birth,
+        life_status: editedMember.life_status,
+        tshirt_size: editedMember.tshirt_size,
+        shell_jacket_size: editedMember.shell_jacket_size,
+        membership_type: editedMember.membership_type,
+        skills: editedMember.skills,
+        other_skills: editedMember.other_skills,
+      };
+
+      const response = await api.put(`/members/${memberId}`, updateData);
 
       if (response.data) {
         setMember(response.data as Member);
@@ -434,9 +452,10 @@ setEditedMember(memberData);
 
         <MemberBasicInfo
           member={member}
-          isEditing={isEditing && canEdit}
           editedMember={editedMember}
+          isEditing={isEditing}
           handleChange={handleChange}
+          handleSkillsChange={handleSkillsChange}
           validationErrors={validationErrors}
         />
 

@@ -261,23 +261,58 @@
       "title": "Activity History",
       "totalActivities": "Total Activities",
       "totalHours": "Total Hours"
-    },
-    "messages": {
-      "title": "Send Message to Administrator",
-      "placeholder": "Type your message here...",
-      "sendButton": "Send Message",
-      "sendSuccess": "Message sent successfully.",
-      "sendError": "Error sending message."
     }
+  },
+  "membershipDetailsCard": {
+    "title": "Membership Details",
+    "cardNumber": "Card Number:",
+    "hidden": "*** Hidden ***",
+    "visibleToAdmins": "(Visible only to administrators)",
+    "noCardAssigned": "No card number assigned",
+    "stampStatus": "Stamp Status",
+    "stampIssued": "Stamp issued",
+    "stampNotIssued": "Stamp not issued",
+    "membershipType": "Membership Type",
+    "role": "Role",
+    "activityStatusTitle": "Activity Status",
+    "totalHours": "Total Hours",
+    "hoursNeeded": "Need {{count}} more hours to become active",
+    "status": "Status",
+    "active": "Active",
+    "passive": "Passive"
+  },
+  "memberUpdated": "Member data updated successfully",
+  "activityHistory": {
+    "title": "Activity History",
+    "totalActivities": "Total Activities",
+    "totalHours": "Total Hours"
+  },
+  "messages": {
+    "title": "Send Message to Administrator",
+    "placeholder": "Type your message here...",
+    "sendButton": "Send Message",
+    "sendSuccess": "Message sent successfully.",
+    "sendError": "Error sending message."
   },
   "membershipType": {
     "regular": "Regular member",
     "honorary": "Honorary member",
     "supporting": "Supporting member"
-  },
-  "roles": {
+  },  "roles": {
     "member": "Member",
     "member_administrator": "Administrator",
     "member_superuser": "Super Administrator"
+  },
+  "skills": {
+    "title": "Skills and Qualifications",
+    "description": "Select the skills the member possesses. For skills not on the list, enter them in the Other field."
+  },
+  "skillsSelector": {
+    "title": "Select Skills",
+    "instructor": "Instructor",
+    "other": "Other skills (if not on the list)",
+    "errors": {
+      "fetchError": "Error fetching skills."
+    }
   }
 }

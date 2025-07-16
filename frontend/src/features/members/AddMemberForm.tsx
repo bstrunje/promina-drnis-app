@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Member, MembershipTypeEnum } from '@shared/member';
+import { Member, MembershipTypeEnum, MemberSkill } from '@shared/member';
 import { formatInputDate } from '../../utils/dateUtils';
+import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
+import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AddMemberFormProps {
   onClose: () => void;
@@ -34,6 +37,7 @@ const genderOptions = [
 ];
 
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
+  const { t } = useTranslation();
   const [member, setMember] = useState<Omit<Member, 'member_id'>>({
     first_name: '',
     last_name: '',
@@ -59,8 +63,12 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
       membership_status: undefined
     },
     registration_completed: false,
-    total_hours: 0
+    total_hours: 0,
+    skills: [],
+    other_skills: ''
   });
+
+  const [showSkills, setShowSkills] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -77,6 +85,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     } else {
       setMember(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleSkillsChange = (update: { skills: MemberSkill[]; other_skills: string }) => {
+    setMember(prev => ({
+      ...prev,
+      skills: update.skills,
+      other_skills: update.other_skills,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -215,6 +231,30 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               </option>
             ))}
           </select>
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowSkills(!showSkills)}
+              className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <span>{t('skills.title')}</span>
+              {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {showSkills && (
+              <div className="mt-2">
+                <SkillsSelector
+                  value={member.skills ?? []}
+                  otherSkills={member.other_skills ?? ''}
+                  onChange={(skills, other_skills) => {
+                    handleSkillsChange({ skills, other_skills });
+                  }}
+                  isEditing={true}
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('skills.description')}</p>
+              </div>
+            )}
+          </div>
+
           <div className="mt-4">
             <button 
               type="submit" 

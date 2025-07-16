@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
-import { User, ChevronDown, ChevronRight } from "lucide-react";
-import { Member } from "@shared/member";
+import { User, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
+import { Member, MemberSkill } from "@shared/member";
+import SkillsSelector from './SkillsSelector';
 
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
 import CustomDateInput from '@components/CustomDateInput';
 
+
 interface MemberBasicInfoProps {
   member: Member;
   isEditing: boolean;
   editedMember: Member | null | undefined;
-  handleChange?: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleSkillsChange?: (update: { skills: MemberSkill[]; other_skills: string }) => void;
   validationErrors?: Record<string, string>;
 }
 
@@ -23,11 +24,13 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   isEditing,
   editedMember,
   handleChange,
+  handleSkillsChange,
   validationErrors,
 }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
 
   // Determine if the user can view details
   // Admins, superusers, and the member viewing their own profile should always see details
@@ -273,7 +276,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              Life Status
+            {t('memberProfile.personalInfo.lifeStatus')}
             </label>
             <select
               name="life_status"
@@ -289,6 +292,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <p className="text-sm text-red-500">{validationErrors.life_status}</p>
             )}
           </div>
+
+         
 
           {/* Add membership type dropdown */}
           <div>
@@ -347,6 +352,33 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             </select>
             {validationErrors?.shell_jacket_size && (
               <p className="text-sm text-red-500">{validationErrors.shell_jacket_size}</p>
+            )}
+          </div>
+
+           {/* Skills Selector */}
+           <div>
+            <button
+              type="button"
+              onClick={() => setShowSkills(!showSkills)}
+              className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <span>{t('skills.title')}</span>
+              {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {showSkills && (
+              <div className="mt-2">
+                {handleSkillsChange && (
+                  <SkillsSelector
+                    value={editedMember?.skills ?? []}
+                    otherSkills={editedMember?.other_skills ?? ''}
+                    onChange={(skills, other_skills) => handleSkillsChange?.({ skills, other_skills })}
+                    isEditing={isEditing}
+                  />
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('skills.description')}
+                </p>
+              </div>
             )}
           </div>
         </div>
