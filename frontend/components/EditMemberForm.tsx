@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Member, MembershipTypeEnum } from '@shared/member';
 
 
@@ -23,16 +24,7 @@ const sizeOptions: SizeOptions[] = [
   { value: 'XXXL', label: 'XXXL' }
 ];
 
-const lifeStatusOptions = [
-  { value: 'employed/unemployed', label: 'Employed/Unemployed' },
-  { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
-  { value: 'pensioner', label: 'Pensioner' }
-];
 
-const genderOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' }
-];
 
 type EditMemberLocal = Omit<Member, 'membership_type'> & { membership_type: 'regular' | 'honorary' | 'supporting' };
 
@@ -41,6 +33,18 @@ function parseMembershipType(value: unknown): 'regular' | 'honorary' | 'supporti
 }
 
 const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit }) => {
+  const { t } = useTranslation();
+
+  const lifeStatusOptions = [
+    { value: 'employed/unemployed', label: t('memberProfile.personalInfo.employed') },
+    { value: 'child/pupil/student', label: t('memberProfile.personalInfo.child') },
+    { value: 'pensioner', label: t('memberProfile.personalInfo.pensioner') }
+  ];
+
+  const genderOptions = [
+    { value: 'male', label: t('memberProfile.personalInfo.male') },
+    { value: 'female', label: t('memberProfile.personalInfo.female') }
+  ];
   const [editedMember, setEditedMember] = useState<EditMemberLocal>(() => ({
     ...member,
     tshirt_size: member.tshirt_size ?? 'XS',
@@ -93,14 +97,14 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Edit Member</h3>
+        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('editMemberForm.title')}</h3>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
             name="first_name"
             value={editedMember.first_name}
             onChange={handleChange}
-            placeholder="First Name"
+            placeholder={t('editMemberForm.placeholders.firstName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -109,7 +113,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="last_name"
             value={editedMember.last_name}
             onChange={handleChange}
-            placeholder="Last Name"
+            placeholder={t('editMemberForm.placeholders.lastName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -140,7 +144,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="street_address"
             value={editedMember.street_address}
             onChange={handleChange}
-            placeholder="Street Address"
+            placeholder={t('editMemberForm.placeholders.streetAddress')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -149,7 +153,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="city"
             value={editedMember.city}
             onChange={handleChange}
-            placeholder="City"
+            placeholder={t('editMemberForm.placeholders.city')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -158,9 +162,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="oib"
             value={editedMember.oib}
             onChange={handleChange}
-            placeholder="OIB"
+            placeholder={t('editMemberForm.placeholders.oib')}
             pattern="[0-9]{11}"
-            title="OIB must be exactly 11 digits"
+            title={t('editMemberForm.oibTitle')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -169,7 +173,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="cell_phone"
             value={editedMember.cell_phone}
             onChange={handleChange}
-            placeholder="Cell Phone"
+            placeholder={t('editMemberForm.placeholders.cellPhone')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -178,7 +182,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             name="email"
             value={editedMember.email}
             onChange={handleChange}
-            placeholder="Email"
+            placeholder={t('editMemberForm.placeholders.email')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -204,9 +208,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
             className="mt-2 p-2 w-full border rounded"
             required
           >
-            <option value="regular">Regular</option>
-            <option value="supporting">Supporting</option>
-            <option value="honorary">Honorary</option>
+            <option value="regular">{t('membershipType.regular')}</option>
+            <option value="supporting">{t('membershipType.supporting')}</option>
+            <option value="honorary">{t('membershipType.honorary')}</option>
           </select>
           
           <select
@@ -242,14 +246,14 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
               type="submit" 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Update Member
+              {t('editMemberForm.buttons.update')}
             </button>
             <button 
               type="button" 
               onClick={onClose} 
               className="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
             >
-              Cancel
+              {t('editMemberForm.buttons.cancel')}
             </button>
           </div>
         </form>

@@ -532,7 +532,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="paymentDate" className="block text-sm font-medium text-gray-700">
-                        Payment Date
+                        {t('memberProfile.feeSection.paymentDate')}
                       </label>
                       <div className="mt-1 relative">
                         <Input

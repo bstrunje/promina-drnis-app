@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
 import { Clock, CreditCard } from 'lucide-react';
@@ -12,8 +13,9 @@ interface MembershipDetailsCardProps {
 const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   member,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  
+
   const getStatusColor = (status: Member["life_status"]) => {
     switch (status) {
       case "employed/unemployed":
@@ -34,10 +36,8 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   const canViewCardNumber = user?.role === "member_administrator" || user?.role === "member_superuser";
 
   // Activity status calculation (moved from MemberActivityStatus)
-  const getActivityStatus = (totalMinutes: number) => {
-    // Pretvaramo minute u sate za usporedbu
-    const hoursValue = totalMinutes / 60;
-    return hoursValue >= 20 ? "active" : "passive";
+  const getActivityStatus = (totalHours: number) => {
+    return totalHours >= 20 ? "active" : "passive";
   };
 
   return (
@@ -46,14 +46,14 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
         <CardTitle>
           <div className="flex items-center">
             <CreditCard className="w-5 h-5 mr-2" />
-            Membership Details
+            {t('memberProfile.membershipDetails.title')}
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-gray-500">Card Number: </label>
+            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.cardNumber')}</label>
             {cardNumber ? (
               canViewCardNumber ? (
                 <p
@@ -66,63 +66,64 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
               ) : (
                 <p className="text-gray-500">
                   <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
-                    *** Skriveno ***
+                    {t('memberProfile.membershipDetails.hidden')}
                   </span>
                   <span className="text-xs ml-2 text-gray-400">
-                    (Vidljivo samo administratorima)
+                    {t('memberProfile.membershipDetails.visibleToAdmins')}
                   </span>
                 </p>
               )
             ) : (
-              <p className="text-gray-400 ml-2">No card number assigned</p>
+              <p className="text-gray-400 ml-2">{t('memberProfile.membershipDetails.noCardNumber')}</p>
             )}
           </div>
           <div>
-            <label className="text-sm text-gray-500">Status markice</label>
+            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.stampStatus')}</label>
             <div className="flex items-center mt-1">
               <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${member.membership_details?.card_stamp_issued ? 'bg-black text-white' : 'border border-gray-300'}`}>
                 {member.membership_details?.card_stamp_issued && '✓'}
               </div>
               <span className="text-sm">
-                {member.membership_details?.card_stamp_issued ? 'Markica izdana' : 'Markica nije izdana'}
+                {member.membership_details?.card_stamp_issued
+                  ? t('memberProfile.membershipDetails.stampIssued')
+                  : t('memberProfile.membershipDetails.stampNotIssued')}
               </span>
             </div>
           </div>
           <div>
-            <label className="text-sm text-gray-500">Membership Type</label>
-            <p>{member.membership_type}</p>
+            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.membershipType')}</label>
+            <p>{t(`membershipType.${member.membership_type}`)}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-500">Role</label>
-            <p>{member.role}</p>
+            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.role')}</label>
+            <p>{t(`roles.${member.role}`)}</p>
           </div>
 
-          {/* Activity Status section (moved from MemberActivityStatus component) */}
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5" />
-              Activity Status
+          {/* Activity Status section */}
+          <div className="mt-6 pt-4 border-t">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              {t('memberProfile.activityStatus.title')}
             </h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-gray-500">Total Hours</label>
-                <p className="text-2xl font-bold">
-                  {formatMinutesToHoursAndMinutes(member?.total_hours ?? 0)}
+                <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.totalHours')}</label>
+                <p className="font-bold text-lg">{formatMinutesToHoursAndMinutes(member.total_hours ?? 0)}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.status')}</label>
+                <p className={`font-bold text-lg ${getActivityStatus(member.total_hours ?? 0) === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                  {getActivityStatus(member.total_hours ?? 0) === 'active'
+                    ? t('memberProfile.activityStatus.active')
+                    : t('memberProfile.activityStatus.passive')}
                 </p>
               </div>
-              {getActivityStatus(Number(member?.total_hours ?? 0)) === "passive" && (
-                <div className="text-yellow-600">
-                  <p>
-                    Need {Math.ceil(20 - (Number(member?.total_hours ?? 0) / 60))} more
-                    hours to become active
-                  </p>
-                </div>
-              )}
-              <div>
-                <label className="text-sm text-gray-500">Status</label>
-                <p>{getActivityStatus(Number(member?.total_hours ?? 0))}</p>
-              </div>
             </div>
+            {getActivityStatus(member.total_hours ?? 0) === 'passive' && (
+              <p className="text-xs text-gray-500 mt-2">
+                {t('memberProfile.activityStatus.hoursNeeded', { count: 20 - Math.floor(member.total_hours ?? 0) })}
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

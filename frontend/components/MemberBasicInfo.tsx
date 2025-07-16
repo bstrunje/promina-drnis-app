@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User, ChevronDown, ChevronRight } from "lucide-react";
 import { Member } from "@shared/member";
@@ -25,6 +26,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   validationErrors,
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
 
   // Determine if the user can view details
@@ -50,7 +52,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <User className="h-5 w-5 mr-2" />
-              Personal Information
+              {t('memberProfile.personalInfo.title')}
             </div>
             {canViewDetails && (
               showDetails ? 
@@ -63,55 +65,55 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           {canViewDetails && showDetails ? (
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">Full Name</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.fullName')}</label>
                 <p>
                   {member.first_name} {member.last_name}{member.nickname ? ` - ${member.nickname}` : ''}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Date of Birth</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.dateOfBirth')}</label>
                 <p>
                   {formatDate(member?.date_of_birth)}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Gender</label>
-                <p className="capitalize">{member?.gender}</p>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.gender')}</label>
+                <p className="capitalize">{member?.gender ? t(`memberProfile.personalInfo.${member.gender}`) : ''}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">OIB</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.oib')}</label>
                 <p>{member?.oib}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Email</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.email')}</label>
                 <p>{member.email}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Phone</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.phone')}</label>
                 <p>{member.cell_phone}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Address</label>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.address')}</label>
                 <p>{member.street_address}</p>
                 <p>{member.city}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Life Status</label>
-                <p>{member.life_status}</p>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.lifeStatus')}</label>
+                <p>{t(`memberProfile.personalInfo.${member.life_status?.split('/')[0]}`)}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">T-Shirt Size</label>
-                <p>{member?.tshirt_size ?? "Not set"}</p>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.tShirtSize')}</label>
+                <p>{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Shell Jacket Size</label>
-                <p>{member?.shell_jacket_size ?? "Not set"}</p>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.shellJacketSize')}</label>
+                <p>{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</p>
               </div>
             </div>
           ) : canViewDetails ? (
-            <p className="text-sm text-gray-500 italic">Click the header to view personal information</p>
+            <p className="text-sm text-gray-500 italic">{t('memberProfile.personalInfo.viewPrompt')}</p>
           ) : (
-            <p className="text-sm text-gray-500 italic">Personal information is private</p>
+            <p className="text-sm text-gray-500 italic">{t('memberProfile.personalInfo.privatePrompt')}</p>
           )}
         </CardContent>
       </Card>
@@ -123,13 +125,13 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
       <CardHeader>
         <CardTitle>
           <User className="h-5 w-5" />
-          Edit Personal Information
+          {t('memberProfile.personalInfo.editTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">First Name</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.firstName')}</label>
             <input
               type="text"
               name="first_name"
@@ -142,7 +144,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Last Name</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.lastName')}</label>
             <input
               type="text"
               name="last_name"
@@ -155,22 +157,22 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Nadimak (opcionalno)</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.nickname')}</label>
             <input
               type="text"
               name="nickname"
               value={editedMember?.nickname ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
-              placeholder="Unesite nadimak člana"
+              placeholder={t('memberProfile.personalInfo.nicknamePlaceholder')}
             />
             <p className="text-xs text-gray-500 mt-1">
-              
+              {t('memberProfile.personalInfo.nicknameHelpText')}
             </p>
           </div>
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium mb-1">
-              Date of Birth
+              {t('memberProfile.personalInfo.dateOfBirth')}
             </label>
             <input
               type="date"
@@ -186,29 +188,29 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Gender</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.gender')}</label>
             <select
               name="gender"
               value={editedMember?.gender ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="male">{t('memberProfile.personalInfo.male')}</option>
+              <option value="female">{t('memberProfile.personalInfo.female')}</option>
             </select>
             {validationErrors?.gender && (
               <p className="text-sm text-red-500">{validationErrors.gender}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">OIB</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.oib')}</label>
             <input
               type="text"
               name="oib"
               value={editedMember?.oib ?? ""}
               onChange={handleChange}
               pattern="[0-9]{11}"
-              title="OIB must be exactly 11 digits"
+              title={t('editMemberForm.oibTitle')}
               className="w-full p-2 border rounded"
             />
             {validationErrors?.oib && (
@@ -216,7 +218,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.email')}</label>
             <input
               type="email"
               name="email"
@@ -229,7 +231,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Phone</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.phone')}</label>
             <input
               type="tel"
               name="cell_phone"
@@ -243,7 +245,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              Street Address
+              {t('memberProfile.personalInfo.address')}
             </label>
             <input
               type="text"
@@ -257,7 +259,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">City</label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.city')}</label>
             <input
               type="text"
               name="city"
@@ -279,9 +281,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="employed/unemployed">Employed/Unemployed</option>
-              <option value="child/pupil/student">Child/Pupil/Student</option>
-              <option value="pensioner">Pensioner</option>
+              <option value="employed/unemployed">{t('memberProfile.personalInfo.employed')}</option>
+              <option value="child/pupil/student">{t('memberProfile.personalInfo.child')}</option>
+              <option value="pensioner">{t('memberProfile.personalInfo.pensioner')}</option>
             </select>
             {validationErrors?.life_status && (
               <p className="text-sm text-red-500">{validationErrors.life_status}</p>
@@ -290,18 +292,16 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
 
           {/* Add membership type dropdown */}
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Membership Type
-            </label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.membershipType')}</label>
             <select
               name="membership_type"
               value={editedMember?.membership_type ?? "regular"}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="regular">Regular Member</option>
-              <option value="supporting">Supporting Member</option>
-              <option value="honorary">Honorary Member</option>
+              <option value="regular">{t('membershipType.regular')}</option>
+              <option value="supporting">{t('membershipType.supporting')}</option>
+              <option value="honorary">{t('membershipType.honorary')}</option>
             </select>
             {validationErrors?.membership_type && (
               <p className="text-sm text-red-500">{validationErrors.membership_type}</p>
@@ -309,9 +309,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
-              T-Shirt Size
-            </label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.tShirtSize')}</label>
             <select
               name="tshirt_size"
               value={editedMember?.tshirt_size ?? ""}
@@ -332,9 +330,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Shell Jacket Size
-            </label>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.shellJacketSize')}</label>
             <select
               name="shell_jacket_size"
               value={editedMember?.shell_jacket_size ?? ""}

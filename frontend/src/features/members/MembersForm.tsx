@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Member, MembershipTypeEnum } from '@shared/member';
 import { Save, X } from 'lucide-react';
 
@@ -58,13 +59,16 @@ const sizeOptions: SizeOptions[] = [
   { value: 'XXXL', label: 'XXXL' }
 ];
 
-const lifeStatusOptions = [
-  { value: 'employed/unemployed', label: 'Employed/Unemployed' },
-  { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
-  { value: 'pensioner', label: 'Pensioner' }
-];
+
 
 export default function MemberForm({ member, onSubmit, onCancel }: MemberFormProps) {
+  const { t } = useTranslation();
+
+  const lifeStatusOptions = [
+    { value: 'employed/unemployed', label: t('memberProfile.personalInfo.employed') },
+    { value: 'child/pupil/student', label: t('memberProfile.personalInfo.child') },
+    { value: 'pensioner', label: t('memberProfile.personalInfo.pensioner') }
+  ];
   const [formData, setFormData] = useState<MemberFormData>({
     member_id: member?.member_id ?? 0,
     first_name: member?.first_name ?? '',
@@ -109,7 +113,7 @@ membership_type: mapMembershipTypeToEnum(
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium mb-1">Registration Status</label>
+            <label className="block text-sm font-medium mb-1">{t('membersForm.registrationStatus')}</label>
             <select
               name="registration_completed"
               value={formData.registration_completed.toString()}
@@ -119,14 +123,14 @@ membership_type: mapMembershipTypeToEnum(
               }))}
               className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
-              <option value="false">Pending</option>
-              <option value="true">Completed</option>
+              <option value="false">{t('membersForm.pending')}</option>
+              <option value="true">{t('membersForm.completed')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Name
+              {t('memberProfile.personalInfo.firstName')}
             </label>
             <input
               type="text"
@@ -139,7 +143,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Last Name
+              {t('memberProfile.personalInfo.lastName')}
             </label>
             <input
               type="text"
@@ -152,7 +156,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Date of Birth
+              {t('memberProfile.personalInfo.dateOfBirth')}
             </label>
             <input
               type="date"
@@ -165,7 +169,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Street Address
+              {t('memberProfile.personalInfo.address')}
             </label>
             <input
               type="text"
@@ -178,7 +182,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              City
+              {t('memberProfile.personalInfo.city')}
             </label>
             <input
               type="text"
@@ -191,13 +195,13 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              OIB
+              {t('memberProfile.personalInfo.oib')}
             </label>
             <input
               type="text"
               required
               pattern="[0-9]{11}"
-              title="OIB must be exactly 11 digits"
+              title={t('editMemberForm.oibTitle')}
               className="mt-2 p-2 w-full border rounded"
               value={formData.oib}
               onChange={(e) => setFormData({...formData, oib: e.target.value})}
@@ -206,7 +210,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Cell Phone
+              {t('memberProfile.personalInfo.phone')}
             </label>
             <input
               type="tel"
@@ -219,7 +223,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Email
+              {t('memberProfile.personalInfo.email')}
             </label>
             <input
               type="email"
@@ -232,7 +236,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Gender
+              {t('memberProfile.personalInfo.gender')}
             </label>
             <select
               required
@@ -240,14 +244,14 @@ membership_type: mapMembershipTypeToEnum(
               onChange={(e) => setFormData({...formData, gender: e.target.value as 'male' | 'female'})}
               className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="male">{t('memberProfile.personalInfo.male')}</option>
+              <option value="female">{t('memberProfile.personalInfo.female')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Life Status
+              {t('memberProfile.personalInfo.lifeStatus')}
             </label>
             <select
               required
@@ -265,7 +269,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              T-shirt Size
+              {t('memberProfile.personalInfo.tShirtSize')}
             </label>
             <select
               required
@@ -283,7 +287,7 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Shell Jacket Size
+              {t('memberProfile.personalInfo.shellJacketSize')}
             </label>
             <select
               required
@@ -301,48 +305,46 @@ membership_type: mapMembershipTypeToEnum(
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Role
+              {t('memberProfile.membershipDetails.role')}
             </label>
             <select
               name="role"
               value={formData.role}
               onChange={(e) => {
-                // TypeScript zahtijeva da role bude točno 'member' | 'member_administrator' | 'member_superuser', nikad undefined
                 const value = e.target.value;
                 setFormData(prev => ({
                   ...prev,
                   role: value === 'member' || value === 'member_administrator' || value === 'member_superuser'
                     ? value
-                    : 'member', // fallback na 'member' ako iz nekog razloga value nije očekivan
+                    : 'member',
                 }));
               }}
               className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             >
-              <option value="member">Member</option>
-              <option value="member_administrator">Admin</option>
-              <option value="member_superuser">Superuser</option>
+              <option value="member">{t('roles.member')}</option>
+              <option value="member_administrator">{t('roles.member_administrator')}</option>
+              <option value="member_superuser">{t('roles.member_superuser')}</option>
             </select>
           </div>
 
-        </div> 
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Membership Type
-          </label>
-          <select
-            name="membership_type"
-            value={formData.membership_type}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              membership_type: mapMembershipTypeToEnum(e.target.value)
-            }))}
-            className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
-          >
-            <option value={MembershipTypeEnum.Regular}>Regular Member</option>
-            <option value={MembershipTypeEnum.Supporting}>Supporting Member</option>
-            <option value={MembershipTypeEnum.Honorary}>Honorary Member</option>
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {t('memberProfile.membershipDetails.membershipType')}
+            </label>
+            <select
+              name="membership_type"
+              value={formData.membership_type}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                membership_type: mapMembershipTypeToEnum(e.target.value)
+              }))}
+              className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+            >
+              <option value={MembershipTypeEnum.Regular}>{t('membershipType.regular')}</option>
+              <option value={MembershipTypeEnum.Supporting}>{t('membershipType.supporting')}</option>
+              <option value={MembershipTypeEnum.Honorary}>{t('membershipType.honorary')}</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex justify-end gap-4">
@@ -351,19 +353,18 @@ membership_type: mapMembershipTypeToEnum(
             onClick={onCancel}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
-            <X className="w-4 h-4" />
-            Cancel
+            <X className="mr-2 h-4 w-4" />
+            {t('editMemberForm.buttons.cancel')}
           </button>
           <button
             type="submit"
             className="flex items-center gap-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
-            <Save className="w-4 h-4" />
-            Save
+            <Save className="mr-2 h-4 w-4" />
+            {t('editMemberForm.buttons.save')}
           </button>
         </div>
-      </form>
-    </div>
+  </form>
+</div>
   );
-
 }
