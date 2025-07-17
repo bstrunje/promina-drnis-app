@@ -343,7 +343,9 @@ const systemManagerController = {
                     req.user.id, // performed_by
                     `Kreiran novi system manager: ${username}`, // action_details
                     req, // req objekt
-                    'success' // status
+                    'success', // status
+                    undefined,
+                    req.user.performer_type
                 );
             }
 

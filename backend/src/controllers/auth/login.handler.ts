@@ -37,7 +37,15 @@ export async function loginHandler(
 
     const member = await prisma.member.findFirst({
       where: { email },
-      include: { permissions: true },
+      include: {
+        permissions: true,
+        periods: {
+          orderBy: {
+            start_date: 'desc'
+          },
+          take: 1
+        }
+      },
     });
 
     if (!member) {
@@ -47,6 +55,39 @@ export async function loginHandler(
     }
 
     console.log(`Member found: ${member.member_id}, status: ${member.status}, role: ${member.role}`);
+
+    // Provjera statusa članstva i plaćene članarine
+    const isAdmin = member.role === 'member_administrator' || member.role === 'member_superuser';
+    const currentYear = new Date().getFullYear();
+    const lastPeriod = member.periods[0];
+
+    let isMembershipValid = false;
+    if (lastPeriod) {
+      if (lastPeriod.end_date && new Date(lastPeriod.end_date) < new Date()) {
+        // Članstvo je eksplicitno završilo u prošlosti
+        isMembershipValid = false;
+      } else {
+        // Članstvo nema krajnji datum, provjeri godinu početka
+        const membershipYear = new Date(lastPeriod.start_date).getFullYear();
+        if (membershipYear >= currentYear) {
+          isMembershipValid = true;
+        }
+      }
+    }
+
+    if (!isAdmin && !isMembershipValid) {
+      console.log(`Login denied for member: ${member.member_id}. Membership for ${currentYear} is not valid.`);
+      await auditService.logAction(
+        'LOGIN_FAILED_MEMBERSHIP_EXPIRED',
+        member.member_id,
+        `Pokušaj prijave s nevažećom članarinom za ${currentYear}.`,
+        req,
+        'failure',
+        member.member_id,
+        PerformerType.MEMBER
+      );
+      return res.status(403).json({ message: `Prijava nije moguća. Članarina za ${currentYear} godinu nije važeća.` });
+    }
 
     if (member.status !== 'registered' && member.status !== 'active') {
       console.log(`Login attempt for inactive member: ${member.member_id}, status: ${member.status}`);
@@ -251,7 +292,8 @@ export async function loginHandler(
         `Serverska greška prilikom pokušaja prijave za: ${emailAttempt}. Greška: ${String(error)}`,
         req, 
         'error',
-        undefined 
+        undefined,
+        PerformerType.MEMBER
     );
     res.status(500).json({ message: "Internal server error" });
   }

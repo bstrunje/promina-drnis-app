@@ -40,11 +40,7 @@ const auditRepository = {
         performer_type?: PerformerType | null
     ): Promise<void> {
         try {
-            // Osiguravamo da performer_type nije null ako je performed_by = 1 (System Manager ID)
-            let finalPerformerType = performer_type;
-            if (performed_by === 1 && !performer_type) {
-                finalPerformerType = PerformerType.SYSTEM_MANAGER;
-            }
+            const finalPerformerType = performer_type;
 
             await prisma.auditLog.create({
                 data: {
@@ -68,7 +64,7 @@ const auditRepository = {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
                    CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN COALESCE(sm.display_name, 'System Manager')
+                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN 'System Manager'
                      WHEN al.performer_type = 'MEMBER' THEN m1.full_name
                      ELSE 'Nepoznati izvršitelj'
                    END as performer_name,
@@ -87,7 +83,7 @@ const auditRepository = {
         const results = await prisma.$queryRaw<RawAuditLogResult[]>`
             SELECT al.*,
                    CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN COALESCE(sm.display_name, 'System Manager')
+                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN 'System Manager'
                      WHEN al.performer_type = 'MEMBER' THEN m1.full_name
                      ELSE 'Nepoznati izvršitelj'
                    END as performer_name,

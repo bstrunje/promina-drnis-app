@@ -29,6 +29,7 @@ export async function createInitialSystemManagerIfNeeded(tx: Prisma.TransactionC
 
   await tx.systemManager.create({
     data: {
+      id: 0,
       username,
       email,
       display_name,

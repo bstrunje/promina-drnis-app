@@ -13,6 +13,7 @@ import { Request } from "express";
 import prisma from "../utils/prisma.js";
 import { parseDate, getCurrentDate, formatDate, getCurrentYear } from '../utils/dateUtils.js';
 import { updateAnnualStatistics } from './statistics.service.js';
+import { PerformerType } from "@prisma/client";
 
 // Definicija tipa za tijelo zahtjeva za ažuriranje članstva
 interface MembershipUpdatePayload {
@@ -26,8 +27,9 @@ const membershipService = {
   async processFeePayment(
     memberId: number,
     paymentDate: Date,
-    userId?: number,
-    isRenewalPayment?: boolean
+    performerId?: number,
+    isRenewalPayment?: boolean,
+    performerType?: PerformerType
   ): Promise<Member | null> {
     try {
       // Get system settings
@@ -113,14 +115,15 @@ const membershipService = {
         }
       });
 
-      if (userId) {
+      if (performerId) {
         await auditService.logAction(
           "MEMBERSHIP_FEE_PAYMENT",
-          userId,
+          performerId,
           `Membership fee paid for ${paymentYear}`,
-          undefined, // req is now optional
+          undefined,
           "success",
-          memberId
+          memberId,
+          performerType
         );
       }
 
@@ -168,7 +171,7 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, userId?: number): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, performerId?: number): Promise<void> {
     try {
       // Prvo dohvatimo trenutni broj kartice
       const details = await membershipRepository.getMembershipDetails(memberId);
@@ -288,8 +291,9 @@ const membershipService = {
   async updateMembershipHistory(
     memberId: number,
     periods: MembershipPeriod[],
-    userId?: number,
-    updateMemberStatus: boolean = false
+    performerId?: number,
+    updateMemberStatus: boolean = false,
+    performerType?: PerformerType
   ): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
@@ -309,14 +313,15 @@ const membershipService = {
             data: { status: 'registered' }
           });
           
-          if (userId) {
+          if (performerId) {
             await auditService.logAction(
               "UPDATE_MEMBER_HISTORY",
-              userId,
+              performerId,
               `Updated membership history for member ${memberId}`,
-              undefined, // req is now optional
+              undefined,
               "success",
-              memberId
+              memberId,
+              performerType
             );
           }
         }
@@ -330,7 +335,8 @@ const membershipService = {
   async updateMembership(
     memberId: number,
     payload: MembershipUpdatePayload,
-    userId?: number
+    performerId?: number,
+    performerType?: PerformerType
   ): Promise<Member | null> {
     const { paymentDate, cardNumber, stampIssued, isRenewalPayment } = payload;
 
@@ -338,13 +344,14 @@ const membershipService = {
       await this.processFeePayment(
         memberId,
         parseDate(paymentDate),
-        userId,
-        isRenewalPayment
+        performerId,
+        isRenewalPayment,
+        performerType
       );
     }
 
     if (typeof cardNumber !== 'undefined' || typeof stampIssued !== 'undefined') {
-        await this.updateCardDetails(memberId, cardNumber, stampIssued, userId);
+        await this.updateCardDetails(memberId, cardNumber, stampIssued, performerId);
     }
 
     return memberRepository.findById(memberId);
@@ -353,8 +360,9 @@ const membershipService = {
   async terminateMembership(
     memberId: number,
     reason: MembershipEndReason,
-    userId?: number,
-    endDateStr?: string
+    performerId?: number,
+    endDateStr?: string,
+    performerType?: PerformerType
   ): Promise<void> {
     try {
         const endDate = endDateStr ? parseDate(endDateStr) : getCurrentDate();
@@ -378,14 +386,15 @@ const membershipService = {
             await cardNumberRepository.markCardNumberConsumed(details.card_number, memberId);
         }
 
-        if (userId) {
+        if (performerId) {
           await auditService.logAction(
             'TERMINATE_MEMBERSHIP',
-            userId,
+            performerId,
             `Terminated membership for member ${memberId} with reason: ${reason}`,
-            undefined, // req is now optional
+            undefined,
             'success',
-            memberId
+            memberId,
+            performerType
           );
         }
     } catch (error: unknown) {
@@ -398,7 +407,8 @@ const membershipService = {
     memberId: number,
     periodId: number,
     endReason: MembershipEndReason,
-    userId?: number
+    performerId?: number,
+    performerType?: PerformerType
   ): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
@@ -413,14 +423,15 @@ const membershipService = {
       
       await membershipRepository.updatePeriodEndReason(periodId, endReason);
 
-      if (userId) {
+      if (performerId) {
         await auditService.logAction(
           'UPDATE_MEMBERSHIP_END_REASON',
-          userId,
+          performerId,
           `Updated end reason for period ${periodId} for member ${memberId}`,
           undefined,
           'success',
-          memberId
+          memberId,
+          performerType
         );
       }
     } catch (error) {

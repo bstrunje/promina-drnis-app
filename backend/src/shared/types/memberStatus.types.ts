@@ -191,88 +191,52 @@ export function determineMembershipStatus(
  * @returns Detaljan status članstva
  */
 export function determineDetailedMembershipStatus(
-  member: MemberStatusData, 
+  member: MemberStatusData,
   periods: MembershipPeriod[],
-  currentYear?: number
+  _currentYear?: number // _currentYear se više ne koristi direktno, ali ostaje radi kompatibilnosti
 ): DetailedMembershipStatus {
-  // Provjeri ima li član ikakve podatke o članstvu
-  const hasMembershipData = (
-    (!!member.membership_details?.card_number || !!member.card_number) || 
-    (!!member.membership_details?.fee_payment_date) || 
-    (!!member.membership_details?.fee_payment_year) ||
-    (periods && periods.length > 0)
-  );
-  
-  // Ako nema nikakve podatke o članstvu, tretiramo ga kao "pending" bez obzira na status u bazi
-  if (!hasMembershipData) {
-    return {
-      status: 'pending',
-      reason: 'Nema podataka o članstvu'
-    };
-  }
-  // Ako član ima broj iskaznice, smatra se registriranim članom
-  const hasCardNumber = !!member.card_number || !!member.membership_details?.card_number;
-  if (hasCardNumber) {
-    // Provjeri je li članarina plaćena
-    const hasPaidFee = hasPaidMembershipFee(member, currentYear);
-    if (!hasPaidFee) {
-      const year = currentYear ?? getCurrentYear();
-      return {
-        status: 'registered',
-        reason: `Članarina nije plaćena za ${year}. godinu`
-      };
-    }
-    
-    // Član s brojem iskaznice i plaćenom članarinom
+
+  // 1. Provjera aktivnog perioda članstva - ovo je najvažniji pokazatelj
+  if (hasActiveMembershipPeriod(periods)) {
     return {
       status: 'registered',
       reason: 'Članstvo važeće'
     };
   }
-  
-  // Provjeri postoji li aktivan period članstva
-  const hasActivePeriod = hasActiveMembershipPeriod(periods);
-  if (!hasActivePeriod) {
-    // Za članove koji su u "pending" statusu (novi članovi)
-    if (member.status === 'pending') {
-      return {
-        status: 'pending',
-        reason: 'Registracija u tijeku'
-      };
-    }
-    
-    // Za sve ostale bez aktivnog perioda
+
+  // 2. Ako nema aktivnog perioda, provjeravamo specifične statuse
+
+  // Ako je status 'pending', član je vjerojatno novi i čeka prvu uplatu
+  if (member.status === 'pending') {
+    return {
+      status: 'pending',
+      reason: 'Registracija u tijeku'
+    };
+  }
+
+  // Ako je status eksplicitno 'inactive' u bazi
+  if (member.status === 'inactive') {
     const lastEndedPeriod = findLastEndedPeriod(periods);
     return {
       status: 'inactive',
-      reason: 'Članstvo završeno',
+      reason: 'Članstvo isteklo',
       date: lastEndedPeriod?.end_date,
-      endReason: lastEndedPeriod?.end_reason ?? 'other'
+      endReason: lastEndedPeriod?.end_reason ?? 'inactivity'
     };
   }
-  
-  // Provjeri bazu podataka za eksplicitni 'inactive' status
-  if (member.status === 'inactive') {
-    return {
-      status: 'inactive',
-      reason: 'Neaktivan status u sustavu'
-    };
-  }
-  
-  // Provjeri je li članarina plaćena
-  const hasPaidFee = hasPaidMembershipFee(member, currentYear);
-  if (!hasPaidFee) {
-    const year = currentYear ?? getCurrentYear();
-    return {
-      status: 'pending',
-      reason: `Članarina nije plaćena za ${year}. godinu`
-    };
-  }
-  
-  // Ako ima aktivan period, ima plaćenu članarinu i nema eksplicitni 'inactive' status
+
+  // 3. Ako status nije ni aktivan, ni pending, ni inactive - mora biti neaktivan
+  // Ovo hvata sve ostale slučajeve (npr. 'registered' status u bazi, ali bez aktivnog perioda)
+  const lastEndedPeriod = findLastEndedPeriod(periods);
+  const reason = lastEndedPeriod 
+    ? 'Članstvo završeno' 
+    : 'Članarina nije plaćena ili članstvo nije aktivirano';
+
   return {
-    status: 'registered',
-    reason: 'Članstvo važeće'
+    status: 'inactive',
+    reason: reason,
+    date: lastEndedPeriod?.end_date,
+    endReason: lastEndedPeriod?.end_reason ?? 'inactivity'
   };
 }
 

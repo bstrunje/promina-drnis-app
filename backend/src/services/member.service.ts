@@ -483,12 +483,13 @@ const memberService = {
     
             if (req.user?.id) {
               await auditService.logAction(
-                "UPDATE_MEMBERSHIP_FEE",
-                req.user.id,
-                `Updated membership fee for member ${memberId} to year ${paymentYear}`,
+                'MEMBERSHIP_FEE_PAYMENT',
+                req.user?.id || null, // Koristimo ID iz req.user
+                `Membership fee paid for ${paymentYear}`,
                 req,
-                "success",
-                memberId
+                'success',
+                memberId,
+                req.user?.performer_type
               );
             }
         } catch (error) {

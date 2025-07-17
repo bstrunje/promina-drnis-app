@@ -60,7 +60,9 @@ const cardNumberController = {
         req.user?.id || null,
         `Added card number: ${cardNumber}`,
         req,
-        'success'
+        'success',
+        undefined,
+        req.user?.performer_type
       );
       
       res.status(201).json({ message: 'Card number added successfully' });
@@ -104,7 +106,9 @@ const cardNumberController = {
         req.user?.id || null,
         `Added card number range: ${start} to ${end} (${added} added)`,
         req,
-        'success'
+        'success',
+        undefined,
+        req.user?.performer_type
       );
       
       res.status(201).json({ message: `${added} card numbers added successfully` });
@@ -132,7 +136,7 @@ const cardNumberController = {
       }
       
       const performerId = req.user?.id || null;
-      const performerType = req.user?.is_SystemManager ? PerformerType.SYSTEM_MANAGER : PerformerType.MEMBER;
+      const performerType = req.user?.performer_type;
 
       await auditService.logAction(
         'CARD_NUMBER_DELETED',
@@ -204,7 +208,9 @@ const cardNumberController = {
         req.user?.id || null,
         `Synchronized card number status. Updated ${result.updated} records.`,
         req,
-        'success'
+        'success',
+        undefined,
+        req.user?.performer_type
       );
       
       res.status(200).json({ 
@@ -313,7 +319,8 @@ const cardNumberController = {
         await membershipService.updateCardDetails(
           parseInt(memberId),
           cardNumber,
-          false // Markica se NE izdaje automatski
+          false, // Markica se NE izdaje automatski
+          req.user?.id
         );
 
         // Ažuriraj lozinku člana i status registracije
@@ -336,7 +343,8 @@ const cardNumberController = {
           `Assigned card number ${cardNumber} to member ${member.full_name}`,
           req,
           'success',
-          parseInt(memberId)
+          parseInt(memberId),
+          req.user.performer_type
         );
       }
 

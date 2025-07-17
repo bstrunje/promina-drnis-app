@@ -21,15 +21,14 @@ const auditService = {
         action_type: string,
         performed_by: number | null,
         action_details: string,
-        req: Request | undefined, // Make req optional
+        req: Request | undefined,
         status: string = 'success',
         affected_member?: number,
-        performer_type?: PerformerType | null
+        performer_type?: PerformerType
     ): Promise<void> {
         try {
             const ip_address = req ? (req.ip || req.socket.remoteAddress || 'unknown') : 'not available';
             
-            // Fix: Pass individual arguments instead of an object
             await auditRepository.create(
                 action_type,
                 performed_by,

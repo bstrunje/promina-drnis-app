@@ -4,6 +4,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { DatabaseError } from "../utils/errors.js";
 import { getCurrentDate } from '../utils/dateUtils.js';
+import { PerformerType } from '@prisma/client';
 
 const stampService = {
   async getInventoryStatus() {
@@ -137,7 +138,7 @@ const stampService = {
     }
   },
 
-  async issueStampToMember(memberId: number, userId: number, forNextYear: boolean = false): Promise<void> {
+  async issueStampToMember(memberId: number, performerId: number, forNextYear: boolean = false, performerType?: PerformerType): Promise<void> {
     try {
       const member = await memberRepository.findById(memberId);
       if (!member) {
@@ -162,11 +163,12 @@ const stampService = {
       const stampYear = forNextYear ? getCurrentDate().getFullYear() + 1 : getCurrentDate().getFullYear();
       await auditService.logAction(
         'ISSUE_STAMP',
-        userId,
+        performerId,
         `Issued ${stampType} stamp to member ${memberId} for year ${stampYear}`,
-        undefined, // req is now optional
+        undefined,
         'success',
-        memberId
+        memberId,
+        performerType
       );
     } catch (error) {
       throw new DatabaseError(

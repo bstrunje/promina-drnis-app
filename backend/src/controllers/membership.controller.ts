@@ -15,9 +15,10 @@ const membershipController = {
   ): Promise<void> {
     try {
       const { memberId } = req.params;
-      const userId = req.user?.id;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
 
-      if (!userId) {
+      if (!performerId || !performerType) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
@@ -25,7 +26,8 @@ const membershipController = {
       const updatedMember = await membershipService.updateMembership(
         Number(memberId),
         req.body,
-        userId
+        performerId,
+        performerType
       );
       res.status(200).json(updatedMember);
     } catch (error) {
@@ -40,14 +42,15 @@ const membershipController = {
     try {
       const { memberId } = req.params;
       const { periods } = req.body;
-      const userId = req.user?.id;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
 
-      if (!userId) {
+      if (!performerId || !performerType) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
-      await membershipService.updateMembershipHistory(Number(memberId), periods, userId);
+      await membershipService.updateMembershipHistory(Number(memberId), periods, performerId, false, performerType);
       res.status(204).send();
     } catch (error) {
       handleControllerError(error, res);
@@ -61,9 +64,10 @@ const membershipController = {
     try {
       const { memberId } = req.params;
       const { reason, endDate } = req.body;
-      const userId = req.user?.id;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
 
-      if (!userId) {
+      if (!performerId || !performerType) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
@@ -71,8 +75,9 @@ const membershipController = {
       await membershipService.terminateMembership(
         Number(memberId),
         reason,
-        userId,
-        endDate
+        performerId,
+        endDate,
+        performerType
       );
       res.status(204).send();
     } catch (error) {
@@ -87,9 +92,10 @@ const membershipController = {
     try {
       const { memberId, periodId } = req.params;
       const { endReason } = req.body;
-      const userId = req.user?.id;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
 
-      if (!userId) {
+      if (!performerId || !performerType) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
@@ -98,7 +104,8 @@ const membershipController = {
         Number(memberId),
         Number(periodId),
         endReason,
-        userId
+        performerId,
+        performerType
       );
 
       res.json(updatedPeriod);
@@ -113,14 +120,15 @@ const membershipController = {
   ): Promise<void> {
     try {
       const { memberId } = req.params;
-      const userId = req.user?.id;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
 
-      if (!userId) {
+      if (!performerId || !performerType) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
-      await stampService.issueStampToMember(Number(memberId), userId);
+      await stampService.issueStampToMember(Number(memberId), performerId, false, performerType);
       res.status(204).send();
     } catch (error) {
       handleControllerError(error, res);

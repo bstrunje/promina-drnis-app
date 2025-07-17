@@ -47,7 +47,8 @@ export const permissionsController = {
                 `Updated permissions for member ${memberId}`,
                 req,
                 'success',
-                memberId
+                memberId,
+                req.user?.performer_type
             );
 
             res.json({ message: 'Permissions updated successfully' });

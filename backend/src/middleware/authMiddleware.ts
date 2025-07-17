@@ -11,13 +11,24 @@ interface JWTPayload {
     role?: string;
 }
 
+import { PerformerType } from '@prisma/client';
+
+// Types
+interface JWTPayload {
+    id: number;
+    full_name?: string;
+    type?: 'member' | 'SystemManager';
+    role?: string;
+}
+
 export interface DatabaseUser {
     id: number;
-    role: string;        
-    role_name: string;   
+    role: string;
+    role_name: string;
     member_id?: number;
-    is_SystemManager?: boolean; 
-    user_type: 'member' | 'SystemManager'; 
+    is_SystemManager?: boolean;
+    user_type: 'member' | 'SystemManager';
+    performer_type: PerformerType;
 }
 
 // Extend Express Request type to include user
@@ -56,9 +67,10 @@ const authenticateToken = async (
                 req.user = {
                     id: systemManager.id,
                     role: 'SystemManager',
-                    role_name: 'SystemManager', // Dodano nedostajuće polje
+                    role_name: 'SystemManager',
                     is_SystemManager: true,
-                    user_type: 'SystemManager'
+                    user_type: 'SystemManager',
+                    performer_type: 'SYSTEM_MANAGER' as PerformerType
                 };
                 next(); // KLJUČNI ISPRAVAK: Prosljeđivanje zahtjeva dalje
             } else {
@@ -96,11 +108,12 @@ const authenticateToken = async (
             // Attach member to request object
             req.user = {
                 id: result.rows[0].id,
-                role: result.rows[0].role,  
+                role: result.rows[0].role,
                 role_name: result.rows[0].role_name,
                 member_id: result.rows[0].id,
                 is_SystemManager: false,
-                user_type: 'member'
+                user_type: 'member',
+                performer_type: 'MEMBER' as PerformerType
             };
             next(); // Poziv za članove ostaje ovdje
         }

@@ -18,7 +18,9 @@ const messageController = {
                     req.user.id,
                     `Message created by member ${memberId}`,
                     req,
-                    'success'
+                    'success',
+                    undefined,
+                    req.user.performer_type
                 );
             }
 
@@ -58,7 +60,9 @@ const messageController = {
                 senderId,
                 `Admin sent message to member ${recipientId}`,
                 req,
-                'success'
+                'success',
+                recipientId,
+                req.user?.performer_type
             );
 
             // Mapiramo poruku za frontend
@@ -101,7 +105,9 @@ const messageController = {
                 senderId,
                 `Admin sent message to ${recipientMemberIds.length} members`,
                 req,
-                'success'
+                'success',
+                undefined,
+                req.user?.performer_type
             );
 
             // Mapiramo poruku za frontend
@@ -138,7 +144,9 @@ const messageController = {
                 senderId,
                 `Admin sent message to all members`,
                 req,
-                'success'
+                'success',
+                undefined,
+                req.user?.performer_type
             );
 
             // Mapiramo poruku za frontend
@@ -259,7 +267,9 @@ const messageController = {
                 memberId,
                 `Message ${messageId} marked as read by user ${memberId}`,
                 req,
-                'success'
+                'success',
+                memberId,
+                req.user?.performer_type
             );
 
             res.status(200).json({ message: 'Message marked as read' });
@@ -271,7 +281,9 @@ const messageController = {
                 actorIdForAudit,
                 `Error marking message ${req.params.messageId} as read. Error: ${error instanceof Error ? error.message : String(error)}`,
                 req,
-                'failure'
+                'failure',
+                undefined,
+                req.user?.performer_type
             );
             res.status(500).json({ 
                 message: error instanceof Error ? error.message : 'Failed to mark message as read' 
@@ -297,7 +309,9 @@ const messageController = {
                 memberId,
                 `Message ${messageId} archived by user ${memberId}`,
                 req,
-                'success'
+                'success',
+                memberId,
+                req.user?.performer_type
             );
 
             res.json({ message: 'Message archived' });
@@ -325,7 +339,9 @@ const messageController = {
                     req.user.id,
                     `Message ${messageId} deleted`,
                     req,
-                    'success'
+                    'success',
+                    undefined,
+                    req.user.performer_type
                 );
             }
 
@@ -349,7 +365,9 @@ const messageController = {
                     req.user.id,
                     `All messages deleted`,
                     req,
-                    'success'
+                    'success',
+                    undefined,
+                    req.user.performer_type
                 );
             }
 
@@ -390,7 +408,9 @@ async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
                 req.user.id,
                 `Message ${messageId} marked as read for member ${memberId}`,
                 req,
-                'success'
+                'success',
+                memberId,
+                req.user.performer_type
             );
         }
 

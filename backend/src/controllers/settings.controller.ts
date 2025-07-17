@@ -110,7 +110,7 @@ export const updateSettings = [
         });
 
         const performerId = req.user!.id;
-        const performerType = req.user?.is_SystemManager ? PerformerType.SYSTEM_MANAGER : PerformerType.MEMBER;
+        const performerType = req.user?.performer_type;
         
         // Dodana dijagnostika za performer_type
         console.log('DEBUG - određeni performerType:', performerType);

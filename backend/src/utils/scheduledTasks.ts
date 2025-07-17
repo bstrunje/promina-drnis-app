@@ -1,5 +1,6 @@
 // src/utils/scheduledTasks.ts
 import membershipService from '../services/membership.service.js';
+import memberStatusSyncService from '../services/memberStatusSync.service.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import prisma from '../utils/prisma.js';
 
@@ -64,6 +65,21 @@ async function checkUnreadMessages() {
   }
 }
 
+// Funkcija za sinkronizaciju neaktivnih članova
+async function runInactiveMemberSync() {
+  console.log('\n🔄 Pokretanje sinkronizacije neaktivnih članova...');
+  try {
+    const result = await memberStatusSyncService.syncInactiveMembers();
+    if (result.updatedCount > 0) {
+      console.log(`   ✅ Uspješno sinkronizirano. Ažurirano članova: ${result.updatedCount}`);
+    } else {
+      console.log('   ✅ Nema članova za ažuriranje.');
+    }
+  } catch (error) {
+    console.error('❌ Greška prilikom sinkronizacije neaktivnih članova:', error);
+  }
+}
+
 // Funkcija koja pokreće sve planirane zadatke
 export const initScheduledTasks = () => {
   // Koristimo setTimeout kako bismo osigurali da se logovi pravilno prikazuju nakon inicijalizacije servera
@@ -78,6 +94,11 @@ export const initScheduledTasks = () => {
   
   // Postavi interval za periodično izvršavanje
   setInterval(checkUnreadMessages, 60000); // Provjera svakih 60 sekundi
+
+  // Periodična sinkronizacija neaktivnih članova (svakih sat vremena)
+  console.log('   ✔️ Postavljam periodičnu sinkronizaciju neaktivnih članova (svakih sat vremena)');
+  runInactiveMemberSync(); // Odmah izvrši prvu sinkronizaciju
+  setInterval(runInactiveMemberSync, 3600000); // Svakih 3600000 ms = 1 sat
   
   // Postavi dnevnu provjeru članstava u ponoć
   console.log('   ✔️ Postavljam dnevnu provjeru članstava u ponoć');

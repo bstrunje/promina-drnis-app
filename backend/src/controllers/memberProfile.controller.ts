@@ -35,7 +35,8 @@ const memberProfileController = {
           `Created new member: ${newMember.full_name}`,
           req,
           'success',
-          newMember.member_id
+          newMember.member_id,
+          req.user.performer_type
         );
       }
       res.status(201).json(newMember);
@@ -60,7 +61,8 @@ const memberProfileController = {
           `Updated member: ${updatedMember.full_name}`,
           req,
           'success',
-          memberId
+          memberId,
+          req.user.performer_type
         );
       }
       res.json(updatedMember);
@@ -90,7 +92,8 @@ const memberProfileController = {
           `Updated role for member ${updatedMember.full_name} to ${role}`,
           req,
           'success',
-          memberId
+          memberId,
+          req.user.performer_type
         );
       }
 
@@ -119,7 +122,8 @@ const memberProfileController = {
           `Uploaded profile image for member ${memberId}`,
           req,
           'success',
-          memberId
+          memberId,
+          req.user.performer_type
         );
       }
 
@@ -142,7 +146,8 @@ const memberProfileController = {
           `Deleted profile image for member ${memberId}`,
           req,
           'success',
-          memberId
+          memberId,
+          req.user.performer_type
         );
       }
 
@@ -175,7 +180,8 @@ const memberProfileController = {
           `Assigned new password to member ${memberId}`,
           req,
           'success',
-          memberId
+          memberId,
+          req.user.performer_type
         );
       }
 
