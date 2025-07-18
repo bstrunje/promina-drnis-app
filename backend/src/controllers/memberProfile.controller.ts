@@ -27,7 +27,8 @@ const memberProfileController = {
     res: Response
   ): Promise<void> {
     try {
-      const newMember = await memberService.createMember(req.body);
+      const { skills, other_skills, ...rest } = req.body;
+      const newMember = await memberService.createMember({ skills, other_skills, ...rest });
       if (req.user?.id) {
         await auditService.logAction(
           'CREATE_MEMBER',

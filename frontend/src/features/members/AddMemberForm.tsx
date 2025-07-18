@@ -87,13 +87,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     }
   };
 
-  const handleSkillsChange = (update: { skills: MemberSkill[]; other_skills: string }) => {
-    setMember(prev => ({
-      ...prev,
-      skills: update.skills,
-      other_skills: update.other_skills,
-    }));
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,9 +239,9 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
                 <SkillsSelector
                   value={member.skills ?? []}
                   otherSkills={member.other_skills ?? ''}
-                  onChange={(skills, other_skills) => {
-                    handleSkillsChange({ skills, other_skills });
-                  }}
+                  onChange={(skills, other_skills) => 
+                    setMember(prev => ({ ...prev, skills, other_skills }))
+                  }
                   isEditing={true}
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('skills.description')}</p>

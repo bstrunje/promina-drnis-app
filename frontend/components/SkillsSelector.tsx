@@ -27,6 +27,15 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Interno stanje za upravljanje vještinama unutar komponente
+  const [internalSelected, setInternalSelected] = useState<SelectedSkill[]>(value);
+  const [internalOtherSkills, setInternalOtherSkills] = useState<string>(otherSkills);
+
+  useEffect(() => {
+    setInternalSelected(value);
+    setInternalOtherSkills(otherSkills);
+  }, [value, otherSkills]);
+
   useEffect(() => {
     const fetchSkills = async () => {
       try {
@@ -46,26 +55,30 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
   }, [t]);
 
   const handleSkillChange = (skillId: number) => {
-    const isSelected = value.some(s => s.skill_id === skillId);
+    const isSelected = internalSelected.some(s => s.skill_id === skillId);
     let newSelection;
 
     if (isSelected) {
-      newSelection = value.filter(s => s.skill_id !== skillId);
+      newSelection = internalSelected.filter(s => s.skill_id !== skillId);
     } else {
-      newSelection = [...value, { skill_id: skillId, is_instructor: false }];
+      newSelection = [...internalSelected, { skill_id: skillId, is_instructor: false }];
     }
-    onChange(newSelection, otherSkills);
+    setInternalSelected(newSelection);
+    onChange(newSelection, internalOtherSkills);
   };
 
   const handleInstructorChange = (skillId: number) => {
-    const newSelection = value.map(s => 
+    const newSelection = internalSelected.map(s =>
       s.skill_id === skillId ? { ...s, is_instructor: !s.is_instructor } : s
     );
-    onChange(newSelection, otherSkills);
+    setInternalSelected(newSelection);
+    onChange(newSelection, internalOtherSkills);
   };
 
   const handleOtherSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(value, e.target.value);
+    const newOtherSkills = e.target.value;
+    setInternalOtherSkills(newOtherSkills);
+    onChange(internalSelected, newOtherSkills);
   };
 
   if (loading) {

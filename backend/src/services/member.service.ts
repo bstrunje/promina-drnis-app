@@ -170,7 +170,7 @@ const memberService = {
                     const lastName = basicMemberData.last_name ?? currentMember.last_name;
                     memberToUpdate.full_name = `${firstName} ${lastName}`;
 
-                                        const membershipDetails = await tx.membershipDetails.findUnique({ where: { member_id: memberId } });
+                    const membershipDetails = await tx.membershipDetails.findUnique({ where: { member_id: memberId } });
                     if (membershipDetails?.card_number) {
                         const newPassword = `${memberToUpdate.full_name}-isk-${membershipDetails.card_number}`;
                         memberToUpdate.password_hash = await bcrypt.hash(newPassword, 10);
@@ -273,25 +273,89 @@ const memberService = {
 
 
 
-    async createMember(memberData: MemberCreateData): Promise<Member> {
+    async createMember(memberData: MemberCreateData & { skills?: any, other_skills?: string }): Promise<Member> {
+        const { skills, other_skills, ...basicMemberData } = memberData;
+
         try {
-            // Set default values for new members
-            const newMemberData: MemberCreateData = {
-                ...memberData,
-                membership_type: mapMembershipTypeToEnum(memberData.membership_type) || MembershipTypeEnum.Regular
-            };
+            const newMember = await prisma.$transaction(async (tx) => {
+                const registration_completed = !!(
+                    basicMemberData.first_name &&
+                    basicMemberData.last_name &&
+                    basicMemberData.date_of_birth &&
+                    basicMemberData.gender &&
+                    basicMemberData.street_address &&
+                    basicMemberData.city &&
+                    basicMemberData.oib &&
+                    basicMemberData.cell_phone &&
+                    basicMemberData.email &&
+                    basicMemberData.life_status &&
+                    basicMemberData.tshirt_size &&
+                    basicMemberData.shell_jacket_size &&
+                    basicMemberData.membership_type
+                );
 
-            // Ako je date_of_birth string u formatu yyyy-MM-dd, konvertiraj ga u Date objekt
-            if (
-                typeof newMemberData.date_of_birth === 'string' &&
-                /^\d{4}-\d{2}-\d{2}$/.test(newMemberData.date_of_birth)
-            ) {
-                newMemberData.date_of_birth = new Date(newMemberData.date_of_birth + 'T00:00:00.000Z').toISOString();
-            }
+                const createdCoreMember = await tx.member.create({
+                    data: {
+                        first_name: basicMemberData.first_name,
+                        last_name: basicMemberData.last_name,
+                        full_name: `${basicMemberData.first_name} ${basicMemberData.last_name}`,
+                        date_of_birth: new Date(basicMemberData.date_of_birth),
+                        gender: basicMemberData.gender,
+                        street_address: basicMemberData.street_address,
+                        city: basicMemberData.city,
+                        oib: basicMemberData.oib,
+                        cell_phone: basicMemberData.cell_phone,
+                        email: basicMemberData.email,
+                        life_status: basicMemberData.life_status,
+                        tshirt_size: basicMemberData.tshirt_size,
+                        shell_jacket_size: basicMemberData.shell_jacket_size,
+                        membership_type: mapMembershipTypeToEnum(basicMemberData.membership_type),
+                        nickname: basicMemberData.nickname,
+                        other_skills: other_skills,
+                        status: 'pending',
+                        role: 'member',
+                        registration_completed: registration_completed,
+                    },
+                });
 
-            return await memberRepository.create(newMemberData);
+                // 2. Kreiranje vještina (skills)
+                if (skills && Array.isArray(skills) && skills.length > 0) {
+                    const skillCreations = skills.map((skill: { skill_id: number, is_instructor: boolean }) => {
+                        return tx.memberSkill.create({
+                            data: {
+                                member_id: createdCoreMember.member_id,
+                                skill_id: skill.skill_id,
+                                is_instructor: skill.is_instructor || false,
+                            },
+                        });
+                    });
+                    await Promise.all(skillCreations);
+                }
+
+                // 3. Vrati puni objekt člana nakon kreiranja
+                const finalNewMember = await tx.member.findUnique({
+                    where: { member_id: createdCoreMember.member_id },
+                    include: {
+                        membership_details: true,
+                        skills: {
+                            include: {
+                                skill: true,
+                            },
+                        },
+                    },
+                });
+
+                if (!finalNewMember) {
+                    throw new Error("Failed to fetch new member details after transaction.");
+                }
+
+                return finalNewMember as unknown as Member;
+            });
+
+            return newMember;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('Error creating member:', errorMessage);
             throw new Error('Error creating member: ' + errorMessage);
         }
     },

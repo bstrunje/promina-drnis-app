@@ -250,22 +250,11 @@ const LoginPage = () => {
 
     try {
       const memberData: Omit<Member, "member_id" | "total_hours"> = {
-        ...registerData,
-        registration_completed: false,
-        membership_type: MembershipTypeEnum.Regular,
-        role: "member",
-        first_name: registerData.first_name,
-        last_name: registerData.last_name,
-        date_of_birth: registerData.date_of_birth,
-        street_address: registerData.street_address,
-        city: registerData.city,
-        oib: registerData.oib,
-        cell_phone: registerData.cell_phone,
-        email: registerData.email,
-        life_status: registerData.life_status,
-        tshirt_size: registerData.tshirt_size,
-        shell_jacket_size: registerData.shell_jacket_size,
-        membership_details: {
+        ...registerData, // Sadrži sva polja iz forme, uključujući skills
+        registration_completed: false, // Eksplicitno postavljamo
+        membership_type: MembershipTypeEnum.Regular, // Eksplicitno postavljamo
+        role: "member", // Eksplicitno postavljamo
+        membership_details: { // Eksplicitno postavljamo
           card_stamp_issued: false,
           card_number: ""
         }
