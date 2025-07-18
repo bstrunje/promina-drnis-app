@@ -1,5 +1,6 @@
 // features/members/permissions/AddMemberPermissionsModal.tsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Search, UserPlus } from 'lucide-react';
 import { getMembersWithoutPermissions } from '../../../features/systemManager/utils/systemManagerApi';
 import { Member } from '@shared/member';
@@ -13,6 +14,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
   onClose,
   onMemberSelect
 }) => {
+  const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl p-6 max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Dodaj administratorske ovlasti članu</h2>
+          <h2 className="text-xl font-semibold">{t('permissions.addMemberPermissions')}</h2>
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"

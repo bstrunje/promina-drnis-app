@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getActivityById, updateActivity } from '../../utils/api/apiActivities';
 import { Activity, ActivityStatus } from '@shared/activity.types';
@@ -14,6 +15,7 @@ import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPe
 import { MemberSelect } from './MemberSelect';
 
 const EditActivityPage: React.FC = () => {
+  const { t } = useTranslation();
   const { activityId } = useParams<{ activityId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -150,36 +152,36 @@ const EditActivityPage: React.FC = () => {
 
     try {
       await updateActivity(Number(activityId), dataToUpdate);
-      toast({ title: 'Uspjeh', description: 'Aktivnost je uspješno ažurirana.' });
+      toast({ title: t('activities.editing.success'), description: t('activities.editing.activityUpdated') });
       navigate(`/activities/${activityId}`);
     } catch (error) {
-      toast({ title: 'Greška', description: 'Nije moguće ažurirati aktivnost.', variant: 'destructive' });
+      toast({ title: t('activities.editing.error'), description: t('activities.editing.updateFailed'), variant: 'destructive' });
     }
   };
 
-  if (loading) return <div className="container mx-auto p-4">Učitavanje...</div>;
+  if (loading) return <div className="container mx-auto p-4">{t('activities.editing.loading')}</div>;
 
   return (
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Uredi aktivnost</CardTitle>
+          <CardTitle>{t('activities.editing.editActivity')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-6">
               <div>
-                <Label htmlFor="name">Naziv aktivnosti</Label>
+                <Label htmlFor="name">{t('activities.editing.activityName')}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
               <div>
-                <Label htmlFor="description">Opis</Label>
+                <Label htmlFor="description">{t('activities.editing.description')}</Label>
                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
 
               {/* Polje za datum početka */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="startDate" className="md:text-right">Datum početka</Label>
+                <Label htmlFor="startDate" className="md:text-right">{t('activities.editing.startDate')}</Label>
                 <div className="md:col-span-3 flex items-center gap-2">
                   <Input id="startDate" type="date" className="w-40 hide-date-time-icons" value={startDate} onChange={e => { setStartDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) startTimeRef.current?.focus(); }} required />
                   <Input id="startTime" type="time" ref={startTimeRef} className="w-28 hide-date-time-icons" value={startTime} onChange={e => setStartTime(e.target.value)} required />
@@ -189,7 +191,7 @@ const EditActivityPage: React.FC = () => {
 
               {/* Polje za stvarni početak */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="actualStartDate" className="md:text-right">Početak</Label>
+                <Label htmlFor="actualStartDate" className="md:text-right">{t('activities.editing.actualStart')}</Label>
                 <div className="md:col-span-3 flex items-center gap-2">
                   <Input 
                     id="actualStartDate" 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { searchMembers } from '../../utils/api/apiAuth';
 // Zamijenjeno prema novoj modularnoj API strukturi
 import {
@@ -22,6 +23,7 @@ import { CornerDownLeft, Send, Users, UserCheck, Mail, X } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
+  const { t } = useTranslation();
   // Ref za automatski fokus na input za pretragu članova
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -320,11 +322,11 @@ const AdminMessageSender: React.FC = () => {
           <TabsContent value="group" className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="group-member-search" className="text-sm font-medium">
-                Dodaj člana u grupu:
+                {t('messages.addMemberToGroup')}
               </label>
               <Input
                 id="group-member-search"
-                placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
+                placeholder={t('messages.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 ref={searchInputRef}

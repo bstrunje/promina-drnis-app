@@ -101,7 +101,11 @@
       "placeholder": "Upišite vašu poruku ovdje...",
       "sendButton": "Pošalji poruku",
       "sendSuccess": "Poruka je uspješno poslana.",
-      "sendError": "Greška prilikom slanja poruke."
+      "sendError": "Greška prilikom slanja poruke.",
+      "deleteAll": "Izbriši sve poruke",
+      "deleteAllShort": "Izbriši sve",
+      "addMemberToGroup": "Dodaj člana u grupu:",
+      "searchPlaceholder": "Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
     },
     "personalInfo": {
       "title": "Osobni podaci",
@@ -298,6 +302,95 @@
     "other": "Ostale vještine (ako nisu na popisu)",
     "errors": {
       "fetchError": "Greška pri dohvaćanju vještina."
+    }
+  },
+  "options": {
+    "lifeStatus": {
+      "employed": "Zaposlen/Nezaposlen",
+      "child": "Dijete/Učenik/Student",
+      "pensioner": "Umirovljenik"
+    },
+    "gender": {
+      "male": "Muški",
+      "female": "Ženski"
+    }
+  },
+  "systemManager": {
+    "settings": {
+      "saveChanges": "Spremi promjene",
+      "saving": "Spremanje...",
+      "saveSettings": "Spremi postavke"
+    }
+  },
+  "membership": {
+    "periods": {
+      "edit": "Uredi",
+      "cancel": "Odustani",
+      "save": "Spremi",
+      "saving": "Spremanje...",
+      "addPeriod": "Dodaj period"
+    }
+  },
+  "statistics": {
+    "genderDistribution": "Podjela po spolu",
+    "male": "Muški:",
+    "female": "Ženski:"
+  },
+  "permissions": {
+    "addMemberPermissions": "Dodaj administratorske ovlasti članu",
+    "categories": {
+      "membership": "Članstvo",
+      "activities": "Aktivnosti",
+      "finances": "Financije",
+      "messages": "Poruke",
+      "other": "Ostalo"
+    },
+    "labels": {
+      "can_view_members": "Pregled članova",
+      "can_edit_members": "Uređivanje članova",
+      "can_add_members": "Dodavanje članova",
+      "can_manage_membership": "Upravljanje članstvom",
+      "can_view_activities": "Pregled aktivnosti",
+      "can_create_activities": "Kreiranje aktivnosti",
+      "can_approve_activities": "Odobravanje aktivnosti",
+      "can_view_financials": "Pregled financija",
+      "can_manage_financials": "Upravljanje financijama",
+      "can_send_group_messages": "Slanje grupnih poruka",
+      "can_manage_all_messages": "Upravljanje svim porukama",
+      "can_view_statistics": "Pregled statistika",
+      "can_export_data": "Izvoz podataka",
+      "can_manage_end_reasons": "Upravljanje razlozima prestanka",
+      "can_manage_card_numbers": "Upravljanje brojevima iskaznica",
+      "can_assign_passwords": "Dodjela lozinki"
+    },
+    "templates": {
+      "fullAdmin": "Puni administratorski pristup",
+      "operational": "Operativni pristup"
+    }
+  },
+  "activities": {
+    "roles": {
+      "guide": "Vodič",
+      "assistantGuide": "Pomoćni vodič",
+      "driver": "Vozač",
+      "regular": "Izletnik"
+    },
+    "creation": {
+      "success": "Uspjeh",
+      "activityCreated": "Aktivnost je uspješno kreirana.",
+      "error": "Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno."
+    },
+    "editing": {
+      "success": "Uspjeh",
+      "activityUpdated": "Aktivnost je uspješno ažurirana.",
+      "error": "Greška",
+      "updateFailed": "Nije moguće ažurirati aktivnost.",
+      "loading": "Učitavanje...",
+      "editActivity": "Uredi aktivnost",
+      "activityName": "Naziv aktivnosti",
+      "description": "Opis",
+      "startDate": "Datum početka",
+      "actualStart": "Početak"
     }
   }
 }

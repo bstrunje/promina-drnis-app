@@ -1,5 +1,6 @@
 import React from "react";
 import { Calendar, Edit, Save, X, Plus } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { MembershipPeriodsSectionProps } from "../types/membershipTypes";
@@ -17,6 +18,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   feePaymentDate,
   onUpdatePeriods,
 }) => {
+  const { t } = useTranslation();
   const {
     isEditing,
     editedPeriods,
@@ -70,7 +72,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
               className="bg-black hover:bg-blue-500 transition-colors"
             >
               <Edit className="w-4 h-4 mr-2" />
-              Uredi
+              {t('membership.periods.edit')}
             </Button>
           )}
         </div>
@@ -96,7 +98,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
-                <X className="w-4 h-4 mr-1" /> Odustani
+                <X className="w-4 h-4 mr-1" /> {t('membership.periods.cancel')}
               </Button>
               <Button
                 variant="default"
@@ -106,10 +108,10 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                 className="bg-black hover:bg-blue-500 transition-colors"
               >
                 {isSubmitting ? (
-                  <>Spremanje...</>
+                  <>{t('membership.periods.saving')}</>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-1" /> Spremi
+                    <Save className="w-4 h-4 mr-1" /> {t('membership.periods.save')}
                   </>
                 )}
               </Button>
@@ -119,7 +121,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                 onClick={handleAddPeriod}
                 className="ml-auto"
               >
-                <Plus className="w-4 h-4 mr-1" /> Dodaj period
+                <Plus className="w-4 h-4 mr-1" /> {t('membership.periods.addPeriod')}
               </Button>
             </div>
           )}

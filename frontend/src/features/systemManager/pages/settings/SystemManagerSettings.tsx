@@ -1,6 +1,7 @@
 // features/systemManager/pages/settings/SystemManagerSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { Shield, RefreshCw, Save } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
@@ -18,6 +19,7 @@ interface SystemSettingsFormProps {
 }
 
 export function ChangePasswordForm() {
+  const { t } = useTranslation();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -124,7 +126,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         type="submit"
         className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
       >
-        Spremi promjene
+        {t('systemManager.settings.saveChanges')}
       </button>
       {message && <div className={`mt-2 text-sm ${message.includes('uspješno') ? 'text-green-600' : 'text-red-600'}`}>{message}</div>}
     </form>
@@ -139,6 +141,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   onSubmit,
   showFixedSuccess
 }) => {
+  const { t } = useTranslation();
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -300,12 +303,12 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           {isLoading ? (
             <>
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Spremanje...
+              {t('systemManager.settings.saving')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              Spremi postavke
+              {t('systemManager.settings.saveSettings')}
             </>
           )}
         </button>

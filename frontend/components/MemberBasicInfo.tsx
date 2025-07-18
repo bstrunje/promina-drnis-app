@@ -169,10 +169,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               className="w-full p-2 border rounded"
               placeholder={t('memberProfile.personalInfo.nicknamePlaceholder')}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {t('memberProfile.personalInfo.nicknameHelpText')}
-            </p>
-          </div>
+             </div>
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium mb-1">
               {t('memberProfile.personalInfo.dateOfBirth')}

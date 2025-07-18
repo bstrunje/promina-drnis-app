@@ -292,7 +292,11 @@
     "placeholder": "Type your message here...",
     "sendButton": "Send Message",
     "sendSuccess": "Message sent successfully.",
-    "sendError": "Error sending message."
+    "sendError": "Error sending message.",
+    "deleteAll": "Delete All Messages",
+    "deleteAllShort": "Delete All",
+    "addMemberToGroup": "Add member to group:",
+    "searchPlaceholder": "Search by name or surname... (minimum 2 characters)"
   },
   "membershipType": {
     "regular": "Regular member",
@@ -313,6 +317,95 @@
     "other": "Other skills (if not on the list)",
     "errors": {
       "fetchError": "Error fetching skills."
+    }
+  },
+  "options": {
+    "lifeStatus": {
+      "employed": "Employed/Unemployed",
+      "child": "Child/Pupil/Student",
+      "pensioner": "Pensioner"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female"
+    }
+  },
+  "systemManager": {
+    "settings": {
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "saveSettings": "Save Settings"
+    }
+  },
+  "membership": {
+    "periods": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "addPeriod": "Add Period"
+    }
+  },
+  "statistics": {
+    "genderDistribution": "Gender Distribution",
+    "male": "Male:",
+    "female": "Female:"
+  },
+  "permissions": {
+    "addMemberPermissions": "Add administrative permissions to member",
+    "categories": {
+      "membership": "Membership",
+      "activities": "Activities",
+      "finances": "Finances",
+      "messages": "Messages",
+      "other": "Other"
+    },
+    "labels": {
+      "can_view_members": "View members",
+      "can_edit_members": "Edit members",
+      "can_add_members": "Add members",
+      "can_manage_membership": "Manage membership",
+      "can_view_activities": "View activities",
+      "can_create_activities": "Create activities",
+      "can_approve_activities": "Approve activities",
+      "can_view_financials": "View finances",
+      "can_manage_financials": "Manage finances",
+      "can_send_group_messages": "Send group messages",
+      "can_manage_all_messages": "Manage all messages",
+      "can_view_statistics": "View statistics",
+      "can_export_data": "Export data",
+      "can_manage_end_reasons": "Manage end reasons",
+      "can_manage_card_numbers": "Manage card numbers",
+      "can_assign_passwords": "Assign passwords"
+    },
+    "templates": {
+      "fullAdmin": "Full administrative access",
+      "operational": "Operational access"
+    }
+  },
+  "activities": {
+    "roles": {
+      "guide": "Guide",
+      "assistantGuide": "Assistant guide",
+      "driver": "Driver",
+      "regular": "Participant"
+    },
+    "creation": {
+      "success": "Success",
+      "activityCreated": "Activity successfully created.",
+      "error": "Failed to create activity. Please try again."
+    },
+    "editing": {
+      "success": "Success",
+      "activityUpdated": "Activity successfully updated.",
+      "error": "Error",
+      "updateFailed": "Unable to update activity.",
+      "loading": "Loading...",
+      "editActivity": "Edit activity",
+      "activityName": "Activity name",
+      "description": "Description",
+      "startDate": "Start date",
+      "actualStart": "Start"
     }
   }
 }

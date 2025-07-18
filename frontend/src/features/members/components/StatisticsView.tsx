@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { getCurrentDate } from '../../../utils/dateUtils';
 import { parseDate } from '../../../utils/dateUtils';
@@ -11,6 +12,7 @@ interface StatisticsViewProps {
  * Komponenta za prikaz statistike članstva
  */
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
+  const { t } = useTranslation();
   // Računanje dobnih skupina u rasponima od 5 godina
   const ageGroups = useMemo(() => {
     const groups: Record<string, number> = {};
@@ -77,14 +79,14 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Podjela po spolu</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.genderDistribution')}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Muški:</span>
+              <span>{t('statistics.male')}</span>
               <span>{members.filter(m => m.gender === 'male').length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Ženski:</span>
+              <span>{t('statistics.female')}</span>
               <span>{members.filter(m => m.gender === 'female').length}</span>
             </div>
           </div>

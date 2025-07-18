@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './activities.css';
 import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
@@ -23,6 +24,7 @@ interface CreateActivityModalProps {
 }
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -146,7 +148,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           participant_ids: participantIds.map(id => Number(id)),
         });
       }
-      toast({ title: 'Uspjeh', description: 'Aktivnost je uspješno kreirana.' });
+      toast({ title: t('activities.creation.success'), description: t('activities.creation.activityCreated') });
       onActivityCreated();
       // Reset form
       setDescription('');
@@ -162,7 +164,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       onClose();
     } catch (err) {
       console.error('Greška prilikom kreiranja aktivnosti:', err);
-      setError('Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno.');
+      setError(t('activities.creation.error'));
     } finally {
       setIsLoading(false);
     }

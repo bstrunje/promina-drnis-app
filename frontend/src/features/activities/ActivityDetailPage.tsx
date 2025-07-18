@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './activities.css';
 import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getActivityById, cancelActivity as apiCancelActivity, joinActivity } from '../../utils/api/apiActivities';
@@ -22,17 +23,18 @@ import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
 import { ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 
-const roleLabels: { [key in ParticipantRole]: string } = {
-  [ParticipantRole.GUIDE]: 'Vodič',
-  [ParticipantRole.ASSISTANT_GUIDE]: 'Pomoćni vodič',
-  [ParticipantRole.DRIVER]: 'Vozač',
-  [ParticipantRole.REGULAR]: 'Izletnik',
-};
+const getRoleLabels = (t: any): { [key in ParticipantRole]: string } => ({
+  [ParticipantRole.GUIDE]: t('activities.roles.guide'),
+  [ParticipantRole.ASSISTANT_GUIDE]: t('activities.roles.assistantGuide'),
+  [ParticipantRole.DRIVER]: t('activities.roles.driver'),
+  [ParticipantRole.REGULAR]: t('activities.roles.regular'),
+});
 
 // Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
-const getRoleNameByPercentage = (percentage: number): string | null => {
+const getRoleNameByPercentage = (percentage: number, t: any): string | null => {
   const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
   if (roleEntry) {
+    const roleLabels = getRoleLabels(t);
     return roleLabels[roleEntry[0] as ParticipantRole];
   }
   return null; // Vraća null ako nema definirane uloge
@@ -41,6 +43,7 @@ const getRoleNameByPercentage = (percentage: number): string | null => {
 
 
 const ActivityDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { activityId } = useParams<{ activityId: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -315,7 +318,7 @@ const ActivityDetailPage: React.FC = () => {
                           {p.member.full_name}
                           {/* Prikaz uloge samo za izlete */}
                           {activity?.activity_type?.key === 'izleti' && p.recognition_override !== null && p.recognition_override !== undefined && (() => {
-                            const roleName = getRoleNameByPercentage(p.recognition_override);
+                            const roleName = getRoleNameByPercentage(p.recognition_override, t);
                             return roleName ? (
                               <Badge variant="outline" className="ml-2 border-amber-300 text-amber-700 bg-amber-50 text-xs">
                                 {roleName}
