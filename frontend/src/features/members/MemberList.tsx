@@ -1,5 +1,6 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -37,6 +38,7 @@ import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Dobavi članove pomoću custom hooka
@@ -315,7 +317,7 @@ export default function MemberList(): JSX.Element {
         handleSwipeForNav(e);
       }}>
       {/* Print-only header */}
-      <div className="hidden print:block print:!block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{pageBreakInside: 'avoid'}} id="print-header">
+      <div className="hidden print:block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{pageBreakInside: 'avoid'}} id="print-header">
         <h1 className="text-2xl font-bold mb-2">Planinarsko društvo "Promina" Drniš</h1>
         <h2 className="text-xl font-semibold mb-3">Upisna lista članova</h2>
         <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
@@ -401,7 +403,7 @@ export default function MemberList(): JSX.Element {
             onClick={() => window.print()}
           >
             <Printer className="w-4 h-4 md:mr-1" />
-            <span className="hidden md:inline">Print List</span>
+            <span className="hidden md:inline">{t('members.printList')}</span>
           </Button>
 
                   {isAdmin && (
@@ -412,7 +414,7 @@ export default function MemberList(): JSX.Element {
                       onClick={() => setShowAddForm(true)}
                     >
                       <UserPlus className="w-4 h-4 md:mr-1" />
-                      <span className="hidden md:inline">Add Member</span>
+                      <span className="hidden md:inline">{t('members.addMember')}</span>
                     </Button>
                   )}
                 </div>

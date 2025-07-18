@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getAdminSentMessages, getMemberSentMessages } from '../../../utils/api/apiMessages';
 import { useToast } from "@components/ui/use-toast";
 import { Button } from "@components/ui/button";
@@ -11,6 +12,7 @@ interface SentMessagesProps {
   userRole: string;
 }
 export default function SentMessages({ userRole }: SentMessagesProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
@@ -35,8 +37,8 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
       setSentMessages(convertedData);
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poslane poruke',
+        title: t('messages.error'),
+        description: error instanceof Error ? error.message : t('messages.fetchSentMessagesError'),
         variant: "destructive"
       });
     } finally {

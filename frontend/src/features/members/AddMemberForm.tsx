@@ -25,19 +25,20 @@ const sizeOptions: SizeOptions[] = [
   { value: 'XXXL', label: 'XXXL' }
 ];
 
-const lifeStatusOptions = [
-  { value: 'employed/unemployed', label: 'Employed/Unemployed' },
-  { value: 'child/pupil/student', label: 'Child/Pupil/Student' },
-  { value: 'pensioner', label: 'Pensioner' }
-];
-
-const genderOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' }
-];
-
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   const { t } = useTranslation();
+  
+  // Opcije za dropdown-ove - koriste postojeće ključeve
+  const lifeStatusOptions = [
+    { value: 'employed/unemployed', label: t('options.lifeStatus.employed') },
+    { value: 'child/pupil/student', label: t('options.lifeStatus.child') },
+    { value: 'pensioner', label: t('options.lifeStatus.pensioner') }
+  ];
+  
+  const genderOptions = [
+    { value: 'male', label: t('options.gender.male') },
+    { value: 'female', label: t('options.gender.female') }
+  ];
   const [member, setMember] = useState<Omit<Member, 'member_id'>>({
     first_name: '',
     last_name: '',
@@ -97,14 +98,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Add New Member</h3>
+        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('members.addMemberForm.title')}</h3>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
             name="first_name"
             value={member.first_name}
             onChange={handleChange}
-            placeholder="First Name"
+            placeholder={t('members.addMemberForm.firstName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -113,7 +114,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="last_name"
             value={member.last_name}
             onChange={handleChange}
-            placeholder="Last Name"
+            placeholder={t('members.addMemberForm.lastName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -144,7 +145,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="street_address"
             value={member.street_address}
             onChange={handleChange}
-            placeholder="Street Address"
+            placeholder={t('members.addMemberForm.streetAddress')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -153,7 +154,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="city"
             value={member.city}
             onChange={handleChange}
-            placeholder="City"
+            placeholder={t('members.addMemberForm.city')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -162,9 +163,9 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="oib"
             value={member.oib}
             onChange={handleChange}
-            placeholder="OIB"
+            placeholder={t('members.addMemberForm.oib')}
             pattern="[0-9]{11}"
-            title="OIB must be exactly 11 digits"
+            title={t('members.addMemberForm.oibTitle')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -173,7 +174,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="cell_phone"
             value={member.cell_phone}
             onChange={handleChange}
-            placeholder="Cell Phone"
+            placeholder={t('members.addMemberForm.cellPhone')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -182,7 +183,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="email"
             value={member.email}
             onChange={handleChange}
-            placeholder="Email"
+            placeholder={t('members.addMemberForm.email')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -254,14 +255,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               type="submit" 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Add Member
+              {t('members.addMemberForm.addButton')}
             </button>
             <button 
               type="button" 
               onClick={onClose} 
               className="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
             >
-              Cancel
+              {t('members.addMemberForm.cancelButton')}
             </button>
           </div>
         </form>

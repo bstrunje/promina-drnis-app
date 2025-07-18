@@ -105,7 +105,11 @@
       "deleteAll": "Izbriši sve poruke",
       "deleteAllShort": "Izbriši sve",
       "addMemberToGroup": "Dodaj člana u grupu:",
-      "searchPlaceholder": "Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
+      "searchPlaceholder": "Pretraži po imenu ili prezimenu... (najmanje 2 znaka)",
+      "error": "Greška",
+      "fetchMessagesError": "Nije moguće dohvatiti poruke",
+      "fetchSentMessagesError": "Nije moguće dohvatiti poslane poruke",
+      "readMessageTitle": "Pročitana poruka"
     },
     "personalInfo": {
       "title": "Osobni podaci",
@@ -391,6 +395,23 @@
       "description": "Opis",
       "startDate": "Datum početka",
       "actualStart": "Početak"
+    }
+  },
+  "members": {
+    "printList": "Ispiši listu",
+    "addMember": "Dodaj člana",
+    "addMemberForm": {
+      "title": "Dodaj novog člana",
+      "firstName": "Ime",
+      "lastName": "Prezime",
+      "streetAddress": "Adresa",
+      "city": "Grad",
+      "oib": "OIB",
+      "cellPhone": "Mobitel",
+      "email": "Email",
+      "addButton": "Dodaj člana",
+      "cancelButton": "Odustani",
+      "oibTitle": "OIB mora imati točno 11 znamenki"
     }
   }
 }

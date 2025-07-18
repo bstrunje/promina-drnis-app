@@ -293,16 +293,21 @@
     "sendButton": "Send Message",
     "sendSuccess": "Message sent successfully.",
     "sendError": "Error sending message.",
-    "deleteAll": "Delete All Messages",
-    "deleteAllShort": "Delete All",
+    "deleteAll": "Delete all messages",
+    "deleteAllShort": "Delete all",
     "addMemberToGroup": "Add member to group:",
-    "searchPlaceholder": "Search by name or surname... (minimum 2 characters)"
+    "searchPlaceholder": "Search by name or surname... (minimum 2 characters)",
+    "error": "Error",
+    "fetchMessagesError": "Unable to fetch messages",
+    "fetchSentMessagesError": "Unable to fetch sent messages",
+    "readMessageTitle": "Read message"
   },
   "membershipType": {
     "regular": "Regular member",
     "honorary": "Honorary member",
     "supporting": "Supporting member"
-  },  "roles": {
+  }, 
+  "roles": {
     "member": "Member",
     "member_administrator": "Administrator",
     "member_superuser": "Super Administrator"
@@ -335,6 +340,30 @@
       "saveChanges": "Save Changes",
       "saving": "Saving...",
       "saveSettings": "Save Settings"
+    },
+    "login": {
+      "title": "System Manager Login",
+      "username": "Username",
+      "password": "Password",
+      "loginButton": "Login",
+      "error": "Invalid credentials"
+    }
+  },
+  "members": {
+    "printList": "Print List",
+    "addMember": "Add Member",
+    "addMemberForm": {
+      "title": "Add New Member",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "streetAddress": "Street Address",
+      "city": "City",
+      "oib": "OIB",
+      "cellPhone": "Cell Phone",
+      "email": "Email",
+      "addButton": "Add Member",
+      "cancelButton": "Cancel",
+      "oibTitle": "OIB must be exactly 11 digits"
     }
   },
   "membership": {
