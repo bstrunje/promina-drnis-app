@@ -34,7 +34,7 @@ export const getActivitiesByTypeId = async (typeId: string, year?: number): Prom
  * @returns Promise koji razrješava u polje aktivnosti.
  */
 export const getActivitiesByStatus = async (status: string): Promise<Activity[]> => {
-  const response = await apiInstance.get<Activity[]>(`/activities/by-status/${status}`);
+  const response = await apiInstance.get<Activity[]>(`/activities/by-status/${status}?include=participants`);
   return response.data;
 };
 
@@ -53,6 +53,16 @@ export const getAllActivities = async (): Promise<Activity[]> => {
  * Dohvaća sve aktivnosti s potpunim detaljima o sudionicima (za izračun sati)
  * @returns Promise koji razrješava u polje aktivnosti s potpunim detaljima sudionika
  */
+/**
+ * Dohvaća sve aktivnosti za određenu godinu s potpunim detaljima o sudionicima.
+ * @param year Godina za koju se dohvaćaju aktivnosti.
+ * @returns Promise koji razrješava u polje aktivnosti s potpunim detaljima sudionika.
+ */
+export const getActivitiesByYearWithParticipants = async (year: number): Promise<Activity[]> => {
+  const response = await apiInstance.get(`/activities/by-year/${year}/with-participants`);
+  return response.data;
+};
+
 export const getAllActivitiesWithParticipants = async (): Promise<Activity[]> => {
   // Koristi novu specijaliziranu rutu koja vraća potpune podatke o sudionicima
   const response = await apiInstance.get('/activities/with-participants');

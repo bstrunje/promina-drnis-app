@@ -120,6 +120,10 @@ export const getAllActivitiesService = async () => {
  * Dohvaća sve aktivnosti s detaljima o sudionicima (koristi se za izračun sati)
  * @returns Promise<Activity[]> Lista aktivnosti s uključenim sudionicima
  */
+export const getActivitiesByYearWithParticipantsService = async (year: number) => {
+  return activityRepository.findActivitiesByYearWithParticipants(year);
+};
+
 export const getAllActivitiesWithParticipantsService = async () => {
   return activityRepository.findAllActivitiesWithParticipants();
 };

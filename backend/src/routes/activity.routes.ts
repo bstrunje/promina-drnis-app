@@ -6,23 +6,29 @@ const router = express.Router();
 
 // --- Rute za Aktivnosti --- //
 
+// VAŽNO: Specifične rute moraju doći prije parametarskih ruta!
+
 // Dohvati sve tipove aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/types', authenticateToken, activityController.getActivityTypes);
 
-// Dohvati aktivnosti po tipu (dostupno svim prijavljenim korisnicima)
-router.get('/type/:typeId', authenticateToken, activityController.getActivitiesByTypeId);
+// Dohvati sve aktivnosti s detaljima o sudionicima (za izračun sati - dostupno svim prijavljenim korisnicima)
+router.get('/with-participants', authenticateToken, activityController.getAllActivitiesWithParticipants);
+
+// Dohvati aktivnosti po godini s detaljima o sudionicima (NOVO - za performanse)
+router.get('/by-year/:year/with-participants', authenticateToken, activityController.getActivitiesByYearWithParticipants);
 
 // Dohvati sve aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/', authenticateToken, activityController.getAllActivities);
 
-// VAŽNO: Specifične rute moraju doći prije parametarskih ruta!
-// Dohvati sve aktivnosti s detaljima o sudionicima (za izračun sati - dostupno svim prijavljenim korisnicima)
-router.get('/with-participants', authenticateToken, activityController.getAllActivitiesWithParticipants);
+// --- Parametarske rute --- //
+
+// Dohvati aktivnosti po tipu (dostupno svim prijavljenim korisnicima)
+router.get('/type/:typeId', authenticateToken, activityController.getActivitiesByTypeId);
 
 // Dohvati aktivnosti po statusu (dostupno svim prijavljenim korisnicima)
 router.get('/by-status/:status', authenticateToken, activityController.getActivitiesByStatus);
 
-// Dohvati jednu aktivnost po ID-u (dostupno svim prijavljenim korisnicima)
+// Dohvati jednu aktivnost po ID-u (mora biti jedna od zadnjih GET ruta)
 router.get('/:activityId', authenticateToken, activityController.getActivityById);
 
 // Dohvati sve aktivnosti za člana (dostupno svim prijavljenim korisnicima)

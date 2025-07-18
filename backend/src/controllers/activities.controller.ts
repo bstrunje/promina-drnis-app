@@ -42,6 +42,19 @@ export const getAllActivities = async (req: Request, res: Response, next: NextFu
  * Dohvaća sve aktivnosti s detaljima o sudionicima
  * @route GET /api/activities/with-participants
  */
+export const getActivitiesByYearWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const year = parseInt(req.params.year, 10);
+    if (isNaN(year)) {
+      return res.status(400).json({ message: 'Invalid year provided.' });
+    }
+    const activities = await activityService.getActivitiesByYearWithParticipantsService(year);
+    res.status(200).json(activities);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAllActivitiesWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const activities = await activityService.getAllActivitiesWithParticipantsService();

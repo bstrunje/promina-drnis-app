@@ -182,11 +182,12 @@ setEditedMember(memberData);
     }
   }, [memberId, savedScrollPosition]);
   
-  useEffect(() => {
+    useEffect(() => {
   if (memberId) {
     void fetchMemberDetails(false); // Označi kao floating promise
   }
-}, [memberId, fetchMemberDetails]); // Dodan fetchMemberDetails u dependencies
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [memberId]);
 
   useEffect(() => {
     if (member?.membership_history) {

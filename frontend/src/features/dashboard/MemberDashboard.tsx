@@ -7,7 +7,7 @@ import { formatHoursToHHMM } from '../../utils/activityHours';
 import { Users, Activity as ActivityIcon, Mail, User, RefreshCw, Bell, Calendar } from 'lucide-react';
 import { Member } from '@shared/member';
 import { Activity } from '@shared/activity.types';
-import { getActivitiesByStatus } from '../../utils/api/apiActivities';
+import { getAllActivitiesWithParticipants } from '../../utils/api/apiActivities';
 import { API_BASE_URL } from '@/utils/config';
 import axios from 'axios';
 import { MESSAGE_EVENTS } from '../../utils/events';
@@ -50,7 +50,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
   const [fullMember, setFullMember] = useState<Member>(member);
-  const [plannedActivities, setPlannedActivities] = useState<Activity[]>([]);
+  const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
 
   const getActivityStatus = (totalHours: number | null | undefined) => {
     return (totalHours ?? 0) >= 20 ? "active" : "passive";
@@ -92,13 +92,22 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     }
   };
 
-  const fetchPlannedActivities = async () => {
+  const fetchUpcomingActivities = async () => {
     try {
-      const activities = await getActivitiesByStatus('PLANNED');
-      setPlannedActivities(activities);
+      // Dohvaćamo SVE aktivnosti s podacima o sudionicima
+      const allActivities = await getAllActivitiesWithParticipants();
+
+      // Filtriramo ih na klijentu da prikažemo samo PLANNED i ACTIVE
+      const upcoming = allActivities.filter(
+        activity => activity.status === 'PLANNED' || activity.status === 'ACTIVE'
+      );
+
+      // Sortiramo aktivnosti po datumu početka kako bi bile kronološki poredane
+      upcoming.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+      setUpcomingActivities(upcoming);
     } catch (err) {
-      console.error('Failed to fetch planned activities:', err);
-      // Ovdje ne postavljamo opću grešku da ne bismo prekinuli prikaz ostatka dashboarda
+      console.error('Failed to fetch upcoming activities:', err);
     }
   };
 
@@ -145,17 +154,10 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         }
       };
 
-      const fetchPlannedActivities = async () => {
-        try {
-          const activities = await getActivitiesByStatus('PLANNED');
-          setPlannedActivities(activities);
-        } catch (err) {
-          console.error('Failed to fetch planned activities:', err);
-        }
-      };
+
 
       void fetchMemberData();
-      void fetchPlannedActivities();
+      void fetchUpcomingActivities();
     };
 
     void fetchMemberDetails();
@@ -329,15 +331,29 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <Calendar className="mr-2 h-5 w-5 text-gray-500" />
             Nadolazeći događaji
           </h3>
-          {plannedActivities.length > 0 ? (
+          {upcomingActivities.length > 0 ? (
             <ul className="space-y-3">
-              {plannedActivities.map(activity => (
+              {upcomingActivities.map(activity => (
                 <li key={activity.activity_id} className="p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
                   <Link to={`/activities/${activity.activity_id}`} className="block">
-                    <p className="font-semibold text-gray-800">{activity.name}</p>
-                    <p className="text-sm text-gray-600">
-                      {formatInputDate(activity.start_date)} - {activity.activity_type?.name}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-gray-800">{activity.name}</p>
+                        <p className="text-sm text-gray-600">
+                          {formatInputDate(activity.start_date)} - {activity.activity_type?.name}
+                        </p>
+                      </div>
+                      {(() => {
+                        switch (activity.status) {
+                          case 'PLANNED':
+                            return <span className="font-semibold text-green-600 text-sm">Najavljeno</span>;
+                          case 'ACTIVE':
+                            return <span className="font-semibold text-blue-500 text-sm">U tijeku</span>;
+                          default:
+                            return null;
+                        }
+                      })()}
+                    </div>
                   </Link>
                 </li>
               ))}

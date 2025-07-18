@@ -3,7 +3,7 @@ import './activities.css';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
-import { getActivityTypes, getAllActivities, getActivityById } from '@/utils/api/apiActivities';
+import { getActivityTypes, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
 import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
@@ -27,35 +27,14 @@ const ActivitiesList: React.FC = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      // 1. Prvo dohvaćamo tipove i osnovne podatke o aktivnostima
-      const [types, basicActivities] = await Promise.all([
+      // Optimizirani dohvat: jednim pozivom dohvaćamo sve potrebne podatke.
+      const [types, activitiesWithDetails] = await Promise.all([
         getActivityTypes(),
-        getAllActivities(),
+        getAllActivitiesWithParticipants(), // Ovaj poziv sada vraća sve, uključujući sudionike
       ]);
+
       setActivityTypes(types);
-      
-      // 2. Za svaku aktivnost dohvaćamo detalje s podacima o sudionicima
-      // Sada dohvaćamo sve aktivnosti bez obzira na status
-      
-      // 3. Za svaku aktivnost dohvaćamo detalje kako bismo dobili točne podatke o sudionicima
-      const detailedActivitiesPromises = basicActivities.map(activity => 
-        getActivityById(activity.activity_id.toString())
-      );
-      
-      // 4. Čekamo da se dohvate svi detalji
-      const detailedActivities = await Promise.all(detailedActivitiesPromises);
-      
-      // 5. Spajamo osnovne aktivnosti s detaljnima za sve aktivnosti
-      const enhancedActivities = basicActivities.map(basicActivity => {
-        // Tražimo detalje za svaku aktivnost
-        const detailedActivity = detailedActivities.find(
-          detailedAct => detailedAct.activity_id === basicActivity.activity_id
-        );
-        return detailedActivity || basicActivity;
-      });
-      
-      console.log('Enhancing activities with detailed participant data', enhancedActivities);
-      setAllActivities(enhancedActivities);
+      setAllActivities(activitiesWithDetails);
       setError(null);
     } catch (err) {
       console.error('Greška prilikom dohvaćanja podataka:', err);
@@ -199,6 +178,10 @@ const ActivitiesList: React.FC = () => {
               return activityYear === year;
             });
             const yearHours = calculateGrandTotalHours(yearActivities);
+
+            // Provjera za aktivne i najavljene aktivnosti unutar godine
+            const hasActive = totalYearActivities.some(a => a.status === 'ACTIVE');
+            const hasPlanned = totalYearActivities.some(a => a.status === 'PLANNED');
             
             // Link bi vodio na posebnu stranicu za pregled aktivnosti po godini
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
@@ -206,9 +189,15 @@ const ActivitiesList: React.FC = () => {
               <Link to={`/activities/year/${year}`} key={year}>
                 <Card className="hover:bg-muted/50 transition-colors activity-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-1 sm:gap-2 justify-center">
-                      <Calendar className="h-4 w-4 sm:h-6 sm:w-6" />
-                      <span className="text-lg sm:text-xl">{year}</span>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 sm:h-6 sm:w-6" />
+                        <span className="text-lg sm:text-xl">{year}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
+                        {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title="Postoje najavljene aktivnosti"></div>}
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardFooter className="pt-0 pb-3 px-3 sm:px-6 sm:pb-6 flex flex-col gap-1 sm:gap-2">

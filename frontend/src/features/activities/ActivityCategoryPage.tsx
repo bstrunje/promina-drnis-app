@@ -5,7 +5,7 @@ import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircl
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
+import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -64,26 +64,9 @@ const ActivityCategoryPage: React.FC = () => {
         
         // Dohvaćamo aktivnosti te godine za računanje statistike s detaljima o sudionicima
         // Koristimo novu funkciju koja dohvaća sve podatke o sudionicima za pravilni izračun sati
-        const allActivities = await getAllActivitiesWithParticipants();
-        
-        // Filtriranje aktivnosti po godini
-        const filteredActivities = allActivities.filter(activity => {
-          // Provjera ima li aktivnost datum
-          if (!activity.start_date) return false;
-          
-          // Izvlačimo godinu direktno iz ISO stringa za konzistentnost
-          let activityYear;
-          if (typeof activity.start_date === 'string') {
-            activityYear = parseInt(activity.start_date.substring(0, 4), 10);
-          } else {
-            const activityDate = new Date(activity.start_date);
-            activityYear = activityDate.getFullYear();
-          }
-          
-          return activityYear === parseInt(yearParam, 10);
-        });
-        
-        setActivities(filteredActivities);
+        const year = parseInt(yearParam, 10);
+        const activitiesForYear = await getActivitiesByYearWithParticipants(year);
+        setActivities(activitiesForYear);
         setActivityType(null); // Nema specifičnog tipa aktivnosti u prikazu po godini
         
       } else if (isYearView && activityTypeId && yearParam) {
@@ -91,26 +74,9 @@ const ActivityCategoryPage: React.FC = () => {
         const currentType = types.find(t => t.type_id.toString() === activityTypeId);
         setActivityType(currentType || null);
         
-        // Dohvaćamo sve aktivnosti s detaljima o sudionicima pa filtriramo po godini i tipu
-        const allActivities = await getAllActivitiesWithParticipants();
-        const filteredActivities = allActivities.filter(activity => {
-          // Provjera ima li aktivnost datum
-          if (!activity.start_date) return false;
-          
-          // Izvlačimo godinu direktno iz ISO stringa za konzistentnost
-          let activityYear;
-          if (typeof activity.start_date === 'string') {
-            activityYear = parseInt(activity.start_date.substring(0, 4), 10);
-          } else {
-            const activityDate = new Date(activity.start_date);
-            activityYear = activityDate.getFullYear();
-          }
-          
-          return activityYear === parseInt(yearParam, 10) && 
-                 activity.type_id.toString() === activityTypeId;
-        });
-        
-        setActivities(filteredActivities);
+        const year = parseInt(yearParam, 10);
+        const activitiesForTypeInYear = await getActivitiesByTypeId(activityTypeId, year);
+        setActivities(activitiesForTypeInYear);
         
       } else if (activityTypeId) {
         // Standardni dohvat po kategoriji (bez filtriranja po godini)
@@ -134,7 +100,8 @@ const ActivityCategoryPage: React.FC = () => {
 
   useEffect(() => {
     void fetchData();
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityTypeId, yearParam, isYearView]);
 
   const handleActivityCreated = () => {
     setCreateModalOpen(false);
@@ -262,6 +229,10 @@ const ActivityCategoryPage: React.FC = () => {
               
               // Ukupan broj aktivnosti u ovoj kategoriji
               const totalActivitiesCount = activitiesForType.length;
+
+              // Provjera za aktivne i najavljene aktivnosti
+              const hasActive = activitiesForType.some(a => a.status === 'ACTIVE');
+              const hasPlanned = activitiesForType.some(a => a.status === 'PLANNED');
               
               return (
                 <Link 
@@ -271,9 +242,15 @@ const ActivityCategoryPage: React.FC = () => {
                 >
                    <Card className="h-full transition-colors hover:bg-muted/50 activity-card">
                     <CardHeader className="activity-card-header">
-                      <div className="flex items-center gap-2">
-                        <ActivityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <CardTitle className="text-base sm:text-lg">{type.name}</CardTitle>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <ActivityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <CardTitle className="text-base sm:text-lg">{type.name}</CardTitle>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
+                          {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title="Postoje najavljene aktivnosti"></div>}
+                        </div>
                       </div>
                       {type.description && (
                         <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{type.description}</p>
@@ -346,13 +323,13 @@ const ActivityCategoryPage: React.FC = () => {
                           {(() => {
                             switch (activity.status) {
                               case 'PLANNED':
-                                return <span className="font-semibold text-red-500">Najavljeno</span>;
+                                return <span className="font-semibold text-green-600">Najavljeno</span>;
                               case 'ACTIVE':
                                 return <span className="font-semibold text-blue-500">U tijeku</span>;
                               case 'COMPLETED':
-                                return <span className="font-semibold text-green-600">Završena</span>;
+                                return <span className="font-semibold text-black">Završena</span>;
                               case 'CANCELLED':
-                                return <span className="font-semibold text-gray-500">Otkazana</span>;
+                                return <span className="font-semibold text-red-500">Otkazana</span>;
                               default:
                                 return null;
                             }
