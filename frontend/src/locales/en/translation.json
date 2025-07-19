@@ -328,6 +328,7 @@
     "title": "Select Skills",
     "instructor": "Instructor",
     "other": "Other skills (if not on the list)",
+    "otherPlaceholder": "Enter other skills...",
     "errors": {
       "fetchError": "Error fetching skills."
     }
@@ -681,39 +682,6 @@
     "error": "Failed to load events",
     "registered": "registered",
     "noEvents": "No events scheduled yet"
-  },
-  "auditLogs": {
-    "title": "Audit Logs",
-    "description": "System Activity Monitoring",
-    "filterLogs": "Filter Logs",
-    "filters": {
-      "dateRange": "Date Range",
-      "actionType": "Action Type",
-      "status": "Status",
-      "user": "User",
-      "searchByUser": "Search by user..."
-    },
-    "actionTypes": {
-      "all": "All",
-      "login": "Login",
-      "create": "Create",
-      "update": "Update",
-      "delete": "Delete",
-      "password": "Password"
-    },
-    "statuses": {
-      "all": "All",
-      "success": "Success",
-      "error": "Error"
-    },
-    "table": {
-      "timestamp": "Timestamp",
-      "action": "Action",
-      "performedBy": "Performed By",
-      "details": "Details",
-      "status": "Status",
-      "ipAddress": "IP Address"
-    }
   },
   "memberTable": {
     "headers": {

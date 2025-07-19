@@ -47,8 +47,8 @@ export const permissionsController = {
                 `Updated permissions for member ${memberId}`,
                 req,
                 'success',
-                memberId,
-                req.user?.performer_type
+                memberId
+                // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
             );
 
             res.json({ message: 'Permissions updated successfully' });

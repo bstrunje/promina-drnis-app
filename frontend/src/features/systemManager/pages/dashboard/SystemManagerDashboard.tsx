@@ -93,7 +93,7 @@ const SystemManagerDashboard: React.FC = () => {
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (
           <>
-            <h2 className="text-xl font-semibold mb-6">Postavke sustava</h2>
+            <h2 className="text-xl font-semibold mb-6">System Settings</h2>
             <SystemManagerSettings />
           </>
         )}
@@ -101,7 +101,7 @@ const SystemManagerDashboard: React.FC = () => {
         {/* Tab sadržaj - Registracija članova */}
         {activeTab === 'register-members' && (
           <>
-            <h2 className="text-xl font-semibold mb-6">Registracija članova</h2>
+            <h2 className="text-xl font-semibold mb-6">Member Registration</h2>
             <PendingMembersList />
           </>
         )}

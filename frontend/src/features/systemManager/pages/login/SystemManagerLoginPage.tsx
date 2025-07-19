@@ -16,7 +16,7 @@ const SystemManagerLoginPage: React.FC = () => {
     e.preventDefault();
     
     if (!username || !password) {
-      setError('Molimo unesite korisničko ime i lozinku');
+      setError('Please enter username and password');
       return;
     }
     
@@ -29,7 +29,7 @@ const SystemManagerLoginPage: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Greška prilikom prijave. Provjerite korisničko ime i lozinku.');
+        setError('Login error. Please check your username and password.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -44,11 +44,11 @@ const SystemManagerLoginPage: React.FC = () => {
             <img src={logoImage} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 text-center">
-            System Manager Pristup
+            System Manager Access
           </h1>
           <div className="flex items-center mt-2">
             <Shield className="w-5 h-5 text-blue-600 mr-1" />
-            <p className="text-sm text-gray-600">Ograničeni pristup - samo za managere sustava</p>
+            <p className="text-sm text-gray-600">Restricted access - system managers only</p>
           </div>
         </div>
 
@@ -62,7 +62,7 @@ const SystemManagerLoginPage: React.FC = () => {
 
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-              Korisničko ime
+              Username
             </label>
             <input
               type="text"
@@ -70,7 +70,7 @@ const SystemManagerLoginPage: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Unesite korisničko ime"
+              placeholder="Enter username"
               disabled={isLoggingIn}
               autoComplete="username"
             />
@@ -78,7 +78,7 @@ const SystemManagerLoginPage: React.FC = () => {
 
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Lozinka
+              Password
             </label>
             <div className="relative">
               <input
@@ -87,7 +87,7 @@ const SystemManagerLoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                placeholder="Unesite lozinku"
+                placeholder="Enter password"
                 disabled={isLoggingIn}
                 autoComplete="current-password"
               />
@@ -126,9 +126,9 @@ const SystemManagerLoginPage: React.FC = () => {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Ova stranica služi samo za prijavu managera sustava.
-              <br />Za člansku prijavu, molimo posjetite{' '}
-              <a href="/login" className="text-blue-600 hover:underline">standardnu prijavu</a>.
+              This page is for system manager login only.
+              <br />For member login, please visit{' '}
+              <a href="/login" className="text-blue-600 hover:underline">standard login</a>.
             </p>
           </div>
         </form>

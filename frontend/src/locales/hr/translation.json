@@ -311,6 +311,7 @@
     "title": "Odabir vještina",
     "instructor": "Instruktor",
     "other": "Ostale vještine (ako nisu na popisu)",
+    "otherPlaceholder": "Unesite ostale vještine...",
     "errors": {
       "fetchError": "Greška pri dohvaćanju vještina."
     }
@@ -333,6 +334,9 @@
       "saveSettings": "Spremi postavke"
     }
   },
+  "editMemberForm": {
+      "oibTitle": "OIB must have exactly 11 digits"
+    },
   "membership": {
     "periods": {
       "edit": "Uredi",
@@ -654,39 +658,6 @@
     "error": "Neuspješno učitavanje događaja",
     "registered": "prijavljeno",
     "noEvents": "Još nema zakazanih događaja"
-  },
-  "auditLogs": {
-    "title": "Revizijski zapisi",
-    "description": "Praćenje aktivnosti sustava",
-    "filterLogs": "Filtriraj zapise",
-    "filters": {
-      "dateRange": "Raspon datuma",
-      "actionType": "Tip akcije",
-      "status": "Status",
-      "user": "Korisnik",
-      "searchByUser": "Pretraži po korisniku..."
-    },
-    "actionTypes": {
-      "all": "Sve",
-      "login": "Prijava",
-      "create": "Kreiranje",
-      "update": "Ažuriranje",
-      "delete": "Brisanje",
-      "password": "Lozinka"
-    },
-    "statuses": {
-      "all": "Sve",
-      "success": "Uspjeh",
-      "error": "Greška"
-    },
-    "table": {
-      "timestamp": "Vremenska oznaka",
-      "action": "Akcija",
-      "performedBy": "Izvršio",
-      "details": "Detalji",
-      "status": "Status",
-      "ipAddress": "IP adresa"
-    }
   },
   "memberTable": {
     "headers": {

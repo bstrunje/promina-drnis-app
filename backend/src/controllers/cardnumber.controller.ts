@@ -61,8 +61,8 @@ const cardNumberController = {
         `Added card number: ${cardNumber}`,
         req,
         'success',
-        undefined,
-        req.user?.performer_type
+        undefined
+        // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
       res.status(201).json({ message: 'Card number added successfully' });
@@ -107,8 +107,8 @@ const cardNumberController = {
         `Added card number range: ${start} to ${end} (${added} added)`,
         req,
         'success',
-        undefined,
-        req.user?.performer_type
+        undefined
+        // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
       res.status(201).json({ message: `${added} card numbers added successfully` });
@@ -136,7 +136,6 @@ const cardNumberController = {
       }
       
       const performerId = req.user?.id || null;
-      const performerType = req.user?.performer_type;
 
       await auditService.logAction(
         'CARD_NUMBER_DELETED',
@@ -144,8 +143,8 @@ const cardNumberController = {
         `Deleted card number: ${cardNumber}`,
         req,
         'success',
-        undefined, // affected_member
-        performerType
+        undefined // affected_member
+        // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
       res.status(200).json({ 
@@ -209,8 +208,8 @@ const cardNumberController = {
         `Synchronized card number status. Updated ${result.updated} records.`,
         req,
         'success',
-        undefined,
-        req.user?.performer_type
+        undefined
+        // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
       res.status(200).json({ 

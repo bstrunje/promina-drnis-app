@@ -21,7 +21,7 @@ const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }
       >
         <div className="flex items-center">
           <Activity className="h-4 w-4 mr-2" />
-          <span>Pregled sustava</span>
+          <span>System Overview</span>
         </div>
       </button>
       <button
@@ -34,7 +34,7 @@ const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }
       >
         <div className="flex items-center">
           <Settings className="h-4 w-4 mr-2" />
-          <span>Postavke sustava</span>
+          <span>System Settings</span>
         </div>
       </button>
       <button
@@ -47,7 +47,7 @@ const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }
       >
         <div className="flex items-center">
           <FileText className="h-4 w-4 mr-2" />
-          <span>Revizijski zapisi</span>
+          <span>Audit Logs</span>
         </div>
       </button>
 

@@ -21,13 +21,13 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
       {/* Kartica članova - samo informativna */}
       <StatisticCard
-        title="Članovi"
+        title="Members"
         icon={<Users className="h-6 w-6 text-blue-600" />}
         value={stats?.totalMembers ?? 0}
         subtitle={
-          `${stats?.registeredMembers ?? 0} registriranih, ${stats?.activeMembers ?? 0} aktivnih 
+          `${stats?.registeredMembers ?? 0} registered, ${stats?.activeMembers ?? 0} active 
           ${(stats?.registeredMembers ?? 0) > 0 ? 
-            ` (${(((stats?.activeMembers ?? 0) / (stats?.registeredMembers ?? 1)) * 100).toFixed(1)}% aktivnih)` : 
+            ` (${(((stats?.activeMembers ?? 0) / (stats?.registeredMembers ?? 1)) * 100).toFixed(1)}% active)` : 
             ''}`
         }
         loading={statsLoading}
@@ -36,20 +36,20 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
 
       {/* Kartica aktivnosti */}
       <StatisticCard
-        title="Nedavne aktivnosti"
+        title="Recent Activities"
         icon={<Activity className="h-6 w-6 text-green-600" />}
         value={stats?.recentActivities ?? 0}
-        subtitle="U posljednja 24 sata"
+        subtitle="In the last 24 hours"
         loading={statsLoading}
         onClick={() => navigate("/activities")}
       />
 
       {/* Kartica registracija koje čekaju */}
       <StatisticCard
-        title="Registracije na čekanju"
+        title="Pending Registrations"
         icon={<Shield className="h-6 w-6 text-orange-600" />}
         value={stats?.pendingApprovals ?? 0}
-        subtitle="Čeka dodjelu lozinke"
+        subtitle="Awaiting Password Assignment"
         loading={statsLoading}
         onClick={() => { void setActiveTab('register-members'); }}
       />

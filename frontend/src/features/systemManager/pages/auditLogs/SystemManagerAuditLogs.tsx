@@ -100,8 +100,8 @@ const SystemManagerAuditLogs: React.FC = () => {
       const token = localStorage.getItem('systemManagerToken');
       if (!token) {
         toast({
-          title: "Greška",
-          description: "Niste prijavljeni kao System Manageristrator.",
+          title: "Error",
+          description: "You are not logged in as System Manager.",
           variant: "destructive"
         });
         setLoading(false);
@@ -124,8 +124,8 @@ const SystemManagerAuditLogs: React.FC = () => {
     } catch (err) {
       console.error('Error fetching audit logs:', err);
       toast({
-        title: "Greška",
-        description: "Dogodila se greška prilikom dohvata revizijskih zapisa.",
+        title: "Error",
+        description: "An error occurred while fetching audit logs.",
         variant: "destructive"
       });
     } finally {
@@ -188,18 +188,18 @@ const SystemManagerAuditLogs: React.FC = () => {
       </div>
 
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Revizijski zapisi sustava</h1>
-        <p className="opacity-90">Pregled svih aktivnosti u sustavu</p>
+        <h1 className="text-2xl font-bold mb-2">System Audit Logs</h1>
+        <p className="opacity-90">Overview of all system activities</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Filtriraj zapise</CardTitle>
+          <CardTitle>Filter Logs</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium mb-1">Vremenski raspon</label>
+              <label className="block text-sm font-medium mb-1">Time Range</label>
               <div className="flex gap-2">
                 <input
                   type="date"
@@ -216,20 +216,20 @@ const SystemManagerAuditLogs: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Vrsta akcije</label>
+              <label className="block text-sm font-medium mb-1">Action Type</label>
               <select
                 className="w-full p-2 border rounded"
                 value={filters.actionType}
                 onChange={(e) => handleFilterChange('actionType', e.target.value)}
               >
-                <option value="">Sve</option>
-                <option value="LOGIN">Prijava</option>
-                <option value="LOGOUT">Odjava</option>
-                <option value="UPDATE">Ažuriranje</option>
-                <option value="CREATE">Kreiranje</option>
-                <option value="DELETE">Brisanje</option>
-                <option value="SYSTEM">Sistemska akcija</option>
-                <option value="SYSTEM_ADMIN">System Manager akcija</option>
+                <option value="">All</option>
+                <option value="LOGIN">Login</option>
+                <option value="LOGOUT">Logout</option>
+                <option value="UPDATE">Update</option>
+                <option value="CREATE">Create</option>
+                <option value="DELETE">Delete</option>
+                <option value="SYSTEM">System Action</option>
+                <option value="SYSTEM_ADMIN">System Manager Action</option>
               </select>
             </div>
             <div>
@@ -239,19 +239,19 @@ const SystemManagerAuditLogs: React.FC = () => {
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
-                <option value="">Svi</option>
-                <option value="success">Uspješno</option>
-                <option value="error">Greška</option>
-                <option value="warning">Upozorenje</option>
+                <option value="">All</option>
+                <option value="success">Success</option>
+                <option value="error">Error</option>
+                <option value="warning">Warning</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Korisnik</label>
+            <label className="block text-sm font-medium mb-1">User</label>
             <input
               type="text"
               className="w-full p-2 border rounded"
-              placeholder="Pretražite po korisniku..."
+              placeholder="Search by user..."
               value={filters.user}
               onChange={(e) => handleFilterChange('user', e.target.value)}
             />
@@ -279,7 +279,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort('created_at')}
                 >
-                  Vrijeme
+                  Time
                   {sortField === 'created_at' && (
                     <span className="ml-1 inline-block">
                       {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -290,7 +290,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort('action_type')}
                 >
-                  Akcija
+                  Action
                   {sortField === 'action_type' && (
                     <span className="ml-1 inline-block">
                       {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -301,7 +301,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort('performed_by')}
                 >
-                  Korisnik
+                  User
                   {sortField === 'performed_by' && (
                     <span className="ml-1 inline-block">
                       {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -322,7 +322,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                 <th 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Detalji
+                  Details
                 </th>
               </tr>
             </thead>
@@ -353,14 +353,14 @@ const SystemManagerAuditLogs: React.FC = () => {
                         <span className="font-medium text-gray-900">{log.performer_name}</span>
                       ) : log.performed_by ? (
                         <span>
-                          Korisnik <span className="text-blue-600 font-medium">#{log.performed_by}</span>
+                          User <span className="text-blue-600 font-medium">#{log.performed_by}</span>
                         </span>
                       ) : (
-                        <span className="italic">Sustav</span>
+                        <span className="italic">System</span>
                       )}
                       {log.affected_name && (
                         <span className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-full">
-                          Za člana: {log.affected_name}
+                          For member: {log.affected_name}
                         </span>
                       )}
                     </td>
@@ -375,7 +375,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="max-w-xs truncate">
-                        {log.action_details || 'Nema detalja'}
+                        {log.action_details || 'No details'}
                       </div>
                     </td>
                   </tr>
@@ -383,7 +383,7 @@ const SystemManagerAuditLogs: React.FC = () => {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                    Nisu pronađeni zapisi koji odgovaraju zadanim kriterijima.
+                    No records found matching the specified criteria.
                   </td>
                 </tr>
               )}
@@ -391,7 +391,7 @@ const SystemManagerAuditLogs: React.FC = () => {
           </table>
         </div>
         <div className="px-6 py-4 bg-gray-50 text-sm text-gray-500">
-          Ukupno zapisa: {filteredLogs.length} (od {auditLogs.length})
+          Total records: {filteredLogs.length} (of {auditLogs.length})
         </div>
       </div>
     </div>

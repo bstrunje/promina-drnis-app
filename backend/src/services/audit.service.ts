@@ -10,10 +10,48 @@ interface LogEventParams {
     user_type: string | null;
     ip_address: string;
     details: Record<string, any>;
+    performer_type?: PerformerType;
 }
 
 interface AuditLogDetails {
     user_id: number | null;
+}
+
+// Helper funkcija za određivanje performer_type-a
+function getPerformerType(req: Request | undefined): PerformerType | null {
+    console.log('DEBUG getPerformerType - req?.user:', req?.user);
+    
+    if (!req?.user) {
+        console.log('DEBUG getPerformerType - no req.user, returning null');
+        return null;
+    }
+    
+    // Ako je performer_type eksplicitno postavljen, koristi ga
+    if (req.user.performer_type) {
+        console.log('DEBUG getPerformerType - using explicit performer_type:', req.user.performer_type);
+        return req.user.performer_type;
+    }
+    
+    // Fallback logika na osnovu user_type ili is_SystemManager
+    if (req.user.is_SystemManager || req.user.user_type === 'SystemManager') {
+        console.log('DEBUG getPerformerType - detected SystemManager, returning SYSTEM_MANAGER');
+        return PerformerType.SYSTEM_MANAGER;
+    }
+    
+    if (req.user.user_type === 'member') {
+        console.log('DEBUG getPerformerType - detected member, returning MEMBER');
+        return PerformerType.MEMBER;
+    }
+    
+    // Zadnji fallback - pokušaj na osnovu role
+    if (req.user.role === 'SystemManager') {
+        console.log('DEBUG getPerformerType - detected SystemManager role, returning SYSTEM_MANAGER');
+        return PerformerType.SYSTEM_MANAGER;
+    }
+    
+    // Ako ništa nije jasno, pretpostavi da je član
+    console.log('DEBUG getPerformerType - fallback to MEMBER');
+    return PerformerType.MEMBER;
 }
 
 const auditService = {
@@ -29,6 +67,9 @@ const auditService = {
         try {
             const ip_address = req ? (req.ip || req.socket.remoteAddress || 'unknown') : 'not available';
             
+            // Koristi helper funkciju ako performer_type nije postavljen ili je undefined/null
+            const finalPerformerType = performer_type ?? getPerformerType(req);
+            
             await auditRepository.create(
                 action_type,
                 performed_by,
@@ -36,7 +77,7 @@ const auditService = {
                 ip_address,
                 status,
                 affected_member,
-                performer_type
+                finalPerformerType
             );
         } catch (error) {
             console.error('Error logging audit action:', error);
@@ -59,7 +100,8 @@ const auditService = {
                 detailsStr,
                 ip_address,
                 'success', // Pretpostavljeni status
-                details.affected_member || null
+                details.affected_member || null,
+                params.performer_type || null
             );
         } catch (error) {
             console.error('Error logging audit event:', error);
@@ -77,3 +119,4 @@ const auditService = {
 };
 
 export default auditService;
+export { getPerformerType };

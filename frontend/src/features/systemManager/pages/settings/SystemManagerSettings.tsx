@@ -19,7 +19,6 @@ interface SystemSettingsFormProps {
 }
 
 export function ChangePasswordForm() {
-  const { t } = useTranslation();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -39,14 +38,14 @@ export function ChangePasswordForm() {
       }
       if (oldPassword && newPassword) {
         if (newPassword !== confirm) {
-          setMessage('Nova lozinka i potvrda nisu iste.');
+          setMessage('New password and confirmation do not match.');
           return;
         }
         await systemManagerApi.patch('/system-manager/change-password', { oldPassword, newPassword });
       }
       setMessage(
-        (usernameChanged ? 'Username uspješno promijenjen. ' : '') +
-        (oldPassword && newPassword ? 'Lozinka uspješno promijenjena.' : '')
+        (usernameChanged ? 'Username successfully changed. ' : '') +
+        (oldPassword && newPassword ? 'Password successfully changed.' : '')
       );
       setOldPassword('');
       setNewPassword('');
@@ -60,18 +59,18 @@ const data = err.response?.data as unknown;
 const serverMsg = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
   ? (data as { message: string }).message
   : undefined;
-        setMessage(serverMsg ?? 'Greška pri spremanju promjena.');
+        setMessage(serverMsg ?? 'Error saving changes.');
       } else if (err instanceof Error) {
-        setMessage(typeof err.message === 'string' ? err.message : 'Greška pri spremanju promjena.');
+        setMessage(typeof err.message === 'string' ? err.message : 'Error saving changes.');
       } else {
-        setMessage('Greška pri spremanju promjena.');
+        setMessage('Error saving changes.');
       }
     }
   };
 
   return (
     <form onSubmit={e => void handleSubmit(e)} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow">
-      <label htmlFor="newUsername" className="font-medium">Novi username (opcionalno)</label>
+      <label htmlFor="newUsername" className="font-medium">New username (optional)</label>
       <input
         id="newUsername"
         type="text"
@@ -79,9 +78,9 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         value={newUsername}
         onChange={e => setNewUsername(e.target.value)}
-        placeholder={manager?.username ?? 'Trenutni username'}
+        placeholder={manager?.username ?? 'Current username'}
       />
-      <label htmlFor="oldPassword" className="font-medium">Stara lozinka</label>
+      <label htmlFor="oldPassword" className="font-medium">Old password</label>
       {/* Skriveno polje za username radi accessibility i browser autofill */}
       <input
         type="text"
@@ -102,7 +101,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         onChange={e => setOldPassword(e.target.value)}
         required={!!(newPassword || confirm)}
       />
-      <label htmlFor="newPassword" className="font-medium">Nova lozinka</label>
+      <label htmlFor="newPassword" className="font-medium">New password</label>
       <input
         id="newPassword"
         type="password"
@@ -112,7 +111,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         onChange={e => setNewPassword(e.target.value)}
         required={!!oldPassword}
       />
-      <label htmlFor="confirmPassword" className="font-medium">Potvrdi novu lozinku</label>
+      <label htmlFor="confirmPassword" className="font-medium">Confirm New Password</label>
       <input
         id="confirmPassword"
         type="password"
@@ -126,9 +125,9 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
         type="submit"
         className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
       >
-        {t('systemManager.settings.saveChanges')}
+        Save Changes
       </button>
-      {message && <div className={`mt-2 text-sm ${message.includes('uspješno') ? 'text-green-600' : 'text-red-600'}`}>{message}</div>}
+      {message && <div className={`mt-2 text-sm ${message.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>{message}</div>}
     </form>
   );
 }
@@ -141,15 +140,15 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   onSubmit,
   showFixedSuccess
 }) => {
-  const { t } = useTranslation();
+  
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4">Osnovne postavke sustava</h2>
+        <h2 className="text-lg font-semibold mb-4">Basic System Settings</h2>
         
         <div className="mb-6">
           <label className="block text-gray-700 text-sm font-bold mb-2">
-            Duljina broja članske iskaznice
+            Member Card Number Length
           </label>
           <input
             type="number"
@@ -161,13 +160,13 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
           <p className="text-sm text-gray-500 mt-1">
-            Definira duljinu brojeva članskih iskaznica.
+            Defines the length of member card numbers.
           </p>
         </div>
 
         <div className="mb-6">
           <label className="block text-gray-700 text-sm font-bold mb-2">
-            Datum obnove članstva
+            Membership Renewal Date
           </label>
           <div className="flex space-x-4">
             <div>
@@ -175,13 +174,13 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 htmlFor="renewalStartDay"
                 className="block text-sm font-medium text-gray-700"
               >
-                Dan
+                Day
               </label>
               <input
                 type="number"
                 name="renewalStartDay"
                 className="mt-1 block w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="Dan"
+                placeholder="Day"
                 min="1"
                 max="31"
                 value={settings.renewalStartDay ?? 1}
@@ -193,7 +192,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 htmlFor="renewalStartMonth"
                 className="block text-sm font-medium text-gray-700"
               >
-                Mjesec
+                Month
               </label>
               <select
                 name="renewalStartMonth"
@@ -201,20 +200,20 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 value={settings.renewalStartMonth ?? 11}
                 onChange={onChange}
               >
-                <option value={11}>Prosinac</option>
-                <option value={10}>Studeni</option>
+                <option value={11}>December</option>
+                <option value={10}>November</option>
               </select>
             </div>
           </div>
           <div className="mt-2 space-y-2">
             <p className="text-sm text-gray-500">
-              Postavlja granični datum za obradu obnove članstva.
+              Sets the cutoff date for membership renewal processing.
             </p>
             <p className="text-sm text-blue-600">
-              Ako je uplata primljena nakon ovog datuma, članstvo počinje od 1. siječnja sljedeće godine.
+              If payment is received after this date, membership starts from January 1st of the following year.
             </p>
             <p className="text-sm text-blue-600">
-              Ako je uplata primljena prije ili na ovaj datum, članstvo počinje odmah.
+              If payment is received before or on this date, membership starts immediately.
             </p>
           </div>
         </div>
@@ -222,7 +221,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
         {/* Dodana kontrola za vremensku zonu */}
         <div className="mt-5">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Vremenska zona sustava
+            System Time Zone
           </label>
           <div className="flex space-x-4">
             <div className="w-full">
@@ -236,7 +235,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 <option value="Europe/Belgrade">Beograd (UTC+1/UTC+2)</option>
                 <option value="Europe/Berlin">Berlin (UTC+1/UTC+2)</option>
                 <option value="Europe/London">London (UTC+0/UTC+1)</option>
-                <option value="UTC">UTC (Koordinirano svjetsko vrijeme)</option>
+                <option value="UTC">UTC (Coordinated Universal Time)</option>
                 <option value="Europe/Athens">Atena (UTC+2/UTC+3)</option>
                 <option value="Europe/Kiev">Kijev (UTC+2/UTC+3)</option>
                 <option value="Europe/Moscow">Moskva (UTC+3)</option>
@@ -248,10 +247,10 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
                 <option value="America/Los_Angeles">Los Angeles (UTC-8/UTC-7)</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                Ova postavka utječe na prikazivanje datuma i vremena u cijeloj aplikaciji.
+                This setting affects date and time display throughout the application.
               </p>
               <div className="mt-1 text-xs text-blue-600">
-                Vremenske zone prikazuju se s njihovim pomakom od UTC (standardno/ljetno).
+                Time zones are displayed with their UTC offset (standard/daylight).
               </div>
             </div>
           </div>
@@ -259,28 +258,28 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4">Sigurnosne postavke</h2>
+        <h2 className="text-lg font-semibold mb-4">Security Settings</h2>
         
         <div className="text-sm text-gray-500 py-2">
-          <p>U budućim verzijama će biti dostupne dodatne sigurnosne postavke:</p>
+          <p>Additional security settings will be available in future versions:</p>
           <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Postavke dvostruke autentifikacije</li>
-            <li>Pravila kompleksnosti lozinke</li>
-            <li>Postavke sesija</li>
-            <li>Autorizacijska pravila</li>
+            <li>Two-factor authentication settings</li>
+            <li>Password complexity rules</li>
+            <li>Session settings</li>
+            <li>Authorization rules</li>
           </ul>
         </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4">Postavke sigurnosnih kopija</h2>
+        <h2 className="text-lg font-semibold mb-4">Backup Settings</h2>
         
         <div className="text-sm text-gray-500 py-2">
-          <p>U budućim verzijama će biti dostupne postavke sigurnosnih kopija:</p>
+          <p>Backup settings will be available in future versions:</p>
           <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Učestalost kreiranja automatskih sigurnosnih kopija</li>
-            <li>Lokacija pohrane</li>
-            <li>Postavke zadržavanja</li>
+            <li>Frequency of automatic backup creation</li>
+            <li>Storage location</li>
+            <li>Retention settings</li>
           </ul>
         </div>
       </div>
@@ -303,12 +302,12 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           {isLoading ? (
             <>
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              {t('systemManager.settings.saving')}
+              Saving...
             </>
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              {t('systemManager.settings.saveSettings')}
+              Save Settings
             </>
           )}
         </button>
@@ -362,11 +361,11 @@ const SystemManagerSettings: React.FC = () => {
             ? (data as { message: string }).message
             : err.message;
         } else if (err instanceof Error) {
-          errorMessage = typeof err.message === 'string' ? err.message : 'Dogodila se nepoznata greška';
+          errorMessage = typeof err.message === 'string' ? err.message : 'An unknown error occurred';
         } else {
-          errorMessage = 'Dogodila se nepoznata greška';
+          errorMessage = 'An unknown error occurred';
         }
-        setError(`Greška prilikom dohvata postavki: ${errorMessage}`);
+        setError(`Error fetching settings: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -382,7 +381,7 @@ const SystemManagerSettings: React.FC = () => {
     if (name === 'renewalStartDay') {
       const numValue = parseInt(value);
       if (numValue < 1 || numValue > 31) {
-        setError('Dan obnove mora biti između 1 i 31');
+        setError('Renewal day must be between 1 and 31');
         return;
       }
       
@@ -394,7 +393,7 @@ const SystemManagerSettings: React.FC = () => {
     else if (name === 'cardNumberLength') {
       const numValue = parseInt(value);
       if (numValue < 1 || numValue > 10) {
-        setError('Duljina broja iskaznice mora biti između 1 i 10');
+        setError('Card number length must be between 1 and 10');
         return;
       }
       
@@ -433,7 +432,7 @@ const SystemManagerSettings: React.FC = () => {
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
       const updatedSettings = await updateSystemSettings(settings);
       setSettings(updatedSettings);
-      setSuccessMessage("Postavke su uspješno ažurirane!");
+      setSuccessMessage("Settings successfully updated!");
       
       // Postavi fiksnu poruku o uspjehu
       setShowFixedSuccess(true);
@@ -447,8 +446,8 @@ const SystemManagerSettings: React.FC = () => {
         setShowFixedSuccess(false);
       }, 8000); // void zbog lint pravila
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Dogodila se nepoznata greška';
-      setError(`Greška prilikom ažuriranja postavki: ${errorMessage}`);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(`Error updating settings: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -470,7 +469,7 @@ const SystemManagerSettings: React.FC = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <span className="font-medium text-lg">Postavke su uspješno ažurirane!</span>
+          <span className="font-medium text-lg">Settings successfully updated!</span>
         </div>
       )}
       
@@ -482,7 +481,7 @@ const SystemManagerSettings: React.FC = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-lg font-semibold text-gray-900 flex items-center">
               <Shield className="h-5 w-5 mr-2 text-indigo-600" />
-              System Manager - Postavke
+              System Manager - Settings
             </h1>
           </div>
         </div>
@@ -491,8 +490,8 @@ const SystemManagerSettings: React.FC = () => {
       {/* Main Content */}
       <main className="container mx-auto p-4">
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg text-white p-6 mb-6">
-          <h1 className="text-2xl font-bold mb-2">Postavke sustava</h1>
-          <p className="opacity-90">Konfiguracija sistemskih parametara</p>
+          <h1 className="text-2xl font-bold mb-2">System Settings</h1>
+          <p className="opacity-90">System parameter configuration</p>
         </div>
 
         {error && (
@@ -515,7 +514,7 @@ const SystemManagerSettings: React.FC = () => {
           showFixedSuccess={showFixedSuccess}
         />
         <section className="mt-10">
-          <h2 className="text-lg font-semibold mb-2">Promjena lozinke</h2>
+          <h2 className="text-lg font-semibold mb-2">Change Password</h2>
           <ChangePasswordForm />
         </section>
       </main>

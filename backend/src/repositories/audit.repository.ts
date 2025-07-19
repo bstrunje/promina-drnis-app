@@ -41,6 +41,9 @@ const auditRepository = {
     ): Promise<void> {
         try {
             const finalPerformerType = performer_type;
+            
+            console.log('DEBUG auditRepository.create - received performer_type:', performer_type);
+            console.log('DEBUG auditRepository.create - finalPerformerType:', finalPerformerType);
 
             await prisma.auditLog.create({
                 data: {
@@ -53,6 +56,8 @@ const auditRepository = {
                     performer_type: finalPerformerType || null,
                 },
             });
+            
+            console.log('DEBUG auditRepository.create - audit log created successfully');
         } catch (error) {
             console.error('GREŠKA PRILIKOM KREIRANJA AUDIT LOGA:', error);
             // U produkciji možda ne želite baciti grešku koja će srušiti zahtjev

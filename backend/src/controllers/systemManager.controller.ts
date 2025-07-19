@@ -41,7 +41,7 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!manager) return res.status(404).json({ message: 'System Manager not found' });
 
     const isMatch = await bcrypt.compare(oldPassword, manager.password_hash);
-    if (!isMatch) return res.status(400).json({ message: 'Pogrešna stara lozinka' });
+    if (!isMatch) return res.status(400).json({ message: 'Incorrect old password' });
 
     const newHash = await bcrypt.hash(newPassword, 10);
     await prisma.systemManager.update({
@@ -49,7 +49,7 @@ export const changePassword = async (req: Request, res: Response) => {
         data: { password_hash: newHash },
     });
 
-    return res.json({ message: 'Lozinka uspješno promijenjena' });
+    return res.json({ message: 'Password changed successfully' });
 };
 
 // PATCH /system-manager/change-username
@@ -76,14 +76,14 @@ export const changeUsername = async (req: Request, res: Response) => {
     await auditService.logAction(
         'update', // action_type
         managerId,  // performed_by
-        `System manager promijenio korisničko ime u: ${username}`, // action_details
+        `System manager changed username to: ${username}`, // action_details
         req,      // req objekt
         'success', // status
         undefined,
         PerformerType.SYSTEM_MANAGER
     );
 
-    return res.json({ message: 'Korisničko ime uspješno promijenjeno', username });
+    return res.json({ message: 'Username changed successfully', username });
 };
 
 /**
@@ -303,7 +303,7 @@ const systemManagerController = {
             });
         } catch (error) {
             console.error('Error during system manager login:', error);
-            res.status(500).json({ message: 'Došlo je do greške prilikom prijave' });
+            res.status(500).json({ message: 'Error occurred during login' });
         }
     },
 
@@ -324,7 +324,7 @@ const systemManagerController = {
             // Provjera postoji li već korisnik s tim korisničkim imenom
             const existingAdmin = await systemManagerRepository.findByUsername(username);
             if (existingAdmin) {
-                res.status(400).json({ message: 'Korisničko ime već postoji' });
+                res.status(400).json({ message: 'Username already exists' });
                 return;
             }
 
@@ -341,7 +341,7 @@ const systemManagerController = {
                 await auditService.logAction(
                     'create', // action_type
                     req.user.id, // performed_by
-                    `Kreiran novi system manager: ${username}`, // action_details
+                    `Created new system manager: ${username}`, // action_details
                     req, // req objekt
                     'success', // status
                     undefined,
@@ -359,7 +359,7 @@ const systemManagerController = {
             });
         } catch (error) {
             console.error('Error creating system manager:', error);
-            res.status(500).json({ message: 'Došlo je do greške prilikom kreiranja system managera' });
+            res.status(500).json({ message: 'Error occurred while creating system manager' });
         }
     },
 
@@ -670,19 +670,19 @@ const systemManagerController = {
                 await auditService.logAction(
                     'update', // action_type
                     req.user.id, // performed_by
-                    `Ažurirane sistemske postavke: ${changedSettings.join(', ')}`, // action_details
+                    `Updated system settings: ${changedSettings.join(', ')}`, // action_details
                     req, // req objekt
                     'success' // status
                 );
             }
             
             res.json({
-                message: 'Postavke uspješno ažurirane',
+                message: 'Settings updated successfully',
                 settings: updatedSettings
             });
         } catch (error) {
             console.error('Error updating system settings:', error);
-            res.status(500).json({ message: 'Došlo je do greške prilikom ažuriranja sistemskih postavki' });
+            res.status(500).json({ message: 'Error occurred while updating system settings' });
         }
     },
 
@@ -748,7 +748,7 @@ const systemManagerController = {
             const { memberId, password, cardNumber } = req.body;
             
             if (!memberId || !password) {
-                res.status(400).json({ message: 'Potrebno je unijeti ID člana i lozinku' });
+                res.status(400).json({ message: 'Member ID and password are required' });
                 return;
             }
             
@@ -764,7 +764,7 @@ const systemManagerController = {
             
             // Provjera je li član već aktiviran
             if (member.status !== 'pending') {
-                res.status(400).json({ message: 'Član je već aktiviran' });
+                res.status(400).json({ message: 'Member is already activated' });
                 return;
             }
             

@@ -3,7 +3,7 @@ import React from 'react';
 import { RefreshCw } from 'lucide-react';
 import { SystemManagerDashboardStats } from '../../utils/systemManagerApi';
 import DashboardStats from './DashboardStats';
-import QuickLinks from './QuickLinks';
+
 import SystemStatus from './SystemStatus';
 
 // Komponenta za prikaz pregleda sustava (dashboard)
@@ -25,7 +25,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Pregled sustava</h2>
+        <h2 className="text-xl font-semibold">System Overview</h2>
         
         <button 
           onClick={() => { void refreshDashboardStats(); }} 
@@ -33,7 +33,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${statsLoading ? 'animate-spin' : ''}`} />
-          {statsLoading ? 'Osvježavanje...' : 'Osvježi podatke'}
+          {statsLoading ? 'Refreshing...' : 'Refresh Data'}
         </button>
       </div>
 
@@ -46,11 +46,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* Statistike članova, aktivnosti i registracija */}
       <DashboardStats stats={stats} statsLoading={statsLoading} setActiveTab={setActiveTab} />
       
-      {/* Grid za brze prečace i status sustava */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <QuickLinks />
-        <SystemStatus stats={stats} statsLoading={statsLoading} />
-      </div>
+      {/* System Status */}
+      <SystemStatus stats={stats} statsLoading={statsLoading} />
     </div>
   );
 };

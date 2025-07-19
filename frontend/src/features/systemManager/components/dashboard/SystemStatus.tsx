@@ -50,7 +50,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
   
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h3 className="text-lg font-medium mb-4">Status sustava</h3>
+      <h3 className="text-lg font-medium mb-4">System Status</h3>
       {statsLoading ? (
         <div className="space-y-4">
           <div className="h-6 bg-gray-200 animate-pulse rounded-md"></div>
@@ -71,9 +71,9 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                 stats.systemHealth === 'Warning' ? 'text-yellow-600' :
                 'text-red-600'
               }`}>
-                {stats.systemHealth === 'Healthy' ? 'Zdravo' :
-                stats.systemHealth === 'Warning' ? 'Upozorenje' :
-                'Kritično'}
+                {stats.systemHealth === 'Healthy' ? 'Healthy' :
+                stats.systemHealth === 'Warning' ? 'Warning' :
+                'Critical'}
               </span>
               {stats.healthDetails && (
                 <button 
@@ -104,7 +104,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                       </span>
                     ) : (
                       <span className="text-red-600 flex items-center">
-                        <XCircle className="w-4 h-4 mr-1" /> Greška u povezivanju
+                        <XCircle className="w-4 h-4 mr-1" /> Connection Error
                       </span>
                     )}
                   </div>
@@ -116,7 +116,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                     <HardDrive className="w-4 h-4 mr-1" /> Disk:
                   </div>
                   <div>
-                    Korišteno: {stats.healthDetails.diskSpace.percentUsed}%
+                    Used: {stats.healthDetails.diskSpace.percentUsed}%
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div 
                         className={`h-2.5 rounded-full ${
@@ -136,10 +136,10 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                 {/* Informacije o memoriji */}
                 <div className="space-y-1">
                   <div className="font-medium text-gray-700 flex items-center">
-                    <Cpu className="w-4 h-4 mr-1" /> Memorija:
+                    <Cpu className="w-4 h-4 mr-1" /> Memory:
                   </div>
                   <div>
-                    Korišteno: {stats.healthDetails.memory.percentUsed}%
+                    Used: {stats.healthDetails.memory.percentUsed}%
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div 
                         className={`h-2.5 rounded-full ${
@@ -203,14 +203,14 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                 
                 {stats.backupDetails.backupSize && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Veličina:</span>
+                    <span className="text-gray-600">Size:</span>
                     <span>{formatBytes(stats.backupDetails.backupSize)}</span>
                   </div>
                 )}
                 
                 {stats.backupDetails.backupLocation && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Lokacija:</span>
+                    <span className="text-gray-600">Location:</span>
                     <span className="text-gray-900">{stats.backupDetails.backupLocation}</span>
                   </div>
                 )}
@@ -222,10 +222,10 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                     stats.backupDetails.status === 'Failed' ? 'text-red-600' :
                     'text-gray-600'
                   }`}>
-                    {stats.backupDetails.status === 'Success' ? 'Uspješno' :
-                     stats.backupDetails.status === 'Failed' ? 'Neuspješno' :
-                     stats.backupDetails.status === 'Never' ? 'Nikad izvršeno' :
-                     'Nepoznato'}
+                    {stats.backupDetails.status === 'Success' ? 'Success' :
+                     stats.backupDetails.status === 'Failed' ? 'Failed' :
+                     stats.backupDetails.status === 'Never' ? 'Never executed' :
+                     'Unknown'}
                   </span>
                 </div>
               </div>

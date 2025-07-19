@@ -110,20 +110,16 @@ export const updateSettings = [
         });
 
         const performerId = req.user!.id;
-        const performerType = req.user?.performer_type;
         
-        // Dodana dijagnostika za performer_type
-        console.log('DEBUG - određeni performerType:', performerType);
-
-        // Logiranje promjene
+        // Logiranje promjene - ne prosljeđujemo performer_type, neka auditService sam odredi
         await auditService.logAction(
           'update',
           performerId,
           `Ažurirane sistemske postavke: ${Object.entries(changes).map(([key, value]) => `${key}: ${value}`).join(', ')}`,
           req,
           'success',
-          undefined, // affected_member
-          performerType
+          undefined // affected_member
+          // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
         );
 
         return res.json(settings);
