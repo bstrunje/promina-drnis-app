@@ -64,7 +64,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
       <div className="space-y-4">
         {loadingSent ? (
           <div className="text-center p-8">
-            <p className="text-gray-500">Učitavanje poslanih poruka...</p>
+            <p className="text-gray-500">{t('sentMessages.loading')}</p>
           </div>
         ) : sentMessages.length > 0 ? (
           sentMessages.map(message => (
@@ -76,7 +76,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
           ))
         ) : (
           <div className="text-center p-8">
-            <p className="text-gray-500">Nema poslanih poruka.</p>
+            <p className="text-gray-500">{t('sentMessages.noMessages')}</p>
           </div>
         )}
       </div>

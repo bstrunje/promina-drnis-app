@@ -1,5 +1,6 @@
 import React from "react";
 import { NavigateFunction } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Users, Activity, Mail } from "lucide-react";
 
 interface DashboardNavCardsProps {
@@ -14,6 +15,8 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
   navigate, 
   unreadMessages 
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <>
       <div
@@ -21,11 +24,11 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">Member Management</h3>
+          <h3 className="font-medium">{t("dashboard.navigation.memberManagement.title")}</h3>
           <Users className="h-5 w-5 text-purple-600" />
         </div>
         <p className="text-sm text-gray-600">
-          Manage member accounts and permissions
+          {t("dashboard.navigation.memberManagement.description")}
         </p>
       </div>
 
@@ -34,10 +37,10 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">Activity Management</h3>
+          <h3 className="font-medium">{t("dashboard.navigation.activityManagement.title")}</h3>
           <Activity className="h-5 w-5 text-purple-600" />
         </div>
-        <p className="text-sm text-gray-600">Manage and monitor activities</p>
+        <p className="text-sm text-gray-600">{t("dashboard.navigation.activityManagement.description")}</p>
       </div>
 
       <div
@@ -45,14 +48,14 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">Messages</h3>
+          <h3 className="font-medium">{t("dashboard.navigation.messages.title")}</h3>
           <Mail className="h-5 w-5 text-purple-600" />
         </div>
         <p className="text-sm text-gray-600">
           {unreadMessages ? (
-            <span className="text-red-600">There are unread messages</span>
+            <span className="text-red-600">{t("dashboard.navigation.messages.unreadMessages")}</span>
           ) : (
-            "No unread messages"
+            t("dashboard.navigation.messages.noUnreadMessages")
           )}
         </p>
       </div>

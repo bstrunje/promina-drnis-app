@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface Event {
   id: number;
@@ -13,6 +14,7 @@ interface Event {
 }
 
 const EventsList: React.FC = () => {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ const EventsList: React.FC = () => {
       
       setEvents(validatedEvents);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load events';
+      const errorMessage = err instanceof Error ? err.message : t('eventsList.error');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -51,7 +53,7 @@ const EventsList: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('eventsList.loading')}</div>;
   }
 
   if (error) {
@@ -61,9 +63,9 @@ const EventsList: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Upcoming Events</h1>
+        <h1 className="text-2xl font-bold">{t('eventsList.title')}</h1>
         <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          Create Event
+          {t('eventsList.createEvent')}
         </button>
       </div>
 
@@ -84,7 +86,7 @@ const EventsList: React.FC = () => {
                   <div className="text-right">
                     {event.registeredCount !== undefined && (
                       <p className="text-sm text-gray-600">
-                        {event.registeredCount}/{event.capacity} registered
+                        {event.registeredCount}/{event.capacity} {t('eventsList.registered')}
                       </p>
                     )}
                   </div>
@@ -99,7 +101,7 @@ const EventsList: React.FC = () => {
           <div className="flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">
               <CalendarDays className="h-12 w-12 mx-auto mb-2" />
-              <p>No events scheduled yet</p>
+              <p>{t('eventsList.noEvents')}</p>
             </div>
           </div>
         )}

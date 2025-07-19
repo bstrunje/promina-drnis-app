@@ -5,6 +5,7 @@ import { Member } from '@shared/member';
 import { Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/UnreadMessagesContext';
 import { useTranslation } from 'react-i18next';
+import LanguageToggle from '../src/components/LanguageToggle';
 
 interface NavigationProps {
   user: Member | null;
@@ -101,6 +102,8 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 {user.first_name} {user.last_name}
                 {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
               </Link>
+
+              <LanguageToggle />
 
               <button
                 onClick={() => {

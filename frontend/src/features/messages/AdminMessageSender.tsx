@@ -81,8 +81,8 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToSingle = async () => {
     if (!selectedMember) {
       toast({
-        title: "Upozorenje",
-        description: "Molimo odaberite člana za slanje poruke",
+        title: t('common.warning'),
+        description: t('adminMessageSender.messages.selectMemberWarning'),
         variant: "default"
       });
       return;
@@ -90,8 +90,8 @@ const AdminMessageSender: React.FC = () => {
 
     if (!messageText.trim()) {
       toast({
-        title: "Upozorenje",
-        description: "Poruka ne može biti prazna",
+        title: t('common.warning'),
+        description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
       return;
@@ -107,8 +107,8 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: "Uspjeh",
-        description: `Poruka uspješno poslana članu ${selectedMember.full_name}`,
+        title: t('common.success'),
+        description: t('adminMessageSender.messages.singleSuccess', { memberName: selectedMember.full_name }),
         variant: "success"
       });
 
@@ -116,8 +116,8 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : "Slanje poruke nije uspjelo",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('adminMessageSender.messages.singleError'),
         variant: "destructive"
       });
     } finally {
@@ -142,8 +142,8 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToGroup = async () => {
     if (selectedMembers.length === 0) {
       toast({
-        title: "Upozorenje",
-        description: "Molimo odaberite barem jednog člana za slanje grupne poruke",
+        title: t('common.warning'),
+        description: t('adminMessageSender.messages.selectGroupWarning'),
         variant: "default"
       });
       return;
@@ -151,8 +151,8 @@ const AdminMessageSender: React.FC = () => {
 
     if (!messageText.trim()) {
       toast({
-        title: "Upozorenje",
-        description: "Poruka ne može biti prazna",
+        title: t('common.warning'),
+        description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
       return;
@@ -169,8 +169,8 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: "Uspjeh",
-        description: `Poruka uspješno poslana grupi od ${memberIds.length} članova`,
+        title: t('common.success'),
+        description: t('adminMessageSender.messages.groupSuccess', { count: memberIds.length }),
         variant: "success"
       });
 
@@ -178,8 +178,8 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : "Slanje grupne poruke nije uspjelo",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('adminMessageSender.messages.groupError'),
         variant: "destructive"
       });
     } finally {
@@ -191,14 +191,14 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToAll = async () => {
     if (!messageText.trim()) {
       toast({
-        title: "Upozorenje",
-        description: "Poruka ne može biti prazna",
+        title: t('common.warning'),
+        description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
       return;
     }
 
-    if (!window.confirm('Jeste li sigurni da želite poslati poruku SVIM članovima?')) {
+    if (!window.confirm(t('adminMessageSender.confirmDialogs.sendToAll'))) {
       return;
     }
 
@@ -209,8 +209,8 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: "Uspjeh",
-        description: `Poruka uspješno poslana svim članovima`,
+        title: t('common.success'),
+        description: t('adminMessageSender.messages.allSuccess'),
         variant: "success"
       });
 
@@ -218,8 +218,8 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : "Slanje poruke svim članovima nije uspjelo",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('adminMessageSender.messages.allError'),
         variant: "destructive"
       });
     } finally {
@@ -232,7 +232,7 @@ const AdminMessageSender: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center">
           <Send className="mr-2 h-6 w-6 text-blue-600" />
-          Slanje poruka članovima
+          {t('adminMessageSender.title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -240,22 +240,22 @@ const AdminMessageSender: React.FC = () => {
           <TabsList className="w-full mb-4">
             <TabsTrigger value="single" className="flex items-center">
               <UserCheck className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Pojedinačnom članu</span>
+              <span className="hidden sm:inline">{t('adminMessageSender.tabs.single')}</span>
             </TabsTrigger>
             <TabsTrigger value="group" className="flex items-center">
               <Users className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Grupi članova</span>
+              <span className="hidden sm:inline">{t('adminMessageSender.tabs.group')}</span>
             </TabsTrigger>
             <TabsTrigger value="all" className="flex items-center">
               <Mail className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Svim članovima</span>
+              <span className="hidden sm:inline">{t('adminMessageSender.tabs.all')}</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="single" className="space-y-4">
                         <div className="space-y-2">
               <label htmlFor="member-search" className="text-sm font-medium">
-                Primatelj:
+                {t('adminMessageSender.labels.recipient')}
               </label>
               {selectedMember ? (
                 <div className="flex items-center justify-between p-2 border rounded-md bg-blue-100 text-blue-800">
@@ -268,7 +268,7 @@ const AdminMessageSender: React.FC = () => {
                 <div>
                   <Input
                     id="member-search"
-                    placeholder="Pretraži po imenu ili prezimenu... (najmanje 2 znaka)"
+                    placeholder={t('adminMessageSender.placeholders.searchMember')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -289,7 +289,7 @@ const AdminMessageSender: React.FC = () => {
                   )}
                   {searchTerm.length > 0 && searchTerm.length < 2 && (
                     <div className="text-sm text-gray-500 mt-1">
-                      Unesite najmanje 2 znaka za pretragu članova
+                      {t('adminMessageSender.messages.searchMinLength')}
                     </div>
                   )}
                 </div>
@@ -298,12 +298,12 @@ const AdminMessageSender: React.FC = () => {
 
             <div className="space-y-2">
               <label htmlFor="message-text-single" className="text-sm font-medium">
-                Tekst poruke:
+                {t('adminMessageSender.labels.messageText')}
               </label>
               <textarea
                 id="message-text-single"
                 className="w-full p-2 border rounded-md h-32"
-                placeholder="Unesite tekst poruke..."
+                placeholder={t('adminMessageSender.placeholders.messageText')}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
@@ -313,7 +313,7 @@ const AdminMessageSender: React.FC = () => {
                 disabled={isSending || !selectedMember || !messageText.trim()}
                 className="w-full"
               >
-                {isSending ? 'Slanje...' : 'Pošalji poruku'}
+                {isSending ? t('adminMessageSender.buttons.sending') : t('adminMessageSender.buttons.sendMessage')}
                 <CornerDownLeft className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -360,7 +360,7 @@ const AdminMessageSender: React.FC = () => {
 
               {searchTerm.length > 0 && searchTerm.length < 2 && (
                 <div className="text-sm text-gray-500 mt-1">
-                  Unesite najmanje 2 znaka za pretragu članova
+                  {t('adminMessageSender.messages.searchMinLength')}
                 </div>
               )}
             </div>
@@ -368,12 +368,12 @@ const AdminMessageSender: React.FC = () => {
             {selectedMembers.length > 0 && (
               <div className="p-2 border rounded-md bg-slate-50 mt-4">
                 <div className="flex justify-between items-center">
-                  <p className="font-medium">Odabrani članovi ({selectedMembers.length}):</p>
+                  <p className="font-medium">{t('adminMessageSender.labels.selectedMembers', { count: selectedMembers.length })}</p>
                   <button
                     className="text-xs text-red-500"
                     onClick={() => setSelectedMembers([])}
                   >
-                    Obriši sve
+                    {t('adminMessageSender.buttons.clearAll')}
                   </button>
                 </div>
                 <div className="max-h-32 overflow-y-auto mt-1">
@@ -396,12 +396,12 @@ const AdminMessageSender: React.FC = () => {
 
             <div className="space-y-2">
               <label htmlFor="message-text-group" className="text-sm font-medium">
-                Tekst poruke za grupu:
+                {t('adminMessageSender.labels.messageTextGroup')}
               </label>
               <textarea
                 id="message-text-group"
                 className="w-full p-2 border rounded-md h-32"
-                placeholder="Unesite tekst poruke za grupu članova..."
+                placeholder={t('adminMessageSender.placeholders.messageTextGroup')}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
@@ -411,7 +411,7 @@ const AdminMessageSender: React.FC = () => {
                 disabled={isSending || selectedMembers.length === 0 || !messageText.trim()}
                 className="w-full"
               >
-                {isSending ? 'Slanje...' : `Pošalji poruku (${selectedMembers.length} članova)`}
+                {isSending ? t('adminMessageSender.buttons.sending') : t('adminMessageSender.buttons.sendToGroup', { count: selectedMembers.length })}
                 <Users className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -419,21 +419,20 @@ const AdminMessageSender: React.FC = () => {
 
           <TabsContent value="all" className="space-y-4">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 mb-4">
-              <p className="font-medium">Važno upozorenje</p>
+              <p className="font-medium">{t('adminMessageSender.warnings.importantNotice')}</p>
               <p className="text-sm">
-                Ova poruka će biti poslana SVIM članovima u sustavu. Koristite ovu opciju samo
-                kada je poruka namijenjena svim članovima, poput važnih obavijesti, događaja, itd.
+                {t('adminMessageSender.warnings.sendToAllDescription')}
               </p>
             </div>
 
             <div className="space-y-2">
               <label htmlFor="message-text-all" className="text-sm font-medium">
-                Tekst poruke za sve članove:
+                {t('adminMessageSender.labels.messageTextAll')}
               </label>
               <textarea
                 id="message-text-all"
                 className="w-full p-2 border rounded-md h-32"
-                placeholder="Unesite tekst poruke za sve članove..."
+                placeholder={t('adminMessageSender.placeholders.messageTextAll')}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
@@ -443,7 +442,7 @@ const AdminMessageSender: React.FC = () => {
                 disabled={isSending || !messageText.trim()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
-                {isSending ? 'Slanje...' : 'Pošalji svim članovima'}
+                {isSending ? t('adminMessageSender.buttons.sending') : t('adminMessageSender.buttons.sendToAll')}
                 <Mail className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -452,7 +451,7 @@ const AdminMessageSender: React.FC = () => {
 
         {showSuccess && (
           <div className="mt-4 p-3 bg-green-100 border border-green-200 rounded-md text-green-800 animate-pulse">
-            Poruka uspješno poslana!
+            {t('adminMessageSender.success.messageSent')}
           </div>
         )}
       </CardContent>

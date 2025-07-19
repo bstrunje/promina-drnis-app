@@ -2,7 +2,7 @@ import { MemberWithDetails } from "@shared/memberDetails.types";
 import { DetailedMembershipStatus, findLastEndedPeriod, hasActiveMembershipPeriod, MembershipPeriod } from "@shared/memberStatus.types";
 
 // Funkcija za filtriranje članova s obojenim retcima
-export function filterOnlyColoredRows(members: MemberWithDetails[]) {
+export function filterOnlyColoredRows(members: MemberWithDetails[], t?: (key: string) => string) {
   return members.filter((member) => {
     // Dohvati status člana
     const displayStatus = getMembershipDisplayStatusExternal(
@@ -10,11 +10,13 @@ export function filterOnlyColoredRows(members: MemberWithDetails[]) {
       false, // isAdmin
       false, // isSuperuser
       member.membership_type,
-      member.periods
+      member.periods,
+      t
     );
 
     // Samo za redovne članove primijeni bojanje prema životnom statusu
-    if (displayStatus === "Redovni član") {
+    const regularMemberStatus = t ? t('membershipStatus.regularMember') : 'Redovni član';
+    if (displayStatus === regularMemberStatus) {
       const lifeStatus = member.life_status;
 
       // Vrati true ako član ima životni status koji rezultira bojanjem
@@ -45,32 +47,45 @@ export function getMembershipDisplayStatusExternal(
   isAdmin: boolean,
   isSuperuser: boolean,
   membershipType?: string,
-  periods?: MembershipPeriod[]
+  periods?: MembershipPeriod[],
+  t?: (key: string) => string
 ): string {
   if (!detailedStatus) return "";
 
+  // Fallback funkcija ako t nije proslijeđena (za backward compatibility)
+  const translate = t || ((key: string) => {
+    const fallbacks: Record<string, string> = {
+      'membershipStatus.pending': 'Na čekanju',
+      'membershipStatus.regularMember': 'Redovni član',
+      'membershipStatus.honoraryMember': 'Počasni član',
+      'membershipStatus.supportingMember': 'Podržavajući član',
+      'membershipStatus.formerMember': 'Bivši član'
+    };
+    return fallbacks[key] || key;
+  });
+
   if (periods && !hasActiveMembershipPeriod(periods)) {
     const lastEnded = findLastEndedPeriod(periods);
-    if (lastEnded) return "Bivši član";
+    if (lastEnded) return translate('membershipStatus.formerMember');
   }
 
   if (detailedStatus.status === "pending") {
-    return "Na čekanju";
+    return translate('membershipStatus.pending');
   }
   if (detailedStatus.status === "registered" && membershipType === "regular") {
-    return "Redovni član";
+    return translate('membershipStatus.regularMember');
   }
   if (detailedStatus.status === "registered" && membershipType === "honorary") {
-    return "Počasni član";
+    return translate('membershipStatus.honoraryMember');
   }
   if (
     detailedStatus.status === "registered" &&
     membershipType === "supporting"
   ) {
-    return "Podržavajući član";
+    return translate('membershipStatus.supportingMember');
   }
   if (detailedStatus.status === "inactive") {
-    return "Bivši član";
+    return translate('membershipStatus.formerMember');
   }
   return "";
 }

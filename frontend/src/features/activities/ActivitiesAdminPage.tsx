@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createActivityAdmin, getAllActivitiesAdmin, getActivityTypes } from '../../utils/api/apiActivities';
 import { Activity, ActivityStatus, ActivityType } from '@shared/activity.types';
 import { useAuth } from '../../context/AuthContext';
@@ -8,19 +8,18 @@ import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
 import { Textarea } from '@components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { useTranslation } from 'react-i18next';
 
 const ActivitiesAdminPage: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newActivity, setNewActivity] = useState({
-    name: '',
-    description: '',
-    start_date: '',
-    type_id: '',
+    name: '', description: '', start_date: '', type_id: '',
   });
 
   useEffect(() => {
@@ -35,7 +34,7 @@ const ActivitiesAdminPage: React.FC = () => {
         setActivityTypes(typesData);
         setError(null);
       } catch (err) {
-        setError('Greška prilikom dohvaćanja podataka.');
+        setError(t('activities.admin.messages.errorFetchingData'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -83,13 +82,13 @@ const ActivitiesAdminPage: React.FC = () => {
         name: '', description: '', start_date: '', type_id: '',
       });
     } catch (err) {
-      setError('Greška prilikom kreiranja aktivnosti.');
+      setError(t('activities.admin.messages.errorCreatingActivity'));
       console.error(err);
     }
   };
 
   if (loading) {
-    return <div className="container mx-auto p-4">Učitavanje...</div>;
+    return <div className="container mx-auto p-4">{t('activities.admin.messages.loading')}</div>;
   }
 
   if (error) {
@@ -99,29 +98,29 @@ const ActivitiesAdminPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Administracija aktivnosti</h1>
+        <h1 className="text-2xl font-bold">{t('activities.admin.title')}</h1>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
-            <Button>Dodaj novu aktivnost</Button>
+            <Button>{t('activities.admin.addNewActivity')}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova aktivnost</DialogTitle>
+              <DialogTitle>{t('activities.admin.newActivity')}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="name">Naziv</Label>
+                <Label htmlFor="name">{t('activities.admin.form.name')}</Label>
                 <Input id="name" name="name" value={newActivity.name} onChange={handleInputChange} required />
               </div>
               <div>
-                <Label htmlFor="description">Opis</Label>
+                <Label htmlFor="description">{t('activities.admin.form.description')}</Label>
                 <Textarea id="description" name="description" value={newActivity.description} onChange={handleInputChange} />
               </div>
               <div>
-                <Label htmlFor="type_id">Tip aktivnosti</Label>
+                <Label htmlFor="type_id">{t('activities.admin.form.activityType')}</Label>
                 <Select onValueChange={handleSelectChange} value={newActivity.type_id} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Odaberite tip" />
+                    <SelectValue placeholder={t('activities.admin.form.selectType')} />
                   </SelectTrigger>
                   <SelectContent>
                     {activityTypes.map((type) => (
@@ -133,12 +132,12 @@ const ActivitiesAdminPage: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="start_date">Datum početka</Label>
+                <Label htmlFor="start_date">{t('activities.admin.form.startDate')}</Label>
                 <Input id="start_date" name="start_date" type="datetime-local" value={newActivity.start_date} onChange={handleInputChange} required />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Odustani</Button>
-                <Button type="submit">Spremi</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button type="submit">{t('common.save')}</Button>
               </div>
             </form>
           </DialogContent>
@@ -148,10 +147,10 @@ const ActivitiesAdminPage: React.FC = () => {
         <table className="min-w-full bg-white">
           <thead>
             <tr>
-              <th className="py-2 px-4 border-b">Naziv</th>
-              <th className="py-2 px-4 border-b">Datum početka</th>
-              <th className="py-2 px-4 border-b">Status</th>
-              <th className="py-2 px-4 border-b">Akcije</th>
+              <th className="py-2 px-4 border-b">{t('activities.admin.table.name')}</th>
+              <th className="py-2 px-4 border-b">{t('activities.admin.table.startDate')}</th>
+              <th className="py-2 px-4 border-b">{t('activities.admin.table.status')}</th>
+              <th className="py-2 px-4 border-b">{t('activities.admin.table.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -161,8 +160,8 @@ const ActivitiesAdminPage: React.FC = () => {
                 <td className="py-2 px-4 border-b">{new Date(activity.start_date).toLocaleString()}</td>
                 <td className="py-2 px-4 border-b">{activity.status}</td>
                 <td className="py-2 px-4 border-b">
-                  <button className="text-blue-500 hover:underline mr-2">Uredi</button>
-                  <button className="text-red-500 hover:underline">Obriši</button>
+                  <button className="text-blue-500 hover:underline mr-2">{t('activities.admin.table.edit')}</button>
+                  <button className="text-red-500 hover:underline">{t('activities.admin.table.delete')}</button>
                 </td>
               </tr>
             ))}

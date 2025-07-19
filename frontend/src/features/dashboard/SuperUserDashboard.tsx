@@ -1,6 +1,7 @@
 // frontend/src/features/dashboard/SuperUserDashboard.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Users, Activity, Shield, ChevronRight, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import axios from "axios";
@@ -36,6 +37,7 @@ interface DashboardStatsResponse {
 const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   // console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -100,7 +102,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">{error}</div>}
 
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Dashboard Overview</h2>
+        <h2 className="text-xl font-semibold">{t("dashboard.overview")}</h2>
         
         <button 
           onClick={() => void fetchDashboardStats()} 
@@ -108,7 +110,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Refreshing...' : 'Refresh Data'}
+          {loading ? t("dashboard.refreshing") : t("dashboard.refreshData")}
         </button>
       </div>
 
@@ -118,7 +120,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Members</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.members.members")}</h3>
             <Users className="h-6 w-6 text-blue-600" />
           </div>
           <div className="space-y-2">
@@ -128,7 +130,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
               <>
                 <p className="text-2xl font-bold">{stats.totalMembers}</p>
                 <p className="text-sm text-gray-500">
-                  {stats.registeredMembers} registered, {stats.activeMembers} active 
+                  {stats.registeredMembers} {t("dashboard.members.registered")}, {stats.activeMembers} {t("dashboard.members.active")} 
                   {stats.registeredMembers > 0 ? 
                     ` (${((stats.activeMembers / stats.registeredMembers) * 100).toFixed(1)}% active)` : 
                     ''}
@@ -143,7 +145,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Recent Activities</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.activities.recentActivities")}</h3>
             <Activity className="h-6 w-6 text-green-600" />
           </div>
           <div className="space-y-2">
@@ -152,7 +154,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{stats.recentActivities}</p>
-                <p className="text-sm text-gray-500">U zadnjih 30 dana</p>
+                <p className="text-sm text-gray-500">{t("dashboard.activities.inLast30Days")}</p>
               </>
             )}
           </div>
@@ -163,7 +165,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Pending Registrations</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.pendingRegistrations.title")}</h3>
             <Shield className="h-6 w-6 text-orange-600" />
           </div>
           <div className="space-y-2">
@@ -172,7 +174,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-                <p className="text-sm text-gray-500">Await password assignment</p>
+                <p className="text-sm text-gray-500">{t("dashboard.pendingRegistrations.awaitPasswordAssignment")}</p>
               </>
             )}
           </div>
@@ -181,27 +183,27 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
+          <h3 className="text-lg font-medium mb-4">{t("dashboard.quickActions.title")}</h3>
           <div className="space-y-3">
             <button
               onClick={() => navigate("/members")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
-              <span>Member Management</span>
+              <span>{t("dashboard.quickActions.memberManagement")}</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
             <button
               onClick={() => navigate("/activities")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
-              <span>Activity Approvals</span>
+              <span>{t("dashboard.quickActions.activityApprovals")}</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
             <button
               onClick={() => navigate("/settings")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
-              <span>System Settings</span>
+              <span>{t("dashboard.quickActions.systemSettings")}</span>
               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
             </button>
           </div>

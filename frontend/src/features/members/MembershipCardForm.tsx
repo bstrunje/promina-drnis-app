@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Checkbox } from "../../../components/ui/checkbox";
 import { Label } from "../../../components/ui/label";
+import { useTranslation } from 'react-i18next';
 
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { updateMembership } from '../../utils/api/apiMembership';
@@ -25,6 +26,7 @@ export default function MembershipCardForm({
   currentCardNumber 
 }: MembershipCardFormProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { length: cardNumberLength } = useCardNumberLength();
   const [cardNumber, setCardNumber] = useState<string>(currentCardNumber ?? "");
   const [stampIssued, setStampIssued] = useState(false);
@@ -92,8 +94,8 @@ export default function MembershipCardForm({
     const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
     if (cardNumber && !cardNumberRegex.test(cardNumber)) {
       toast({
-        title: "Validation Error",
-        description: `Card number must be exactly ${cardNumberLength} digits`,
+        title: t('membershipCard.messages.validationError'),
+        description: t('membershipCard.messages.cardNumberMustBe', { length: cardNumberLength }),
         variant: "destructive",
       });
       return;
@@ -112,8 +114,8 @@ export default function MembershipCardForm({
       });
 
       toast({
-        title: "Success",
-        description: "Card details updated successfully",
+        title: t('membershipCard.messages.success'),
+        description: t('membershipCard.messages.cardDetailsUpdated'),
         variant: "success",
       });
       
@@ -121,8 +123,8 @@ export default function MembershipCardForm({
     } catch (error) {
       console.error('Card update error:', error);
       toast({
-        title: "Error",
-        description: "Failed to update card details",
+        title: t('membershipCard.messages.error'),
+        description: t('membershipCard.messages.failedToUpdate'),
         variant: "destructive",
       });
     } finally {
@@ -142,21 +144,21 @@ export default function MembershipCardForm({
   return (
     <form onSubmit={e => void handleSubmit(e)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="cardNumber">Card Number</Label>
+        <Label htmlFor="cardNumber">{t('membershipCard.form.cardNumber')}</Label>
         
         {/* Ažurirano polje za unos broja kartice */}
         <Input
           id="cardNumber"
           value={cardNumber}
           onChange={handleCardNumberChange}
-          placeholder={isLoadingCardNumbers ? "Loading..." : `Enter ${cardNumberLength}-digit card number`}
+          placeholder={isLoadingCardNumbers ? t('membershipCard.placeholders.loading') : t('membershipCard.placeholders.enterCardNumber', { length: cardNumberLength })}
           disabled={isLoading}
           maxLength={cardNumberLength}
         />
         
         {/* Debug info */}
         <div className="text-xs text-gray-500 mt-1">
-          Available numbers: {availableCardNumbers.length}
+          {t('membershipCard.messages.availableNumbers')} {availableCardNumbers.length}
           {availableCardNumbers.length > 0 && (
             <div className="mt-1 max-h-32 overflow-y-auto text-xs">
               {availableCardNumbers.map(num => (
@@ -170,7 +172,7 @@ export default function MembershipCardForm({
           )}
         </div>
         
-        {isLoadingCardNumbers && <p className="text-sm text-muted-foreground">Loading card numbers...</p>}
+        {isLoadingCardNumbers && <p className="text-sm text-muted-foreground">{t('membershipCard.messages.loadingCardNumbers')}</p>}
         {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
       </div>
 
@@ -180,11 +182,11 @@ export default function MembershipCardForm({
           checked={stampIssued} 
           onCheckedChange={(checked) => setStampIssued(checked === true)}
         />
-        <Label htmlFor="stampIssued">Stamp Issued</Label>
+        <Label htmlFor="stampIssued">{t('membershipCard.form.stampIssued')}</Label>
       </div>
 
       <Button type="submit" disabled={isLoading || !cardNumber}>
-        {isLoading ? "Updating..." : "Update Card Details"}
+        {isLoading ? t('membershipCard.form.updating') : t('membershipCard.form.updateCardDetails')}
       </Button>
     </form>
   );

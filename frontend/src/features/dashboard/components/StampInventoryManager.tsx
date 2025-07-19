@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
@@ -27,6 +28,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
   setShowHistory
 }) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
   const [inventory, setInventory] = useState<StampInventory>({});
@@ -199,7 +201,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       
       // Prikaži povratnu informaciju da je spremanje u tijeku
       toast({
-        title: "Spremanje",
+        title: t("common.saving"),
         description: "Ažuriranje inventara markica u tijeku...",
         duration: 2000,
       });
@@ -238,7 +240,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       
       // Prikaži detaljnu povratnu informaciju o grešci
       toast({
-        title: "Greška",
+        title: t("common.error"),
         description:
           error instanceof Error ? error.message : "Neuspješno ažuriranje inventara",
         variant: "destructive",
@@ -338,7 +340,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           {/* Sakrij naslov na malim ekranima */}
-          <h3 className="font-medium hidden sm:block">Stamp Inventory</h3>
+          <h3 className="font-medium hidden sm:block">{t("dashboard.stampInventory.title")}</h3>
           <div className="flex flex-wrap gap-2 items-center">
             {/* Sakrij gumb za osvježavanje na malim ekranima */}
             <Button
@@ -354,46 +356,46 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
               <div className="flex flex-wrap gap-2">
                 {/* Prikaži gumb samo ako je korisnik superuser */}
                 {member.role === 'member_superuser' && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleEdit}
-                    className="w-full sm:w-auto"
-                  >
-                    Edit Inventory
-                  </Button>
-                )}
-                {/* Postavi punu širinu na malim ekranima, auto na većim */}
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowHistory(!showHistory)}
-                  className="w-full sm:w-auto" 
+                  onClick={handleEdit}
+                  className="w-full sm:w-auto"
                 >
-                  {showHistory ? "Hide History" : "Show History"}
+                  {t("dashboard.stampInventory.editInventory")}
                 </Button>
-                {member.role === "member_superuser" && (
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => setShowArchiveDialog(true)}
-                    className="w-full sm:w-auto"
-                  >
-                    Archive Year
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancel
+              )}
+              {/* Postavi punu širinu na malim ekranima, auto na većim */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHistory(!showHistory)}
+                className="w-full sm:w-auto" 
+              >
+                {showHistory ? t("dashboard.stampInventory.hideHistory") : t("dashboard.stampInventory.showHistory")}
+              </Button>
+              {member.role === "member_superuser" && (
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setShowArchiveDialog(true)}
+                  className="w-full sm:w-auto"
+                >
+                  {t("dashboard.stampInventory.archiveYear")}
                 </Button>
-                <Button onClick={() => void handleSave()}>Save Changes</Button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={handleCancel}>
+                {t("dashboard.stampInventory.cancel")}
+              </Button>
+              <Button onClick={() => void handleSave()}>{t("dashboard.stampInventory.save")}</Button>
+            </div>
+          )}
         </div>
-        <div className="space-y-4">
-          <div className="flex justify-between mb-4">
-            {/* Sakrij labelu na malim ekranima */}
-            <h3 className="font-medium hidden sm:block">Select Year:</h3>
+      </div>
+      <div className="space-y-4">
+        <div className="flex justify-between mb-4">
+          {/* Sakrij labelu na malim ekranima */}
+          <h3 className="font-medium hidden sm:block">{t("dashboard.stampInventory.selectYear")}</h3>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -425,7 +427,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
 
           {/* Employed/Unemployed Stamps */}
           <StampTypeCard
-            title="Employed/Unemployed Members Stamps"
+            title={t("dashboard.stampInventory.stampTypes.employedUnemployed")}
             type="employedStamps"
             data={isEditing ? editValues.employedStamps : (inventory[selectedYear]?.employedStamps || { initial: 0, issued: 0, remaining: 0 })}
             bgColor="bg-blue-100"
@@ -438,7 +440,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
 
           {/* Student/Pupil Stamps */}
           <StampTypeCard
-            title="Student/Pupil Stamps"
+            title={t("dashboard.stampInventory.stampTypes.studentPupil")}
             type="studentStamps"
             data={isEditing ? editValues.studentStamps : (inventory[selectedYear]?.studentStamps || { initial: 0, issued: 0, remaining: 0 })}
             bgColor="bg-green-100"
@@ -451,7 +453,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
 
           {/* Pensioner Stamps */}
           <StampTypeCard
-            title="Pensioner Stamps"
+            title={t("dashboard.stampInventory.stampTypes.pensioner")}
             type="pensionerStamps"
             data={isEditing ? editValues.pensionerStamps : (inventory[selectedYear]?.pensionerStamps || { initial: 0, issued: 0, remaining: 0 })}
             bgColor="bg-red-100"

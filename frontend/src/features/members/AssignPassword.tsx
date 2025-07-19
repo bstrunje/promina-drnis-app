@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../utils/config';
 
 // Definiramo tip za člana koji dolazi s API-ja
@@ -14,6 +15,7 @@ interface PendingMember {
 }
 
 const AssignPassword: React.FC = () => {
+    const { t } = useTranslation();
     const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
     const [selectedMember, setSelectedMember] = useState<number | ''>('');
     const [password, setPassword] = useState('');
@@ -67,31 +69,31 @@ const AssignPassword: React.FC = () => {
             });
 
             if (response.ok) {
-                alert('Password assigned successfully');
+                alert(t('assignPassword.messages.passwordAssignedSuccessfully'));
                 setSelectedMember('');
                 setPassword('');
                 void fetchPendingMembers();
             } else {
-                alert('Failed to assign password');
+                alert(t('assignPassword.messages.failedToAssignPassword'));
             }
         } catch (error) {
             console.error('Error assigning password:', error);
-            alert('An error occurred');
+            alert(t('assignPassword.messages.errorOccurred'));
         }
     };
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Assign Password to Pending Members</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('assignPassword.title')}</h2>
             <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
                 <div>
-                    <label className="block mb-2">Select Member:</label>
+                    <label className="block mb-2">{t('assignPassword.form.selectMember')}</label>
                     <select 
                         value={selectedMember} 
                         onChange={(e) => setSelectedMember(Number(e.target.value))}
                         className="w-full p-2 border rounded"
                     >
-                        <option value="">Select a member</option>
+                        <option value="">{t('assignPassword.form.selectMemberPlaceholder')}</option>
                         {pendingMembers.map((member) => (
                             <option key={member.member_id} value={member.member_id}>
                                 {member.full_name}
@@ -100,7 +102,7 @@ const AssignPassword: React.FC = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block mb-2">Password:</label>
+                    <label className="block mb-2">{t('assignPassword.form.password')}</label>
                     <input 
                         type="password" 
                         value={password} 
@@ -109,7 +111,7 @@ const AssignPassword: React.FC = () => {
                     />
                 </div>
                 <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-                    Assign Password
+                    {t('assignPassword.form.assignPasswordButton')}
                 </button>
             </form>
         </div>

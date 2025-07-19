@@ -1,6 +1,7 @@
 // frontend/src/features/dashboard/MemberDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useUnreadMessages } from '../../contexts/UnreadMessagesContext';
 import { formatHoursToHHMM } from '../../utils/activityHours';
@@ -40,6 +41,7 @@ interface DashboardStatsResponse {
 
 const MemberDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<MemberStats>({
@@ -206,10 +208,10 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                   {stats.unreadMessages > 0 ? (
                     <span className="flex items-center text-blue-600">
                       <Bell className="h-4 w-4 mr-1" />
-                      Nepročitane poruke
+                      {t("dashboard.messages.unreadMessages")}
                     </span>
                   ) : (
-                    "Poruke"
+                    t("dashboard.messages.messages")
                   )}
                 </p>
               </>
@@ -223,7 +225,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
           className="block bg-white p-6 rounded-lg shadow-sm border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Sve moje aktivnosti</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.activities.allMyActivities")}</h3>
             <ActivityIcon className="h-6 w-6 text-green-600" />
           </div>
           <div className="grid grid-cols-2 gap-4 text-center">
@@ -236,11 +238,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
               <>
                 <div>
                   <p className="text-2xl font-bold">{activityTotals.activities}</p>
-                  <p className="text-sm text-gray-500">Ukupno aktivnosti</p>
+                  <p className="text-sm text-gray-500">{t("dashboard.activities.totalActivities")}</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{formatHoursToHHMM(activityTotals.hours)}</p>
-                  <p className="text-sm text-gray-500">Ukupno sati</p>
+                  <p className="text-sm text-gray-500">{t("dashboard.activities.totalHours")}</p>
                 </div>
               </>
             )}
@@ -253,7 +255,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Članovi</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.members.members")}</h3>
             <Users className="h-6 w-6 text-purple-600" />
           </div>
           <div className="space-y-2">
@@ -262,7 +264,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{stats.memberCount}</p>
-                <p className="text-sm text-gray-500">Ukupno aktivnih članova</p>
+                <p className="text-sm text-gray-500">{t("dashboard.members.totalActiveMembers")}</p>
               </>
             )}
           </div>
@@ -274,7 +276,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Profil</h3>
+            <h3 className="text-gray-600 font-medium">{t("dashboard.profile.profile")}</h3>
             <User className="h-6 w-6 text-orange-600" />
           </div>
           <div className="space-y-2">
@@ -283,7 +285,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             ) : (
               <>
                 <p className="text-2xl font-bold">{fullMember.full_name}</p>
-                <p className="text-sm text-gray-500">Vaš korisnički profil</p>
+                <p className="text-sm text-gray-500">{t("dashboard.profile.yourUserProfile")}</p>
               </>
             )}
           </div>
@@ -293,34 +295,34 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
       {/* Dodatna sekcija za brze akcije */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-medium mb-4">Moje članstvo</h3>
+          <h3 className="text-lg font-medium mb-4">{t("dashboard.membership.myMembership")}</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Status članstva:</span>
+              <span className="text-gray-600">{t("dashboard.membership.membershipStatus")}</span>
               <span className="font-medium">
                 {getActivityStatus(fullMember.total_hours) === 'active' ? (
-                  <span className="text-green-600">Aktivan</span>
+                  <span className="text-green-600">{t("dashboard.membership.active")}</span>
                 ) : (
-                  <span className="text-yellow-600">Pasivan</span>
+                  <span className="text-yellow-600">{t("dashboard.membership.passive")}</span>
                 )}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Godina članarine:</span>
+              <span className="text-gray-600">{t("dashboard.membership.membershipYear")}</span>
               <span className="font-medium">
                 {fullMember.membership_details?.fee_payment_year ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Životni status:</span>
+              <span className="text-gray-600">{t("dashboard.membership.lifeStatus")}</span>
               <span className="font-medium">
                 {fullMember.life_status ?? "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Godišnja markica:</span>
+              <span className="text-gray-600">{t("dashboard.membership.annualStamp")}</span>
               <span className="font-medium">
-                {fullMember.membership_details?.card_stamp_issued ? "Izdana" : "Nije izdana"}
+                {fullMember.membership_details?.card_stamp_issued ? t("dashboard.membership.issued") : t("dashboard.membership.notIssued")}
               </span>
             </div>
           </div>
@@ -329,7 +331,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium mb-4 flex items-center">
             <Calendar className="mr-2 h-5 w-5 text-gray-500" />
-            Nadolazeći događaji
+            {t("dashboard.upcomingEvents.title")}
           </h3>
           {upcomingActivities.length > 0 ? (
             <ul className="space-y-3">
@@ -346,9 +348,9 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                       {(() => {
                         switch (activity.status) {
                           case 'PLANNED':
-                            return <span className="font-semibold text-green-600 text-sm">Najavljeno</span>;
+                            return <span className="font-semibold text-green-600 text-sm">{t("dashboard.upcomingEvents.planned")}</span>;
                           case 'ACTIVE':
-                            return <span className="font-semibold text-blue-500 text-sm">U tijeku</span>;
+                            return <span className="font-semibold text-blue-500 text-sm">{t("dashboard.upcomingEvents.active")}</span>;
                           default:
                             return null;
                         }
@@ -360,7 +362,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             </ul>
           ) : (
             <div className="text-gray-600 text-center py-6">
-              <p>Trenutno nema nadolazećih događaja.</p>
+              <p>{t("dashboard.upcomingEvents.noUpcomingEvents")}</p>
             </div>
           )}
         </div>

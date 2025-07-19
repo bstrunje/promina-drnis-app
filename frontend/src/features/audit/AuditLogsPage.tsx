@@ -7,8 +7,10 @@ import { AuditLog } from '@shared/audit';
 import { getAuditLogs } from '../../utils/api/apiMisc';
 import { parseISO } from 'date-fns';
 import { formatDate } from "../../utils/dateUtils";
+import { useTranslation } from 'react-i18next';
 
 const AuditLogsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,18 +123,18 @@ const AuditLogsPage: React.FC = () => {
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Audit Logs</h1>
-        <p className="opacity-90">System Activity Monitoring</p>
+        <h1 className="text-2xl font-bold mb-2">{t('auditLogs.title')}</h1>
+        <p className="opacity-90">{t('auditLogs.description')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Filter Logs</CardTitle>
+          <CardTitle>{t('auditLogs.filterLogs')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium mb-1">Date Range</label>
+              <label className="block text-sm font-medium mb-1">{t('auditLogs.filters.dateRange')}</label>
               <div className="flex gap-2">
                 <input
                   type="date"
@@ -149,38 +151,38 @@ const AuditLogsPage: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Action Type</label>
+              <label className="block text-sm font-medium mb-1">{t('auditLogs.filters.actionType')}</label>
               <select
                 className="w-full p-2 border rounded"
                 value={filters.actionType}
                 onChange={(e) => handleFilterChange('actionType', e.target.value)}
               >
-                <option value="">All</option>
-                <option value="LOGIN">Login</option>
-                <option value="CREATE">Create</option>
-                <option value="UPDATE">Update</option>
-                <option value="DELETE">Delete</option>
-                <option value="PASSWORD">Password</option>
+                <option value="">{t('auditLogs.actionTypes.all')}</option>
+                <option value="LOGIN">{t('auditLogs.actionTypes.login')}</option>
+                <option value="CREATE">{t('auditLogs.actionTypes.create')}</option>
+                <option value="UPDATE">{t('auditLogs.actionTypes.update')}</option>
+                <option value="DELETE">{t('auditLogs.actionTypes.delete')}</option>
+                <option value="PASSWORD">{t('auditLogs.actionTypes.password')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
+              <label className="block text-sm font-medium mb-1">{t('auditLogs.filters.status')}</label>
               <select
                 className="w-full p-2 border rounded"
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
-                <option value="">All</option>
-                <option value="success">Success</option>
-                <option value="error">Error</option>
+                <option value="">{t('auditLogs.statuses.all')}</option>
+                <option value="success">{t('auditLogs.statuses.success')}</option>
+                <option value="error">{t('auditLogs.statuses.error')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">User</label>
+              <label className="block text-sm font-medium mb-1">{t('auditLogs.filters.user')}</label>
               <input
                 type="text"
                 className="w-full p-2 border rounded"
-                placeholder="Search by user..."
+                placeholder={t('auditLogs.filters.searchByUser')}
                 value={filters.user}
                 onChange={(e) => handleFilterChange('user', e.target.value)}
               />
@@ -193,20 +195,20 @@ const AuditLogsPage: React.FC = () => {
                 <tr className="border-b">
                   <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort('created_at')}>
                     <div className="flex items-center">
-                      Timestamp
+                      {t('auditLogs.table.timestamp')}
                       {sortField === 'created_at' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4 ml-1" /> : <ArrowDown className="w-4 h-4 ml-1" />)}
                     </div>
                   </th>
                   <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort('action_type')}>
                     <div className="flex items-center">
-                      Action
+                      {t('auditLogs.table.action')}
                       {sortField === 'action_type' && (sortDirection === 'asc' ? <ArrowUp className="w-4 h-4 ml-1" /> : <ArrowDown className="w-4 h-4 ml-1" />)}
                     </div>
                   </th>
-                  <th className="py-2 px-4 text-left">Performed By</th>
-                  <th className="py-2 px-4 text-left">Details</th>
-                  <th className="py-2 px-4 text-left">Status</th>
-                  <th className="py-2 px-4 text-left">IP Address</th>
+                  <th className="py-2 px-4 text-left">{t('auditLogs.table.performedBy')}</th>
+                  <th className="py-2 px-4 text-left">{t('auditLogs.table.details')}</th>
+                  <th className="py-2 px-4 text-left">{t('auditLogs.table.status')}</th>
+                  <th className="py-2 px-4 text-left">{t('auditLogs.table.ipAddress')}</th>
                 </tr>
               </thead>
               <tbody>

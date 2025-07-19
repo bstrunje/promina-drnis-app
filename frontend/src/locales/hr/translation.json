@@ -20,7 +20,7 @@
     "alreadyMember": "Već jesi član? Prijavi se"
   },
   "common": {
-    "loading": "Učitavam...",
+    "loading": "Učitavanje...",
     "close": "Zatvori",
     "submit": "Pošalji",
     "cancel": "Odustani",
@@ -373,11 +373,36 @@
     }
   },
   "activities": {
+    "admin": {
+      "title": "Administracija aktivnosti",
+      "addNewActivity": "Dodaj novu aktivnost",
+      "newActivity": "Nova aktivnost",
+      "form": {
+        "name": "Naziv",
+        "description": "Opis",
+        "activityType": "Tip aktivnosti",
+        "startDate": "Datum početka",
+        "selectType": "Odaberite tip"
+      },
+      "table": {
+        "name": "Naziv",
+        "startDate": "Datum početka",
+        "status": "Status",
+        "actions": "Akcije",
+        "edit": "Uredi",
+        "delete": "Obriši"
+      },
+      "messages": {
+        "loading": "Učitavanje...",
+        "errorFetchingData": "Greška prilikom dohvaćanja podataka.",
+        "errorCreatingActivity": "Greška prilikom kreiranja aktivnosti."
+      }
+    },
     "roles": {
       "guide": "Vodič",
       "assistantGuide": "Pomoćni vodič",
       "driver": "Vozač",
-      "regular": "Izletnik"
+      "regular": "Sudionik"
     },
     "creation": {
       "success": "Uspjeh",
@@ -397,6 +422,99 @@
       "actualStart": "Početak"
     }
   },
+  "dashboard": {
+    "overview": "Pregled nadzorne ploče",
+    "refreshing": "Osvježavam...",
+    "refreshData": "Osvježi podatke",
+    "messages": {
+      "unreadMessages": "Nepročitane poruke",
+      "messages": "Poruke"
+    },
+    "activities": {
+      "allMyActivities": "Sve moje aktivnosti",
+      "totalActivities": "Ukupno aktivnosti",
+      "totalHours": "Ukupno sati",
+      "recentActivities": "Nedavne aktivnosti",
+      "inLast30Days": "U zadnjih 30 dana"
+    },
+    "members": {
+      "members": "Članovi",
+      "totalActiveMembers": "Ukupno aktivnih članova",
+      "registered": "registrirano",
+      "active": "aktivno"
+    },
+    "profile": {
+      "profile": "Profil",
+      "yourUserProfile": "Vaš korisnički profil"
+    },
+    "membership": {
+      "myMembership": "Moje članstvo",
+      "membershipStatus": "Status članstva:",
+      "active": "Aktivan",
+      "passive": "Pasivan",
+      "membershipYear": "Godina članarine:",
+      "lifeStatus": "Životni status:",
+      "annualStamp": "Godišnja markica:",
+      "issued": "Izdana",
+      "notIssued": "Nije izdana"
+    },
+    "upcomingEvents": {
+      "title": "Nadolazeći događaji",
+      "noUpcomingEvents": "Trenutno nema nadolazećih događaja.",
+      "planned": "Najavljeno",
+      "active": "U tijeku"
+    },
+    "pendingRegistrations": {
+      "title": "Registracije na čekanju",
+      "awaitPasswordAssignment": "Čeka dodjelu lozinke"
+    },
+    "quickActions": {
+      "title": "Brze akcije",
+      "memberManagement": "Upravljanje članovima",
+      "activityApprovals": "Odobravanje aktivnosti",
+      "systemSettings": "Postavke sustava"
+    },
+    "errors": {
+      "errorCheckingMessages": "Greška prilikom provjere poruka"
+    },
+    "header": {
+      "welcome": "Dobrodošli, {name}",
+      "adminDashboard": "Administratorska nadzorna ploča",
+      "memberDashboard": "Članska nadzorna ploča",
+      "superUserDashboard": "Superkorisničke nadzorna ploča"
+    },
+    "navigation": {
+      "memberManagement": {
+        "title": "Upravljanje članovima",
+        "description": "Upravljanje korisničkim računima i dozvolama"
+      },
+      "activityManagement": {
+        "title": "Upravljanje aktivnostima",
+        "description": "Upravljanje i praćenje aktivnosti"
+      },
+      "messages": {
+        "title": "Poruke",
+        "unreadMessages": "Postoje nepročitane poruke",
+        "noUnreadMessages": "Nema nepročitanih poruka"
+      }
+    },
+    "stampInventory": {
+      "title": "Inventar markica",
+      "editInventory": "Uredi inventar",
+      "showHistory": "Prikaži povijest",
+      "hideHistory": "Sakrij povijest",
+      "archiveYear": "Arhiviraj godinu",
+      "selectYear": "Odaberi godinu:",
+      "refresh": "Osvježi",
+      "save": "Spremi",
+      "cancel": "Odustani",
+      "stampTypes": {
+        "employedUnemployed": "Markice za zaposlene/nezaposlene članove",
+        "studentPupil": "Markice za djecu/đake/studente",
+        "pensioner": "Markice za umirovljenike"
+      }
+    }
+  },
   "members": {
     "printList": "Ispiši listu",
     "addMember": "Dodaj člana",
@@ -412,6 +530,288 @@
       "addButton": "Dodaj člana",
       "cancelButton": "Odustani",
       "oibTitle": "OIB mora imati točno 11 znamenki"
+    }
+  },
+  "membershipCard": {
+    "form": {
+      "cardNumber": "Broj kartice",
+      "stampIssued": "Markica izdana",
+      "updateCardDetails": "Ažuriraj podatke kartice",
+      "updating": "Ažuriranje..."
+    },
+    "placeholders": {
+      "loading": "Učitavanje...",
+      "enterCardNumber": "Unesite {length}-znamenkasti broj kartice"
+    },
+    "messages": {
+      "validationError": "Greška validacije",
+      "cardNumberMustBe": "Broj kartice mora imati točno {length} znamenki",
+      "success": "Uspjeh",
+      "cardDetailsUpdated": "Podaci kartice uspješno ažurirani",
+      "error": "Greška",
+      "failedToUpdate": "Neuspješno ažuriranje podataka kartice",
+      "loadingCardNumbers": "Učitavanje brojeva kartica...",
+      "availableNumbers": "Dostupni brojevi:"
+    }
+  },
+  "assignPassword": {
+    "title": "Dodjela lozinke članovima na čekanju",
+    "form": {
+      "selectMember": "Odaberite člana:",
+      "password": "Lozinka:",
+      "selectMemberPlaceholder": "Odaberite člana",
+      "assignPasswordButton": "Dodjeli lozinku"
+    },
+    "messages": {
+      "passwordAssignedSuccessfully": "Lozinka je uspješno dodijeljena",
+      "failedToAssignPassword": "Neuspješna dodjela lozinke",
+      "errorOccurred": "Dogodila se greška"
+    }
+  },
+  "hoursLog": {
+    "title": "Evidencija sati",
+    "logHours": "Evidentiraj sate",
+    "hours": "sati",
+    "verified": "Potvrđeno",
+    "notVerified": "Nije potvrđeno",
+    "noHoursLogged": "Još nema evidencije sati."
+  },
+  "roleAssignment": {
+    "title": "Dodjeli ulogu članu {name}",
+    "form": {
+      "role": "Uloga",
+      "member": "Član",
+      "administrator": "Administrator",
+      "superuser": "Superkorisnik"
+    },
+    "buttons": {
+      "cancel": "Odustani",
+      "assignRole": "Dodjeli ulogu"
+    }
+  },
+  "activitiesList": {
+    "title": "Aktivnosti",
+    "description": "Pregledajte i sudjelujte u nadolažećim aktivnostima.",
+    "create": "Kreiraj",
+    "loading": "Učitavanje...",
+    "error": "Došlo je do pogreške prilikom dohvaćanja podataka.",
+    "totalCompletedHours": "Ukupno odrađenih sati",
+    "totalHours": "Ukupno sati",
+    "activities": "Aktivnosti:",
+    "totalHoursLabel": "Ukupno sati:",
+    "noActivities": "Nema aktivnosti za prikaz.",
+    "tooltips": {
+      "activeActivities": "Postoje aktivne aktivnosti",
+      "plannedActivities": "Postoje najavljene aktivnosti"
+    }
+  },
+  "eventsList": {
+    "title": "Nadolažeći događaji",
+    "createEvent": "Kreiraj događaj",
+    "loading": "Učitavanje...",
+    "error": "Neuspješno učitavanje događaja",
+    "registered": "prijavljeno",
+    "noEvents": "Još nema zakazanih događaja"
+  },
+  "auditLogs": {
+    "title": "Revizijski zapisi",
+    "description": "Praćenje aktivnosti sustava",
+    "filterLogs": "Filtriraj zapise",
+    "filters": {
+      "dateRange": "Raspon datuma",
+      "actionType": "Tip akcije",
+      "status": "Status",
+      "user": "Korisnik",
+      "searchByUser": "Pretraži po korisniku..."
+    },
+    "actionTypes": {
+      "all": "Sve",
+      "login": "Prijava",
+      "create": "Kreiranje",
+      "update": "Ažuriranje",
+      "delete": "Brisanje",
+      "password": "Lozinka"
+    },
+    "statuses": {
+      "all": "Sve",
+      "success": "Uspjeh",
+      "error": "Greška"
+    },
+    "table": {
+      "timestamp": "Vremenska oznaka",
+      "action": "Akcija",
+      "performedBy": "Izvršio",
+      "details": "Detalji",
+      "status": "Status",
+      "ipAddress": "IP adresa"
+    }
+  },
+  "memberTable": {
+    "headers": {
+      "number": "BR.",
+      "member": "ČLAN",
+      "membership": "ČLANSTVO",
+      "hours": "SATI",
+      "actions": "AKCIJE",
+      "signature": "POTPIS"
+    },
+    "tooltips": {
+      "assignNumber": "Dodijeli broj",
+      "managePermissions": "Upravljanje ovlastima"
+    },
+    "status": {
+      "pending": "Na čekanju"
+    }
+  },
+  "memberListFilters": {
+    "search": {
+      "placeholder": "Pretraži ime, prezime...",
+      "clearSearch": "Obriši pretragu"
+    },
+    "filters": {
+      "activityStatus": "Status aktivnosti",
+      "sortBy": "Sortiraj po"
+    },
+    "options": {
+      "allMembers": "Svi članovi",
+      "active": "Aktivni",
+      "passive": "Pasivni",
+      "paid": "Plaćeno",
+      "unpaid": "Nije plaćeno",
+      "sortByName": "Sortiraj po imenu",
+      "sortByHours": "Sortiraj po satima"
+    },
+    "buttons": {
+      "adults": "Punoljetni",
+      "group": "Grupiraj",
+      "colored": "Obojani"
+    },
+    "tooltips": {
+      "showAllMembers": "Prikaži sve članove",
+      "showOnlyAdults": "Prikaži samo punoljetne",
+      "sortAscending": "Sortiraj uzlazno",
+      "sortDescending": "Sortiraj silazno",
+      "disableGrouping": "Onemogući grupiranje",
+      "groupByMemberType": "Grupiraj po tipu člana",
+      "showOnlyColoredRows": "Prikaži samo obojane retke"
+    }
+  },
+  "membershipStatus": {
+    "pending": "Na čekanju",
+    "regularMember": "Redovni član",
+    "honoraryMember": "Počasni član",
+    "supportingMember": "Podržavajući član",
+    "formerMember": "Bivši član"
+  },
+  "receivedMessages": {
+    "loading": "Učitavanje poruka...",
+    "buttons": {
+      "unread": "Nepročitane",
+      "read": "Pročitane",
+      "archived": "Arhivirane"
+    },
+    "messages": {
+      "fetchError": "Nije moguće dohvatiti poruke",
+      "markAsReadSuccess": "Poruka je označena kao pročitana",
+      "markAsReadError": "Nije moguće označiti poruku kao pročitanu",
+      "archiveSuccess": "Poruka je arhivirana",
+      "archiveError": "Nije moguće arhivirati poruku",
+      "deleteSuccess": "Poruka je obrisana",
+      "deleteError": "Nije moguće obrisati poruku",
+      "deleteAllSuccess": "Sve poruke su obrisane",
+      "deleteAllError": "Nije moguće obrisati sve poruke"
+    },
+    "confirmDialogs": {
+      "deleteMessage": "Jeste li sigurni da želite obrisati ovu poruku?",
+      "deleteAllMessages": "Jeste li sigurni da želite obrisati sve poruke?"
+    }
+  },
+  "sentMessages": {
+    "loading": "Učitavanje poslanih poruka...",
+    "noMessages": "Nema poslanih poruka."
+  },
+  "adminMessageSender": {
+    "title": "Slanje poruka članovima",
+    "tabs": {
+      "single": "Pojedinačnom članu",
+      "group": "Grupi članova",
+      "all": "Svim članovima"
+    },
+    "labels": {
+      "recipient": "Primatelj:",
+      "messageText": "Tekst poruke:",
+      "messageTextGroup": "Tekst poruke za grupu:",
+      "messageTextAll": "Tekst poruke za sve članove:",
+      "selectedMembers": "Odabrani članovi ({{count}}):"
+    },
+    "placeholders": {
+      "searchMember": "Pretraži po imenu ili prezimenu... (najmanje 2 znaka)",
+      "messageText": "Unesite tekst poruke...",
+      "messageTextGroup": "Unesite tekst poruke za grupu članova...",
+      "messageTextAll": "Unesite tekst poruke za sve članove..."
+    },
+    "buttons": {
+      "sending": "Slanje...",
+      "sendMessage": "Pošalji poruku",
+      "sendToGroup": "Pošalji poruku ({{count}} članova)",
+      "sendToAll": "Pošalji svim članovima",
+      "clearAll": "Obriši sve"
+    },
+    "messages": {
+      "searchMinLength": "Unesite najmanje 2 znaka za pretragu članova",
+      "selectMemberWarning": "Molimo odaberite člana za slanje poruke",
+      "selectGroupWarning": "Molimo odaberite barem jednog člana za slanje grupne poruke",
+      "emptyMessageWarning": "Poruka ne može biti prazna",
+      "singleSuccess": "Poruka uspješno poslana članu {{memberName}}",
+      "groupSuccess": "Poruka uspješno poslana grupi od {{count}} članova",
+      "allSuccess": "Poruka uspješno poslana svim članovima",
+      "singleError": "Slanje poruke nije uspjelo",
+      "groupError": "Slanje grupne poruke nije uspjelo",
+      "allError": "Slanje poruke svim članovima nije uspjelo"
+    },
+    "confirmDialogs": {
+      "sendToAll": "Jeste li sigurni da želite poslati poruku SVIM članovima?"
+    },
+    "warnings": {
+      "importantNotice": "Važno upozorenje",
+      "sendToAllDescription": "Ova poruka će biti poslana SVIM članovima u sustavu. Koristite ovu opciju samo kada je poruka namijenjena svim članovima, poput važnih obavijesti, događaja, itd."
+    },
+    "success": {
+      "messageSent": "Poruka uspješno poslana!"
+    }
+  },
+  "memberMessageList": {
+    "titles": {
+      "adminMessages": "Poruke od administratora",
+      "sentMessages": "Poslane poruke"
+    },
+    "tabs": {
+      "received": "Primljene poruke",
+      "sent": "Poslane poruke"
+    },
+    "filters": {
+      "unread": "Nepročitane",
+      "read": "Pročitane",
+      "all": "Sve poruke"
+    },
+    "unreadCount": {
+      "single": "nepročitana",
+      "multiple": "nepročitanih"
+    },
+    "emptyStates": {
+      "noReceivedMessages": "Nemate primljenih poruka",
+      "noUnreadMessages": "Nema nepročitanih poruka",
+      "noReadMessages": "Nema pročitanih poruka",
+      "noSentMessages": "Nema poslanih poruka."
+    },
+    "loading": {
+      "sentMessages": "Učitavanje poslanih poruka..."
+    },
+    "buttons": {
+      "refreshMessages": "Osvježi poruke"
+    },
+    "badges": {
+      "sentToAll": "Poslano svim članovima"
     }
   }
 }

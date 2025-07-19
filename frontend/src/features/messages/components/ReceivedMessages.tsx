@@ -58,8 +58,8 @@ const fetchMessages = useCallback(async () => {
     // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
     if (error?.config?._retry === true) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće dohvatiti poruke',
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('receivedMessages.messages.fetchError'),
         variant: "destructive"
       });
     }
@@ -92,14 +92,14 @@ useEffect(() => {
       onUnreadCountChange(updatedUnreadCount);
       
       toast({
-        title: "Uspjeh",
-        description: "Poruka je označena kao pročitana",
+        title: t('common.success'),
+        description: t('receivedMessages.messages.markAsReadSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće označiti poruku kao pročitanu',
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('receivedMessages.messages.markAsReadError'),
         variant: "destructive"
       });
     }
@@ -127,14 +127,14 @@ useEffect(() => {
       }
       
       toast({
-        title: "Uspjeh",
-        description: "Poruka je arhivirana",
+        title: t('common.success'),
+        description: t('receivedMessages.messages.archiveSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće arhivirati poruku',
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('receivedMessages.messages.archiveError'),
         variant: "destructive"
       });
     }
@@ -142,7 +142,7 @@ useEffect(() => {
 
   // Funkcija za brisanje poruke
   const onDelete = async (messageId: number) => {
-    if (!window.confirm('Jeste li sigurni da želite obrisati ovu poruku?')) {
+    if (!window.confirm(t('receivedMessages.confirmDialogs.deleteMessage'))) {
       return;
     }
     
@@ -162,14 +162,14 @@ useEffect(() => {
       );
       
       toast({
-        title: "Uspjeh",
-        description: "Poruka je obrisana",
+        title: t('common.success'),
+        description: t('receivedMessages.messages.deleteSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće obrisati poruku',
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('receivedMessages.messages.deleteError'),
         variant: "destructive"
       });
     }
@@ -177,7 +177,7 @@ useEffect(() => {
 
   // Funkcija za brisanje svih poruka
   const onDeleteAll = async () => {
-    if (!window.confirm('Jeste li sigurni da želite obrisati sve poruke?')) {
+    if (!window.confirm(t('receivedMessages.confirmDialogs.deleteAllMessages'))) {
       return;
     }
     
@@ -191,14 +191,14 @@ useEffect(() => {
       onUnreadCountChange(0);
       
       toast({
-        title: "Uspjeh",
-        description: "Sve poruke su obrisane",
+        title: t('common.success'),
+        description: t('receivedMessages.messages.deleteAllSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : 'Nije moguće obrisati sve poruke',
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('receivedMessages.messages.deleteAllError'),
         variant: "destructive"
       });
     }
@@ -217,7 +217,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Bell className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Nepročitane</span>
+            <span className="hidden sm:inline">{t('receivedMessages.buttons.unread')}</span>
           </Button>
           <Button
             variant={filter === 'read' ? 'default' : 'outline'}
@@ -225,7 +225,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <CheckCircle className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Pročitane</span>
+            <span className="hidden sm:inline">{t('receivedMessages.buttons.read')}</span>
           </Button>
           <Button
             variant={filter === 'archived' ? 'default' : 'outline'}
@@ -233,7 +233,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Archive className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Arhivirane</span>
+            <span className="hidden sm:inline">{t('receivedMessages.buttons.archived')}</span>
           </Button>
         </div>
       </div>

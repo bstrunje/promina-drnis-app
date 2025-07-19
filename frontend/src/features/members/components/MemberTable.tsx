@@ -23,6 +23,7 @@ import { Member } from "@shared/member";
 import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
 import { useState } from "react";
 import { formatMinutesToHoursAndMinutes } from '../../../utils/dateUtils';
+import { useTranslation } from 'react-i18next';
 
 import { getMembershipDisplayStatusExternal } from "./memberTableUtils";
 
@@ -56,6 +57,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
 
 }) => {
+  const { t } = useTranslation();
+  
   // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
   const getMembershipStatusColor = (displayStatus: string): string => {
@@ -122,7 +125,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
       isAdmin,
       isSuperuser,
       membershipType,
-      periods
+      periods,
+      t // Proslijedi translation funkciju
     );
   }
 
@@ -145,7 +149,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
         style={{ minWidth: "120px" }}
       >
         <div style={{ width: "32px", textAlign: "center" }}>
-          {displayStatus === "Na čekanju" && (
+          {displayStatus === t('membershipStatus.pending') && (
             <Button
               variant="ghost"
               size="sm"
@@ -153,7 +157,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 e.stopPropagation();
                 if (onAssignPassword) { onAssignPassword(member); }
               }}
-              title="Assign number"
+              title={t('memberTable.tooltips.assignNumber')}
             >
               <Key className="w-4 h-4" />
             </Button>
@@ -170,7 +174,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                 setSelectedMember(member);
                 setIsPermissionsModalOpen(true);
               }}
-              title="Upravljanje ovlastima"
+              title={t('memberTable.tooltips.managePermissions')}
             >
               <UserCog className="w-4 h-4" />
             </Button>
@@ -218,24 +222,24 @@ export const MemberTable: React.FC<MemberTableProps> = ({
           <thead className="bg-gray-100 border-b border-gray-300 print:bg-white">
             <tr>
               <th className="hidden print:table-cell px-3 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
-                BR.
+                {t('memberTable.headers.number')}
               </th>
               <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
-                ČLAN
+                {t('memberTable.headers.member')}
               </th>
               <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center print:hidden">
-                ČLANSTVO
+                {t('memberTable.headers.membership')}
               </th>
               <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 text-center">
-                SATI
+                {t('memberTable.headers.hours')}
               </th>
               {isSuperuser && (
                 <th className="px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider text-center print:hidden">
-                  AKCIJE
+                  {t('memberTable.headers.actions')}
                 </th>
               )}
               <th className="hidden print:table-cell px-6 py-1 text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
-                POTPIS
+                {t('memberTable.headers.signature')}
               </th>
             </tr>
           </thead>

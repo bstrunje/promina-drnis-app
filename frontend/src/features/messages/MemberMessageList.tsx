@@ -203,12 +203,12 @@ const MemberMessageList: React.FC = () => {
           <CardTitle className="flex justify-between items-center">
             <div className="flex items-center">
               <MessageCircle className="mr-2 h-5 w-5" />
-              {activeTab === 'received' ? 'Poruke od administratora' : 'Poslane poruke'}
+              {activeTab === 'received' ? t('memberMessageList.titles.adminMessages') : t('memberMessageList.titles.sentMessages')}
             </div>
             {activeTab === 'received' && unreadCount > 0 && (
               <div className="flex items-center bg-white text-blue-800 px-2 py-1 rounded-full text-sm">
                 <Bell className="h-4 w-4 mr-1" />
-                {unreadCount} {unreadCount === 1 ? 'nepročitana' : 'nepročitanih'}
+                {unreadCount} {unreadCount === 1 ? t('memberMessageList.unreadCount.single') : t('memberMessageList.unreadCount.multiple')}
               </div>
             )}
           </CardTitle>
@@ -227,7 +227,7 @@ const MemberMessageList: React.FC = () => {
               size="sm"
             >
               <MessageCircle className="h-4 w-4 mr-1" />
-              <span>Primljene poruke</span>
+              <span>{t('memberMessageList.tabs.received')}</span>
             </Button>
             <Button
               variant={activeTab === 'sent' ? 'default' : 'outline'}
@@ -236,7 +236,7 @@ const MemberMessageList: React.FC = () => {
               size="sm"
             >
               <MessageCircle className="h-4 w-4 mr-1" />
-              <span>Poslane poruke</span>
+              <span>{t('memberMessageList.tabs.sent')}</span>
             </Button>
           </div>
 
@@ -250,7 +250,7 @@ const MemberMessageList: React.FC = () => {
                   className="flex items-center"
                 >
                   <Bell className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Nepročitane</span>
+                  <span className="hidden sm:inline">{t('memberMessageList.filters.unread')}</span>
                 </Button>
                 <Button
                   onClick={() => setFilter('read')}
@@ -258,7 +258,7 @@ const MemberMessageList: React.FC = () => {
                   className="flex items-center"
                 >
                   <CheckCircle className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Pročitane</span>
+                  <span className="hidden sm:inline">{t('memberMessageList.filters.read')}</span>
                 </Button>
                 <Button
                   onClick={() => setFilter('all')}
@@ -266,7 +266,7 @@ const MemberMessageList: React.FC = () => {
                   className="flex items-center"
                 >
                   <MessageCircle className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Sve poruke</span>
+                  <span className="hidden sm:inline">{t('memberMessageList.filters.all')}</span>
                 </Button>
               </div>
             </div>
@@ -276,7 +276,7 @@ const MemberMessageList: React.FC = () => {
           {activeTab === 'received' && (
             messages.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                Nemate primljenih poruka
+                {t('memberMessageList.emptyStates.noReceivedMessages')}
               </div>
             ) : messages.filter(msg => {
               if (filter === 'all') return true;
@@ -285,7 +285,7 @@ const MemberMessageList: React.FC = () => {
               return true;
             }).length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                Nema {filter === 'unread' ? 'nepročitanih' : filter === 'read' ? 'pročitanih' : ''} poruka
+                {filter === 'unread' ? t('memberMessageList.emptyStates.noUnreadMessages') : filter === 'read' ? t('memberMessageList.emptyStates.noReadMessages') : ''}
               </div>
             ) : (
               <div className="space-y-4">
@@ -350,7 +350,7 @@ const MemberMessageList: React.FC = () => {
                           <div className="mb-3">{message.message_text}</div>
                           {message.recipient_type === 'all' && (
                             <div className="mt-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">
-                              Poslano svim članovima
+                              {t('memberMessageList.badges.sentToAll')}
                             </div>
                           )}
                           {/* Uklonjen gumb za označavanje kao pročitano za članove */}
@@ -364,7 +364,7 @@ const MemberMessageList: React.FC = () => {
                   onClick={() => { void fetchMessages(); }}
                   className="w-full"
                 >
-                  Osvježi poruke
+                  {t('memberMessageList.buttons.refreshMessages')}
                 </Button>
               </div>
             )
@@ -374,7 +374,7 @@ const MemberMessageList: React.FC = () => {
           {activeTab === 'sent' && (
             <div>
               {loadingSent ? (
-                <div className="text-center p-4">Učitavanje poslanih poruka...</div>
+                <div className="text-center p-4">{t('memberMessageList.loading.sentMessages')}</div>
               ) : sentMessages.length > 0 ? (
                 <div>
                   {sentMessages.map(message => (
@@ -386,7 +386,7 @@ const MemberMessageList: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center p-4 text-gray-500">Nema poslanih poruka.</div>
+                <div className="text-center p-4 text-gray-500">{t('memberMessageList.emptyStates.noSentMessages')}</div>
               )}
             </div>
           )}

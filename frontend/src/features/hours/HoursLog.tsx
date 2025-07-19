@@ -1,5 +1,6 @@
 // frontend/src/features/hours/HoursLog.tsx
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@components/ui/alert';
 
 interface LoggedHours {
@@ -12,6 +13,7 @@ interface LoggedHours {
 }
 
 const HoursLog: React.FC = () => {
+  const { t } = useTranslation();
   const [hours, setHours] = useState<LoggedHours[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,9 +72,9 @@ const HoursLog: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Hours Log</h1>
+        <h1 className="text-2xl font-bold">{t('hoursLog.title')}</h1>
         <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          Log Hours
+          {t('hoursLog.logHours')}
         </button>
       </div>
 
@@ -83,13 +85,13 @@ const HoursLog: React.FC = () => {
               <div key={log.id} className="border rounded-lg p-4">
                 <h3 className="font-medium">{log.activity_name}</h3>
                 <p className="text-gray-600">{log.date}</p>
-                <p className="text-gray-600">{log.hours} hours</p>
-                <p className="text-gray-600">{log.verified ? 'Verified' : 'Not Verified'}</p>
+                <p className="text-gray-600">{log.hours} {t('hoursLog.hours')}</p>
+                <p className="text-gray-600">{log.verified ? t('hoursLog.verified') : t('hoursLog.notVerified')}</p>
               </div>
             ))}
           </div>
         ) : (
-          <p>No hours logged yet.</p>
+          <p>{t('hoursLog.noHoursLogged')}</p>
         )}
       </div>
     </div>

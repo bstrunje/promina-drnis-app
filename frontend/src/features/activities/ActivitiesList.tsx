@@ -11,9 +11,11 @@ import { parseISO, format } from 'date-fns';
 import { Activity as ActivityIcon, Clock, Calendar, PlusCircle, AlertCircle, CheckCircle2, PlayCircle } from 'lucide-react';
 import { calculateGrandTotalHours, calculateTotalActivityHours, formatHoursToHHMM } from '@/utils/activityHours';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import CreateActivityModal from './CreateActivityModal';
 
 const ActivitiesList: React.FC = () => {
+  const { t } = useTranslation();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ const ActivitiesList: React.FC = () => {
       setError(null);
     } catch (err) {
       console.error('Greška prilikom dohvaćanja podataka:', err);
-      setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
+      setError(t('activitiesList.error'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,7 @@ const ActivitiesList: React.FC = () => {
     void fetchData();
   };
 
-  if (loading) return <div className="p-6">Učitavanje...</div>;
+  if (loading) return <div className="p-6">{t('activitiesList.loading')}</div>;
   if (error) return (
     <div className="p-6">
       <Alert variant="destructive">
@@ -113,13 +115,13 @@ const ActivitiesList: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Aktivnosti</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('activitiesList.title')}</h1>
         <div className="flex items-center gap-4">
-          <p className="text-muted-foreground hidden md:block">Pregledajte i sudjelujte u nadolazećim aktivnostima.</p>
+          <p className="text-muted-foreground hidden md:block">{t('activitiesList.description')}</p>
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <Button size="sm" className="sm:size-md" onClick={() => setCreateModalOpen(true)}>
               <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">Kreiraj</span>
+              <span className="text-xs sm:text-sm">{t('activitiesList.create')}</span>
             </Button>
           )}
         </div>
@@ -129,8 +131,8 @@ const ActivitiesList: React.FC = () => {
           <Card>
               <CardHeader className="flex flex-row items-center justify-between py-3 sm:py-6">
                   <CardTitle>
-                    <span className="hidden sm:inline">Ukupno odrađenih sati</span>
-                    <span className="inline sm:hidden">Ukupno sati</span>
+                    <span className="hidden sm:inline">{t('activitiesList.totalCompletedHours')}</span>
+                    <span className="inline sm:hidden">{t('activitiesList.totalHours')}</span>
                   </CardTitle>
                   <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
               </CardHeader>
@@ -195,8 +197,8 @@ const ActivitiesList: React.FC = () => {
                         <span className="text-lg sm:text-xl">{year}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
-                        {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title="Postoje najavljene aktivnosti"></div>}
+                        {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title={t('activitiesList.tooltips.activeActivities')}></div>}
+                        {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title={t('activitiesList.tooltips.plannedActivities')}></div>}
                       </div>
                     </CardTitle>
                   </CardHeader>
@@ -205,7 +207,7 @@ const ActivitiesList: React.FC = () => {
                      <div className="flex justify-between text-muted-foreground w-full">
                        <div className="flex items-center gap-1 sm:gap-1.5">
                          <ActivityIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                         <span className="text-xs sm:text-sm">Aktivnosti:</span>
+                         <span className="text-xs sm:text-sm">{t('activitiesList.activities')}</span>
                        </div>
                        <Badge variant="secondary" className="text-xs sm:text-sm">{totalYearActivities.length}</Badge>
                      </div>
@@ -215,7 +217,7 @@ const ActivitiesList: React.FC = () => {
                        <div className="flex justify-between text-muted-foreground w-full">
                          <div className="flex items-center gap-1 sm:gap-1.5">
                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                           <span className="text-xs sm:text-sm">Ukupno sati:</span>
+                           <span className="text-xs sm:text-sm">{t('activitiesList.totalHoursLabel')}</span>
                          </div>
                          <Badge variant="outline" className="text-xs sm:text-sm">{formatHoursToHHMM(yearHours)} h</Badge>
                        </div>
@@ -229,7 +231,7 @@ const ActivitiesList: React.FC = () => {
           <div className="col-span-full flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">
               <Calendar className="h-12 w-12 mx-auto mb-2" />
-              <p>Nema aktivnosti za prikaz.</p>
+              <p>{t('activitiesList.noActivities')}</p>
             </div>
           </div>
         )}

@@ -12,6 +12,7 @@ import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
+import LanguageToggle from '../../components/LanguageToggle';
 
 interface SizeOptions {
   value: string;
@@ -296,7 +297,11 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-        <div className="p-6 bg-blue-600 text-white text-center">
+        <div className="p-6 bg-blue-600 text-white text-center relative">
+          {/* Language Toggle in top right corner */}
+          <div className="absolute top-4 right-4">
+            <LanguageToggle />
+          </div>
           <div className="mb-4">
             {/* Logo */}
             <img 

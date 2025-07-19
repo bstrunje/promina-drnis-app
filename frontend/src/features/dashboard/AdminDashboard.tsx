@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Member } from "@shared/member";
 import { useToast } from "@components/ui/use-toast";
 // Zamijenjeno prema novoj modularnoj API strukturi
@@ -22,6 +23,7 @@ interface Props {
 const AdminDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   
@@ -38,9 +40,9 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     } catch (error) {
       console.error("Error checking messages:", error);
       toast({
-        title: "Greška",
+        title: t("common.error"),
         description:
-          error instanceof Error ? error.message : "Greška prilikom provjere poruka",
+          error instanceof Error ? error.message : t("dashboard.errors.errorCheckingMessages"),
         variant: "destructive",
       });
     }
