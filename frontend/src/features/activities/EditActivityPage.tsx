@@ -378,8 +378,8 @@ const EditActivityPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                 <Button type="button" variant="outline" onClick={() => navigate(-1)}>Odustani</Button>
-                <Button type="submit">Spremi promjene</Button>
+                 <Button type="button" variant="outline" onClick={() => navigate(-1)}>{t('common.cancel')}</Button>
+                <Button type="submit">{t('activities.admin.saveChanges')}</Button>
               </div>
             </div>
           </form>

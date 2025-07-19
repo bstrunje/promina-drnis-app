@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import fakeTimers from '@sinonjs/fake-timers';
-import memberStatusSyncService from '../services/memberStatusSync.service.js';
+
 import db from '../utils/db.js';
 
 const router: Router = express.Router();
@@ -53,19 +53,7 @@ router.post('/reset-date', isDevelopment, (req: Request, res: Response) => {
   }
 });
 
-// Endpoint za ručno pokretanje sinkronizacije statusa članova
-// GET /api/dev/sync-members
-router.get('/sync-members', isDevelopment, async (req: Request, res: Response) => {
-    try {
-        console.log('Pokrećem ručnu sinkronizaciju statusa članova...');
-        await memberStatusSyncService.syncMemberStatuses(req);
-        console.log('Ručna sinkronizacija statusa članova uspješno završena.');
-        res.status(200).json({ message: 'Sinkronizacija statusa članova uspješno izvršena.' });
-    } catch (error) {
-        console.error('Greška prilikom ručne sinkronizacije statusa članova:', error);
-        res.status(500).json({ message: 'Greška prilikom sinkronizacije', error: (error as Error).message });
-    }
-});
+
 
 // Ruta za resetiranje sekvence za member_id
 // Koristi se POST metoda jer operacija mijenja stanje baze podataka

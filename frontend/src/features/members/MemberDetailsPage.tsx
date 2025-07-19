@@ -71,6 +71,13 @@ const memberId = useMemo(() => {
   }, [member?.membership_details?.fee_payment_year]);
 
   // Helper function to calculate total duration
+  // Funkcija za hrvatsku pluralizaciju
+  const getHrPluralKey = (count: number, baseKey: string): string => {
+    if (count === 1) return `${baseKey}_one`;
+    if (count >= 2 && count <= 4) return `${baseKey}_few`;
+    return `${baseKey}_other`;
+  };
+
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
     if (!Array.isArray(periods) || periods.length === 0) return "";
 
@@ -97,13 +104,16 @@ const memberId = useMemo(() => {
     const parts: string[] = [];
 
     if (years > 0) {
-      parts.push(t('navigation.duration.years', { count: years }));
+      const yearKey = getHrPluralKey(years, 'navigation.duration.years');
+      parts.push(t(yearKey, { count: years }));
     }
     if (months > 0) {
-      parts.push(t('navigation.duration.months', { count: months }));
+      const monthKey = getHrPluralKey(months, 'navigation.duration.months');
+      parts.push(t(monthKey, { count: months }));
     }
     if (days > 0) {
-      parts.push(t('navigation.duration.days', { count: days }));
+      const dayKey = getHrPluralKey(days, 'navigation.duration.days');
+      parts.push(t(dayKey, { count: days }));
     }
 
     if (parts.length === 0 && totalDays >= 0) {

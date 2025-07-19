@@ -214,7 +214,7 @@ const ActivityDetailPage: React.FC = () => {
                     <Link to={`/activities/${activity.activity_id}/edit`}>
                       <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
                         <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                        <span className="text-xs sm:text-sm">Uredi</span>
+                        <span className="text-xs sm:text-sm">{t('common.edit')}</span>
                       </Button>
                     </Link>
                     {!isCompleted && (
@@ -357,10 +357,10 @@ const ActivityDetailPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsCancelModalOpen(false)}>
-              Odustani
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleCancelConfirm}>
-              Potvrdi otkazivanje
+              {t('activities.confirmCancellation')}
             </Button>
           </DialogFooter>
         </DialogContent>

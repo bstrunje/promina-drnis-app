@@ -430,10 +430,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           <DialogFooter className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-0">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
-              Odustani
+              {t('common.cancel')}
             </Button>
             <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
-              {isLoading ? 'Spremanje...' : 'Spremi'}
+              {isLoading ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </div>

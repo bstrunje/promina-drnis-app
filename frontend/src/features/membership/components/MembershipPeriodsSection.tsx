@@ -80,7 +80,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
       <CardContent>
         <div className="space-y-4">
           <div className="text-sm">
-            <span className="font-medium">Ukupno trajanje: </span>
+            <span className="font-medium">{t('membership.membershipDetails.totalDuration')}: </span>
             {totalDuration}
           </div>
 
@@ -168,7 +168,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       }}
                       className="h-7 text-xs"
                     >
-                      <Save className="w-3 h-3 mr-1" /> Spremi
+                      <Save className="w-3 h-3 mr-1" /> {t('common.save')}
                     </Button>
                     <Button
                       variant="outline"
@@ -176,7 +176,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       onClick={() => setNewPeriod(null)}
                       className="h-7 text-xs"
                     >
-                      <X className="w-3 h-3 mr-1" /> Odustani
+                      <X className="w-3 h-3 mr-1" /> {t('common.cancel')}
                     </Button>
                   </div>
                 </div>

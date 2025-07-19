@@ -24,7 +24,10 @@ i18n
     debug: import.meta.env.DEV, // Uključuje logiranje u konzolu samo u razvoju
     interpolation: {
       escapeValue: false // React sam po sebi štiti od XSS napada
-    }
+    },
+    // Standardna i18next konfiguracija za pluralizaciju
+    pluralSeparator: '_',
+    contextSeparator: '_'
   });
 
 export default i18n;

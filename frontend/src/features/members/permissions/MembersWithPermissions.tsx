@@ -1,5 +1,6 @@
 // features/members/permisssions/MembersWithPermissions.tsx
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, RefreshCw } from 'lucide-react';
 import useMembersWithPermissions from './hooks/useMembersWithPermissions';
 import EditMemberPermissionsModal from './EditMemberPermissionsModal';
@@ -13,6 +14,7 @@ interface MembersWithPermissionsProps {
 }
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
+  const { t } = useTranslation();
   const { membersWithPermissions, loading, error, refreshMembersWithPermissions } = useMembersWithPermissions(activeTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
@@ -52,7 +54,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
     try {
       await removeMemberPermissions(memberId);
       setDeleteError(null);
-      setDeleteSuccess('Ovlasti uspješno uklonjene.');
+      setDeleteSuccess(t('permissions.permissionsRemovedSuccess'));
       // Osvježi popis članova nakon 1.5 sekundi
       setTimeout(() => {
         void refreshMembersWithPermissions();
@@ -62,7 +64,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
       if (err instanceof Error) {
         setDeleteError(err.message);
       } else {
-        setDeleteError('Došlo je do greške prilikom uklanjanja ovlasti.');
+        setDeleteError(t('permissions.removePermissionsError'));
       }
       // Automatski ukloni poruku o grešci nakon 3 sekunde
       setTimeout(() => setDeleteError(null), 3000);
@@ -77,7 +79,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Upravljanje ovlastima članova</h2>
+        <h2 className="text-xl font-semibold">{t('permissions.managePermissions')}</h2>
         
         <button 
           onClick={() => { void refreshMembersWithPermissions(); }} 
@@ -85,7 +87,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Osvježavanje...' : 'Osvježi podatke'}
+          {loading ? t('common.refreshing') : t('common.refreshData')}
         </button>
       </div>
 
@@ -112,7 +114,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
         <div className="relative w-full max-w-md">
           <input
             type="text"
-            placeholder="Pretraži članove..."
+            placeholder={t('permissions.searchMembers')}
             className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -136,9 +138,9 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
       ) : membersWithPermissions.length === 0 ? (
         <div className="bg-gray-50 p-8 text-center rounded-md">
           <User className="h-10 w-10 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-gray-700 font-medium mb-2">Nema članova s ovlastima</h3>
+          <h3 className="text-gray-700 font-medium mb-2">{t('permissions.noMembersWithPermissions')}</h3>
           <p className="text-gray-500">
-            Trenutno nema članova kojima su dodijeljene administratorske ovlasti.
+            {t('permissions.noMembersWithPermissionsDescription')}
           </p>
         </div>
       ) : (
@@ -147,16 +149,16 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Član
+                  {t('permissions.member')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ovlasti
+                  {t('permissions.permissions')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dodijeljeno
+                  {t('permissions.granted')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Akcije
+                  {t('common.actions')}
                 </th>
               </tr>
             </thead>
@@ -183,12 +185,12 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                     <div className="flex flex-wrap gap-1">
                       {memberWithPermissions.can_view_members && 
                         <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                          Pregled članova
+                          {t('permissions.viewMembers')}
                         </span>
                       }
                       {memberWithPermissions.can_edit_members && 
                         <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                          Uređivanje članova
+                          {t('permissions.editMembers')}
                         </span>
                       }
                       {/* Prikazujemo samo neke ovlasti, ostatak se može vidjeti u detaljnom pregledu */}
@@ -196,7 +198,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                         memberWithPermissions.can_view_financials || 
                         memberWithPermissions.can_manage_financials) && 
                         <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                          +{Object.values(memberWithPermissions).filter(value => value === true).length - 2} više
+                          +{Object.values(memberWithPermissions).filter(value => value === true).length - 2} {t('permissions.more')}
                         </span>
                       }
                     </div>
@@ -212,13 +214,13 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                       className="text-blue-600 hover:text-blue-900 mr-4"
                       onClick={() => handleEditClick(memberWithPermissions)}
                     >
-                      Uredi
+                      {t('common.edit')}
                     </button>
                     <button 
                       className="text-red-600 hover:text-red-900"
                       onClick={() => void handleRemovePermissions(memberWithPermissions.member.member_id)}
                     >
-                      Ukloni
+                      {t('permissions.remove')}
                     </button>
                   </td>
                 </tr>

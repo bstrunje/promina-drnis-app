@@ -393,7 +393,7 @@ const permissionCategories = categorizePermissions(permissions, t);
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
             disabled={saving}
           >
-            Odustani
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => { void handleSave(); }}
@@ -402,7 +402,7 @@ const permissionCategories = categorizePermissions(permissions, t);
             }`}
             disabled={saving || loading}
           >
-            {saving ? 'Spremanje...' : 'Spremi ovlasti'}
+            {saving ? t('common.saving') : t('permissions.savePermissions')}
           </button>
         </div>
       </div>

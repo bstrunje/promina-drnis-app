@@ -27,7 +27,7 @@ import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
-import Clock from './components/common/Clock';
+
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -130,7 +130,7 @@ function App() {
       <TimeZoneProvider>
         <UnreadMessagesProvider>
           <ToastProvider>
-            <Clock /> {/* Dodajem komponentu sata */}
+
             <AppContent />
             {import.meta.env.DEV && (
               <div className="fixed bottom-4 right-4 z-50">

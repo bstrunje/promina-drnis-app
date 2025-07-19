@@ -1,4 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
+import { useTranslation } from 'react-i18next';
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
@@ -9,6 +10,7 @@ import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers,
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {
+  const { t } = useTranslation();
   const { toast } = useToast(); 
   
   // Dohvati duljinu broja kartice iz postavki
@@ -290,22 +292,22 @@ export default function CardNumberManagement() {
   return (
     <Card className="my-6">
       <CardHeader>
-        <CardTitle>Card Number Management</CardTitle>
+        <CardTitle>{t('cardNumberManagement.title')}</CardTitle>
         <CardDescription>
-          Add and manage membership card numbers
+          {t('cardNumberManagement.description')}
         </CardDescription>
         {cardStats && (
           <div className="mt-2 text-sm font-medium flex flex-col space-y-1">
             <div className="flex items-center justify-between">
               <span>
-                Total card numbers: {cardStats.total}
-                {isLoadingCount && <span className="ml-2">(refreshing...)</span>}
+                {t('cardNumberManagement.stats.total', { count: cardStats.total })}
+                {isLoadingCount && <span className="ml-2">({t('cardNumberManagement.stats.refreshing')})</span>}
               </span>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="h-6 w-6 p-0" 
-                title="Refresh card statistics"
+                title={t('cardNumberManagement.stats.refreshTitle')}
                 onClick={() => { void refreshCardNumbers(); }}
                 disabled={isLoadingCount}
               >
@@ -313,8 +315,8 @@ export default function CardNumberManagement() {
               </Button>
             </div>
             <div className="flex space-x-4">
-              <span className="text-green-600">Available: {cardStats.available}</span>
-              <span className="text-blue-600">Assigned: {cardStats.assigned}</span>
+              <span className="text-green-600">{t('cardNumberManagement.stats.available', { count: cardStats.available })}</span>
+              <span className="text-blue-600">{t('cardNumberManagement.stats.assigned', { count: cardStats.assigned })}</span>
             </div>
           </div>
         )}
@@ -330,8 +332,8 @@ export default function CardNumberManagement() {
                 className="h-auto py-6 flex flex-col items-center justify-center"
                 variant="outline"
               >
-                <span className="text-lg font-medium">Add Single Number</span>
-                <span className="text-xs text-gray-500 mt-1">Add an individual card number to the system</span>
+                <span className="text-lg font-medium">{t('cardNumberManagement.actions.addSingle.title')}</span>
+                <span className="text-xs text-gray-500 mt-1">{t('cardNumberManagement.actions.addSingle.description')}</span>
               </Button>
               
               <Button 
@@ -339,8 +341,8 @@ export default function CardNumberManagement() {
                 className="h-auto py-6 flex flex-col items-center justify-center"
                 variant="outline"
               >
-                <span className="text-lg font-medium">Add Number Range</span>
-                <span className="text-xs text-gray-500 mt-1">Add a sequential range of card numbers</span>
+                <span className="text-lg font-medium">{t('cardNumberManagement.actions.addRange.title')}</span>
+                <span className="text-xs text-gray-500 mt-1">{t('cardNumberManagement.actions.addRange.description')}</span>
               </Button>
               
               <Button 
@@ -348,8 +350,8 @@ export default function CardNumberManagement() {
                 className="h-auto py-6 flex flex-col items-center justify-center"
                 variant="outline"
               >
-                <span className="text-lg font-medium">Manage Numbers</span>
-                <span className="text-xs text-gray-500 mt-1">View, search and delete existing card numbers</span>
+                <span className="text-lg font-medium">{t('cardNumberManagement.actions.manage.title')}</span>
+                <span className="text-xs text-gray-500 mt-1">{t('cardNumberManagement.actions.manage.description')}</span>
               </Button>
             </div>
           )}
@@ -364,16 +366,16 @@ export default function CardNumberManagement() {
                   className="mr-2"
                   size="sm"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                  <ArrowLeft className="h-4 w-4 mr-1" /> {t('cardNumberManagement.forms.addSingle.back')}
                 </Button>
-                <h3 className="text-lg font-semibold">Add Single Card Number</h3>
+                <h3 className="text-lg font-semibold">{t('cardNumberManagement.forms.addSingle.title')}</h3>
               </div>
               
               <div className="bg-white p-6 rounded-lg border">
                 <form onSubmit={(e) => { void handleAddSingle(e); }} className="space-y-4">
                   <Input
                     id="singleCardNumber"
-                    placeholder={`Enter new card number (${cardNumberLength} digits)`}
+                    placeholder={t('cardNumberManagement.forms.addSingle.placeholder', { length: cardNumberLength })}
                     value={singleCardNumber}
                     onChange={handleSingleCardNumberChange}
                     disabled={isLoadingSingle}
@@ -384,14 +386,14 @@ export default function CardNumberManagement() {
                       type="submit" 
                       disabled={isLoadingSingle || singleCardNumber.length !== cardNumberLength}
                     >
-                      {isLoadingSingle ? "Adding..." : "Add Card Number"}
+                      {isLoadingSingle ? t('cardNumberManagement.forms.addSingle.adding') : t('cardNumberManagement.forms.addSingle.submit')}
                     </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => setActiveSection(null)}
                     >
-                      Cancel
+                      {t('cardNumberManagement.forms.addSingle.cancel')}
                     </Button>
                   </div>
                 </form>
@@ -409,9 +411,9 @@ export default function CardNumberManagement() {
                   className="mr-2"
                   size="sm"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                  <ArrowLeft className="h-4 w-4 mr-1" /> {t('cardNumberManagement.forms.addRange.back')}
                 </Button>
-                <h3 className="text-lg font-semibold">Add Card Number Range</h3>
+                <h3 className="text-lg font-semibold">{t('cardNumberManagement.forms.addRange.title')}</h3>
               </div>
               
               <div className="bg-white p-6 rounded-lg border">
@@ -419,11 +421,11 @@ export default function CardNumberManagement() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="rangeStart" className="text-sm text-gray-500 mb-1 block">
-                        Start Number
+                        {t('cardNumberManagement.forms.addRange.startLabel')}
                       </label>
                       <Input
                         id="rangeStart"
-                        placeholder={`e.g., ${'1'.padStart(cardNumberLength, '0')}`}
+                        placeholder={t('cardNumberManagement.forms.addRange.startPlaceholder', { example: '1'.padStart(cardNumberLength, '0') })}
                         type="number"
                         value={rangeStart ?? ''}
                         onChange={(e) => setRangeStart(e.target.value ? parseInt(e.target.value) : null)}
@@ -433,11 +435,11 @@ export default function CardNumberManagement() {
                     </div>
                     <div>
                       <label htmlFor="rangeEnd" className="text-sm text-gray-500 mb-1 block">
-                        End Number
+                        {t('cardNumberManagement.forms.addRange.endLabel')}
                       </label>
                       <Input
                         id="rangeEnd"
-                        placeholder={`e.g., ${'100'.padStart(cardNumberLength, '0')}`}
+                        placeholder={t('cardNumberManagement.forms.addRange.endPlaceholder', { example: '100'.padStart(cardNumberLength, '0') })}
                         type="number"
                         value={rangeEnd ?? ''}
                         onChange={(e) => setRangeEnd(e.target.value ? parseInt(e.target.value) : null)}
@@ -450,18 +452,18 @@ export default function CardNumberManagement() {
                       type="submit" 
                       disabled={isLoadingRange || rangeStart === null || rangeEnd === null}
                     >
-                      {isLoadingRange ? "Adding..." : "Add Range"}
+                      {isLoadingRange ? t('cardNumberManagement.forms.addRange.adding') : t('cardNumberManagement.forms.addRange.submit')}
                     </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => setActiveSection(null)}
                     >
-                      Cancel
+                      {t('cardNumberManagement.forms.addRange.cancel')}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Numbers will be padded with leading zeros based on your system settings.
+                    {t('cardNumberManagement.forms.addRange.note')}
                   </p>
                 </form>
               </div>
@@ -478,16 +480,16 @@ export default function CardNumberManagement() {
                   className="mr-2"
                   size="sm"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                  <ArrowLeft className="h-4 w-4 mr-1" /> {t('cardNumberManagement.forms.manage.back')}
                 </Button>
-                <h3 className="text-lg font-semibold">Manage Card Numbers</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('cardNumberManagement.forms.manage.title')}</h3>
               </div>
               
               {/* Filter and view options */}
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
                 <Input
                   type="text"
-                  placeholder="Search card numbers..."
+                  placeholder={t('cardNumberManagement.forms.manage.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -504,7 +506,7 @@ export default function CardNumberManagement() {
                   size="sm"
                   onClick={() => setStatusFilter('all')}
                 >
-                  All ({filteredCardNumbers.length})
+                  {t('cardNumberManagement.forms.manage.filters.all', { count: filteredCardNumbers.length })}
                 </Button>
                 <Button 
                   variant={statusFilter === 'available' ? 'default' : 'outline'}
@@ -512,7 +514,7 @@ export default function CardNumberManagement() {
                   onClick={() => setStatusFilter('available')}
                   className="text-green-600"
                 >
-                  Available ({cardStats.available})
+                  {t('cardNumberManagement.forms.manage.filters.available', { count: cardStats.available })}
                 </Button>
                 <Button 
                   variant={statusFilter === 'assigned' ? 'default' : 'outline'}
@@ -520,7 +522,7 @@ export default function CardNumberManagement() {
                   onClick={() => setStatusFilter('assigned')}
                   className="text-blue-600"
                 >
-                  Assigned ({cardStats.assigned})
+                  {t('cardNumberManagement.forms.manage.filters.assigned', { count: cardStats.assigned })}
                 </Button>
                 <Button
                   variant={statusFilter === 'consumed' ? 'default' : 'outline'}
@@ -528,7 +530,7 @@ export default function CardNumberManagement() {
                   onClick={() => setStatusFilter('consumed')}
                   className="text-gray-600"
                 >
-                  Spent/Consumed
+                  {t('cardNumberManagement.forms.manage.filters.consumed')}
                 </Button>
               </div>
               
@@ -538,7 +540,7 @@ export default function CardNumberManagement() {
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4 items-start">
                     <Input
                       type="text"
-                      placeholder="Pretraži po broju ili imenu člana..."
+                      placeholder={t('cardNumberManagement.forms.manage.consumedSearchPlaceholder')}
                       value={consumedSearch}
                       onChange={(e) => {
                         setConsumedSearch(e.target.value);
@@ -548,21 +550,21 @@ export default function CardNumberManagement() {
                     />
                   </div>
                   {isLoadingConsumed ? (
-                    <p className="text-sm text-muted-foreground">Učitavanje potrošenih kartica...</p>
+                    <p className="text-sm text-muted-foreground">{t('cardNumberManagement.forms.manage.consumed.loading')}</p>
                   ) : filteredConsumed.length > 0 ? (
                     <>
                       <div className="mb-2 text-sm text-muted-foreground">
-                        Prikazano {paginatedCardNumbers.length} od {filteredConsumed.length} potrošenih kartica
+                        {t('cardNumberManagement.forms.manage.consumed.showing', { count: paginatedCardNumbers.length, total: filteredConsumed.length })}
                       </div>
                       <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
                         {paginatedCardNumbers.map(card => (
                           <div key={card.card_number} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50">
                             <div className="flex flex-col">
-                            <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title="Klikni za kopiranje">
+                            <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title={t('cardNumberManagement.forms.manage.consumed.copyTooltip')}>
                                 {card.card_number}
                               </span>
-                              <span className="text-xs text-gray-500">Član: {card.member_name || 'N/A'}</span>
-                              <span className="text-xs text-gray-400">Izdana: {card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : (card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-')}</span>
+                              <span className="text-xs text-gray-500">{t('cardNumberManagement.forms.manage.consumed.member', { member: card.member_name || 'N/A' })}</span>
+                              <span className="text-xs text-gray-400">{t('cardNumberManagement.forms.manage.consumed.issued', { date: card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : (card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-') })}</span>
                             </div>
                           </div>
                         ))}
@@ -575,10 +577,10 @@ export default function CardNumberManagement() {
                             onClick={prevPage} 
                             disabled={currentPage === 1}
                           >
-                            Previous
+                            {t('cardNumberManagement.forms.manage.pagination.prevPage')}
                           </Button>
                           <span className="text-sm">
-                            Page {currentPage} of {totalPages}
+                            {t('cardNumberManagement.forms.manage.pagination.page', { page: currentPage, totalPages: totalPages })}
                           </span>
                           <Button 
                             variant="outline" 
@@ -586,16 +588,16 @@ export default function CardNumberManagement() {
                             onClick={() => { void nextPage(); }} 
                             disabled={currentPage === totalPages}
                           >
-                            Next
+                            {t('cardNumberManagement.forms.manage.pagination.nextPage')}
                           </Button>
                         </div>
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Nema potrošenih kartica za prikaz</p>
+                    <p className="text-sm text-muted-foreground">{t('cardNumberManagement.forms.manage.consumed.noCards')}</p>
                   )}
                   <div className="mt-4 text-xs text-muted-foreground">
-                    <p>Ovdje su prikazane sve potrošene (iskorištene) kartice, uključujući člana i datume.</p>
+                    <p>{t('cardNumberManagement.forms.manage.consumed.note')}</p>
                   </div>
                 </div>
               ) : (
@@ -603,8 +605,8 @@ export default function CardNumberManagement() {
                 <>
                   {/* Stats */}
                   <div className="mb-2 text-sm text-muted-foreground">
-                    Showing {paginatedCardNumbers.length} of {filteredCardNumbers.length} 
-                    {searchTerm && ` (filtered from ${filteredByStatus.length})`} numbers
+                    {t('cardNumberManagement.forms.manage.stats.showing', { current: paginatedCardNumbers.length, total: filteredCardNumbers.length })}
+                    {searchTerm && ` ${t('cardNumberManagement.forms.manage.stats.filtered', { total: filteredByStatus.length })}`} {t('cardNumberManagement.forms.manage.stats.numbers')}
                   </div>
                   
                   {/* Dropdown style list */}
@@ -622,13 +624,13 @@ export default function CardNumberManagement() {
                               card.status === 'assigned' ? 'text-blue-600' : ''
                             }`}
                             onClick={() => { void navigator.clipboard.writeText(card.card_number); }}
-                            title="Click to copy"
+                            title={t('cardNumberManagement.forms.manage.assigned.copyTooltip')}
                           >
                             {card.card_number}
                           </span>
                           {card.status === 'assigned' && card.member_name && (
                             <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                              Assigned to: {card.member_name}
+                              {t('cardNumberManagement.forms.manage.assigned.assignedTo', { name: card.member_name })}
                             </span>
                           )}
                         </div>
@@ -661,10 +663,10 @@ export default function CardNumberManagement() {
                         onClick={prevPage} 
                         disabled={currentPage === 1}
                       >
-                        Previous
+                        {t('cardNumberManagement.forms.manage.pagination.previous')}
                       </Button>
                       <span className="text-sm">
-                        Page {currentPage} of {totalPages}
+                        {t('cardNumberManagement.forms.manage.pagination.page', { page: currentPage, totalPages: totalPages })}
                       </span>
                       <Button 
                         variant="outline" 
@@ -672,15 +674,15 @@ export default function CardNumberManagement() {
                         onClick={() => { void nextPage(); }} 
                         disabled={currentPage === totalPages}
                       >
-                        Next
+                        {t('cardNumberManagement.forms.manage.pagination.next')}
                       </Button>
                     </div>
                   )}
                 </>
               )}
               <div className="mt-4 text-sm text-muted-foreground">
-                <p>Note: Only unused card numbers can be deleted. Click on a number to copy it.</p>
-                <p>Cards already assigned to members are shown in blue.</p>
+                <p>{t('cardNumberManagement.forms.manage.notes.deleteNote')}</p>
+                <p>{t('cardNumberManagement.forms.manage.notes.assignedNote')}</p>
               </div>
             </div>
           )}

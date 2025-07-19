@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import './activities.css'; // Dodajemo CSS za custom stilove
 import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2 } from 'lucide-react';
@@ -23,6 +24,7 @@ import {
 import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
+  const { t } = useTranslation();
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
   const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
   const location = useLocation();
@@ -198,13 +200,13 @@ const ActivityCategoryPage: React.FC = () => {
             <CardTitle>
               <span className="hidden sm:inline">
                 {isYearView 
-                  ? `Ukupno odrađenih sati u ${yearParam}. godini` 
-                  : 'Ukupno odrađenih sati u kategoriji'}
+                  ? t('activities.totalHoursInYear', { year: yearParam }) 
+                  : t('activities.totalHoursInCategory')}
               </span>
               <span className="inline sm:hidden">
                 {isYearView 
-                  ? `Sati u ${yearParam}.` 
-                  : 'Sati u kategoriji'}
+                  ? t('activities.hoursInYear', { year: yearParam }) 
+                  : t('activities.hoursInCategory')}
               </span>
             </CardTitle>
             <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
@@ -347,7 +349,7 @@ const ActivityCategoryPage: React.FC = () => {
                             onClick={(e) => handleDeleteClick(activity, e)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Obriši aktivnost
+                            {t('activities.deleteActivity')}
                           </Button>
                         </CardFooter>
                       )}
@@ -358,7 +360,7 @@ const ActivityCategoryPage: React.FC = () => {
             })
           ) : (
             <div className="col-span-full text-center text-muted-foreground">
-              <p>Trenutno nema planiranih aktivnosti u ovoj kategoriji.</p>
+              <p>{t('activities.noActivitiesInCategory')}</p>
             </div>
           )}
         </div>
@@ -378,10 +380,9 @@ const ActivityCategoryPage: React.FC = () => {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Potvrda brisanja</DialogTitle>
+              <DialogTitle>{t('activities.confirmDeletion')}</DialogTitle>
               <DialogDescription>
-                Jeste li sigurni da želite obrisati aktivnost "{activityToDelete?.name}"?
-                Ova akcija će obrisati sve podatke povezane s aktivnošću i ne može se poništiti.
+                {t('activities.deleteConfirmationMessage', { name: activityToDelete?.name })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -390,14 +391,14 @@ const ActivityCategoryPage: React.FC = () => {
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
               >
-                Odustani
+                {t('common.cancel')}
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
               >
-                {isDeleting ? "Brisanje..." : "Obriši"}
+                {isDeleting ? t('activities.deleting') : t('activities.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>

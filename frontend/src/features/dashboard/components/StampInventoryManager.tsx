@@ -124,9 +124,9 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       }
     } catch (error) {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description:
-          error instanceof Error ? error.message : "Failed to fetch inventory",
+          error instanceof Error ? error.message : t("dashboard.stampInventory.fetchInventoryError"),
         variant: "destructive",
       });
     }
@@ -140,9 +140,9 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       setStampHistory(data as StampHistoryItem[]);
     } catch (error) {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description:
-          error instanceof Error ? error.message : "Failed to fetch stamp history",
+          error instanceof Error ? error.message : t("dashboard.stampInventory.fetchHistoryError"),
         variant: "destructive",
       });
     } finally {
@@ -157,8 +157,8 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       const result = await archiveStampInventory(year, notes, force) as ArchiveResult;
       
       toast({
-        title: "Success",
-        description: result.message ?? "Inventory archived successfully",
+        title: t("common.success"),
+        description: result.message ?? t("dashboard.stampInventory.archiveSuccess"),
       });
       
       // Osvježi popis povijesti i inventar
@@ -171,9 +171,9 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       setShowArchiveDialog(false);
     } catch (error) {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description:
-          error instanceof Error ? error.message : "Failed to archive inventory",
+          error instanceof Error ? error.message : t("dashboard.stampInventory.archiveError"),
         variant: "destructive",
       });
     } finally {
@@ -202,7 +202,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       // Prikaži povratnu informaciju da je spremanje u tijeku
       toast({
         title: t("common.saving"),
-        description: "Ažuriranje inventara markica u tijeku...",
+        description: t("dashboard.stampInventory.updatingInventory"),
         duration: 2000,
       });
       
@@ -220,15 +220,15 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
 
       console.log("Odgovor sa servera:", response.data);
 
-      if (!response.data) throw new Error("Failed to update inventory");
+      if (!response.data) throw new Error(t("dashboard.stampInventory.updateInventoryError"));
 
       // Ažuriraj lokalno stanje s novim vrijednostima i napravimo ponovno dohvaćanje
       setIsEditing(false);
       
       // Prikaži jasnu povratnu informaciju o uspjehu
       toast({
-        title: "Uspjeh!",
-        description: `Inventar markica za godinu ${selectedYear} uspješno ažuriran`,
+        title: t("common.success"),
+        description: t("dashboard.stampInventory.inventoryUpdated", { year: selectedYear }),
         variant: "success",
         duration: 3000,
       });
@@ -242,7 +242,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       toast({
         title: t("common.error"),
         description:
-          error instanceof Error ? error.message : "Neuspješno ažuriranje inventara",
+          error instanceof Error ? error.message : t("dashboard.stampInventory.updateInventoryFailed"),
         variant: "destructive",
         duration: 5000,
       });
@@ -348,7 +348,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
               size="sm"
               onClick={() => void fetchInventory()}
               className="p-1 h-8 w-8 hidden sm:block" 
-              title="Refresh inventory data"
+              title={t("dashboard.stampInventory.refreshInventoryData")}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>

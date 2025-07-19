@@ -1,4 +1,33 @@
 {
+  "common": {
+    "loading": "Učitavanje...",
+    "error": "Greška",
+    "success": "Uspjeh",
+    "warning": "Upozorenje",
+    "save": "Spremi",
+    "cancel": "Odustani",
+    "saving": "Spremanje...",
+    "edit": "Uredi",
+    "delete": "Obriši",
+    "add": "Dodaj",
+    "close": "Zatvori",
+    "submit": "Pošalji",
+    "view": "Pregled",
+    "search": "Pretraži",
+    "filter": "Filtriraj",
+    "clear": "Očisti",
+    "reset": "Resetiraj",
+    "confirm": "Potvrdi",
+    "back": "Natrag",
+    "next": "Dalje",
+    "yes": "Da",
+    "no": "Ne",
+    "ok": "U redu",
+    "toggleDebug": "Uključi/isključi debug mod",
+    "refreshing": "Osvježavanje...",
+    "refreshData": "Osvježi podatke",
+    "actions": "Akcije"
+  },
   "login": {
     "title": "Prijava u sustav",
     "emailLabel": "Email adresa",
@@ -19,29 +48,6 @@
     "loggingIn": "Prijava...",
     "alreadyMember": "Već jesi član? Prijavi se"
   },
-  "common": {
-    "loading": "Učitavanje...",
-    "close": "Zatvori",
-    "submit": "Pošalji",
-    "cancel": "Odustani",
-    "save": "Spremi",
-    "delete": "Izbriši",
-    "edit": "Uredi",
-    "add": "Dodaj",
-    "view": "Pregled",
-    "search": "Pretraži",
-    "filter": "Filtriraj",
-    "clear": "Očisti",
-    "reset": "Resetiraj",
-    "confirm": "Potvrdi",
-    "back": "Natrag",
-    "next": "Dalje",
-    "yes": "Da",
-    "no": "Ne",
-    "ok": "U redu",
-    "error": "Greška",
-    "toggleDebug": "Uključi/isključi debug mod"
-  },
   "navigation": {
     "title": "Planinarsko društvo \"Promina\" Drniš",
     "titleShort": "PD \"Promina\" Drniš",
@@ -53,15 +59,15 @@
     "duration": {
       "years": "{{count}} godina",
       "years_one": "{{count}} godina",
-      "years_paucal": "{{count}} godine",
+      "years_few": "{{count}} godine",
       "years_other": "{{count}} godina",
       "months": "{{count}} mjesec",
       "months_one": "{{count}} mjesec",
-      "months_paucal": "{{count}} mjeseca",
+      "months_few": "{{count}} mjeseca",
       "months_other": "{{count}} mjeseci",
       "days": "{{count}} dan",
       "days_one": "{{count}} dan",
-      "days_paucal": "{{count}} dana",
+      "days_few": "{{count}} dana",
       "days_other": "{{count}} dana",
       "noDuration": "Nema podataka o trajanju"
     },
@@ -161,6 +167,7 @@
       "hoursNeeded_one": "Potreban još {{count}} sat za status aktivnog člana",
       "hoursNeeded_few": "Potrebna još {{count}} sata za status aktivnog člana",
       "hoursNeeded_other": "Potrebno još {{count}} sati za status aktivnog člana",
+      "hoursNeeded": "Potrebno još {{count}} sati za status aktivnog člana",
       "status": "Status",
       "active": "Aktivan",
       "passive": "Pasivan"
@@ -189,7 +196,7 @@
       "statusPaymentRequired": "Potrebna uplata",
       "lastPaymentDate": "Datum zadnje uplate:",
       "noPaymentData": "Nema podataka o plaćanju za tekuću ili iduću godinu",
-      "paymentYear": "Godina uplate:",
+      "paymentYear": "Godina uplate",
       "statusPaid": "Plaćeno",
       "paidForYear": "Plaćeno za",
       "processPayment": "Procesuiraj uplatu",
@@ -201,7 +208,7 @@
       "membershipHistory": "Povijest članstva",
       "editHistory": "Uredi povijest",
       "saveHistory": "Spremi povijest",
-      "totalDuration": "Ukupno trajanje članstva:",
+      "totalDuration": "Ukupno trajanje članstva",
       "activePeriod": "Aktivni period",
       "startDate": "Datum početka",
       "endDate": "Datum završetka",
@@ -370,7 +377,21 @@
     "templates": {
       "fullAdmin": "Puni administratorski pristup",
       "operational": "Operativni pristup"
-    }
+    },
+    "savePermissions": "Spremi ovlasti",
+    "permissionsRemovedSuccess": "Ovlasti uspješno uklonjene.",
+    "removePermissionsError": "Došlo je do greške prilikom uklanjanja ovlasti.",
+    "managePermissions": "Upravljanje ovlastima članova",
+    "searchMembers": "Pretraži članove...",
+    "noMembersWithPermissions": "Nema članova s ovlastima",
+    "noMembersWithPermissionsDescription": "Trenutno nema članova kojima su dodijeljene administratorske ovlasti.",
+    "member": "Član",
+    "permissions": "Ovlasti",
+    "granted": "Dodijeljeno",
+    "viewMembers": "Pregled članova",
+    "editMembers": "Uređivanje članova",
+    "more": "više",
+    "remove": "Ukloni"
   },
   "activities": {
     "admin": {
@@ -396,7 +417,8 @@
         "loading": "Učitavanje...",
         "errorFetchingData": "Greška prilikom dohvaćanja podataka.",
         "errorCreatingActivity": "Greška prilikom kreiranja aktivnosti."
-      }
+      },
+      "saveChanges": "Spremi promjene"
     },
     "roles": {
       "guide": "Vodič",
@@ -409,6 +431,17 @@
       "activityCreated": "Aktivnost je uspješno kreirana.",
       "error": "Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno."
     },
+    "confirmCancellation": "Potvrdi otkazivanje",
+    "totalHoursInYear": "Ukupno odrađenih sati u {{year}}. godini",
+    "totalHoursInCategory": "Ukupno odrađenih sati u kategoriji",
+    "hoursInYear": "Sati u {{year}}.",
+    "hoursInCategory": "Sati u kategoriji",
+    "deleteActivity": "Obriši aktivnost",
+    "noActivitiesInCategory": "Trenutno nema planiranih aktivnosti u ovoj kategoriji.",
+    "confirmDeletion": "Potvrda brisanja",
+    "deleteConfirmationMessage": "Jeste li sigurni da želite obrisati aktivnost \"{{name}}\"? Ova akcija će obrisati sve podatke povezane s aktivnošću i ne može se poništiti.",
+    "deleting": "Brisanje...",
+    "delete": "Obriši",
     "editing": {
       "success": "Uspjeh",
       "activityUpdated": "Aktivnost je uspješno ažurirana.",
@@ -510,9 +543,18 @@
       "cancel": "Odustani",
       "stampTypes": {
         "employedUnemployed": "Markice za zaposlene/nezaposlene članove",
-        "studentPupil": "Markice za djecu/đake/studente",
+        "studentPupil": "Markice za učenike/studente",
         "pensioner": "Markice za umirovljenike"
-      }
+      },
+      "fetchInventoryError": "Neuspjelo dohvaćanje inventara",
+      "fetchHistoryError": "Neuspjelo dohvaćanje povijesti markica",
+      "archiveSuccess": "Inventar uspješno arhiviran",
+      "archiveError": "Neuspjelo arhiviranje inventara",
+      "updatingInventory": "Ažuriranje inventara markica u tijeku...",
+      "updateInventoryError": "Neuspjelo ažuriranje inventara",
+      "inventoryUpdated": "Inventar markica za godinu {{year}} uspješno ažuriran",
+      "updateInventoryFailed": "Neuspješno ažuriranje inventara",
+      "refreshInventoryData": "Osvježi podatke inventara"
     }
   },
   "members": {
@@ -729,6 +771,98 @@
   "sentMessages": {
     "loading": "Učitavanje poslanih poruka...",
     "noMessages": "Nema poslanih poruka."
+  },
+  "settings": {
+    "title": "Postavke za upravljanje članovim"
+  },
+  "cardNumberManagement": {
+    "title": "Upravljanje brojevima iskaznica",
+    "description": "Dodavanje i upravljanje brojevima članskih iskaznica",
+    "stats": {
+      "total": "Ukupno brojeva iskaznica: {{count}}",
+      "available": "Dostupno: {{count}}",
+      "assigned": "Dodijeljeno: {{count}}",
+      "refreshing": "osvježavam...",
+      "refreshTitle": "Osvježi statistike kartica"
+    },
+    "actions": {
+      "addSingle": {
+        "title": "Dodaj pojedinačni broj",
+        "description": "Dodaj jedan broj iskaznice u sustav"
+      },
+      "addRange": {
+        "title": "Dodaj raspon brojeva",
+        "description": "Dodaj uzastopni raspon brojeva iskaznica"
+      },
+      "manage": {
+        "title": "Upravljaj brojevima",
+        "description": "Pregled, pretraživanje i brisanje postojećih brojeva iskaznica"
+      }
+    },
+    "forms": {
+      "addSingle": {
+        "title": "Dodaj pojedinačni broj iskaznice",
+        "placeholder": "Unesite novi broj iskaznice ({{length}} znamenki)",
+        "submit": "Dodaj broj iskaznice",
+        "adding": "Dodajem...",
+        "back": "Natrag",
+        "cancel": "Odustani"
+      },
+      "addRange": {
+        "title": "Dodaj raspon brojeva iskaznica",
+        "startLabel": "Početni broj",
+        "endLabel": "Završni broj",
+        "startPlaceholder": "npr., {{example}}",
+        "endPlaceholder": "npr., {{example}}",
+        "submit": "Dodaj raspon",
+        "adding": "Dodajem...",
+        "cancel": "Odustani",
+        "back": "Natrag",
+        "note": "Brojevi će biti dopunjeni vodećim nulama prema postavkama sustava."
+      },
+      "manage": {
+        "title": "Upravljaj brojevima kartica",
+        "searchPlaceholder": "Pretraži brojeve kartica...",
+        "consumedSearchPlaceholder": "Pretraži po broju ili imenu člana...",
+        "filters": {
+          "all": "Sve ({{count}})",
+          "available": "Dostupno ({{count}})",
+          "assigned": "Dodijeljeno ({{count}})",
+          "consumed": "Potrošeno/Iskorišteno"
+        },
+        "stats": {
+          "showing": "Prikazano {{current}} od {{total}}",
+          "filtered": "(filtrirano od {{total}})",
+          "numbers": "brojeva",
+          "consumedCards": "potrošenih kartica"
+        },
+        "consumed": {
+          "loading": "Učitavanje potrošenih kartica...",
+          "noCards": "Nema potrošenih kartica za prikaz",
+          "member": "Član: {{member}}",
+          "issued": "Izdana: {{date}}",
+          "copyTooltip": "Klikni za kopiranje",
+          "note": "Ovdje su prikazane sve potrošene (iskorištene) kartice, uključujući člana i datume.",
+          "showing": "Prikazano {{count}} od {{total}} potrošenih kartica"
+        },
+        "assigned": {
+          "assignedTo": "Dodijeljeno: {{name}}",
+          "copyTooltip": "Klikni za kopiranje"
+        },
+        "pagination": {
+          "previous": "Prethodna",
+          "next": "Sljedeća",
+          "page": "Stranica {{page}} od {{totalPages}}",
+          "prevPage": "Prethodna",
+          "nextPage": "Sljedeća"
+        },
+        "notes": {
+          "deleteNote": "Napomena: Samo neiskorišteni brojevi kartica mogu se obrisati. Kliknite na broj za kopiranje.",
+          "assignedNote": "Kartice već dodijeljene članovima prikazane su plavom bojom."
+        },
+        "back": "Natrag"
+      }
+    }
   },
   "adminMessageSender": {
     "title": "Slanje poruka članovima",

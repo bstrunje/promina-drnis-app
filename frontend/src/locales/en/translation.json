@@ -1,4 +1,33 @@
 {
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "close": "Close",
+    "submit": "Submit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "toggleDebug": "Toggle debug mode",
+    "refreshing": "Refreshing...",
+    "refreshData": "Refresh Data",
+    "actions": "Actions"
+  },
   "login": {
     "title": "Prijava u sustav",
     "emailLabel": "Email Address",
@@ -18,31 +47,6 @@
     "passwordPlaceholder": "Enter your password",
     "loggingIn": "Signing in...",
     "alreadyMember": "Already a member? Sign in"
-  },
-  "common": {
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "warning": "Warning",
-    "close": "Close",
-    "submit": "Submit",
-    "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "add": "Add",
-    "view": "View",
-    "search": "Search",
-    "filter": "Filter",
-    "clear": "Clear",
-    "reset": "Reset",
-    "confirm": "Confirm",
-    "back": "Back",
-    "next": "Next",
-    "yes": "Yes",
-    "no": "No",
-    "ok": "OK",
-    "toggleDebug": "Toggle debug mode"
   },
   "navigation": {
     "title": "Mountaineering Club \"Promina\" Drniš",
@@ -133,7 +137,9 @@
       "title": "Activity Status",
       "totalHours": "Total Hours",
       "hoursNeeded_one": "Need {{count}} more hour to become active",
+      "hoursNeeded_few": "Need {{count}} more hours to become active",
       "hoursNeeded_other": "Need {{count}} more hours to become active",
+      "hoursNeeded": "Need {{count}} more hours to become active",
       "status": "Status",
       "active": "Active",
       "passive": "Passive"
@@ -159,8 +165,8 @@
       "title": "Membership Fee Status",
       "lastPaymentDate": "Last Payment Date:",
       "noPaymentData": "No payment data for the current or next year",
-      "paymentYear": "Payment Year:",
-      "paymentStatus": "Payment Status:",
+      "paymentYear": "Payment Year",
+      "paymentStatus": "Payment Status",
       "statusCurrent": "Paid",
       "statusPaymentRequired": "Payment Required",
       "paidForYear": "Paid for year",
@@ -173,7 +179,7 @@
       "membershipHistory": "Membership History",
       "editHistory": "Edit History",
       "saveHistory": "Save History",
-      "totalDuration": "Total Membership Duration:",
+      "totalDuration": "Total Membership Duration",
       "activePeriod": "Active Period",
       "startDate": "Start Date",
       "endDate": "End Date",
@@ -199,7 +205,7 @@
       "historyError": "Failed to update membership history",
       "membershipEnded": "Membership Ended",
       "membershipExpired": "Membership Expired",
-      "memberStatus": "Member Status:",
+      "memberStatus": "Member Status",
       "registeredMember": "Registered member",
       "activeMember": "Active member with paid fee",
       "pendingStatus": "Pending status",
@@ -366,6 +372,9 @@
       "addButton": "Add Member",
       "cancelButton": "Cancel",
       "oibTitle": "OIB must have exactly 11 digits"
+    },
+    "editMemberForm": {
+      "oibTitle": "OIB must have exactly 11 digits"
     }
   },
   "membership": {
@@ -412,7 +421,21 @@
     "templates": {
       "fullAdmin": "Full administrative access",
       "operational": "Operational access"
-    }
+    },
+    "savePermissions": "Save Permissions",
+    "permissionsRemovedSuccess": "Permissions successfully removed.",
+    "removePermissionsError": "An error occurred while removing permissions.",
+    "managePermissions": "Manage Member Permissions",
+    "searchMembers": "Search members...",
+    "noMembersWithPermissions": "No members with permissions",
+    "noMembersWithPermissionsDescription": "There are currently no members assigned administrative permissions.",
+    "member": "Member",
+    "permissions": "Permissions",
+    "granted": "Granted",
+    "viewMembers": "View Members",
+    "editMembers": "Edit Members",
+    "more": "more",
+    "remove": "Remove"
   },
   "dashboard": {
     "overview": "Dashboard Overview",
@@ -504,7 +527,16 @@
         "employedUnemployed": "Employed/Unemployed Members Stamps",
         "studentPupil": "Student/Pupil Stamps",
         "pensioner": "Pensioner Stamps"
-      }
+      },
+      "fetchInventoryError": "Failed to fetch inventory",
+      "fetchHistoryError": "Failed to fetch stamp history",
+      "archiveSuccess": "Inventory archived successfully",
+      "archiveError": "Failed to archive inventory",
+      "updatingInventory": "Updating stamp inventory in progress...",
+      "updateInventoryError": "Failed to update inventory",
+      "inventoryUpdated": "Stamp inventory for year {{year}} successfully updated",
+      "updateInventoryFailed": "Failed to update inventory",
+      "refreshInventoryData": "Refresh inventory data"
     }
   },
   "activities": {
@@ -531,7 +563,8 @@
         "loading": "Loading...",
         "errorFetchingData": "Error fetching data.",
         "errorCreatingActivity": "Error creating activity."
-      }
+      },
+      "saveChanges": "Save Changes"
     },
     "roles": {
       "guide": "Guide",
@@ -541,9 +574,20 @@
     },
     "creation": {
       "success": "Success",
-      "activityCreated": "Activity successfully created.",
+      "activityCreated": "Activity created successfully.",
       "error": "Failed to create activity. Please try again."
     },
+    "confirmCancellation": "Confirm Cancellation",
+    "totalHoursInYear": "Total hours worked in {{year}}",
+    "totalHoursInCategory": "Total hours worked in category",
+    "hoursInYear": "Hours in {{year}}",
+    "hoursInCategory": "Hours in category",
+    "deleteActivity": "Delete Activity",
+    "noActivitiesInCategory": "There are currently no planned activities in this category.",
+    "confirmDeletion": "Confirm Deletion",
+    "deleteConfirmationMessage": "Are you sure you want to delete the activity \"{{name}}\"? This action will delete all data associated with the activity and cannot be undone.",
+    "deleting": "Deleting...",
+    "delete": "Delete",
     "editing": {
       "success": "Success",
       "activityUpdated": "Activity successfully updated.",
@@ -755,11 +799,103 @@
     "loading": "Loading sent messages...",
     "noMessages": "No sent messages."
   },
+  "settings": {
+    "title": "Member Management Settings"
+  },
+  "cardNumberManagement": {
+    "title": "Card Number Management",
+    "description": "Add and manage membership card numbers",
+    "stats": {
+      "total": "Total card numbers: {{count}}",
+      "available": "Available: {{count}}",
+      "assigned": "Assigned: {{count}}",
+      "refreshing": "refreshing...",
+      "refreshTitle": "Refresh card statistics"
+    },
+    "actions": {
+      "addSingle": {
+        "title": "Add Single Number",
+        "description": "Add an individual card number to the system"
+      },
+      "addRange": {
+        "title": "Add Number Range",
+        "description": "Add a sequential range of card numbers"
+      },
+      "manage": {
+        "title": "Manage Numbers",
+        "description": "View, search and delete existing card numbers"
+      }
+    },
+    "forms": {
+      "addSingle": {
+        "title": "Add Single Card Number",
+        "placeholder": "Enter new card number ({{length}} digits)",
+        "submit": "Add Card Number",
+        "adding": "Adding...",
+        "back": "Back",
+        "cancel": "Cancel"
+      },
+      "addRange": {
+        "title": "Add Card Number Range",
+        "startLabel": "Start Number",
+        "endLabel": "End Number",
+        "startPlaceholder": "e.g., {{example}}",
+        "endPlaceholder": "e.g., {{example}}",
+        "submit": "Add Range",
+        "adding": "Adding...",
+        "cancel": "Cancel",
+        "back": "Back",
+        "note": "Numbers will be padded with leading zeros based on your system settings."
+      },
+      "manage": {
+        "title": "Manage Card Numbers",
+        "searchPlaceholder": "Search card numbers...",
+        "consumedSearchPlaceholder": "Search by number or member name...",
+        "filters": {
+          "all": "All ({{count}})",
+          "available": "Available ({{count}})",
+          "assigned": "Assigned ({{count}})",
+          "consumed": "Spent/Consumed"
+        },
+        "stats": {
+          "showing": "Showing {{current}} of {{total}}",
+          "filtered": "(filtered from {{total}})",
+          "numbers": "numbers",
+          "consumedCards": "consumed cards"
+        },
+        "consumed": {
+          "loading": "Loading consumed cards...",
+          "noCards": "No consumed cards to display",
+          "member": "Member: {{member}}",
+          "issued": "Issued: {{date}}",
+          "copyTooltip": "Click to copy",
+          "note": "Here are all consumed (used) cards, including member and dates.",
+          "showing": "Showing {{count}} of {{total}} consumed cards"
+        },
+        "assigned": {
+          "assignedTo": "Assigned to: {{name}}",
+          "copyTooltip": "Click to copy"
+        },
+        "pagination": {
+          "previous": "Previous",
+          "next": "Next",
+          "page": "Page {{page}} of {{totalPages}}",
+          "prevPage": "Previous",
+          "nextPage": "Next"
+        },
+        "notes": {
+          "deleteNote": "Note: Only unused card numbers can be deleted. Click on a number to copy it.",
+          "assignedNote": "Cards already assigned to members are shown in blue."
+        },
+        "back": "Back"
+      }
+    }
+  },
   "adminMessageSender": {
     "title": "Send Messages to Members",
     "tabs": {
-      "single": "Single Member",
-      "group": "Group of Members",
+      "single": "To Individual Member",
+      "group": "To Group of Members",
       "all": "All Members"
     },
     "labels": {
