@@ -438,18 +438,23 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
   };
 
   // Provjeri je li trenutno članstvo aktivno
-  // Ispravno: vraća boolean, koristi samo logičke izraze
   const isCurrentMembershipActive = (): boolean => {
-    if (!feePaymentYear || !feePaymentDate) return false;
+    // Uvjet 1: Provjeri postoji li aktivan period članstva (bez datuma završetka)
+    const hasActivePeriod = editedPeriods.some(period => !period.end_date);
+
+    if (!hasActivePeriod) {
+      return false;
+    }
+
+    // Uvjet 2: Provjeri je li članarina plaćena za tekuću godinu
+    if (!feePaymentYear) {
+      return false;
+    }
 
     const currentYear = getCurrentYear();
-    const paymentDate = parseISO(feePaymentDate);
-    const paymentMonth = getMonth(paymentDate);
+    const isFeePaidForCurrentYear = feePaymentYear === currentYear;
 
-    return (
-      feePaymentYear === currentYear ||
-      (feePaymentYear === currentYear && paymentMonth >= 10)
-    ); // Sigurnosna promjena: koristi isključivo logičke izraze, nema smisla koristiti ?? za broj
+    return isFeePaidForCurrentYear;
   };
 
 

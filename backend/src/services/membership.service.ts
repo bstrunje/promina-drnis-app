@@ -484,12 +484,15 @@ const membershipService = {
       const cutoffMonth = settings?.renewalStartMonth || 10; // Default je studeni (10)
       const cutoffDay = settings?.renewalStartDay || 1;
 
-      // Kreiraj datum za provjeru (31.12. tekuće godine)
-      const yearEndDate = parseDate(`${currentYear}-12-31`); // Mjesec 11 je prosinac
+      // Definiramo rok za obnovu članstva (1. ožujak tekuće godine)
+      const renewalDeadline = new Date(currentYear, 2, 1); // Mjesec 2 je ožujak
 
-      // Ako je trenutni datum nakon kraja godine, završi sva članstva koja nisu obnovljena
-      if (currentDate >= yearEndDate) {
+      // Ako je trenutni datum nakon roka za obnovu, provjeri i završi sva članstva koja nisu obnovljena
+      if (currentDate > renewalDeadline) {
+        console.log(`INFO: Trenutni datum (${formatDate(currentDate)}) je nakon roka za obnovu članstva (${formatDate(renewalDeadline)}). Pokrećem provjeru isteklih članstava za ${currentYear}.`);
         await membershipRepository.endExpiredMemberships(currentYear);
+      } else {
+        console.log(`INFO: Trenutni datum (${formatDate(currentDate)}) je prije roka za obnovu članstva (${formatDate(renewalDeadline)}). Preskačem provjeru.`);
       }
 
       return;
