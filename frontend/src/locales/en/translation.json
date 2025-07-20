@@ -68,6 +68,7 @@
     "administrator": "Administrator",
     "assignPasswords": "Assign Passwords",
     "superuser": "Superuser",
+    "dashboard": "Dashboard",
     "hours_one": "{{count}} hour",
     "hours_other": "{{count}} hours",
     "logout": "Logout"
@@ -439,12 +440,15 @@
     "remove": "Remove"
   },
   "dashboard": {
+    "welcome_male": "Welcome {{name}}",
+    "welcome_female": "Welcome {{name}}",
     "overview": "Dashboard Overview",
     "refreshing": "Refreshing...",
     "refreshData": "Refresh Data",
     "messages": {
       "unreadMessages": "Unread Messages",
-      "messages": "Messages"
+      "messages": "Messages",
+      "title": "Messages"
     },
     "activities": {
       "allMyActivities": "All My Activities",

@@ -169,15 +169,14 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Dobrodošli, {fullMember.full_name}</h1>
-        <p className="opacity-90">Članski Dashboard</p>
+        <h1 className="text-2xl font-bold">
+          {t('dashboard.welcome', { name: fullMember.full_name, context: fullMember.gender === 'male' ? 'male' : 'female' })}
+        </h1>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">{error}</div>}
 
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Pregled Dashboarda</h2>
-        
         <button 
           onClick={() => void fetchDashboardStats()} 
           disabled={loading}
@@ -195,7 +194,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-600 font-medium">Poruke</h3>
+            <h3 className="text-gray-600 font-medium">{t('dashboard.messages.title')}</h3>
             <Mail className="h-6 w-6 text-blue-600" />
           </div>
           <div className="space-y-2">

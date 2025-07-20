@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
-import { Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/UnreadMessagesContext';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../src/components/LanguageToggle';
@@ -93,16 +93,11 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             )}
             {/* System Manager je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
             {/* Pristup System Manager sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
+            <Link to="/member/dashboard" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+              <LayoutDashboard size={20} className="inline sm:hidden" />
+              <span>{t('navigation.dashboard')}</span>
+            </Link>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
-              <Link 
-                to="/member/dashboard" 
-                className={`text-sm ${user.total_hours && user.total_hours >= 20 ? 'text-green-600' : 'text-gray-600'} hover:underline cursor-pointer`}
-                onClick={closeMenu}
-              >
-                {user.first_name} {user.last_name}
-                {user.total_hours !== undefined && ` (${user.total_hours} hours)`}
-              </Link>
-
               <LanguageToggle />
 
               <button
