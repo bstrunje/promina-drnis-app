@@ -198,10 +198,19 @@ export function determineDetailedMembershipStatus(
 
   // 1. Provjera aktivnog perioda članstva - ovo je najvažniji pokazatelj
   if (hasActiveMembershipPeriod(periods)) {
-    return {
-      status: 'registered',
-      reason: 'Članstvo važeće'
-    };
+    // Ako postoji aktivan period, provjeri i plaćanje članarine
+    if (hasPaidMembershipFee(member)) {
+      return {
+        status: 'registered',
+        reason: 'Aktivno članstvo s plaćenom članarinom'
+      };
+    } else {
+      // Aktivan period, ali nije plaćena članarina -> status je 'pending'
+      return {
+        status: 'pending',
+        reason: 'Potrebna uplata članarine za tekuću godinu'
+      };
+    }
   }
 
   // 2. Ako nema aktivnog perioda, provjeravamo specifične statuse
