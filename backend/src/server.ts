@@ -83,6 +83,9 @@ async function startServer(): Promise<void> {
             throw new Error('Unable to connect to database');
         }
 
+        // Postavljanje početnih podataka u bazi (System Manager, tipovi aktivnosti itd.)
+        await setupDatabase();
+
         // Provjeri i arhiviraj stanje markica ako je zadnji dan u godini
         await scheduledService.checkAndArchiveStamps();
         
