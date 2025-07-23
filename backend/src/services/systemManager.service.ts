@@ -2,7 +2,7 @@
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
 import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
-// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js'; // Može se koristiti za tipizaciju ako je potrebno
+// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js'; // Can be used for typing if necessary
 // import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -21,45 +21,45 @@ interface SystemSettings {
 }
 
 const systemManagerService = {
-    // Provjera vjerodajnica i prijava managera
+    // Check credentials and log in manager
     async authenticate(username: string, password: string): Promise<any> {
-        // Dohvat managera prema korisničkom imenu
+        // Get manager by username
         const manager = await systemManagerRepository.findByUsername(username);
         
-        // Ako manager ne postoji ili nema lozinku
+        // If manager does not exist or has no password
         if (!manager || !(manager as any).password_hash) {
             return null;
         }
         
-        // Usporedba lozinke s hash-om
+        // Compare password with hash
         const passwordMatch = await bcrypt.compare(password, (manager as any).password_hash);
         
         if (!passwordMatch) {
             return null;
         }
         
-        // Ažuriranje vremena zadnje prijave
+        // Update last login time
         await systemManagerRepository.updateLastLogin((manager as any).id);
         
-        // Vraćamo managera bez lozinke
+        // Return manager without password
         const { password_hash, ...managerWithoutPassword } = manager as any;
         return managerWithoutPassword;
     },
     
-    // Kreiranje JWT access tokena za managera
+    // Create JWT access token for manager
     generateToken(manager: any): string {
         return jwt.sign(
             { 
                 id: manager.id, 
-                type: 'SystemManager',  // Označava tip korisnika kao SystemManager
+                type: 'SystemManager',  // Indicates the user type is SystemManager
                 role: 'SystemManager'
             },
             JWT_SECRET,
-            { expiresIn: '1h' } // Kraće trajanje za access token
+            { expiresIn: '1h' } // Shorter duration for access token
         );
     },
     
-    // Kreiranje JWT refresh tokena za managera
+    // Create JWT refresh token for manager
     generateRefreshToken(manager: any): string {
         return jwt.sign(
             { 
@@ -69,29 +69,29 @@ const systemManagerService = {
                 tokenType: 'refresh'
             },
             JWT_SECRET,
-            { expiresIn: '7d' } // Duže trajanje za refresh token
+            { expiresIn: '7d' } // Longer duration for refresh token
         );
     },
     
-    // Kreiranje novog managera
+    // Create new manager
     async createSystemManager(managerData: any): Promise<any> {
         return systemManagerRepository.create(managerData);
     },
     
-    // Provjera postoji li već manager u sustavu
+    // Check if a manager already exists in the system
     async systemManagerExists(): Promise<boolean> {
         return await systemManagerRepository.exists();
     },
     
-    // Dohvat svih managera
+    // Get all managers
     async getAllSystemManagers(): Promise<any[]> {
         return systemManagerRepository.findAll();
     },
     
-    // Dohvat ovlasti za člana
+    // Get member permissions
     async getMemberPermissions(memberId: number): Promise<any | null> {
         try {
-            // Provjera postoji li član
+            // Check if member exists
             const member = await prisma.member.findUnique({
                 where: {
                     member_id: memberId
@@ -102,7 +102,7 @@ const systemManagerService = {
                 return null;
             }
 
-            // Pokušaj dohvata ovlasti koristeći Prisma
+            // Attempt to fetch permissions using Prisma
             let permissions = null;
             try {
                 permissions = await prisma.memberPermissions.findUnique({
@@ -111,7 +111,7 @@ const systemManagerService = {
                     }
                 });
             } catch (prismaError) {
-                // Ako Prisma ne uspije, koristimo direktni SQL upit
+                // If Prisma fails, use a direct SQL query
                 console.warn('Prisma error when fetching permissions, falling back to SQL:', prismaError);
                 
                 const result = await db.query(
@@ -123,7 +123,7 @@ const systemManagerService = {
             }
 
             if (!permissions) {
-                // Ako član ima ulogu member_superuser ili member_administrator, vrati defaultne ovlasti
+                // If member has role member_superuser or member_administrator, return default permissions
                 if (member.role === 'member_superuser' || member.role === 'member_administrator') {
                     return {
                         member_id: member.member_id,
@@ -159,7 +159,7 @@ const systemManagerService = {
                 return null;
             }
 
-            // Vraćanje ovlasti s dodatnim podacima o članu
+            // Return permissions with additional member data
             return {
                 ...permissions,
                 member: {
@@ -176,23 +176,23 @@ const systemManagerService = {
         }
     },
     
-    // Ažuriranje ovlasti za člana
+    // Update member permissions
     async updateMemberPermissions(
         memberId: number, 
         permissions: any,
         grantedById: number
     ): Promise<void> {
         try {
-            // Logiramo primljene podatke za dijagnostiku
+            // Log received data for diagnostics
             console.log('updateMemberPermissions called with:', { memberId, permissions, grantedById });
             
-            // Filtriramo i ekstrahiramo samo polja koja postoje u bazi podataka
-            // Prema Prisma shemi, jedino polje dozvole je 'can_manage_end_reasons'
+            // Filter and extract only the fields that exist in the database
+            // According to the Prisma schema, the only permission field is 'can_manage_end_reasons'
             const can_manage_end_reasons = permissions.can_manage_end_reasons === true;
             
             console.log('Using permission:', { can_manage_end_reasons });
             
-            // Prvo pokušamo pronaći postojeće ovlasti
+            // First, try to find existing permissions
             const existingPermissions = await prisma.memberPermissions.findUnique({
                 where: {
                     member_id: memberId
@@ -433,119 +433,7 @@ const systemManagerService = {
         }
     },
 
-    /**
-     * Dohvaća tjednu povijest aktivnosti i druge ključne statistike za dashboard managera.
-     * Povijest aktivnosti vraća se kao niz objekata po tjednima (zadnjih 8 tjedana).
-     * @returns Objekt sa statistikom i poviješću aktivnosti
-     */
-    async getDashboardStats(): Promise<{
-        weeklyActivityHistory: { weekStart: Date; count: number }[];
-        totalActivities: number;
-        totalMembers: number; // Ukupan broj članova
-        registeredMembers: number; // Broj registriranih članova
-        activeMembers: number; // Broj aktivnih članova
-        pendingApprovals: number; // Broj članova na čekanju
-        recentActivities: number; // Nedavne aktivnosti
-        systemHealth: string; // Status zdravlja sustava ('Healthy', 'Warning', 'Critical')
-        lastBackup: string; // Informacija o zadnjoj sigurnosnoj kopiji
-        healthDetails?: SystemHealthInfo; // Detaljne informacije o zdravlju sustava (opciono)
-        backupDetails?: BackupInfo; // Detaljne informacije o sigurnosnoj kopiji (opciono)
-    }> {
-        try {
-            // Koliko tjedana povijesti vraćamo
-            const NUM_WEEKS = 8;
-            const now = getCurrentDate();
-            // Pronađi početak ovog tjedna (ponedjeljak)
-            const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // 0 je nedjelja, želimo 1-7
-            const startOfWeek = new Date(now); // Koristimo kopiju trenutnog datuma
-            startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
-            startOfWeek.setHours(0,0,0,0);
 
-            // Generiraj tjedne granice
-            const weekStarts: Date[] = [];
-            for (let i = NUM_WEEKS - 1; i >= 0; i--) {
-                const d = new Date(startOfWeek); // Koristimo kopiju početka tjedna
-                d.setDate(startOfWeek.getDate() - i * 7);
-                weekStarts.push(d);
-            }
-
-            // Dohvati sve aktivnosti iz zadnjih N tjedana
-            const oldestWeek = weekStarts[0];
-            const activities = await prisma.activity.findMany({
-                where: {
-                    start_date: {
-                        gte: oldestWeek
-                    }
-                },
-                select: {
-                    start_date: true
-                }
-            });
-
-            // Grupiraj aktivnosti po tjednima
-            const weeklyCounts = weekStarts.map((weekStart, idx) => {
-                const weekEnd = new Date(weekStart); // Koristimo kopiju početka tjedna
-                weekEnd.setDate(weekEnd.getDate() + 7);
-                const count = activities.filter(a => {
-                    return a.start_date >= weekStart && a.start_date < weekEnd;
-                }).length;
-                return { weekStart, count };
-            });
-
-            // Ukupan broj aktivnosti
-            const totalActivities = await prisma.activity.count();
-            
-            // Dohvat informacija o članovima
-            const totalMembers = await prisma.member.count();
-            const registeredMembers = await prisma.member.count({
-                where: { status: 'registered' }
-            });
-            const activeMembers = await prisma.member.count({
-                where: { 
-                    status: 'registered',
-                    last_login: { not: null }
-                }
-            });
-            const pendingApprovals = await prisma.member.count({
-                where: { status: 'pending' }
-            });
-            
-            // Broj nedavnih aktivnosti (zadnjih 24h)
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const recentActivities = await prisma.activity.count({
-                where: {
-                    start_date: { gte: yesterday }
-                }
-            });
-
-            // Dohvat stvarnih informacija o zdravlju sustava
-            const healthInfo = await systemHealthService.checkSystemHealth();
-            const backupInfo = await systemHealthService.getBackupInfo();
-            
-            // Formatiranje za prikaz na dashboardu
-            const systemHealth = systemHealthService.formatHealthStatus(healthInfo);
-            const lastBackup = systemHealthService.formatBackupInfo(backupInfo);
-
-            // Povratni objekt
-            return {
-                weeklyActivityHistory: weeklyCounts,
-                totalActivities,
-                totalMembers,
-                registeredMembers,
-                activeMembers,
-                pendingApprovals,
-                recentActivities,
-                systemHealth,
-                lastBackup,
-                healthDetails: healthInfo,  // Detaljne informacije ako ih frontend želi prikazati
-                backupDetails: backupInfo   // Detaljne informacije ako ih frontend želi prikazati
-            };
-        } catch (error) {
-            console.error('Greška prilikom dohvaćanja dashboard statistike:', error);
-            throw error;
-        }
-    },
 
     // Dohvat sistemskih postavki
     async getSystemSettings(): Promise<SystemSettings> {

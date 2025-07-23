@@ -1,38 +1,38 @@
 // repositories/systemManager.repository.ts
 import prisma from '../utils/prisma.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
-// import { SystemManager, CreateSystemManagerDto } from '../shared/types/systemManager.js'; // Može se koristiti za tipizaciju ako je potrebno
+// import { SystemManager, CreateSystemManagerDto } from '../shared/types/systemManager.js'; // Can be used for typing if necessary
 import bcrypt from 'bcrypt';
 
-// Pomoćne funkcije
+// Helper functions
 const hashPassword = async (password: string): Promise<string> => {
     const saltRounds = 10;
     return bcrypt.hash(password, saltRounds);
 };
 
 const systemManagerRepository = {
-    // Dohvat managera po korisničkom imenu
+    // Find manager by username
     async findByUsername(username: string): Promise<any> {
         return prisma.systemManager.findUnique({
             where: { username }
         });
     },
     
-    // Dohvat managera po email adresi
+    // Find manager by email
     async findByEmail(email: string): Promise<any> {
         return prisma.systemManager.findUnique({
             where: { email }
         });
     },
     
-    // Dohvat managera po ID-u
+    // Find manager by ID
     async findById(id: number): Promise<any> {
         return prisma.systemManager.findUnique({
             where: { id }
         });
     },
     
-    // Kreiranje novog managera
+    // Create a new manager
     async create(managerData: any): Promise<any> {
         const passwordHash = await hashPassword(managerData.password);
         
@@ -46,7 +46,7 @@ const systemManagerRepository = {
         });
     },
     
-    // Ažuriranje vremena zadnje prijave
+    // Update last login time
     async updateLastLogin(id: number): Promise<void> {
         await prisma.systemManager.update({
             where: { id },
@@ -54,13 +54,13 @@ const systemManagerRepository = {
         });
     },
     
-    // Provjera postoji li već manager u sustavu
+    // Check if a manager already exists in the system
     async exists(): Promise<boolean> {
         const count = await prisma.systemManager.count();
         return count > 0;
     },
     
-    // Promjena lozinke
+    // Change password
     async changePassword(id: number, newPassword: string): Promise<void> {
         const passwordHash = await hashPassword(newPassword);
         
@@ -70,7 +70,7 @@ const systemManagerRepository = {
         });
     },
     
-    // Dohvat svih managera
+    // Find all managers
     async findAll(): Promise<any[]> {
         return prisma.systemManager.findMany({
             select: {

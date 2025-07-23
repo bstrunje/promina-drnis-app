@@ -104,7 +104,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
             <div className="mt-4 pt-4 border-t">
               <h3 className="text-lg font-semibold mb-2 flex items-center">
                 <Star className="w-5 h-5 mr-2" />
-                {t('skills.title', 'Vještine i osposobljenosti')}
+                {t('skills.title')}
               </h3>
               <SkillsSelector
                 value={member.skills ?? []}

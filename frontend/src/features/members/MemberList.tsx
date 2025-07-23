@@ -25,15 +25,15 @@ import { Button } from "@components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
 import { formatDate, getCurrentDate } from "../../utils/dateUtils";
 
-// Uvoz custom hooka za dohvat podataka o članovima
+// Import custom hook for fetching member data
 import { useMemberData } from "./hooks/useMemberData";
-// Uvoz komponente za filtriranje
-import { MemberListFilters } from "./components/MemberListFilters";
-// Uvoz komponente za prikaz tablice
+// Import filter component
+import MemberListFilters, { MemberListFiltersProps } from "./components/MemberListFilters";
+// Import table display component
 import { filterOnlyColoredRows } from "./components/memberTableUtils";
-// Uvoz komponente za prikaz statistike
+// Import statistics component
 import { StatisticsView } from "./components/StatisticsView";
-// Uvoz custom hooka za filtriranje i sortiranje
+// Import custom hook for filtering and sorting
 import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
 
@@ -56,7 +56,7 @@ export default function MemberList(): JSX.Element {
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Stil za printanje direktno u komponenti
+  // Style for printing directly in the component
   useEffect(() => {
     const printStyle = document.createElement('style');
     printStyle.innerHTML = `
@@ -108,7 +108,7 @@ export default function MemberList(): JSX.Element {
     };
   }, []);
 
-  // Modalni prozori - stanja
+  // Modals - states
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   
@@ -119,35 +119,40 @@ export default function MemberList(): JSX.Element {
   const isAdmin = user?.role === "member_administrator" || user?.role === "member_superuser";
   const isSuperuser = user?.role === "member_superuser";
 
-  // Stanja za filtriranje i sortiranje
+  // States for filtering and sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid" | "pending">(() => {
-    const filterFromUrl = searchParams.get('filter');
-    return filterFromUrl === 'pending' ? 'pending' : 'active';
-  });
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid">("all");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [groupByType, setGroupByType] = useState<boolean>(false);
   const [showOnlyColored, setShowOnlyColored] = useState<boolean>(false);
-  const [showFilters, setShowFilters] = useState<boolean>(false); // Stanje za prikaz/skrivanje filtera
-  const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // Stanje za prikaz/skrivanje navigacijskih tabova - vidljivo na desktop, ali ne na mobile
-  const [refreshing, setRefreshing] = useState(false); // Stanje za pull-to-refresh
-  const [touchStartY, setTouchStartY] = useState(0); // Za praćenje swipe geste
-  // Ova varijabla se koristi u useEffect funkciji za provjeru veličine ekrana
+  const [showFilters, setShowFilters] = useState<boolean>(false); // State for showing/hiding filters
+  const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // State for showing/hiding navigation tabs - visible on desktop, but not on mobile
+  const [refreshing, setRefreshing] = useState(false); // State for pull-to-refresh
+  const [touchStartY, setTouchStartY] = useState(0); // For tracking swipe gesture
+  // This variable is used in the useEffect function to check the screen size
   const [, setIsMobile] = useState(false);
 
-  // Sinkronizacija filtera s URL-om
+  // Sync filters with URL
   useEffect(() => {
     const filterFromUrl = searchParams.get('filter');
     if (filterFromUrl === 'pending') {
-      setActiveFilter('pending');
+      setActiveFilter('all'); // ili 'active' ovisno što želiš kao default
+    } else if (
+      filterFromUrl === 'all' ||
+      filterFromUrl === 'active' ||
+      filterFromUrl === 'passive' ||
+      filterFromUrl === 'paid' ||
+      filterFromUrl === 'unpaid'
+    ) {
+      setActiveFilter(filterFromUrl);
+    } else {
+      setActiveFilter('all');
     }
-    // Opcionalno: ako želite da se filter vrati na "active" kad parametar nestane,
-    // možete dodati i `else` blok.
   }, [searchParams]);
 
-  // Koristimo custom hook za filtriranje i sortiranje
+  // We use a custom hook for filtering and sorting
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
     members,
     searchTerm,
@@ -158,7 +163,7 @@ export default function MemberList(): JSX.Element {
     groupByType
   });
 
-  // Memoizirana funkcija za grupiranje članova prema statusu
+  // Memoized function for grouping members by status
   const groupMembers = React.useCallback((memberList: MemberWithDetails[]): { key: string; title: string; members: MemberWithDetails[]; }[] => {
     if (groupByType) {
       const groups: Record<string, MemberWithDetails[]> = {};
@@ -177,7 +182,7 @@ export default function MemberList(): JSX.Element {
     }
   }, [groupByType]);
 
-  // Handleri kao u modularnom pristupu
+  // Handlers as in a modular approach
   const handleAddMember = async (newMember: Member) => {
     const success = await addMember(newMember);
     if (success) {
@@ -219,60 +224,58 @@ export default function MemberList(): JSX.Element {
     const checkIsMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
+            // Always show tabs on larger screens
+        if (!mobile) {
+          setShowNavTabs(true);
+        }
+        // On mobile, we hide by default
+        else if (mobile && showNavTabs === true) {
+          setShowNavTabs(false);
+        }
+      };
       
-      // Na većim ekranima uvijek prikazuj tabove
-      if (!mobile) {
-        setShowNavTabs(true);
-      }
-      // Na mobilnim sakrivamo default
-      else if (mobile && showNavTabs === true) {
-        setShowNavTabs(false);
-      }
-    };
-    
-    // Inicijalna provjera
-    checkIsMobile();
-    
-    // Slušaj promjene veličine prozora
-    window.addEventListener('resize', checkIsMobile);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIsMobile);
+      // Initial check
+      checkIsMobile();
+      
+      // Listen for window resize changes
+      window.addEventListener('resize', checkIsMobile);
+      
+      // Cleanup
+      return () => window.removeEventListener('resize', checkIsMobile);
   }, [showNavTabs]);
 
   useEffect(() => {
-    // Dodajemo stil za ispis
+    // Add style for printing
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
-        /* Sakrivamo sve što ne treba biti na ispisu */
+        /* Hide everything that should not be printed */
         header, nav, .logo-container, button, .navigation-menu, .primary-navigation,
-        .print\\:hidden, #global-header, .items-center.gap-2, .amber-50, 
-        [aria-label="filters"], [class*="Pronađeno"], .flex.items-center.bg-amber-50 {
+        .print\:hidden, #global-header, .items-center.gap-2, .amber-50, 
+        [aria-label="${t('memberList.buttons.filters')}"], [class*="${t('memberList.found')}"], .flex.items-center.bg-amber-50 {
           display: none !important;
         }
       }
     `;
     document.head.appendChild(style);
 
-    // Čišćenje pri unmount
+    // Cleanup on unmount
     return () => {
       document.head.removeChild(style);
     };
-  }, []);
-
+  }, [t]);
 
   const handleToggleColoredRows = () => {
     if (showOnlyColored) {
-      // Ako već prikazujemo samo obojane, vrati sve članove
+      // If we are already showing only colored, return all members
       setShowOnlyColored(false);
     } else {
-      // Inače, filtriraj i prikaži samo obojane
+      // Otherwise, filter and show only colored
       setShowOnlyColored(true);
     }
   };
 
-  // Funkcija za pull-to-refresh
+  // Function for pull-to-refresh
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
   };
@@ -281,31 +284,31 @@ export default function MemberList(): JSX.Element {
     const touchY = e.touches[0].clientY;
     const diff = touchY - touchStartY;
     
-    // Ako je korisnik povukao dovoljno prema dolje i nije već u procesu osvježavanja
+    // If the user has pulled down enough and is not already in the process of refreshing
     if (diff > 100 && !refreshing && window.scrollY === 0) {
       setRefreshing(true);
       
-      // Osvježi podatke
+      // Refresh data
       refreshMembers();
       
-      // Postavi timer za resetiranje stanja nakon osvježavanja
+      // Set a timer to reset the state after refreshing
       setTimeout(() => {
         setRefreshing(false);
-      }, 1000); // Kratka odgoda za bolji UX
+      }, 1000); // Short delay for better UX
     }
   };
   
-  // Funkcija za swipe za prikaz/skrivanje navigacijskih tabova
+  // Function for swipe to show/hide navigation tabs
   const handleSwipeForNav = (e: React.TouchEvent) => {
     const touchY = e.touches[0].clientY;
     const touchEndY = touchY;
     const diff = touchEndY - touchStartY;
     
-    // Ako je swipe prema dolje i tabs nisu vidljivi
+    // If swipe down and tabs are not visible
     if (diff > 50 && !showNavTabs) {
       setShowNavTabs(true);
     } 
-    // Ako je swipe prema gore i tabs su vidljivi
+    // If swipe up and tabs are visible
     else if (diff < -50 && showNavTabs) {
       setShowNavTabs(false);
     }
@@ -318,21 +321,21 @@ export default function MemberList(): JSX.Element {
       }}>
       {/* Print-only header */}
       <div className="hidden print:block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{pageBreakInside: 'avoid'}} id="print-header">
-        <h1 className="text-2xl font-bold mb-2">Planinarsko društvo "Promina" Drniš</h1>
-        <h2 className="text-xl font-semibold mb-3">Upisna lista članova</h2>
+        <h1 className="text-2xl font-bold mb-2">{t('memberList.printHeader.title')}</h1>
+        <h2 className="text-xl font-semibold mb-3">{t('memberList.printHeader.subtitle')}</h2>
         <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
-          Ukupno članova: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>
+          {t('memberList.printHeader.totalMembers')}: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>
         </div>
         <div className="flex justify-center gap-4 mt-3 text-sm">
           <div className="border rounded-md px-3 py-1 bg-gray-50">
-            Aktivni: <span className="font-semibold">{members.filter(m => m.isActive).length}</span>
+            {t('memberList.printHeader.active')}: <span className="font-semibold">{members.filter(m => m.isActive).length}</span>
           </div>
           <div className="border rounded-md px-3 py-1 bg-gray-50">
-            Neaktivni: <span className="font-semibold">{members.filter(m => !m.isActive).length}</span>
+            {t('memberList.printHeader.inactive')}: <span className="font-semibold">{members.filter(m => !m.isActive).length}</span>
           </div>
         </div>
         <div className="text-sm text-gray-500 mt-3">
-          Generirano: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
+          {t('memberList.printHeader.generated')}: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
         </div>
       </div>
 
@@ -362,20 +365,20 @@ export default function MemberList(): JSX.Element {
                   <TabsList>
                     <TabsTrigger value="list" className="flex items-center">
                       <Users className="w-4 h-4 mr-2" />
-                      <span className="hidden md:inline">Lista članova</span>
+                      <span className="hidden md:inline">{t('memberList.tabs.list')}</span>
                     </TabsTrigger>
                     <TabsTrigger value="statistics" className="flex items-center">
                       <BarChart className="w-4 h-4 mr-2" />
-                      <span className="hidden md:inline">Statistika</span>
+                      <span className="hidden md:inline">{t('memberList.tabs.statistics')}</span>
                     </TabsTrigger>
                   </TabsList>
                 </div>
                 
                 {/* Desna strana - ostali gumbi */}
                 <div className="flex items-center gap-2 flex-wrap print:hidden">
-                  {/* Brojač članova */}
+                  {/* Member counter */}
                   <div className="flex items-center bg-amber-50 border border-amber-200 rounded-md px-3 py-1">
-                    <span className="text-sm font-medium text-gray-500 mr-1 hidden md:inline">Pronađeno:</span>
+                    <span className="text-sm font-medium text-gray-500 mr-1 hidden md:inline">{t('memberList.found')}:</span>
                     <span className="text-lg font-bold text-amber-600">
                       {filteredMembers.reduce((count, group) => count + group.members.length, 0)}
                     </span>
@@ -389,7 +392,7 @@ export default function MemberList(): JSX.Element {
                     className="text-gray-700 hover:text-gray-900"
                   >
                     <Filter className="w-4 h-4 md:mr-1" />
-                    <span className="hidden md:inline">Filteri</span>
+                    <span className="hidden md:inline">{t('memberList.buttons.filters')}</span>
                     {showFilters ? 
                       <ChevronUp className="w-4 h-4 hidden md:inline md:ml-1" /> : 
                       <ChevronDown className="w-4 h-4 hidden md:inline md:ml-1" />

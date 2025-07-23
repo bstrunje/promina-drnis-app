@@ -66,6 +66,11 @@ export function mapToMember(raw: any, total_hours: number = 0): Member {
       name: ms.skill.name,
       is_instructor: ms.is_instructor
     })),
-    other_skills: raw.other_skills ?? undefined
+    other_skills: raw.other_skills ?? undefined,
+    /**
+     * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
+     */
+    functions_in_society: raw.functions_in_society ?? undefined
   };
+
 }

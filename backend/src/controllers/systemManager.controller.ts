@@ -4,7 +4,7 @@ import systemManagerService from '../services/systemManager.service.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { JWT_SECRET } from '../config/jwt.config.js';
 import jwt from 'jsonwebtoken';
-// Koristimo any umjesto specifičnih tipova - privremeno rješenje
+// Using 'any' instead of specific types - temporary solution
 // import { SystemManager, SystemManagerLoginData, CreateSystemManagerDto, UpdateMemberPermissionsDto } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
@@ -14,7 +14,7 @@ import systemManagerRepository from '../repositories/systemManager.repository.js
 import prisma from '../utils/prisma.js';
 import { Prisma, PerformerType } from '@prisma/client';
 
-// Privremena definicija tipova dok se ne implementira potpuno rješenje
+// Temporary type definition until a full solution is implemented
 interface SystemManagerLoginData {
     username: string;
     password: string;
@@ -29,12 +29,12 @@ declare global {
     }
 }
 
-// Promjena lozinke system managera
+// Change system manager password
 export const changePassword = async (req: Request, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
-    const managerId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
+    const managerId = req.user.id; // obtained from JWT after authentication
     const { oldPassword, newPassword } = req.body;
 
     const manager = await prisma.systemManager.findUnique({ where: { id: managerId } });
@@ -57,27 +57,27 @@ export const changeUsername = async (req: Request, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
-    const managerId = req.user.id; // dobiveno iz JWT-a nakon autentikacije
+    const managerId = req.user.id; // obtained from JWT after authentication
     const { username } = req.body;
 
-    // Provjera je li username već zauzet
+    // Check if username is already taken
     const existingAdmin = await prisma.systemManager.findUnique({ where: { username } });
     if (existingAdmin && existingAdmin.id !== managerId) {
-        return res.status(400).json({ message: 'Korisničko ime već postoji' });
+        return res.status(400).json({ message: 'Username already exists' });
     }
 
-    // Ažuriranje korisničkog imena
+    // Update username
     await prisma.systemManager.update({
         where: { id: managerId },
         data: { username },
     });
 
-    // Zabilježi promjenu u audit log
+    // Log the change in the audit log
     await auditService.logAction(
         'update', // action_type
         managerId,  // performed_by
         `System manager changed username to: ${username}`, // action_details
-        req,      // req objekt
+        req,      // req object
         'success', // status
         undefined,
         PerformerType.SYSTEM_MANAGER
@@ -87,76 +87,76 @@ export const changeUsername = async (req: Request, res: Response) => {
 };
 
 /**
- * Funkcija za obnavljanje tokena System Managera
+ * Function to refresh System Manager token
  */
 export const refreshToken = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Dohvat refresh tokena iz kolačića
+        // Get refresh token from cookies
         const refreshToken = req.cookies.systemManagerRefreshToken;
         
         if (!refreshToken) {
-            res.status(401).json({ message: 'Refresh token nije pronađen' });
+            res.status(401).json({ message: 'Refresh token not found' });
             return;
         }
         
-        // Verifikacija refresh tokena
+        // Verify refresh token
         try {
             const decoded = jwt.verify(refreshToken, JWT_SECRET) as { id: number; type: string; tokenType: string };
             
-            // Provjera je li token zaista refresh token za System Managera
+            // Check if the token is indeed a refresh token for the System Manager
             if (decoded.type !== 'SystemManager' || decoded.tokenType !== 'refresh') {
-                res.status(403).json({ message: 'Neispravan tip tokena' });
+                res.status(403).json({ message: 'Invalid token type' });
                 return;
             }
             
-            // Dohvat managera iz baze
+            // Get manager from the database
             const manager = await systemManagerRepository.findById(decoded.id);
             
             if (!manager) {
-                res.status(404).json({ message: 'System Manager nije pronađen' });
+                res.status(404).json({ message: 'System Manager not found' });
                 return;
             }
             
-            // Generiranje novog access tokena i refresh tokena
+            // Generate new access token and refresh token
             const token = systemManagerService.generateToken(manager);
             const newRefreshToken = systemManagerService.generateRefreshToken(manager);
 
             await auditService.logAction(
                 'token_refresh',
                 manager.id,
-                `System manager ${manager.username} je obnovio token`,
+                `System manager ${manager.username} has refreshed the token`,
                 req,
                 'success',
                 undefined,
                 PerformerType.SYSTEM_MANAGER
             );
             
-            // Ažuriranje vremena zadnje prijave
+            // Update last login time
             await systemManagerRepository.updateLastLogin(manager.id);
             
-            // Postavljanje novog refresh tokena kao HTTP-only kolačića
+            // Set new refresh token as an HTTP-only cookie
             const isProduction = process.env.NODE_ENV === 'production';
             const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-            // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
+            // Using let instead of const so we can modify the value
             let secure = isProduction || protocol === 'https';
             
-            // Dinamičko određivanje sameSite postavke
-            // Za cross-site zahtjeve, potrebno je postaviti sameSite na 'none' i secure na true
-            // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
+            // Dynamic determination of the sameSite setting
+            // For cross-site requests, it's necessary to set sameSite to 'none' and secure to true
+            // Firefox specifically requires this combination for a cross-site context
             let sameSite: 'strict' | 'lax' | 'none' | undefined;
             
             if (isProduction || secure) {
                 sameSite = 'none';
-                // Ako koristimo 'none', secure mora biti true
+                // If we use 'none', secure must be true
                 if (sameSite === 'none') {
                     secure = true;
                 }
             } else {
-                sameSite = 'lax'; // Za lokalni razvoj
+                sameSite = 'lax'; // For local development
             }
             
-            // Brisanje refreshToken kolačića ako postoji
-            // kako bi se izbjegao konflikt između dva tipa tokena
+            // Delete refreshToken cookie if it exists
+            // to avoid conflict between two token types
             if (req.cookies.refreshToken) {
                 res.clearCookie('refreshToken', { 
                     path: '/api/auth',
@@ -165,7 +165,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
                 });
             }
             
-            // Također provjeravamo i brišemo stari systemManagerRefreshToken ako postoji
+            // We also check and delete the old systemManagerRefreshToken if it exists
             if (req.cookies.systemManagerRefreshToken) {
                 res.clearCookie('systemManagerRefreshToken', { 
                     path: '/api/system-manager',
@@ -178,11 +178,11 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
                 httpOnly: true,
                 secure: secure,
                 sameSite: sameSite,
-                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dana
-                path: '/api/system-manager' // Ograničeno na /api/system-manager putanju
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                path: '/api/system-manager' // Restricted to the /api/system-manager path
             });
             
-            // Vraćanje novog tokena
+            // Return new token
             res.json({
                 token,
                 manager: {
@@ -195,17 +195,17 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
                 }
             });
         } catch (error) {
-            // Ako je token istekao ili je neispravan
-            res.status(403).json({ message: 'Neispravan ili istekao refresh token' });
+            // If the token has expired or is invalid
+            res.status(403).json({ message: 'Invalid or expired refresh token' });
         }
     } catch (error) {
-        console.error('Greška prilikom obnavljanja tokena:', error);
-        res.status(500).json({ message: 'Interna greška servera' });
+        console.error('Error refreshing token:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
 const systemManagerController = {
-    // Prijava system managera
+    // System manager login
     async login(
         req: Request<{}, {}, SystemManagerLoginData>,
         res: Response
@@ -213,43 +213,43 @@ const systemManagerController = {
         try {
             const { username, password } = req.body;
 
-            // Validacija ulaznih podataka
+            // Input data validation
             if (!username || !password) {
-                res.status(400).json({ message: 'Potrebno je unijeti korisničko ime i lozinku' });
+                res.status(400).json({ message: 'Username and password are required' });
                 return;
             }
 
-            // Autentikacija korisnika
+            // User authentication
             const manager = await systemManagerService.authenticate(username, password);
             
             if (!manager) {
-                res.status(401).json({ message: 'Neispravno korisničko ime ili lozinka' });
+                res.status(401).json({ message: 'Invalid username or password' });
                 return;
             }
 
-            // Generiranje JWT tokena i refresh tokena
+            // Generate JWT token and refresh token
             const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
             const refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
 
             await auditService.logAction(
                 'login', // action_type
                 manager.id, // performed_by
-                `System manager ${username} se prijavio u sustav`, // action_details
-                req,      // req objekt
+                `System manager ${username} has logged into the system`, // action_details
+                req,      // req object
                 'success', // status
                 undefined, // affected_member
                 PerformerType.SYSTEM_MANAGER
             );
 
-            // Postavljanje refresh tokena kao HTTP-only kolačića
+            // Set new refresh token as an HTTP-only cookie
             const isProduction = process.env.NODE_ENV === 'production';
             const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-            // Koristimo let umjesto const kako bismo mogli modificirati vrijednost
+            // Using let instead of const so we can modify the value
             let secure = isProduction || protocol === 'https';
             
-            // Dinamičko određivanje sameSite postavke
-            // Za cross-site zahtjeve, potrebno je postaviti sameSite na 'none' i secure na true
-            // Firefox posebno zahtijeva ovu kombinaciju za cross-site kontekst
+            // Dynamic determination of the sameSite setting
+            // For cross-site requests, it's necessary to set sameSite to 'none' and secure to true
+            // Firefox specifically requires this combination for a cross-site context
             let sameSite: 'strict' | 'lax' | 'none' | undefined;
             
             if (isProduction || secure) {
@@ -574,13 +574,28 @@ const systemManagerController = {
     async getDashboardStats(
         req: Request,
         res: Response
-    ): Promise<any> { // Ispravak povratnog tipa
+    ): Promise<any> { 
         try {
-            const stats = await systemManagerService.getDashboardStats();
+            const totalMembers = await prisma.member.count();
+            const registeredMembers = await prisma.member.count({ where: { status: 'registered' } });
+            const activeMembers = await prisma.member.count({ where: { status: 'active' } }); 
+            const pendingApprovals = await prisma.member.count({ where: { registration_completed: false } });
+
+            // TODO: Implementirati dohvat ostalih statistika
+            const stats = {
+                totalMembers,
+                registeredMembers,
+                activeMembers,
+                pendingApprovals,
+                recentActivities: 0, // Placeholder
+                systemHealth: 'Healthy', // Placeholder
+                lastBackup: 'Never', // Placeholder
+            };
+
             return res.json(stats);
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            return res.status(500).json({ message: 'Došlo je do greške prilikom dohvata statistika za dashboard' });
+            return res.status(500).json({ message: 'Error fetching dashboard stats' });
         }
     },
 
@@ -708,7 +723,7 @@ const systemManagerController = {
         try {
             const pendingMembers = await prisma.member.findMany({
                 where: {
-                    status: 'pending'
+                    registration_completed: false
                 },
                 select: {
                     member_id: true,

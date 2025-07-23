@@ -29,7 +29,7 @@
     "actions": "Akcije"
   },
   "login": {
-    "title": "Prijava u sustav",
+    "title": "Prijava",
     "emailLabel": "Email adresa",
     "passwordLabel": "Lozinka",
     "loginButton": "Prijavi se",
@@ -46,7 +46,42 @@
     "errorTitle": "Prijava neuspješna",
     "passwordPlaceholder": "Unesite vašu lozinku",
     "loggingIn": "Prijava...",
-    "alreadyMember": "Već jesi član? Prijavi se"
+    "alreadyMember": "Već jesi član? Prijavi se",
+    "registrationSuccess": "Registracija uspješna.",
+    "registrationError": "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
+    "mustAcceptTerms": "Morate prihvatiti uvjete korištenja i pravila privatnosti.",
+    "stepEmail": "Unesite vašu email adresu",
+    "stepPassword": "Unesite vašu lozinku",
+    "showPassword": "Prikaži lozinku",
+    "hidePassword": "Sakrij lozinku",
+    "firstNamePlaceholder": "Upiši ime",
+    "lastNamePlaceholder": "Upiši prezime",
+    "addressPlaceholder": "Upiši adresu",
+    "cityPlaceholder": "Upiši grad",
+    "oibPlaceholder": "Upiši OIB",
+    "cellPhonePlaceholder": "Upiši broj mobitela",
+    "lifeStatusPlaceholder": "Odaberite status",
+    "tshirtSizePlaceholder": "Odaberite veličinu",
+    "shellJacketSizePlaceholder": "Odaberite veličinu",
+    "clubTitle": "Planinarsko društvo \"Promina\" Drniš",
+    "importantDocuments": "Važni dokumenti",
+    "showDocuments": "Prikaži Dokumente",
+    "hideDocuments": "Sakrij Dokumente",
+    "firstName": "Ime",
+    "lastName": "Prezime",
+    "gender": "Spol",
+    "birthDate": "Datum rođenja",
+    "address": "Ulica i broj",
+    "city": "Grad/mjesto",
+    "oib": "OIB",
+    "oibError": "OIB mora imati točno 11 znamenki",
+    "cellPhone": "Mobitel",
+    "email": "E-mail",
+    "lifeStatus": "Životni status",
+    "tShirt": "Majica",
+    "tShirtPlaceholder": "Odaberite veličinu",
+    "shellJacket": "Flis jakna",
+    "shellJacketPlaceholder": "Odaberite veličinu"
   },
   "navigation": {
     "title": "Planinarsko društvo \"Promina\" Drniš",
@@ -239,6 +274,7 @@
       "registeredMember": "Registrirani član",
       "activeMember": "Aktivan član s plaćenom članarinom",
       "pendingStatus": "Status na čekanju",
+      "unknownStatus": "Status nepoznat",
       "validMembership": "Članstvo važeće",
       "inactive": "Neaktivan",
       "pending": "Na čekanju",
@@ -305,6 +341,23 @@
     "member_superuser": "Nad administrator"
   },
   "skills": {
+    "basic_mountaineering_school": "Mala planinarska škola",
+    "general_mountaineering_school": "Opća planinarska škola",
+    "advanced_mountaineering_school": "Viša planinarska škola",
+    "trail_marker": "Markacist",
+    "mountain_nature_keeper": "Čuvar planinske prirode",
+    "guide_a_standard": "Vodič A standarda",
+    "guide_b_standard": "Vodič B standarda",
+    "guide_c_standard": "Vodič C standarda",
+    "guide_d_standard": "Vodič D standarda",
+    "guide_e_standard": "Vodič E standarda",
+    "guide_f_standard": "Vodič F standarda",
+    "guide_g_standard": "Vodič G standarda",
+    "alpinist_apprentice": "Alpinist pripravnik",
+    "alpinist": "Alpinist",
+    "speleologist_apprentice": "Speleološki pripravnik",
+    "speleologist": "Speleolog",
+    "cmrs_member": "Pripadnik HGSS-a",
     "title": "Vještine i osposobljenosti",
     "description": "Odaberite vještine koje član posjeduje. Za vještine koje nisu na popisu, upišite ih u polje Ostalo."
   },
@@ -328,16 +381,9 @@
       "female": "Ženski"
     }
   },
-  "systemManager": {
-    "settings": {
-      "saveChanges": "Spremi promjene",
-      "saving": "Spremanje...",
-      "saveSettings": "Spremi postavke"
-    }
-  },
   "editMemberForm": {
-      "oibTitle": "OIB must have exactly 11 digits"
-    },
+    "oibTitle": "OIB must have exactly 11 digits"
+  },
   "membership": {
     "periods": {
       "edit": "Uredi",
@@ -350,7 +396,19 @@
   "statistics": {
     "genderDistribution": "Podjela po spolu",
     "male": "Muški:",
-    "female": "Ženski:"
+    "female": "Ženski:",
+    "totalMembers": "Ukupno članova",
+    "activeMembers": "Aktivni članovi",
+    "passiveMembers": "Pasivni članovi",
+    "categoryDistribution": "Podjela po kategoriji",
+    "validMembership": "Članstvo važeće",
+    "inactive": "Neaktivni",
+    "pending": "Na čekanju",
+    "feeDistribution": "Podjela po plaćanju članarine",
+    "feePaid": "Plaćena članarina",
+    "feeRequired": "Potrebno platiti",
+    "ageDistribution": "Statistika po dobnim skupinama",
+    "years": "{{range}} godina"
   },
   "permissions": {
     "addMemberPermissions": "Dodaj administratorske ovlasti članu",
@@ -397,6 +455,24 @@
     "editMembers": "Uređivanje članova",
     "more": "više",
     "remove": "Ukloni"
+  },
+  "memberList": {
+    "printHeader": {
+      "title": "Planinarsko društvo \"Promina\" Drniš",
+      "subtitle": "Upisna lista članova",
+      "totalMembers": "Ukupno članova",
+      "active": "Aktivni",
+      "inactive": "Neaktivni",
+      "generated": "Generirano"
+    },
+    "tabs": {
+      "list": "Lista članova",
+      "statistics": "Statistika"
+    },
+    "found": "Pronađeno",
+    "buttons": {
+      "filters": "Filteri"
+    }
   },
   "activities": {
     "admin": {
@@ -551,7 +627,7 @@
       "cancel": "Odustani",
       "stampTypes": {
         "employedUnemployed": "Markice za zaposlene/nezaposlene članove",
-        "studentPupil": "Markice za učenike/studente",
+        "studentPupil": "Markice za učenike/đake/studente",
         "pensioner": "Markice za umirovljenike"
       },
       "fetchInventoryError": "Neuspjelo dohvaćanje inventara",
@@ -577,6 +653,9 @@
       "oib": "OIB",
       "cellPhone": "Mobitel",
       "email": "Email",
+      "functionsInSocietyLabel": "Funkcije u društvu",
+      "functionsInSocietyPlaceholder": "Npr. predsjednik, tajnik, blagajnik (odvojite zarezom)",
+      "functionsInSocietyTooltip": "Upišite sve funkcije koje član ima u društvu, odvojene zarezom. Maksimalno 250 znakova.",
       "addButton": "Dodaj člana",
       "cancelButton": "Odustani",
       "oibTitle": "OIB mora imati točno 11 znamenki"

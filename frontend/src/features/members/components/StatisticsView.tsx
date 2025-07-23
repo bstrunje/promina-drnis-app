@@ -65,14 +65,14 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     <div className="space-y-6 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Ukupno članova: {currentMembers.length}</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.totalMembers')}: {currentMembers.length}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Aktivni članovi:</span>
+              <span>{t('statistics.activeMembers')}:</span>
               <span>{currentMembers.filter(m => m.isActive).length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Pasivni članovi:</span>
+              <span>{t('statistics.passiveMembers')}:</span>
               <span>{currentMembers.filter(m => !m.isActive).length}</span>
             </div>
           </div>
@@ -96,29 +96,29 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
           <h3 className="text-lg font-semibold mb-4">Podjela po kategoriji</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Članstvo važeće:</span>
+              <span>{t('statistics.validMembership')}:</span>
               <span>{members.filter(m => m.membershipStatus === 'registered').length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Neaktivni:</span>
+              <span>{t('statistics.inactive')}:</span>
               <span>{members.filter(m => m.membershipStatus === 'inactive').length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Na čekanju:</span>
+              <span>{t('statistics.pending')}:</span>
               <span>{members.filter(m => m.membershipStatus === 'pending').length}</span>
             </div>
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Podjela po plaćanju članarine</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.feeDistribution')}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Plaćena članarina:</span>
+              <span>{t('statistics.feePaid')}:</span>
               <span>{members.filter(m => m.feeStatus === 'current').length}</span>
             </div>
             <div className="flex justify-between">
-              <span>Potrebno platiti:</span>
+              <span>{t('statistics.feeRequired')}:</span>
               <span>{members.filter(m => m.feeStatus === 'payment required').length}</span>
             </div>
           </div>
@@ -126,12 +126,12 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
         
         {/* Nova statistika po dobnim skupinama */}
         <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Statistika po dobnim skupinama</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.ageDistribution')}</h3>
           <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-2">
             {Object.entries(ageGroups).map(([group, count]) => (
               <div key={group} className="bg-gray-50 p-2 rounded-md">
                 <div className="text-center">
-                  <div className="text-sm text-gray-500">{group} godina</div>
+                  <div className="text-sm text-gray-500">{t('statistics.years', { range: group })}</div>
                   <div className="text-lg font-bold">{count}</div>
                 </div>
               </div>

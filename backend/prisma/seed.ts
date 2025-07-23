@@ -3,32 +3,57 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const skillsToSeed = [
-  { name: 'Mala planinarska škola', is_instructor_possible: false },
-  { name: 'Opća planinarska škola', is_instructor_possible: false },
-  { name: 'Viša planinarska škola', is_instructor_possible: false },
-  { name: 'Markacist', is_instructor_possible: true },
-  { name: 'Čuvar planinske prirode', is_instructor_possible: false },
-  { name: 'Vodič A standarda', is_instructor_possible: true },
-  { name: 'Vodič B standarda', is_instructor_possible: true },
-  { name: 'Vodič C standarda', is_instructor_possible: true },
-  { name: 'Vodič D standarda', is_instructor_possible: true },
-  { name: 'Vodič E standarda', is_instructor_possible: true },
-  { name: 'Vodič F standarda', is_instructor_possible: true },
-  { name: 'Vodič G standarda', is_instructor_possible: true },
-  { name: 'Alpinist pripravnik', is_instructor_possible: false },
-  { name: 'Alpinist', is_instructor_possible: true },
-  { name: 'Speleološki pripravnik', is_instructor_possible: false },
-  { name: 'Speleolog', is_instructor_possible: true },
-  { name: 'Pripadnik HGSS-a', is_instructor_possible: false },
+  { key: 'basic_mountaineering_school', is_instructor_possible: false },
+  { key: 'general_mountaineering_school', is_instructor_possible: false },
+  { key: 'advanced_mountaineering_school', is_instructor_possible: false },
+  { key: 'trail_marker', is_instructor_possible: true },
+  { key: 'mountain_nature_keeper', is_instructor_possible: false },
+  { key: 'guide_a_standard', is_instructor_possible: true },
+  { key: 'guide_b_standard', is_instructor_possible: true },
+  { key: 'guide_c_standard', is_instructor_possible: true },
+  { key: 'guide_d_standard', is_instructor_possible: true },
+  { key: 'guide_e_standard', is_instructor_possible: true },
+  { key: 'guide_f_standard', is_instructor_possible: true },
+  { key: 'guide_g_standard', is_instructor_possible: true },
+  { key: 'alpinist_apprentice', is_instructor_possible: false },
+  { key: 'alpinist', is_instructor_possible: true },
+  { key: 'speleologist_apprentice', is_instructor_possible: false },
+  { key: 'speleologist', is_instructor_possible: true },
+  { key: 'cmrs_member', is_instructor_possible: false }, // Croatian Mountain Rescue Service
 ];
+
+const skillKeyToNameHr: Record<string, string> = {
+  basic_mountaineering_school: 'Mala planinarska škola',
+  general_mountaineering_school: 'Opća planinarska škola',
+  advanced_mountaineering_school: 'Viša planinarska škola',
+  trail_marker: 'Markacist',
+  mountain_nature_keeper: 'Čuvar planinske prirode',
+  guide_a_standard: 'Vodič A standarda',
+  guide_b_standard: 'Vodič B standarda',
+  guide_c_standard: 'Vodič C standarda',
+  guide_d_standard: 'Vodič D standarda',
+  guide_e_standard: 'Vodič E standarda',
+  guide_f_standard: 'Vodič F standarda',
+  guide_g_standard: 'Vodič G standarda',
+  alpinist_apprentice: 'Alpinist pripravnik',
+  alpinist: 'Alpinist',
+  speleologist_apprentice: 'Speleološki pripravnik',
+  speleologist: 'Speleolog',
+  cmrs_member: 'Pripadnik HGSS-a',
+};
 
 async function main() {
   console.log('Start seeding skills...');
   for (const skillData of skillsToSeed) {
+    const name = skillKeyToNameHr[skillData.key];
     const skill = await prisma.skill.upsert({
-      where: { name: skillData.name },
+      where: { key: skillData.key },
       update: {},
-      create: skillData,
+      create: {
+        key: skillData.key,
+        name,
+        is_instructor_possible: skillData.is_instructor_possible,
+      },
     });
     console.log(`Created or found skill: ${skill.name}`);
   }

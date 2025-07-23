@@ -6,6 +6,7 @@ import api from '../src/utils/api';
 interface Skill {
   id: number;
   name: string;
+  key?: string;
   is_instructor_possible: boolean;
 }
 
@@ -112,7 +113,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
         <ul className="space-y-1">
           {selectedSkillDetails.map(skill => (
             <li key={skill.id} className="text-sm text-gray-800">
-              <span className="font-medium">{skill.name}</span>
+              <span className="font-medium">{skill.key ? t(`skills.${skill.key}`) : skill.name}</span>
               {skill.is_instructor && <span className="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-0.5 rounded-full">{t('skillsSelector.instructor')}</span>}
             </li>
           ))}
@@ -145,7 +146,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
                     disabled={!isEditing}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="ml-3 text-gray-800 font-medium">{skill.name}</span>
+                  <span className="ml-3 text-gray-800 font-medium">{skill.key ? t(`skills.${skill.key}`) : skill.name}</span>
                 </label>
               </div>
               {skill.is_instructor_possible && (

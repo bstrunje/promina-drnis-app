@@ -109,6 +109,11 @@ export interface Member {
     // Member skills and qualifications
     skills?: MemberSkill[];
     other_skills?: string;
+    /**
+     * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
+     * Višestruke vrijednosti odvojene zarezom, npr. "Predsjednik, Tajnik"
+     */
+    functions_in_society?: string;
 }
 
 /**

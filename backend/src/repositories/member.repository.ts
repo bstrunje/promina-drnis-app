@@ -24,9 +24,19 @@ export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 
     shell_jacket_size: Member['shell_jacket_size'];
     membership_type: Member['membership_type'];
     nickname?: string;
+    /**
+     * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
+     * Višestruke vrijednosti odvojene zarezom
+     */
+    functions_in_society?: string;
 }
 
 export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'status' | 'role'>> {
+    /**
+     * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
+     * Višestruke vrijednosti odvojene zarezom
+     */
+    functions_in_society?: string;
     first_name?: string;
     last_name?: string;
     full_name?: string;
@@ -126,7 +136,8 @@ const memberRepository = {
             shell_jacket_size: memberData.shell_jacket_size,
             total_hours: memberData.total_hours,
             membership_type: memberData.membership_type !== undefined ? mapMembershipTypeToEnum(memberData.membership_type) : undefined,
-            nickname: memberData.nickname
+            nickname: memberData.nickname,
+            functions_in_society: memberData.functions_in_society
         } });
         return mapToMember(raw);
     },
@@ -149,7 +160,8 @@ const memberRepository = {
             status: 'pending',
             role: 'member',
             membership_type: mapMembershipTypeToEnum(memberData.membership_type),
-            nickname: memberData.nickname
+            nickname: memberData.nickname,
+            functions_in_society: memberData.functions_in_society
         } });
         return mapToMember(raw);
     },

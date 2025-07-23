@@ -2,21 +2,14 @@ import React from "react";
 import { MemberWithDetails } from "@shared/memberDetails.types";
 import {
   DetailedMembershipStatus,
-
-
   MembershipPeriod,
 } from "@shared/memberStatus.types";
 
 import { Button } from "@components/ui/button";
 import {
-
-
   Trash2,
   UserCog,
   Key,
-
-
-
 } from "lucide-react";
 
 import { Member } from "@shared/member";
@@ -24,10 +17,7 @@ import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModa
 import { useState } from "react";
 import { formatMinutesToHoursAndMinutes } from '../../../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
-
 import { getMembershipDisplayStatusExternal } from "./memberTableUtils";
-
-
 
 
 interface MemberTableProps {
@@ -41,7 +31,6 @@ interface MemberTableProps {
   onViewDetails?: (memberId: number) => void;
   onAssignPassword?: (member: Member) => void;
   onAssignRole?: (member: Member) => void;
-
 }
 
 // Komponenta za prikaz tablice članova
@@ -52,24 +41,20 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   onViewDetails,
   onAssignPassword,
   onAssignRole,
-
-
-
-
 }) => {
   const { t } = useTranslation();
-  
+
   // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
-  const getMembershipStatusColor = (displayStatus: string): string => {
-    switch (displayStatus) {
-      case "Redovni član":
-      case "Počasni član":
-      case "Podržavajući član":
+  const getMembershipStatusColor = (statusKey: string): string => {
+    switch (statusKey) {
+      case "regularMember":
+      case "honoraryMember":
+      case "supportingMember":
         return "text-green-700 bg-green-100";
-      case "Bivši član":
+      case "formerMember":
         return "text-red-700 bg-red-100";
-      case "Na čekanju":
+      case "pending":
         return "text-yellow-700 bg-yellow-100";
       default:
         return "text-gray-700 bg-gray-100";
@@ -82,7 +67,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
     let baseClass = "hover:bg-gray-50";
 
     // Dohvati status člana
-    const displayStatus = getMembershipDisplayStatus(
+    const status = getMembershipDisplayStatus(
       member.detailedStatus,
       !!isAdmin,
       !!isSuperuser,
@@ -91,7 +76,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
     );
 
     // Samo za redovne članove primijeni bojanje prema životnom statusu
-    if (displayStatus === "Redovni član") {
+    if (status.key === "regularMember") {
       const lifeStatus = member.life_status;
 
       switch (lifeStatus) {
@@ -119,7 +104,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
     isSuperuser: boolean,
     membershipType?: string,
     periods?: MembershipPeriod[]
-  ): string {
+  ): { key: string; displayText: string } {
     return getMembershipDisplayStatusExternal(
       detailedStatus,
       isAdmin,
@@ -135,7 +120,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
   const renderActionButtons = (member: MemberWithDetails) => {
     // Dohvati status člana
-    const displayStatus = getMembershipDisplayStatus(
+    const status = getMembershipDisplayStatus(
       member.detailedStatus,
       !!isAdmin,
       !!isSuperuser,
@@ -149,7 +134,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
         style={{ minWidth: "120px" }}
       >
         <div style={{ width: "32px", textAlign: "center" }}>
-          {displayStatus === t('membershipStatus.pending') && (
+          {status.key === 'pending' && (
             <Button
               variant="ghost"
               size="sm"
@@ -308,25 +293,24 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       </div>
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center print:hidden ${getLifeStatusColor(member)}`}>
-                      <span
-                        className={`${getMembershipStatusColor(
-                          getMembershipDisplayStatus(
+                      {
+                        (() => {
+                          const status = getMembershipDisplayStatus(
                             member.detailedStatus,
                             !!isAdmin,
                             !!isSuperuser,
                             member.membership_type,
                             member.periods
-                          )
-                        )} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
-                      >
-                        {getMembershipDisplayStatus(
-                          member.detailedStatus,
-                          !!isAdmin,
-                          !!isSuperuser,
-                          member.membership_type,
-                          member.periods
-                        )}
-                      </span>
+                          );
+                          return (
+                            <span
+                              className={`${getMembershipStatusColor(status.key)} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
+                            >
+                              {status.displayText}
+                            </span>
+                          );
+                        })()
+                      }
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {formatMinutesToHoursAndMinutes(member.total_hours)}
@@ -376,25 +360,24 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       </div>
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center print:hidden ${getLifeStatusColor(member)}`}>
-                      <span
-                        className={`${getMembershipStatusColor(
-                          getMembershipDisplayStatus(
+                      {
+                        (() => {
+                          const status = getMembershipDisplayStatus(
                             member.detailedStatus,
                             !!isAdmin,
                             !!isSuperuser,
                             member.membership_type,
                             member.periods
-                          )
-                        )} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
-                      >
-                        {getMembershipDisplayStatus(
-                          member.detailedStatus,
-                          !!isAdmin,
-                          !!isSuperuser,
-                          member.membership_type,
-                          member.periods
-                        )}
-                      </span>
+                          );
+                          return (
+                            <span
+                              className={`${getMembershipStatusColor(status.key)} px-3 py-1.5 text-xs font-medium rounded-full inline-block`}
+                            >
+                              {status.displayText}
+                            </span>
+                          );
+                        })()
+                      }
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
                       {formatMinutesToHoursAndMinutes(member.total_hours)}

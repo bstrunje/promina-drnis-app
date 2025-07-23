@@ -163,22 +163,25 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
         [member.member_id]
       );
       
-      const activeCount = parseInt(activePeriods.rows[0].active_count);
-      
-      // Dohvati zatvorene periode članstva (s end_date i end_reason)
-      const hasClosedPeriods = await db.query(
-        'SELECT EXISTS(SELECT 1 FROM membership_periods WHERE member_id = $1 AND end_date IS NOT NULL AND end_reason IS NOT NULL) as has_closed',
+      const allPeriods = await db.query(
+        'SELECT COUNT(*) as total_count FROM membership_periods WHERE member_id = $1',
         [member.member_id]
       );
-      
+      const totalPeriodsCount = parseInt(allPeriods.rows[0].total_count);
+
+      const activeCount = parseInt(activePeriods.rows[0].active_count);
+
       // Odredi koji status član treba imati
-      let shouldBeStatus = 'pending';  // Default za nove članove
-      
-      if (activeCount > 0) {
-        // Ima aktivnih perioda - treba biti 'registered'
+      let shouldBeStatus = 'inactive'; // Default je neaktivan ako ima povijest
+
+      if (totalPeriodsCount === 0) {
+        // Ako nema nikakvih perioda, član je na čekanju
+        shouldBeStatus = 'pending';
+      } else if (activeCount > 0) {
+        // Ako ima barem jedan aktivan period, član je registriran
         shouldBeStatus = 'registered';
-      } // Nema aktivnih perioda, ali ima zatvorenih - status 'inactive' je izveden, NE zapisuje se u tablicu
-      // shouldBeStatus ostaje 'pending' ili 'registered'
+      } 
+      // Ako ima periode, ali nijedan nije aktivan, ostaje 'inactive'
       
       // Ažuriraj status ako nije ispravan
       if (member.status !== shouldBeStatus) {

@@ -24,4 +24,9 @@ export interface MemberWithDetails extends Member {
   isActive?: boolean;
   feeStatus?: 'current' | 'payment required';
   periods?: MembershipPeriod[];
+  /**
+   * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
+   * Višestruke vrijednosti odvojene zarezom, npr. "Predsjednik, Tajnik"
+   */
+  functions_in_society?: string;
 }

@@ -5,11 +5,10 @@ import {
   Filter, 
   Search, 
   XCircle,
-
   Palette,
   CheckCircle2
 } from 'lucide-react';
-import { Button } from '@components/ui/button';
+import { Button } from '@components/ui/button'; // Promijenio @ putanju
 import { Input } from '@components/ui/input';
 import { 
   Select, 
@@ -20,17 +19,23 @@ import {
 } from '@components/ui/select';
 import { useTranslation } from 'react-i18next';
 
+// Definirani tipovi za bolju type safety
+type SortOrder = 'asc' | 'desc';
+type SortCriteria = 'name' | 'hours';
+type ActiveFilter = 'all' | 'active' | 'passive' | 'paid' | 'unpaid';
+type AgeFilter = 'all' | 'adults';
+
 export interface MemberListFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  activeFilter: string;
-  onActiveFilterChange: (value: string) => void;
-  ageFilter: string;
-  onAgeFilterChange: (value: string) => void;
-  sortCriteria: string;
-  onSortCriteriaChange: (value: string) => void;
-  sortOrder: string;
-  onSortOrderChange: (value: string) => void;
+  activeFilter: ActiveFilter;
+  onActiveFilterChange: (value: ActiveFilter) => void;
+  ageFilter: AgeFilter;
+  onAgeFilterChange: (value: AgeFilter) => void;
+  sortCriteria: SortCriteria;
+  onSortCriteriaChange: (value: SortCriteria) => void;
+  sortOrder: SortOrder;
+  onSortOrderChange: (value: SortOrder) => void;
   groupType: string;
   onGroupTypeChange: (value: string) => void;
   showOnlyColored?: boolean;
@@ -41,7 +46,7 @@ export interface MemberListFiltersProps {
 /**
  * Komponenta za filtere i pretraživanje članova
  */
-export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
+const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   searchTerm,
   onSearchChange,
   activeFilter,
@@ -54,15 +59,37 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onSortOrderChange,
   groupType,
   onGroupTypeChange,
-  showOnlyColored,
+  showOnlyColored = false, // Dodana default vrijednost
   onToggleColoredRows,
   onCloseFilters
 }) => {
   const { t } = useTranslation();
+
+  // Handler funkcije s boljim tipovima
+  const handleActiveFilterChange = (value: string) => {
+    onActiveFilterChange(value as ActiveFilter);
+    onCloseFilters?.();
+  };
+
+  const handleSortCriteriaChange = (value: string) => {
+    onSortCriteriaChange(value as SortCriteria);
+    onCloseFilters?.();
+  };
+
+  const handleSortOrderToggle = () => {
+    onSortOrderChange(sortOrder === "asc" ? "desc" : "asc");
+  };
+
+  const handleAgeFilterToggle = () => {
+    onAgeFilterChange(ageFilter === "adults" ? "all" : "adults");
+  };
+
+  const handleGroupToggle = () => {
+    onGroupTypeChange(groupType ? "" : "true");
+  };
   
   return (
     <div className="flex flex-col md:flex-row gap-4">
-      {/* Reorganizirani filteri za bolji mobilni prikaz */}
       <div className="flex flex-wrap md:flex-row flex-col gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 w-full">
         {/* Tražilica */}
         <div className="flex-1 md:max-w-[250px]">
@@ -88,16 +115,12 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
           </div>
         </div>
         
+        {/* Status filteri */}
         <div className="flex flex-col">
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
             <Select
               value={activeFilter}
-              onValueChange={(value: string) => {
-                onActiveFilterChange(value);
-                if (onCloseFilters) {
-                  onCloseFilters();
-                }
-              }}
+              onValueChange={handleActiveFilterChange}
             >
               <SelectTrigger className="w-full md:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
@@ -115,8 +138,10 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
             <Button
               variant={ageFilter === "adults" ? "default" : "outline"}
               size="sm"
-              onClick={() => onAgeFilterChange(ageFilter === "adults" ? "all" : "adults")}
-              title={ageFilter === "adults" ? t('memberListFilters.tooltips.showAllMembers') : t('memberListFilters.tooltips.showOnlyAdults')}
+              onClick={handleAgeFilterToggle}
+              title={ageFilter === "adults" 
+                ? t('memberListFilters.tooltips.showAllMembers') 
+                : t('memberListFilters.tooltips.showOnlyAdults')}
               className="min-w-[50px] md:min-w-[130px]"
             >
               <span>{t('memberListFilters.buttons.adults')}</span>
@@ -124,17 +149,13 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
           </div>
         </div>
         
+        {/* Sortiranje */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <div className="flex-1">
               <Select
                 value={sortCriteria}
-                onValueChange={(value: string) => {
-                  onSortCriteriaChange(value);
-                  if (onCloseFilters) {
-                    onCloseFilters();
-                  }
-                }}
+                onValueChange={handleSortCriteriaChange}
               >
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder={t('memberListFilters.filters.sortBy')} />
@@ -149,8 +170,10 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
-              title={sortOrder === "asc" ? t('memberListFilters.tooltips.sortDescending') : t('memberListFilters.tooltips.sortAscending')}
+              onClick={handleSortOrderToggle}
+              title={sortOrder === "asc" 
+                ? t('memberListFilters.tooltips.sortDescending') 
+                : t('memberListFilters.tooltips.sortAscending')}
               className="w-10 h-10 p-0 flex-shrink-0"
             >
               {sortOrder === "asc" ? (
@@ -162,13 +185,16 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
           </div>
         </div>
         
+        {/* Grupiranje i boje */}
         <div className="flex flex-col">
           <div className="flex gap-2">
             <Button
               variant={groupType ? "default" : "outline"}
               size="sm"
-              onClick={() => onGroupTypeChange(groupType ? "" : "true")}
-              title={groupType ? t('memberListFilters.tooltips.disableGrouping') : t('memberListFilters.tooltips.groupByMemberType')}
+              onClick={handleGroupToggle}
+              title={groupType 
+                ? t('memberListFilters.tooltips.disableGrouping') 
+                : t('memberListFilters.tooltips.groupByMemberType')}
               className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
             >
               <span className="whitespace-nowrap">{t('memberListFilters.buttons.group')}</span>
@@ -179,7 +205,9 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 variant={showOnlyColored ? "default" : "outline"}
                 size="sm"
                 onClick={onToggleColoredRows}
-                title={showOnlyColored ? t('memberListFilters.tooltips.showAllMembers') : t('memberListFilters.tooltips.showOnlyColoredRows')}
+                title={showOnlyColored 
+                  ? t('memberListFilters.tooltips.showAllMembers') 
+                  : t('memberListFilters.tooltips.showOnlyColoredRows')}
                 className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
               >
                 <Palette className="h-4 w-4 mr-1" />
@@ -189,8 +217,6 @@ export const MemberListFilters: React.FC<MemberListFiltersProps> = ({
           </div>
         </div>
       </div>
-      
-      {/* Gumb za spremanje filtera je uklonjen. Filteri se sada primjenjuju odmah pri odabiru. */}
     </div>
   );
 };

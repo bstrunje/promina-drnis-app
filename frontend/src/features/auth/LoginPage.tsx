@@ -310,7 +310,7 @@ const LoginPage = () => {
               className="w-28 h-28 mx-auto rounded-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-bold">Planinarsko društvo "Promina" Drniš</h2>
+          <h2 className="text-2xl font-bold">{t('login.clubTitle', 'Planinarsko društvo "Promina" Drniš')}</h2>
         </div>
 
         <div className="p-6 bg-blue-600 text-white text-center">
@@ -320,14 +320,14 @@ const LoginPage = () => {
         <div className="px-6 py-4 bg-gray-50 border-b">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-medium text-gray-700">
-              Važni dokumenti
+              {t('login.importantDocuments', 'Važni dokumenti')}
             </h3>
             <button
               onClick={() => setShowDocuments(!showDocuments)}
               className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
             >
               <FileText className="w-4 h-4 mr-1" />
-              {showDocuments ? "Sakrij" : "Prikaži"} Dokumente
+              {showDocuments ? t('login.hideDocuments', 'Sakrij Dokumente') : t('login.showDocuments', 'Prikaži Dokumente')}
             </button>
           </div>
 
@@ -361,7 +361,7 @@ const LoginPage = () => {
         <div className="p-6">
           {isRegistering ? (
             <form onSubmit={(e) => { void handleRegister(e); }} className="space-y-4">
-              <h2 className="text-2xl font-bold mb-4">Postani novi član</h2>
+              <h2 className="text-2xl font-bold mb-4">{t('login.registerTitle', 'Postani novi član')}</h2>
               
               {/* Prikaz poruke o grešci ili uspjehu */}
               {message && (
@@ -378,7 +378,7 @@ const LoginPage = () => {
                     className="mt-1 h-4 w-4 text-blue-600"
                   />
                   <span className="ml-2 text-sm text-gray-600">
-                    Pročitah i prihvaćam Etički kodeks, Pravila o zaštiti podataka i Pravilnik o članstvu
+                    {t('login.acceptTerms', 'Pročitah i prihvaćam Etički kodeks, Pravila o zaštiti podataka i Pravilnik o članstvu')}
                   </span>
                 </label>
               </div>
@@ -386,7 +386,7 @@ const LoginPage = () => {
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Ime
+                  {t('login.firstName', 'Ime')}
                 </label>
                 <input
                   type="text"
@@ -405,7 +405,7 @@ const LoginPage = () => {
               {/* Surname */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Prezime
+                  {t('login.lastName', 'Prezime')}
                 </label>
                 <input
                   type="text"
@@ -424,7 +424,7 @@ const LoginPage = () => {
               {/* Gender */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Spol
+                  {t('login.gender', 'Spol')}
                 </label>
                 <select
                   name="gender"
@@ -447,7 +447,7 @@ const LoginPage = () => {
               {/* Date of birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Datum rođenja
+                  {t('login.birthDate', 'Datum rođenja')}
                 </label>
                 <input
                   type="date"
@@ -466,7 +466,7 @@ const LoginPage = () => {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Ulica i broj
+                  {t('login.address', 'Ulica i broj')}
                 </label>
                 <input
                   type="text"
@@ -485,7 +485,7 @@ const LoginPage = () => {
               {/* City/town */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Grad/mjesto
+                  {t('login.city', 'Grad/mjesto')}
                 </label>
                 <input
                   type="text"
@@ -501,13 +501,13 @@ const LoginPage = () => {
               {/* OIB */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  OIB
+                  {t('login.oib', 'OIB')}
                 </label>
                 <input
                   type="text"
                   required
                   pattern="[0-9]{11}"
-                  title="OIB must be exactly 11 digits"
+                  title={t('login.oibError', 'OIB must be exactly 11 digits')}
                   className="mt-2 p-2 w-full border rounded"
                   value={registerData.oib}
                   onChange={(e) =>
@@ -519,7 +519,7 @@ const LoginPage = () => {
               {/* Mobile phone number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Mobitel
+                  {t('login.cellPhone', 'Mobitel')}
                 </label>
                 <input
                   type="tel"
@@ -538,7 +538,7 @@ const LoginPage = () => {
               {/* E-mail */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  E-mail
+                  {t('login.email', 'E-mail')}
                 </label>
                 <input
                   type="email"
@@ -554,7 +554,7 @@ const LoginPage = () => {
               {/* Life status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Životni status
+                  {t('login.lifeStatus', 'Životni status')}
                 </label>
                 <select
                   required
@@ -571,7 +571,7 @@ const LoginPage = () => {
                     })
                   }
                 >
-                  <option value="">Select status</option>
+                  <option value="">{t('login.lifeStatusPlaceholder', 'Odaberite status')}</option>
                   <option value="employed/unemployed">{t('options.lifeStatus.employed')}</option>
                   <option value="child/pupil/student">{t('options.lifeStatus.child')}</option>
                   <option value="pensioner">{t('options.lifeStatus.pensioner')}</option>
@@ -581,7 +581,7 @@ const LoginPage = () => {
               {/* T-shirt */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Majica
+                  {t('login.tShirt', 'Majica')}
                 </label>
                 <select
                   required
@@ -602,7 +602,7 @@ const LoginPage = () => {
                     })
                   }
                 >
-                  <option value="">Select size</option>
+                  <option value="">{t('login.tShirtPlaceholder', 'Odaberite veličinu')}</option>
                   {sizeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -614,7 +614,7 @@ const LoginPage = () => {
               {/* Shell jacket */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Flis jakna
+                  {t('login.shellJacket', 'Flis jakna')}
                 </label>
                 <select
                   required
@@ -635,7 +635,7 @@ const LoginPage = () => {
                     })
                   }
                 >
-                  <option value="">Select size</option>
+                  <option value="">{t('login.shellJacketPlaceholder', 'Odaberite veličinu')}</option>
                   {sizeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -680,7 +680,7 @@ const LoginPage = () => {
                   }}
                   className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Natrag
+                  {t('login.backButton', 'Natrag')}
                 </button>
                 <button
                   type="submit"
@@ -691,11 +691,11 @@ const LoginPage = () => {
                   }`}
                 >
                   {loading ? (
-                    <span>Registering...</span>
+                    <span>{t('login.registering', 'Registering...')}</span>
                   ) : (
                     <span className="flex items-center">
                       <LogIn className="w-5 h-5 mr-2" />
-                      Upiši se
+                      {t('login.registerButton', 'Upiši se')}
                     </span>
                   )}
                 </button>
@@ -716,7 +716,7 @@ const LoginPage = () => {
                     onClick={() => setStep(1)}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Prijavi se
+                    {t('login.loginButton', 'Prijavi se')}
                   </button>
                   <button
                     onClick={() => {
@@ -725,7 +725,7 @@ const LoginPage = () => {
                     }}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Hoćeš postati član Planinarskog društva Promina Drniš? Upiši se
+                    {t('login.registerLink', 'Hoćeš postati član Planinarskog društva Promina Drniš? Upiši se')}
                   </button>
                 </div>
               )}
@@ -740,14 +740,14 @@ const LoginPage = () => {
                 >
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email adresa
+                      {t('login.emailLabel', 'Email adresa')}
                     </label>
                     <input
                       type="email"
                       name="email"
                       id="email"
                       required
-                      placeholder="Unesite vašu email adresu"
+                      placeholder={t('login.emailPlaceholder', 'Unesite vašu email adresu')}
                       className="mt-1 p-2 w-full border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={loginData.email} // Pristup email svojstvu - sada ispravno
                       autoComplete="email"
@@ -761,13 +761,13 @@ const LoginPage = () => {
                       onClick={() => setStep(0)}
                       className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Natrag
+                      {t('login.backButton', 'Natrag')}
                     </button>
                     <button
                       type="submit"
                       className="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Dalje
+                      {t('login.nextButton', 'Dalje')}
                     </button>
                   </div>
                 </form>
@@ -777,7 +777,7 @@ const LoginPage = () => {
                 <form onSubmit={(e) => { void handleLogin(e); }} className="space-y-4">
                   {error && (
                     <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                      <p className="font-bold">Login Failed</p>
+                      <p className="font-bold">{t('login.errorTitle', 'Prijava neuspješna')}</p>
                       <p>{error}</p>
                     </div>
                   )}
@@ -787,7 +787,7 @@ const LoginPage = () => {
                         type={showPassword ? "text" : "password"}
                         name="password"
                         required
-                        placeholder="Enter your password"
+                        placeholder={t('login.passwordPlaceholder', 'Unesite vašu lozinku')}
                         className="mt-2 p-2 w-full border rounded"
                         value={loginData.password}
                         autoComplete="new-password"
@@ -813,7 +813,7 @@ const LoginPage = () => {
                       onClick={() => setStep(1)}
                       className="w-1/2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Natrag
+                      {t('login.backButton', 'Natrag')}
                     </button>
                     <button
                       type="submit"
@@ -823,11 +823,11 @@ const LoginPage = () => {
                       }`}
                     >
                       {loading ? (
-                        <span>Signing in...</span>
+                        <span>{t('login.loggingIn', 'Prijava...')}</span>
                       ) : (
                         <span className="flex items-center">
                           <LogIn className="w-5 h-5 mr-2" />
-                          Sign In
+                          {t('login.loginButton', 'Prijavi se')}
                         </span>
                       )}
                     </button>
@@ -848,7 +848,7 @@ const LoginPage = () => {
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Već jesi član? Prijavi se
+                {t('login.alreadyMember', 'Već jesi član? Prijavi se')}
               </button>
             )}
           </div>

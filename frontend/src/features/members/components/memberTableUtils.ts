@@ -5,7 +5,7 @@ import { DetailedMembershipStatus, findLastEndedPeriod, hasActiveMembershipPerio
 export function filterOnlyColoredRows(members: MemberWithDetails[], t?: (key: string) => string) {
   return members.filter((member) => {
     // Dohvati status člana
-    const displayStatus = getMembershipDisplayStatusExternal(
+    const status = getMembershipDisplayStatusExternal(
       member.detailedStatus,
       false, // isAdmin
       false, // isSuperuser
@@ -15,8 +15,7 @@ export function filterOnlyColoredRows(members: MemberWithDetails[], t?: (key: st
     );
 
     // Samo za redovne članove primijeni bojanje prema životnom statusu
-    const regularMemberStatus = t ? t('membershipStatus.regularMember') : 'Redovni član';
-    if (displayStatus === regularMemberStatus) {
+    if (status.key === 'regularMember') {
       const lifeStatus = member.life_status;
 
       // Vrati true ako član ima životni status koji rezultira bojanjem
@@ -49,8 +48,8 @@ export function getMembershipDisplayStatusExternal(
   membershipType?: string,
   periods?: MembershipPeriod[],
   t?: (key: string) => string
-): string {
-  if (!detailedStatus) return "";
+): { key: string; displayText: string } {
+    if (!detailedStatus) return { key: "unknown", displayText: "" };
 
   // Fallback funkcija ako t nije proslijeđena (za backward compatibility)
   const translate = t || ((key: string) => {
@@ -64,28 +63,28 @@ export function getMembershipDisplayStatusExternal(
     return fallbacks[key] || key;
   });
 
-  if (periods && !hasActiveMembershipPeriod(periods)) {
+    if (periods && !hasActiveMembershipPeriod(periods)) {
     const lastEnded = findLastEndedPeriod(periods);
-    if (lastEnded) return translate('membershipStatus.formerMember');
+    if (lastEnded) return { key: 'formerMember', displayText: translate('membershipStatus.formerMember') };
   }
 
-  if (detailedStatus.status === "pending") {
-    return translate('membershipStatus.pending');
+    if (detailedStatus.status === "pending") {
+    return { key: 'pending', displayText: translate('membershipStatus.pending') };
   }
-  if (detailedStatus.status === "registered" && membershipType === "regular") {
-    return translate('membershipStatus.regularMember');
+    if (detailedStatus.status === "registered" && membershipType === "regular") {
+    return { key: 'regularMember', displayText: translate('membershipStatus.regularMember') };
   }
-  if (detailedStatus.status === "registered" && membershipType === "honorary") {
-    return translate('membershipStatus.honoraryMember');
+    if (detailedStatus.status === "registered" && membershipType === "honorary") {
+    return { key: 'honoraryMember', displayText: translate('membershipStatus.honoraryMember') };
   }
-  if (
+    if (
     detailedStatus.status === "registered" &&
     membershipType === "supporting"
   ) {
-    return translate('membershipStatus.supportingMember');
+    return { key: 'supportingMember', displayText: translate('membershipStatus.supportingMember') };
   }
-  if (detailedStatus.status === "inactive") {
-    return translate('membershipStatus.formerMember');
+    if (detailedStatus.status === "inactive") {
+    return { key: 'formerMember', displayText: translate('membershipStatus.formerMember') };
   }
-  return "";
+  return { key: "unknown", displayText: "" };
 }
