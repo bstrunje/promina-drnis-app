@@ -183,7 +183,10 @@
       "pensioner": "Umirovljenik",
       "regular": "Redovni",
       "honorary": "Počasni",
-      "supporting": "Podupirući"
+      "supporting": "Podupirući",
+      "functionsInSocietyLabel": "Funkcije u društvu",
+      "functionsInSocietyPlaceholder": "Npr. predsjednik, tajnik, blagajnik (odvojite zarezom)",
+      "functionsInSocietyTooltip": "Upišite sve funkcije koje član ima u društvu, odvojene zarezom. Maksimalno 250 znakova."      
     },
     "membershipDetails": {
       "title": "Podaci o članstvu",
@@ -653,9 +656,6 @@
       "oib": "OIB",
       "cellPhone": "Mobitel",
       "email": "Email",
-      "functionsInSocietyLabel": "Funkcije u društvu",
-      "functionsInSocietyPlaceholder": "Npr. predsjednik, tajnik, blagajnik (odvojite zarezom)",
-      "functionsInSocietyTooltip": "Upišite sve funkcije koje član ima u društvu, odvojene zarezom. Maksimalno 250 znakova.",
       "addButton": "Dodaj člana",
       "cancelButton": "Odustani",
       "oibTitle": "OIB mora imati točno 11 znamenki"

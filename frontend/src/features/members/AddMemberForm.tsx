@@ -66,8 +66,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     registration_completed: false,
     total_hours: 0,
     skills: [],
-    other_skills: '',
-    functions_in_society: ''
+    other_skills: ''
   });
 
   const [showSkills, setShowSkills] = useState(false);
@@ -227,26 +226,6 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               </option>
             ))}
           </select>
-
-          {/* Polje za funkcije u društvu */}
-          <div className="mt-2">
-            <label htmlFor="functions_in_society" className="block text-sm font-medium mb-1">
-              {t('members.addMemberForm.functionsInSocietyLabel')}
-              <span className="text-xs text-gray-400 ml-1" title={t('members.addMemberForm.functionsInSocietyTooltip')}>
-                (?)
-              </span>
-            </label>
-            <input
-              type="text"
-              name="functions_in_society"
-              id="functions_in_society"
-              value={member.functions_in_society ?? ''}
-              onChange={handleChange}
-              placeholder={t('members.addMemberForm.functionsInSocietyPlaceholder')}
-              className="p-2 w-full border rounded"
-              maxLength={250}
-            />
-          </div>
 
           <div className="mt-2">
             <button

@@ -55,6 +55,12 @@ const memberProfileController = {
         memberId,
         req.body
       );
+
+      if (!updatedMember) {
+        res.status(404).json({ message: 'Member not found' });
+        return;
+      }
+
       if (req.user?.id) {
         await auditService.logAction(
           'UPDATE_MEMBER',

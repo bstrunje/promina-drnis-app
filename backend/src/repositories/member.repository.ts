@@ -119,6 +119,8 @@ const memberRepository = {
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
+        console.log('UPDATE MEMBER - memberData.functions_in_society:', memberData.functions_in_society);
+        console.log('UPDATE MEMBER - memberId:', memberId, 'memberData:', memberData);
         const raw = await prisma.member.update({ where: { member_id: memberId }, data: {
             first_name: memberData.first_name,
             last_name: memberData.last_name,

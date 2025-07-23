@@ -48,8 +48,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   if (!isEditing) {
     return (
       <Card>
-        <CardHeader 
-          className={canViewDetails ? "cursor-pointer hover:bg-gray-50" : ""} 
+        <CardHeader
+          className={canViewDetails ? "cursor-pointer hover:bg-gray-50" : ""}
           onClick={() => canViewDetails && setShowDetails(!showDetails)}
         >
           <CardTitle className="flex items-center justify-between">
@@ -58,8 +58,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               {t('memberProfile.personalInfo.title')}
             </div>
             {canViewDetails && (
-              showDetails ? 
-                <ChevronDown className="h-5 w-5" /> : 
+              showDetails ?
+                <ChevronDown className="h-5 w-5" /> :
                 <ChevronRight className="h-5 w-5" />
             )}
           </CardTitle>
@@ -169,7 +169,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               className="w-full p-2 border rounded"
               placeholder={t('memberProfile.personalInfo.nicknamePlaceholder')}
             />
-             </div>
+          </div>
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium mb-1">
               {t('memberProfile.personalInfo.dateOfBirth')}
@@ -273,7 +273,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-            {t('memberProfile.personalInfo.lifeStatus')}
+              {t('memberProfile.personalInfo.lifeStatus')}
             </label>
             <select
               name="life_status"
@@ -290,7 +290,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
 
-         
+
 
           {/* Add membership type dropdown */}
           <div>
@@ -352,8 +352,26 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
 
-           {/* Skills Selector */}
-           <div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {t('memberProfile.personalInfo.functionsInSocietyLabel')}
+              <span className="text-xs text-gray-400 ml-1" title={t('memberProfile.personalInfo.functionsInSocietyTooltip')}>
+                (?)
+              </span>
+            </label>
+            <input
+              type="text"
+              name="functions_in_society"
+              value={editedMember?.functions_in_society ?? ""}
+              onChange={handleChange}
+              placeholder={t('memberProfile.personalInfo.functionsInSocietyPlaceholder')}
+              className="w-full p-2 border rounded"
+              maxLength={250}
+            />
+          </div>
+
+          {/* Skills Selector */}
+          <div>
             <button
               type="button"
               onClick={() => setShowSkills(!showSkills)}

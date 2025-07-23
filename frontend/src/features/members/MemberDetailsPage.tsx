@@ -357,8 +357,10 @@ setEditedMember(memberData);
         membership_type: editedMember.membership_type,
         skills: editedMember.skills,
         other_skills: editedMember.other_skills,
+        functions_in_society: editedMember.functions_in_society,
       };
 
+      console.log('PUT /members/' + memberId + ' payload:', updateData);
       const response = await api.put(`/members/${memberId}`, updateData);
 
       if (response.data) {

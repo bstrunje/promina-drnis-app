@@ -14,8 +14,10 @@
     "setup-db": "node dist/setupDatabase.js",
     "test": "vitest run",
     "test:ui": "vitest",
-    "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev && npm run prisma:seed",
+
+    "migrate:deploy": "prisma migrate deploy && npm run prisma:seed",
+
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "backup": "node dist/scripts/backupDatabase.js",

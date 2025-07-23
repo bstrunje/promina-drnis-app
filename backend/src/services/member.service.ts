@@ -154,7 +154,7 @@ const memberService = {
         }
     },
 
-    async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member> {
+    async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member | null> {
         const { skills, ...basicMemberData } = memberData;
 
         try {
@@ -177,6 +177,7 @@ const memberService = {
                     }
                 }
 
+                console.log('[updateMember] memberToUpdate.functions_in_society neposredno prije update:', memberToUpdate.functions_in_society);
                 const updatedCoreMember = await tx.member.update({
                     where: { member_id: memberId },
                     data: {
@@ -197,6 +198,7 @@ const memberService = {
                         membership_type: memberToUpdate.membership_type ? mapMembershipTypeToEnum(memberToUpdate.membership_type) : undefined,
                         other_skills: memberToUpdate.other_skills, // Dodano polje koje je nedostajalo
                         password_hash: memberToUpdate.password_hash,
+                        functions_in_society: memberToUpdate.functions_in_society,
                     },
                 });
 

@@ -9,6 +9,8 @@ COPY package*.json ./
 # Kopiramo Prisma shemu PRIJE instalacije, jer je potrebna za 'postinstall' skriptu
 COPY prisma ./prisma/
 
+# Instaliramo build-dependencies potrebne za bcrypt i native module
+RUN apk add --no-cache python3 make g++
 # Instaliramo SVE ovisnosti, uključujući devDependencies za build proces
 RUN npm install
 

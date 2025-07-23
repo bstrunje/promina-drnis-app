@@ -52,7 +52,7 @@ export const useMemberData = () => {
   // Funkcija za uređivanje člana
   const updateMember = async (memberId: string, updatedMember: Partial<Member>) => {
     try {
-      await api.patch(`/members/${memberId}`, updatedMember);
+      await api.put(`/members/${memberId}`, updatedMember);
       toast({
         title: "Success",
         description: "Member updated successfully",

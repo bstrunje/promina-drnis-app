@@ -95,6 +95,12 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
             <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.membershipType')}</label>
             <p>{t(`membershipType.${member.membership_type}`)}</p>
           </div>
+          {member.functions_in_society && member.functions_in_society.trim() !== '' && (
+            <div>
+              <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.functionsInSocietyLabel')}</label>
+              <p>{member.functions_in_society}</p>
+            </div>
+          )}
           <div>
             <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.role')}</label>
             <p>{t(`roles.${member.role}`)}</p>
