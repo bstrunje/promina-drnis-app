@@ -15,16 +15,14 @@
     "test": "vitest run",
     "test:ui": "vitest",
     "migrate:dev": "prisma migrate dev && npm run prisma:seed",
-
     "migrate:deploy": "prisma migrate deploy && npm run prisma:seed",
-
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "backup": "node dist/scripts/backupDatabase.js",
     "restore": "node dist/scripts/restoreDatabase.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.12.0",
+    "@prisma/client": "^6.13.0",
     "@types/bcrypt": "^5.0.0",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.8",
@@ -57,10 +55,9 @@
     "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "tsconfig": "^7.0.0",
-    "typescript": "^5.6.3",
     "ts-node": "^10.9.2",
-    "prisma": "^6.12.0"
+    "tsconfig": "^7.0.0",
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
     "@eslint/js": "^8.56.0",
@@ -76,6 +73,7 @@
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-node": "^11.1.0",
     "globals": "^16.1.0",
+    "prisma": "^6.13.0",
     "supertest": "^7.1.1",
     "typescript-eslint": "^8.32.1",
     "vitest": "^3.1.3"
