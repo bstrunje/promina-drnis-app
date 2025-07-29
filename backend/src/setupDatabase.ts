@@ -16,7 +16,7 @@ export async function createInitialSystemManagerIfNeeded(tx: Prisma.TransactionC
   console.info('Creating initial system manager...');
   const username = process.env.INITIAL_SYSTEM_MANAGER_USERNAME || 'systemManager';
   const email = process.env.INITIAL_SYSTEM_MANAGER_EMAIL || 'manager@example.com';
-  const defaultPassword = process.env.INITIAL_SYSTEM_MANAGER_PASSWORD || 'password123';
+  const defaultPassword = process.env.INITIAL_SYSTEM_MANAGER_PASSWORD;
   const display_name = 'System Manager';
 
   if (!defaultPassword) {
