@@ -315,7 +315,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">{t("dashboard.membership.lifeStatus")}</span>
               <span className="font-medium">
-                {fullMember.life_status ?? "N/A"}
+                {fullMember.life_status ? t(`options.lifeStatus.${fullMember.life_status}`) : "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">

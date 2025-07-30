@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -17,13 +18,7 @@ export enum ParticipantRole {
   REGULAR = 'REGULAR'
 }
 
-// Mapiranje uloga na hrvatske nazive
-const roleLabels: Record<ParticipantRole, string> = {
-  [ParticipantRole.GUIDE]: 'Vodič',
-  [ParticipantRole.ASSISTANT_GUIDE]: 'Pomoćni vodič',
-  [ParticipantRole.DRIVER]: 'Vozač',
-  [ParticipantRole.REGULAR]: 'Izletnik',
-};
+// Uloge se sada lokaliziraju putem i18next
 
 // Mapiranje uloga na postotke priznavanja
 export const rolesToRecognitionPercentage: Record<ParticipantRole, number> = {
@@ -46,6 +41,7 @@ interface MemberRoleSelectProps {
 }
 
 export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMembers, onSelectionChange }) => {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -131,7 +127,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
           <Command>
             <CommandInput 
               ref={inputRef}
-              placeholder="Pretraži i dodaj sudionike..." 
+              placeholder={t('activities.participants.searchPlaceholder')}
               value={inputValue}
               onValueChange={setInputValue}
               onFocus={() => setIsFocused(true)}
@@ -141,7 +137,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
               <div className="absolute top-full mt-1 w-full rounded-md border bg-popover p-0 text-popover-foreground shadow-md z-[100]">
                 <CommandList>
                   {inputValue && filteredMembers.length === 0 && (
-                    <CommandEmpty>Nema rezultata.</CommandEmpty>
+                    <CommandEmpty>{t('common.noResults')}</CommandEmpty>
                   )}
                   {filteredMembers.map((member) => (
                     <CommandItem
@@ -167,12 +163,12 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
         <div className="w-36">
           <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as ParticipantRole)}>
             <SelectTrigger>
-              <SelectValue placeholder="Uloga" />
+              <SelectValue placeholder={t('activities.participants.role')} />
             </SelectTrigger>
             <SelectContent>
               {Object.values(ParticipantRole).map((role) => (
                 <SelectItem key={role} value={role}>
-                  {roleLabels[role]}
+                  {t(`activities.roles.${role.toLowerCase()}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -182,7 +178,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
 
       <div className="space-y-2">
         {selectedMembers.length > 0 && (
-          <div className="text-sm text-muted-foreground mb-1">Odabrani sudionici:</div>
+          <div className="text-sm text-muted-foreground mb-1">{t('activities.participants.selectedParticipants')}:</div>
         )}
         
         {selectedMembers.length > 0 && (
@@ -201,12 +197,12 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
                       onValueChange={(value) => handleRoleChange(member.member_id.toString(), value as ParticipantRole)}
                     >
                       <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Uloga" />
+                        <SelectValue placeholder={t('activities.participants.role')} />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.values(ParticipantRole).map((role) => (
                           <SelectItem key={role} value={role}>
-                            {roleLabels[role]}
+                            {t(`activities.roles.${role.toLowerCase()}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -222,7 +218,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
         )}
         
         {selectedMembers.length === 0 && (
-          <div className="text-sm text-muted-foreground">Dodajte sudionike iz liste.</div>
+          <div className="text-sm text-muted-foreground">{t('activities.participants.addFromList')}</div>
         )}
       </div>
     </div>

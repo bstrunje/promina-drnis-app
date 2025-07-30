@@ -6,6 +6,7 @@
     "warning": "Upozorenje",
     "save": "Spremi",
     "cancel": "Odustani",
+    "noResults": "Nema rezultata.",
     "saving": "Spremanje...",
     "edit": "Uredi",
     "delete": "Obriši",
@@ -377,7 +378,9 @@
     "lifeStatus": {
       "employed": "Zaposlen/Nezaposlen",
       "child": "Dijete/Učenik/Student",
-      "pensioner": "Umirovljenik"
+      "pensioner": "Umirovljenik",
+      "employed/unemployed": "Zaposlen/Nezaposlen",
+      "child/pupil/student": "Dijete/Učenik/Student"
     },
     "gender": {
       "male": "Muški",
@@ -478,6 +481,11 @@
     }
   },
   "activities": {
+    "allMyActivities": "Sve moje aktivnosti",
+    "totalActivities": "Ukupno aktivnosti",
+    "totalHours": "Ukupno sati",
+    "recentActivities": "Nedavne aktivnosti",
+    "inLast30Days": "U zadnjih 30 dana",
     "admin": {
       "title": "Administracija aktivnosti",
       "addNewActivity": "Dodaj novu aktivnost",
@@ -510,10 +518,56 @@
       "driver": "Vozač",
       "regular": "Sudionik"
     },
+    "participants": {
+      "searchPlaceholder": "Pretraži i dodaj sudionike...",
+      "role": "Uloga",
+      "selectedParticipants": "Odabrani sudionici",
+      "addFromList": "Dodajte sudionike iz liste."
+    },
+    "types": {
+      "akcija-drustvo": "Akcija Društvo",
+      "akcija-trail": "Akcija Trail",
+      "dezurstva": "Dežurstva",
+      "izleti": "Izleti",
+      "razno": "Razno",
+      "sastanci": "Sastanci"
+    },
+    "descriptions": {
+      "akcija-drustvo": "Radne akcije u organizaciji Društva",
+      "akcija-trail": "Radne akcije za Trail",
+      "dezurstva": "Dežurstva u domu",
+      "izleti": "Organizacija, vođenje i sudjelovanje na izletima",
+      "razno": "Ostale razne aktivnosti",
+      "sastanci": "Sastanci članova i upravnog odbora"
+    },
     "creation": {
+      "title": "Kreiraj novu aktivnost",
+      "description": "Ispunite detalje za novu aktivnost",
+      "activityType": "Tip aktivnosti",
+      "selectActivityType": "Odaberite tip aktivnosti",
+      "descriptionLabel": "Opis aktivnosti",
+      "descriptionPlaceholder": "Npr. Uspon na Dinaru",
+      "startDate": "Datum početka",
+      "startTime": "Vrijeme početka",
+      "actualStartDate": "Stvarni datum početka",
+      "actualStartTime": "Stvarno vrijeme početka",
+      "actualEndDate": "Stvarni datum završetka",
+      "actualEndTime": "Stvarno vrijeme završetka",
+      "manualHours": "Ručni unos sati",
+      "manualHoursPlaceholder": "Npr. 2.5 za 2 sata i 30 minuta",
+      "recognitionPercentage": "Postotak priznavanja",
+      "participants": "Sudionici",
+      "required": "Obavezno",
       "success": "Uspjeh",
       "activityCreated": "Aktivnost je uspješno kreirana.",
-      "error": "Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno."
+      "error": "Nije uspjelo kreiranje aktivnosti. Pokušajte ponovno.",
+      "loadingTypes": "Učitavanje tipova aktivnosti...",
+      "validation": {
+        "descriptionRequired": "Opis je obavezan",
+        "startDateRequired": "Datum početka je obavezan",
+        "startTimeRequired": "Vrijeme početka je obavezno",
+        "activityTypeRequired": "Tip aktivnosti je obavezan"
+      }
     },
     "confirmCancellation": "Potvrdi otkazivanje",
     "totalHoursInYear": "Ukupno odrađenih sati u {{year}}. godini",
@@ -559,7 +613,7 @@
     },
     "members": {
       "members": "Članovi",
-      "totalActiveMembers": "Ukupno aktivnih članova",
+      "totalActiveMembers": "Ukupno redovnih članova",
       "registered": "registrirano",
       "active": "aktivno"
     },

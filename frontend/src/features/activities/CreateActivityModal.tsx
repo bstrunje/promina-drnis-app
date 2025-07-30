@@ -39,6 +39,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const [manualHours, setManualHours] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   
   // Dodajemo stanje za tipove aktivnosti i odabrani tip
@@ -94,10 +95,19 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   const isExcursion = activityTypes.find(type => type.type_id.toString() === activityTypeId)?.key === 'izleti';
 
   const handleSubmit = async () => {
-    if (!description || !startDate || !startTime || !selectedTypeId) {
-      setError('Opis, datum početka i tip aktivnosti su obavezni.');
+    const newFieldErrors: Record<string, string> = {};
+    
+    if (!description) newFieldErrors.description = 'Opis je obavezan';
+    if (!startDate) newFieldErrors.startDate = 'Datum početka je obavezan';
+    if (!startTime) newFieldErrors.startTime = 'Vrijeme početka je obavezno';
+    if (!selectedTypeId) newFieldErrors.selectedTypeId = 'Tip aktivnosti je obavezan';
+    
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
       return;
     }
+    
+    setFieldErrors({});
     setIsLoading(true);
     setError(null);
 
@@ -176,79 +186,98 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Kreiraj novu aktivnost</DialogTitle>
-          <DialogDescription>Ispunite detalje za novu aktivnost.</DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">{t('activities.creation.title')}</DialogTitle>
+          <DialogDescription>{t('activities.creation.description')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
           {/* Odabir tipa aktivnosti */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="activityType" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Tip aktivnosti
+              {t('activities.creation.activityType')}
             </Label>
             <div className="sm:col-span-3">
-              <Select value={selectedTypeId} onValueChange={setSelectedTypeId} disabled={loadingTypes}>
-                <SelectTrigger id="activityType">
-                  <SelectValue placeholder="Odaberite tip aktivnosti" />
+              <Select value={selectedTypeId} onValueChange={(value) => {
+                setSelectedTypeId(value);
+                setFieldErrors(prev => ({ ...prev, selectedTypeId: '' }));
+              }} disabled={loadingTypes}>
+                <SelectTrigger className={fieldErrors.selectedTypeId ? 'border-red-500' : ''}>
+                  <SelectValue placeholder={t('activities.creation.selectActivityType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {activityTypes.map((type) => (
                     <SelectItem key={type.type_id} value={String(type.type_id)}>
-                      {type.name}
+                      {t(`activities.types.${type.key}`).toUpperCase()}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {loadingTypes && <p className="text-sm text-muted-foreground mt-1">Učitavanje tipova aktivnosti...</p>}
+              {fieldErrors.selectedTypeId && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.activityTypeRequired')}</p>}
+              {loadingTypes && <p className="text-sm text-muted-foreground mt-1">{t('activities.creation.loadingTypes')}</p>}
             </div>
           </div>
             
           {/* Opis aktivnosti */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="description" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Opis
+              {t('activities.creation.descriptionLabel')}
             </Label>
-            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3" required />
+            <div className="sm:col-span-3">
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setFieldErrors(prev => ({ ...prev, description: '' }));
+                }}
+                placeholder={t('activities.creation.descriptionPlaceholder')}
+                className={`w-full ${fieldErrors.description ? 'border-red-500' : ''}`}
+              />
+              {fieldErrors.description && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.descriptionRequired')}</p>}
+            </div>
           </div>
 
-          {/* Polje za datum početka */}
+          {/* Datum početka */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="startDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Datum početka
+              {t('activities.creation.startDate')}
             </Label>
-            <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={e => {
-                  setStartDate(e.target.value);
-                  // Provjeravamo je li unesena godina četveroznamenkasta prije skoka
-                  if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
-                    startTimeRef.current?.focus();
-                  }
-                }}
-                className="w-auto"
-                required
-              />
-              <Input
-                id="startTime"
-                type="time"
-                ref={startTimeRef}
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-                className="w-auto"
-                required
-              />
-              <Button type="button" variant="outline" size="icon" onClick={() => handleSetNow(setStartDate, setStartTime)}>
-                <Clock className="h-4 w-4" />
-              </Button>
+            <div className="sm:col-span-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, startDate: '' }));
+                    }}
+                    className={fieldErrors.startDate ? 'border-red-500' : ''}
+                  />
+                  {fieldErrors.startDate && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.startDateRequired')}</p>}
+                </div>
+                <div className="flex-1">
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, startTime: '' }));
+                    }}
+                    className={fieldErrors.startTime ? 'border-red-500' : ''}
+                    ref={startTimeRef}
+                  />
+                  {fieldErrors.startTime && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.startTimeRequired')}</p>}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Polje za stvarni početak */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="actualStartDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Stvarni početak
+              {t('activities.creation.actualStartDate')}
             </Label>
             <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
@@ -305,7 +334,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Polje za stvarni završetak */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="actualEndDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Stvarni završetak
+              {t('activities.creation.actualEndDate')}
             </Label>
             <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
@@ -362,7 +391,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Polje za ručni unos sati */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="manualHours" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              Ručni unos sati
+              {t('activities.creation.manualHours')}
             </Label>
             <div className="sm:col-span-3 flex items-center gap-2">
               <Input
@@ -370,7 +399,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 type="number"
                 min="0"
                 step="0.5"
-                placeholder="Npr. 2.5 za 2 sata i 30 minuta"
+                placeholder={t('activities.creation.manualHoursPlaceholder')}
                 value={manualHours}
                 onChange={e => {
                   const value = e.target.value;
@@ -393,7 +422,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {!isExcursion && (
             <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
               <Label htmlFor="recognition_percentage" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-                Postotak priznavanja
+                {t('activities.creation.recognitionPercentage')}
               </Label>
               <div className="sm:col-span-3">
                 <Input
@@ -409,7 +438,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           {/* Odabir sudionika */}
           <div className="grid sm:grid-cols-4 items-start gap-1 sm:gap-4">
-            <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">Sudionici</Label>
+            <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">{t('activities.creation.participants')}</Label>
             <div className="sm:col-span-3">
               {/* Prikazujemo različite komponente ovisno o tipu aktivnosti */}
               {activityTypes.find(type => type.type_id === Number(selectedTypeId))?.key === 'izleti' ? (
@@ -426,7 +455,12 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             </div>
           </div>
 
-          {error && <p className="col-span-4 text-red-500 text-sm">{error}</p>}
+          {error && (
+            <div className="col-span-4 bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-red-700 text-sm font-medium">{t('common.error')}</p>
+              <p className="text-red-600 text-sm">{t('activities.creation.error')}</p>
+            </div>
+          )}
 
           <DialogFooter className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-0">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -13,6 +14,7 @@ interface MemberSelectProps {
 }
 
 export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, onSelectionChange }) => {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -67,7 +69,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
         <Command>
           <CommandInput 
             ref={inputRef}
-            placeholder="Pretraži i dodaj sudionike..." 
+            placeholder={t('activities.participants.searchPlaceholder')}
             value={inputValue}
             onValueChange={setInputValue}
             onFocus={() => setIsFocused(true)}
@@ -77,7 +79,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
             <div className="absolute top-full mt-1 w-full rounded-md border bg-popover p-0 text-popover-foreground shadow-md z-[100]">
               <CommandList>
                 {inputValue && filteredMembers.length === 0 && (
-                  <CommandEmpty>Nema rezultata.</CommandEmpty>
+                  <CommandEmpty>{t('common.noResults')}</CommandEmpty>
                 )}
                 {filteredMembers.map((member) => (
                   <CommandItem

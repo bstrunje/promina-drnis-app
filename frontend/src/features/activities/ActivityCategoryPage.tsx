@@ -187,11 +187,11 @@ const ActivityCategoryPage: React.FC = () => {
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <Button onClick={() => setCreateModalOpen(true)} size="sm" className="sm:text-base sm:px-4 sm:py-2">
               <PlusCircle className="mr-1 sm:mr-2 h-4 w-4" />
-              <span>Kreiraj</span>
+              <span>{t('activitiesList.create')}</span>
             </Button>
           )}
         </div>
-        {!isYearView && <p className="text-muted-foreground">{activityType?.description}</p>}
+        {!isYearView && <p className="text-sm text-muted-foreground pt-1">{t(`activities.descriptions.${activityType?.key}`)}</p>}
       </div>
 
       <div className="mb-6">
@@ -247,7 +247,7 @@ const ActivityCategoryPage: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <ActivityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                          <CardTitle className="text-base sm:text-lg">{type.name}</CardTitle>
+                          <CardTitle className="text-base sm:text-lg">{t(`activities.types.${type.key}`).toUpperCase()}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
                           {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
@@ -255,7 +255,7 @@ const ActivityCategoryPage: React.FC = () => {
                         </div>
                       </div>
                       {type.description && (
-                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{type.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{t(`activities.descriptions.${type.key}`)}</p>
                       )}
                     </CardHeader>
                     <CardFooter className="pt-2 flex flex-col gap-2 activity-card-footer">

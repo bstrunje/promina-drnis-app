@@ -574,12 +574,15 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           isSubmitting && "opacity-50"
                         )}
                       >
-                        Process Payment
+                        {t('memberProfile.feeSection.processPayment')}
                       </Button>
                     ) : (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-700">
-                          Confirm payment for {member.first_name} {member.last_name}?
+                        {t('memberProfile.feeSection.confirmPaymentQuestion', { 
+                          firstName: member?.first_name || '', 
+                          lastName: member?.last_name || '' 
+                        })}
                         </p>
                         <div className="flex space-x-2">
                           <Button
@@ -588,7 +591,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             variant="default"
                             className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                           >
-                            {isSubmitting ? "Processing..." : "Confirm"}
+                            {isSubmitting ? "Processing..." : t('common.confirm')}
                           </Button>
                           <Button
                             type="button"
@@ -596,7 +599,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             variant="outline"
                             className="flex-1 bg-red-500 hover:bg-red-600 text-white"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </Button>
                         </div>
                       </div>

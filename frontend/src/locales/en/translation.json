@@ -6,6 +6,7 @@
         "warning": "Warning",
         "save": "Save",
         "cancel": "Cancel",
+        "noResults": "No results.",
         "saving": "Saving...",
         "edit": "Edit",
         "delete": "Delete",
@@ -370,7 +371,9 @@
         "lifeStatus": {
             "employed": "Employed/Unemployed",
             "child": "Child/Pupil/Student",
-            "pensioner": "Pensioner"
+            "pensioner": "Pensioner",
+            "employed/unemployed": "Employed/Unemployed",
+            "child/pupil/student": "Child/Pupil/Student"
         },
         "gender": {
             "male": "Male",
@@ -503,10 +506,56 @@
             "driver": "Driver",
             "regular": "Participant"
         },
+        "participants": {
+            "searchPlaceholder": "Search and add participants...",
+            "role": "Role",
+            "selectedParticipants": "Selected Participants",
+            "addFromList": "Add participants from the list."
+        },
+        "types": {
+            "akcija-drustvo": "Society Action",
+            "akcija-trail": "Trail Action",
+            "dezurstva": "On-call duty",
+            "izleti": "Excursions",
+            "razno": "Miscellaneous",
+            "sastanci": "Meetings"
+        },
+        "descriptions": {
+            "akcija-drustvo": "Work actions organized by the Society",
+            "akcija-trail": "Work actions for the Trail",
+            "dezurstva": "On-call duty at the mountain hut",
+            "izleti": "Organization, guiding and participation in excursions",
+            "razno": "Other various activities",
+            "sastanci": "Meetings of members and the board"
+        },
         "creation": {
+            "title": "Create New Activity",
+            "description": "Fill in details for new activity",
+            "activityType": "Activity Type",
+            "selectActivityType": "Select activity type",
+            "descriptionLabel": "Activity Description",
+            "descriptionPlaceholder": "E.g., Climb to Dinara",
+            "startDate": "Start Date",
+            "startTime": "Start Time",
+            "actualStartDate": "Actual Start Date",
+            "actualStartTime": "Actual Start Time",
+            "actualEndDate": "Actual End Date",
+            "actualEndTime": "Actual End Time",
+            "manualHours": "Manual Hours Entry",
+            "manualHoursPlaceholder": "E.g., 2.5 for 2 hours and 30 minutes",
+            "recognitionPercentage": "Recognition Percentage",
+            "participants": "Participants",
+            "required": "Required",
             "success": "Success",
             "activityCreated": "Activity created successfully.",
-            "error": "Failed to create activity. Please try again."
+            "error": "Failed to create activity. Please try again.",
+            "loadingTypes": "Loading activity types...",
+            "validation": {
+                "descriptionRequired": "Description is required",
+                "startDateRequired": "Start date is required",
+                "startTimeRequired": "Start time is required",
+                "activityTypeRequired": "Activity type is required"
+            }
         },
         "confirmCancellation": "Confirm Cancellation",
         "totalHoursInYear": "Total hours worked in {{year}}",
@@ -552,7 +601,7 @@
         },
         "members": {
             "members": "Members",
-            "totalActiveMembers": "Total Active Members",
+            "totalActiveMembers": "Total Regular Members",
             "registered": "registered",
             "active": "active"
         },
@@ -622,15 +671,15 @@
             "save": "Save",
             "cancel": "Cancel",
             "stampTypes": {
-                "employedUnemployed": "Employed/Unemployed Members Stamps",
-                "studentPupil": "Student/Pupil Stamps",
-                "pensioner": "Pensioner Stamps"
+                "employedUnemployed": "Stamps for employed/unemployed members",
+                "studentPupil": "Stamps for pupils/students",
+                "pensioner": "Stamps for pensioners"
             },
             "fetchInventoryError": "Failed to fetch inventory",
             "fetchHistoryError": "Failed to fetch stamp history",
-            "archiveSuccess": "Inventory archived successfully",
+            "archiveSuccess": "Inventory successfully archived",
             "archiveError": "Failed to archive inventory",
-            "updatingInventory": "Updating stamp inventory in progress...",
+            "updatingInventory": "Updating stamp inventory...",
             "updateInventoryError": "Failed to update inventory",
             "inventoryUpdated": "Stamp inventory for year {{year}} successfully updated",
             "updateInventoryFailed": "Failed to update inventory",

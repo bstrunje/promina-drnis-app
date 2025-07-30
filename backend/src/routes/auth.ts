@@ -37,6 +37,19 @@ router.get('/search-members', searchRateLimit, authController.searchMembers);
 router.post('/refresh', authController.refreshToken);
 router.post('/logout', authController.logout);
 
+// Health check endpoint za provjeru valjanosti tokena
+router.get('/health', authMiddleware, (req, res) => {
+  // Ako smo došli do ovdje, token je valjan
+  res.json({ 
+    status: 'ok', 
+    authenticated: true,
+    user: req.user ? {
+      member_id: req.user.member_id,
+      role: req.user.role
+    } : null
+  });
+});
+
 // Very simple direct debug endpoint for quicker testing
 router.get('/debug-member/:id', async (req, res) => {
   try {
