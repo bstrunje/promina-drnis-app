@@ -212,7 +212,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
                 accept="image/jpeg,image/png,image/gif"
                 onChange={e => { void handleImageUpload(e); }}
                 className="hidden"
-                id="image-upload"
+                id={`profileImageUpload-${member.member_id}`}
                 disabled={isUploading}
               />
 
