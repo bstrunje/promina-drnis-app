@@ -15,7 +15,6 @@ export async function createInitialSystemManagerIfNeeded(tx: Prisma.TransactionC
 
   console.info('Creating initial system manager...');
   const username = process.env.INITIAL_SYSTEM_MANAGER_USERNAME || 'systemManager';
-  const email = process.env.INITIAL_SYSTEM_MANAGER_EMAIL || 'manager@example.com';
   const defaultPassword = process.env.INITIAL_SYSTEM_MANAGER_PASSWORD;
   const display_name = 'System Manager';
 
@@ -27,15 +26,18 @@ export async function createInitialSystemManagerIfNeeded(tx: Prisma.TransactionC
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash(defaultPassword, salt);
 
-  await tx.systemManager.create({
-    data: {
-      id: 0,
-      username,
-      email,
-      display_name,
-      password_hash,
-    },
-  });
+  const createData: any = {
+    id: 0,
+    username,
+    display_name,
+    password_hash,
+  };
+
+  if (process.env.INITIAL_SYSTEM_MANAGER_EMAIL) {
+    createData.email = process.env.INITIAL_SYSTEM_MANAGER_EMAIL;
+  }
+
+  await tx.systemManager.create({ data: createData });
 
   console.info(`Initial system manager created with username: ${username}`);
   console.warn('IMPORTANT: Please change the default password after first login!');

@@ -40,6 +40,5 @@ COPY --from=builder /usr/src/app/prisma ./prisma
 # Izlažemo port
 EXPOSE 3001
 
-# Naredba za pokretanje: prvo migracije, zatim start aplikacije
-# Koristimo 'node_modules/.bin/prisma' za direktno pozivanje
-CMD [ "sh", "-c", "npx prisma migrate deploy && npm run prisma:seed && npm start" ]
+# Naredba za pokretanje: prvo seed, zatim inicijalizacija, i na kraju start aplikacije
+CMD [ "sh", "-c", "npm run prisma:seed && node dist/run-setup.js && npm start" ]
