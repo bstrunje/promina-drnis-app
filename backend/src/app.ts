@@ -79,9 +79,6 @@ app.set('trust proxy', 1); // Vjeruj samo prvom (najbližem) proxy poslužitelju
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Definicija putanje do izgrađene frontend aplikacije
-const frontendDistPath = path.join(__dirname, '../../frontend/dist');
-
 // Basic middleware setup
 app.use(helmet());
 app.use(compression());
@@ -89,9 +86,6 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
-
-// Middleware za posluživanje statičkih datoteka iz React build direktorija
-app.use(express.static(frontendDistPath));
 
 // Set up static file serving with better error handling
 // Set up static file serving with better error handling
@@ -326,18 +320,6 @@ app.get('/api', (req: Request, res: Response) => {
       debug: '/api/debug'
     }
   });
-});
-
-// "Catch-all" ruta koja poslužuje index.html za sve ne-API zahtjeve
-// Ovo je ključno za ispravan rad React Routera (SPA)
-app.get('*', (req, res, next) => {
-  // Provjeravamo da zahtjev nije za API rutu
-  if (req.originalUrl.startsWith('/api')) {
-    // Ako je API ruta koja nije uhvaćena, prepuštamo je dalje (na 404 ili error handler)
-    return next();
-  }
-  // Za sve ostale rute, poslužujemo glavnu stranicu aplikacije
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
 // Error handling middleware

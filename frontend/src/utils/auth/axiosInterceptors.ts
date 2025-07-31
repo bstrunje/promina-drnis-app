@@ -52,102 +52,39 @@ export function setupAxiosInterceptors(
   const responseInterceptor = axios.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
-      // Osiguraj siguran pristup propertijima
-      if (!error || typeof error !== 'object') {
-        return Promise.reject(new Error('Nepoznata greška u axios interceptoru'));
-      }
-      
       if (!isAxiosError(error)) {
-        return Promise.reject(new Error('Nepoznata greška u axios interceptoru'));
-      }
-      
-      const axiosError = error;
-      // Provjeravamo ima li axiosError config property i ako ima, koristimo ga, inače stvaramo novi objekt
-      const originalConfig = axiosError.config ?? {};
-      const originalRequest: AxiosRequestConfigWithRetry = { ...originalConfig };
-
-      // Inicijaliziraj brojač pokušaja ako ne postoji
-      if (typeof originalRequest._retryCount === 'undefined') {
-        originalRequest._retryCount = 0;
+        return Promise.reject(error);
       }
 
-      // Ako je greška 401 (Unauthorized) i nismo prekoračili maksimalan broj pokušaja
-      if (
-        axiosError.response?.status === 401 &&
-        originalRequest._retryCount < MAX_REFRESH_RETRIES &&
-        token // Samo ako postoji token
-      ) {
-        originalRequest._retryCount++;
-        console.log(`Zahtjev vratio 401, pokušavam osvježiti token (pokušaj ${originalRequest._retryCount}/${MAX_REFRESH_RETRIES})...`);
+      const originalRequest: AxiosRequestConfigWithRetry = error.config || {};
 
-        try {
-          // Pokušaj osvježiti token
-          const newToken = await refreshTokenFn();
-          if (newToken) {
-            // Sigurno dodavanje Authorization headera
-            // Provjeravamo postojanje headers objekta i stvaramo novi ako ne postoji
-            if (!originalRequest.headers) {
-              originalRequest.headers = {};
-            }
-            
-            // Postavljamo Authorization header
-            originalRequest.headers = {
-              ...originalRequest.headers,
-              Authorization: `Bearer ${newToken}`
-            };
-            
-            // Ponovno šaljemo originalni zahtjev s novim tokenom
-            return axios(originalRequest as AxiosRequestConfig);
-          } else if (originalRequest._retryCount < MAX_REFRESH_RETRIES) {
-            // Ako nismo uspjeli osvježiti token, ali još imamo pokušaja
-            await delay(REFRESH_RETRY_DELAY);
-            return axios(originalRequest as AxiosRequestConfig);
+      // Ako greška nije 401 ili ako je zahtjev već bio ponovljen, ne pokušavaj ponovno.
+      if (error.response?.status !== 401 || originalRequest._retry) {
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+      console.log('Access token istekao, pokušavam ga osvježiti...');
+
+      try {
+        const newToken = await refreshTokenFn();
+        if (newToken) {
+          console.log('Token uspješno osvježen, ponavljam originalni zahtjev.');
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
           }
-        } catch (refreshError) {
-          console.error("Greška pri obnavljanju tokena u interceptoru:", refreshError);
-          
-          // Ako još imamo pokušaja, probaj ponovno
-          if (originalRequest._retryCount < MAX_REFRESH_RETRIES) {
-            await delay(REFRESH_RETRY_DELAY);
-            return axios(originalRequest as AxiosRequestConfig);
-          }
-          
-          // Centralna logika: ako refresh endpoint vrati 401, očisti refresh token iz localStorage i odmah preusmjeri na login
-          // Ovo se izvršava samo ako je refresh endpoint vratio 401, što znači da je refresh token nevažeći
-          if (axiosError.response?.status === 401 && axiosError.config && typeof axiosError.config.url === 'string' && axiosError.config.url.includes('/api/auth/refresh')) {
-            try {
-              localStorage.removeItem('refreshToken'); // Brišemo backup refresh token
-            } catch (e) {
-              // Ignoriramo grešku
-            }
-            console.log('[axiosInterceptors] Pozivam logoutFn zbog konačnog neuspjeha (refresh token nevažeći ili iscrpljeni pokušaji).');
-            await logoutFn();
-            // Nakon odjave korisnika, odmah prekidamo daljnje pokušaje i vraćamo grešku
-            return Promise.reject(error); // Nema više retryja ni refresh pokušaja nakon logouta
-          }
-          
-          // Tek nakon što smo iscrpili sve pokušaje, odjavi korisnika
-          console.log('Iscrpljeni svi pokušaji obnavljanja tokena, odjavljujem korisnika');
-          console.log('[axiosInterceptors] Pozivam logoutFn nakon što su iscrpljeni svi pokušaji obnavljanja tokena.');
+          return axios(originalRequest);
+        } else {
+          // Ako refreshTokenFn vrati null, to znači da je i refresh token nevažeći.
+          console.log('Refresh token nije valjan, odjavljujem korisnika.');
           await logoutFn();
-          // Nakon odjave korisnika, odmah prekidamo daljnje pokušaje i vraćamo grešku
-          return Promise.reject(error); // Nema više retryja ni refresh pokušaja nakon logouta
+          return Promise.reject(error);
         }
+      } catch (refreshError) {
+        console.error('Greška pri osvježavanju tokena, odjavljujem korisnika:', refreshError);
+        await logoutFn();
+        return Promise.reject(refreshError);
       }
-      
-      // Za mrežne greške koje nisu vezane za autentikaciju, također možemo pokušati ponovno
-      if (
-        (!axiosError.response || axiosError.code === 'ECONNABORTED' || axiosError.message.includes('Network Error')) &&
-        originalRequest._retryCount < MAX_REFRESH_RETRIES
-      ) {
-        originalRequest._retryCount++;
-        console.log(`Mrežna greška, pokušavam ponovno (pokušaj ${originalRequest._retryCount}/${MAX_REFRESH_RETRIES})...`);
-        
-        await delay(REFRESH_RETRY_DELAY);
-        return axios(originalRequest as AxiosRequestConfig);
-      }
-      
-      return Promise.reject(error instanceof Error ? error : new Error(JSON.stringify(error)));
     }
   );
 
