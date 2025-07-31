@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "prisma migrate deploy && prisma generate && tsc",
-    "postbuild": "node dist/run-setup.js",
+    "postbuild": "npm run prisma:seed && node dist/run-setup.js",
     "render-build": "npm install typescript && prisma migrate deploy && npm run prisma:seed && tsc -p tsconfig.production.json",
     "postinstall": "prisma generate",
     "prisma:seed": "rimraf dist/seed && tsc prisma/seed.ts --outDir dist/seed --module NodeNext --moduleResolution NodeNext --target ES2020 --esModuleInterop true --resolveJsonModule true && node dist/seed/seed.js",

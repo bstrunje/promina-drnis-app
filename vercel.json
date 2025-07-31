@@ -1,10 +1,16 @@
 {
   "version": 2,
 
+  "builds": [
+    {
+      "src": "backend/dist/server.js",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/Dockerfile"
+      "dest": "backend/dist/server.js"
     },
     {
       "src": "/((?!api/|assets/|vite.svg|_next/|favicon.ico|logo.png|manifest.json|robots.txt|sw.js).*)",
