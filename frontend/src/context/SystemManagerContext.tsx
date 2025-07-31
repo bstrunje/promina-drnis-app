@@ -65,11 +65,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
           // Eksplicitno definiramo tip parsiranog objekta
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const parsedData = JSON.parse(storedManager);
-          // Dodajemo email polje ako ga nema u parsiranim podacima
-          const parsedManager: SystemManager = {
-            ...parsedData,
-            email: parsedData.email || '' // Dodajemo email polje ako ga nema u parsiranim podacima
-          };
+          const parsedManager: SystemManager = parsedData as SystemManager;
           setManager(parsedManager);
           setIsAuthenticated(true);
           // console.log('System Manager autentikacija uspješna');
@@ -118,11 +114,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const parsedData = JSON.parse(storedManager);
-        // Dodajemo email polje ako ga nema u parsiranim podacima
-        const parsedManager: SystemManager = {
-          ...parsedData,
-          email: parsedData.email || '' // Dodajemo email polje ako ga nema u parsiranim podacima
-        };
+        const parsedManager: SystemManager = parsedData as SystemManager;
         setManager(parsedManager);
         setIsAuthenticated(true);
         // console.log('Podaci System Managera uspješno osvježeni');
@@ -147,11 +139,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
     setLoading(true);
     try {
       const response = await systemManagerLogin(credentials);
-      // Eksplicitno definiramo tip podataka iz odgovora i dodajemo email polje koje je obavezno u SystemManager tipu
-      const managerData: SystemManager = {
-        ...response.manager,
-        email: response.manager.email || '' // Dodajemo email polje ako ga nema u odgovoru
-      };
+      const managerData: SystemManager = response.manager;
 
       // KLJUČAN ISPRAVAK: Spremanje tokena i podataka u localStorage
       localStorage.setItem('systemManagerToken', response.token);

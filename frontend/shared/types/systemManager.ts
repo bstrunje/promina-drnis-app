@@ -3,7 +3,7 @@
 export interface SystemManager {
   id: number;
   username: string;
-  email: string;
+  email?: string;
   display_name: string;
   last_login?: string;
   created_at?: string;
@@ -21,7 +21,7 @@ export interface SystemManagerLoginResponse {
     id: number;
     username: string;
     display_name: string;
-    email: string;
+    email?: string;
     role?: string;
     last_login?: string;
   };
