@@ -7,7 +7,8 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "prisma generate && tsc",
+    "build": "prisma migrate deploy && prisma generate && tsc",
+    "postbuild": "node dist/run-setup.js",
     "render-build": "npm install typescript && prisma migrate deploy && npm run prisma:seed && tsc -p tsconfig.production.json",
     "postinstall": "prisma generate",
     "prisma:seed": "rimraf dist/seed && tsc prisma/seed.ts --outDir dist/seed --module NodeNext --moduleResolution NodeNext --target ES2020 --esModuleInterop true --resolveJsonModule true && node dist/seed/seed.js",
@@ -36,6 +37,7 @@
     "@types/pg": "^8.10.9",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
+    "@vercel/blob": "^1.1.1",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",

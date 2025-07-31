@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import memberService from '../services/member.service.js';
 import auditService from '../services/audit.service.js';
-import imageService from '../services/image.service.js';
 import memberRepository, { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { DatabaseUser } from '../middleware/authMiddleware.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
@@ -15,10 +14,6 @@ declare global {
       user?: DatabaseUser;
     }
   }
-}
-
-interface RequestWithFile extends Request {
-  file?: Express.Multer.File;
 }
 
 const memberProfileController = {
@@ -110,59 +105,7 @@ const memberProfileController = {
     }
   },
 
-  async uploadProfileImage(req: RequestWithFile, res: Response): Promise<void> {
-    try {
-      const memberId = parseInt(req.params.memberId, 10);
-      const file = req.file;
 
-      if (!file) {
-        res.status(400).json({ message: 'No file uploaded.' });
-        return;
-      }
-
-      const imageUrl = await imageService.processAndSaveProfileImage(file, memberId);
-
-      if (req.user?.id) {
-        await auditService.logAction(
-          'UPLOAD_PROFILE_IMAGE',
-          req.user.id,
-          `Uploaded profile image for member ${memberId}`,
-          req,
-          'success',
-          memberId,
-          req.user.performer_type
-        );
-      }
-
-      res.json({ imageUrl });
-    } catch (error) {
-      handleControllerError(error, res);
-    }
-  },
-
-  async deleteProfileImage(req: Request, res: Response): Promise<void> {
-    try {
-      const memberId = parseInt(req.params.memberId, 10);
-
-      await imageService.deleteProfileImage(memberId);
-
-      if (req.user?.id) {
-        await auditService.logAction(
-          'DELETE_PROFILE_IMAGE',
-          req.user.id,
-          `Deleted profile image for member ${memberId}`,
-          req,
-          'success',
-          memberId,
-          req.user.performer_type
-        );
-      }
-
-      res.status(200).json({ message: 'Profile image deleted successfully.' });
-    } catch (error) {
-      handleControllerError(error, res);
-    }
-  },
 
   async assignPassword(
     req: Request<

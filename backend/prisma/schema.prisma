@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model Member {
@@ -80,9 +81,9 @@ model Activity {
   name                   String
   description            String?
   type_id                Int
-  activity_type          ActivityType            @relation(fields: [type_id], references: [type_id])
+  activity_type          ActivityType            @relation(fields: [type_id], references: [type_id], onDelete: Restrict, onUpdate: Cascade)
   organizer_id           Int
-  organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id])
+  organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id], onDelete: Restrict, onUpdate: Cascade)
   status                 ActivityStatus          @default(PLANNED)
   start_date             DateTime 
   actual_start_time      DateTime? 
@@ -101,9 +102,9 @@ model Activity {
 model ActivityParticipation {
   participation_id     Int       @id @default(autoincrement())
   activity_id          Int
-  activity             Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
+  activity             Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade, onUpdate: Cascade)
   member_id            Int
-  member               Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  member               Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
   start_time           DateTime? 
   end_time             DateTime? 
   manual_hours         Float? 
@@ -131,8 +132,8 @@ model MemberSkill {
   is_instructor Boolean   @default(false)
   assigned_at   DateTime  @default(now())
 
-  member Member @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
-  skill  Skill  @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  skill  Skill  @relation(fields: [skill_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([member_id, skill_id])
   @@map("member_skills")
@@ -159,7 +160,7 @@ model MembershipDetails {
   next_year_stamp_issued Boolean?  @default(false)
   status                 String?   @default("active") @db.VarChar(20)
   active_until           DateTime? @db.Timestamp(6)
-  member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([fee_payment_year], map: "idx_membership_details_fee_payment_year")
   @@index([fee_payment_date], map: "idx_membership_details_fee_payment_date")
@@ -176,7 +177,7 @@ model MembershipPeriod {
   end_reason   String?   @db.VarChar(20)
   created_at   DateTime? @default(now()) @db.Timestamp(6)
   is_test_data Boolean?  @default(false)
-  membership   Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  membership   Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([is_test_data], map: "idx_membership_periods_test_data")
   @@map("membership_periods")
@@ -201,7 +202,7 @@ model ConsumedCardNumber {
   member_id   Int
   consumed_at DateTime @default(now())
   issued_at   DateTime
-  member      Member   @relation(fields: [member_id], references: [member_id])
+  member      Member   @relation(fields: [member_id], references: [member_id], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("consumed_card_numbers")
 }
@@ -215,8 +216,8 @@ model MemberMessage {
   recipient_id       Int?
   recipient_type     String?                  @default("member_administrator") @db.VarChar(20)
   sender_type        SenderType               @default(member)
-  member             Member?                  @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
-  sender             Member?                  @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade)
+  member             Member?                  @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  sender             Member?                  @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
   recipient_statuses MessageRecipientStatus[]
 
   @@map("member_messages")
@@ -230,8 +231,8 @@ model MessageRecipientStatus {
   read_at                     DateTime?     @db.Timestamp(6)
   created_at                  DateTime      @default(now()) @db.Timestamp(6)
   updated_at                  DateTime      @updatedAt @db.Timestamp(6)
-  message                     MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
-  member                      Member        @relation("RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade)
+  message                     MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade, onUpdate: Cascade)
+  member                      Member        @relation("RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([message_id, recipient_member_id])
   @@index([message_id])
@@ -247,7 +248,7 @@ model AnnualStatistics {
   total_activities  Int
   membership_status String    @db.VarChar(20)
   calculated_at     DateTime? @default(now()) @db.Timestamp(6)
-  member            Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction, map: "annual_statistics_member_fkey")
+  member            Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade, map: "annual_statistics_member_fkey")
 
   @@unique([member_id, year], map: "unique_member_year")
   @@index([member_id, year], map: "idx_annual_statistics_member_year")
@@ -264,7 +265,7 @@ model AuditLog {
   created_at      DateTime? @default(now()) @db.Timestamptz(6)
   status          String?   @db.VarChar(20)
   affected_member Int?
-  affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
 
   @@map("audit_logs")
 }
@@ -304,8 +305,8 @@ model MemberPermissions {
   can_view_members        Boolean?  @default(false)
   can_view_statistics     Boolean?  @default(false)
   updated_at              DateTime? @default(now()) @db.Timestamp(6)
-  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
-  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
+  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([granted_by], map: "idx_member_permissions_granted_by")
   @@index([member_id], map: "idx_member_permissions_member")
@@ -319,7 +320,7 @@ model CardNumber {
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   assigned_at DateTime? @db.Timestamptz(6)
   member_id   Int?
-  members     Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction, map: "member_fk")
+  members     Member?   @relation(fields: [member_id], references: [member_id], onDelete: SetNull, onUpdate: Cascade, map: "member_fk")
 
   @@index([member_id], map: "idx_card_numbers_member_id")
   @@index([status], map: "idx_card_numbers_status")
@@ -332,7 +333,7 @@ model password_update_queue {
   card_number String    @db.VarChar(20)
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   processed   Boolean?  @default(false)
-  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model stamp_history {
@@ -345,7 +346,7 @@ model stamp_history {
   reset_by      Int?
   notes         String?
   stamp_year    Int
-  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
 }
 
 model refresh_tokens {
@@ -354,7 +355,7 @@ model refresh_tokens {
   member_id  Int
   expires_at DateTime @db.Timestamp(6)
   created_at DateTime @default(now()) @db.Timestamp(6)
-  members    Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: NoAction)
+  members    Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([member_id], map: "idx_refresh_tokens_member_id")
 }

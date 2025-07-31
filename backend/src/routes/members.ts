@@ -1,6 +1,8 @@
 // backend/src/routes/members.ts
 import express, { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
+import { put, del } from '@vercel/blob';
+import multer from 'multer';
 import { memberController, getMemberDashboardStats } from '../controllers/member.controller.js';
 import memberProfileController from '../controllers/memberProfile.controller.js';
 import cardNumberController from '../controllers/cardnumber.controller.js';
@@ -8,12 +10,14 @@ import memberStatsController from '../controllers/memberStats.controller.js';
 import memberMessageController from '../controllers/member.message.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
-import multerConfig from '../config/upload.js';
 import { MembershipEndReason } from '../shared/types/membership.js';
 import memberService from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
 
 const router = express.Router();
+
+// Konfiguracija za Multer da koristi memoriju umjesto diska
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Public routes
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
@@ -97,25 +101,80 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
   }
 });
 
-// Profile image routes
+// Rute za profilnu sliku (Vercel Blob)
 router.post(
   '/:memberId/profile-image',
   authenticateToken,
-  function(req: express.Request, res: express.Response, next: express.NextFunction) {
-    multerConfig.single('image')(req, res, function(err: any) {
-      if (err) {
-        return res.status(400).json({ message: err.message });
+  upload.single('image'),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Slika nije priložena.' });
+    }
+
+    const { memberId } = req.params;
+    const memberIdNum = parseInt(memberId, 10);
+
+    try {
+      // Prvo obriši staru sliku ako postoji
+      const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
+      if (member?.profile_image_path) {
+        await del(member.profile_image_path);
       }
-      next();
-    });
-  },
-  memberProfileController.uploadProfileImage
+
+      const fileName = `profile-images/${memberId}-${Date.now()}-${req.file.originalname}`;
+      const blob = await put(fileName, req.file.buffer, {
+        access: 'public',
+        contentType: req.file.mimetype,
+      });
+
+      const updatedMember = await prisma.member.update({
+        where: { member_id: memberIdNum },
+        data: {
+          profile_image_path: blob.url,
+          profile_image_updated_at: new Date(),
+        },
+      });
+
+      res.json(updatedMember);
+    } catch (error) {
+      console.error('Greška pri uploadu slike na Vercel Blob:', error);
+      const message = error instanceof Error ? error.message : 'Neuspješan upload slike.';
+      res.status(500).json({ message });
+    }
+  }
 );
 
 router.delete(
   '/:memberId/profile-image',
   authenticateToken,
-  memberProfileController.deleteProfileImage
+  async (req: Request, res: Response) => {
+    const { memberId } = req.params;
+    const memberIdNum = parseInt(memberId, 10);
+
+    try {
+      const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
+
+      if (!member || !member.profile_image_path) {
+        return res.status(404).json({ message: 'Profilna slika nije pronađena.' });
+      }
+
+      await del(member.profile_image_path);
+
+      const updatedMember = await prisma.member.update({
+        where: { member_id: memberIdNum },
+        data: {
+          profile_image_path: null,
+          profile_image_updated_at: new Date(),
+        },
+      });
+
+      res.json(updatedMember);
+    } catch (error) {
+      console.error('Greška pri brisanju slike s Vercel Bloba:', error);
+      const message = error instanceof Error ? error.message : 'Neuspješno brisanje slike.';
+      res.status(500).json({ message });
+    }
+  }
 );
 
 router.get('/test', (req, res) => {
