@@ -272,18 +272,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/system-manager', systemManagerRoutes);
 app.use('/api/skills', skillRoutes);
 
-// Učitaj dev rute samo u ne-produkcijskom okruženju
-if (process.env.NODE_ENV !== 'production') {
-  import('./routes/dev.routes.js')
-    .then(devRoutesModule => {
-      app.use('/dev', devRoutesModule.default);
-      console.log('Development routes loaded.');
-    })
-    .catch(err => {
-      console.error('Failed to load development routes:', err);
-    });
-}
-
 console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
