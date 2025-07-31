@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node dist/server.js",
-    "build": "prisma migrate deploy && prisma generate && tsc",
+    "build": "prisma generate && tsc",
     "postbuild": "npm run prisma:seed && node dist/run-setup.js",
     "render-build": "npm install typescript && prisma migrate deploy && npm run prisma:seed && tsc -p tsconfig.production.json",
     "postinstall": "prisma generate",

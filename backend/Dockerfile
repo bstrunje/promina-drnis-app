@@ -41,4 +41,4 @@ COPY --from=builder /usr/src/app/prisma ./prisma
 EXPOSE 3001
 
 # Naredba za pokretanje: prvo seed, zatim inicijalizacija, i na kraju start aplikacije
-CMD [ "sh", "-c", "npm run prisma:seed && node dist/run-setup.js && npm start" ]
+CMD ["npm", "start"]
