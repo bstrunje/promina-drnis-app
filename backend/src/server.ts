@@ -40,6 +40,10 @@ console.log('📁 Loading .env from:', path.resolve(__dirname, '.env'));
 console.log('⚙️  Environment configuration:', {
     PORT: `${port} (Web Server)`,
     DATABASE_URL: process.env.DATABASE_URL ? 'Set (Hidden for security)' : 'Not set',
+    // Diagnostic log for Vercel
+    PRISMA_DATABASE_URL: process.env.PRISMA_DATABASE_URL ? 
+        `Set (Host: ${process.env.PRISMA_DATABASE_URL.split('@')[1]?.split(':')[0]}, SSL: ${new URL(process.env.PRISMA_DATABASE_URL).searchParams.get('sslmode')})` : 
+        'Not set',
     JWT_SECRET: process.env.JWT_SECRET ? 'Set (Hidden for security)' : 'Not set',
     NODE_ENV: process.env.NODE_ENV || 'development'
 });

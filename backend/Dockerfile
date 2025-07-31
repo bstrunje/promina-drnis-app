@@ -31,6 +31,8 @@ COPY package*.json ./
 # Kopiramo SVE instalirane ovisnosti iz 'builder' faze umjesto ponovne instalacije
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 
+
+
 # Kopiramo izgrađenu aplikaciju iz 'builder' faze
 COPY --from=builder /usr/src/app/dist ./dist
 
