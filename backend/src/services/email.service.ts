@@ -8,7 +8,13 @@ interface EmailParams {
     lastName: string;
 }
 
-export async function sendPasswordEmail({ to, full_name, password, firstName, lastName }: EmailParams): Promise<void> {
+export const sendPasswordEmail = async ({ to, full_name, password, firstName, lastName }: EmailParams): Promise<void> => {
+    // Ako SMTP podaci nisu postavljeni, nemoj slati email i samo zabilježi u log
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+        console.log('SMTP varijable nisu postavljene. Preskačem slanje emaila.');
+        return;
+    }
+
     // Create transporter
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
