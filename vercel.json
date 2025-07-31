@@ -1,23 +1,15 @@
 {
   "version": 2,
 
-  "builds": [
-    {
-      "src": "backend/dist/server.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/api/(.*)",
-      "dest": "backend/dist/server.js"
+      "dest": "/backend/Dockerfile"
     },
     {
-      "src": "/.*",
-      "dest": "/index.html"
+      "src": "/((?!api/|assets/|vite.svg|_next/|favicon.ico|logo.png|manifest.json|robots.txt|sw.js).*)",
+      "dest": "/index.html",
+      "check": true
     }
   ]
 }
