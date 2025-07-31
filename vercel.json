@@ -2,12 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/package.json",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["prisma/**"],
-        "buildCommand": "npm install && npx prisma generate && npx prisma migrate deploy && npx tsc"
-      }
+      "src": "backend/Dockerfile",
+      "use": "@vercel/node"
     },
     {
       "src": "frontend/package.json",
