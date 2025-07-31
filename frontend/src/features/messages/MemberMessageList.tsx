@@ -113,37 +113,30 @@ const MemberMessageList: React.FC = () => {
       const event = new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED);
       window.dispatchEvent(event);
 
-      // Dodatna provjera - malo odgodi i ponovno emitiraj događaj za osvježavanje brojača
-      // Ovo osigurava da se brojač osvježi i ako je prva emisija događaja propuštena
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED));
-      }, 500);
-
-      // Ne prikazuj toast za automatsko označavanje poruka kao pročitane
-      // jer bi to moglo zbuniti korisnika kada napušta stranicu
     } catch (error) {
-      toast({
-        title: t('messages.error'),
-        description: error instanceof Error ? error.message : 'Unable to mark message as read',
-        variant: "destructive"
-      });
+      console.error(`Failed to mark message ${messageId} as read`, error);
+      // Ovdje ne prikazujemo toast da ne ometamo korisnika
     }
-  }, [toast]);
+  }, []); // Prazan niz ovisnosti jer unutra nema vanjskih varijabli
 
-  // Efekt koji se pokreće samo jednom, prilikom napuštanja komponente
+  // EFEKT ZA OZNAČAVANJE PORUKA KAO PROČITANIH
   useEffect(() => {
-    // Vraća funkciju za čišćenje (cleanup function) koja se poziva na unmount
+    // Cleanup funkcija se izvršava prije sljedećeg renderiranja ili pri unmountu.
+    // Ovo je idealno mjesto za poziv API-ja jer hvatamo sve ID-jeve
+    // koji su dodani u ref tijekom prethodnog stanja.
     return () => {
-      // Prođi kroz sve poruke čiji su ID-jevi spremljeni u ref i označi ih kao pročitane
-      openedMessageIdsRef.current.forEach(messageId => {
-        // Ovdje ne možemo direktno provjeriti status iz 'messages' state-a jer je closure star.
-        // API poziv će se pobrinuti da ne radi ništa ako je poruka već pročitana.
-        void handleMarkAsRead(messageId);
-      });
+      const idsToMark = Array.from(openedMessageIdsRef.current);
+      if (idsToMark.length > 0) {
+        idsToMark.forEach(id => {
+          void handleMarkAsRead(id);
+        });
+        // Isprazni set nakon što smo poslali zahtjeve
+        openedMessageIdsRef.current.clear();
+      }
     };
-  // Prazan niz ovisnosti osigurava da se ovaj efekt pokrene samo na mount, a cleanup na unmount.
-  // handleMarkAsRead je uključen jer je vanjski scope, ali je stabiliziran sa useCallback.
-  }, [handleMarkAsRead]);
+  }, [handleMarkAsRead, openCollapsibleId, filter, activeTab]); // Ponovno pokreni efekt na svaku relevantnu promjenu
+
+
 
   const handleRefresh = () => {
     if (activeTab === 'received') {

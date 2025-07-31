@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './activities.css'; // Dodajemo CSS za custom stilove
 import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
-import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2 } from 'lucide-react';
+import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2, MountainSnow, Users, ClipboardList, ListChecks, Axe, Route, ConciergeBell } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format, parseISO } from 'date-fns';
+import { hr, enUS } from 'date-fns/locale';
 import { useAuth } from '@/context/AuthContext';
 import CreateActivityModal from './CreateActivityModal';
 import { Badge } from '@components/ui/badge';
@@ -24,7 +25,8 @@ import {
 import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLocale = i18n.language === 'hr' ? hr : enUS;
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
   const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
   const location = useLocation();
@@ -50,6 +52,16 @@ const ActivityCategoryPage: React.FC = () => {
   
   // Pretvaramo year parametar u broj
   const year = yearParam ? parseInt(yearParam, 10) : null;
+
+  const iconMap: { [key: string]: React.ElementType } = {
+    'akcija-drustvo': Axe,
+    'akcija-trail': Route,
+    dezurstva: ConciergeBell,
+    izleti: MountainSnow,
+    sastanci: Users,
+    razno: ClipboardList,
+    default: ActivityIcon,
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -167,7 +179,7 @@ const ActivityCategoryPage: React.FC = () => {
         <Button asChild variant="outline" className="mb-4">
           <Link to={yearParam && !isYearView ? `/activities/year/${yearParam}` : "/activities"}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {isYearView ? 'Sve godine' : (yearParam ? `Aktivnosti ${yearParam}` : 'Sve kategorije')}
+            {isYearView ? t('activities.summary.allYears') : (yearParam ? t('activities.summary.activitiesInYear', { year: yearParam }) : t('activities.summary.allCategories'))}
           </Link>
         </Button>
         <div className="flex justify-between items-center">
@@ -175,11 +187,11 @@ const ActivityCategoryPage: React.FC = () => {
             {isYearView ? (
               <>
                 <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
-                <span className="text-xl sm:text-3xl">{yearParam} - Aktivnosti</span>
+                <span className="text-xl sm:text-3xl">{t('activities.summary.yearActivitiesTitle', { year: yearParam })}</span>
               </>
             ) : (
               <>
-                <ActivityIcon className="h-8 w-8" />
+                {React.createElement(iconMap[activityType?.key ?? 'default'] || iconMap.default, { className: 'h-8 w-8' })}
                 {activityType?.name || 'Aktivnosti'}
               </>
             )}
@@ -242,11 +254,11 @@ const ActivityCategoryPage: React.FC = () => {
                   key={type.type_id}
                   className="block"
                 >
-                   <Card className="h-full transition-colors hover:bg-muted/50 activity-card">
+                  <Card className="h-full transition-colors hover:bg-muted/50 activity-card">
                     <CardHeader className="activity-card-header">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          <ActivityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                          {React.createElement(iconMap[type.key] || iconMap.default, { className: 'h-6 w-6 text-primary' })}
                           <CardTitle className="text-base sm:text-lg">{t(`activities.types.${type.key}`).toUpperCase()}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
@@ -262,8 +274,8 @@ const ActivityCategoryPage: React.FC = () => {
                       <div className="w-full space-y-2">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
-                            <ActivityIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Ukupno:</span>
+                            <ListChecks className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{t('activities.summary.total')}</span>
                           </div>
                           <Badge variant="secondary">{totalActivitiesCount}</Badge>
                         </div>
@@ -271,7 +283,7 @@ const ActivityCategoryPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
                             <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Sati:</span>
+                            <span className="text-muted-foreground">{t('activities.summary.hours')}</span>
                           </div>
                           <Badge variant="outline">{formatHoursToHHMM(typeHours)} h</Badge>
                         </div>
@@ -315,7 +327,7 @@ const ActivityCategoryPage: React.FC = () => {
                       <CardContent className="space-y-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>{format(new Date(activity.start_date), 'dd.MM.yyyy.')}</span>
+                          <span>{format(new Date(activity.start_date), 'P', { locale: currentLocale })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
@@ -323,15 +335,17 @@ const ActivityCategoryPage: React.FC = () => {
                         </div>
                         <div className="pt-2 text-right">
                           {(() => {
+                            const statusKey = `activities.status.${activity.status.toLowerCase()}`;
+                            const statusText = t(statusKey);
                             switch (activity.status) {
                               case 'PLANNED':
-                                return <span className="font-semibold text-green-600">Najavljeno</span>;
+                                return <span className="font-semibold text-green-600">{statusText}</span>;
                               case 'ACTIVE':
-                                return <span className="font-semibold text-blue-500">U tijeku</span>;
+                                return <span className="font-semibold text-blue-500">{statusText}</span>;
                               case 'COMPLETED':
-                                return <span className="font-semibold text-black">Završena</span>;
+                                return <span className="font-semibold text-black">{statusText}</span>;
                               case 'CANCELLED':
-                                return <span className="font-semibold text-red-500">Otkazana</span>;
+                                return <span className="font-semibold text-red-500">{statusText}</span>;
                               default:
                                 return null;
                             }

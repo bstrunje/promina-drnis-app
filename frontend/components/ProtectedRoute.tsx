@@ -27,8 +27,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   // Funkcija za provjeru valjanosti tokena
   const checkTokenValidity = async () => {
     try {
-      // Jednostavan health check na backend
-      await axios.get('/api/auth/health', {
+      // Pozivamo refresh endpoint umjesto health checka
+      await axios.post('/api/auth/refresh', {}, {
         withCredentials: true
       });
     } catch (error: any) {

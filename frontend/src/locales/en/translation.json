@@ -502,7 +502,7 @@
         },
         "roles": {
             "guide": "Guide",
-            "assistantGuide": "Assistant Guide",
+            "assistant_guide": "Assistant Guide",
             "driver": "Driver",
             "regular": "Participant"
         },
@@ -513,12 +513,12 @@
             "addFromList": "Add participants from the list."
         },
         "types": {
-            "akcija-drustvo": "Society Action",
-            "akcija-trail": "Trail Action",
-            "dezurstva": "On-call duty",
-            "izleti": "Excursions",
-            "razno": "Miscellaneous",
-            "sastanci": "Meetings"
+          "akcija-drustvo": "Society Work Actions",
+          "akcija-trail": "Trail Work Actions",
+          "dezurstva": "On-call Duty",
+          "izleti": "Excursions",
+          "sastanci": "Meetings",
+          "razno": "Miscellaneous"
         },
         "descriptions": {
             "akcija-drustvo": "Work actions organized by the Society",
@@ -545,6 +545,9 @@
             "manualHoursPlaceholder": "E.g., 2.5 for 2 hours and 30 minutes",
             "recognitionPercentage": "Recognition Percentage",
             "participants": "Participants",
+            "errors": {
+                "fetchTypes": "Failed to fetch activity types."
+            },
             "required": "Required",
             "success": "Success",
             "activityCreated": "Activity created successfully.",
@@ -569,16 +572,39 @@
         "deleting": "Deleting...",
         "delete": "Delete",
         "editing": {
+            "title": "Edit Activity",
             "success": "Success",
             "activityUpdated": "Activity successfully updated.",
             "error": "Error",
             "updateFailed": "Unable to update activity.",
+            "fetchFailed": "Could not fetch activity data.",
+            "validationFailed": "Name and start date are required.",
             "loading": "Loading...",
-            "editActivity": "Edit activity",
             "activityName": "Activity name",
             "description": "Description",
-            "startDate": "Start date",
-            "actualStart": "Start"
+            "startDateTime": "Start Date and Time",
+            "actualStartTime": "Actual Start Time",
+            "actualEndTime": "Actual End Time",
+            "manualHours": "Manual Hour Entry",
+            "manualHoursPlaceholder": "e.g. 2.5 for 2 hours and 30 mins",
+            "recognitionPercentage": "Recognition Percentage",
+            "participants": "Participants"
+        },
+        "status": {
+            "planned": "Planned",
+            "active": "Active",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        },
+        "summary": {
+            "title": "Activity Summary",
+            "total": "Total Activities",
+            "hours": "Total hours",
+            "allYears": "All years",
+            "activitiesInYear": "Activities in {{year}}",
+            "allCategories": "All categories",
+            "yearActivitiesTitle": "{{year}} - Activities",
+            "recognitionPercentage": "Recognition Percentage"
         }
     },
     "dashboard": {

@@ -104,7 +104,7 @@ const EditActivityPage: React.FC = () => {
         }
 
       } catch (err) {
-        toast({ title: 'Greška', description: 'Nije moguće dohvatiti podatke o aktivnosti.', variant: 'destructive' });
+        toast({ title: t('activities.editing.error'), description: t('activities.editing.fetchFailed'), variant: 'destructive' });
       } finally {
         setLoading(false);
       }
@@ -124,7 +124,7 @@ const EditActivityPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activityId || !name || !startDate || !startTime) {
-        toast({ title: 'Greška', description: 'Naziv i datum početka su obavezni.', variant: 'destructive' });
+        toast({ title: t('activities.editing.error'), description: t('activities.editing.validationFailed'), variant: 'destructive' });
         return;
     }
 
@@ -165,7 +165,7 @@ const EditActivityPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('activities.editing.editActivity')}</CardTitle>
+          <CardTitle>{t('activities.editing.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
@@ -181,7 +181,7 @@ const EditActivityPage: React.FC = () => {
 
               {/* Polje za datum početka */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="startDate" className="md:text-right">{t('activities.editing.startDate')}</Label>
+                <Label htmlFor="startDate" className="md:text-right">{t('activities.editing.startDateTime')}</Label>
                 <div className="md:col-span-3 flex items-center gap-2">
                   <Input id="startDate" type="date" className="w-40 hide-date-time-icons" value={startDate} onChange={e => { setStartDate(e.target.value); if (parseInt(e.target.value.substring(0, 4), 10) > 1000) startTimeRef.current?.focus(); }} required />
                   <Input id="startTime" type="time" ref={startTimeRef} className="w-28 hide-date-time-icons" value={startTime} onChange={e => setStartTime(e.target.value)} required />
@@ -191,7 +191,7 @@ const EditActivityPage: React.FC = () => {
 
               {/* Polje za stvarni početak */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="actualStartDate" className="md:text-right">{t('activities.editing.actualStart')}</Label>
+                <Label htmlFor="actualStartDate" className="md:text-right">{t('activities.editing.actualStartTime')}</Label>
                 <div className="md:col-span-3 flex items-center gap-2">
                   <Input 
                     id="actualStartDate" 
@@ -256,7 +256,7 @@ const EditActivityPage: React.FC = () => {
 
               {/* Polje za stvarni završetak */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="actualEndDate" className="md:text-right">Završetak</Label>
+                <Label htmlFor="actualEndDate" className="md:text-right">{t('activities.editing.actualEndTime')}</Label>
                 <div className="md:col-span-3 flex items-center gap-2">
                   <Input 
                     id="actualEndDate" 
@@ -321,14 +321,14 @@ const EditActivityPage: React.FC = () => {
 
               {/* Polje za ručni unos sati */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
-                <Label htmlFor="manualHours" className="md:text-right">Ručni unos sati</Label>
+                <Label htmlFor="manualHours" className="md:text-right">{t('activities.editing.manualHours')}</Label>
                 <div className="md:col-span-3">
                   <Input
                     id="manualHours"
                     type="number"
                     min="0"
                     step="0.5"
-                    placeholder="Npr. 2.5 za 2 sata i 30 minuta"
+                    placeholder={t('activities.editing.manualHoursPlaceholder')}
                     value={manualHours}
                     onChange={e => {
                       const value = e.target.value;
@@ -351,7 +351,7 @@ const EditActivityPage: React.FC = () => {
               {!isExcursion && (
                 <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
                   <Label htmlFor="recognition_percentage" className="md:text-right">
-                    Postotak priznavanja
+                    {t('activities.editing.recognitionPercentage')}
                   </Label>
                   <div className="md:col-span-3">
                     <Input
@@ -367,7 +367,7 @@ const EditActivityPage: React.FC = () => {
 
               {/* Odabir sudionika */}
               <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
-                <Label className="md:text-right pt-2">Sudionici</Label>
+                <Label className="md:text-right pt-2">{t('activities.editing.participants')}</Label>
                 <div className="md:col-span-3">
                   {isExcursion ? (
                     <MemberRoleSelect selectedMembers={participantsWithRoles} onSelectionChange={setParticipantsWithRoles} />
@@ -379,7 +379,7 @@ const EditActivityPage: React.FC = () => {
 
               <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="outline" onClick={() => navigate(-1)}>{t('common.cancel')}</Button>
-                <Button type="submit">{t('activities.admin.saveChanges')}</Button>
+                <Button type="submit">{t('common.save')}</Button>
               </div>
             </div>
           </form>

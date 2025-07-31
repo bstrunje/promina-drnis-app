@@ -66,7 +66,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           }
         } catch (err) {
           console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
-          setError('Nije uspjelo dohvaćanje tipova aktivnosti.');
+          setError(t('activities.creation.errors.fetchTypes'));
         } finally {
           setLoadingTypes(false);
         }

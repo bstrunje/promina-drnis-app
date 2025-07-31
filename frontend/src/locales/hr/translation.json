@@ -514,7 +514,7 @@
     },
     "roles": {
       "guide": "Vodič",
-      "assistantGuide": "Pomoćni vodič",
+      "assistant_guide": "Pomoćni vodič",
       "driver": "Vozač",
       "regular": "Sudionik"
     },
@@ -557,6 +557,9 @@
       "manualHoursPlaceholder": "Npr. 2.5 za 2 sata i 30 minuta",
       "recognitionPercentage": "Postotak priznavanja",
       "participants": "Sudionici",
+      "errors": {
+        "fetchTypes": "Nije uspjelo dohvaćanje tipova aktivnosti."
+      },
       "required": "Obavezno",
       "success": "Uspjeh",
       "activityCreated": "Aktivnost je uspješno kreirana.",
@@ -581,16 +584,39 @@
     "deleting": "Brisanje...",
     "delete": "Obriši",
     "editing": {
+      "title": "Uredi aktivnost",
       "success": "Uspjeh",
       "activityUpdated": "Aktivnost je uspješno ažurirana.",
       "error": "Greška",
       "updateFailed": "Nije moguće ažurirati aktivnost.",
+      "fetchFailed": "Nije moguće dohvatiti podatke o aktivnosti.",
+      "validationFailed": "Naziv i datum početka su obavezni.",
       "loading": "Učitavanje...",
-      "editActivity": "Uredi aktivnost",
       "activityName": "Naziv aktivnosti",
       "description": "Opis",
-      "startDate": "Datum početka",
-      "actualStart": "Početak"
+      "startDateTime": "Datum i vrijeme početka",
+      "actualStartTime": "Stvarno vrijeme početka",
+      "actualEndTime": "Stvarno vrijeme završetka",
+      "manualHours": "Ručni unos sati",
+      "manualHoursPlaceholder": "Npr. 2.5 za 2 sata i 30 minuta",
+      "recognitionPercentage": "Postotak priznavanja",
+      "participants": "Sudionici"
+    },
+    "status": {
+      "planned": "Planirano",
+      "active": "Aktivno",
+      "completed": "Završeno",
+      "cancelled": "Otkazano"
+    },
+    "summary": {
+      "title": "Sažetak aktivnosti",
+      "total": "Ukupno aktivnosti",
+      "hours": "Ukupno sati",
+    "allYears": "Sve godine",
+    "activitiesInYear": "Aktivnosti {{year}}",
+    "allCategories": "Sve kategorije",
+    "yearActivitiesTitle": "{{year}} - Aktivnosti",
+      "recognitionPercentage": "Postotak priznavanja"
     }
   },
   "dashboard": {
