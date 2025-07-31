@@ -31,11 +31,8 @@ export async function createInitialSystemManagerIfNeeded(tx: Prisma.TransactionC
     username,
     display_name,
     password_hash,
+    email: process.env.INITIAL_SYSTEM_MANAGER_EMAIL || 'manager@promina-drnis.hr',
   };
-
-  if (process.env.INITIAL_SYSTEM_MANAGER_EMAIL) {
-    createData.email = process.env.INITIAL_SYSTEM_MANAGER_EMAIL;
-  }
 
   await tx.systemManager.create({ data: createData });
 
