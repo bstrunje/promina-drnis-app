@@ -72,25 +72,8 @@ async function checkDatabaseConnection(): Promise<boolean> {
     }
 }
 
-// Server instance
-let server: Server;
-
-// Start the server
-server = app.listen(port, '0.0.0.0', () => {
-    console.log(`
-✅ Server is running on http://localhost:${port}`);
-    console.log('🔑 JWT Secret is configured');
-    console.log('Press CTRL-C to stop\n');
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-        console.log('HTTP server closed');
-        prisma.$disconnect();
-    });
-});
+// Export the app for Vercel
+export default app;
 
 // Server management functions
 async function startServer(): Promise<void> {

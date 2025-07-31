@@ -1,15 +1,27 @@
 {
   "version": 2,
 
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/src/server.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/Dockerfile"
+      "dest": "backend/src/server.ts"
     },
     {
-      "src": "/((?!api/|assets/|vite.svg|_next/|favicon.ico|logo.png|manifest.json|robots.txt|sw.js).*)",
-      "dest": "/index.html",
-      "check": true
+      "src": "/(.*)",
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
