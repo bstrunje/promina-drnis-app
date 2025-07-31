@@ -1,50 +1,50 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { Clock } from 'lucide-react';
 import { Member } from '@shared/member';
+import { formatMinutesToHoursAndMinutes } from '../src/utils/dateUtils';
 
 interface MemberActivityStatusProps {
   member: Member;
 }
 
 const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) => {
-  const getActivityStatus = (totalMinutes: number) => {
-    // Pretvaramo minute u sate za usporedbu
-    const hoursValue = totalMinutes / 60;
-    return hoursValue >= 20 ? "active" : "passive";
+  const { t } = useTranslation();
+  const totalMinutes = member.total_hours ?? 0;
+  const totalHours = totalMinutes / 60;
+
+  const getActivityStatus = (hours: number) => {
+    return hours >= 20 ? 'active' : 'passive';
   };
 
+  const status = getActivityStatus(totalHours);
+  const hoursNeeded = Math.max(0, 20 - totalHours);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Activity Status
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm text-gray-500">Total Hours</label>
-            <p className="text-2xl font-bold">
-              {member?.total_hours ?? 0}
-            </p>
-          </div>
-          {getActivityStatus(Number(member?.total_hours) || 0) === "passive" && (
-            <div className="text-yellow-600">
-              <p>
-                Need {Math.ceil(20 - ((Number(member?.total_hours) || 0) / 60))} more
-                hours to become active
-              </p>
-            </div>
-          )}
-          <div>
-            <label className="text-sm text-gray-500">Status</label>
-            <p>{getActivityStatus(Number(member?.total_hours) || 0)}</p>
-          </div>
+    <div className="mt-6 pt-4 border-t">
+      <h3 className="text-lg font-semibold mb-2 flex items-center">
+        <Clock className="w-5 h-5 mr-2" />
+        {t('memberProfile.activityStatus.title')}
+      </h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.totalHours')}</label>
+          <p className="font-bold text-lg">{formatMinutesToHoursAndMinutes(totalMinutes)}</p>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.status')}</label>
+          <p className={`font-bold text-lg ${status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+            {t(`memberProfile.activityStatus.${status}`)}
+          </p>
+        </div>
+      </div>
+      {status === 'passive' && (
+        <p className="text-xs text-gray-500 mt-2">
+          {t('memberProfile.activityStatus.hoursNeeded', { count: Math.ceil(hoursNeeded) })}
+        </p>
+      )}
+    </div>
   );
 };
 

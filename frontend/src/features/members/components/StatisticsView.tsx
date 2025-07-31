@@ -93,7 +93,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Podjela po kategoriji</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.categoryDistribution')}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>{t('statistics.validMembership')}:</span>

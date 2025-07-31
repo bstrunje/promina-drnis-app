@@ -6,6 +6,7 @@ import { Clock, CreditCard, Star } from 'lucide-react';
 import { useAuth } from "../src/context/AuthContext";
 import { formatMinutesToHoursAndMinutes } from "../src/utils/dateUtils";
 import SkillsSelector from './SkillsSelector';
+import MemberActivityStatus from './MemberActivityStatus';
 
 interface MembershipDetailsCardProps {
   member: Member;
@@ -36,10 +37,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   // Provjeri je li korisnik administrator ili superuser
   const canViewCardNumber = user?.role === "member_administrator" || user?.role === "member_superuser";
 
-  // Activity status calculation (moved from MemberActivityStatus)
-  const getActivityStatus = (totalHours: number) => {
-    return totalHours >= 20 ? "active" : "passive";
-  };
+
 
   return (
     <Card className="mb-6">
@@ -121,32 +119,7 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
             </div>
           ) : null}
 
-          {/* Activity Status section */}
-          <div className="mt-6 pt-4 border-t">
-            <h3 className="text-lg font-semibold mb-2 flex items-center">
-              <Clock className="w-5 h-5 mr-2" />
-              {t('memberProfile.activityStatus.title')}
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.totalHours')}</label>
-                <p className="font-bold text-lg">{formatMinutesToHoursAndMinutes(member.total_hours ?? 0)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.activityStatus.status')}</label>
-                <p className={`font-bold text-lg ${getActivityStatus(member.total_hours ?? 0) === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                  {getActivityStatus(member.total_hours ?? 0) === 'active'
-                    ? t('memberProfile.activityStatus.active')
-                    : t('memberProfile.activityStatus.passive')}
-                </p>
-              </div>
-            </div>
-            {getActivityStatus(member.total_hours ?? 0) === 'passive' && (
-              <p className="text-xs text-gray-500 mt-2">
-                {t('memberProfile.activityStatus.hoursNeeded', { count: 20 - Math.floor(member.total_hours ?? 0) })}
-              </p>
-            )}
-          </div>
+          <MemberActivityStatus member={member} />
         </div>
       </CardContent>
     </Card>

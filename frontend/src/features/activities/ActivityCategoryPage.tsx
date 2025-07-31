@@ -173,6 +173,12 @@ const ActivityCategoryPage: React.FC = () => {
     </div>
   );
 
+  const pageTitle = isYearView
+    ? t('activities.summary.allActivitiesForYear', { year })
+    : activityType
+      ? t(`activities.types.${activityType.key}`)
+      : t('activities.loading');
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -192,7 +198,7 @@ const ActivityCategoryPage: React.FC = () => {
             ) : (
               <>
                 {React.createElement(iconMap[activityType?.key ?? 'default'] || iconMap.default, { className: 'h-8 w-8' })}
-                {activityType?.name || 'Aktivnosti'}
+                {pageTitle}
               </>
             )}
           </h1>

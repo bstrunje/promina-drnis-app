@@ -1,7 +1,30 @@
 {
-    "version": 2,
-    "buildCommand": "npm run build:shared && cd frontend && npm install && npm run build",
-    "outputDirectory": "frontend/dist",
-    "installCommand": "npm install",
-    "framework": "vite"
-  }
+  "version": 2,
+  "installCommand": "npm install",
+  "builds": [
+    {
+      "src": "backend/src/server.ts",
+      "use": "@vercel/node",
+      "config": { 
+        "includeFiles": ["../node_modules/**", "../frontend/shared/**"]
+      }
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/src/server.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
+  ]
+}
