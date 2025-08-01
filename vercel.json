@@ -1,14 +1,20 @@
 {
   "version": 2,
+  "functions": {
+    "backend/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/package.json"
+      "dest": "/backend/index.js"
     },
     {
       "src": "/((?!api/|assets/|vite.svg|_next/|favicon.ico|logo.png|manifest.json|robots.txt|sw.js).*)",
       "dest": "/index.html",
       "check": true
     }
-  ]
+  ],
+  "buildCommand": "npm run build:vercel"
 }
