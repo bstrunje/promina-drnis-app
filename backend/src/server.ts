@@ -49,15 +49,15 @@ console.log('⚙️  Environment configuration:', {
 });
 
 // Environment validation with Windows-friendly error messages
-if (!process.env.DATABASE_URL) {
-    console.error('❌ ERROR: DATABASE_URL is not defined in your .env file');
-    console.error('📝 Tip: Make sure your .env file exists in:', path.resolve(__dirname, '.env'));
+if (!process.env.DATABASE_URL && !process.env.PRISMA_DATABASE_URL) {
+    console.error('❌ ERROR: A database connection string is not defined.');
+    console.error('📝 Tip: Please set either DATABASE_URL or PRISMA_DATABASE_URL in your environment variables.');
     process.exit(1);
 }
 
 if (!process.env.JWT_SECRET) {
-    console.error('❌ ERROR: JWT_SECRET is not defined in your .env file');
-    console.error('📝 Tip: Make sure your .env file exists in:', path.resolve(__dirname, '.env'));
+    console.error('❌ ERROR: JWT_SECRET is not defined in environment variables.');
+    console.error('📝 Tip: Please set JWT_SECRET in your environment variables.');
     process.exit(1);
 }
 

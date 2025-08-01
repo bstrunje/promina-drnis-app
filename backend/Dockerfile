@@ -48,11 +48,13 @@ COPY entrypoint.sh .
 RUN sed -i 's/\r$//' ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
+# Postavljamo entrypoint skriptu kao ulaznu točku
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Zadana naredba koju će entrypoint pokrenuti
+CMD ["npm", "start"]
+
 # Izlažemo port
 EXPOSE 3001
 
-# Postavljamo entrypoint. On će pokrenuti migracije prije glavne naredbe.
-ENTRYPOINT ["./entrypoint.sh"]
 
-# Glavna naredba kontejnera (koju poziva entrypoint)
-CMD ["npm", "start"]

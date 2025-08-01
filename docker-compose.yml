@@ -45,6 +45,8 @@ services:
       # Dodajemo varijable za inicijalnog system managera
       INITIAL_SYSTEM_MANAGER_USERNAME: "System Manager"
       INITIAL_SYSTEM_MANAGER_PASSWORD: "manager123"
+      INITIAL_SYSTEM_MANAGER_EMAIL: "manager@promina-drnis.hr"
+      JWT_SECRET: "super-secret-key-for-local-development"
 
 volumes:
   postgres_data:

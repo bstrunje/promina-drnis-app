@@ -31,24 +31,28 @@ interface QueryOptions {
     timeout?: number;
 }
 
-const poolConfig: ExtendedPoolConfig = process.env.DATABASE_URL 
+// Određivanje connection stringa s prioritetom:
+// 1. PRISMA_DATABASE_URL (za Docker i Vercel gdje je Prisma primarni izvor)
+// 2. DATABASE_URL (za standardni .env lokalni razvoj)
+const connectionString = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
+
+const poolConfig: ExtendedPoolConfig = connectionString
     ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? {
-            rejectUnauthorized: false
-        } : undefined,
+        // Konfiguracija putem connection stringa (preferirani način)
+        connectionString: connectionString,
+        ssl: connectionString.includes('sslmode=require'), // Automatsko prepoznavanje SSL-a
         connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
         query_timeout: 60000,
-        // Uklonjen client_encoding jer ga postavljamo nakon konekcije
         max: process.env.NODE_ENV === 'production' ? 20 : 10
     }
     : {
+        // Fallback konfiguracija za lokalni razvoj bez definiranog connection stringa
         database: process.env.DB_NAME || 'promina_drnis_db',
         user: process.env.DB_USER || 'bozos',
         host: process.env.DB_HOST || 'localhost',
         password: process.env.DB_PASSWORD || 'Listopad24$',
-        port: parseInt(process.env.DB_PORT || '5432'),
+        port: parseInt(process.env.DB_PORT || '5432', 10),
         connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
         query_timeout: 60000,

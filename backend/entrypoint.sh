@@ -18,6 +18,5 @@ npm run prisma:seed
 echo "Running database setup..."
 node dist/run-setup.js
 
-# Zatim pokrećemo glavni proces kontejnera (ono što je definirano kao CMD u Dockerfile-u)
-echo "Starting the application..."
+echo "Handing over to CMD..."
 exec "$@"
