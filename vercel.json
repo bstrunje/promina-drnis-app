@@ -3,11 +3,11 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "frontend/dist",
   "routes": [
-    { "src": "/api/(.*)", "dest": "/backend/index.js" },
-    { "src": "/uploads/(.*)", "dest": "/backend/index.js" },
-    { "src": "/health", "dest": "/backend/index.js" },
-    { "src": "/assets/(.*)", "dest": "/frontend/dist/assets/$1" },
-    { "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))", "dest": "/frontend/dist/$1" },
-    { "src": "/(.*)", "dest": "/frontend/dist/index.html" }
+    { "src": "/api/(.*)", "dest": "backend/index.js" },
+    { "src": "/uploads/(.*)", "dest": "backend/index.js" },
+    { "src": "/health", "dest": "backend/index.js" },
+    { "src": "/assets/(.*)", "dest": "frontend/dist/assets/$1" },
+    { "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))", "dest": "frontend/dist/$1" },
+    { "src": "/(.*)", "dest": "frontend/dist/index.html" }
   ]
 }
