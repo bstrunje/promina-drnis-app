@@ -1,16 +1,13 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/index.js"
-    },
-    {
-      "src": "/((?!api/|assets/|vite.svg|_next/|favicon.ico|logo.png|manifest.json|robots.txt|sw.js).*)",
-      "dest": "/index.html",
-      "check": true
-    }
-  ],
   "buildCommand": "npm run build:vercel",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/backend/index.js" },
+    { "src": "/uploads/(.*)", "dest": "/backend/index.js" },
+    { "src": "/health", "dest": "/backend/index.js" },
+    { "src": "/assets/(.*)", "dest": "/frontend/dist/assets/$1" },
+    { "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))", "dest": "/frontend/dist/$1" },
+    { "src": "/(.*)", "dest": "/frontend/dist/index.html" }
+  ]
 }
