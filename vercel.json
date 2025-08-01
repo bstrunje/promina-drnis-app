@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "backend/index.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -16,5 +11,6 @@
       "check": true
     }
   ],
-  "buildCommand": "npm run build:vercel"
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "frontend/dist"
 }
