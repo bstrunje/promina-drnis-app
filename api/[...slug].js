@@ -1,6 +1,14 @@
 // Vercel serverless function that handles all API routes
 // This catches all /api/* routes and forwards them to the Express app
 
-import app from '../backend/dist/app.js';
+let app;
 
-export default app;
+module.exports = async (req, res) => {
+  if (!app) {
+    // Dynamic import za ES Module
+    const appModule = await import('../backend/dist/app.js');
+    app = appModule.default;
+  }
+  
+  return app(req, res);
+};
