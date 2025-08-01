@@ -4,9 +4,14 @@ services:
     container_name: promina-test-db
     restart: always
     environment:
+      POSTGRES_DB: testdb
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: testdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       # Port na hostu : Port u kontejneru
       # Koristimo 5433 da izbjegnemo konflikt s vašom postojećom bazom na 5432
@@ -23,16 +28,17 @@ services:
     container_name: promina-test-backend
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
     ports:
       # Izlažemo backend na portu 3001
       - "3001:3001"
-    env_file:
-      - ./backend/.env
+
     environment:
-      # Povezujemo backend s novom bazom podataka unutar Docker mreže
-      # Host 'db' je naziv servisa baze definiran iznad
-      DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
+      # Povezujemo backend s bazom podataka unutar Docker mreže koristeći ime servisa 'db'
+      PRISMA_DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
+      SHADOW_DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb_shadow?schema=public"
       # Postavljamo port na kojem backend sluša
       PORT: 3001
       NODE_ENV: development

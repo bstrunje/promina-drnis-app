@@ -10,7 +10,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Instaliramo build-dependencies potrebne za bcrypt i native module
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache openssl netcat-openbsd python3 make g++
 # Instaliramo SVE ovisnosti, uključujući devDependencies za build proces
 RUN npm install
 
@@ -33,14 +33,26 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 
 
 
+# Instaliramo alate potrebne u produkcijskoj slici
+RUN apk add --no-cache netcat-openbsd postgresql-client
+
 # Kopiramo izgrađenu aplikaciju iz 'builder' faze
 COPY --from=builder /usr/src/app/dist ./dist
 
 # Kopiramo Prisma shemu i migracije za 'prisma migrate deploy'
 COPY --from=builder /usr/src/app/prisma ./prisma
 
+# Kopiramo i pripremamo entrypoint skriptu
+COPY entrypoint.sh .
+# Rješavamo problem s Windows (CRLF) vs Linux (LF) krajevima redova
+RUN sed -i 's/\r$//' ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Izlažemo port
 EXPOSE 3001
 
-# Naredba za pokretanje: prvo seed, zatim inicijalizacija, i na kraju start aplikacije
+# Postavljamo entrypoint. On će pokrenuti migracije prije glavne naredbe.
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Glavna naredba kontejnera (koju poziva entrypoint)
 CMD ["npm", "start"]
