@@ -31,6 +31,7 @@ function handleControllerError(error: unknown, res: Response): void {
 /**
  * Dohvaća statistike za članski dashboard
  * Vraća broj nepročitanih poruka, nedavnih aktivnosti i ukupan broj članova
+ * Optimizirano za Vercel serverless okruženje
  */
 export const getMemberDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -40,9 +41,13 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
       return;
     }
 
-    let unreadMessages = 0;
-    try {
-      unreadMessages = await prisma.memberMessage.count({
+    // Paralelno izvršavanje upita za bolje performanse
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const [unreadMessages, recentActivities, memberCount] = await Promise.allSettled([
+      // Optimizirani upit za nepročitane poruke
+      prisma.memberMessage.count({
         where: {
           recipient_statuses: {
             some: {
@@ -51,44 +56,34 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
             }
           }
         }
-      });
-    } catch (error) {
-      console.error("Error fetching unread messages:", error);
-    }
-
-    let recentActivities = 0;
-    try {
-      const thirtyDaysAgo = new Date(getCurrentDate());
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      }),
       
-      recentActivities = await (prisma as any).activity.count({
+      // Optimizirani upit za nedavne aktivnosti
+      prisma.activity.count({
         where: {
-          organizer_id: memberId,
           created_at: {
             gte: thirtyDaysAgo
           }
         }
-      });
-    } catch (error) {
-      console.error("Error fetching recent activities:", error);
-    }
+      }),
+      
+      // Optimizirani upit za broj članova - koristi count umjesto findMany
+      prisma.member.count({
+        where: { status: 'registered' }
+      })
+    ]);
 
-    let memberCount = 0;
-    try {
-      const members = await prisma.member.findMany({
-        where: { status: 'registered' },
-      });
-      memberCount = members.length;
-    } catch (e) {
-      console.error('Greška pri brojanju članova', e);
-    }
+    const response = {
+      unreadMessages: unreadMessages.status === 'fulfilled' ? unreadMessages.value : 0,
+      recentActivities: recentActivities.status === 'fulfilled' ? recentActivities.value : 0,
+      memberCount: memberCount.status === 'fulfilled' ? memberCount.value : 0
+    };
 
-    res.status(200).json({
-      unreadMessages,
-      recentActivities,
-      memberCount
-    });
+    // Dodaj cache headers za bolje performanse
+    res.setHeader('Cache-Control', 'public, max-age=30'); // Cache 30 sekundi
+    res.status(200).json(response);
   } catch (error) {
+    console.error('Dashboard stats error:', error);
     handleControllerError(error, res);
   }
 };

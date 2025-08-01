@@ -1,7 +1,21 @@
 import { PrismaClient } from '@prisma/client';
-// Inicijalizacija Prisma klijenta s dodatnim postavkama za kodiranje
+
+// Optimizirana Prisma konfiguracija za Vercel serverless okruženje
 const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  // Smanji logging u produkciji za bolje performanse
+  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  
+  // Optimizacije za serverless okruženje
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
+
+// Graceful shutdown za serverless funkcije
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
 });
 
 // Ova funkcija se može koristiti za dodatne inicijalizijske korake
