@@ -3,7 +3,9 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "frontend/dist",
   "env": {
-    "VERCEL": "1"
+    "VERCEL": "1",
+    "PRISMA_CLIENT_ENGINE_TYPE": "binary",
+    "NODE_OPTIONS": "--max-old-space-size=1024"
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...slug]" },
