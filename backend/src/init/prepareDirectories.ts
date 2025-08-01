@@ -7,6 +7,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export function prepareDirectories() {
+  // Skip directory creation on Vercel serverless environment
+  if (process.env.VERCEL) {
+    console.log('Skipping directory creation on Vercel serverless environment');
+    return;
+  }
+  
   // For Render deployment, use the absolute path
   // Prioritize UPLOADS_DIR for persistent storage, with fallbacks for other environments
   const baseUploadsDir = process.env.UPLOADS_DIR || 
