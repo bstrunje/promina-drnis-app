@@ -64,43 +64,8 @@ export default defineConfig({
       },
       output: {
         sourcemapExcludeSources: true,
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            // Drži React, React-DOM i sve React-related biblioteke zajedno
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || 
-                id.includes('@radix-ui') || id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'vendor-react';
-            }
-            if (id.includes('date-fns') || id.includes('axios') || id.includes('zustand')) {
-              return 'vendor-utils';
-            }
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
-            }
-            // Ostali vendor paketi
-            return 'vendor-misc';
-          }
-          
-          // Aplikacijski chunks
-          if (id.includes('/src/')) {
-            if (id.includes('/pages/') || id.includes('/components/pages/')) {
-              return 'app-pages';
-            }
-            if (id.includes('/components/')) {
-              return 'app-components';
-            }
-            if (id.includes('/services/') || id.includes('/api/')) {
-              return 'app-services';
-            }
-            if (id.includes('/stores/') || id.includes('/hooks/')) {
-              return 'app-state';
-            }
-            if (id.includes('/utils/') || id.includes('/helpers/')) {
-              return 'app-utils';
-            }
-          }
-        },
+        // PRIVREMENO: Uklanjam code splitting da riješim useMergeRef problem
+        // manualChunks: undefined, // Jedan bundle za sve
         assetFileNames: (assetInfo) => {
           if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
           
