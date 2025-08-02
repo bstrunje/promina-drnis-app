@@ -209,7 +209,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 <SelectTrigger className={fieldErrors.selectedTypeId ? 'border-red-500' : ''}>
                   <SelectValue placeholder={t('activities.creation.selectActivityType')} />
                 </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={5}>
+                                <SelectContent position="popper" sideOffset={5} className="z-[99]">
                   {activityTypes.map((type) => (
                     <SelectItem key={type.type_id} value={String(type.type_id)}>
                       {t(`activities.types.${type.key}`).toUpperCase()}
