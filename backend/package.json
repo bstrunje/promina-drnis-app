@@ -13,6 +13,7 @@
     "postinstall": "prisma generate",
     "prisma:seed": "rimraf dist/seed && tsc prisma/seed.ts --outDir dist/seed --module NodeNext --moduleResolution NodeNext --target ES2020 --esModuleInterop true --resolveJsonModule true && node dist/seed/seed.js",
     "setup-db": "node dist/setupDatabase.js",
+    "init-system-manager": "tsc src/run-setup.ts --outDir dist --module NodeNext --moduleResolution NodeNext --target ES2020 --esModuleInterop true && node dist/run-setup.js",
     "test": "vitest run",
     "test:ui": "vitest",
     "migrate:dev": "prisma migrate dev && npm run prisma:seed",

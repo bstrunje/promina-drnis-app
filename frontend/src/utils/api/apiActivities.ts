@@ -193,6 +193,15 @@ export const joinActivity = async (activityId: number): Promise<ActivityParticip
 };
 
 /**
+ * Omogućuje prijavljenom korisniku da napusti aktivnost.
+ * @param activityId ID aktivnosti koju korisnik napušta.
+ * @returns Promise koji se razrješava kada je operacija gotova.
+ */
+export const leaveActivity = async (activityId: number): Promise<void> => {
+  await apiInstance.post(`/activities/${activityId}/leave`);
+};
+
+/**
  * Dohvaća godišnju statistiku aktivnosti za određenog člana.
  * @param memberId ID člana.
  * @returns Promise koji razrješava u polje godišnjih statistika.

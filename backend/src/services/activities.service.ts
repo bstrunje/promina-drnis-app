@@ -406,6 +406,45 @@ export const deleteActivityService = async (activity_id: number) => {
   });
 };
 
+export const leaveActivityService = async (activity_id: number, member_id: number) => {
+  return prisma.$transaction(async (tx) => {
+    const activity = await tx.activity.findUnique({ where: { activity_id } });
+    if (!activity) {
+      throw new NotFoundError('Aktivnost nije pronađena.');
+    }
+
+    const participation = await tx.activityParticipation.findUnique({
+      where: {
+        activity_id_member_id: { activity_id, member_id },
+      },
+    });
+
+    if (!participation) {
+      throw new NotFoundError('Niste sudionik ove aktivnosti.');
+    }
+
+    // Ne možete napustiti aktivnost koja je završena ili otkazana
+    if (activity.status === 'COMPLETED' || activity.status === 'CANCELLED') {
+        throw new ConflictError('Ne možete napustiti aktivnost koja je završena ili otkazana.');
+    }
+
+    await tx.activityParticipation.delete({
+      where: {
+        activity_id_member_id: { activity_id, member_id },
+      },
+    });
+
+    await updateMemberTotalHours(member_id, tx);
+
+    if (activity.start_date) {
+      const year = new Date(activity.start_date).getFullYear();
+      await updateAnnualStatistics(member_id, year, tx);
+    }
+
+    return { message: 'Uspješno ste napustili aktivnost.' };
+  });
+};
+
 // --- Sudionici (Participants) --- //
 
 export const addParticipantService = async (activity_id: number, member_id: number) => {

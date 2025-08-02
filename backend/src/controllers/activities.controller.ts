@@ -170,6 +170,22 @@ export const joinActivity = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const leaveActivity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const activity_id = parseInt(req.params.activityId, 10);
+    const member_id = req.user?.member_id;
+
+    if (!member_id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    await activityService.leaveActivityService(activity_id, member_id);
+    res.status(204).send(); // No Content
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const addParticipantToActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;

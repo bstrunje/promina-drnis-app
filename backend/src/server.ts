@@ -79,6 +79,26 @@ async function checkDatabaseConnection(): Promise<boolean> {
 // Register routes
 app.use('/api/debug', debugRoutes);
 
+// Inicijalizacija baze podataka (uključujući kreiranje System Manager-a)
+(async () => {
+    try {
+        console.log('\n🔧 ========================================');
+        console.log('🔧 STARTAM INICIJALIZACIJU BAZE PODATAKA');
+        console.log('🔧 (System Manager, Activity Types, itd.)');
+        console.log('🔧 ========================================');
+        await setupDatabase();
+        console.log('✅ ========================================');
+        console.log('✅ INICIJALIZACIJA BAZE ZAVRŠENA USPJEŠNO');
+        console.log('✅ ========================================\n');
+    } catch (error) {
+        console.error('\n❌ ========================================');
+        console.error('❌ GREŠKA PRILIKOM INICIJALIZACIJE BAZE!');
+        console.error('❌ ========================================');
+        console.error('❌', error);
+        console.error('❌ ========================================\n');
+    }
+})();
+
 // Inicijalizacija periodičkih zadataka
 startPasswordUpdateJob();
 initScheduledTasks();

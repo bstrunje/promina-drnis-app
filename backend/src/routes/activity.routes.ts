@@ -54,6 +54,9 @@ router.delete('/:activityId', authenticateToken, roles.requireSuperUser, activit
 // Član se pridružuje aktivnosti (samo prijavljeni korisnik za sebe)
 router.post('/:activityId/join', authenticateToken, activityController.joinActivity);
 
+// Član napušta aktivnost (samo prijavljeni korisnik za sebe)
+router.post('/:activityId/leave', authenticateToken, activityController.leaveActivity);
+
 
 // Dodaj sudionika na aktivnost (samo admin i superuser)
 router.post(
