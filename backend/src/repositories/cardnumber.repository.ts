@@ -183,50 +183,68 @@ const cardNumberRepository = {
     return (result?.rowCount ?? 0) > 0;
   },
   
-  // Release a card number (make it available again)
+  // OPTIMIZACIJA: Prisma update umjesto db.query
   async releaseCardNumber(cardNumber: string): Promise<boolean> {
-    const result = await db.query(
-      `UPDATE card_numbers
-       SET status = 'available', 
-           assigned_at = NULL,
-           member_id = NULL
-       WHERE card_number = $1 
-       AND status = 'assigned'
-       RETURNING id`,
-      [cardNumber]
-    );
-    
-    // Fix null check
-    return (result?.rowCount ?? 0) > 0;
+    console.log(`[CARD-NUMBERS] Oslobođavam karticu ${cardNumber}...`);
+    try {
+      const result = await prisma.cardNumber.updateMany({
+        where: {
+          card_number: cardNumber,
+          status: 'assigned'
+        },
+        data: {
+          status: 'available',
+          assigned_at: null,
+          member_id: null
+        }
+      });
+      
+      const success = result.count > 0;
+      console.log(`[CARD-NUMBERS] Kartica ${cardNumber} ${success ? 'uspješno oslobođena' : 'nije pronađena'}`);
+      return success;
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri oslobođavanju kartice ${cardNumber}:`, error);
+      return false;
+    }
   },
   
-  // Check if a card number is available
+  // OPTIMIZACIJA: Prisma findFirst umjesto db.query
   async isAvailable(cardNumber: string): Promise<boolean> {
-    const result = await db.query(
-      `SELECT 1 FROM card_numbers 
-       WHERE card_number = $1 
-       AND status = 'available'`,
-      [cardNumber]
-    );
-    
-    // Fix null check
-    return (result?.rowCount ?? 0) > 0;
+    console.log(`[CARD-NUMBERS] Provjeravam dostupnost kartice ${cardNumber}...`);
+    try {
+      const card = await prisma.cardNumber.findFirst({
+        where: {
+          card_number: cardNumber,
+          status: 'available'
+        },
+        select: { id: true }
+      });
+      
+      const available = card !== null;
+      console.log(`[CARD-NUMBERS] Kartica ${cardNumber} je ${available ? 'dostupna' : 'nedostupna'}`);
+      return available;
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri provjeri dostupnosti kartice ${cardNumber}:`, error);
+      return false;
+    }
   },
 
-  // Add this method to the repository object
+  // OPTIMIZACIJA: Prisma delete umjesto db.query
   async deleteCardNumber(cardNumber: string): Promise<boolean> {
+    console.log(`[CARD-NUMBERS] Brišem karticu ${cardNumber}...`);
     try {
-      const result = await db.query(
-        `DELETE FROM card_numbers 
-         WHERE card_number = $1 
-         AND status = 'available'
-         RETURNING card_number`,
-        [cardNumber]
-      );
+      const result = await prisma.cardNumber.deleteMany({
+        where: {
+          card_number: cardNumber,
+          status: 'available'
+        }
+      });
       
-      return (result?.rowCount ?? 0) > 0;
+      const success = result.count > 0;
+      console.log(`[CARD-NUMBERS] Kartica ${cardNumber} ${success ? 'uspješno obrisana' : 'nije pronađena ili nije dostupna'}`);
+      return success;
     } catch (error) {
-      console.error(`Error deleting card number ${cardNumber}:`, error);
+      console.error(`[CARD-NUMBERS] Greška pri brisanju kartice ${cardNumber}:`, error);
       throw error;
     }
   },
@@ -295,22 +313,40 @@ const cardNumberRepository = {
     }
   },
 
-  // Add this method to find member by card number
+  // OPTIMIZACIJA: Prisma join upit umjesto db.query
   async findMemberByCardNumber(cardNumber: string): Promise<{
     member_id: number;
     full_name: string;
   } | null> {
-    const result = await db.query(
-      `SELECT m.member_id, m.full_name
-       FROM members m
-       JOIN membership_details md ON m.member_id = md.member_id
-       WHERE md.card_number = $1`,
-      [cardNumber]
-    );
-    
-    // Sigurna provjera za null/undefined s opcionalnim chainanjem i nullish coalescing
-    const rowCount = result?.rowCount ?? 0;
-    return rowCount > 0 ? result.rows[0] : null;
+    console.log(`[CARD-NUMBERS] Tražim člana po kartici ${cardNumber}...`);
+    try {
+      const membershipDetail = await prisma.membershipDetails.findFirst({
+        where: { card_number: cardNumber },
+        include: {
+          member: {
+            select: {
+              member_id: true,
+              full_name: true
+            }
+          }
+        }
+      });
+      
+      if (membershipDetail?.member) {
+        const result = {
+          member_id: membershipDetail.member.member_id,
+          full_name: membershipDetail.member.full_name
+        };
+        console.log(`[CARD-NUMBERS] Pronađen član ${result.full_name} za karticu ${cardNumber}`);
+        return result;
+      }
+      
+      console.log(`[CARD-NUMBERS] Nije pronađen član za karticu ${cardNumber}`);
+      return null;
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri traženju člana za karticu ${cardNumber}:`, error);
+      return null;
+    }
   },
 
   // Optimizirana metoda za sinkronizaciju statusa brojeva iskaznica korištenjem batch operacija

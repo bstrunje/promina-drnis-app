@@ -1,58 +1,83 @@
 import db from '../utils/db.js';
+import prisma from '../utils/prisma.js';
 import { Member, MemberSearchResult } from '../shared/types/member.js';
 
 const authRepository = {
+    // OPTIMIZACIJA: Prisma upit umjesto db.query za serverless performanse
     async findUserByFullName(full_name: string): Promise<Member | null> {
-        const result = await db.query<Member>(
-            'SELECT * FROM members WHERE full_name = $1',
-            [full_name]
-        );
-        return result.rows[0] || null;
+        console.log(`[AUTH-REPO] Tražim korisnika po imenu: ${full_name}`);
+        try {
+            const member = await prisma.member.findFirst({
+                where: { full_name }
+            });
+            return member as unknown as Member | null;
+        } catch (error) {
+            console.error('[AUTH-REPO] Greška pri traženju korisnika po imenu:', error);
+            return null;
+        }
     },
 
+    // OPTIMIZACIJA: Prisma upit za traženje po email-u
     async findUserByEmail(email: string): Promise<Member | null> {
-        const result = await db.query<Member>(
-            'SELECT * FROM members WHERE email = $1',
-            [email]
-        );
-        return result.rows[0] || null;
+        console.log(`[AUTH-REPO] Tražim korisnika po email-u: ${email}`);
+        try {
+            const member = await prisma.member.findFirst({
+                where: { email }
+            });
+            return member as unknown as Member | null;
+        } catch (error) {
+            console.error('[AUTH-REPO] Greška pri traženju korisnika po email-u:', error);
+            return null;
+        }
     },
 
+    // KRITIČNA OPTIMIZACIJA: Najvažnija funkcija za authMiddleware
     async findUserById(id: number): Promise<Member | null> {
-        const result = await db.query<Member>(
-            'SELECT * FROM members WHERE member_id = $1',
-            [id]
-        );
-        return result.rows[0] || null;
+        console.log(`[AUTH-REPO] Tražim korisnika po ID: ${id}`);
+        const startTime = Date.now();
+        try {
+            const member = await prisma.member.findUnique({
+                where: { member_id: id }
+            });
+            const duration = Date.now() - startTime;
+            console.log(`[AUTH-REPO] Korisnik ${id} pronađen u ${duration}ms`);
+            return member as unknown as Member | null;
+        } catch (error) {
+            console.error(`[AUTH-REPO] Greška pri traženju korisnika ${id}:`, error);
+            return null;
+        }
     },
 
+    // OPTIMIZACIJA: Prisma create umjesto db.query
     async createMember(memberData: Omit<Member, 'member_id'>): Promise<Member> {
-        const result = await db.query<Member>(
-            `INSERT INTO members (
-                first_name, last_name, email, cell_phone, 
-                street_address, city, oib, date_of_birth, 
-                gender, life_status, tshirt_size, shell_jacket_size,
-                status, role, membership_type
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-                'pending', 'member', 'regular'
-            ) RETURNING *`,
-            [
-                memberData.first_name,
-                memberData.last_name,
-                memberData.email,
-                memberData.cell_phone,
-                memberData.street_address,
-                memberData.city,
-                memberData.oib,
-                memberData.date_of_birth,
-                memberData.gender,
-                memberData.life_status,
-                memberData.tshirt_size,
-                memberData.shell_jacket_size
-            ]
-        );
-        return result.rows[0];
+        console.log(`[AUTH-REPO] Stvaram novog člana: ${memberData.email}`);
+        try {
+            const member = await prisma.member.create({
+                data: {
+                    first_name: memberData.first_name,
+                    last_name: memberData.last_name,
+                    full_name: `${memberData.first_name} ${memberData.last_name}`, // Dodaj full_name
+                    email: memberData.email,
+                    cell_phone: memberData.cell_phone,
+                    street_address: memberData.street_address,
+                    city: memberData.city,
+                    oib: memberData.oib,
+                    date_of_birth: memberData.date_of_birth,
+                    gender: memberData.gender,
+                    life_status: memberData.life_status,
+                    tshirt_size: memberData.tshirt_size,
+                    shell_jacket_size: memberData.shell_jacket_size,
+                    status: 'pending',
+                    role: 'member',
+                    membership_type: 'regular'
+                }
+            });
+            console.log(`[AUTH-REPO] Član ${memberData.email} uspješno stvoren`);
+            return member as unknown as Member; // Sigurna konverzija
+        } catch (error) {
+            console.error(`[AUTH-REPO] Greška pri stvaranju člana ${memberData.email}:`, error);
+            throw error;
+        }
     },
 
     async updateMemberWithCardAndPassword(
