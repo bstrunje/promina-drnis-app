@@ -27,6 +27,7 @@ import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
+import SpeedInsightsWrapper from './components/SpeedInsights';
 
 
 function AppContent() {
@@ -137,6 +138,7 @@ function App() {
 
               </div>
             )}
+            <SpeedInsightsWrapper />
             <Toaster />
           </ToastProvider>
         </UnreadMessagesProvider>
