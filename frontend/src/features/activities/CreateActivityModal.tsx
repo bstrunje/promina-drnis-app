@@ -65,11 +65,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
         try {
           const types = await getActivityTypes();
           setActivityTypes(types);
-          
-          // Ako nije prethodno odabran tip, postavi prvi kao defaultni
-          if (!selectedTypeId && types.length > 0) {
-            setSelectedTypeId(String(types[0].type_id));
-          }
         } catch (err) {
           console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
           setError(t('activities.creation.errors.fetchTypes'));
@@ -77,10 +72,18 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           setLoadingTypes(false);
         }
       };
-      
       void fetchActivityTypes();
     }
-  }, [isOpen, selectedTypeId]);
+  }, [isOpen, t]);
+
+  // Postavljanje defaultnog tipa aktivnosti nakon dohvaćanja
+  useEffect(() => {
+    // Postavi defaultni tip aktivnosti samo ako su tipovi učitani i ako već nije odabran
+    if (activityTypes.length > 0 && !selectedTypeId) {
+      setSelectedTypeId(String(activityTypes[0].type_id));
+    }
+    // Ovaj hook ovisi samo o `activityTypes`. Ne želimo ga ponovno pokretati kad se `selectedTypeId` promijeni.
+  }, [activityTypes]);
   
   // Efekt koji prati promjenu tipa aktivnosti
   useEffect(() => {
