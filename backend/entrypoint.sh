@@ -10,13 +10,9 @@ echo "Database is healthy, entrypoint script continues..."
 echo "Running database migrations..."
 npx prisma migrate deploy
 
-# Pokrećemo seedanje baze
+# Pokrećemo jedinstvenu seed skriptu (vještine, tipovi aktivnosti, system manager)
 echo "Seeding database..."
-npm run prisma:seed
-
-# Pokrećemo setup skriptu (kreiranje System Managera)
-echo "Running database setup..."
-node dist/run-setup.js
+npm run seed
 
 echo "Handing over to CMD..."
 exec "$@"

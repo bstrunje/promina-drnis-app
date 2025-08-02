@@ -8,7 +8,6 @@
     "strict": true,
     "isolatedModules": true,
     "outDir": "./dist",
-    "rootDir": "src",
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
@@ -20,6 +19,6 @@
     "resolvePackageJsonExports": true
   },
   "references": [],
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma/seed.ts"],
   "exclude": ["node_modules", "dist", "src/routes/dev.routes.ts", "src/tests"]
 }
