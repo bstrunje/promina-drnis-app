@@ -55,19 +55,7 @@ const scheduledService = {
       return isDone;
     } catch (error) {
       console.error(`[SCHEDULED] Greška prilikom provjere arhiviranja za godinu ${year}:`, error);
-      
-      // Fallback na legacy db.query ako Prisma ne radi
-      try {
-        console.log(`[SCHEDULED] Fallback na legacy db.query za godinu ${year}...`);
-        const result = await db.query(`
-          SELECT COUNT(*) FROM stamp_history WHERE year = $1
-        `, [year]);
-        
-        return parseInt(result.rows[0].count) > 0;
-      } catch (fallbackError) {
-        console.error(`[SCHEDULED] Fallback greška za godinu ${year}:`, fallbackError);
-        return false;
-      }
+      throw error;
     }
   },
   

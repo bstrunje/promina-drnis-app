@@ -205,59 +205,34 @@ const systemManagerService = {
             if (existingPermissions) {
                 console.log('Existing permissions found, updating...');
                 // Ako ovlasti već postoje, ažuriramo ih
-                try {
-                    await prisma.memberPermissions.update({
-                        where: {
-                            member_id: memberId
-                        },
-                        data: {
-                            can_manage_end_reasons: can_manage_end_reasons,
-                            grantedByMember: {
-                                connect: { member_id: grantedById }
-                            }
+                await prisma.memberPermissions.update({
+                    where: {
+                        member_id: memberId
+                    },
+                    data: {
+                        can_manage_end_reasons: can_manage_end_reasons,
+                        grantedByMember: {
+                            connect: { member_id: grantedById }
                         }
-                    });
-                    console.log('Permissions updated successfully via Prisma');
-                } catch (prismaError) {
-                    // Ako Prisma ne uspije, koristimo direktni SQL upit
-                    console.warn('Prisma error when updating permissions, falling back to SQL:', prismaError);
-                    
-                    await db.query(
-                        `UPDATE member_permissions 
-                         SET can_manage_end_reasons = $1, granted_by = $2
-                         WHERE member_id = $3`,
-                        [can_manage_end_reasons, grantedById, memberId]
-                    );
-                    console.log('Permissions updated successfully via SQL');
-                }
+                    }
+                });
+                console.log('[SYSTEM-MANAGER] Permissions updated successfully via Prisma');
             } else {
                 console.log('No existing permissions found, creating new entry...');
                 // Ako ovlasti ne postoje, kreiramo ih
-                try {
-                    await prisma.memberPermissions.create({
-                        data: {
-                            can_manage_end_reasons: can_manage_end_reasons,
-                            member: {
-                                connect: { member_id: memberId }
-                            },
-                            grantedByMember: {
-                                connect: { member_id: grantedById }
-                            },
-                            granted_at: now
-                        }
-                    });
-                    console.log('Permissions created successfully via Prisma');
-                } catch (prismaError) {
-                    // Ako Prisma ne uspije, koristimo direktni SQL upit
-                    console.warn('Prisma error when creating permissions, falling back to SQL:', prismaError);
-                    
-                    await db.query(
-                        `INSERT INTO member_permissions (member_id, can_manage_end_reasons, granted_by, granted_at)
-                         VALUES ($1, $2, $3, $4)`,
-                        [memberId, can_manage_end_reasons, grantedById, now]
-                    );
-                    console.log('Permissions created successfully via SQL');
-                }
+                await prisma.memberPermissions.create({
+                    data: {
+                        can_manage_end_reasons: can_manage_end_reasons,
+                        member: {
+                            connect: { member_id: memberId }
+                        },
+                        grantedByMember: {
+                            connect: { member_id: grantedById }
+                        },
+                        granted_at: now
+                    }
+                });
+                console.log('[SYSTEM-MANAGER] Permissions created successfully via Prisma');
             }
         } catch (error) {
             console.error('Error in updateMemberPermissions:', error);
@@ -397,23 +372,42 @@ const systemManagerService = {
     // Dohvat članova koji nemaju admin ovlasti
     async getMembersWithoutPermissions(): Promise<any[]> {
         try {
-            // Dohvaćamo članove koji nemaju zapis u tablici admin_permissions
+            console.log('[SYSTEM-MANAGER] Dohvaćam članove koji nemaju admin ovlasti...');
+            
+            // Dohvaćamo članove koji nemaju zapis u tablici member_permissions
             // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'member_administrator', 'member_superuser' ili 'member'
-            return db.query(`
-                SELECT 
-                    m.member_id, 
-                    m.first_name, 
-                    m.last_name, 
-                    m.email,
-                    m.role
-                FROM member m
-                WHERE m.member_id NOT IN (
-                    SELECT member_id FROM admin_permissions
-                )
-                AND m.detailed_status = 'registered'
-                AND m.role IN ('member_administrator', 'member_superuser', 'member')
-                ORDER BY m.last_name, m.first_name
-            `).then(result => result.rows);
+            const membersWithoutPermissions = await prisma.member.findMany({
+                where: {
+                    AND: [
+                        {
+                            // Članovi koji NEMAJU zapis u member_permissions tablici
+                            permissions: null
+                        },
+                        {
+                            status: 'registered'
+                        },
+                        {
+                            role: {
+                                in: ['member_administrator', 'member_superuser', 'member']
+                            }
+                        }
+                    ]
+                },
+                select: {
+                    member_id: true,
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    role: true
+                },
+                orderBy: [
+                    { last_name: 'asc' },
+                    { first_name: 'asc' }
+                ]
+            });
+            
+            console.log(`[SYSTEM-MANAGER] Pronađeno ${membersWithoutPermissions.length} članova bez admin ovlasti`);
+            return membersWithoutPermissions;
         } catch (error) {
             console.error('Error in getMembersWithoutPermissions:', error);
             throw error;

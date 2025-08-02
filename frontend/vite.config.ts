@@ -36,18 +36,46 @@ export default defineConfig({
     rollupOptions: {
       output: {
         sourcemapExcludeSources: true,
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-label'
-          ],
-          'vendor-utils': ['date-fns', 'axios', 'zustand'],
-          'vendor-forms': ['react-hook-form', '@hookform/resolvers'],
-          'vendor-charts': ['recharts'],
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'vendor-ui';
+            }
+            if (id.includes('date-fns') || id.includes('axios') || id.includes('zustand')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('react-hook-form') || id.includes('@hookform')) {
+              return 'vendor-forms';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            // Ostali vendor paketi
+            return 'vendor-misc';
+          }
+          
+          // Aplikacijski chunks
+          if (id.includes('/src/')) {
+            if (id.includes('/pages/') || id.includes('/components/pages/')) {
+              return 'app-pages';
+            }
+            if (id.includes('/components/')) {
+              return 'app-components';
+            }
+            if (id.includes('/services/') || id.includes('/api/')) {
+              return 'app-services';
+            }
+            if (id.includes('/stores/') || id.includes('/hooks/')) {
+              return 'app-state';
+            }
+            if (id.includes('/utils/') || id.includes('/helpers/')) {
+              return 'app-utils';
+            }
+          }
         },
         assetFileNames: (assetInfo) => {
           if (!assetInfo.name) return 'assets/[name]-[hash][extname]';

@@ -5,6 +5,7 @@ import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../../config/jwt.config.js';
 import { formatUTCDate, getTokenExpiryDate } from '../../utils/dateUtils.js';
 import {
   generateCookieOptions,
+  generateClearCookieOptions,
 } from './auth.utils.js';
 
 // Funkcija za obnavljanje access tokena pomoću refresh tokena
@@ -287,13 +288,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     if (req.cookies.systemManagerRefreshToken) {
       console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
-      const systemManagerCookieOptions = generateCookieOptions(req);
+      const systemManagerCookieOptions = generateClearCookieOptions(req);
       res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     }
     
     if (req.cookies.refreshToken) {
       console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
-      const memberCookieOptions = generateCookieOptions(req);
+      const memberCookieOptions = generateClearCookieOptions(req);
       res.clearCookie('refreshToken', memberCookieOptions);
     }
     

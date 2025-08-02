@@ -418,29 +418,7 @@ const memberService = {
                 console.log(`[MEMBER] Dohvaćeno ${activitiesData.length} aktivnosti za člana ${memberId}`);
             } catch (error) {
                 console.error(`[MEMBER] Greška prilikom dohvaćanja aktivnosti za člana ${memberId}:`, error);
-                
-                // Fallback na legacy db.query ako Prisma ne radi
-                try {
-                    console.log(`[MEMBER] Fallback na legacy db.query za člana ${memberId}...`);
-                    const activitiesQuery = await db.query(`
-                        SELECT 
-                            a.activity_id,
-                            a.name,
-                            a.start_date as date,
-                            ap.manual_hours,
-                            a.actual_start_time,
-                            a.actual_end_time
-                        FROM activities a
-                        JOIN activity_participations ap ON a.activity_id = ap.activity_id
-                        WHERE ap.member_id = $1
-                        ORDER BY a.start_date DESC
-                    `, [memberId]);
-                    
-                    activitiesData = activitiesQuery.rows;
-                } catch (fallbackError) {
-                    console.error(`[MEMBER] Fallback greška za člana ${memberId}:`, fallbackError);
-                    throw fallbackError;
-                }
+                throw error;
             }
 
             /**
@@ -490,7 +468,7 @@ const memberService = {
                 return {
                     activity_id: activity.activity_id,
                     name: activity.name,
-                    date: activity.date,
+                    date: activity.date.toISOString().split('T')[0], // Konvertiraj Date u string format YYYY-MM-DD
                     hours_spent
                 };
             });

@@ -38,6 +38,43 @@ export const generateCookieOptions = (req: Request): any => {
   }
 };
 
+// OPTIMIZACIJA: Funkcija za brisanje kolačića bez maxAge opcije (Express 5 kompatibilnost)
+export const generateClearCookieOptions = (req: Request): any => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    // Production settings (assuming HTTPS)
+    const origin = req.get('Origin');
+    let isSecureFrontendInProd = false;
+    if (origin) {
+      try {
+        const originUrl = new URL(origin);
+        isSecureFrontendInProd = originUrl.protocol === 'https:';
+      } catch (error) {
+        // console.error('Invalid Origin header in prod:', origin);
+      }
+    }
+
+    return {
+      httpOnly: true,
+      secure: true, // Production must be Secure
+      sameSite: isSecureFrontendInProd ? 'none' : 'lax', // 'none' if frontend is HTTPS, 'lax' otherwise. Consider 'strict'.
+      // maxAge se ne koristi s res.clearCookie() - Express 5 deprecation fix
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined, // Use COOKIE_DOMAIN if set, otherwise undefined
+    };
+  } else {
+    // Development settings (HTTP localhost)
+    return {
+      httpOnly: true,
+      secure: false, // Explicitly false for HTTP
+      sameSite: 'lax', // Lax is standard and usually works for HTTP localhost
+      // maxAge se ne koristi s res.clearCookie() - Express 5 deprecation fix
+      path: '/',
+    };
+  }
+};
+
 /**
  * Pomoćna funkcija za formatiranje teksta za minute u hrvatskom jeziku
  * (pravilno gramatičko sklanjanje riječi "minuta")

@@ -61,18 +61,7 @@ const authService = {
             console.log(`[AUTH] Last_login uspješno ažuriran za člana ${user.member_id}`);
         } catch (error) {
             console.error(`[AUTH] Greška prilikom ažuriranja last_login za člana ${user.member_id}:`, error);
-            
-            // Fallback na legacy db.query ako Prisma ne radi
-            try {
-                console.log(`[AUTH] Fallback na legacy db.query za člana ${user.member_id}...`);
-                await db.query(
-                    'UPDATE members SET last_login = CURRENT_TIMESTAMP WHERE member_id = $1',
-                    [user.member_id]
-                );
-            } catch (fallbackError) {
-                console.error(`[AUTH] Fallback greška za člana ${user.member_id}:`, fallbackError);
-                // Ne prekidamo login proces zbog greške u ažuriranju last_login
-            }
+            // Ne prekidamo login proces zbog greške u ažuriranju last_login
         }
 
         return {
