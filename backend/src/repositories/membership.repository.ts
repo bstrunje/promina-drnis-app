@@ -282,13 +282,19 @@ const membershipRepository = {
         );
     },
 
+    // OPTIMIZACIJA: Prisma upit umjesto db.query
     async updateStampStatus(memberId: number, isIssued: boolean): Promise<void> {
-        await db.query(
-            `UPDATE membership_details 
-             SET card_stamp_issued = $2 
-             WHERE member_id = $1`,
-            [memberId, isIssued]
-        );
+        console.log(`[MEMBERSHIP] Ažuriram status markice za člana ${memberId}: ${isIssued}`);
+        try {
+            await prisma.membershipDetails.update({
+                where: { member_id: memberId },
+                data: { card_stamp_issued: isIssued }
+            });
+            console.log(`[MEMBERSHIP] Uspješno ažuriran status markice za člana ${memberId}`);
+        } catch (error) {
+            console.error(`[MEMBERSHIP] Greška pri ažuriranju statusa markice za člana ${memberId}:`, error);
+            throw error;
+        }
     },
 
     async endExpiredMemberships(year: number): Promise<void> {
