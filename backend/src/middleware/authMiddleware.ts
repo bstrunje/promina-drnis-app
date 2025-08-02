@@ -46,6 +46,9 @@ const authenticateToken = async (
     res: Response, 
     next: NextFunction
 ): Promise<void> => {
+    const startTime = Date.now();
+    console.log(`[AUTH] Početak autentifikacije za ${req.method} ${req.path}`);
+    
     try {
         // Get token from header
         console.log('Auth headers:', req.headers.authorization);
@@ -80,6 +83,7 @@ const authenticateToken = async (
             }
         } else {
             // Za članove - postojeća logika
+            console.log(`[AUTH] Dohvaćam podatke člana ${decoded.id} iz baze...`);
             // Get member from database
             const result = await db.query<DatabaseUser>(
                 `SELECT 
@@ -115,6 +119,9 @@ const authenticateToken = async (
                 user_type: 'member',
                 performer_type: 'MEMBER' as PerformerType
             };
+            
+            const duration = Date.now() - startTime;
+            console.log(`[AUTH] Autentifikacija uspješna za člana ${decoded.id} u ${duration}ms`);
             next(); // Poziv za članove ostaje ovdje
         }
     } catch (error) {
