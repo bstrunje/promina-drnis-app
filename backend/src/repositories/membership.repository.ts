@@ -110,91 +110,79 @@ const membershipRepository = {
         });
       },
 
-      async updateMembershipPeriods(
-        memberId: number, 
-        periods: MembershipPeriod[],
-        req?: Request
-      ): Promise<void> {
-        await db.transaction(async client => {
-          // Sigurna provjera jest li u testnom načinu rada
-          const isTestMode = req ? (req as any).isTestMode || false : false;
-          if (isTestMode) {
-            console.log(`🧪 Testni način rada: Ažuriranje razdoblja članstva za člana ${memberId}`);
-          }
-          
-          // Izbriši postojeće periode (briše SVE periode, pažljivo!)
-          await client.query(
-            'DELETE FROM membership_periods WHERE member_id = $1',
-            [memberId]
-          );
+      // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
+async updateMembershipPeriods(
+  memberId: number, 
+  periods: MembershipPeriod[],
+  req?: Request
+): Promise<void> {
+  console.log(`[MEMBERSHIP] Ažuriranje perioda članstva za člana ${memberId}...`);
+  
+  await prisma.$transaction(async (tx) => {
+    // Sigurna provjera jest li u testnom načinu rada
+    const isTestMode = req ? (req as any).isTestMode || false : false;
+    if (isTestMode) {
+      console.log(`[MEMBERSHIP] 🧪 Testni način rada: Ažuriranje razdoblja članstva za člana ${memberId}`);
+    }
+    
+    // Izbriši postojeće periode (briše SVE periode, pažljivo!)
+    await tx.membershipPeriod.deleteMany({
+      where: { member_id: memberId }
+    });
+    console.log(`[MEMBERSHIP] Obrisani postojeći periodi za člana ${memberId}`);
+
+    // Insert new periods using Prisma createMany
+    if (periods.length > 0) {
+      await tx.membershipPeriod.createMany({
+        data: periods.map(period => ({
+          member_id: memberId,
+          start_date: period.start_date,
+          end_date: period.end_date || null,
+          end_reason: period.end_reason || null,
+          is_test_data: isTestMode
+        }))
+      });
+      console.log(`[MEMBERSHIP] Kreirano ${periods.length} novih perioda za člana ${memberId}`);
+    }
+  
+    // Provjeri ima li član aktivnih perioda (bez end_date) - Prisma count
+    const activeCount = await tx.membershipPeriod.count({
+      where: {
+        member_id: memberId,
+        end_date: null
+      }
+    });
+    
+    console.log(`[MEMBERSHIP] Broj aktivnih perioda za člana ${memberId}: ${activeCount}`);
+  
+    // Provjeri ima li barem jedan zatvoren period s razlogom
+    const hasEndedPeriods = periods.some(p => p.end_date && p.end_reason);
+    console.log(`[MEMBERSHIP] Ima završenih perioda za člana ${memberId}: ${hasEndedPeriods}`);
+  
+    // Ako nema aktivnih perioda, član je izvedeno 'inactive' (ali status se NE zapisuje u tablicu)
+    if (activeCount === 0 && hasEndedPeriods) {
+      console.log(`[MEMBERSHIP] Član ${memberId} je logički INACTIVE (nema aktivnih perioda). Status u bazi ostaje nepromijenjen.`);
+      // Status 'inactive' se ne zapisuje u tablicu members!
+      // Odluka: status 'inactive' je izveden i koristi se samo u helper funkcijama i prikazu.
+    } else if (activeCount > 0) {
+      // Osiguraj da je član aktivan ako ima aktivnih perioda
+      console.log(`[MEMBERSHIP] Postavljam člana ${memberId} kao aktivnog - ima ${activeCount} aktivnih perioda`);
+      await tx.member.update({
+        where: { member_id: memberId },
+        data: { status: 'registered' }
+      });
       
-          // Insert new periods
-          for (const period of periods) {
-            await client.query(
-              `INSERT INTO membership_periods 
-               (member_id, start_date, end_date, end_reason, is_test_data) 
-               VALUES ($1, $2, $3, $4, $5)`,
-              [
-                memberId,
-                period.start_date,
-                period.end_date || null,
-                period.end_reason || null,
-                isTestMode
-              ]
-            );
-          }
-        
-          // Provjeri ima li član aktivnih perioda (bez end_date)
-          const activePeriodsResult = await client.query(
-            `SELECT COUNT(*) as active_count 
-             FROM membership_periods 
-             WHERE member_id = $1 AND end_date IS NULL`,
-            [memberId]
-          );
-          
-          console.log(`DEBUG: Active periods count for member ${memberId}:`, activePeriodsResult.rows[0].active_count);
-          console.log(`DEBUG: Type of active_count:`, typeof activePeriodsResult.rows[0].active_count);
-        
-          // Provjeri ima li barem jedan zatvoren period s razlogom
-          const hasEndedPeriods = periods.some(p => p.end_date && p.end_reason);
-          console.log(`DEBUG: Has ended periods for member ${memberId}: ${hasEndedPeriods}, periods:`, 
-            periods.map(p => ({ 
-              start: p.start_date, 
-              end: p.end_date || "null", 
-              reason: p.end_reason || "null" 
-            }))
-          );
-        
-          // Preciznija obrada rezultata COUNT - može doći u različitim formatima ovisno o PostgreSQL driveru
-          let activeCount = 0;
-          
-          if (typeof activePeriodsResult.rows[0].active_count === 'string') {
-            activeCount = parseInt(activePeriodsResult.rows[0].active_count);
-          } else {
-            activeCount = Number(activePeriodsResult.rows[0].active_count);
-          }
-          
-          console.log(`DEBUG: Processed activeCount (after conversion):`, activeCount);
-        
-          // Ako nema aktivnih perioda, član je izvedeno 'inactive' (ali status se NE zapisuje u tablicu)
-          if (activeCount === 0 && hasEndedPeriods) {
-            console.log(`Member ${memberId} je logički INACTIVE (nema aktivnih perioda). Status u bazi ostaje nepromijenjen.`);
-            // Status 'inactive' se ne zapisuje u tablicu members!
-            // Odluka: status 'inactive' je izveden i koristi se samo u helper funkcijama i prikazu.
-          } else {
-            // Osiguraj da je član aktivan ako ima aktivnih perioda
-            console.log(`Ensuring member ${memberId} is active - has active membership periods: ${activeCount}`);
-            await client.query(
-              'UPDATE members SET status = $1 WHERE member_id = $2',
-              ['registered', memberId]
-            );
-            
-            // Dodatno logirajmo status nakon promjene
-            const statusCheck = await client.query('SELECT status FROM members WHERE member_id = $1', [memberId]);
-            console.log(`DEBUG: Member ${memberId} status after update: ${statusCheck.rows[0].status}`);
-          }
-        });
-      },
+      // Provjeri status nakon promjene
+      const updatedMember = await tx.member.findUnique({
+        where: { member_id: memberId },
+        select: { status: true }
+      });
+      console.log(`[MEMBERSHIP] Status člana ${memberId} nakon ažuriranja: ${updatedMember?.status}`);
+    }
+    
+    console.log(`[MEMBERSHIP] Uspješno ažurirani periodi članstva za člana ${memberId}`);
+  });
+},
 
     async getCurrentPeriod(memberId: number): Promise<MembershipPeriod | null> {
         const result = await db.query<MembershipPeriod>(
@@ -297,46 +285,57 @@ const membershipRepository = {
         }
     },
 
-    async endExpiredMemberships(year: number): Promise<void> {
-        await db.transaction(async (client) => {
-            // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
-            //    i koji su trenutno 'registered'.
-            const expiredMembersResult = await client.query<{ member_id: number }>(
-                `SELECT m.member_id 
-                 FROM members m
-                 LEFT JOIN membership_details md ON m.member_id = md.member_id
-                 WHERE m.status = 'registered' AND (md.fee_payment_year < $1 OR md.fee_payment_year IS NULL)`,
-                [year]
-            );
+    // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
+async endExpiredMemberships(year: number): Promise<void> {
+    console.log(`[MEMBERSHIP] Završavam istekla članstva za godinu ${year}...`);
+    
+    await prisma.$transaction(async (tx) => {
+        // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
+        //    i koji su trenutno 'registered' - koristimo Prisma raw query za složeni join
+        const expiredMembers = await tx.$queryRaw<{ member_id: number }[]>`
+            SELECT m.member_id 
+            FROM members m
+            LEFT JOIN membership_details md ON m.member_id = md.member_id
+            WHERE m.status = 'registered' AND (md.fee_payment_year < ${year} OR md.fee_payment_year IS NULL)
+        `;
 
-            const memberIdsToExpire = expiredMembersResult.rows.map(row => row.member_id);
+        const memberIdsToExpire = expiredMembers.map(row => row.member_id);
 
-            if (memberIdsToExpire.length === 0) {
-                console.log(`Nema članova s isteklim članstvom za godinu ${year}.`);
-                return;
+        if (memberIdsToExpire.length === 0) {
+            console.log(`[MEMBERSHIP] Nema članova s isteklim članstvom za godinu ${year}.`);
+            return;
+        }
+
+        console.log(`[MEMBERSHIP] Pronađeno ${memberIdsToExpire.length} članova kojima ističe članarina:`, memberIdsToExpire);
+
+        // 2. Ažuriraj status i sate za te članove u tablici `members` - Prisma updateMany
+        await tx.member.updateMany({
+            where: {
+                member_id: { in: memberIdsToExpire }
+            },
+            data: {
+                status: 'inactive',
+                total_hours: 0
             }
-
-            console.log(`Pronađeno ${memberIdsToExpire.length} članova kojima ističe članarina:`, memberIdsToExpire);
-
-            // 2. Ažuriraj status i sate za te članove u tablici `members`
-            await client.query(
-                `UPDATE members
-                 SET status = 'inactive', total_hours = 0
-                 WHERE member_id = ANY($1::int[])`,
-                [memberIdsToExpire]
-            );
-
-            // 3. Završi njihova aktivna razdoblja članstva u `membership_periods`
-            await client.query(
-                `UPDATE membership_periods 
-                 SET end_date = $1, end_reason = 'non_payment'
-                 WHERE end_date IS NULL AND member_id = ANY($2::int[])`,
-                [getCurrentDate(), memberIdsToExpire]
-            );
-
-            console.log(`Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive' i sati resetirani.`);
         });
-    }
+        console.log(`[MEMBERSHIP] Ažuriran status na 'inactive' i resetirani sati za ${memberIdsToExpire.length} članova`);
+
+        // 3. Završi njihova aktivna razdoblja članstva u `membership_periods` - Prisma updateMany
+        await tx.membershipPeriod.updateMany({
+            where: {
+                end_date: null,
+                member_id: { in: memberIdsToExpire }
+            },
+            data: {
+                end_date: getCurrentDate(),
+                end_reason: 'non_payment'
+            }
+        });
+        console.log(`[MEMBERSHIP] Završena aktivna razdoblja članstva za ${memberIdsToExpire.length} članova`);
+
+        console.log(`[MEMBERSHIP] Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive' i sati resetirani.`);
+    });
+}
 };
 
 export default membershipRepository;

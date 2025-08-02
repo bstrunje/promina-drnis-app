@@ -80,53 +80,57 @@ const authRepository = {
         }
     },
 
+    // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
     async updateMemberWithCardAndPassword(
         memberId: number, 
         passwordHash: string, 
         cardNumber: string
     ): Promise<void> {
         try {
-            console.log('==== MEMBER UPDATE DETAILS ====');
-            console.log(`Member ID: ${memberId}`);
-            console.log(`Password hash length: ${passwordHash.length}`);
-            console.log(`Card number assigned: "${cardNumber}"`);
+            console.log('[AUTH] ==== MEMBER UPDATE DETAILS ====');
+            console.log(`[AUTH] Member ID: ${memberId}`);
+            console.log(`[AUTH] Password hash length: ${passwordHash.length}`);
+            console.log(`[AUTH] Card number assigned: "${cardNumber}"`);
             
-            await db.transaction(async (client) => {
-                // Prvo ažuriramo status člana i lozinku
-                await client.query(`
-                    UPDATE members
-                    SET password_hash = $1, 
-                        status = 'registered', 
-                        registration_completed = true
-                    WHERE member_id = $2
-                `, [passwordHash, memberId]);
+            await prisma.$transaction(async (tx) => {
+                // Prvo ažuriramo status člana i lozinku - Prisma update
+                const updatedMember = await tx.member.update({
+                    where: { member_id: memberId },
+                    data: {
+                        password_hash: passwordHash,
+                        status: 'registered',
+                        registration_completed: true
+                    },
+                    select: {
+                        member_id: true,
+                        full_name: true,
+                        status: true,
+                        registration_completed: true
+                    }
+                });
                 
-                // Dohvatimo ažurirane podatke o članu za potvrdu
-                const memberAfterUpdate = await client.query(
-                    'SELECT member_id, full_name, status, registration_completed FROM members WHERE member_id = $1',
-                    [memberId]
-                );
+                console.log('[AUTH] Member after update:', updatedMember);
                 
-                console.log('Member after update:', memberAfterUpdate.rows[0]);
-                
-                // Zatim ažuriramo broj članske iskaznice
+                // Zatim ažuriramo broj članske iskaznice - Prisma upsert
                 try {
-                    await client.query(`
-                        INSERT INTO membership_details (member_id, card_number)
-                        VALUES ($1, $2)
-                        ON CONFLICT (member_id) 
-                        DO UPDATE SET card_number = $2
-                    `, [memberId, cardNumber]);
+                    await tx.membershipDetails.upsert({
+                        where: { member_id: memberId },
+                        update: { card_number: cardNumber },
+                        create: {
+                            member_id: memberId,
+                            card_number: cardNumber
+                        }
+                    });
                     
-                    console.log('Card number updated successfully');
+                    console.log('[AUTH] Card number updated successfully');
                 } catch (cardError) {
-                    console.error('Failed to update card number:', cardError);
+                    console.error('[AUTH] Failed to update card number:', cardError);
                     throw cardError; // Propagiramo grešku da bismo poništili cijelu transakciju
                 }
             });
-            console.log('Member update completed successfully');
+            console.log('[AUTH] Member update completed successfully');
         } catch (error) {
-            console.error("Error updating member with card and password:", error);
+            console.error("[AUTH] Error updating member with card and password:", error);
             throw error;
         }
     },

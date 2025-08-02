@@ -4,6 +4,7 @@ import { validateRegistration, validateLogin } from '../middleware/validators.js
 import authController from '../controllers/auth.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 import db from '../utils/db.js'; // Full direct path, no @ symbol
+import prisma from '../utils/prisma.js'; // OPTIMIZACIJA: Dodano za Prisma ORM
 import { createRateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
@@ -56,16 +57,17 @@ router.get('/debug-member/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     console.log(`Debug request for ID: ${id}`);
     
-    // Simple raw query to avoid any potential issues
-    const result = await db.query('SELECT * FROM members WHERE member_id = $1', [id]);
+    // OPTIMIZACIJA: Prisma upit umjesto db.query
+    const member = await prisma.member.findUnique({
+      where: { member_id: id }
+    });
     
-    if (result.rowCount === 0) {
+    if (!member) {
       console.log(`No member found with ID ${id}`);
       return res.status(404).json({ message: 'Member not found' });
     }
     
     // Return minimal data with password hash length only
-    const member = result.rows[0];
     return res.json({
       debug: true,
       member_id: member.member_id,
