@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './activities.css';
 import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
+import { Dialog, DialogPortal, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
@@ -21,6 +21,7 @@ import RecognitionPercentageInput from '@components/RecognitionPercentageInput';
 import { MemberSelect } from './MemberSelect';
 import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { ActivityType } from '@shared/activity.types';
+import { SelectPortal } from '@radix-ui/react-select';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -193,7 +194,8 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
+      <DialogPortal>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">{t('activities.creation.title')}</DialogTitle>
           <DialogDescription>{t('activities.creation.description')}</DialogDescription>
@@ -212,13 +214,15 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 <SelectTrigger className={fieldErrors.selectedTypeId ? 'border-red-500' : ''}>
                   <SelectValue placeholder={t('activities.creation.selectActivityType')} />
                 </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={5} className="z-[99]">
-                  {activityTypes.map((type) => (
-                    <SelectItem key={type.type_id} value={String(type.type_id)}>
-                      {t(`activities.types.${type.key}`).toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectPortal>
+                  <SelectContent className="z-[9999]" position="popper" sideOffset={5}>
+                    {activityTypes.map((type) => (
+                      <SelectItem key={type.type_id} value={String(type.type_id)}>
+                        {t(`activities.types.${type.key}`).toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </SelectPortal>
               </Select>
               {fieldErrors.selectedTypeId && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.activityTypeRequired')}</p>}
               {loadingTypes && <p className="text-sm text-muted-foreground mt-1">{t('activities.creation.loadingTypes')}</p>}
@@ -481,6 +485,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           </DialogFooter>
         </div>
       </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 };

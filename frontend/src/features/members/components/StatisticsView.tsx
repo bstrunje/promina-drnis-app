@@ -55,25 +55,34 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     return groups;
   }, [members]);
 
-  // Filtriramo samo članove s važećim članstvom za statistiku aktivnosti
-  const currentMembers = useMemo(
+  const registeredMembers = useMemo(
     () => members.filter(m => m.membershipStatus === 'registered'),
     [members]
+  );
+
+  const activeMembersCount = useMemo(
+    () => registeredMembers.filter(member => (member.total_hours ?? 0) >= 1200).length,
+    [registeredMembers]
+  );
+
+  const passiveMembersCount = useMemo(
+    () => registeredMembers.length - activeMembersCount,
+    [registeredMembers, activeMembersCount]
   );
 
   return (
     <div className="space-y-6 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">{t('statistics.totalMembers')}: {currentMembers.length}</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('statistics.totalMembers')}: {registeredMembers.length}</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>{t('statistics.activeMembers')}:</span>
-              <span>{currentMembers.filter(m => m.isActive).length}</span>
+              <span>{activeMembersCount}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('statistics.passiveMembers')}:</span>
-              <span>{currentMembers.filter(m => !m.isActive).length}</span>
+              <span>{passiveMembersCount}</span>
             </div>
           </div>
         </div>
