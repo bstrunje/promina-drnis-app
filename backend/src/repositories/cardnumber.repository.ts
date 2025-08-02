@@ -138,49 +138,63 @@ const cardNumberRepository = {
     }
   },
   
-  // Add a range of card numbers
+  // KRITIČNA OPTIMIZACIJA: Prisma batch operacije umjesto db.transaction
   async addRange(start: number, end: number, padLength: number): Promise<number> {
-    let added = 0;
+    console.log(`[CARD-NUMBERS] Dodajem raspon ${start}-${end} (padding: ${padLength})...`);
+    const startTime = Date.now();
     
-    // Transaction to ensure all-or-nothing insertion
-    await db.transaction(async (client) => {
+    try {
+      // Pripremi sve brojeve kartica za batch insert
+      const cardNumbers = [];
       for (let i = start; i <= end; i++) {
-        // Pad the number with leading zeros
         const cardNumber = i.toString().padStart(padLength, '0');
-        
-        const result = await client.query(
-          `INSERT INTO card_numbers (card_number, status) 
-           VALUES ($1, 'available')
-           ON CONFLICT (card_number) DO NOTHING
-           RETURNING card_number`,
-          [cardNumber]
-        );
-        
-        // Fix null check
-        if ((result?.rowCount ?? 0) > 0) {
-          added++;
-        }
+        cardNumbers.push({
+          card_number: cardNumber,
+          status: 'available' as const
+        });
       }
-    });
-    
-    return added;
+      
+      console.log(`[CARD-NUMBERS] Pripravljeno ${cardNumbers.length} brojeva za batch insert...`);
+      
+      // OPTIMIZACIJA: Prisma createMany s skipDuplicates umjesto petlje
+      const result = await prisma.cardNumber.createMany({
+        data: cardNumbers,
+        skipDuplicates: true // Preskoči duplikate umjesto ON CONFLICT
+      });
+      
+      const duration = Date.now() - startTime;
+      console.log(`[CARD-NUMBERS] Dodano ${result.count} novih brojeva u ${duration}ms`);
+      
+      return result.count;
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri dodavanju raspona ${start}-${end}:`, error);
+      throw error;
+    }
   },
   
-  // Assign a card number to a member
+  // OPTIMIZACIJA: Prisma update umjesto db.query
   async assignToMember(cardNumber: string, memberId: number): Promise<boolean> {
-    const result = await db.query(
-      `UPDATE card_numbers
-       SET status = 'assigned', 
-           assigned_at = CURRENT_TIMESTAMP,
-           member_id = $2
-       WHERE card_number = $1 
-       AND status = 'available'
-       RETURNING id`,
-      [cardNumber, memberId]
-    );
-    
-    // Fix null check
-    return (result?.rowCount ?? 0) > 0;
+    console.log(`[CARD-NUMBERS] Dodjeljujem karticu ${cardNumber} članu ${memberId}...`);
+    try {
+      const result = await prisma.cardNumber.updateMany({
+        where: {
+          card_number: cardNumber,
+          status: 'available'
+        },
+        data: {
+          status: 'assigned',
+          assigned_at: new Date(),
+          member_id: memberId
+        }
+      });
+      
+      const success = result.count > 0;
+      console.log(`[CARD-NUMBERS] Kartica ${cardNumber} ${success ? 'uspješno dodijeljena' : 'nije dostupna'} članu ${memberId}`);
+      return success;
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri dodjeli kartice ${cardNumber} članu ${memberId}:`, error);
+      return false;
+    }
   },
   
   // OPTIMIZACIJA: Prisma update umjesto db.query
