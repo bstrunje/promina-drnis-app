@@ -10,7 +10,17 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './shared/types'),
       '@components': path.resolve(__dirname, './components')
     },
-    dedupe: ['react', 'react-dom'],
+    // Pojačano dedupe za sve React-related pakete da se izbjegnu duplikati
+    dedupe: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-toast', 
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-label'
+    ],
   },
   server: {
     proxy: {
@@ -28,12 +38,30 @@ export default defineConfig({
     port: 5173,
     host: true
   },
+  optimizeDeps: {
+    // Forsiranje pre-bundling za sve React-related pakete
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-label'
+    ],
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
     target: 'es2015',
     chunkSizeWarningLimit: 600,
     rollupOptions: {
+      // Osiguraj da se React moduli tretiraju kao external dependencies
+      external: (id) => {
+        // Ne tretiramo ništa kao external - sve bundlamo
+        return false;
+      },
       output: {
         sourcemapExcludeSources: true,
         manualChunks: (id) => {
