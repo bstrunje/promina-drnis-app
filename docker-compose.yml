@@ -36,7 +36,8 @@ services:
       - "3001:3001"
 
     environment:
-      # Povezujemo backend s bazom podataka unutar Docker mreže koristeći ime servisa 'db'
+      # KRITIČNA ISPRAVKA: Dodaj DATABASE_URL za Prisma klijent
+      DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
       PRISMA_DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
       SHADOW_DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb_shadow?schema=public"
       # Postavljamo port na kojem backend sluša

@@ -263,66 +263,96 @@ const cardNumberRepository = {
     }
   },
 
-  // Modify the getAllCardNumbers method to check all tables for card assignment information
+  // KRITIČNA OPTIMIZACIJA: Zamjena kompleksnog db.query s Prisma upitima
   async getAllCardNumbers(): Promise<{
     card_number: string;
     status: 'available' | 'assigned';
     member_id?: number;
     member_name?: string;
   }[]> {
+    console.log('[CARD-NUMBERS] Početak dohvata svih brojeva kartica...');
+    const startTime = Date.now();
+    
     try {
-      // Main query - expand to check membership_details table as well
-      const result = await db.query(`
-        WITH assigned_cards AS (
-          SELECT 
-            md.card_number,
-            md.member_id,
-            m.full_name as member_name,
-            'assigned' as source
-          FROM 
-            membership_details md
-          JOIN 
-            members m ON md.member_id = m.member_id
-          WHERE 
-            md.card_number IS NOT NULL AND md.card_number != ''
-        )
+      // OPTIMIZACIJA: Paralelni Prisma upiti umjesto kompleksnog CTE/JOIN
+      const [cardNumbers, assignedCards] = await Promise.allSettled([
+        // 1. Dohvati sve brojeve kartica
+        prisma.cardNumber.findMany({
+          select: {
+            card_number: true,
+            status: true,
+            member_id: true
+          },
+          orderBy: { card_number: 'asc' }
+        }),
         
-        SELECT 
-          cn.card_number, 
-          CASE
-            WHEN ac.card_number IS NOT NULL THEN 'assigned'
-            WHEN cn.status = 'assigned' THEN 'assigned'
-            ELSE cn.status
-          END as status,
-          COALESCE(ac.member_id, cn.member_id)::integer as member_id,
-          ac.member_name
-        FROM 
-          card_numbers cn
-        LEFT JOIN 
-          assigned_cards ac ON cn.card_number = ac.card_number
-        
-        UNION
-        
-        -- Include cards from membership_details that might not be in card_numbers
-        SELECT 
-          ac.card_number, 
-          'assigned' as status,
-          ac.member_id::integer,
-          ac.member_name
-        FROM 
-          assigned_cards ac
-        LEFT JOIN 
-          card_numbers cn ON ac.card_number = cn.card_number
-        WHERE 
-          cn.card_number IS NULL
-        
-        ORDER BY 
-          status, card_number ASC
-      `);
+        // 2. Dohvati dodijeljene kartice iz membership_details
+        prisma.membershipDetails.findMany({
+          where: {
+            card_number: { not: null }
+          },
+          select: {
+            card_number: true,
+            member_id: true,
+            member: {
+              select: {
+                full_name: true
+              }
+            }
+          }
+        })
+      ]);
       
-      return result.rows;
+      // Obradi rezultate s fallback vrijednostima
+      const allCardNumbers = cardNumbers.status === 'fulfilled' ? cardNumbers.value : [];
+      const membershipCards = assignedCards.status === 'fulfilled' ? assignedCards.value : [];
+      
+      // Stvori mapu dodijeljenih kartica za brzo pretraživanje
+      const assignedCardsMap = new Map(
+        membershipCards
+          .filter(mc => mc.card_number)
+          .map(mc => [
+            mc.card_number!,
+            {
+              member_id: mc.member_id,
+              member_name: mc.member?.full_name || null
+            }
+          ])
+      );
+      
+      // Kombiniraj podatke
+      const result = allCardNumbers.map(cn => {
+        const assignedInfo = assignedCardsMap.get(cn.card_number);
+        
+        return {
+          card_number: cn.card_number,
+          status: (assignedInfo ? 'assigned' : cn.status) as 'available' | 'assigned',
+          member_id: assignedInfo?.member_id || cn.member_id || undefined,
+          member_name: assignedInfo?.member_name || undefined
+        };
+      });
+      
+      // Dodaj kartice koje postoje samo u membership_details
+      for (const [cardNumber, info] of assignedCardsMap) {
+        if (!allCardNumbers.find(cn => cn.card_number === cardNumber)) {
+          result.push({
+            card_number: cardNumber,
+            status: 'assigned',
+            member_id: info.member_id,
+            member_name: info.member_name || undefined
+          });
+        }
+      }
+      
+      // Sortiraj po broju kartice
+      result.sort((a, b) => a.card_number.localeCompare(b.card_number));
+      
+      const duration = Date.now() - startTime;
+      console.log(`[CARD-NUMBERS] Dohvaćeno ${result.length} brojeva kartica u ${duration}ms`);
+      
+      return result;
     } catch (error) {
-      console.error("Error in getAllCardNumbers:", error);
+      console.error('[CARD-NUMBERS] Greška u getAllCardNumbers:', error);
       throw error;
     }
   },
