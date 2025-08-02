@@ -84,37 +84,42 @@ const authenticateToken = async (
         } else {
             // Za članove - postojeća logika
             console.log(`[AUTH] Dohvaćam podatke člana ${decoded.id} iz baze...`);
-            // Get member from database
-            const result = await db.query<DatabaseUser>(
-                `SELECT 
-                    m.member_id as id, 
-                    m.member_id as user_id,
-                    m.first_name || ' ' || m.last_name as full_name,
-                    m.email,
-                    CASE 
-                        WHEN m.role = 'member_administrator' THEN 'member_administrator'
-                        WHEN m.role = 'member_superuser' THEN 'member_superuser'
-                        ELSE 'member'
-                    END as role_name,
-                    m.status = 'registered' as is_active,
-                    m.role,
-                    m.status
-                 FROM members m
-                 WHERE m.member_id = $1 AND (m.role = 'member_superuser' OR m.status = 'registered')`,
-                [decoded.id]
-            );
+            // KRITIČNA OPTIMIZACIJA: Zamjena db.query s Prisma za serverless performanse
+            const member = await prisma.member.findFirst({
+                where: {
+                    member_id: decoded.id,
+                    OR: [
+                        { role: 'member_superuser' },
+                        { status: 'registered' }
+                    ]
+                },
+                select: {
+                    member_id: true,
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    role: true,
+                    status: true
+                }
+            });
 
-            if (result.rows.length === 0) {
+            if (!member) {
+                console.log(`[AUTH] Član ${decoded.id} nije pronađen ili nije aktivan`);
                 res.status(401).json({ message: 'Member not found or inactive' });
                 return;
             }
 
+            // Mapiranje role_name prema postojećoj logici
+            const role_name = member.role === 'member_administrator' ? 'member_administrator' 
+                            : member.role === 'member_superuser' ? 'member_superuser' 
+                            : 'member';
+
             // Attach member to request object
             req.user = {
-                id: result.rows[0].id,
-                role: result.rows[0].role,
-                role_name: result.rows[0].role_name,
-                member_id: result.rows[0].id,
+                id: member.member_id,
+                role: member.role,
+                role_name: role_name,
+                member_id: member.member_id,
                 is_SystemManager: false,
                 user_type: 'member',
                 performer_type: 'MEMBER' as PerformerType
