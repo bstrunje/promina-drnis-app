@@ -5,9 +5,13 @@ let prisma: PrismaClient;
 
 // Optimizirana Prisma konfiguracija za Vercel serverless okruženje
 if (process.env.VERCEL) {
+  console.log('[PRISMA] Inicijalizacija za Vercel serverless okruženje');
+  console.log('[PRISMA] DATABASE_URL postoji:', !!process.env.DATABASE_URL);
+  console.log('[PRISMA] DATABASE_URL duljina:', process.env.DATABASE_URL?.length || 0);
+  
   // Vercel serverless optimizacije
   prisma = new PrismaClient({
-    log: ['error'], // Minimalno logging za performanse
+    log: ['error', 'warn'], // Dodano warn za debug
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
@@ -31,15 +35,34 @@ process.on('beforeExit', async () => {
   await prisma.$disconnect();
 });
 
-// Warm-up funkcija za serverless okruženje
-const warmUpPrisma = async () => {
+// Test konekcije prema bazi za debug
+export const testDatabaseConnection = async () => {
+  const startTime = Date.now();
+  try {
+    console.log('[PRISMA] Testiranje konekcije prema bazi...');
+    await prisma.$queryRaw`SELECT 1 as test`;
+    const duration = Date.now() - startTime;
+    console.log(`[PRISMA] Konekcija uspješna - ${duration}ms`);
+    return true;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`[PRISMA] Konekcija neuspješna nakon ${duration}ms:`, error);
+    return false;
+  }
+};
+
+// Warm-up funkcija za smanjenje cold start latency
+export const warmUpPrisma = async () => {
   if (process.env.VERCEL) {
     try {
-      // Jednostavan upit za "zagrijavanje" konekcije
-      await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Prisma connection warmed up');
+      const connected = await testDatabaseConnection();
+      if (connected) {
+        console.log('[PRISMA] Warm-up uspješan');
+      } else {
+        console.error('[PRISMA] Warm-up neuspješan - nema konekcije');
+      }
     } catch (error) {
-      console.warn('⚠️ Prisma warm-up failed:', error);
+      console.error('[PRISMA] Warm-up neuspješan:', error);
     }
   }
 };
@@ -57,4 +80,4 @@ if (process.env.VERCEL) {
 }
 
 export default prisma;
-export { initializePrisma, warmUpPrisma };
+export { initializePrisma };

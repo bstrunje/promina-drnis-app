@@ -48,6 +48,16 @@ router.use((req: AuthRequest, res, next) => {
 // OPTIMIZIRANI admin dashboard stats endpoint za serverless
 router.get('/dashboard/stats', async (req, res) => {
   try {
+    console.log('[ADMIN-STATS] Početak zahtjeva');
+    
+    // Test konekcije prema bazi
+    const { testDatabaseConnection } = await import('../utils/prisma.js');
+    const connectionOk = await testDatabaseConnection();
+    if (!connectionOk) {
+      console.error('[ADMIN-STATS] Nema konekcije prema bazi');
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+    
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
