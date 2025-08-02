@@ -22,6 +22,7 @@ import memberRoutes from './routes/members.js';
 import membershipRoutes from './routes/membership.routes.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
+import { performanceMonitor } from './middleware/performanceMonitor.js';
 import auditRoutes from './routes/audit.js';
 import adminMessagesRouter from './routes/admin.messages.js';
 
@@ -82,6 +83,7 @@ const __dirname = dirname(__filename);
 // Basic middleware setup
 app.use(helmet());
 app.use(compression());
+app.use(performanceMonitor); // Performance monitoring za analizu sporih API poziva
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
