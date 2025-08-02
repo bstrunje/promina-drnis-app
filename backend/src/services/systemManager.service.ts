@@ -102,24 +102,25 @@ const systemManagerService = {
                 return null;
             }
 
-            // Attempt to fetch permissions using Prisma
+            // OPTIMIZACIJA: Zamjena legacy db.query fallback s optimiziranim Prisma upitom
+            console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
+            
             let permissions = null;
             try {
+                // Koristimo ispravno ime Prisma modela prema shemi
                 permissions = await prisma.memberPermissions.findUnique({
                     where: {
                         member_id: memberId
                     }
                 });
+                
+                console.log(`[SYSTEM-MANAGER] Prisma upit uspješan za člana ${memberId}, ovlasti pronađene: ${!!permissions}`);
             } catch (prismaError) {
-                // If Prisma fails, use a direct SQL query
-                console.warn('Prisma error when fetching permissions, falling back to SQL:', prismaError);
+                console.error(`[SYSTEM-MANAGER] Prisma greška za člana ${memberId}:`, prismaError);
                 
-                const result = await db.query(
-                    `SELECT * FROM member_permissions WHERE member_id = $1`,
-                    [memberId]
-                );
-                
-                permissions = result.rows[0];
+                // Umjesto fallback na db.query, vraćamo null i oslanjamo se na default ovlasti
+                console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
+                permissions = null;
             }
 
             if (!permissions) {
@@ -587,50 +588,33 @@ const systemManagerService = {
                     id: data.id
                 });
                 
-                await prisma.$executeRaw`
-                    UPDATE system_settings
-                    SET 
-                        card_number_length = ${cardNumberLength},
-                        renewal_start_month = ${renewalStartMonth},
-                        renewal_start_day = ${renewalStartDay},
-                        time_zone = ${timeZone},
-                        updated_at = ${now},
-                        updated_by = ${updatedBy}
-                    WHERE id = ${data.id}
-                `;
+                // OPTIMIZACIJA: Zamjena legacy $executeRaw i $queryRaw s Prisma update operacijom
+                console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za ID: ${data.id}`);
                 
-                // Dohvati ažurirane postavke
-                const updatedSettingsResult = await prisma.$queryRaw`
-                    SELECT 
-                        id, 
-                        card_number_length, 
-                        renewal_start_month, 
-                        renewal_start_day, 
-                        updated_at, 
-                        updated_by,
-                        time_zone
-                    FROM system_settings 
-                    WHERE id = ${data.id}
-                `;
+                const updatedSettings = await prisma.systemSettings.update({
+                    where: {
+                        id: data.id
+                    },
+                    data: {
+                        cardNumberLength: cardNumberLength,
+                        renewalStartMonth: renewalStartMonth,
+                        renewalStartDay: renewalStartDay,
+                        timeZone: timeZone,
+                        updatedAt: now,
+                        updatedBy: updatedBy
+                    }
+                });
                 
-                const updatedSettings = Array.isArray(updatedSettingsResult) && updatedSettingsResult.length > 0 
-                    ? updatedSettingsResult[0] 
-                    : null;
-                    
-                if (!updatedSettings) {
-                    throw new Error('Failed to update settings');
-                }
-                
-                console.log('Dohvaćene postavke nakon ažuriranja:', updatedSettings);
+                console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za ID: ${updatedSettings.id}`);
                 
                 return {
                     id: updatedSettings.id,
-                    cardNumberLength: updatedSettings.card_number_length,
-                    renewalStartMonth: updatedSettings.renewal_start_month,
-                    renewalStartDay: updatedSettings.renewal_start_day,
-                    timeZone: updatedSettings.time_zone,
-                    updatedAt: updatedSettings.updated_at,
-                    updatedBy: updatedSettings.updated_by
+                    cardNumberLength: updatedSettings.cardNumberLength,
+                    renewalStartMonth: updatedSettings.renewalStartMonth,
+                    renewalStartDay: updatedSettings.renewalStartDay,
+                    timeZone: updatedSettings.timeZone,
+                    updatedAt: updatedSettings.updatedAt,
+                    updatedBy: updatedSettings.updatedBy?.toString() || null // Type conversion za TypeScript
                 };
             }
         } catch (error) {

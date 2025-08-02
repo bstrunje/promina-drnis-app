@@ -187,101 +187,126 @@ const membershipService = {
       console.log(`Card number: "${cardNumber}"`);
       console.log(`Stamp issued: ${stampIssued}`);
       
-      // Dohvati trenutni status člana prije transakcije
-      const memberResult = await db.query(
-        `SELECT status, registration_completed FROM members WHERE member_id = $1`,
-        [memberId]
-      );
+      // OPTIMIZACIJA: Prisma upit umjesto db.query
+      const member = await prisma.member.findUnique({
+        where: { member_id: memberId },
+        select: {
+          status: true,
+          registration_completed: true
+        }
+      });
       
-      const member = memberResult.rows[0];
+      if (!member) {
+        throw new Error(`Member with ID ${memberId} not found`);
+      }
+      
       console.log('Current member status before transaction:', member);
       
-      // Započinjemo transakciju za osiguranje konzistentnosti podataka
-      await db.transaction(async (client) => {
+      // OPTIMIZACIJA: Prisma transakcija umjesto db.transaction
+      await prisma.$transaction(async (tx) => {
         // Prvo ažuriramo status člana na 'registered' i registration_completed na true
         // ako je dodijeljen broj kartice (preslikavamo ponašanje iz updateMemberWithCardAndPassword)
         // VAŽNO: Provjeravamo da li je cardNumber stvarno dodijeljen (nije prazan string)
         if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
           console.log(`Updating member status for member ${memberId} to: registered and registration_completed: true`);
           
-          // Eksplicitno ažuriramo status člana
-          const updateResult = await client.query(`
-            UPDATE members
-            SET status = 'registered', registration_completed = true
-            WHERE member_id = $1
-            RETURNING member_id, status, registration_completed
-          `, [memberId]);
+          // OPTIMIZACIJA: Prisma update umjesto client.query
+          const updateResult = await tx.member.update({
+            where: { member_id: memberId },
+            data: {
+              status: 'registered',
+              registration_completed: true
+            },
+            select: {
+              member_id: true,
+              status: true,
+              registration_completed: true
+            }
+          });
           
-          console.log('Member status update result:', updateResult.rows[0]);
+          console.log('Member status update result:', updateResult);
         } else {
           console.log(`Card number is empty or undefined, not updating member status`);
         }
         
-        // Provjera postoji li već zapis za ovog člana
-        const existingCheck = await client.query(
-          `SELECT member_id, card_number FROM membership_details WHERE member_id = $1`,
-          [memberId]
-        );
+        // OPTIMIZACIJA: Prisma findUnique umjesto client.query
+        const existingMembershipDetails = await tx.membershipDetails.findUnique({
+          where: { member_id: memberId },
+          select: {
+            member_id: true,
+            card_number: true
+          }
+        });
 
-        // Sigurna provjera za rowCount (može biti null)
-        const memberExists = (existingCheck?.rowCount ?? 0) > 0;
+        const memberExists = !!existingMembershipDetails;
         console.log('Membership details exist:', memberExists);
         if (memberExists) {
-          console.log('Current card number:', existingCheck.rows[0].card_number);
+          console.log('Current card number:', existingMembershipDetails.card_number);
         }
         
         // Zatim ažuriramo broj članske iskaznice
         if (!memberExists) {
-          // Ako zapis ne postoji, kreiramo novi sa svim vrijednostima
-          // VAŽNO: Eksplicitno postavljamo card_stamp_issued na FALSE
+          // OPTIMIZACIJA: Prisma create umjesto INSERT
           console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
-          await client.query(
-            `INSERT INTO membership_details (member_id, card_number, card_stamp_issued)
-             VALUES ($1, $2, FALSE)`,
-            [memberId, cardNumber || ""]
-          );
+          await tx.membershipDetails.create({
+            data: {
+              member_id: memberId,
+              card_number: cardNumber || "",
+              card_stamp_issued: false
+            }
+          });
         } else {
-          // Ako je proslijeđen broj kartice, ažuriramo ga
+          // Pripremi podatke za update
+          const updateData: any = {};
+          
+          // Ako je proslijeden broj kartice, ažuriramo ga
           if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
             console.log(`Updating card number for member ${memberId} to: ${cardNumber}`);
-            await client.query(
-              `UPDATE membership_details SET card_number = $2 WHERE member_id = $1`,
-              [memberId, cardNumber.trim()]
-            );
+            updateData.card_number = cardNumber.trim();
           } else {
             console.log(`Card number is empty or undefined, not updating card number`);
           }
 
-          // Ako je proslijeđen status markice, ažuriramo ga u odvojenoj operaciji
-          // SAMO ako je stampIssued eksplicitno postavljen
+          // Ako je proslijeden status markice, ažuriramo ga
           if (stampIssued !== null && stampIssued !== undefined) {
             console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
-            await client.query(
-              `UPDATE membership_details SET card_stamp_issued = $2 WHERE member_id = $1`,
-              [memberId, stampIssued]
-            );
+            updateData.card_stamp_issued = stampIssued;
+          }
+          
+          // OPTIMIZACIJA: Prisma update umjesto UPDATE query
+          if (Object.keys(updateData).length > 0) {
+            await tx.membershipDetails.update({
+              where: { member_id: memberId },
+              data: updateData
+            });
           }
         }
         
-        // Brišemo sve stare zapise iz password_update_queue za ovog člana
-        // i ostavljamo samo trenutni broj kartice (ako postoji u queue)
+        // OPTIMIZACIJA: Prisma deleteMany umjesto DELETE query
         if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
-          await client.query(
-            `DELETE FROM password_update_queue WHERE member_id = $1 AND card_number != $2`,
-            [memberId, cardNumber.trim()]
-          );
+          await tx.password_update_queue.deleteMany({
+            where: {
+              member_id: memberId,
+              card_number: { not: cardNumber.trim() }
+            }
+          });
           
           console.log('Card number updated successfully');
         }
         
-        // Na kraju dohvatimo ažurirane podatke o članu za potvrdu
-        const memberAfterUpdate = await client.query(
-          'SELECT member_id, full_name, status, registration_completed FROM members WHERE member_id = $1',
-          [memberId]
-        );
+        // OPTIMIZACIJA: Prisma findUnique umjesto SELECT query
+        const memberAfterUpdate = await tx.member.findUnique({
+          where: { member_id: memberId },
+          select: {
+            member_id: true,
+            full_name: true,
+            status: true,
+            registration_completed: true
+          }
+        });
         
-        console.log('Member after all updates:', memberAfterUpdate.rows[0]);
-      })
+        console.log('Member after all updates:', memberAfterUpdate);
+      });
     } catch (error) {
       console.error('Error updating card details:', error);
       throw new Error(`Failed to update card details: ${error instanceof Error ? error.message : 'Unknown error'}`);

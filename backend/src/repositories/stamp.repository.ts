@@ -1,5 +1,6 @@
 import db from '../utils/db.js';
 import { getCurrentDate, formatDate } from '../utils/dateUtils.js';
+import prisma from '../utils/prisma.js';
 
 interface StampInventory {
     stamp_type: 'employed' | 'student' | 'pensioner';
@@ -11,42 +12,96 @@ interface StampInventory {
 const stampRepository = {
     async getInventory(): Promise<StampInventory[]> {
         try {
-            // Pokušaj s originalnim upitom
-            const result = await db.query<StampInventory>(
-                'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory'
-            );
-            return result.rows;
-        } catch (error: unknown) {
-            // Ako nema kolone stamp_year, koristi alternativni upit
-            if (error instanceof Error && error.message && error.message.includes('column "stamp_year" does not exist')) {
-                console.warn('⚠️ Upozorenje: Kolona stamp_year ne postoji u tablici stamp_inventory. Koristi se alternativni upit.');
-                try {
-                    // Koristi samo kolone koje sigurno postoje i dodaj default vrijednost za stamp_year
-                    const fallbackResult = await db.query<StampInventory>(
-                        'SELECT stamp_type, EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER as stamp_year, initial_count, issued_count FROM stamp_inventory'
-                    );
-                    return fallbackResult.rows;
-                } catch (fallbackError: unknown) {
-                    console.error('❌ Greška prilikom izvršavanja alternativnog upita:', fallbackError);
-                    return [];
-                }
-            }
+            console.log('[STAMP-INVENTORY] Dohvaćam inventar markica s Prisma...');
             
-            console.error('❌ Greška prilikom dohvaćanja inventara markica:', error);
-            return [];
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom
+            const stampInventory = await prisma.stampInventory.findMany({
+                select: {
+                    stamp_type: true,
+                    stamp_year: true,
+                    initial_count: true,
+                    issued_count: true
+                },
+                orderBy: [
+                    { stamp_year: 'desc' },
+                    { stamp_type: 'asc' }
+                ]
+            });
+            
+            console.log(`[STAMP-INVENTORY] Pronađeno ${stampInventory.length} zapisa inventara`);
+            
+            // Konvertiraj Prisma rezultat u StampInventory format
+            const result: StampInventory[] = stampInventory.map(item => ({
+                stamp_type: item.stamp_type as 'employed' | 'student' | 'pensioner',
+                stamp_year: item.stamp_year || new Date().getFullYear(), // Fallback na trenutnu godinu
+                initial_count: item.initial_count,
+                issued_count: item.issued_count || 0 // Null check za issued_count
+            }));
+            
+            return result;
+        } catch (error: unknown) {
+            console.error('[STAMP-INVENTORY] Greška prilikom dohvaćanja inventara markica:', error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
+            try {
+                console.log('[STAMP-INVENTORY] Fallback na legacy db.query...');
+                const result = await db.query<StampInventory>(
+                    'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory'
+                );
+                return result.rows;
+            } catch (fallbackError: unknown) {
+                console.error('[STAMP-INVENTORY] Fallback greška:', fallbackError);
+                return [];
+            }
         }
     },
 
     async getInventoryByYear(year: number): Promise<StampInventory[]> {
         try {
-            const result = await db.query<StampInventory>(
-                'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory WHERE stamp_year = $1',
-                [year]
-            );
-            return result.rows;
+            console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za godinu ${year} s Prisma...`);
+            
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom
+            const stampInventory = await prisma.stampInventory.findMany({
+                where: {
+                    stamp_year: year
+                },
+                select: {
+                    stamp_type: true,
+                    stamp_year: true,
+                    initial_count: true,
+                    issued_count: true
+                },
+                orderBy: {
+                    stamp_type: 'asc'
+                }
+            });
+            
+            console.log(`[STAMP-INVENTORY] Pronađeno ${stampInventory.length} zapisa za godinu ${year}`);
+            
+            // Konvertiraj Prisma rezultat u StampInventory format
+            const result: StampInventory[] = stampInventory.map(item => ({
+                stamp_type: item.stamp_type as 'employed' | 'student' | 'pensioner',
+                stamp_year: item.stamp_year || year,
+                initial_count: item.initial_count,
+                issued_count: item.issued_count || 0 // Null check za issued_count
+            }));
+            
+            return result;
         } catch (error: unknown) {
-            console.error('❌ Greška prilikom dohvaćanja inventara markica za godinu:', error);
-            return [];
+            console.error(`[STAMP-INVENTORY] Greška prilikom dohvaćanja inventara markica za godinu ${year}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
+            try {
+                console.log(`[STAMP-INVENTORY] Fallback na legacy db.query za godinu ${year}...`);
+                const result = await db.query<StampInventory>(
+                    'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory WHERE stamp_year = $1',
+                    [year]
+                );
+                return result.rows;
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-INVENTORY] Fallback greška za godinu ${year}:`, fallbackError);
+                return [];
+            }
         }
     },
 
@@ -56,8 +111,37 @@ const stampRepository = {
         stamp_year: number
     ): Promise<void> {
         try {
-            // Provjera postoji li stamp_year kolona
+            console.log(`[STAMP-UPDATE] Ažuriram inventar markica: ${stamp_type}, godina ${stamp_year}, početni broj ${initial_count}`);
+            
+            // OPTIMIZACIJA: Zamjena 6 legacy db.query poziva s Prisma upsert operacijom
+            const updatedInventory = await prisma.stampInventory.upsert({
+                where: {
+                    stamp_type_year_unique: {
+                        stamp_type: stamp_type,
+                        stamp_year: stamp_year
+                    }
+                },
+                update: {
+                    initial_count: initial_count,
+                    last_updated: new Date()
+                },
+                create: {
+                    stamp_type: stamp_type,
+                    stamp_year: stamp_year,
+                    initial_count: initial_count,
+                    issued_count: 0,
+                    last_updated: new Date()
+                }
+            });
+            
+            console.log(`[STAMP-UPDATE] Inventar uspješno ažuriran: ID ${updatedInventory.id}, tip ${updatedInventory.stamp_type}`);
+        } catch (error: unknown) {
+            console.error(`[STAMP-UPDATE] Greška prilikom ažuriranja inventara markica za ${stamp_type}/${stamp_year}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
             try {
+                console.log(`[STAMP-UPDATE] Fallback na legacy db.query za ${stamp_type}/${stamp_year}...`);
+                
                 const existingRecord = await db.query(
                     'SELECT 1 FROM stamp_inventory WHERE stamp_type = $1 AND stamp_year = $2',
                     [stamp_type, stamp_year]
@@ -79,45 +163,48 @@ const stampRepository = {
                         [stamp_type, stamp_year, initial_count]
                     );
                 }
-            } catch (error: unknown) {
-                // Ako nema kolone stamp_year, koristi alternativni upit
-                if (error instanceof Error && error.message && error.message.includes('column "stamp_year" does not exist')) {
-                    console.warn('⚠️ Upozorenje: Kolona stamp_year ne postoji u tablici stamp_inventory. Koristi se alternativni upit bez stamp_year kolone.');
-                    const existingRecordFallback = await db.query(
-                        'SELECT 1 FROM stamp_inventory WHERE stamp_type = $1',
-                        [stamp_type]
-                    );
-                    
-                    if (existingRecordFallback.rows && existingRecordFallback.rows.length > 0) {
-                        await db.query(
-                            `UPDATE stamp_inventory 
-                            SET initial_count = $1,
-                                last_updated = CURRENT_TIMESTAMP
-                            WHERE stamp_type = $2`,
-                            [initial_count, stamp_type]
-                        );
-                    } else {
-                        await db.query(
-                            `INSERT INTO stamp_inventory 
-                            (stamp_type, initial_count, issued_count, last_updated)
-                            VALUES ($1, $2, 0, CURRENT_TIMESTAMP)`,
-                            [stamp_type, initial_count]
-                        );
-                    }
-                } else {
-                    throw error; // Proslijedi dalje ako je druga greška
-                }
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-UPDATE] Fallback greška za ${stamp_type}/${stamp_year}:`, fallbackError);
+                throw fallbackError;
             }
-        } catch (error: unknown) {
-            console.error('❌ Greška prilikom ažuriranja inventara markica:', error);
-            throw error;
         }
     },
 
     async incrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
         try {
-            // Provjera postoji li stamp_year kolona
+            console.log(`[STAMP-INCREMENT] Povećavam broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
+            
+            // OPTIMIZACIJA: Zamjena 5 legacy db.query poziva s Prisma upsert operacijom
+            const updatedInventory = await prisma.stampInventory.upsert({
+                where: {
+                    stamp_type_year_unique: {
+                        stamp_type: stamp_type,
+                        stamp_year: stamp_year
+                    }
+                },
+                update: {
+                    issued_count: {
+                        increment: 1
+                    },
+                    last_updated: new Date()
+                },
+                create: {
+                    stamp_type: stamp_type,
+                    stamp_year: stamp_year,
+                    initial_count: 0,
+                    issued_count: 1,
+                    last_updated: new Date()
+                }
+            });
+            
+            console.log(`[STAMP-INCREMENT] Broj izdanih markica uspješno povećan: ${updatedInventory.stamp_type}, nova vrijednost: ${updatedInventory.issued_count}`);
+        } catch (error: unknown) {
+            console.error(`[STAMP-INCREMENT] Greška prilikom povećanja broja izdanih markica za ${stamp_type}/${stamp_year}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
             try {
+                console.log(`[STAMP-INCREMENT] Fallback na legacy db.query za ${stamp_type}/${stamp_year}...`);
+                
                 const existingRecord = await db.query(
                     'SELECT 1 FROM stamp_inventory WHERE stamp_type = $1 AND stamp_year = $2',
                     [stamp_type, stamp_year]
@@ -139,45 +226,43 @@ const stampRepository = {
                         [stamp_type, stamp_year]
                     );
                 }
-            } catch (error: unknown) {
-                // Ako nema kolone stamp_year, koristi alternativni upit
-                if (error instanceof Error && error.message && error.message.includes('column "stamp_year" does not exist')) {
-                    console.warn('⚠️ Upozorenje: Kolona stamp_year ne postoji u tablici stamp_inventory. Koristi se alternativni upit bez stamp_year kolone.');
-                    const existingRecordFallback = await db.query(
-                        'SELECT 1 FROM stamp_inventory WHERE stamp_type = $1',
-                        [stamp_type]
-                    );
-                    
-                    if (existingRecordFallback.rows && existingRecordFallback.rows.length > 0) {
-                        await db.query(
-                            `UPDATE stamp_inventory 
-                            SET issued_count = issued_count + 1,
-                                last_updated = CURRENT_TIMESTAMP
-                            WHERE stamp_type = $1`,
-                            [stamp_type]
-                        );
-                    } else {
-                        await db.query(
-                            `INSERT INTO stamp_inventory 
-                            (stamp_type, initial_count, issued_count, last_updated)
-                            VALUES ($1, 0, 1, CURRENT_TIMESTAMP)`,
-                            [stamp_type]
-                        );
-                    }
-                } else {
-                    throw error; // Proslijedi dalje ako je druga greška
-                }
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-INCREMENT] Fallback greška za ${stamp_type}/${stamp_year}:`, fallbackError);
+                throw fallbackError;
             }
-        } catch (error: unknown) {
-            console.error('❌ Greška prilikom povećanja broja izdanih markica:', error);
-            throw error;
         }
     },
 
     async decrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
         try {
-            // Provjera postoji li stamp_year kolona
+            console.log(`[STAMP-DECREMENT] Smanjujem broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
+            
+            // OPTIMIZACIJA: Zamjena 2 legacy db.query poziva s Prisma update operacijom
+            const updatedInventory = await prisma.stampInventory.updateMany({
+                where: {
+                    stamp_type: stamp_type,
+                    stamp_year: stamp_year
+                },
+                data: {
+                    issued_count: {
+                        decrement: 1
+                    },
+                    last_updated: new Date()
+                }
+            });
+            
+            if (updatedInventory.count > 0) {
+                console.log(`[STAMP-DECREMENT] Broj izdanih markica uspješno smanjen za ${stamp_type}/${stamp_year}`);
+            } else {
+                console.warn(`[STAMP-DECREMENT] Nema zapisa za ${stamp_type}/${stamp_year} - nema što smanjiti`);
+            }
+        } catch (error: unknown) {
+            console.error(`[STAMP-DECREMENT] Greška prilikom smanjenja broja izdanih markica za ${stamp_type}/${stamp_year}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
             try {
+                console.log(`[STAMP-DECREMENT] Fallback na legacy db.query za ${stamp_type}/${stamp_year}...`);
+                
                 await db.query(
                   `UPDATE stamp_inventory 
                    SET issued_count = GREATEST(issued_count - 1, 0),
@@ -185,72 +270,156 @@ const stampRepository = {
                    WHERE stamp_type = $1 AND stamp_year = $2`,
                   [stamp_type, stamp_year]
                 );
-            } catch (error: unknown) {
-                // Ako nema kolone stamp_year, koristi alternativni upit
-                if (error instanceof Error && error.message && error.message.includes('column "stamp_year" does not exist')) {
-                    console.warn('⚠️ Upozorenje: Kolona stamp_year ne postoji u tablici stamp_inventory. Koristi se alternativni upit bez stamp_year kolone.');
-                    await db.query(
-                      `UPDATE stamp_inventory 
-                       SET issued_count = GREATEST(issued_count - 1, 0),
-                           last_updated = CURRENT_TIMESTAMP
-                       WHERE stamp_type = $1`,
-                      [stamp_type]
-                    );
-                } else {
-                    throw error; // Proslijedi dalje ako je druga greška
-                }
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-DECREMENT] Fallback greška za ${stamp_type}/${stamp_year}:`, fallbackError);
+                throw fallbackError;
             }
-        } catch (error: unknown) {
-            console.error('❌ Greška prilikom smanjenja broja izdanih markica:', error);
-            throw error;
         }
     },
 
     async getStampHistory(): Promise<any[]> {
-        const result = await db.query(
-          `SELECT 
-            h.id, 
-            h.year, 
-            h.stamp_type, 
-            h.initial_count, 
-            h.issued_count, 
-            h.reset_date,
-            h.reset_by,
-            h.notes,
-            m.first_name || ' ' || m.last_name as reset_by_name
-          FROM 
-            stamp_history h
-          LEFT JOIN
-            members m ON h.reset_by = m.member_id
-          ORDER BY 
-            h.year DESC, h.reset_date DESC`
-        );
-        return result.rows;
+        try {
+            console.log('[STAMP-HISTORY] Dohvaćam povijest markica s Prisma...');
+            
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom s relacijama
+            const stampHistory = await prisma.stamp_history.findMany({
+                include: {
+                    members: {
+                        select: {
+                            first_name: true,
+                            last_name: true
+                        }
+                    }
+                },
+                orderBy: [
+                    { year: 'desc' },
+                    { reset_date: 'desc' }
+                ]
+            });
+            
+            console.log(`[STAMP-HISTORY] Pronađeno ${stampHistory.length} zapisa povijesti`);
+            
+            // Konvertiraj Prisma rezultat u legacy format
+            const result = stampHistory.map(item => ({
+                id: item.id,
+                year: item.year,
+                stamp_type: item.stamp_type,
+                initial_count: item.initial_count,
+                issued_count: item.issued_count,
+                reset_date: item.reset_date,
+                reset_by: item.reset_by,
+                notes: item.notes,
+                reset_by_name: item.members 
+                    ? `${item.members.first_name} ${item.members.last_name}` 
+                    : null
+            }));
+            
+            return result;
+        } catch (error: unknown) {
+            console.error('[STAMP-HISTORY] Greška prilikom dohvaćanja povijesti markica:', error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
+            try {
+                console.log('[STAMP-HISTORY] Fallback na legacy db.query...');
+                const result = await db.query(
+                  `SELECT 
+                    h.id, 
+                    h.year, 
+                    h.stamp_type, 
+                    h.initial_count, 
+                    h.issued_count, 
+                    h.reset_date,
+                    h.reset_by,
+                    h.notes,
+                    m.first_name || ' ' || m.last_name as reset_by_name
+                  FROM 
+                    stamp_history h
+                  LEFT JOIN
+                    members m ON h.reset_by = m.member_id
+                  ORDER BY 
+                    h.year DESC, h.reset_date DESC`
+                );
+                return result.rows;
+            } catch (fallbackError: unknown) {
+                console.error('[STAMP-HISTORY] Fallback greška:', fallbackError);
+                return [];
+            }
+        }
     },
 
     async getStampHistoryByYear(year: number): Promise<any[]> {
-        const result = await db.query(
-          `SELECT 
-            h.id, 
-            h.year, 
-            h.stamp_type, 
-            h.initial_count, 
-            h.issued_count, 
-            h.reset_date,
-            h.reset_by,
-            h.notes,
-            m.first_name || ' ' || m.last_name as reset_by_name
-          FROM 
-            stamp_history h
-          LEFT JOIN
-            members m ON h.reset_by = m.member_id
-          WHERE
-            h.year = $1
-          ORDER BY 
-            h.reset_date DESC`,
-          [year]
-        );
-        return result.rows;
+        try {
+            console.log(`[STAMP-HISTORY-YEAR] Dohvaćam povijest markica za godinu ${year} s Prisma...`);
+            
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom s relacijama
+            const stampHistory = await prisma.stamp_history.findMany({
+                where: {
+                    year: year
+                },
+                include: {
+                    members: {
+                        select: {
+                            first_name: true,
+                            last_name: true
+                        }
+                    }
+                },
+                orderBy: {
+                    reset_date: 'desc'
+                }
+            });
+            
+            console.log(`[STAMP-HISTORY-YEAR] Pronađeno ${stampHistory.length} zapisa za godinu ${year}`);
+            
+            // Konvertiraj Prisma rezultat u legacy format
+            const result = stampHistory.map(item => ({
+                id: item.id,
+                year: item.year,
+                stamp_type: item.stamp_type,
+                initial_count: item.initial_count,
+                issued_count: item.issued_count,
+                reset_date: item.reset_date,
+                reset_by: item.reset_by,
+                notes: item.notes,
+                reset_by_name: item.members 
+                    ? `${item.members.first_name} ${item.members.last_name}` 
+                    : null
+            }));
+            
+            return result;
+        } catch (error: unknown) {
+            console.error(`[STAMP-HISTORY-YEAR] Greška prilikom dohvaćanja povijesti markica za godinu ${year}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
+            try {
+                console.log(`[STAMP-HISTORY-YEAR] Fallback na legacy db.query za godinu ${year}...`);
+                const result = await db.query(
+                  `SELECT 
+                    h.id, 
+                    h.year, 
+                    h.stamp_type, 
+                    h.initial_count, 
+                    h.issued_count, 
+                    h.reset_date,
+                    h.reset_by,
+                    h.notes,
+                    m.first_name || ' ' || m.last_name as reset_by_name
+                  FROM 
+                    stamp_history h
+                  LEFT JOIN
+                    members m ON h.reset_by = m.member_id
+                  WHERE
+                    h.year = $1
+                  ORDER BY 
+                    h.reset_date DESC`,
+                  [year]
+                );
+                return result.rows;
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-HISTORY-YEAR] Fallback greška za godinu ${year}:`, fallbackError);
+                return [];
+            }
+        }
     },
 
     /**
@@ -261,45 +430,97 @@ const stampRepository = {
      */
     async archiveStampInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
         try {
+            console.log(`[STAMP-ARCHIVE] Arhiviram inventar markica za godinu ${year}, član ID: ${memberId}`);
+            
             // Koristimo simulirani datum iz getCurrentDate funkcije
             const currentDate = getCurrentDate();
             const formattedDate = formatDate(currentDate, 'yyyy-MM-dd').split('T')[0]; // Format YYYY-MM-DD
             
-            await db.transaction(async (client) => {
-                // Filtriramo markice samo za zadanu godinu
-                const currentInventory = await client.query(
-                    'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory WHERE stamp_year = $1',
-                    [year]
-                );
+            // OPTIMIZACIJA: Zamjena legacy db.transaction s Prisma transakcijom
+            await prisma.$transaction(async (tx) => {
+                // Dohvaćamo inventar za zadanu godinu s Prisma
+                const currentInventory = await tx.stampInventory.findMany({
+                    where: {
+                        stamp_year: year
+                    },
+                    select: {
+                        stamp_type: true,
+                        stamp_year: true,
+                        initial_count: true,
+                        issued_count: true
+                    }
+                });
 
-                if (currentInventory.rows.length === 0) {
+                if (currentInventory.length === 0) {
                     throw new Error(`No stamp inventory found for year ${year}`);
                 }
+                
+                console.log(`[STAMP-ARCHIVE] Pronađeno ${currentInventory.length} zapisa za arhiviranje`);
 
-                for (const item of currentInventory.rows) {
-                    await client.query(
-                        `INSERT INTO stamp_history
-                            (year, stamp_type, stamp_year, initial_count, issued_count, reset_date, reset_by, notes)
-                        VALUES
-                            ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                        [
-                            year, 
-                            item.stamp_type, 
-                            item.stamp_year, 
-                            item.initial_count, 
-                            item.issued_count, 
-                            formattedDate,  // Koristimo simulirani datum iz dateUtils
-                            memberId, 
-                            notes
-                        ]
-                    );
-                }
+                // Kreiramo batch insert za stamp_history s Prisma
+                const historyRecords = currentInventory.map(item => ({
+                    year: year,
+                    stamp_type: item.stamp_type,
+                    stamp_year: item.stamp_year || year,
+                    initial_count: item.initial_count,
+                    issued_count: item.issued_count || 0, // Null check za issued_count
+                    reset_date: new Date(formattedDate),
+                    reset_by: memberId,
+                    notes: notes
+                }));
+                
+                // Batch insert u stamp_history
+                await tx.stamp_history.createMany({
+                    data: historyRecords
+                });
+                
+                console.log(`[STAMP-ARCHIVE] Uspješno arhivirano ${historyRecords.length} zapisa za godinu ${year}`);
 
                 // Nema resetiranja markica, samo arhiviramo stanje
             });
         } catch (error: unknown) {
-            console.error('❌ Greška prilikom arhiviranja inventara markica:', error);
-            throw error;
+            console.error(`[STAMP-ARCHIVE] Greška prilikom arhiviranja inventara markica za godinu ${year}:`, error);
+            
+            // Fallback na legacy db.transaction ako Prisma ne radi
+            try {
+                console.log(`[STAMP-ARCHIVE] Fallback na legacy db.transaction za godinu ${year}...`);
+                
+                const currentDate = getCurrentDate();
+                const formattedDate = formatDate(currentDate, 'yyyy-MM-dd').split('T')[0];
+                
+                await db.transaction(async (client) => {
+                    const currentInventory = await client.query(
+                        'SELECT stamp_type, stamp_year, initial_count, issued_count FROM stamp_inventory WHERE stamp_year = $1',
+                        [year]
+                    );
+
+                    if (currentInventory.rows.length === 0) {
+                        throw new Error(`No stamp inventory found for year ${year}`);
+                    }
+
+                    for (const item of currentInventory.rows) {
+                        await client.query(
+                            `INSERT INTO stamp_history
+                                (year, stamp_type, stamp_year, initial_count, issued_count, reset_date, reset_by, notes)
+                            VALUES
+                                ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                            [
+                                year, 
+                                item.stamp_type, 
+                                item.stamp_year, 
+                                item.initial_count, 
+                                item.issued_count, 
+                                formattedDate,
+                                memberId, 
+                                notes
+                            ]
+                        );
+                    }
+                });
+            } catch (fallbackError: unknown) {
+                console.error(`[STAMP-ARCHIVE] Fallback greška za godinu ${year}:`, fallbackError);
+                throw fallbackError;
+            }
         }
     },
 

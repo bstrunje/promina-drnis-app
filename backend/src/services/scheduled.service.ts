@@ -1,6 +1,7 @@
 import db from "../utils/db.js";
 import stampRepository from "../repositories/stamp.repository.js";
 import { getCurrentDate } from "../utils/dateUtils.js";
+import prisma from "../utils/prisma.js";
 
 /**
  * Servis za zakazane zadatke koji se izvršavaju automatski
@@ -39,16 +40,34 @@ const scheduledService = {
    */
   async isArchivingDoneForYear(year: number): Promise<boolean> {
     try {
-      // Provjeri postoji li već unos u stamp_history za ovu godinu
-      const result = await db.query(`
-        SELECT COUNT(*) FROM stamp_history WHERE year = $1
-      `, [year]);
+      console.log(`[SCHEDULED] Provjeravam je li arhiviranje već izvršeno za godinu ${year}`);
       
-      // Ako postoji barem jedan unos, arhiviranje je već izvršeno
-      return parseInt(result.rows[0].count) > 0;
+      // OPTIMIZACIJA: Zamjena legacy db.query s Prisma count upitom
+      const count = await prisma.stamp_history.count({
+        where: {
+          year: year
+        }
+      });
+      
+      const isDone = count > 0;
+      console.log(`[SCHEDULED] Arhiviranje za godinu ${year}: ${isDone ? 'već izvršeno' : 'nije izvršeno'} (${count} zapisa)`);
+      
+      return isDone;
     } catch (error) {
-      console.error(`Greška prilikom provjere arhiviranja za godinu ${year}:`, error);
-      return false;
+      console.error(`[SCHEDULED] Greška prilikom provjere arhiviranja za godinu ${year}:`, error);
+      
+      // Fallback na legacy db.query ako Prisma ne radi
+      try {
+        console.log(`[SCHEDULED] Fallback na legacy db.query za godinu ${year}...`);
+        const result = await db.query(`
+          SELECT COUNT(*) FROM stamp_history WHERE year = $1
+        `, [year]);
+        
+        return parseInt(result.rows[0].count) > 0;
+      } catch (fallbackError) {
+        console.error(`[SCHEDULED] Fallback greška za godinu ${year}:`, fallbackError);
+        return false;
+      }
     }
   },
   

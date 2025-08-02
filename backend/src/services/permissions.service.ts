@@ -1,24 +1,58 @@
 import db from '../utils/db.js';
 import { MemberPermissions } from '../shared/types/permissions.js';
+import prisma from '../utils/prisma.js';
 
 const permissionsService = {
+  // OPTIMIZACIJA: Prisma upit umjesto db.query
   async getMemberPermissions(memberId: number): Promise<MemberPermissions> {
-    // Selektiramo sve ovlasti iz tablice
-    const result = await db.query(
-      `SELECT 
-        can_view_members, can_edit_members, can_add_members, can_manage_membership,
-        can_view_activities, can_create_activities, can_approve_activities,
-        can_view_financials, can_manage_financials,
-        can_send_group_messages, can_manage_all_messages,
-        can_view_statistics, can_export_data,
-        can_manage_end_reasons, can_manage_card_numbers, can_assign_passwords
-       FROM member_permissions 
-       WHERE member_id = $1`,
-      [memberId]
-    );
+    console.log(`[PERMISSIONS] Dohvaćam ovlasti za člana ${memberId}...`);
+    try {
+      const permissions = await prisma.memberPermissions.findUnique({
+        where: { member_id: memberId },
+        select: {
+          can_view_members: true,
+          can_edit_members: true,
+          can_add_members: true,
+          can_manage_membership: true,
+          can_view_activities: true,
+          can_create_activities: true,
+          can_approve_activities: true,
+          can_view_financials: true,
+          can_manage_financials: true,
+          can_send_group_messages: true,
+          can_manage_all_messages: true,
+          can_view_statistics: true,
+          can_export_data: true,
+          can_manage_end_reasons: true,
+          can_manage_card_numbers: true,
+          can_assign_passwords: true
+        }
+      });
 
-    // Ako ne postoje ovlasti, vraćamo prazni objekt
-    return result.rows[0] || {};
+      console.log(`[PERMISSIONS] Ovlasti za člana ${memberId}:`, permissions ? 'PRONAĐENE' : 'PRAZNE');
+      // Type casting za kompatibilnost s MemberPermissions tipom
+      return permissions ? {
+        can_view_members: permissions.can_view_members || false,
+        can_edit_members: permissions.can_edit_members || false,
+        can_add_members: permissions.can_add_members || false,
+        can_manage_membership: permissions.can_manage_membership || false,
+        can_view_activities: permissions.can_view_activities || false,
+        can_create_activities: permissions.can_create_activities || false,
+        can_approve_activities: permissions.can_approve_activities || false,
+        can_view_financials: permissions.can_view_financials || false,
+        can_manage_financials: permissions.can_manage_financials || false,
+        can_send_group_messages: permissions.can_send_group_messages || false,
+        can_manage_all_messages: permissions.can_manage_all_messages || false,
+        can_view_statistics: permissions.can_view_statistics || false,
+        can_export_data: permissions.can_export_data || false,
+        can_manage_end_reasons: permissions.can_manage_end_reasons || false,
+        can_manage_card_numbers: permissions.can_manage_card_numbers || false,
+        can_assign_passwords: permissions.can_assign_passwords || false
+      } : {};
+    } catch (error) {
+      console.error(`[PERMISSIONS] Greška pri dohvaćanju ovlasti za člana ${memberId}:`, error);
+      throw error;
+    }
   },
 
   // Ostavljen za podršku legacy koda koji još koristi staru metodu
@@ -26,109 +60,106 @@ const permissionsService = {
     return this.getMemberPermissions(memberId);
   },
 
+  // OPTIMIZACIJA: Prisma upit s join umjesto db.query
   async getAllMembersWithPermissions() {
-    // Prilagodi upit prema strukturi tvoje baze!
-    const result = await db.query(`
-      SELECT m.member_id, m.first_name, m.last_name, m.email, mp.*
-      FROM members m
-      INNER JOIN member_permissions mp ON m.member_id = mp.member_id
-      ORDER BY m.last_name, m.first_name
-    `);
-    return result.rows;
+    console.log('[PERMISSIONS] Dohvaćam sve članove s ovlastima...');
+    try {
+      const membersWithPermissions = await prisma.member.findMany({
+        include: {
+          permissions: true
+        },
+        where: {
+          permissions: {
+            isNot: null
+          }
+        },
+        orderBy: [
+          { last_name: 'asc' },
+          { first_name: 'asc' }
+        ]
+      });
+      
+      // Flatten struktura za kompatibilnost s legacy kodom
+      const result = membersWithPermissions
+        .filter(member => member.permissions)
+        .map(member => ({
+          member_id: member.member_id,
+          first_name: member.first_name,
+          last_name: member.last_name,
+          email: member.email,
+          ...member.permissions
+        }));
+      
+      console.log(`[PERMISSIONS] Pronađeno ${result.length} članova s ovlastima`);
+      return result;
+    } catch (error) {
+      console.error('[PERMISSIONS] Greška pri dohvaćanju članova s ovlastima:', error);
+      throw error;
+    }
   },
 
+  // OPTIMIZACIJA: Prisma upsert umjesto kompleksnih db.query poziva
   async updateMemberPermissions(
     memberId: number, 
     permissions: MemberPermissions,
     grantedBy: number
   ): Promise<void> {
-    // Prvo provjerimo postoji li već zapis
-    const existingPermission = await db.query(
-      'SELECT permission_id FROM member_permissions WHERE member_id = $1',
-      [memberId]
-    );
+    console.log(`[PERMISSIONS] Ažuriram ovlasti za člana ${memberId}...`);
+    
+    try {
+      // OPTIMIZACIJA: Priprema podataka za Prisma upsert
+      const permissionData = {
+        member_id: memberId,
+        granted_by: grantedBy,
+        can_view_members: permissions.can_view_members || false,
+        can_edit_members: permissions.can_edit_members || false,
+        can_add_members: permissions.can_add_members || false,
+        can_manage_membership: permissions.can_manage_membership || false,
+        can_view_activities: permissions.can_view_activities || false,
+        can_create_activities: permissions.can_create_activities || false,
+        can_approve_activities: permissions.can_approve_activities || false,
+        can_view_financials: permissions.can_view_financials || false,
+        can_manage_financials: permissions.can_manage_financials || false,
+        can_send_group_messages: permissions.can_send_group_messages || false,
+        can_manage_all_messages: permissions.can_manage_all_messages || false,
+        can_view_statistics: permissions.can_view_statistics || false,
+        can_export_data: permissions.can_export_data || false,
+        can_manage_end_reasons: permissions.can_manage_end_reasons || false,
+        can_manage_card_numbers: permissions.can_manage_card_numbers || false,
+        can_assign_passwords: permissions.can_assign_passwords || false,
+        updated_at: new Date()
+      };
 
-    // Pripremamo objekt sa svim ovlastima, defaultno na false
-    const permissionValues = {
-      can_view_members: permissions.can_view_members || false,
-      can_edit_members: permissions.can_edit_members || false,
-      can_add_members: permissions.can_add_members || false,
-      can_manage_membership: permissions.can_manage_membership || false,
+      // OPTIMIZACIJA: Prisma upsert umjesto IF/ELSE s db.query
+      await prisma.memberPermissions.upsert({
+        where: { member_id: memberId },
+        update: {
+          granted_by: grantedBy,
+          can_view_members: permissionData.can_view_members,
+          can_edit_members: permissionData.can_edit_members,
+          can_add_members: permissionData.can_add_members,
+          can_manage_membership: permissionData.can_manage_membership,
+          can_view_activities: permissionData.can_view_activities,
+          can_create_activities: permissionData.can_create_activities,
+          can_approve_activities: permissionData.can_approve_activities,
+          can_view_financials: permissionData.can_view_financials,
+          can_manage_financials: permissionData.can_manage_financials,
+          can_send_group_messages: permissionData.can_send_group_messages,
+          can_manage_all_messages: permissionData.can_manage_all_messages,
+          can_view_statistics: permissionData.can_view_statistics,
+          can_export_data: permissionData.can_export_data,
+          can_manage_end_reasons: permissionData.can_manage_end_reasons,
+          can_manage_card_numbers: permissionData.can_manage_card_numbers,
+          can_assign_passwords: permissionData.can_assign_passwords,
+          updated_at: permissionData.updated_at
+        },
+        create: permissionData
+      });
       
-      can_view_activities: permissions.can_view_activities || false,
-      can_create_activities: permissions.can_create_activities || false,
-      can_approve_activities: permissions.can_approve_activities || false,
-      
-      can_view_financials: permissions.can_view_financials || false,
-      can_manage_financials: permissions.can_manage_financials || false,
-      
-      can_send_group_messages: permissions.can_send_group_messages || false,
-      can_manage_all_messages: permissions.can_manage_all_messages || false,
-      
-      can_view_statistics: permissions.can_view_statistics || false,
-      can_export_data: permissions.can_export_data || false,
-      
-      can_manage_end_reasons: permissions.can_manage_end_reasons || false,
-      can_manage_card_numbers: permissions.can_manage_card_numbers || false,
-      can_assign_passwords: permissions.can_assign_passwords || false
-    };
-
-    if (existingPermission.rows.length === 0) {
-      // Ako ne postoji, radimo INSERT
-      await db.query(
-        `INSERT INTO member_permissions (
-          member_id, granted_by, 
-          can_view_members, can_edit_members, can_add_members, can_manage_membership,
-          can_view_activities, can_create_activities, can_approve_activities,
-          can_view_financials, can_manage_financials,
-          can_send_group_messages, can_manage_all_messages,
-          can_view_statistics, can_export_data,
-          can_manage_end_reasons, can_manage_card_numbers, can_assign_passwords,
-          updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW()
-        )`,
-        [
-          memberId, grantedBy, 
-          permissionValues.can_view_members, permissionValues.can_edit_members, 
-          permissionValues.can_add_members, permissionValues.can_manage_membership,
-          permissionValues.can_view_activities, permissionValues.can_create_activities, 
-          permissionValues.can_approve_activities,
-          permissionValues.can_view_financials, permissionValues.can_manage_financials,
-          permissionValues.can_send_group_messages, permissionValues.can_manage_all_messages,
-          permissionValues.can_view_statistics, permissionValues.can_export_data,
-          permissionValues.can_manage_end_reasons, permissionValues.can_manage_card_numbers, 
-          permissionValues.can_assign_passwords
-        ]
-      );
-    } else {
-      // Ako već postoji, radimo UPDATE
-      await db.query(
-        `UPDATE member_permissions SET 
-          can_view_members = $1, can_edit_members = $2, 
-          can_add_members = $3, can_manage_membership = $4,
-          can_view_activities = $5, can_create_activities = $6, 
-          can_approve_activities = $7,
-          can_view_financials = $8, can_manage_financials = $9,
-          can_send_group_messages = $10, can_manage_all_messages = $11,
-          can_view_statistics = $12, can_export_data = $13,
-          can_manage_end_reasons = $14, can_manage_card_numbers = $15,
-          can_assign_passwords = $16,
-          granted_by = $17, updated_at = NOW()
-         WHERE member_id = $18`,
-        [
-          permissionValues.can_view_members, permissionValues.can_edit_members, 
-          permissionValues.can_add_members, permissionValues.can_manage_membership,
-          permissionValues.can_view_activities, permissionValues.can_create_activities, 
-          permissionValues.can_approve_activities,
-          permissionValues.can_view_financials, permissionValues.can_manage_financials,
-          permissionValues.can_send_group_messages, permissionValues.can_manage_all_messages,
-          permissionValues.can_view_statistics, permissionValues.can_export_data,
-          permissionValues.can_manage_end_reasons, permissionValues.can_manage_card_numbers, 
-          permissionValues.can_assign_passwords,
-          grantedBy, memberId
-        ]
-      );
+      console.log(`[PERMISSIONS] Uspješno ažurirane ovlasti za člana ${memberId}`);
+    } catch (error) {
+      console.error(`[PERMISSIONS] Greška pri ažuriranju ovlasti za člana ${memberId}:`, error);
+      throw error;
     }
   },
 

@@ -377,20 +377,71 @@ const memberService = {
             const member = await this.getMemberById(memberId);
             if (!member) return null;
 
-            // Modificirani upit koji dohvaća sve potrebne podatke za izračun sati po aktivnosti
-            const activitiesQuery = await db.query(`
-                SELECT 
-                    a.activity_id,
-                    a.name,
-                    a.start_date as date,
-                    ap.manual_hours,
-                    a.actual_start_time,
-                    a.actual_end_time
-                FROM activities a
-                JOIN activity_participations ap ON a.activity_id = ap.activity_id
-                WHERE ap.member_id = $1
-                ORDER BY a.start_date DESC
-            `, [memberId]);
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom
+            console.log(`[MEMBER] Dohvaćam aktivnosti za člana ID: ${memberId}`);
+            
+            let activitiesData = [];
+            
+            try {
+                const participations = await prisma.activityParticipation.findMany({
+                    where: {
+                        member_id: memberId
+                    },
+                    include: {
+                        activity: {
+                            select: {
+                                activity_id: true,
+                                name: true,
+                                start_date: true,
+                                actual_start_time: true,
+                                actual_end_time: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        activity: {
+                            start_date: 'desc'
+                        }
+                    }
+                });
+                
+                // Transformiramo Prisma rezultate u očekivani format
+                activitiesData = participations.map(p => ({
+                    activity_id: p.activity.activity_id,
+                    name: p.activity.name,
+                    date: p.activity.start_date,
+                    manual_hours: p.manual_hours,
+                    actual_start_time: p.activity.actual_start_time,
+                    actual_end_time: p.activity.actual_end_time
+                }));
+                
+                console.log(`[MEMBER] Dohvaćeno ${activitiesData.length} aktivnosti za člana ${memberId}`);
+            } catch (error) {
+                console.error(`[MEMBER] Greška prilikom dohvaćanja aktivnosti za člana ${memberId}:`, error);
+                
+                // Fallback na legacy db.query ako Prisma ne radi
+                try {
+                    console.log(`[MEMBER] Fallback na legacy db.query za člana ${memberId}...`);
+                    const activitiesQuery = await db.query(`
+                        SELECT 
+                            a.activity_id,
+                            a.name,
+                            a.start_date as date,
+                            ap.manual_hours,
+                            a.actual_start_time,
+                            a.actual_end_time
+                        FROM activities a
+                        JOIN activity_participations ap ON a.activity_id = ap.activity_id
+                        WHERE ap.member_id = $1
+                        ORDER BY a.start_date DESC
+                    `, [memberId]);
+                    
+                    activitiesData = activitiesQuery.rows;
+                } catch (fallbackError) {
+                    console.error(`[MEMBER] Fallback greška za člana ${memberId}:`, fallbackError);
+                    throw fallbackError;
+                }
+            }
 
             /**
              * VAŽNA NAPOMENA:
@@ -417,7 +468,7 @@ const memberService = {
              */
 
             // Procesiramo rezultate kako bi izračunali hours_spent za svaku aktivnost
-            const activitiesWithHours = activitiesQuery.rows.map(activity => {
+            const activitiesWithHours = activitiesData.map(activity => {
                 let hours_spent = null;
                 
                 // Prvo provjerimo postoji li manual_hours
@@ -598,20 +649,68 @@ const memberService = {
     },
 
     async getMemberWithCardDetails(memberId: number) {
-        // Always get card info from membership_details, not the members table
-        return await db.query(`
-            SELECT 
-              m.*,
-              md.card_number,
-              md.card_stamp_issued,
-              md.fee_payment_date
-            FROM 
-              members m
-            LEFT JOIN 
-              membership_details md ON m.member_id = md.member_id
-            WHERE 
-              m.member_id = $1
-          `, [memberId]);
+        console.log(`[MEMBER] Dohvaćam detalje člana s karticom za ID: ${memberId}`);
+        
+        try {
+            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom s relacijama
+            const memberWithCard = await prisma.member.findUnique({
+                where: {
+                    member_id: memberId
+                },
+                include: {
+                    membership_details: {
+                        select: {
+                            card_number: true,
+                            card_stamp_issued: true,
+                            fee_payment_date: true
+                        }
+                    }
+                }
+            });
+            
+            if (!memberWithCard) {
+                console.log(`[MEMBER] Član s ID ${memberId} nije pronađen`);
+                return { rows: [] }; // Vraćamo format kompatibilan s legacy db.query
+            }
+            
+            // Transformiramo Prisma rezultat u format kompatibilan s legacy db.query
+            const result = {
+                ...memberWithCard,
+                card_number: memberWithCard.membership_details?.card_number || null,
+                card_stamp_issued: memberWithCard.membership_details?.card_stamp_issued || null,
+                fee_payment_date: memberWithCard.membership_details?.fee_payment_date || null
+            };
+            
+            // Uklanjamo nested membership_details jer smo ih već "spljoštili"
+            delete (result as any).membership_details;
+            
+            console.log(`[MEMBER] Uspješno dohvaćeni detalji člana ${memberId} s karticom`);
+            
+            return { rows: [result] }; // Vraćamo format kompatibilan s legacy db.query
+        } catch (error) {
+            console.error(`[MEMBER] Greška prilikom dohvaćanja detalja člana ${memberId}:`, error);
+            
+            // Fallback na legacy db.query ako Prisma ne radi
+            try {
+                console.log(`[MEMBER] Fallback na legacy db.query za člana ${memberId}...`);
+                return await db.query(`
+                    SELECT 
+                      m.*,
+                      md.card_number,
+                      md.card_stamp_issued,
+                      md.fee_payment_date
+                    FROM 
+                      members m
+                    LEFT JOIN 
+                      membership_details md ON m.member_id = md.member_id
+                    WHERE 
+                      m.member_id = $1
+                  `, [memberId]);
+            } catch (fallbackError) {
+                console.error(`[MEMBER] Fallback greška za člana ${memberId}:`, fallbackError);
+                throw fallbackError;
+            }
+        }
     }
 };
 

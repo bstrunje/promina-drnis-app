@@ -3,16 +3,32 @@ import { PoolClient } from 'pg';
 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 import { Request } from 'express';
 import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
+import prisma from '../utils/prisma.js';
 
 const membershipRepository = {
+    // OPTIMIZACIJA: Prisma upit umjesto db.query
     async getMembershipDetails(memberId: number): Promise<MembershipDetails | null> {
-        const result = await db.query<MembershipDetails>(
-            'SELECT card_number, fee_payment_year, card_stamp_issued, fee_payment_date FROM membership_details WHERE member_id = $1',
-            [memberId]
-        );
-        return result.rows[0] || null;
+        console.log(`[MEMBERSHIP] Dohvaćam detalje članstva za člana ${memberId}...`);
+        try {
+            const membershipDetails = await prisma.membershipDetails.findUnique({
+                where: { member_id: memberId },
+                select: {
+                    card_number: true,
+                    fee_payment_year: true,
+                    card_stamp_issued: true,
+                    fee_payment_date: true
+                }
+            });
+            
+            console.log(`[MEMBERSHIP] Pronađeni detalji za člana ${memberId}:`, membershipDetails ? 'DA' : 'NE');
+            return membershipDetails as MembershipDetails | null;
+        } catch (error) {
+            console.error(`[MEMBERSHIP] Greška pri dohvaćanju detalja za člana ${memberId}:`, error);
+            throw error;
+        }
     },
 
+    // OPTIMIZACIJA: Prisma transakcija umjesto db.transaction
     async updateMembershipDetails(
         memberId: number,
         details: {
@@ -23,71 +39,72 @@ const membershipRepository = {
           next_year_stamp_issued?: boolean;
         }
       ): Promise<void> {
-        return await db.transaction(async (client) => {
-          try {
-            console.log(`Updating membership details for member ID: ${memberId}`);
-            
-            // Optimizacija 1: Koristimo client umjesto db za sve upite unutar transakcije
-            // Ovo osigurava da svi upiti koriste istu konekciju i transakciju
-            
-            // Check if member exists - koristimo client umjesto db
-            const memberExists = await client.query(
-              'SELECT 1 FROM members WHERE member_id = $1',
-              [memberId]
-            );
+        console.log(`[MEMBERSHIP] Ažuriram detalje članstva za člana ${memberId}...`);
         
-            if (!memberExists.rows.length) {
+        return await prisma.$transaction(async (tx) => {
+          try {
+            // OPTIMIZACIJA: Prisma findUnique umjesto client.query
+            const memberExists = await tx.member.findUnique({
+              where: { member_id: memberId },
+              select: { member_id: true }
+            });
+        
+            if (!memberExists) {
               throw new Error('Member not found');
             }
         
-            // Optimizacija 2: Provjera duplikata samo ako je potrebno
+            // OPTIMIZACIJA: Provjera duplikata samo ako je potrebno
             if (details.card_number) {
-              console.log(`Checking for duplicate card number: ${details.card_number}`);
+              console.log(`[MEMBERSHIP] Provjeravam duplikat kartice: ${details.card_number}`);
               
-              // Optimizacija upita za provjeru duplikata - koristimo client umjesto db
-              const existingCard = await client.query(
-                `SELECT member_id FROM membership_details 
-                 WHERE card_number = $1 AND member_id != $2`,
-                [details.card_number, memberId]
-              );
+              // OPTIMIZACIJA: Prisma findFirst umjesto client.query
+              const existingCard = await tx.membershipDetails.findFirst({
+                where: {
+                  card_number: details.card_number,
+                  member_id: { not: memberId }
+                },
+                select: { member_id: true }
+              });
               
-              // Optimizacija 3: Pojednostavljena logika provjere duplikata
-              if (existingCard.rows.length > 0) {
+              if (existingCard) {
                 throw new Error(`Card number ${details.card_number} is already assigned to another member`);
               }
             }
         
-            // Optimizacija 4: Priprema parametara za upit
-            const filteredEntries = Object.entries(details)
-              .filter(([_, value]) => value !== undefined);
+            // OPTIMIZACIJA: Priprema podataka za Prisma upsert
+            const updateData: any = {};
             
-            const keys = filteredEntries.map(([key]) => key);
+            if (details.fee_payment_year !== undefined) {
+              updateData.fee_payment_year = details.fee_payment_year;
+            }
+            if (details.fee_payment_date !== undefined) {
+              updateData.fee_payment_date = details.fee_payment_date;
+            }
+            if (details.card_number !== undefined) {
+              updateData.card_number = details.card_number;
+            }
+            if (details.card_stamp_issued !== undefined) {
+              updateData.card_stamp_issued = details.card_stamp_issued;
+            }
+            if (details.next_year_stamp_issued !== undefined) {
+              updateData.next_year_stamp_issued = details.next_year_stamp_issued;
+            }
             
-            const values = filteredEntries.map(([_, value]) => {
-              if (value instanceof Date) {
-                return formatDate(value, 'yyyy-MM-dd');
+            console.log(`[MEMBERSHIP] Izvršavam UPSERT za detalje članstva s ${Object.keys(updateData).length} polja`);
+            
+            // OPTIMIZACIJA: Prisma upsert umjesto kompleksni INSERT...ON CONFLICT
+            await tx.membershipDetails.upsert({
+              where: { member_id: memberId },
+              update: updateData,
+              create: {
+                member_id: memberId,
+                ...updateData
               }
-              return value;
             });
             
-            const setClause = keys
-              .map((key, index) => `${key} = $${index + 2}`)
-              .join(', ');
-            
-            console.log(`Executing UPSERT query for membership details with ${keys.length} fields`);
-            
-            // Koristimo prepared statement s eksplicitnim timeout-om kroz konfiguraciju
-            await client.query({
-              text: `INSERT INTO membership_details (member_id, ${keys.join(', ')})
-                     VALUES ($1, ${values.map((_, i) => `$${i + 2}`).join(', ')})
-                     ON CONFLICT (member_id) 
-                     DO UPDATE SET ${setClause}`,
-              values: [memberId, ...values]
-            });
-            
-            console.log(`Successfully updated membership details for member ID: ${memberId}`);
+            console.log(`[MEMBERSHIP] Uspješno ažurirani detalji članstva za člana ${memberId}`);
           } catch (error) {
-            console.error('Error in updateMembershipDetails:', error);
+            console.error('[MEMBERSHIP] Greška u updateMembershipDetails:', error);
             throw error;
           }
         });

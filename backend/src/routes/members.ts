@@ -3,6 +3,13 @@ import express, { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { put, del } from '@vercel/blob';
 import multer from 'multer';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ES modules compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { memberController, getMemberDashboardStats } from '../controllers/member.controller.js';
 import memberProfileController from '../controllers/memberProfile.controller.js';
 import cardNumberController from '../controllers/cardnumber.controller.js';
@@ -18,6 +25,32 @@ const router = express.Router();
 
 // Konfiguracija za Multer da koristi memoriju umjesto diska
 const upload = multer({ storage: multer.memoryStorage() });
+
+// KRITIČNA KONFIGURACIJA: Uvjetno korištenje lokalnih uploads vs Vercel Blob
+const isProduction = process.env.NODE_ENV === 'production';
+const hasVercelBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
+const useVercelBlob = isProduction && hasVercelBlobToken;
+
+// Konfiguracija uploads direktorija za lokalni razvoj
+const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
+  ? '/app/uploads' // Fallback za legacy ili non-disk setups
+  : path.resolve(__dirname, '..', '..', 'uploads'));
+
+console.log(`[UPLOAD] Konfiguracija:`);
+console.log(`[UPLOAD] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[UPLOAD] BLOB_READ_WRITE_TOKEN: ${hasVercelBlobToken ? 'postoji' : 'ne postoji'}`);
+console.log(`[UPLOAD] useVercelBlob: ${useVercelBlob}`);
+console.log(`[UPLOAD] uploadsDir: ${uploadsDir}`);
+
+// Funkcija za kreiranje direktorija ako ne postoji
+const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
+  try {
+    await fs.access(dirPath);
+  } catch {
+    await fs.mkdir(dirPath, { recursive: true });
+    console.log(`[UPLOAD] Kreiran direktorij: ${dirPath}`);
+  }
+};
 
 // Public routes
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
@@ -101,7 +134,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
   }
 });
 
-// Rute za profilnu sliku (Vercel Blob)
+// Rute za profilnu sliku (Uvjetno: Vercel Blob ili lokalni uploads)
 router.post(
   '/:memberId/profile-image',
   authenticateToken,
@@ -115,29 +148,79 @@ router.post(
     const memberIdNum = parseInt(memberId, 10);
 
     try {
+      console.log(`[UPLOAD] Početak upload-a slike za člana ${memberId}`);
+      console.log(`[UPLOAD] Datoteka: ${req.file.originalname}, veličina: ${req.file.size} bytes`);
+      
       // Prvo obriši staru sliku ako postoji
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
-      if (member?.profile_image_path) {
-        await del(member.profile_image_path);
+      
+      let imagePath: string;
+      
+      if (useVercelBlob) {
+        console.log(`[UPLOAD] Korištenje Vercel Blob za upload...`);
+        
+        // Obriši staru sliku s Vercel Blob-a
+        if (member?.profile_image_path && member.profile_image_path.includes('vercel-storage.com')) {
+          try {
+            await del(member.profile_image_path);
+            console.log(`[UPLOAD] Stara slika obrisana s Vercel Blob-a`);
+          } catch (delError) {
+            console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s Vercel Blob-a:`, delError);
+          }
+        }
+        
+        const fileName = `profile-images/${memberId}-${Date.now()}-${req.file.originalname}`;
+        const blob = await put(fileName, req.file.buffer, {
+          access: 'public',
+          contentType: req.file.mimetype,
+        });
+        
+        imagePath = blob.url;
+        console.log(`[UPLOAD] Slika uspješno upload-ana na Vercel Blob: ${imagePath}`);
+      } else {
+        console.log(`[UPLOAD] Korištenje lokalnog uploads foldera...`);
+        
+        // Kreiraj profile_images direktorij ako ne postoji
+        const profileImagesDir = path.join(uploadsDir, 'profile_images');
+        await ensureDirectoryExists(profileImagesDir);
+        
+        // Obriši staru sliku s lokalnog diska
+        if (member?.profile_image_path && member.profile_image_path.startsWith('/uploads')) {
+          try {
+            const oldFilePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
+            await fs.unlink(oldFilePath);
+            console.log(`[UPLOAD] Stara slika obrisana s lokalnog diska: ${oldFilePath}`);
+          } catch (delError) {
+            console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s lokalnog diska:`, delError);
+          }
+        }
+        
+        // Generiraj ime datoteke
+        const fileExtension = path.extname(req.file.originalname);
+        const fileName = `processed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const filePath = path.join(profileImagesDir, fileName);
+        
+        // Spremi datoteku na lokalni disk
+        await fs.writeFile(filePath, req.file.buffer);
+        
+        imagePath = `/uploads/profile_images/${fileName}`;
+        console.log(`[UPLOAD] Slika uspješno spremljena lokalno: ${filePath}`);
+        console.log(`[UPLOAD] Relativna putanja: ${imagePath}`);
       }
-
-      const fileName = `profile-images/${memberId}-${Date.now()}-${req.file.originalname}`;
-      const blob = await put(fileName, req.file.buffer, {
-        access: 'public',
-        contentType: req.file.mimetype,
-      });
 
       const updatedMember = await prisma.member.update({
         where: { member_id: memberIdNum },
         data: {
-          profile_image_path: blob.url,
+          profile_image_path: imagePath,
           profile_image_updated_at: new Date(),
         },
       });
+      
+      console.log(`[UPLOAD] Baza podataka ažurirana za člana ${memberId}`);
 
       res.json(updatedMember);
     } catch (error) {
-      console.error('Greška pri uploadu slike na Vercel Blob:', error);
+      console.error(`[UPLOAD] Greška pri upload-u slike za člana ${memberId}:`, error);
       const message = error instanceof Error ? error.message : 'Neuspješan upload slike.';
       res.status(500).json({ message });
     }
@@ -152,13 +235,32 @@ router.delete(
     const memberIdNum = parseInt(memberId, 10);
 
     try {
+      console.log(`[DELETE] Početak brisanja slike za člana ${memberId}`);
+      
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
-
-      if (!member || !member.profile_image_path) {
-        return res.status(404).json({ message: 'Profilna slika nije pronađena.' });
+      
+      if (member?.profile_image_path) {
+        if (useVercelBlob && member.profile_image_path.includes('vercel-storage.com')) {
+          console.log(`[DELETE] Brisanje slike s Vercel Blob-a...`);
+          try {
+            await del(member.profile_image_path);
+            console.log(`[DELETE] Slika uspješno obrisana s Vercel Blob-a`);
+          } catch (delError) {
+            console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s Vercel Blob-a:`, delError);
+          }
+        } else if (member.profile_image_path.startsWith('/uploads')) {
+          console.log(`[DELETE] Brisanje slike s lokalnog diska...`);
+          try {
+            const filePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
+            await fs.unlink(filePath);
+            console.log(`[DELETE] Slika uspješno obrisana s lokalnog diska: ${filePath}`);
+          } catch (delError) {
+            console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s lokalnog diska:`, delError);
+          }
+        }
+      } else {
+        console.log(`[DELETE] Član ${memberId} nema profilnu sliku za brisanje`);
       }
-
-      await del(member.profile_image_path);
 
       const updatedMember = await prisma.member.update({
         where: { member_id: memberIdNum },
@@ -167,10 +269,12 @@ router.delete(
           profile_image_updated_at: new Date(),
         },
       });
+      
+      console.log(`[DELETE] Baza podataka ažurirana za člana ${memberId}`);
 
       res.json(updatedMember);
     } catch (error) {
-      console.error('Greška pri brisanju slike s Vercel Bloba:', error);
+      console.error(`[DELETE] Greška pri brisanju slike za člana ${memberId}:`, error);
       const message = error instanceof Error ? error.message : 'Neuspješno brisanje slike.';
       res.status(500).json({ message });
     }
