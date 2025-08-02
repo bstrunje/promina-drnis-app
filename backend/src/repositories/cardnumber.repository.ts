@@ -1,4 +1,5 @@
 import db from '../utils/db.js';
+import prisma from '../utils/prisma.js';
 
 interface CardNumberResult {
   id: number;
@@ -9,30 +10,48 @@ interface CardNumberResult {
 }
 
 const cardNumberRepository = {
-  // Dohvati sve istinski dostupne brojeve kartica
+  // OPTIMIZIRANA funkcija za dohvat dostupnih brojeva kartica - serverless friendly
   async getAvailable(): Promise<string[]> {
     try {
-      // 1. Dohvati SVE brojeve kartica iz glavne tablice
-      const allNumbersResult = await db.query<{ card_number: string }>(
-        `SELECT card_number FROM card_numbers ORDER BY card_number ASC`
+      console.log('[CARD-NUMBERS] Početak dohvata dostupnih brojeva kartica...');
+      const startTime = Date.now();
+      
+      // KRITIČNA OPTIMIZACIJA: Paralelni Prisma upiti umjesto sekvencijalnih db.query
+      const [allNumbers, consumedNumbers, assignedNumbers] = await Promise.allSettled([
+        // 1. Dohvati SVE brojeve kartica iz glavne tablice
+        prisma.cardNumber.findMany({
+          select: { card_number: true },
+          orderBy: { card_number: 'asc' }
+        }),
+        
+        // 2. Dohvati sve POTROŠENE brojeve (npr. oštećene, izgubljene)
+        prisma.consumedCardNumber.findMany({
+          select: { card_number: true }
+        }),
+        
+        // 3. Dohvati sve brojeve kartica koji su već dodijeljeni članovima
+        prisma.membershipDetails.findMany({
+          where: { card_number: { not: null } },
+          select: { card_number: true }
+        })
+      ]);
+      
+      // Obradi rezultate s fallback vrijednostima
+      const allNumbersList = allNumbers.status === 'fulfilled' ? allNumbers.value.map((n: {card_number: string}) => n.card_number) : [];
+      const consumedNumbersSet = new Set(
+        consumedNumbers.status === 'fulfilled' ? consumedNumbers.value.map((n: {card_number: string}) => n.card_number) : []
       );
-      const allNumbers = allNumbersResult.rows.map(row => row.card_number);
-
-      // 2. Dohvati sve POTROŠENE brojeve (npr. oštećene, izgubljene)
-      const consumedNumbersResult = await db.query<{ card_number: string }>(
-        `SELECT card_number FROM consumed_card_numbers`
+      const assignedNumbersSet = new Set(
+        assignedNumbers.status === 'fulfilled' ? assignedNumbers.value.map((n: {card_number: string | null}) => n.card_number).filter(Boolean) : []
       );
-      // Koristimo Set za puno bržu pretragu
-      const consumedNumbers = new Set(consumedNumbersResult.rows.map(row => row.card_number));
-
-      // 3. Dohvati sve brojeve kartica koji su već dodijeljeni članovima iz ispravne tablice
-      const assignedNumbersResult = await db.query<{ card_number: string }>('SELECT card_number FROM membership_details WHERE card_number IS NOT NULL');
-      const assignedNumbers = new Set(assignedNumbersResult.rows.map(row => row.card_number));
 
       // 4. Filtriraj dostupne brojeve
-      const availableNumbers = allNumbers.filter(num => 
-        !consumedNumbers.has(num) && !assignedNumbers.has(num)
+      const availableNumbers = allNumbersList.filter((num: string) => 
+        !consumedNumbersSet.has(num) && !assignedNumbersSet.has(num)
       );
+      
+      const duration = Date.now() - startTime;
+      console.log(`[CARD-NUMBERS] Pronađeno ${availableNumbers.length} dostupnih brojeva u ${duration}ms`);
       
       return availableNumbers;
     } catch (error) {
@@ -49,37 +68,74 @@ const cardNumberRepository = {
    * @param consumedAt datum kada je potrošena (opcionalno, koristi trenutni ako nije proslijeđen)
    */
   async markCardNumberConsumed(cardNumber: string, memberId: number, issuedAt?: Date, consumedAt?: Date): Promise<void> {
-    // Provjeri postoji li već zapis
-    const existing = await db.query<{ id: number }>(
-      `SELECT id FROM consumed_card_numbers WHERE card_number = $1`,
-      [cardNumber]
-    );
-    if (existing.rows.length > 0) {
-      // Već je potrošena
-      return;
+    console.log(`[CARD-NUMBERS] Označavam karticu ${cardNumber} kao potrošenu...`);
+    
+    try {
+      // OPTIMIZACIJA: Provjeri postoji li već zapis pomoću Prisma
+      const existing = await prisma.consumedCardNumber.findFirst({
+        where: { card_number: cardNumber },
+        select: { id: true }
+      });
+      
+      if (existing) {
+        console.log(`[CARD-NUMBERS] Kartica ${cardNumber} je već označena kao potrošena`);
+        return;
+      }
+      
+      // Koristi proslijeđeni issuedAt ili trenutni datum
+      const issued = issuedAt || new Date();
+      const consumed = consumedAt || new Date();
+      
+      // PARALELNE operacije za bolje performanse
+      await Promise.allSettled([
+        // Unesi u consumed_card_numbers
+        prisma.consumedCardNumber.create({
+          data: {
+            card_number: cardNumber,
+            member_id: memberId,
+            issued_at: issued,
+            consumed_at: consumed
+          }
+        }),
+        
+        // Ažuriraj status u card_numbers (ako postoji)
+        prisma.cardNumber.updateMany({
+          where: { card_number: cardNumber },
+          data: {
+            status: 'consumed',
+            member_id: null,
+            assigned_at: null
+          }
+        })
+      ]);
+      
+      console.log(`[CARD-NUMBERS] Kartica ${cardNumber} uspješno označena kao potrošena`);
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri označavanju kartice ${cardNumber}:`, error);
+      throw error;
     }
-    // Koristi proslijeđeni issuedAt ili trenutni datum
-    const issued = issuedAt || new Date();
-    // Unesi u consumed_card_numbers
-    await db.query(
-      `INSERT INTO consumed_card_numbers (card_number, member_id, issued_at, consumed_at) VALUES ($1, $2, $3, $4)`,
-      [cardNumber, memberId, issued, consumedAt || new Date()]
-    );
-    // Ažuriraj status u card_numbers (ako postoji)
-    await db.query(
-      `UPDATE card_numbers SET status = 'consumed', member_id = NULL, assigned_at = NULL WHERE card_number = $1`,
-      [cardNumber]
-    );
   },
   
-  // Add a single card number
+  // OPTIMIZIRANA funkcija za dodavanje jednog broja kartice
   async addSingle(cardNumber: string): Promise<void> {
-    await db.query(
-      `INSERT INTO card_numbers (card_number, status) 
-       VALUES ($1, 'available')
-       ON CONFLICT (card_number) DO NOTHING`,
-      [cardNumber]
-    );
+    console.log(`[CARD-NUMBERS] Dodajem broj kartice ${cardNumber}...`);
+    
+    try {
+      // OPTIMIZACIJA: Prisma upsert umjesto db.query
+      await prisma.cardNumber.upsert({
+        where: { card_number: cardNumber },
+        update: {}, // Ne mijenjaj ako već postoji
+        create: {
+          card_number: cardNumber,
+          status: 'available'
+        }
+      });
+      
+      console.log(`[CARD-NUMBERS] Broj kartice ${cardNumber} uspješno dodan`);
+    } catch (error) {
+      console.error(`[CARD-NUMBERS] Greška pri dodavanju kartice ${cardNumber}:`, error);
+      throw error;
+    }
   },
   
   // Add a range of card numbers
