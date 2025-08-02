@@ -78,41 +78,70 @@ const membershipService = {
         // Za nove članove ne mijenjamo godinu, čak i ako je kasno u godini
       }
 
-      await db.transaction(async (client) => {
-        await membershipRepository.updateMembershipDetails(memberId, {
-          fee_payment_year: paymentYear,
-          fee_payment_date: validPaymentDate,
+      // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
+      await prisma.$transaction(async (tx) => {
+        console.log(`[MEMBERSHIP] Počinje transakcija za uplatu članarine člana ${memberId}`);
+        
+        // Update membership details
+        await tx.membershipDetails.upsert({
+          where: { member_id: memberId },
+          update: {
+            fee_payment_year: paymentYear,
+            fee_payment_date: validPaymentDate,
+          },
+          create: {
+            member_id: memberId,
+            fee_payment_year: paymentYear,
+            fee_payment_date: validPaymentDate,
+          }
         });
+        console.log(`[MEMBERSHIP] Ažurirani detalji članstva za člana ${memberId}`);
 
         // Automatski postaviti status člana na "registered" kad plati članarinu
-        await prisma.member.update({
+        await tx.member.update({
           where: { member_id: memberId },
           data: { status: 'registered' }
         });
-        console.log(`✅ Status člana ${memberId} postavljen na "registered" nakon plaćanja članarine.`);
+        console.log(`[MEMBERSHIP] Status člana ${memberId} postavljen na "registered" nakon plaćanja članarine`);
 
-        // Check current period
-        const currentPeriod = await membershipRepository.getCurrentPeriod(
-          memberId
-        );
+        // Check current period using Prisma
+        const currentPeriod = await tx.membershipPeriod.findFirst({
+          where: {
+            member_id: memberId,
+            end_date: null
+          },
+          orderBy: { start_date: 'desc' }
+        });
 
         // Handle period management
         if (!currentPeriod) {
-          await membershipRepository.createMembershipPeriod(
-            memberId,
-            validPaymentDate
-          );
+          await tx.membershipPeriod.create({
+            data: {
+              member_id: memberId,
+              start_date: validPaymentDate
+            }
+          });
+          console.log(`[MEMBERSHIP] Kreiran novi period članstva za člana ${memberId}`);
         } else if (currentPeriod.end_reason === "non_payment") {
-          await membershipRepository.endMembershipPeriod(
-            currentPeriod.period_id,
-            getCurrentDate(),
-            "non_payment"
-          );
-          await membershipRepository.createMembershipPeriod(
-            memberId,
-            validPaymentDate
-          );
+          // End current period
+          await tx.membershipPeriod.update({
+            where: { period_id: currentPeriod.period_id },
+            data: {
+              end_date: getCurrentDate(),
+              end_reason: "non_payment"
+            }
+          });
+          // Create new period
+          await tx.membershipPeriod.create({
+            data: {
+              member_id: memberId,
+              start_date: validPaymentDate
+            }
+          });
+          console.log(`[MEMBERSHIP] Završen stari i kreiran novi period za člana ${memberId}`);
         }
+        
+        console.log(`[MEMBERSHIP] Transakcija uspješno završena za člana ${memberId}`);
       });
 
       if (performerId) {
