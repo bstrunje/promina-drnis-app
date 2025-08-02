@@ -39,17 +39,13 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            // Drži React, React-DOM i sve React-related biblioteke zajedno
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || 
+                id.includes('@radix-ui') || id.includes('react-hook-form') || id.includes('@hookform')) {
               return 'vendor-react';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'vendor-ui';
             }
             if (id.includes('date-fns') || id.includes('axios') || id.includes('zustand')) {
               return 'vendor-utils';
-            }
-            if (id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'vendor-forms';
             }
             if (id.includes('recharts')) {
               return 'vendor-charts';
