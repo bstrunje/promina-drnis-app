@@ -3,19 +3,31 @@ import { PrismaClient } from '@prisma/client';
 // Global Prisma instance za serverless okruženje
 let prisma: PrismaClient;
 
-// Optimizirana Prisma konfiguracija za Vercel serverless okruženje
+// Optimizirana Prisma konfiguracija za Vercel serverless okruženje s connection pooling
 if (process.env.VERCEL) {
   console.log('[PRISMA] Inicijalizacija za Vercel serverless okruženje');
   console.log('[PRISMA] DATABASE_URL postoji:', !!process.env.DATABASE_URL);
   console.log('[PRISMA] DATABASE_URL duljina:', process.env.DATABASE_URL?.length || 0);
   
-  // Vercel serverless optimizacije
+  // KRITIČNA OPTIMIZACIJA: Connection pooling za serverless
+  const connectionString = process.env.DATABASE_URL;
+  const pooledConnectionString = connectionString?.includes('?') 
+    ? `${connectionString}&connection_limit=5&pool_timeout=60&pgbouncer=true`
+    : `${connectionString}?connection_limit=5&pool_timeout=60&pgbouncer=true`;
+  
+  console.log('[PRISMA] Koristi connection pooling za serverless');
+  
+  // Vercel serverless optimizacije s connection pooling
   prisma = new PrismaClient({
     log: ['error', 'warn'], // Dodano warn za debug
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: pooledConnectionString,
       },
+    },
+    // Dodatne serverless optimizacije
+    transactionOptions: {
+      timeout: 5000, // 5 sekundi timeout za transakcije
     },
   });
 } else {
