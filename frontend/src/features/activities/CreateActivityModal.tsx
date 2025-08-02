@@ -6,7 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select';
 import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -203,7 +209,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 <SelectTrigger className={fieldErrors.selectedTypeId ? 'border-red-500' : ''}>
                   <SelectValue placeholder={t('activities.creation.selectActivityType')} />
                 </SelectTrigger>
-                <SelectContent>
+                                <SelectContent position="popper" sideOffset={5}>
                   {activityTypes.map((type) => (
                     <SelectItem key={type.type_id} value={String(type.type_id)}>
                       {t(`activities.types.${type.key}`).toUpperCase()}
