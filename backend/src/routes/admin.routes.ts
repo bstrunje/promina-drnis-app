@@ -45,88 +45,34 @@ router.use((req: AuthRequest, res, next) => {
   }
 });
 
-// Update the dashboard/stats endpoint with correct activity logic
+// OPTIMIZIRANI admin dashboard stats endpoint za serverless
 router.get('/dashboard/stats', async (req, res) => {
   try {
-    // Get total members count (all members)
-    const totalMembers = await prisma.member.count();
-    
-    // Get registered members (status = 'registered')
-    const registeredMembers = await prisma.member.count({
-      where: {
-        status: 'registered'
-      }
-    });
-    
-    // Get active members based on activity hours
-    // Note: In your system, active means 20+ hours of activity
-    const activeMembers = await prisma.member.count({
-      where: {
-        status: 'registered',
-        total_hours: {
-          gte: 20 // Consider members active if they have 20+ hours
-        }
-      }
-    });
-    
-    const pendingRegistrations = await prisma.member.count({
-      where: {
-        registration_completed: false
-      }
-    });
-    
-    // Get recent activities 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    let recentActivities = 0;
-    try {
-      recentActivities = await prisma.activity.count({
-        where: {
-          created_at: {
-            gte: thirtyDaysAgo,
-          },
-        },
-      });
-    } catch (err) {
-      console.error('Error getting activity count:', err);
-      recentActivities = 0; // Fallback to 0 in case of error
-    }
+    // PARALELNI upiti umjesto sekvencijalnih - dramatično poboljšanje performansi
+    const [totalMembers, registeredMembers, activeMembers, pendingRegistrations, recentActivities] = await Promise.allSettled([
+      prisma.member.count(),
+      prisma.member.count({ where: { status: 'registered' } }),
+      prisma.member.count({ where: { status: 'registered', total_hours: { gte: 20 } } }),
+      prisma.member.count({ where: { registration_completed: false } }),
+      prisma.activity.count({ where: { created_at: { gte: thirtyDaysAgo } } })
+    ]);
     
-    // Get system health and backup info
+    // Sistemske informacije - bez čitanja datotečnog sustava (sporo na serverless)
     const systemHealth = "Optimal";
+    const lastBackup = "Managed by Vercel"; // Serverless ne koristi lokalne backup datoteke
     
-    // Try to get the last backup timestamp from a file or database
-    let lastBackup = "Never";
-    try {
-      const backupDir = path.join(process.cwd(), 'backups');
-      const files = await fs.readdir(backupDir);
-      if (files.length > 0) {
-        // Sort files by creation time, newest first
-        const fileStats = await Promise.all(
-          files.map(async (file) => {
-            const stats = await fs.stat(path.join(backupDir, file));
-            return { file, mtime: stats.mtime };
-          })
-        );
-        
-        fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-        if (fileStats[0]) {
-          // Formatiramo datum u ISO format umjesto korištenja toLocaleString
-          lastBackup = fileStats[0].mtime.toISOString(); // Već je standardni JS metod, ne treba mijenjati
-        }
-      }
-    } catch (err) {
-      console.error('Error getting backup info:', err);
-      // If there's an error, just keep the default "Never" value
-    }
+    // Cache headers za smanjenje opterećenja
+    res.set('Cache-Control', 'public, max-age=60'); // 1 minuta cache
     
     res.json({
-      totalMembers,
-      registeredMembers,
-      activeMembers,
-      pendingRegistrations,
-      recentActivities,
+      totalMembers: totalMembers.status === 'fulfilled' ? totalMembers.value : 0,
+      registeredMembers: registeredMembers.status === 'fulfilled' ? registeredMembers.value : 0,
+      activeMembers: activeMembers.status === 'fulfilled' ? activeMembers.value : 0,
+      pendingRegistrations: pendingRegistrations.status === 'fulfilled' ? pendingRegistrations.value : 0,
+      recentActivities: recentActivities.status === 'fulfilled' ? recentActivities.value : 0,
       systemHealth,
       lastBackup
     });

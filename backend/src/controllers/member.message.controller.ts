@@ -443,6 +443,9 @@ async getUnreadMessageCount(req: Request, res: Response): Promise<void> {
 
         const count = await messageService.countUnreadMessages(memberId);
         
+        // Cache headers za smanjenje opterećenja serverless funkcija
+        res.set('Cache-Control', 'public, max-age=30'); // 30 sekundi cache
+        
         res.status(200).json({ count });
     } catch (error) {
         console.error('Error getting unread message count:', error);

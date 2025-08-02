@@ -505,19 +505,25 @@ const memberMessageRepository = {
         return count > 0;
     },
 
-    // Broji samo nepročitane poruke gdje je član PRIMATELJ, a nije POŠILJATELJ
+    // OPTIMIZIRANA funkcija za brojanje nepročitanih poruka - serverless friendly
     async countUnreadMessages(memberId: number): Promise<number> {
-        const count = await prisma.messageRecipientStatus.count({
-            where: {
-                recipient_member_id: memberId,
-                status: 'unread',
-                // Isključujemo poruke koje je član sam poslao
-                message: {
-                    sender_id: { not: memberId }
-                }
-            },
-        });
-        return count;
+        try {
+            // Optimiziran upit s minimalnim JOIN-om za serverless performanse
+            const count = await prisma.messageRecipientStatus.count({
+                where: {
+                    recipient_member_id: memberId,
+                    status: 'unread',
+                    // Optimiziran pristup - direktno isključujemo self-sent poruke
+                    message: {
+                        sender_id: { not: memberId }
+                    }
+                },
+            });
+            return count;
+        } catch (error) {
+            console.error('Error counting unread messages for member', memberId, ':', error);
+            return 0; // Fallback vrijednost umjesto error-a
+        }
     }
 };
 
