@@ -22,6 +22,32 @@ export default async function handler(req, res) {
       console.log('[HANDLER] Inicijalizacija Express app-a...');
       const startTime = Date.now();
       
+      // Debug: Ispišemo strukturu direktorija
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      console.log('[DEBUG] Current working directory:', process.cwd());
+      console.log('[DEBUG] __dirname equivalent:', import.meta.url);
+      
+      try {
+        const currentDir = process.cwd();
+        const files = fs.default.readdirSync(currentDir);
+        console.log('[DEBUG] Files in current directory:', files);
+        
+        // Provjeri postoji li backend direktorij
+        if (files.includes('backend')) {
+          const backendFiles = fs.default.readdirSync(path.default.join(currentDir, 'backend'));
+          console.log('[DEBUG] Files in backend directory:', backendFiles);
+          
+          if (backendFiles.includes('dist')) {
+            const distFiles = fs.default.readdirSync(path.default.join(currentDir, 'backend', 'dist'));
+            console.log('[DEBUG] Files in backend/dist directory:', distFiles);
+          }
+        }
+      } catch (debugError) {
+        console.log('[DEBUG] Error reading directory structure:', debugError.message);
+      }
+      
       // Dynamic import za ES Module - ispravka putanje za Vercel
       // Pokušaj s različitim putanjama ovisno o Vercel strukturi
       let appModule;
@@ -35,8 +61,14 @@ export default async function handler(req, res) {
           appModule = await import('../backend/dist/app.js');
         } catch (error2) {
           console.log('[HANDLER] Pokušavam direktnu putanju...');
-          // Direktna putanja ako je app.js u root-u
-          appModule = await import('./app.js');
+          try {
+            // Direktna putanja ako je app.js u root-u
+            appModule = await import('./app.js');
+          } catch (error3) {
+            console.log('[HANDLER] Pokušavam backend/dist/src/app.js...');
+            // Možda je u src poddirektoriju
+            appModule = await import('./backend/dist/src/app.js');
+          }
         }
       }
       app = appModule.default;
