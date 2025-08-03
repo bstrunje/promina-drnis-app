@@ -1,21 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "backend/dist/**",
-          "prisma/**"
-        ]
-      }
-    },
-    {
-      "src": "frontend/dist",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "npm run build:vercel",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...slug]" },
     { "source": "/uploads/(.*)", "destination": "/api/[...slug]" },
