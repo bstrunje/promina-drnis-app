@@ -98,7 +98,7 @@ async function main() {
     await seedActivityTypes(tx);
     await seedInitialSystemManager(tx);
   }, {
-    timeout: 30000, // 30 sekundi timeout za Vercel serverless okruženje
+    timeout: 12000, // 12 sekundi - ispod Prisma Accelerate limita od 15s
   });
   console.log('🎉 Database seeding completed successfully.');
 }
