@@ -1,10 +1,10 @@
 // OPTIMIZIRANI Vercel serverless handler za sve API rute
-// ESM stil s timeout handling-om za serverless okruženje
+// CommonJS stil kompatibilan s Vercel build procesom
 
 let app;
 let appInitialized = false;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     // Timeout za cjelokupni zahtjev (8 sekundi, ostavljamo 2s buffer za Vercel)
     const timeoutId = setTimeout(() => {
@@ -23,24 +23,24 @@ export default async function handler(req, res) {
       const startTime = Date.now();
       
       // Debug: Ispišemo strukturu direktorija
-      const fs = await import('fs');
-      const path = await import('path');
+      const fs = require('fs');
+      const path = require('path');
       
       console.log('[DEBUG] Current working directory:', process.cwd());
-      console.log('[DEBUG] __dirname equivalent:', import.meta.url);
+      console.log('[DEBUG] __dirname equivalent:', __dirname);
       
       try {
         const currentDir = process.cwd();
-        const files = fs.default.readdirSync(currentDir);
+        const files = fs.readdirSync(currentDir);
         console.log('[DEBUG] Files in current directory:', files);
         
         // Provjeri postoji li backend direktorij
         if (files.includes('backend')) {
-          const backendFiles = fs.default.readdirSync(path.default.join(currentDir, 'backend'));
+          const backendFiles = fs.readdirSync(path.join(currentDir, 'backend'));
           console.log('[DEBUG] Files in backend directory:', backendFiles);
           
           if (backendFiles.includes('dist')) {
-            const distFiles = fs.default.readdirSync(path.default.join(currentDir, 'backend', 'dist'));
+            const distFiles = fs.readdirSync(path.join(currentDir, 'backend', 'dist'));
             console.log('[DEBUG] Files in backend/dist directory:', distFiles);
           }
         }
@@ -52,22 +52,26 @@ export default async function handler(req, res) {
       // Pokušaj s različitim putanjama ovisno o Vercel strukturi
       let appModule;
       try {
-        // Prvo pokušaj s relativnom putanjom
-        appModule = await import('./backend/dist/app.js');
+        // Prvo pokušaj s ispravnom putanjom (src poddirektorij)
+        appModule = await import('./backend/dist/src/app.js');
+        console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/src/app.js');
       } catch (error1) {
-        console.log('[HANDLER] Pokušavam alternativnu putanju...');
+        console.log('[HANDLER] Pokušavam alternativnu putanju ../backend/dist/src/app.js...');
         try {
-          // Alternativna putanja
-          appModule = await import('../backend/dist/app.js');
+          // Alternativna putanja s src
+          appModule = await import('../backend/dist/src/app.js');
+          console.log('[HANDLER] Uspješno učitan app.js iz ../backend/dist/src/app.js');
         } catch (error2) {
-          console.log('[HANDLER] Pokušavam direktnu putanju...');
+          console.log('[HANDLER] Pokušavam staru putanju ./backend/dist/app.js...');
           try {
+            // Stara putanja bez src
+            appModule = await import('./backend/dist/app.js');
+            console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/app.js');
+          } catch (error3) {
+            console.log('[HANDLER] Pokušavam direktnu putanju ./app.js...');
             // Direktna putanja ako je app.js u root-u
             appModule = await import('./app.js');
-          } catch (error3) {
-            console.log('[HANDLER] Pokušavam backend/dist/src/app.js...');
-            // Možda je u src poddirektoriju
-            appModule = await import('./backend/dist/src/app.js');
+            console.log('[HANDLER] Uspješno učitan app.js iz ./app.js');
           }
         }
       }
