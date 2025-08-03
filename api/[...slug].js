@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       const startTime = Date.now();
       
       // Dynamic import za ES Module
-      const appModule = await import('../backend/dist/app.js');
+      const appModule = await import('./backend/dist/app.js');
       app = appModule.default;
       appInitialized = true;
       
