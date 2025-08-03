@@ -14,5 +14,4 @@ npx prisma migrate deploy
 echo "Seeding database..."
 npm run seed
 
-echo "Handing over to CMD..."
-exec "$@"
+echo "Entrypoint setup finished."

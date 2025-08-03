@@ -324,18 +324,9 @@ app.use((_err: Error, req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Initialize directories
-prepareDirectories();
-
-// Migrate existing files (keep this commented unless needed)
-migrateExistingFiles()
-  .then(() => console.log('File migration completed'))
-  .catch((err: unknown) => console.error('Error during file migration:', err));
-
-// Inicijalizacija vremenske zone iz postavki sustava
-timezoneService.initializeTimezone()
-  .then(() => console.log('🌐 Vremenska zona uspješno inicijalizirana iz postavki sustava'))
-  .catch((err: unknown) => console.error('Greška pri inicijalizaciji vremenske zone:', err));
+// Inicijalizacijske skripte (prepareDirectories, migrateExistingFiles, timezoneService.initializeTimezone)
+// su premještene u Docker entrypoint ili se više ne koriste.
+// Server sada samo pokreće aplikaciju.
 
 // Initialize scheduled tasks in production
 if (process.env.NODE_ENV === 'production') {

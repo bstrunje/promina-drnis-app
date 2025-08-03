@@ -48,11 +48,10 @@ COPY entrypoint.sh .
 RUN sed -i 's/\r$//' ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# Postavljamo entrypoint skriptu kao ulaznu točku
-ENTRYPOINT ["./entrypoint.sh"]
-
-# Zadana naredba koju će entrypoint pokrenuti
-CMD ["npm", "start"]
+# Postavljamo entrypoint skriptu i glavnu naredbu. 
+# Ovo osigurava da se entrypoint.sh izvrši za pripremu (migracije, seed),
+# a zatim se pokreće server s 'npm start'.
+CMD ["/bin/sh", "-c", "./entrypoint.sh && npm start"]
 
 # Izlažemo port
 EXPOSE 3001
