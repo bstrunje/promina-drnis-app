@@ -1,15 +1,25 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:vercel",
-  "outputDirectory": "frontend/dist",
-  "env": {
-    "VERCEL": "1",
-    "PRISMA_CLIENT_ENGINE_TYPE": "binary",
-    "NODE_OPTIONS": "--max-old-space-size=1024"
-  },
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "backend/dist/**",
+          "prisma/**"
+        ]
+      }
+    },
+    {
+      "src": "frontend/dist",
+      "use": "@vercel/static"
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...slug]" },
     { "source": "/uploads/(.*)", "destination": "/api/[...slug]" },
-    { "source": "/health", "destination": "/api/[...slug]" }
+    { "source": "/health", "destination": "/api/[...slug]" },
+    { "source": "/(.*)", "destination": "/frontend/dist/$1" }
   ]
 }

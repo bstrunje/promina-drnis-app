@@ -22,8 +22,23 @@ export default async function handler(req, res) {
       console.log('[HANDLER] Inicijalizacija Express app-a...');
       const startTime = Date.now();
       
-      // Dynamic import za ES Module
-      const appModule = await import('./backend/dist/app.js');
+      // Dynamic import za ES Module - ispravka putanje za Vercel
+      // Pokušaj s različitim putanjama ovisno o Vercel strukturi
+      let appModule;
+      try {
+        // Prvo pokušaj s relativnom putanjom
+        appModule = await import('./backend/dist/app.js');
+      } catch (error1) {
+        console.log('[HANDLER] Pokušavam alternativnu putanju...');
+        try {
+          // Alternativna putanja
+          appModule = await import('../backend/dist/app.js');
+        } catch (error2) {
+          console.log('[HANDLER] Pokušavam direktnu putanju...');
+          // Direktna putanja ako je app.js u root-u
+          appModule = await import('./app.js');
+        }
+      }
       app = appModule.default;
       appInitialized = true;
       
