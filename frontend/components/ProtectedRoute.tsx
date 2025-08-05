@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../src/context/AuthContext';
+import { API_BASE_URL } from '../src/utils/config';
 import axios from 'axios';
 
 interface ProtectedRouteProps {
@@ -27,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   // Funkcija za provjeru valjanosti tokena
   const checkTokenValidity = async () => {
     try {
-      // Pozivamo refresh endpoint umjesto health checka
-      await axios.post('/api/auth/refresh', {}, {
+      // Pozivamo refresh endpoint umjesto health checka - koristimo centraliziranu konfiguraciju
+      await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
         withCredentials: true
       });
     } catch (error: any) {

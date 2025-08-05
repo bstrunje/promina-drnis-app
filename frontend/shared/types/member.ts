@@ -95,6 +95,12 @@ export interface Member {
     membership_type?: MembershipTypeEnum; // Migrirano na enum
     tshirt_size?: ClothingSize;
     shell_jacket_size?: ClothingSize;
+    hat_size?: ClothingSize;
+    
+    // Equipment delivery status
+    tshirt_delivered?: boolean;
+    shell_jacket_delivered?: boolean;
+    hat_delivered?: boolean;
 
     // Informacije o članskoj iskaznici i članarini (izvor istine)
     membership_details: MembershipDetails; // Uvijek prisutan objekt s detaljima članstva

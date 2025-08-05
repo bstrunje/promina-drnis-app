@@ -104,14 +104,6 @@ export const updateActivity = async (id: number, activityData: ActivityUpdateDat
 };
 
 /**
- * Tip za podatke o sudjelovanju s postotkom priznavanja za izlete
- */
-interface ParticipationWithRecognition {
-  member_id: number;
-  recognition_override: number;
-}
-
-/**
  * Kreira novu aktivnost.
  * @param activityData Podaci za kreiranje aktivnosti.
  * @returns Promise koji razrješava u objekt kreirane aktivnosti.
@@ -125,8 +117,8 @@ export const createActivity = async (activityData: {
   activity_type_id: number;
   recognition_percentage: number;
   participant_ids?: number[];
-  participations?: ParticipationWithRecognition[]; // Novi parametar za sudionike s ulogama i postocima priznavanja
-  manual_hours?: number | null; // Dodano - bit će primijenjeno na sudionike aktivnosti
+  participations?: { member_id: number; recognition_override: number; }[]; 
+  manual_hours?: number | null; 
 }): Promise<Activity> => {
   const response = await apiInstance.post<Activity>('/activities', activityData);
   return response.data;

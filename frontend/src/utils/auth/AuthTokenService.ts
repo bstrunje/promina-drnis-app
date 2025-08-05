@@ -27,13 +27,9 @@ export class AuthTokenService {
    * Dohvaća API URL ovisno o okruženju
    */
   static getApiUrl(endpoint: string): string {
-    // U razvojnom okruženju, Vite proxy rješava preusmjeravanje. Koristimo relativnu putanju.
-    if (import.meta.env.DEV) {
-      return endpoint;
-    }
-    // U produkciji, koristimo punu putanju definiranu u konfiguraciji.
-    const apiEndpoint = endpoint.startsWith('/api/') ? endpoint.substring(4) : endpoint;
-    return `${API_BASE_URL}${apiEndpoint}`;
+    // Koristimo konfiguraciju iz config.ts koja automatski detektira lokalni/Docker setup
+    const apiEndpoint = endpoint.startsWith('/api/') ? endpoint.substring(5) : endpoint;
+    return `${API_BASE_URL}/${apiEndpoint}`;
   }
 
   /**

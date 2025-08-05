@@ -195,6 +195,7 @@ const memberService = {
                         life_status: memberToUpdate.life_status,
                         tshirt_size: memberToUpdate.tshirt_size,
                         shell_jacket_size: memberToUpdate.shell_jacket_size,
+                        hat_size: memberToUpdate.hat_size,
                         membership_type: memberToUpdate.membership_type ? mapMembershipTypeToEnum(memberToUpdate.membership_type) : undefined,
                         other_skills: memberToUpdate.other_skills, // Dodano polje koje je nedostajalo
                         password_hash: memberToUpdate.password_hash,
@@ -311,6 +312,7 @@ const memberService = {
                         life_status: basicMemberData.life_status,
                         tshirt_size: basicMemberData.tshirt_size,
                         shell_jacket_size: basicMemberData.shell_jacket_size,
+                        hat_size: basicMemberData.hat_size,
                         membership_type: mapMembershipTypeToEnum(basicMemberData.membership_type),
                         nickname: basicMemberData.nickname,
                         other_skills: other_skills,

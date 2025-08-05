@@ -27,7 +27,9 @@
         "toggleDebug": "Toggle debug mode",
         "refreshing": "Refreshing...",
         "refreshData": "Refresh Data",
-        "actions": "Actions"
+        "actions": "Actions",
+        "selectSize": "Select size",
+        "notSpecified": "Not specified"
     },
     "activityDetail": {
         "notFound": "Activity not found.",
@@ -216,9 +218,11 @@
             "email": "Email",
             "phone": "Phone",
             "address": "Address",
+            "city": "City",
             "lifeStatus": "Life Status",
             "tShirtSize": "T-Shirt Size",
             "shellJacketSize": "Shell Jacket Size",
+            "hatSize": "Hat Size",
             "notSet": "Not set",
             "firstName": "First Name",
             "lastName": "Last Name",
@@ -227,8 +231,7 @@
             "male": "Male",
             "female": "Female",
             "oibValidation": "OIB must be exactly 11 digits",
-            "city": "City",
-            "membershipType": "Membership Type",
+             "membershipType": "Membership Type",
             "employed": "Employed/Unemployed",
             "child": "Child/Pupil/Student",
             "pensioner": "Pensioner",
@@ -767,6 +770,50 @@
             "inventoryUpdated": "Stamp inventory for year {{year}} successfully updated",
             "updateInventoryFailed": "Failed to update inventory",
             "refreshInventoryData": "Refresh inventory data"
+        },
+        "equipmentInventory": {
+            "title": "Equipment Inventory",
+            "refresh": "Refresh",
+            "editInventory": "Edit Inventory",
+            "equipmentTypes": {
+                "tshirt": "T-Shirt",
+                "shell_jacket": "Shell Jacket",
+                "hat": "Hat"
+            },
+            "tableHeaders": {
+                "size": "Size",
+                "gender": "Gender",
+                "initial": "Initial",
+                "issued": "Issued",
+                "gifts": "Gifts",
+                "remaining": "Remaining"
+            },
+            "cardLabels": {
+                "initial": "Initial:",
+                "issued": "Issued:",
+                "gifts": "Gifts:",
+                "remaining": "Remaining:"
+            },
+            "giftActions": {
+                "giftMarked": "Gift Marked",
+                "giftMarkedDescription": "{{equipmentType}} ({{size}}, {{gender}}) marked as gift",
+                "giftReturned": "Gift Returned",
+                "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) returned to inventory",
+                "error": "Error",
+                "giftMarkError": "Failed to mark as gift",
+                "giftReturnError": "Failed to return gift"
+            },
+            "modal": {
+                "title": "Edit Inventory - {{equipmentType}}",
+                "save": "Save Changes",
+                "cancel": "Cancel",
+                "saveSuccess": "Inventory successfully updated",
+                "saveError": "Error updating inventory"
+            },
+            "gender": {
+                "male": "M",
+                "female": "F"
+            }
         }
     },
     "members": {
@@ -1125,6 +1172,44 @@
         },
         "badges": {
             "sentToAll": "Sent To All Members"
+        }
+    },
+    "equipmentDelivery": {
+        "title": "Equipment Delivery Status",
+        "management": "Equipment Delivery Management",
+        "tShirt": "T-Shirt",
+        "shellJacket": "Shell Jacket",
+        "hat": "Hat",
+        "delivered": "delivered",
+        "notDelivered": "not delivered",
+        "markAsDelivered": "marked as delivered",
+        "markAsUndelivered": "marked as undelivered",
+        "success": "Success",
+        "error": "Error",
+        "failedToUpdate": "Failed to update delivery status",
+        "sizes": {
+            "tShirt": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "shellJacket": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "hat": {
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large"
+            }
         }
     }
 }

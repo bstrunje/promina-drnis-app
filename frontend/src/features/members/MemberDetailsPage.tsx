@@ -19,6 +19,7 @@ import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
+import EquipmentSection from "../../../components/EquipmentSection";
 
 
 interface Props {
@@ -354,6 +355,7 @@ setEditedMember(memberData);
         life_status: editedMember.life_status,
         tshirt_size: editedMember.tshirt_size,
         shell_jacket_size: editedMember.shell_jacket_size,
+        hat_size: editedMember.hat_size,
         membership_type: editedMember.membership_type,
         skills: editedMember.skills,
         other_skills: editedMember.other_skills,
@@ -470,6 +472,8 @@ setEditedMember(memberData);
           handleChange={handleChange}
           handleSkillsChange={handleSkillsChange}
           validationErrors={validationErrors}
+          onUpdate={fetchMemberDetails}
+          onMemberChange={(updatedMember) => setEditedMember(updatedMember)}
         />
 
         <MembershipFeeSection

@@ -11,6 +11,7 @@ import { AdminMessage } from "./components/types";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardNavCards } from "./components/DashboardNavCards";
 import { StampInventoryManager } from "./components/StampInventoryManager";
+import { EquipmentInventoryManager } from "./components/EquipmentInventoryManager";
 
 interface Props {
   member: Member;
@@ -78,17 +79,23 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
     <div className="p-6">
       <DashboardHeader member={member} />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Navigation Cards - First Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <DashboardNavCards 
           navigate={navigate} 
           unreadMessages={unreadMessages} 
         />
-        
+      </div>
+      
+      {/* Inventory Management - Second Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StampInventoryManager 
           member={member} 
           showHistory={showHistory}
           setShowHistory={setShowHistory}
         />
+        
+        <EquipmentInventoryManager member={member} />
       </div>
     </div>
   );

@@ -1,8 +1,0 @@
-An internal hostname: dpg-cuq7s9btq21c73a341l0-a
-Port: 5432
-Database: promina_drnis_db
-Username: promina_drnis_db_user
-Password: z6tCyE8RCxnDAsz3vnP9ofYDJzXxiEUi
-Internal Database URL: postgresql://promina_drnis_db_user:z6tCyE8RCxnDAsz3vnP9ofYDJzXxiEUi@dpg-cuq7s9btq21c73a341l0-a/promina_drnis_db
-External Database URL: postgresql://promina_drnis_db_user:z6tCyE8RCxnDAsz3vnP9ofYDJzXxiEUi@dpg-cuq7s9btq21c73a341l0-a.frankfurt-postgres.render.com/promina_drnis_db?schema=public&encoding=UTF8&client_encoding=UTF8
-PSQL Command: PGPASSWORD=z6tCyE8RCxnDAsz3vnP9ofYDJzXxiEUi psql -h dpg-cuq7s9btq21c73a341l0-a.frankfurt-postgres.render.com -U promina_drnis_db_user promina_drnis_db

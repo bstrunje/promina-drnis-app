@@ -83,89 +83,12 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     if (!storedToken) {
       console.error(`Refresh token nije pronađen u bazi za korisnika ID: ${decoded.id}`);
+      console.log('Token je valjan ali nije u bazi - odbacujem zahtjev');
       
-      const userTokens = await prisma.refresh_tokens.findMany({
-        where: { member_id: decoded.id }
-      });
-      
-      console.log(`Broj tokena u bazi za korisnika ID ${decoded.id}: ${userTokens.length}`);
-      
-      if (userTokens.length > 0) {
-        console.log('Tokeni korisnika u bazi:', userTokens.map(t => ({ 
-          id: t.id, 
-          token_substr: t.token.substring(0, 20) + '...',
-          expires_at: t.expires_at ? formatUTCDate(new Date(t.expires_at)) : 'nije postavljen'
-        })));
-        
-        console.log('Token je valjan ali nije pronađen u bazi - vjerojatno prijava s drugog uređaja');
-        console.log('KRITIČNA GREŠKA: Pokušaj kreiranja postojećeg tokena - izbjegavam duplicate key constraint');
-        
-        // OPTIMIZACIJA: Umjesto kreiranja istog tokena, generiram novi refresh token
-        const userAgent = req.headers['user-agent'] || 'unknown';
-        const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-        const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
-        
-        // Generiram novi refresh token umjesto korištenja postojećeg
-        const newRefreshTokenForCreate = jwt.sign(
-          { 
-            id: decoded.id, 
-            role: decoded.role,
-            fingerprint: deviceFingerprint, 
-            iat: Math.floor(Date.now() / 1000) 
-          }, 
-          REFRESH_TOKEN_SECRET, 
-          { expiresIn: '7d' }
-        );
-        
-        const expiresAt = getTokenExpiryDate(7);
-        
-        try {
-          // ISPRAVKA: Koristim novi token umjesto postojećeg za izbjegavanje duplicate key greške
-          const newToken = await prisma.refresh_tokens.create({
-            data: {
-              token: newRefreshTokenForCreate,  // Novi token umjesto postojećeg
-              member_id: decoded.id,
-              expires_at: expiresAt
-            }
-          });
-          
-          console.log(`Novi token uspješno kreiran s ID: ${newToken.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
-          
-          // Ažuriram refreshToken varijablu za daljnju upotrebu
-          refreshToken = newRefreshTokenForCreate;
-          storedToken = newToken;
-        } catch (error) {
-          console.error('Greška pri kreiranju novog tokena:', error);
-          
-          // Dodatna provjera za duplicate key grešku
-          if (error instanceof Error && error.message.includes('duplicate key')) {
-            console.log('Duplicate key greška - pokušavam pronaći postojeći token...');
-            
-            const existingToken = await prisma.refresh_tokens.findFirst({
-              where: { 
-                token: newRefreshTokenForCreate,
-                member_id: decoded.id
-              }
-            });
-            
-            if (existingToken) {
-              console.log('Postojeći token pronađen, koristim ga...');
-              storedToken = existingToken;
-              refreshToken = newRefreshTokenForCreate;
-            } else {
-              res.status(500).json({ error: 'Interna greška servera pri obradi tokena' });
-              return;
-            }
-          } else {
-            res.status(500).json({ error: 'Interna greška servera pri obradi tokena' });
-            return;
-          }
-        }
-      } else {
-        console.error(`Korisnik ID: ${decoded.id} nema aktivnih tokena u bazi`);
-        res.status(403).json({ error: 'Refresh token nije valjan' });
-        return;
-      }
+      // JEDNOSTAVNO RJEŠENJE: Ako token nije u bazi, odbaci zahtjev
+      // Korisnik će se morati ponovno prijaviti
+      res.status(401).json({ error: 'Refresh token nije valjan ili je istekao' });
+      return;
     }
     
     if (storedToken.expires_at) {
@@ -177,9 +100,12 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       if (currentDate > expiryDate) {
         console.error(`Refresh token je istekao u bazi podataka: ${formatUTCDate(expiryDate)}`);
         
-        await prisma.refresh_tokens.delete({
+        // Koristimo deleteMany umjesto delete da izbjegnemo grešku ako token ne postoji
+        const deleteResult = await prisma.refresh_tokens.deleteMany({
           where: { id: storedToken.id }
         });
+        
+        console.log(`Obrisano ${deleteResult.count} isteklih tokena`);
         
         res.status(401).json({ error: 'Refresh token je istekao' });
         return;
@@ -230,9 +156,12 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       // koristimo DELETE + CREATE operaciju za potpuno izbjegavanje konflikata
       console.log(`[REFRESH-TOKEN] Brišem stari token ID: ${storedToken.id}`);
       
-      await prisma.refresh_tokens.delete({
+      // Koristimo deleteMany umjesto delete da izbjegnemo P2025 grešku ako token ne postoji
+      const deleteResult = await prisma.refresh_tokens.deleteMany({
         where: { id: storedToken.id }
       });
+      
+      console.log(`[REFRESH-TOKEN] Obrisano ${deleteResult.count} starih tokena`);
       
       console.log(`[REFRESH-TOKEN] Kreiram novi token za člana ${member.member_id}`);
       

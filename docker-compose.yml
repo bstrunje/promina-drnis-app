@@ -27,6 +27,8 @@ services:
       dockerfile: Dockerfile
     container_name: promina-test-backend
     restart: always
+    env_file:
+      - ./backend/.env.docker
     depends_on:
       db:
         condition: service_healthy

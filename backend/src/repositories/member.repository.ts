@@ -51,6 +51,10 @@ export interface MemberUpdateData extends Partial<Omit<Member, 'member_id' | 'st
     life_status?: Member['life_status'];
     tshirt_size?: Member['tshirt_size'];
     shell_jacket_size?: Member['shell_jacket_size'];
+    hat_size?: Member['hat_size'];
+    tshirt_delivered?: boolean;
+    shell_jacket_delivered?: boolean;
+    hat_delivered?: boolean;
     total_hours?: number;
     membership_type?: Member['membership_type'];
     nickname?: string;
@@ -136,6 +140,10 @@ const memberRepository = {
             life_status: memberData.life_status,
             tshirt_size: memberData.tshirt_size,
             shell_jacket_size: memberData.shell_jacket_size,
+            hat_size: memberData.hat_size,
+            tshirt_delivered: memberData.tshirt_delivered,
+            shell_jacket_delivered: memberData.shell_jacket_delivered,
+            hat_delivered: memberData.hat_delivered,
             total_hours: memberData.total_hours,
             membership_type: memberData.membership_type !== undefined ? mapMembershipTypeToEnum(memberData.membership_type) : undefined,
             nickname: memberData.nickname,

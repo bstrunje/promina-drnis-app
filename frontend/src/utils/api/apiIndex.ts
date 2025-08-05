@@ -38,7 +38,29 @@ const api = {
   ...stamps,
   ...cards,
   ...misc,
-  ...activities // Dodane aktivnosti u glavni objekt
+  // Eksplicitno izvozimo samo funkcije iz activities, ne tipove
+  getActivityTypes: activities.getActivityTypes,
+  getActivitiesByTypeId: activities.getActivitiesByTypeId,
+  getActivitiesByStatus: activities.getActivitiesByStatus,
+  getAllActivities: activities.getAllActivities,
+  getActivitiesByYearWithParticipants: activities.getActivitiesByYearWithParticipants,
+  getAllActivitiesWithParticipants: activities.getAllActivitiesWithParticipants,
+  getActivityById: activities.getActivityById,
+  updateActivity: activities.updateActivity,
+  createActivity: activities.createActivity,
+  getAllActivitiesAdmin: activities.getAllActivitiesAdmin,
+  getActivityByIdAdmin: activities.getActivityByIdAdmin,
+  createActivityAdmin: activities.createActivityAdmin,
+  updateActivityAdmin: activities.updateActivityAdmin,
+  deleteActivityAdmin: activities.deleteActivityAdmin,
+  addParticipantAdmin: activities.addParticipantAdmin,
+  removeParticipantAdmin: activities.removeParticipantAdmin,
+  updateParticipationAdmin: activities.updateParticipationAdmin,
+  cancelActivity: activities.cancelActivity,
+  deleteActivity: activities.deleteActivity,
+  joinActivity: activities.joinActivity,
+  leaveActivity: activities.leaveActivity,
+  getMemberAnnualStats: activities.getMemberAnnualStats
 };
 
 export default api;

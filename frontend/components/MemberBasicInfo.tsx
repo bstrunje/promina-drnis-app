@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { User, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { Member, MemberSkill } from "@shared/member";
 import SkillsSelector from './SkillsSelector';
+import EquipmentDeliverySection from './EquipmentDeliverySection';
 
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
@@ -17,6 +18,8 @@ interface MemberBasicInfoProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleSkillsChange?: (update: { skills: MemberSkill[]; other_skills: string }) => void;
   validationErrors?: Record<string, string>;
+  onUpdate?: () => void;
+  onMemberChange?: (updatedMember: Member) => void;
 }
 
 const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
@@ -26,6 +29,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   handleChange,
   handleSkillsChange,
   validationErrors,
+  onUpdate,
+  onMemberChange,
 }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -75,9 +80,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.dateOfBirth')}</label>
-                <p>
+                
                   {formatDate(member?.date_of_birth)}
-                </p>
+                
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.gender')}</label>
@@ -106,11 +111,30 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.tShirtSize')}</label>
-                <p>{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</p>
+                <div className="flex items-center">
+                  <p>{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</p>
+                  {member?.tshirt_delivered && (
+                    <span className="ml-2 text-green-500 font-bold">✓</span>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.shellJacketSize')}</label>
-                <p>{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</p>
+                <div className="flex items-center">
+                  <p>{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</p>
+                  {member?.shell_jacket_delivered && (
+                    <span className="ml-2 text-green-500 font-bold">✓</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.hatSize')}</label>
+                <div className="flex items-center">
+                  <p>{member?.hat_size ?? t('memberProfile.personalInfo.notSet')}</p>
+                  {member?.hat_delivered && (
+                    <span className="ml-2 text-green-500 font-bold">✓</span>
+                  )}
+                </div>
               </div>
             </div>
           ) : canViewDetails ? (
@@ -290,8 +314,6 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
 
-
-
           {/* Add membership type dropdown */}
           <div>
             <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.membershipType')}</label>
@@ -353,6 +375,27 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
+            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.hatSize')}</label>
+            <select
+              name="hat_size"
+              value={editedMember?.hat_size ?? ""}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+              <option value="XXXL">XXXL</option>
+            </select>
+            {validationErrors?.hat_size && (
+              <p className="text-sm text-red-500">{validationErrors.hat_size}</p>
+            )}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-1">
               {t('memberProfile.personalInfo.functionsInSocietyLabel')}
               <span className="text-xs text-gray-400 ml-1" title={t('memberProfile.personalInfo.functionsInSocietyTooltip')}>
@@ -396,6 +439,13 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
             )}
           </div>
+
+          <EquipmentDeliverySection 
+            member={member}
+            onUpdate={onUpdate}
+            onMemberUpdate={onMemberChange}
+            isEditing={true}
+          />
         </div>
       </CardContent>
     </Card>

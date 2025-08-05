@@ -27,7 +27,9 @@
     "toggleDebug": "Uključi/isključi mod za otklanjanje grešaka",
     "refreshing": "Osvježavanje...",
     "refreshData": "Osvježi podatke",
-    "actions": "Akcije"
+    "actions": "Akcije",
+    "selectSize": "Odaberi veličinu",
+    "notSpecified": "Nije određeno"
   },
   "activityDetail": {
     "errorFetching": "Greška pri dohvaćanju detalja aktivnosti.",
@@ -122,6 +124,7 @@
     "lifeStatusPlaceholder": "Odaberite status",
     "tshirtSizePlaceholder": "Odaberite veličinu",
     "shellJacketSizePlaceholder": "Odaberite veličinu",
+    "hatSizePlaceholder": "Odaberite veličinu",
     "clubTitle": "Planinarsko društvo \"Promina\" Drniš",
     "importantDocuments": "Važni dokumenti",
     "showDocuments": "Prikaži Dokumente",
@@ -224,9 +227,14 @@
       "email": "Email",
       "phone": "Telefon",
       "address": "Adresa",
+      "city": "Grad",
       "lifeStatus": "Životni status",
       "tShirtSize": "Veličina majice",
       "shellJacketSize": "Veličina jakne (shell)",
+      "hatSize": "Veličina kape",
+      "tShirtDelivery": "Isporuka majice",
+      "shellJacketDelivery": "Isporuka jakne",
+      "hatDelivery": "Isporuka kape",
       "notSet": "Nije postavljeno",
       "firstName": "Ime",
       "lastName": "Prezime",
@@ -235,7 +243,6 @@
       "male": "Muški",
       "female": "Ženski",
       "oibValidation": "OIB mora imati točno 11 znamenki",
-      "city": "Grad",
       "membershipType": "Vrsta članstva",
       "employed": "Zaposlen/Nezaposlen",
       "child": "Dijete/Učenik/Student",
@@ -780,6 +787,50 @@
       "inventoryUpdated": "Inventar markica za godinu {{year}} uspješno ažuriran",
       "updateInventoryFailed": "Neuspješno ažuriranje inventara",
       "refreshInventoryData": "Osvježi podatke inventara"
+    },
+    "equipmentInventory": {
+      "title": "Inventar opreme",
+      "refresh": "Osvježi",
+      "editInventory": "Uredi inventar",
+      "equipmentTypes": {
+        "tshirt": "Majica",
+        "shell_jacket": "Jakna (shell)",
+        "hat": "Kapa"
+      },
+      "tableHeaders": {
+        "size": "Veličina",
+        "gender": "Spol",
+        "initial": "Početno",
+        "issued": "Isporučeno",
+        "gifts": "Pokloni",
+        "remaining": "Preostalo"
+      },
+      "cardLabels": {
+        "initial": "Početno:",
+        "issued": "Isporučeno:",
+        "gifts": "Pokloni:",
+        "remaining": "Preostalo:"
+      },
+      "giftActions": {
+        "giftMarked": "Poklon označen",
+        "giftMarkedDescription": "{{equipmentType}} ({{size}}, {{gender}}) označen kao poklon",
+        "giftReturned": "Poklon vraćen",
+        "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) vraćen u inventar",
+        "error": "Greška",
+        "giftMarkError": "Neuspješno označavanje poklona",
+        "giftReturnError": "Neuspješno vraćanje poklona"
+      },
+      "modal": {
+        "title": "Uredi inventar - {{equipmentType}}",
+        "save": "Spremi promjene",
+        "cancel": "Odustani",
+        "saveSuccess": "Inventar uspješno ažuriran",
+        "saveError": "Greška pri ažuriranju inventara"
+      },
+      "gender": {
+        "male": "M",
+        "female": "Ž"
+      }
     }
   },
   "members": {
@@ -1139,5 +1190,19 @@
     "badges": {
       "sentToAll": "Poslano svim članovima"
     }
+  },
+  "equipmentDelivery": {
+    "title": "Status isporuke opreme",
+    "management": "Upravljanje isporukom opreme",
+    "tShirt": "Majica",
+    "shellJacket": "Jakna (shell)",
+    "hat": "Kapa",
+    "delivered": "isporučeno",
+    "notDelivered": "nije isporučeno",
+    "markAsDelivered": "označeno kao isporučeno",
+    "markAsUndelivered": "označeno kao neisporučeno",
+    "success": "Uspjeh",
+    "error": "Greška",
+    "failedToUpdate": "Neuspješno ažuriranje statusa isporuke"
   }
 }

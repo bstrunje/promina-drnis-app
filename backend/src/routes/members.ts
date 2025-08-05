@@ -20,6 +20,7 @@ import prisma from '../utils/prisma.js';
 import { MembershipEndReason } from '../shared/types/membership.js';
 import memberService from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
+import equipmentService from '../services/equipment.service.js';
 
 const router = express.Router();
 
@@ -80,8 +81,6 @@ router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberP
 // Dodjela broja iskaznice i generiranje lozinke - preusmjereno na ispravan kontroler
 router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, cardNumberController.assignCardNumber);
 
-
-
 // For returning stamps to inventory - only superuser can do this
 router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser, async (req, res) => {
   try {
@@ -130,6 +129,282 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
     console.error("Error returning stamp:", error);
     res.status(500).json({ 
       message: error instanceof Error ? error.message : "Failed to return stamp" 
+    });
+  }
+});
+
+// Equipment Management Routes
+// Get equipment status for a member
+router.get('/:memberId/equipment/status', authenticateToken, roles.requireAdmin, async (req, res) => {
+  try {
+    const memberId = parseInt(req.params.memberId);
+    const equipmentStatus = await equipmentService.getMemberEquipmentStatus(memberId);
+    res.json(equipmentStatus);
+  } catch (error) {
+    console.error("Error fetching member equipment status:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to fetch equipment status" 
+    });
+  }
+});
+
+// Mark equipment as delivered to member
+router.post('/:memberId/equipment/:type/deliver', authenticateToken, roles.requireAdmin, async (req, res) => {
+  try {
+    const memberId = parseInt(req.params.memberId);
+    const equipmentType = req.params.type;
+    const performerId = (req as any).user?.member_id;
+    const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
+
+    if (!performerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Validate equipment type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipmentType)) {
+      return res.status(400).json({ message: "Invalid equipment type" });
+    }
+
+    await equipmentService.markEquipmentAsDelivered(
+      memberId, 
+      equipmentType, 
+      performerId, 
+      performerType
+    );
+
+    // Get updated member to return in response
+    const updatedMember = await memberService.getMemberById(memberId);
+    
+    res.json({ 
+      message: `${equipmentType} marked as delivered successfully`,
+      member: updatedMember
+    });
+  } catch (error) {
+    console.error("Error marking equipment as delivered:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to mark equipment as delivered" 
+    });
+  }
+});
+
+// Unmark equipment as delivered (return to inventory)
+router.post('/:memberId/equipment/:type/undeliver', authenticateToken, roles.requireSuperUser, async (req, res) => {
+  try {
+    const memberId = parseInt(req.params.memberId);
+    const equipmentType = req.params.type;
+    const performerId = (req as any).user?.member_id;
+    const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
+
+    if (!performerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Validate equipment type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipmentType)) {
+      return res.status(400).json({ message: "Invalid equipment type" });
+    }
+
+    await equipmentService.unmarkEquipmentAsDelivered(
+      memberId, 
+      equipmentType, 
+      performerId, 
+      performerType
+    );
+
+    // Get updated member to return in response
+    const updatedMember = await memberService.getMemberById(memberId);
+    
+    res.json({ 
+      message: `${equipmentType} delivery unmarked successfully`,
+      member: updatedMember
+    });
+  } catch (error) {
+    console.error("Error unmarking equipment as delivered:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to unmark equipment as delivered" 
+    });
+  }
+});
+
+// Get equipment inventory status (admin only)
+router.get('/equipment/inventory', authenticateToken, roles.requireAdmin, async (req, res) => {
+  try {
+    const { type } = req.query;
+    
+    let inventoryStatus;
+    if (type && typeof type === 'string') {
+      inventoryStatus = await equipmentService.getInventoryStatusByType(type);
+    } else {
+      inventoryStatus = await equipmentService.getInventoryStatus();
+    }
+    
+    res.json(inventoryStatus);
+  } catch (error) {
+    console.error("Error fetching equipment inventory:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to fetch equipment inventory" 
+    });
+  }
+});
+
+// Update equipment inventory (superuser only)
+router.put('/equipment/inventory', authenticateToken, roles.requireSuperUser, async (req, res) => {
+  try {
+    const { equipment_type, size, gender, initial_count } = req.body;
+
+    // Validate required fields
+    if (!equipment_type || !size || !gender || initial_count === undefined) {
+      return res.status(400).json({ 
+        message: "Missing required fields: equipment_type, size, gender, initial_count" 
+      });
+    }
+
+    // Validate equipment type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipment_type)) {
+      return res.status(400).json({ message: "Invalid equipment type" });
+    }
+
+    // Validate size
+    if (!['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(size)) {
+      return res.status(400).json({ message: "Invalid size" });
+    }
+
+    // Validate gender
+    if (!['male', 'female'].includes(gender)) {
+      return res.status(400).json({ message: "Invalid gender" });
+    }
+
+    // Validate count
+    if (typeof initial_count !== 'number' || initial_count < 0) {
+      return res.status(400).json({ message: "Initial count must be a non-negative number" });
+    }
+
+    await equipmentService.updateInitialCount(equipment_type, size, gender, initial_count);
+    
+    // Get updated inventory to return in response
+    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    
+    res.json({ 
+      message: "Equipment inventory updated successfully",
+      inventory: updatedInventory
+    });
+  } catch (error) {
+    console.error("Error updating equipment inventory:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to update equipment inventory" 
+    });
+  }
+});
+
+// Issue equipment as gift (superuser only)
+router.post('/equipment/gift', authenticateToken, roles.requireSuperUser, async (req, res) => {
+  try {
+    const { equipment_type, size, gender, notes } = req.body;
+    const performerId = (req as any).user?.member_id;
+    const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
+
+    if (!performerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Validate required fields
+    if (!equipment_type || !size || !gender) {
+      return res.status(400).json({ 
+        message: "Missing required fields: equipment_type, size, gender" 
+      });
+    }
+
+    // Validate equipment type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipment_type)) {
+      return res.status(400).json({ message: "Invalid equipment type" });
+    }
+
+    // Validate size
+    if (!['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(size)) {
+      return res.status(400).json({ message: "Invalid size" });
+    }
+
+    // Validate gender
+    if (!['male', 'female'].includes(gender)) {
+      return res.status(400).json({ message: "Invalid gender" });
+    }
+
+    await equipmentService.issueEquipmentAsGift(
+      equipment_type, 
+      size, 
+      gender, 
+      performerId, 
+      notes, 
+      performerType
+    );
+    
+    // Get updated inventory to return in response
+    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    
+    res.json({ 
+      message: `${equipment_type} (${size}, ${gender}) issued as gift successfully`,
+      inventory: updatedInventory
+    });
+  } catch (error) {
+    console.error("Error issuing equipment as gift:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to issue equipment as gift" 
+    });
+  }
+});
+
+// DELETE endpoint za vraćanje gift equipment
+router.delete('/equipment/gift', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { equipment_type, size, gender, notes } = req.body;
+    const performerId = req.user?.member_id;
+    const performerType = 'MEMBER';
+
+    // Validate user authentication
+    if (!performerId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Validate required fields
+    if (!equipment_type || !size || !gender) {
+      return res.status(400).json({ message: "Missing required fields: equipment_type, size, gender" });
+    }
+
+    // Validate equipment_type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipment_type)) {
+      return res.status(400).json({ message: "Invalid equipment_type" });
+    }
+
+    // Validate size
+    if (!['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(size)) {
+      return res.status(400).json({ message: "Invalid size" });
+    }
+
+    // Validate gender
+    if (!['male', 'female'].includes(gender)) {
+      return res.status(400).json({ message: "Invalid gender" });
+    }
+
+    await equipmentService.ungiftEquipment(
+      equipment_type, 
+      size, 
+      gender, 
+      performerId, 
+      notes, 
+      performerType
+    );
+    
+    // Get updated inventory to return in response
+    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    
+    res.json({ 
+      message: `${equipment_type} (${size}, ${gender}) gift returned to inventory successfully`,
+      inventory: updatedInventory
+    });
+  } catch (error) {
+    console.error("Error returning gift equipment:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to return gift equipment" 
     });
   }
 });

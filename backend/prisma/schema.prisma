@@ -4,9 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("PRISMA_DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("PRISMA_DATABASE_URL")
 }
 
 model Member {
@@ -27,8 +26,12 @@ model Member {
   life_status              String?                  @db.VarChar(25)
   tshirt_size              String?                  @db.VarChar(4)
   shell_jacket_size        String?                  @db.VarChar(4)
+  hat_size                 String?                  @db.VarChar(4)
+  tshirt_delivered         Boolean                  @default(false)
+  shell_jacket_delivered   Boolean                  @default(false)
+  hat_delivered            Boolean                  @default(false)
   total_hours              Decimal?                 @default(0) @db.Decimal(10, 2)
-  gender                   String?                  @db.VarChar(6)
+  gender                   String?                  @db.VarChar(6) // "male", "female"
   registration_completed   Boolean?                 @default(false)
   profile_image_path       String?                  @db.VarChar(255)
   profile_image_updated_at DateTime?                @db.Timestamp(6)
@@ -194,6 +197,20 @@ model StampInventory {
 
   @@unique([stamp_type, stamp_year], name: "stamp_type_year_unique", map: "stamp_type_year_unique")
   @@map("stamp_inventory")
+}
+
+model EquipmentInventory {
+  id             Int      @id @default(autoincrement())
+  equipment_type String   @db.VarChar(20)  // "tshirt", "shell_jacket", "hat"
+  size           String   @db.VarChar(4)   // "XS", "S", "M", "L", "XL", "XXL", "XXXL"
+  gender         String   @db.VarChar(6)   // "male", "female"
+  initial_count  Int      @default(0)
+  issued_count   Int      @default(0)
+  gift_count     Int      @default(0)      // Broj izdanih kao poklon
+  last_updated   DateTime @default(now()) @db.Timestamp(6)
+  
+  @@unique([equipment_type, size, gender], name: "equipment_unique")
+  @@map("equipment_inventory")
 }
 
 model ConsumedCardNumber {

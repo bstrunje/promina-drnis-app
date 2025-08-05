@@ -5,13 +5,17 @@
 
 const isLocalDevelopment = import.meta.env.DEV && window.location.hostname === 'localhost';
 
+// Omogućava prebacivanje između lokalnog (3000) i Docker (3001) backend-a
+// Postavite VITE_BACKEND_PORT=3001 za Docker backend, inače koristi lokalni (3000)
+const backendPort = import.meta.env.VITE_BACKEND_PORT || '3000';
+
 export const API_BASE_URL = isLocalDevelopment 
-  ? 'http://localhost:3001/api'  // Lokalni razvoj - direktno na backend port
-  : '/api';                      // Produkcija - relativna putanja
+  ? `http://localhost:${backendPort}/api`  // Dinamički port (3001=Docker, 3000=lokalni)
+  : '/api';                                // Produkcija - relativna putanja
 
 export const IMAGE_BASE_URL = isLocalDevelopment 
-  ? 'http://localhost:3001/uploads'  // Lokalni razvoj - direktno na backend port
-  : '/uploads';                       // Produkcija - relativna putanja
+  ? `http://localhost:${backendPort}/uploads`  // Dinamički port
+  : '/uploads';                                 // Produkcija - relativna putanja
 
 // Debug logging za lakše praćenje konfiguracije
 if (isLocalDevelopment) {

@@ -11,7 +11,7 @@ interface JWTConfig {
 }
 
 interface CorsConfig {
-    origin: string;
+    origin: string | string[];
     methods: string[];
     allowedHeaders: string[];
 }
@@ -35,7 +35,7 @@ const config: Config = {
     },
     
     cors: {
-        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:5174'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
     }

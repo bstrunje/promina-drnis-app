@@ -39,6 +39,10 @@ export function mapToMember(raw: any, total_hours: number = 0): Member {
     membership_type: raw.membership_type as MembershipTypeEnum,
     tshirt_size: raw.tshirt_size as ClothingSize,
     shell_jacket_size: raw.shell_jacket_size as ClothingSize,
+    hat_size: raw.hat_size as ClothingSize,
+    tshirt_delivered: raw.tshirt_delivered ?? false,
+    shell_jacket_delivered: raw.shell_jacket_delivered ?? false,
+    hat_delivered: raw.hat_delivered ?? false,
     membership_details: {
       card_number: raw.membership_details?.card_number,
       fee_payment_year: raw.membership_details?.fee_payment_year,
