@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import fakeTimers from '@sinonjs/fake-timers';
 
-import db from '../utils/db.js';
+import prisma from '../utils/prisma.js';
 
 const router: Router = express.Router();
 
@@ -53,41 +53,39 @@ router.post('/reset-date', isDevelopment, (req: Request, res: Response) => {
   }
 });
 
-
-
 // Ruta za resetiranje sekvence za member_id
 // Koristi se POST metoda jer operacija mijenja stanje baze podataka
 router.post('/reset-member-id-sequence', isDevelopment, async (req, res) => {
-    try {
-        // Pronađi ime sekvence za tablicu 'members' i stupac 'member_id'
-        const sequenceResult = await db.query<{ sequence_name: string }>(`
+  try {
+    // Pronađi ime sekvence za tablicu 'members' i stupac 'member_id'
+    const sequenceResult = await prisma.$queryRaw<{ sequence_name: string }[]>`
             SELECT pg_get_serial_sequence('members', 'member_id') as sequence_name;
-        `);
+        `;
 
-        if (!sequenceResult.rows.length || !sequenceResult.rows[0].sequence_name) {
-            return res.status(404).json({ message: 'Sequence for members.member_id not found.' });
-        }
-
-        const sequenceName = sequenceResult.rows[0].sequence_name;
-
-        // Postavi sekvencu na maksimalnu vrijednost member_id
-        await db.query(`SELECT setval('${sequenceName}', (SELECT MAX(member_id) FROM members), true);`);
-
-        res.json({ message: `Sequence '${sequenceName}' reset successfully.` });
-    } catch (error) {
-        console.error('Failed to reset member_id sequence:', error);
-        res.status(500).json({ message: 'Failed to reset sequence', error: (error as Error).message });
+    if (!sequenceResult.length || !sequenceResult[0].sequence_name) {
+      return res.status(404).json({ message: 'Sequence for members.member_id not found.' });
     }
+
+    const sequenceName = sequenceResult[0].sequence_name;
+
+    // Postavi sekvencu na maksimalnu vrijednost member_id
+    await prisma.$executeRaw`SELECT setval(${sequenceName}, (SELECT MAX(member_id) FROM members), true);`;
+
+    res.json({ message: `Sequence '${sequenceName}' reset successfully.` });
+  } catch (error) {
+    console.error('Failed to reset member_id sequence:', error);
+    res.status(500).json({ message: 'Failed to reset sequence', error: (error as Error).message });
+  }
 });
 
 router.get('/test-db', async (req, res) => {
-    try {
-        const result = await db.query('SELECT NOW()');
-        res.json({ message: 'Database connection successful', time: result.rows[0].now });
-    } catch (error) { 
-        console.error('Database connection test failed:', error);
-        res.status(500).json({ message: 'Database connection failed', error: (error as Error).message });
-    }
+  try {
+    const result = await prisma.$queryRaw<{ now: Date }[]>`SELECT NOW() as now`;
+    res.json({ message: 'Database connection successful', time: result[0].now });
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    res.status(500).json({ message: 'Database connection failed', error: (error as Error).message });
+  }
 });
 
 export default router;

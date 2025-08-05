@@ -8,13 +8,11 @@ import { exec } from 'child_process';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 // Import db
-import db from '../utils/db.js';
+import prisma from '../utils/prisma.js';
 
 // Import member service
-import memberService from '../services/member.service.js';
 
 // Import membership service
-import membershipService from '../services/membership.service.js';
 
 import { getCurrentDate } from '../utils/dateUtils.js';
 
@@ -286,22 +284,22 @@ router.post('/reset-test-database', async (req, res) => {
     
     try {
       // Dohvaćamo stanje ključnih tablica prije resetiranja
-      const membersResult = await db.query('SELECT * FROM members');
-      const membershipDetailsResult = await db.query('SELECT * FROM membership_details');
-      const membershipPeriodsResult = await db.query('SELECT * FROM membership_periods');
-      const stampInventoryResult = await db.query('SELECT * FROM stamp_inventory');
-      const activitiesResult = await db.query('SELECT * FROM activities');
-      const activityParticipantsResult = await db.query('SELECT * FROM activity_participants');
+      const membersResult = await prisma.member.findMany();
+      const membershipDetailsResult = await prisma.membershipDetails.findMany();
+      const membershipPeriodsResult = await prisma.membershipPeriod.findMany();
+      const stampInventoryResult = await prisma.stampInventory.findMany();
+      const activitiesResult = await prisma.activity.findMany();
+      const activityParticipantsResult = await prisma.activityParticipation.findMany();
       
       // Spremamo u backup objekt
       backupData = {
         timestamp: getCurrentDate().toISOString(),
-        members: membersResult.rows,
-        membership_details: membershipDetailsResult.rows,
-        membership_periods: membershipPeriodsResult.rows,
-        stamp_inventory: stampInventoryResult.rows,
-        activities: activitiesResult.rows,
-        activity_participants: activityParticipantsResult.rows
+        members: membersResult,
+        membership_details: membershipDetailsResult,
+        membership_periods: membershipPeriodsResult,
+        stamp_inventory: stampInventoryResult,
+        activities: activitiesResult,
+        activity_participants: activityParticipantsResult
       };
       
       // Spašavamo backup u datoteku
@@ -323,112 +321,61 @@ router.post('/reset-test-database', async (req, res) => {
       // Nastavljamo s resetiranjem čak i ako backup nije uspio
     }
     
-    // Koristimo transakciju za sigurno izvođenje svih izmjena
-    await db.transaction(async (client) => {
+    // Koristimo Prisma transakciju za sigurno izvođenje svih izmjena
+    await prisma.$transaction(async (tx) => {
       // 1. RESETIRANJE KORISNIKA I ČLANSTVA
       
       // Vraćanje statusa svih članova na "registered" (početni status)
-      await client.query(`
-        UPDATE members 
-        SET status = 'registered'
-      `);
-      
-      // Resetiranje podataka o prijavi i blokadama članova
-      await client.query(`
-        UPDATE members 
-        SET 
-          status = 'registered'
-      `);
-      
-      // Vraćanje početnih uloga (opcija - ako želite zadržati specifične uloge za testiranje, ovo možete zakomentirati)
-      // await client.query(`
-      //   UPDATE members 
-      //   SET role = 'member'
-      //   WHERE role != 'member_administrator' AND role != 'member_superuser'
-      // `);
+      await tx.member.updateMany({
+        data: {
+          status: 'registered'
+        }
+      });
       
       // 2. RESETIRANJE ČLANARINA I PERIODA
       
       // Vraćanje članarina na trenutnu godinu i poništavanje datuma plaćanja
       const currentYear = getCurrentDate().getFullYear();
-      await client.query(`
-        UPDATE membership_details 
-        SET 
-          fee_payment_year = $1,
-          fee_payment_date = NULL,
-          card_stamp_issued = false,
-          next_year_stamp_issued = false
-      `, [currentYear]);
-      
-      // Opcija za zatvaranje/brisanje svih aktivnih perioda članstva i otvaranje novih
-      // (zakomentirano jer možete željeti zadržati postojeće periode)
-      // await client.query(`
-      //   UPDATE membership_periods
-      //   SET end_date = CURRENT_DATE, 
-      //       end_reason = 'test_reset'
-      //   WHERE end_date IS NULL
-      // `);
+      await tx.membershipDetails.updateMany({
+        data: {
+          fee_payment_year: currentYear,
+          fee_payment_date: null,
+          card_stamp_issued: false,
+          next_year_stamp_issued: false
+        }
+      });
       
       // 3. RESETIRANJE INVENTARA I MARKICA
       
       // Vraćanje inventara markica na početno stanje
-      await client.query(`
-        UPDATE stamp_inventory 
-        SET 
-          issued_count = 0
-      `);
-      
-      // 4. RESETIRANJE ČLANSKIH ISKAZNICA
-      
-      // Opcija - vraćanje svih iskaznica u dostupno stanje (zakomentirati ako želite zadržati dodjele)
-      // await client.query(`
-      //   UPDATE card_numbers
-      //   SET status = 'available', member_id = NULL
-      //   WHERE status = 'assigned'
-      // `);
-      
-      // 5. RESETIRANJE AKTIVNOSTI
-      
-      // Opcija - brisanje svih aktivnosti kreiranih tijekom testiranja
-      // Možete definirati vremensku točku (npr. datum) od koje se brišu aktivnosti
-      // await client.query(`
-      //   DELETE FROM activity_participants
-      //   WHERE activity_id IN (
-      //     SELECT activity_id FROM activities
-      //     WHERE created_at > (CURRENT_DATE - INTERVAL '30 days')
-      //   )
-      // `);
-      
-      // await client.query(`
-      //   DELETE FROM activities
-      //   WHERE created_at > (CURRENT_DATE - INTERVAL '30 days')
-      // `);
+      await tx.stampInventory.updateMany({
+        data: {
+          issued_count: 0
+        }
+      });
       
       // 6. RESETIRANJE PORUKA
       
-      // Brisanje testnih poruka
-      await client.query(`
-        DELETE FROM member_messages
-        WHERE created_at > (CURRENT_DATE - INTERVAL '1 day')
-      `);
+      // Brisanje testnih poruka (zadnji dan)
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
       
-      // 7. RESETIRANJE RADNIH SATI
-      
-      // Resetiranje ukupnih sati na 0 ili neku minimalnu vrijednost za sve članove
-      // (zakomentirano jer vjerojatno želite zadržati sate članova)
-      // await client.query(`
-      //   UPDATE members
-      //   SET total_hours = 0
-      // `);
+      await tx.memberMessage.deleteMany({
+        where: {
+          created_at: {
+            gt: oneDayAgo
+          }
+        }
+      });
       
       // 8. RESETIRANJE UPDATE QUEUE-a
       
       // Brisanje svih stavki iz reda čekanja za ažuriranje lozinki
-      await client.query(`
-        DELETE FROM password_update_queue
-      `);
+      await tx.password_update_queue.deleteMany({});
       
       console.log('✅ Baza podataka uspješno resetirana na početno stanje');
+    }, {
+      timeout: 12000 // 12 sekundi - ispod Prisma Accelerate limita
     });
     
     // Vraćamo uspješan odgovor s informacijom o backup-u
@@ -486,7 +433,7 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
     }
     
     // Vraćanje podataka u transakciji
-    await db.transaction(async (client) => {
+    await prisma.$transaction(async (tx) => {
       // Primjer vraćanja podataka za members tablicu
       // Ovo je kompleksno jer treba pažljivo obraditi svaki redak i polje
       // Ovdje je pojednostavljeni pristup za members tablicu
@@ -494,46 +441,46 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       console.log('🔄 Vraćanje podataka za članove...');
       
       // Prvo brisanje podataka iz tablica koje imaju strane ključeve
-      await client.query('DELETE FROM password_update_queue');
-      await client.query('DELETE FROM activity_participants');
-      await client.query('DELETE FROM annual_statistics');
-      await client.query('DELETE FROM audit_logs');
-      await client.query('DELETE FROM member_messages');
-      await client.query('DELETE FROM admin_permissions');
+      await tx.password_update_queue.deleteMany({});
+      await tx.activityParticipation.deleteMany({});
+      await tx.annualStatistics.deleteMany({});
+      await tx.auditLog.deleteMany({});
+      await tx.memberMessage.deleteMany({});
+      await tx.memberPermissions.deleteMany({});
       
       // Brisanje postojećih podataka iz membership_details (foreign key constraint)
-      await client.query('DELETE FROM membership_details');
+      await tx.membershipDetails.deleteMany({});
 
       // Brisanje postojećih podataka iz members
-      await client.query('DELETE FROM members');
+      await tx.member.deleteMany({});
       
       // Inserti za members tablicu
       for (const member of backupData.members) {
-        const fields = Object.keys(member).filter(k => k !== 'member_id');
-        const values = fields.map(f => member[f]);
-        const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
+        const { member_id, ...memberData } = member;
         
-        await client.query(`
-          INSERT INTO members (${fields.join(', ')})
-          VALUES (${placeholders})
-        `, values);
+        await tx.member.create({
+          data: {
+            ...memberData
+          }
+        });
       }
       
       // Inserti za membership_details tablicu
       for (const detail of backupData.membership_details) {
-        const fields = Object.keys(detail).filter(k => k !== 'detail_id');
-        const values = fields.map(f => detail[f]);
-        const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
+        const { detail_id, ...detailData } = detail;
         
-        await client.query(`
-          INSERT INTO membership_details (${fields.join(', ')})
-          VALUES (${placeholders})
-        `, values);
+        await tx.membershipDetails.create({
+          data: {
+            ...detailData
+          }
+        });
       }
       
       // Slično za ostale tablice...
       
       console.log('✅ Podaci uspješno vraćeni iz backupa');
+    }, {
+      timeout: 12000 // 12 sekundi - ispod Prisma Accelerate limita od 15s
     });
     
     res.json({
@@ -618,16 +565,25 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
     console.log('🧹 Čišćenje testnih podataka iz baze...');
     
     // Brisanje testnih podataka iz membership_periods
-    const result = await db.query(`
-      DELETE FROM membership_periods 
-      WHERE is_test_data = true 
-      RETURNING member_id
-    `);
+    const deletedPeriods = await prisma.membershipPeriod.findMany({
+      where: {
+        is_test_data: true
+      },
+      select: {
+        member_id: true
+      }
+    });
     
-    const affectedMembers = result.rows.map(row => row.member_id);
+    const result = await prisma.membershipPeriod.deleteMany({
+      where: {
+        is_test_data: true
+      }
+    });
+    
+    const affectedMembers = deletedPeriods.map(period => period.member_id).filter(id => id !== null) as number[];
     const uniqueMembers = [...new Set(affectedMembers)];
     
-    console.log(`✅ Obrisano ${result.rowCount} testnih zapisa za ${uniqueMembers.length} članova`);
+    console.log(`✅ Obrisano ${result.count} testnih zapisa za ${uniqueMembers.length} članova`);
     
     // Ponovno izračunavanje statusa za članove čiji su podaci očišćeni
     if (uniqueMembers.length > 0) {
@@ -635,19 +591,14 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
       
       // Za svakog člana provjeravamo ima li aktivnih razdoblja i po potrebi ažuriramo status
       for (const memberId of uniqueMembers) {
-        const activePeriodsResult = await db.query(
-          `SELECT COUNT(*) as active_count 
-           FROM membership_periods 
-           WHERE member_id = $1 AND end_date IS NULL`,
-          [memberId]
-        );
+        const activePeriodsResult = await prisma.membershipPeriod.findMany({
+          where: {
+            member_id: memberId,
+            end_date: null
+          }
+        });
         
-        let activeCount = 0;
-        if (typeof activePeriodsResult.rows[0].active_count === 'string') {
-          activeCount = parseInt(activePeriodsResult.rows[0].active_count);
-        } else {
-          activeCount = Number(activePeriodsResult.rows[0].active_count);
-        }
+        const activeCount = activePeriodsResult.length;
         
         // Ako nema aktivnih perioda nakon čišćenja, onemogući člana
         // Ako nema aktivnih perioda, status 'inactive' je izveden i NE zapisuje se u tablicu
@@ -656,10 +607,14 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
           // Ovdje po potrebi možeš postaviti na 'pending' ako želiš, ali 'inactive' se ne zapisuje.
         } else {
           console.log(`✅ Član ${memberId} ima ${activeCount} aktivnih razdoblja - postavljanje na 'registered'`);
-          await db.query(
-            'UPDATE members SET status = $1 WHERE member_id = $2',
-            ['registered', memberId]
-          );
+          await prisma.member.update({
+            where: {
+              member_id: memberId
+            },
+            data: {
+              status: 'registered'
+            }
+          });
         }
       }
     }
@@ -669,7 +624,7 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
       success: true,
       message: `Uspješno očišćeni testni podaci`,
       details: {
-        deletedRecords: result.rowCount,
+        deletedRecords: result.count,
         affectedMembers: uniqueMembers.length,
         memberIds: uniqueMembers
       },

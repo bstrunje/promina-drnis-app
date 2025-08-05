@@ -1,14 +1,12 @@
 // services/systemManager.service.ts
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
-import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 // import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js'; // Can be used for typing if necessary
 // import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.config.js';
-import db from '../utils/db.js';
-import systemHealthService, { SystemHealthStatus, SystemHealthInfo, BackupInfo } from './systemHealth.service.js';
 
 interface SystemSettings {
     id: string;
@@ -102,7 +100,6 @@ const systemManagerService = {
                 return null;
             }
 
-            // OPTIMIZACIJA: Zamjena legacy db.query fallback s optimiziranim Prisma upitom
             console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
             
             let permissions = null;
@@ -118,8 +115,7 @@ const systemManagerService = {
             } catch (prismaError) {
                 console.error(`[SYSTEM-MANAGER] Prisma greška za člana ${memberId}:`, prismaError);
                 
-                // Umjesto fallback na db.query, vraćamo null i oslanjamo se na default ovlasti
-                console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
+               console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
                 permissions = null;
             }
 

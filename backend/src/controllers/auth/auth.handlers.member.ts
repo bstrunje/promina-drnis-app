@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import authRepository from '../../repositories/auth.repository.js';
 import prisma from '../../utils/prisma.js';
-import db from '../../utils/db.js';
 
 export async function searchMembersHandler(req: Request, res: Response): Promise<void> {
   try {
@@ -113,30 +112,37 @@ export async function debugMemberHandler(req: Request, res: Response): Promise<v
     const memberId = parseInt(req.params.id);
     console.log(`Debug request for member ${memberId}`);
 
-    const query = `
-        SELECT 
-          member_id, 
-          first_name, 
-          last_name, 
-          full_name, 
-          email, 
-          status,
-          registration_completed,
-          CASE WHEN password_hash IS NULL THEN false ELSE true END as has_password
-        FROM members
-        WHERE member_id = $1
-      `;
+    const member = await prisma.member.findUnique({
+      where: {
+        member_id: memberId
+      },
+      select: {
+        member_id: true,
+        first_name: true,
+        last_name: true,
+        full_name: true,
+        email: true,
+        status: true,
+        registration_completed: true,
+        password_hash: true
+      }
+    });
 
-    const result = await db.query(query, [memberId]);
-
-    if (result.rowCount === 0) {
+    if (!member) {
       console.log(`No member found with ID: ${memberId}`);
       res.status(404).json({ message: 'Member not found' });
       return;
     }
 
+    // Transform to match original response format
+    const { password_hash, ...memberData } = member;
+    const responseData = {
+      ...memberData,
+      has_password: password_hash !== null
+    };
+
     return res.json({
-      member: result.rows[0],
+      member: responseData,
       debug_note: 'This endpoint is for development only',
     });
   } catch (error) {

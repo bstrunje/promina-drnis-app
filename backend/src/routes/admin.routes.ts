@@ -96,15 +96,23 @@ router.get('/dashboard/stats', async (req, res) => {
 router.post('/check-member-statuses', authenticateToken, checkRole(['member_superuser']), async (req: AuthRequest, res: Response) => {
   try {
     console.log('Starting member status check and update...');
-    const db = await import('../utils/db.js').then(m => m.default);
     
     // Dohvati sve članove
-    const membersResult = await db.query(
-      'SELECT member_id, status FROM members WHERE role != $1 ORDER BY member_id',
-      ['system']
-    );
+    const members = await prisma.member.findMany({
+      where: {
+        role: {
+          not: 'system'
+        }
+      },
+      select: {
+        member_id: true,
+        status: true
+      },
+      orderBy: {
+        member_id: 'asc'
+      }
+    });
     
-    const members = membersResult.rows;
     console.log(`Found ${members.length} members to check`);
     
     let updatedCount = 0;
@@ -114,18 +122,18 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
     // Za svakog člana provjeri ima li aktivnih perioda članstva
     for (const member of members) {
       // Dohvati aktivne periode članstva (bez end_date)
-      const activePeriods = await db.query(
-        'SELECT COUNT(*) as active_count FROM membership_periods WHERE member_id = $1 AND end_date IS NULL',
-        [member.member_id]
-      );
+      const activeCount = await prisma.membershipPeriod.count({
+        where: {
+          member_id: member.member_id,
+          end_date: null
+        }
+      });
       
-      const allPeriods = await db.query(
-        'SELECT COUNT(*) as total_count FROM membership_periods WHERE member_id = $1',
-        [member.member_id]
-      );
-      const totalPeriodsCount = parseInt(allPeriods.rows[0].total_count);
-
-      const activeCount = parseInt(activePeriods.rows[0].active_count);
+      const totalPeriodsCount = await prisma.membershipPeriod.count({
+        where: {
+          member_id: member.member_id
+        }
+      });
 
       // Odredi koji status član treba imati
       let shouldBeStatus = 'inactive'; // Default je neaktivan ako ima povijest
@@ -142,10 +150,10 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
       // Ažuriraj status ako nije ispravan
       if (member.status !== shouldBeStatus) {
         console.log(`Updating member ${member.member_id} status from ${member.status} to ${shouldBeStatus}`);
-        await db.query(
-          'UPDATE members SET status = $1 WHERE member_id = $2',
-          [shouldBeStatus, member.member_id]
-        );
+        await prisma.member.update({
+          where: { member_id: member.member_id },
+          data: { status: shouldBeStatus }
+        });
         updatedCount++;
         updatedMembers.push({
           member_id: member.member_id,
@@ -166,7 +174,5 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
     return res.status(500).json({ error: 'Failed to check member statuses' });
   }
 });
-
-
 
 export default router;

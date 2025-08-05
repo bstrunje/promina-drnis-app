@@ -2,8 +2,7 @@
 import express from 'express';
 import { validateRegistration, validateLogin } from '../middleware/validators.js';
 import authController from '../controllers/auth.controller.js';
-import { authMiddleware, roles } from '../middleware/authMiddleware.js';
-import db from '../utils/db.js'; // Full direct path, no @ symbol
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js'; // OPTIMIZACIJA: Dodano za Prisma ORM
 import { createRateLimit } from '../middleware/rateLimit.js';
 
@@ -57,7 +56,6 @@ router.get('/debug-member/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     console.log(`Debug request for ID: ${id}`);
     
-    // OPTIMIZACIJA: Prisma upit umjesto db.query
     const member = await prisma.member.findUnique({
       where: { member_id: id }
     });

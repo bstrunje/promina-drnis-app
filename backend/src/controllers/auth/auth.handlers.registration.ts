@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { PoolClient } from 'pg';
 import { Member } from '../../shared/types/member.js';
-import db, { DatabaseError } from '../../utils/db.js';
 import prisma from '../../utils/prisma.js';
 import { parseDate, cleanISODateString } from '../../utils/dateUtils.js';
 
@@ -25,41 +24,54 @@ export async function registerInitialHandler(
   try {
     const { first_name, last_name, email } = req.body;
 
-    const memberExists = await db.query<Member>(
-      'SELECT * FROM members WHERE email = $1',
-      [email],
-      { singleRow: true }
-    );
+    // Check if member with email already exists
+    const memberExists = await prisma.member.findFirst({
+      where: { email },
+      select: { member_id: true }
+    });
 
-    if (memberExists?.rowCount && memberExists.rowCount > 0) {
+    if (memberExists) {
       res
         .status(400)
         .json({ message: 'Member with this email already exists' });
       return;
     }
 
-    await db.transaction(async (client: PoolClient) => {
-      const result = await client.query<Member>(
-        `INSERT INTO members (
-                        first_name, last_name, email, status, role
-                    ) VALUES ($1, $2, $3, 'pending', 'member')
-                    RETURNING member_id, first_name, last_name, email, role`,
-        [first_name, last_name, email]
-      );
+    // Create new member with required fields
+    const member = await prisma.member.create({
+      data: {
+        first_name,
+        last_name,
+        full_name: `${first_name} ${last_name}`,
+        email,
+        oib: '', // Temporary empty value - will be filled during registration
+        cell_phone: '', // Temporary empty value
+        city: '', // Temporary empty value
+        street_address: '', // Temporary empty value
+        status: 'pending',
+        role: 'member'
+      },
+      select: {
+        member_id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        role: true,
+        nickname: true
+      }
+    });
 
-      const member = result.rows[0];
-      res.status(201).json({
-        message:
-          'Member pre-registered successfully. Awaiting administrator password configuration.',
-        member_id: member.member_id,
-        full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
-        email: member.email,
-      });
+    res.status(201).json({
+      message:
+        'Member pre-registered successfully. Awaiting administrator password configuration.',
+      member_id: member.member_id,
+      full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
+      email: member.email,
     });
   } catch (error) {
     console.error('Registration error:', error);
-    if (error instanceof DatabaseError) {
-      res.status(error.statusCode).json({ message: error.message });
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message });
     } else {
       res.status(500).json({ message: 'Error registering member' });
     }

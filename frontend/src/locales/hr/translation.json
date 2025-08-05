@@ -791,6 +791,7 @@
     "equipmentInventory": {
       "title": "Inventar opreme",
       "refresh": "Osvježi",
+      "noData": "Nema podataka u tablicama",
       "editInventory": "Uredi inventar",
       "equipmentTypes": {
         "tshirt": "Majica",

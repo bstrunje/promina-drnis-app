@@ -1,9 +1,7 @@
-import db from '../utils/db.js';
 import { MemberPermissions } from '../shared/types/permissions.js';
 import prisma from '../utils/prisma.js';
 
 const permissionsService = {
-  // OPTIMIZACIJA: Prisma upit umjesto db.query
   async getMemberPermissions(memberId: number): Promise<MemberPermissions> {
     console.log(`[PERMISSIONS] Dohvaćam ovlasti za člana ${memberId}...`);
     try {
@@ -60,7 +58,6 @@ const permissionsService = {
     return this.getMemberPermissions(memberId);
   },
 
-  // OPTIMIZACIJA: Prisma upit s join umjesto db.query
   async getAllMembersWithPermissions() {
     console.log('[PERMISSIONS] Dohvaćam sve članove s ovlastima...');
     try {
@@ -98,7 +95,6 @@ const permissionsService = {
     }
   },
 
-  // OPTIMIZACIJA: Prisma upsert umjesto kompleksnih db.query poziva
   async updateMemberPermissions(
     memberId: number, 
     permissions: MemberPermissions,
@@ -130,7 +126,6 @@ const permissionsService = {
         updated_at: new Date()
       };
 
-      // OPTIMIZACIJA: Prisma upsert umjesto IF/ELSE s db.query
       await prisma.memberPermissions.upsert({
         where: { member_id: memberId },
         update: {

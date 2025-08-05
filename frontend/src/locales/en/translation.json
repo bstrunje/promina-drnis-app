@@ -774,6 +774,7 @@
         "equipmentInventory": {
             "title": "Equipment Inventory",
             "refresh": "Refresh",
+            "noData": "No data in the table",
             "editInventory": "Edit Inventory",
             "equipmentTypes": {
                 "tshirt": "T-Shirt",

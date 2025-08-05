@@ -379,7 +379,6 @@ const memberService = {
             const member = await this.getMemberById(memberId);
             if (!member) return null;
 
-            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom
             console.log(`[MEMBER] Dohvaćam aktivnosti za člana ID: ${memberId}`);
             
             let activitiesData = [];
@@ -632,7 +631,6 @@ const memberService = {
         console.log(`[MEMBER] Dohvaćam detalje člana s karticom za ID: ${memberId}`);
         
         try {
-            // OPTIMIZACIJA: Zamjena legacy db.query s Prisma upitom s relacijama
             const memberWithCard = await prisma.member.findUnique({
                 where: {
                     member_id: memberId
@@ -650,10 +648,9 @@ const memberService = {
             
             if (!memberWithCard) {
                 console.log(`[MEMBER] Član s ID ${memberId} nije pronađen`);
-                return { rows: [] }; // Vraćamo format kompatibilan s legacy db.query
+                return { rows: [] };
             }
-            
-            // Transformiramo Prisma rezultat u format kompatibilan s legacy db.query
+
             const result = {
                 ...memberWithCard,
                 card_number: memberWithCard.membership_details?.card_number || null,
@@ -666,30 +663,10 @@ const memberService = {
             
             console.log(`[MEMBER] Uspješno dohvaćeni detalji člana ${memberId} s karticom`);
             
-            return { rows: [result] }; // Vraćamo format kompatibilan s legacy db.query
+            return { rows: [result] };
         } catch (error) {
             console.error(`[MEMBER] Greška prilikom dohvaćanja detalja člana ${memberId}:`, error);
-            
-            // Fallback na legacy db.query ako Prisma ne radi
-            try {
-                console.log(`[MEMBER] Fallback na legacy db.query za člana ${memberId}...`);
-                return await db.query(`
-                    SELECT 
-                      m.*,
-                      md.card_number,
-                      md.card_stamp_issued,
-                      md.fee_payment_date
-                    FROM 
-                      members m
-                    LEFT JOIN 
-                      membership_details md ON m.member_id = md.member_id
-                    WHERE 
-                      m.member_id = $1
-                  `, [memberId]);
-            } catch (fallbackError) {
-                console.error(`[MEMBER] Fallback greška za člana ${memberId}:`, fallbackError);
-                throw fallbackError;
-            }
+            throw error;
         }
     }
 };

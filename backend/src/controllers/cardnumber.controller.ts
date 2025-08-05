@@ -3,11 +3,9 @@ import cardNumberRepository from '../repositories/cardnumber.repository.js';
 import auditService from '../services/audit.service.js';
 import prisma from "../utils/prisma.js";
 import memberRepository from '../repositories/member.repository.js';
-import db from '../utils/db.js';
 import bcrypt from 'bcrypt';
 import membershipService from '../services/membership.service.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
-import { PerformerType } from '@prisma/client';
 
 const cardNumberController = {
   // Get all available card numbers
@@ -277,15 +275,25 @@ const cardNumberController = {
       }
 
       // Provjeri je li broj iskaznice već dodijeljen drugom članu
-      const existingCardCheck = await db.query(`
-        SELECT m.member_id, m.full_name
-        FROM membership_details md
-        JOIN members m ON md.member_id = m.member_id
-        WHERE md.card_number = $1 AND md.member_id != $2
-      `, [cardNumber, memberId]);
+      const existingCardCheck = await prisma.membershipDetails.findFirst({
+        where: {
+          card_number: cardNumber,
+          member_id: {
+            not: parseInt(memberId)
+          }
+        },
+        include: {
+          member: {
+            select: {
+              member_id: true,
+              full_name: true
+            }
+          }
+        }
+      });
 
-      if (existingCardCheck && existingCardCheck.rowCount && existingCardCheck.rowCount > 0) {
-        const existingMember = existingCardCheck.rows[0];
+      if (existingCardCheck) {
+        const existingMember = existingCardCheck.member;
         res.status(400).json({ 
           message: `Card number ${cardNumber} is already assigned to member: ${existingMember.full_name}`,
           existingMember: {
@@ -313,7 +321,7 @@ const cardNumberController = {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Pokreni transakciju za ažuriranje člana
-      await db.transaction(async (client) => {
+      await prisma.$transaction(async (tx) => {
         // Ažuriraj podatke o članu - dodaj broj iskaznice
         await membershipService.updateCardDetails(
           parseInt(memberId),
@@ -323,16 +331,26 @@ const cardNumberController = {
         );
 
         // Ažuriraj lozinku člana i status registracije
-        await client.query(
-          'UPDATE members SET password_hash = $1, registration_completed = TRUE, status = \'registered\' WHERE member_id = $2',
-          [hashedPassword, memberId]
-        );
+        await tx.member.update({
+          where: {
+            member_id: parseInt(memberId)
+          },
+          data: {
+            password_hash: hashedPassword,
+            registration_completed: true,
+            status: 'registered'
+          }
+        });
 
         // Označi broj iskaznice kao potrošen
-        await client.query(
-          'UPDATE card_numbers SET status = $1 WHERE card_number = $2',
-          ['consumed', cardNumber]
-        );
+        await tx.cardNumber.update({
+          where: {
+            card_number: cardNumber
+          },
+          data: {
+            status: 'consumed'
+          }
+        });
       });
 
       if (req.user?.id) {

@@ -3,7 +3,6 @@ import { Member } from '../shared/types/member.js';
 import authRepository from '../repositories/auth.repository.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import db from '../utils/db.js';
 import prisma from '../utils/prisma.js';
 
 interface LoginResponse {
@@ -45,7 +44,6 @@ const authService = {
             { expiresIn: '24h' }
         );
 
-        // OPTIMIZACIJA: Zamjena legacy db.query s Prisma update operacijom
         console.log(`[AUTH] Ažuriram last_login za člana ID: ${user.member_id}`);
         
         try {

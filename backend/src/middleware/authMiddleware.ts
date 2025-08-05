@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import db from '../utils/db.js';
 import prisma from '../utils/prisma.js';
 
 // Types
@@ -84,7 +83,6 @@ const authenticateToken = async (
         } else {
             // Za članove - postojeća logika
             console.log(`[AUTH] Dohvaćam podatke člana ${decoded.id} iz baze...`);
-            // KRITIČNA OPTIMIZACIJA: Zamjena db.query s Prisma za serverless performanse
             const member = await prisma.member.findFirst({
                 where: {
                     member_id: decoded.id,

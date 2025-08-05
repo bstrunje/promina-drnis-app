@@ -1,9 +1,7 @@
-import db from '../utils/db.js';
 import prisma from '../utils/prisma.js';
 import { Member, MemberSearchResult } from '../shared/types/member.js';
 
 const authRepository = {
-    // OPTIMIZACIJA: Prisma upit umjesto db.query za serverless performanse
     async findUserByFullName(full_name: string): Promise<Member | null> {
         console.log(`[AUTH-REPO] Tražim korisnika po imenu: ${full_name}`);
         try {
@@ -48,7 +46,6 @@ const authRepository = {
         }
     },
 
-    // OPTIMIZACIJA: Prisma create umjesto db.query
     async createMember(memberData: Omit<Member, 'member_id'>): Promise<Member> {
         console.log(`[AUTH-REPO] Stvaram novog člana: ${memberData.email}`);
         try {
@@ -80,7 +77,6 @@ const authRepository = {
         }
     },
 
-    // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
     async updateMemberWithCardAndPassword(
         memberId: number, 
         passwordHash: string, 
@@ -141,7 +137,7 @@ const authRepository = {
             return [];
         }
         
-        const result = await db.query<MemberSearchResult>(`
+        const result = await prisma.$queryRaw<MemberSearchResult[]>`
             SELECT 
                 member_id,
                 -- Vraća puno ime i nadimak ako postoji
@@ -152,52 +148,49 @@ const authRepository = {
                 nickname
             FROM members 
             WHERE 
-                LOWER(full_name) LIKE LOWER($1)
+                LOWER(full_name) LIKE LOWER(${`%${searchTerm}%`})
                 AND registration_completed = true
                 AND (role = 'member_superuser' OR status = 'registered')
             ORDER BY first_name, last_name 
             -- Ograničavamo na maksimalno 5 rezultata da se spriječi preglašavanje svih članova
-            LIMIT 5`,
-            [`%${searchTerm}%`]
-        );
-        return result.rows;
+            LIMIT 5`;
+        return result;
     },
 
     async checkExistingOib(oib: string): Promise<boolean> {
-        const result = await db.query(
-            'SELECT COUNT(*) as count FROM members WHERE oib = $1',
-            [oib]
-        );
-        return parseInt(result.rows[0].count) > 0;
+        const count = await prisma.member.count({
+            where: { oib }
+        });
+        return count > 0;
     },
 
     async verifyEmail(email: string): Promise<void> {
-        await db.query(
-            'UPDATE members SET email_verified = true WHERE email = $1',
-            [email]
-        );
+        // Using raw SQL since email_verified field doesn't exist in current schema
+        await prisma.$executeRaw`
+            UPDATE members SET email_verified = true WHERE email = ${email}
+        `;
     },
 
     async setResetToken(email: string, token: string, expiry: Date): Promise<void> {
-        await db.query(
-            'UPDATE members SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
-            [token, expiry, email]
-        );
+        // Using raw SQL since reset_token fields don't exist in current schema
+        await prisma.$executeRaw`
+            UPDATE members SET reset_token = ${token}, reset_token_expires = ${expiry} WHERE email = ${email}
+        `;
     },
 
     async findByResetToken(token: string): Promise<Member | null> {
-        const result = await db.query<Member>(
-            'SELECT * FROM members WHERE reset_token = $1 AND reset_token_expires > NOW()',
-            [token]
-        );
-        return result.rows[0] || null;
+        // Using raw SQL since reset_token fields don't exist in current schema
+        const result = await prisma.$queryRaw<Member[]>`
+            SELECT * FROM members WHERE reset_token = ${token} AND reset_token_expires > NOW()
+        `;
+        return result[0] || null;
     },
 
     async clearResetToken(id: number): Promise<void> {
-        await db.query(
-            'UPDATE members SET reset_token = NULL, reset_token_expires = NULL WHERE member_id = $1',
-            [id]
-        );
+        // Using raw SQL since reset_token fields don't exist in current schema
+        await prisma.$executeRaw`
+            UPDATE members SET reset_token = NULL, reset_token_expires = NULL WHERE member_id = ${id}
+        `;
     }
 };
 

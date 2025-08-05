@@ -1,4 +1,3 @@
-import db from "../utils/db.js";
 import stampRepository from "../repositories/stamp.repository.js";
 import { getCurrentDate } from "../utils/dateUtils.js";
 import prisma from "../utils/prisma.js";
@@ -41,8 +40,7 @@ const scheduledService = {
   async isArchivingDoneForYear(year: number): Promise<boolean> {
     try {
       console.log(`[SCHEDULED] Provjeravam je li arhiviranje već izvršeno za godinu ${year}`);
-      
-      // OPTIMIZACIJA: Zamjena legacy db.query s Prisma count upitom
+
       const count = await prisma.stamp_history.count({
         where: {
           year: year

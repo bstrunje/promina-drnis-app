@@ -1,5 +1,4 @@
 // src/services/membership.service.ts
-import db from "../utils/db.js";
 import membershipRepository from "../repositories/membership.repository.js";
 import { 
   MembershipDetails,
@@ -11,7 +10,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";
 import prisma from "../utils/prisma.js";
-import { parseDate, getCurrentDate, formatDate, getCurrentYear } from '../utils/dateUtils.js';
+import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
 import { updateAnnualStatistics } from './statistics.service.js';
 import { PerformerType } from "@prisma/client";
 
@@ -78,7 +77,6 @@ const membershipService = {
         // Za nove članove ne mijenjamo godinu, čak i ako je kasno u godini
       }
 
-      // OPTIMIZACIJA: Prisma $transaction umjesto db.transaction
       await prisma.$transaction(async (tx) => {
         console.log(`[MEMBERSHIP] Počinje transakcija za uplatu članarine člana ${memberId}`);
         
@@ -215,8 +213,7 @@ const membershipService = {
       console.log(`Member ID: ${memberId}`);
       console.log(`Card number: "${cardNumber}"`);
       console.log(`Stamp issued: ${stampIssued}`);
-      
-      // OPTIMIZACIJA: Prisma upit umjesto db.query
+
       const member = await prisma.member.findUnique({
         where: { member_id: memberId },
         select: {
@@ -230,8 +227,7 @@ const membershipService = {
       }
       
       console.log('Current member status before transaction:', member);
-      
-      // OPTIMIZACIJA: Prisma transakcija umjesto db.transaction
+
       await prisma.$transaction(async (tx) => {
         // Prvo ažuriramo status člana na 'registered' i registration_completed na true
         // ako je dodijeljen broj kartice (preslikavamo ponašanje iz updateMemberWithCardAndPassword)
