@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node dist/src/server.js",
     "build": "prisma generate && tsc",
-    "build:vercel": "prisma generate && tsc -p tsconfig.vercel.json && npm run seed",
+    "build:vercel": "prisma migrate deploy && prisma generate && tsc -p tsconfig.vercel.json && npm run seed",
     "postinstall": "prisma generate",
     "seed": "node dist/prisma/seed.js",
     "test": "vitest run",
