@@ -726,7 +726,7 @@
             "errorCheckingMessages": "Error checking messages"
         },
         "header": {
-            "welcome": "Welcome, {name}",
+            "welcome": "Welcome, {{name}}",
             "adminDashboard": "Admin Dashboard",
             "memberDashboard": "Member Dashboard",
             "superUserDashboard": "Super User Dashboard"

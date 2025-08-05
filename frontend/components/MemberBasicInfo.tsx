@@ -5,10 +5,8 @@ import { User, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { Member, MemberSkill } from "@shared/member";
 import SkillsSelector from './SkillsSelector';
 import EquipmentDeliverySection from './EquipmentDeliverySection';
-
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
 import { useAuth } from "../src/context/AuthContext";
-import CustomDateInput from '@components/CustomDateInput';
 
 
 interface MemberBasicInfoProps {
@@ -80,17 +78,15 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.dateOfBirth')}</label>
-                
-                  {formatDate(member?.date_of_birth)}
-                
+                <span className="ml-2">{formatDate(member?.date_of_birth)}</span>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.gender')}</label>
-                <p className="capitalize">{member?.gender ? t(`memberProfile.personalInfo.${member.gender}`) : ''}</p>
+                <span className="ml-2">{member?.gender ? t(`memberProfile.personalInfo.${member.gender}`) : ''}</span>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.oib')}</label>
-                <p>{member?.oib}</p>
+                <span className="ml-2">{member?.oib}</span>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.email')}</label>
@@ -98,12 +94,11 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.phone')}</label>
-                <p>{member.cell_phone}</p>
+                <span className="ml-2">{member.cell_phone}</span>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.address')}</label>
-                <p>{member.street_address}</p>
-                <p>{member.city}</p>
+                <p>{member.street_address},{member.city}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.lifeStatus')}</label>
@@ -111,30 +106,24 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.tShirtSize')}</label>
-                <div className="flex items-center">
-                  <p>{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</p>
-                  {member?.tshirt_delivered && (
-                    <span className="ml-2 text-green-500 font-bold">✓</span>
-                  )}
-                </div>
+                <span className="ml-2">{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                {member?.tshirt_delivered && (
+                  <span className="ml-2 text-green-500 font-bold">✓</span>
+                )}
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.shellJacketSize')}</label>
-                <div className="flex items-center">
-                  <p>{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</p>
-                  {member?.shell_jacket_delivered && (
-                    <span className="ml-2 text-green-500 font-bold">✓</span>
-                  )}
-                </div>
+                <span className="ml-2">{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                {member?.shell_jacket_delivered && (
+                  <span className="ml-2 text-green-500 font-bold">✓</span>
+                )}
               </div>
               <div>
                 <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.hatSize')}</label>
-                <div className="flex items-center">
-                  <p>{member?.hat_size ?? t('memberProfile.personalInfo.notSet')}</p>
-                  {member?.hat_delivered && (
-                    <span className="ml-2 text-green-500 font-bold">✓</span>
-                  )}
-                </div>
+                <span className="ml-2">{member?.hat_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                {member?.hat_delivered && (
+                  <span className="ml-2 text-green-500 font-bold">✓</span>
+                )}
               </div>
             </div>
           ) : canViewDetails ? (

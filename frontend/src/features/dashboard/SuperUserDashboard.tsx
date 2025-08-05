@@ -38,6 +38,12 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   // console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Dinamički odabir welcome poruke na temelju spola
+  const getWelcomeKey = () => {
+    return member.gender === 'female' ? 'dashboard.welcome_female' : 'dashboard.welcome_male';
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -95,8 +101,8 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">Welcome, {member.full_name}</h1>
-        <p className="opacity-90">Superuser Dashboard</p>
+      <h1 className="text-2xl font-bold mb-2">{t(getWelcomeKey(), { name: member.full_name })}</h1>
+      <p className="opacity-90">{t("dashboard.header.superUserDashboard")}</p>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">{error}</div>}

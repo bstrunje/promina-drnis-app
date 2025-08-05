@@ -743,10 +743,10 @@
       "errorCheckingMessages": "Greška prilikom provjere poruka"
     },
     "header": {
-      "welcome": "Dobrodošli, {name}",
+      "welcome": "Dobrodošli, {{name}}",
       "adminDashboard": "Administratorska nadzorna ploča",
       "memberDashboard": "Članska nadzorna ploča",
-      "superUserDashboard": "Superkorisničke nadzorna ploča"
+      "superUserDashboard": "Nadzorna ploča superusera"
     },
     "navigation": {
       "memberManagement": {
@@ -775,7 +775,7 @@
       "cancel": "Odustani",
       "stampTypes": {
         "employedUnemployed": "Markice za zaposlene/nezaposlene članove",
-        "studentPupil": "Markice za učenike/đake/studente",
+        "studentPupil": "Markice za djecu/učenike/studente",
         "pensioner": "Markice za umirovljenike"
       },
       "fetchInventoryError": "Neuspjelo dohvaćanje inventara",

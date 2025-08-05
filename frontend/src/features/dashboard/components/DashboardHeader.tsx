@@ -12,9 +12,14 @@ interface DashboardHeaderProps {
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ member }) => {
   const { t } = useTranslation();
   
+  // Dinamički odabir welcome poruke na temelju spola
+  const getWelcomeKey = () => {
+    return member.gender === 'female' ? 'dashboard.welcome_female' : 'dashboard.welcome_male';
+  };
+  
   return (
     <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
-      <h1 className="text-2xl font-bold mb-2">{t("dashboard.header.welcome", { name: member.full_name })}</h1>
+      <h1 className="text-2xl font-bold mb-2">{t(getWelcomeKey(), { name: member.full_name })}</h1>
       <p className="opacity-90">{t("dashboard.header.adminDashboard")}</p>
     </div>
   );

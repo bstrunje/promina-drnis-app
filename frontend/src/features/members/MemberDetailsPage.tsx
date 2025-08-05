@@ -19,7 +19,6 @@ import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
-import EquipmentSection from "../../../components/EquipmentSection";
 
 
 interface Props {
