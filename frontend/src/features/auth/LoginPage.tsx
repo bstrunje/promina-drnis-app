@@ -257,13 +257,13 @@ const LoginPage = () => {
       console.log('Registration API response:', response);
       
       if (response.message) {
-        console.log('Setting success message:', response.message);
+        console.log('Setting success message:');
         
         // Postavljamo poruku u formi za registraciju
-        setMessage({ type: "success", content: response.message });
+        setMessage({ type: "success", content: t('login.registrationSuccess') });
         
         // Postavljamo poruku koja će biti vidljiva na početnom ekranu
-        setLoginPageMessage({ type: "success", content: response.message });
+        setLoginPageMessage({ type: "success", content: t('login.registrationSuccess') });
         
         // Zatvaramo formu za registraciju nakon kratke pauze da korisnik može vidjeti poruku
         setTimeout(() => {
@@ -507,7 +507,7 @@ const LoginPage = () => {
                   type="text"
                   required
                   pattern="[0-9]{11}"
-                  title={t('login.oibError', 'OIB must be exactly 11 digits')}
+                  title={t('login.oibError')}
                   className="mt-2 p-2 w-full border rounded"
                   value={registerData.oib}
                   onChange={(e) =>

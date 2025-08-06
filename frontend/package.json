@@ -8,7 +8,8 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "dev": "vite",
+    "dev:local": "vite",
+    "dev:docker": "cross-env VITE_BACKEND_PORT=3001 vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -72,6 +73,7 @@
     "@types/react-dom": "^18.3.1",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "cross-env": "^10.0.0",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

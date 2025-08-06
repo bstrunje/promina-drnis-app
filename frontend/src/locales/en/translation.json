@@ -107,7 +107,7 @@
         "passwordPlaceholder": "Enter your password",
         "loggingIn": "Signing in...",
         "alreadyMember": "Already a member? Sign in",
-        "registrationSuccess": "Registration successful.",
+        "registrationSuccess": "Registration successful. After payment of the membership fee, login details will be provided.",
         "registrationError": "An error occurred during registration. Please try again later.",
         "mustAcceptTerms": "You must accept the terms of use and privacy policy.",
         "stepEmail": "Enter your email address",

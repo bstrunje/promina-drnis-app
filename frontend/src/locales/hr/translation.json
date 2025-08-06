@@ -108,7 +108,7 @@
     "passwordPlaceholder": "Unesite vašu lozinku",
     "loggingIn": "Prijava...",
     "alreadyMember": "Već jesi član? Prijavi se",
-    "registrationSuccess": "Registracija uspješna.",
+    "registrationSuccess": "Registracija uspješna. Nakon uplate članarine dodijelit će se podaci za prijavu.",
     "registrationError": "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
     "mustAcceptTerms": "Morate prihvatiti uvjete korištenja i pravila privatnosti.",
     "stepEmail": "Unesite vašu email adresu",
