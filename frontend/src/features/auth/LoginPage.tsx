@@ -32,7 +32,7 @@ const sizeOptions: SizeOptions[] = [
 // Ove opcije će biti generirane dinamički koristeći useTranslation hook
 
 const LoginPage = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('auth');
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -219,20 +219,20 @@ const LoginPage = () => {
     if (!acceptedTerms) {
       setMessage({
         type: "error",
-        content: "You must accept the terms and conditions to register",
+        content: t('login.acceptTermsError'),
       });
       return;
     }
 
     if (!/^\d{11}$/.test(registerData.oib)) {
-      setMessage({ type: "error", content: "OIB must be exactly 11 digits" });
+      setMessage({ type: "error", content: t('login.oibError') });
       return;
     }
 
     if (!registerData.email.includes("@")) {
       setMessage({
         type: "error",
-        content: "Please enter a valid email address",
+        content: t('login.emailError'),
       });
       return;
     }
@@ -281,12 +281,12 @@ const LoginPage = () => {
       if (error instanceof Error) {
         setMessage({
           type: "error",
-          content: "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
+          content: t('login.registrationError'),
         });
       } else {
         setMessage({
           type: "error",
-          content: "Došlo je do greške prilikom registracije. Pokušajte ponovno kasnije.",
+          content: t('login.registrationError'),
         });
       }
     } finally {
@@ -739,7 +739,7 @@ const LoginPage = () => {
                   className="space-y-4"
                 >
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700">
                       {t('login.emailLabel', 'Email adresa')}
                     </label>
                     <input

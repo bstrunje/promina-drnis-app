@@ -69,31 +69,31 @@ const AssignPassword: React.FC = () => {
             });
 
             if (response.ok) {
-                alert(t('assignPassword.messages.passwordAssignedSuccessfully'));
+                alert(t('auth.assignPassword.messages.passwordAssignedSuccessfully'));
                 setSelectedMember('');
                 setPassword('');
                 void fetchPendingMembers();
             } else {
-                alert(t('assignPassword.messages.failedToAssignPassword'));
+                alert(t('auth.assignPassword.messages.failedToAssignPassword'));
             }
         } catch (error) {
             console.error('Error assigning password:', error);
-            alert(t('assignPassword.messages.errorOccurred'));
+            alert(t('auth.assignPassword.messages.errorOccurred'));
         }
     };
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">{t('assignPassword.title')}</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('auth.assignPassword.title')}</h2>
             <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
                 <div>
-                    <label className="block mb-2">{t('assignPassword.form.selectMember')}</label>
+                    <label className="block mb-2">{t('auth.assignPassword.form.selectMember')}</label>
                     <select 
                         value={selectedMember} 
                         onChange={(e) => setSelectedMember(Number(e.target.value))}
                         className="w-full p-2 border rounded"
                     >
-                        <option value="">{t('assignPassword.form.selectMemberPlaceholder')}</option>
+                        <option value="">{t('auth.assignPassword.form.selectMemberPlaceholder')}</option>
                         {pendingMembers.map((member) => (
                             <option key={member.member_id} value={member.member_id}>
                                 {member.full_name}
@@ -102,7 +102,7 @@ const AssignPassword: React.FC = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block mb-2">{t('assignPassword.form.password')}</label>
+                    <label className="block mb-2">{t('auth.assignPassword.form.password')}</label>
                     <input 
                         type="password" 
                         value={password} 
@@ -111,7 +111,7 @@ const AssignPassword: React.FC = () => {
                     />
                 </div>
                 <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-                    {t('assignPassword.form.assignPasswordButton')}
+                    {t('auth.assignPassword.form.assignPasswordButton')}
                 </button>
             </form>
         </div>

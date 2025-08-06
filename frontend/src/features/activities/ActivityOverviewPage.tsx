@@ -5,6 +5,7 @@ import { API_BASE_URL } from '@/utils/config';
 import { Calendar, ChevronRight } from 'lucide-react';
 import BackToDashboard from '@components/BackToDashboard';
 import { formatHoursToHHMM } from '@/utils/activityHours';
+import { useTranslation } from 'react-i18next';
 
 // Sučelje za člana ostaje isto
 interface Member {
@@ -21,6 +22,7 @@ interface AnnualStat {
 const ActivityOverviewPage: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation('activities');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
@@ -45,7 +47,7 @@ const ActivityOverviewPage: React.FC = () => {
 
       } catch (err) {
         console.error("Error fetching activity overview data:", err);
-        setError('Nije moguće učitati podatke. Molimo pokušajte ponovno.');
+        setError(t('activityOverview.errorFetchingData'));
       } finally {
         setLoading(false);
       }
@@ -72,17 +74,17 @@ const ActivityOverviewPage: React.FC = () => {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Sve moje aktivnosti</h1>
-          <p className="text-lg text-gray-600">Član: {member?.full_name}</p>
+          <h1 className="text-3xl font-bold text-gray-800">{t('activityOverview.title')}</h1>
+          <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {member?.full_name}</p>
         </div>
 
         {sortedStats.length === 0 ? (
           <div className="text-center bg-white p-8 rounded-lg shadow-md">
-            <p className="text-gray-500">Član nema zabilježenih aktivnosti.</p>
+            <p className="text-gray-500">{t('activityOverview.noActivities')}</p>
           </div>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-700">Pregled po godinama</h2>
+            <h2 className="text-xl font-semibold text-gray-700">{t('activityOverview.yearView')}</h2>
             {sortedStats.map(stat => (
               <Link 
                 to={`/members/${memberId}/activities/${stat.year}`}
@@ -95,8 +97,8 @@ const ActivityOverviewPage: React.FC = () => {
                     <div>
                       <p className="font-bold text-xl text-gray-800">{stat.year}.</p>
                       <div className="flex space-x-4 text-sm text-gray-500">
-                        <span>Aktivnosti: <span className="font-semibold">{stat.total_activities}</span></span>
-                        <span>Sati: <span className="font-semibold">{formatHoursToHHMM(stat.total_hours)}</span></span>
+                        <span>{t('activityOverview.activitiesCount')}: <span className="font-semibold">{stat.total_activities}</span></span>
+                        <span>{t('activityOverview.hoursCount')}: <span className="font-semibold">{formatHoursToHHMM(stat.total_hours)}</span></span>
                       </div>
                     </div>
                   </div>

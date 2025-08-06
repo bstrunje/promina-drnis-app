@@ -41,7 +41,7 @@ interface MemberMessage {
 }
 
 const MemberMessageList: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('messages');
   const { toast } = useToast();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -66,8 +66,8 @@ const MemberMessageList: React.FC = () => {
       setMessages(convertedData);
     } catch (error) {
       toast({
-        title: t('messages.error'),
-        description: error instanceof Error ? error.message : t('messages.fetchMessagesError'),
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('fetchMessagesError'),
         variant: "destructive"
       });
     } finally {
@@ -86,8 +86,8 @@ const MemberMessageList: React.FC = () => {
     } catch (error) {
       console.error("Error fetching sent messages:", error);
       toast({
-        title: t('messages.error'),
-        description: t('messages.fetchSentMessagesError'),
+        title: t('error'),
+        description: t('fetchSentMessagesError'),
         variant: "destructive",
       });
     }
@@ -316,7 +316,7 @@ const MemberMessageList: React.FC = () => {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                           <div className="flex items-center gap-2">
                             {message.status === 'read' && (
-                              <span className="flex items-center text-green-600" title={t('messages.readMessageTitle')}>
+                              <span className="flex items-center text-green-600" title={t('readMessageTitle')}>
                                 <CheckCircle className="h-4 w-4 mr-1" />
                               </span>
                             )}

@@ -1,0 +1,124 @@
+{
+    "adminMessageSender": {
+      "title": "Send Message to Members",
+      "tabs Tanguta": {
+        "single": "To Individual Member",
+        "group": "To Group of Members",
+        "all": "To All Members"
+      },
+      "labels": {
+        "recipient": "Recipient:",
+        "messageText": "Message Text:",
+        "messageTextGroup": "Group Message Text:",
+        "messageTextAll": "Message Text for All Members:",
+        "selectedMembers": "Selected Members ({{count}}):"
+      },
+      "placeholders": {
+        "searchMember": "Search by first or last name... (minimum 2 characters)",
+        "messageText": "Enter message text...",
+        "messageTextGroup": "Enter message text for group of members...",
+        "messageTextAll": "Enter message text for all members..."
+      },
+      "buttons": {
+        "sending": "Sending...",
+        "sendMessage": "Send Message",
+        "sendToGroup": "Send Message ({{count Âčlanova)",
+        "sendToAll": "Send to All Members",
+        "clearAll": "Clear All"
+      },
+      "messages": {
+        "searchMinLength": "Enter at least 2 characters to search members",
+        "selectMemberWarning": "Please select a member to send message",
+        "selectGroupWarning": "Please select at least one member to send group message",
+        "emptyMessageWarning": "Message cannot be empty",
+        "singleSuccess": "Message successfully sent to member {{memberName}}",
+        "groupSuccess": "Message successfully sent to group of {{count}} members",
+        "allSuccess": "Message successfully sent to all members",
+        "singleError": "Failed to send message",
+        "groupError": "Failed to send group message",
+        "allError": "Failed to send message to all members"
+      },
+      "confirmDialogs": {
+        "sendToAll": "Are you sure you want to send message to ALL members?"
+      },
+      "warnings": {
+        "importantNotice": "Important Notice",
+        "sendToAllDescription": "This message will be sent to ALL members in the system. Use this option only when the message is intended for all members, such as important announcements, events, etc."
+      },
+      "success": {
+        "messageSent": "Message successfully sent!"
+      }
+    },
+    "memberMessageList": {
+      "titles": {
+        "adminMessages": "Messages from Administrator",
+        "sentMessages": "Sent Messages"
+      },
+      "tabs": {
+        "received": "Received Messages",
+        "sent": "Sent Messages"
+      },
+      "filters": {
+        "unread": "Unread",
+        "read": "Read",
+        "all": "All Messages"
+      },
+      "unreadCount": {
+        "single": "unread",
+        "multiple": "unread"
+      },
+      "emptyStates": {
+        "noReceivedMessages": "You have no received messages",
+        "noUnreadMessages": "No unread messages",
+        "noReadMessages": "No read messages",
+        "noSentMessages": "No sent messages."
+      },
+      "loading": {
+        "sentMessages": "Loading sent messages..."
+      },
+      "buttons": {
+        "refreshMessages": "Refresh Messages"
+      },
+      "badges": {
+        "sentToAll": "Sent To All Members"
+      },
+      "messages": {
+        "fetchError": "Failed to fetch messages",
+        "fetchSentError": "Failed to fetch sent messages"
+      }
+    },
+    "receivedMessages": {
+      "messages": {
+        "fetchError": "Failed to fetch messages",
+        "markAsReadSuccess": "Message marked as read",
+        "markAsReadError": "Failed to mark message as read",
+        "archiveSuccess": "Message archived successfully",
+        "archiveError": "Failed to archive message",
+        "deleteSuccess": "Message deleted successfully",
+        "deleteError": "Failed to delete message",
+        "deleteAllSuccess": "All messages deleted successfully",
+        "deleteAllError": "Failed to delete all messages"
+      },
+      "confirmDialogs": {
+        "deleteMessage": "Are you sure you want to delete this message?",
+        "deleteAllMessages": "Are you sure you want to delete ALL messages? This action cannot be undone."
+      },
+      "buttons": {
+        "unread": "Mark as Unread",
+        "read": "Mark as Read",
+        "archived": "Archive Message"
+      }
+    },
+    "sentMessages": {
+      "fetchError": "Failed to fetch sent messages",
+      "noMessages": "No sent messages.",
+      "refreshButton": "Refresh sent messages",
+      "loading": "Loading sent messages...",
+      "memberProfile": {
+        "messages": {
+          "deleteAll": "Delete All Messages",
+          "deleteAllShort": "Delete All"
+        }
+      }
+    }
+  }

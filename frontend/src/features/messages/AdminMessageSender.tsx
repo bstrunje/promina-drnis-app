@@ -23,7 +23,7 @@ import { CornerDownLeft, Send, Users, UserCheck, Mail, X } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('messages');
   // Ref za automatski fokus na input za pretragu članova
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();

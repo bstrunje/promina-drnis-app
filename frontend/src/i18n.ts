@@ -2,16 +2,32 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-import translationEN from './locales/en/translation.json';
-import translationHR from './locales/hr/translation.json';
 
-// Definicija resursa za prijevode
+// Import all namespace files for English
+import commonEN from './locales/en/common.json';
+import authEN from './locales/en/auth.json';
+import messagesEN from './locales/en/messages.json';
+import activitiesEN from './locales/en/activities.json';
+
+// Import all namespace files for Croatian
+import commonHR from './locales/hr/common.json';
+import authHR from './locales/hr/auth.json';
+import messagesHR from './locales/hr/messages.json';
+import activitiesHR from './locales/hr/activities.json';
+
+// Definicija resursa za prijevode sa višestrukim namespace-ima
 const resources = {
   en: {
-    translation: translationEN
+    common: commonEN,
+    auth: authEN,
+    messages: messagesEN,
+    activities: activitiesEN
   },
   hr: {
-    translation: translationHR
+    common: commonHR,
+    auth: authHR,
+    messages: messagesHR,
+    activities: activitiesHR
   }
 };
 
@@ -27,7 +43,11 @@ i18n
     },
     // Standardna i18next konfiguracija za pluralizaciju
     pluralSeparator: '_',
-    contextSeparator: '_'
+    contextSeparator: '_',
+    // Default namespace
+    defaultNS: 'common',
+    // Available namespaces
+    ns: ['common', 'auth', 'messages', 'activities']
   });
 
 export default i18n;

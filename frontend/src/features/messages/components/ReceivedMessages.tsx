@@ -28,7 +28,7 @@ interface ReceivedMessagesProps {
 }
 
 export default function ReceivedMessages({ userRole, onUnreadCountChange }: ReceivedMessagesProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('messages');
   const { toast } = useToast();
   const { user } = useAuthHook();
   const [messages, setMessages] = useState<Message[]>([]);

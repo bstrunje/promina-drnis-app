@@ -12,7 +12,7 @@ interface SentMessagesProps {
   userRole: string;
 }
 export default function SentMessages({ userRole }: SentMessagesProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('messages');
   const { toast } = useToast();
   const { user } = useAuth();
   const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
@@ -37,8 +37,8 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
       setSentMessages(convertedData);
     } catch (error) {
       toast({
-        title: t('messages.error'),
-        description: error instanceof Error ? error.message : t('messages.fetchSentMessagesError'),
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('sentMessages.fetchError'),
         variant: "destructive"
       });
     } finally {
@@ -64,7 +64,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
       <div className="space-y-4">
         {loadingSent ? (
           <div className="text-center p-8">
-            <p className="text-gray-500">{t('sentMessages.loading')}</p>
+            <p className="text-gray-500">{t('common.loading')}</p>
           </div>
         ) : sentMessages.length > 0 ? (
           sentMessages.map(message => (
@@ -87,7 +87,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
           className="w-full"
           disabled={loadingSent}
         >
-          {loadingSent ? 'Osvježavanje...' : 'Osvježi poslane poruke'}
+          {loadingSent ? t('common.loading') + '...' : t('sentMessages.refreshButton')}
         </Button>
       </div>
     </div>

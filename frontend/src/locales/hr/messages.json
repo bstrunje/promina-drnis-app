@@ -1,0 +1,124 @@
+{
+    "adminMessageSender": {
+      "title": "Slanje poruke članovima",
+      "tabs": {
+        "single": "Pojedinačnom članu",
+        "group": "Grupi članova",
+        "all": "Svim članovima"
+      },
+      "labels": {
+        "recipient": "Primatelj:",
+        "messageText": "Tekst poruke:",
+        "messageTextGroup": "Tekst poruke za grupu:",
+        "messageTextAll": "Tekst poruke za sve članove:",
+        "selectedMembers": "Odabrani članovi ({{count}}):"
+      },
+      "placeholders": {
+        "searchMember": "Pretraži po imenu ili prezimenu... (minimalno 2 znaka)",
+        "messageText": "Unesi tekst poruke...",
+        "messageTextGroup": "Unesi tekst poruke za grupu članova...",
+        "messageTextAll": "Unesi tekst poruke za sve članove..."
+      },
+      "buttons": {
+        "sending": "Slanje...",
+        "sendMessage": "Pošalji poruku",
+        "sendToGroup": "Pošalji poruku ({{count}} članova)",
+        "sendToAll": "Pošalji svim članovima",
+        "clearAll": "Očisti sve"
+      },
+      "messages": {
+        "searchMinLength": "Unesi minimalno 2 znaka za pretragu članova",
+        "selectMemberWarning": "Molimo odaberi člana kojem želiš poslati poruku",
+        "selectGroupWarning": "Molimo odaberi barem jednog člana za slanje grupne poruke",
+        "emptyMessageWarning": "Poruka ne može biti prazna",
+        "singleSuccess": "Poruka uspješno poslana članu {{memberName}}",
+        "groupSuccess": "Poruka uspješno poslana grupi od {{count}} članova",
+        "allSuccess": "Poruka uspješno poslana svim članovima",
+        "singleError": "Greška prilikom slanja poruke",
+        "groupError": "Greška prilikom slanja grupne poruke",
+        "allError": "Greška prilikom slanja poruke svim članovima"
+      },
+      "confirmDialogs": {
+        "sendToAll": "Jeste li sigurni da želite poslati poruku SVIM članovima?"
+      },
+      "warnings": {
+        "importantNotice": "Važna napomena",
+        "sendToAllDescription": "Ova poruka će biti poslana SVIM članovima u sustavu. Koristite ovu opciju samo kada je poruka namijenjena svim članovima, kao npr. važne obavijesti, događanja, itd."
+      },
+      "success": {
+        "messageSent": "Poruka uspješno poslana!"
+      }
+    },
+    "memberMessageList": {
+      "titles": {
+        "adminMessages": "Poruke od administratora",
+        "sentMessages": "Poslane poruke"
+      },
+      "tabs": {
+        "received": "Primljene poruke",
+        "sent": "Poslane poruke"
+      },
+      "filters": {
+        "unread": "Nepročitane",
+        "read": "Pročitane",
+        "all": "Sve poruke"
+      },
+      "unreadCount": {
+        "single": "nepročitana",
+        "multiple": "nepročitane"
+      },
+      "emptyStates": {
+        "noReceivedMessages": "Nemaš primljenih poruka",
+        "noUnreadMessages": "Nema nepročitanih poruka",
+        "noReadMessages": "Nema pročitanih poruka",
+        "noSentMessages": "Nema poslanih poruka."
+      },
+      "loading": {
+        "sentMessages": "Učitavanje poslanih poruka..."
+      },
+      "buttons": {
+        "refreshMessages": "Osvježi poruke"
+      },
+      "badges": {
+        "sentToAll": "Poslano svim članovima"
+      },
+      "messages": {
+        "fetchError": "Greška prilikom dohvaćanja poruka",
+        "fetchSentError": "Greška prilikom dohvaćanja poslanih poruka"
+      }
+    },
+    "receivedMessages": {
+      "messages": {
+        "fetchError": "Greška prilikom dohvaćanja poruka",
+        "markAsReadSuccess": "Poruka označena kao pročitana",
+        "markAsReadError": "Greška prilikom označavanja poruke kao pročitane",
+        "archiveSuccess": "Poruka uspješno arhivirana",
+        "archiveError": "Greška prilikom arhiviranja poruke",
+        "deleteSuccess": "Poruka uspješno obrisana",
+        "deleteError": "Greška prilikom brisanja poruke",
+        "deleteAllSuccess": "Sve poruke uspješno obrisane",
+        "deleteAllError": "Greška prilikom brisanja svih poruka"
+      },
+      "confirmDialogs": {
+        "deleteMessage": "Jeste li sigurni da želite obrisati ovu poruku?",
+        "deleteAllMessages": "Jeste li sigurni da želite obrisati SVE poruke? Ova akcija se ne može poništiti."
+      },
+      "buttons": {
+        "unread": "Označi kao nepročitano",
+        "read": "Označi kao pročitano",
+        "archived": "Arhiviraj poruku"
+      }
+    },
+    "sentMessages": {
+      "fetchError": "Greška prilikom dohvaćanja poslanih poruka",
+      "noMessages": "Nema poslanih poruka.",
+      "refreshButton": "Osvježi poslane poruke",
+      "loading": "Učitavanje poslanih poruka...",
+      "memberProfile": {
+        "messages": {
+          "deleteAll": "Obriši sve poruke",
+          "deleteAllShort": "Obriši sve"
+        }
+      }
+    }
+  }
