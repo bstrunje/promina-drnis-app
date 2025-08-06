@@ -28,5 +28,18 @@
   "refreshData": "Osvježi podatke",
   "actions": "Akcije",
   "selectSize": "Odaberite veličinu",
-  "notSpecified": "Nije specificirano"
+  "notSpecified": "Nije specificirano",
+  "navigation": {
+    "title": "Planinarsko društvo \"Promina\" Drniš",
+    "titleShort": "PD \"Promina\" Drniš",
+    "profile": "Profil",
+    "activities": "Aktivnosti",
+    "messages": "Poruke",
+    "members": "Članovi",
+    "administrator": "Administracija",
+    "assignPasswords": "Dodjela lozinki",
+    "superuser": "Superuser",
+    "dashboard": "Pregled",
+    "logout": "Odjava"
+  } 
 }

@@ -43,7 +43,7 @@ const getRoleNameByPercentage = (percentage: number, t: any): string | null => {
 
 
 const ActivityDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('activities');
   const { activityId } = useParams<{ activityId: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -229,7 +229,7 @@ const ActivityDetailPage: React.FC = () => {
                     <Link to={`/activities/${activity.activity_id}/edit`}>
                       <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
                         <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                        <span className="text-xs sm:text-sm">{t('common.edit')}</span>
+                        <span className="text-xs sm:text-sm">{t('edit', { ns: 'common' })}</span>
                       </Button>
                     </Link>
                     {!isCompleted && (

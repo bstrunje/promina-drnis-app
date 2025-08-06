@@ -15,11 +15,15 @@
         "backToCalendar": "Back to Calendar",
         "backToCategory": "Back to Category",
         "backToCategories": "Back to Categories",
+        "backToYear": "Back to Year",
         "editActivity": "Edit Activity",
+        "edit": "Edit",
         "joinActivity": "Join Activity",
         "join": "Join",
         "leaveActivity": "Leave Activity",
+        "leave": "Napusti",
         "cancelActivity": "Cancel Activity",
+        "cancel": "Otkaži",
         "activityCancelled": "Activity is cancelled",
         "reason": "Reason:",
         "cancellationReasonTitle": "Cancellation Reason:",
@@ -33,6 +37,7 @@
         "to": "to",
         "duration": "Duration:",
         "hours_one": "{{count}} hour",
+        "hours_few": "{{count}} hours",
         "hours_other": "{{count}} hours",
         "description": "Description",
         "noDescription": "No description provided.",
@@ -49,6 +54,7 @@
         "cancelModalDescription": "Please enter the reason for cancelling the activity. This action is irreversible.",
         "cancelModalPlaceholder": "Enter cancellation reason...",
         "confirmCancellation": "Confirm Cancellation",
+        "loading": "Loading...",
         "statuses": {
             "planned": "Planned",
             "in_progress": "In Progress",
@@ -131,33 +137,12 @@
             "razno": "Miscellaneous"
         }
     },
-    "activityCategory": {
-        "hiking": {
-            "title": "Hiking Activities",
-            "description": "Plan and manage hiking activities"
-        },
-        "excursion": {
-            "title": "Excursions",
-            "description": "Plan and manage excursions"
-        },
-        "training": {
-            "title": "Training Sessions",
-            "description": "Plan and manage training sessions"
-        },
-        "meeting": {
-            "title": "Meetings",
-            "description": "Plan and manage meetings"
-        },
-        "other": {
-            "title": "Other Activities",
-            "description": "Plan and manage other activities"
-        }
-    },
     "activityYear": {
         "title": "Activities for {{year}}",
         "noActivities": "No activities planned for this year.",
         "loading": "Loading activities...",
-        "backToOverview": "Back to Activity Overview"
+        "backToOverview": "Back to Activity Overview",
+        "errorFetchingData": "Unable to load activities. Please try again."
     },
     "activityOverview": {
         "title": "Activity Overview",
@@ -187,5 +172,150 @@
         "driver": "Driver",
         "equipmentManager": "Equipment Manager",
         "noRole": "No Role Assigned"
+    },
+    "activityCategoryPage": {
+        "summary": {
+            "allActivitiesForYear": "All activities for year {{year}}",
+            "allYears": "All years",
+            "activitiesInYear": "Activities in year {{year}}",
+            "allCategories": "All activity categories",
+            "yearActivitiesTitle": "{{year}} Activities",
+            "total": "Total",
+            "hours": "Hours"
+        },
+        "totalHoursInYear": "Total hours for year {{year}}",
+        "hoursInYear": "Hours in {{year}}",
+        "totalHoursInCategory": "Total hours in category",
+        "hoursInCategory": "Hours in category",
+        "deleteActivity": "Delete Activity",
+        "noActivitiesInCategory": "No activities in this category",
+        "confirmDeletion": "Confirm Deletion",
+        "deleteConfirmationMessage": "Are you sure you want to delete activity {{name}}?",
+        "deleting": "Deleting...",
+        "delete": "Delete",
+        "loading": "Loading...",
+        "descriptions": {
+            "akcija-drustvo": "Plan and manage society work actions",
+            "akcija-trail": "Plan and manage trail work actions",
+            "dezurstva": "Plan and manage on-call duties",
+            "izleti": "Plan and manage excursions",
+            "razno": "Plan and manage miscellaneous activities",
+            "sastanci": "Plan and manage meetings"
+        }
+    },
+    "activities": {
+        "admin": {
+            "messages": {
+                "errorFetchingData": "Error fetching activities data.",
+                "errorCreatingActivity": "An error occurred while creating the activity.",
+                "loading": "Loading..."
+            },
+            "title": "Activity Administration",
+            "addNewActivity": "Add New Activity",
+            "newActivity": "New Activity",
+            "form": {
+                "name": "Name",
+                "description": "Description",
+                "activityType": "Activity Type",
+                "selectType": "Select type",
+                "startDate": "Start Date"
+            },
+            "table": {
+                "name": "Name",
+                "startDate": "Start Date",
+                "status": "Status",
+                "actions": "Actions",
+                "edit": "Edit",
+                "delete": "Delete"
+            }
+        },
+        "list": {
+            "error": "Error fetching activities data.",
+            "loading": "Loading...",
+            "title": "Activity Overview",
+            "description": "Overview of all activities organized by years",
+            "create": "New Activity",
+            "totalCompletedHours": "Total recognized hours",
+            "totalHours": "Total hours",
+            "activities": "Activities",
+            "totalHoursLabel": "Total hours",
+            "noActivities": "No activities to display.",
+            "tooltips": {
+                "activeActivities": "Has active activities",
+                "plannedActivities": "Has planned activities"
+            }
+        },
+        "roles": {
+            "guide": "Guide",
+            "assistantGuide": "Assistant Guide",
+            "driver": "Driver",
+            "regular": "Participant"
+        },
+        "participants": {
+            "searchPlaceholder": "Search participants..."
+        },
+        "editing": {
+            "error": "Error",
+            "fetchFailed": "Failed to fetch activity.",
+            "validationFailed": "Validation failed.",
+            "success": "Saved successfully!",
+            "activityUpdated": "Activity updated.",
+            "updateFailed": "Error saving activity.",
+            "loading": "Loading...",
+            "title": "Edit Activity",
+            "activityName": "Activity Name",
+            "description": "Description",
+            "startDateTime": "Start Date & Time",
+            "actualStartTime": "Actual Start Time",
+            "actualEndTime": "Actual End Time",
+            "manualHours": "Manual Hours",
+            "manualHoursPlaceholder": "Enter number of hours...",
+            "recognitionPercentage": "Recognition Percentage",
+            "participants": "Participants"
+        },
+        "creation": {
+            "errors": {
+                "fetchTypes": "Error fetching activity types."
+            },
+            "success": "Activity created successfully!",
+            "activityCreated": "New activity has been added.",
+            "error": "Error saving activity.",
+            "title": "Create Activity",
+            "description": "Enter activity details.",
+            "activityType": "Activity Type",
+            "selectActivityType": "Select Activity Type",
+            "loadingTypes": "Loading types...",
+            "descriptionLabel": "Description",
+            "descriptionPlaceholder": "Enter activity description...",
+            "validation": {
+                "activityTypeRequired": "Activity type is required.",
+                "descriptionRequired": "Description is required.",
+                "startDateRequired": "Start date is required.",
+                "startTimeRequired": "Start time is required."
+            },
+            "startDate": "Start Date",
+            "actualStartDate": "Actual Start Date",
+            "actualEndDate": "Actual End Date",
+            "manualHours": "Manual Hours",
+            "manualHoursPlaceholder": "Enter number of hours...",
+            "recognitionPercentage": "Recognition Percentage",
+            "participants": "Participants"
+        },
+        "types": {
+            "akcija-drustvo": "Society Work Actions",
+            "akcija-trail": "Trail Work Actions",
+            "dezurstva": "On-call Duty",
+            "izleti": "Excursions",
+            "sastanci": "Meetings",
+            "razno": "Miscellaneous"
+        },
+        "descriptions": {
+            "akcija-drustvo": "Work actions organized by the Society",
+            "akcija-trail": "Work actions for the Trail",
+            "dezurstva": "On-call duty at the mountain hut",
+            "izleti": "Organization, guiding and participation in excursions",
+            "razno": "Other various activities",
+            "sastanci": "Meetings of members and the board"
+        }
     }
 }

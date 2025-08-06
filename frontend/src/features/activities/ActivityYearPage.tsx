@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/utils/config';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { formatHoursToHHMM } from '@/utils/activityHours';
+import { useTranslation } from 'react-i18next';
 
 // Sučelja za podatke
 interface Activity {
@@ -18,6 +19,7 @@ interface ActivityParticipation {
 }
 
 const ActivityYearPage: React.FC = () => {
+  const { t } = useTranslation('activities');
   const { memberId, year } = useParams<{ memberId: string; year: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ const ActivityYearPage: React.FC = () => {
         setParticipations(response.data || []);
       } catch (err) {
         console.error(`Error fetching activities for year ${year}:`, err);
-        setError('Nije moguće učitati aktivnosti. Molimo pokušajte ponovno.');
+        setError(t('activityYear.errorFetchingData'));
       } finally {
         setLoading(false);
       }
@@ -64,20 +66,20 @@ const ActivityYearPage: React.FC = () => {
         </button>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Aktivnosti za {year}.</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{t('activityYear.title', { year })}</h1>
         </div>
 
         {participations.length === 0 ? (
           <div className="text-center bg-white p-8 rounded-lg shadow-md">
-            <p className="text-gray-500">Nema zabilježenih aktivnosti za ovu godinu.</p>
+            <p className="text-gray-500">{t('activityYear.noActivities')}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {participations.map(participation => {
               return (
-                <Link 
-                  to={`/activities/${participation.activity.activity_id}`} 
-                  key={participation.activity.activity_id} 
+                <Link
+                  to={`/activities/${participation.activity.activity_id}`}
+                  key={participation.activity.activity_id}
                   className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 >
                   <div className="flex justify-between items-center">

@@ -25,7 +25,7 @@ import {
 import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation('activities');
   const currentLocale = i18n.language === 'hr' ? hr : enUS;
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
   const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
@@ -106,7 +106,7 @@ const ActivityCategoryPage: React.FC = () => {
       setError(null);
     } catch (err) {
       console.error('Greška prilikom dohvaćanja podataka:', err);
-      setError('Došlo je do pogreške prilikom dohvaćanja podataka.');
+      setError(t('activityOverview.errorFetchingData'));
     } finally {
       setLoading(false);
     }
@@ -135,11 +135,11 @@ const ActivityCategoryPage: React.FC = () => {
     try {
       setIsDeleting(true);
       await deleteActivity(activityToDelete.activity_id);
-      toast.success('Aktivnost je uspješno obrisana');
+      toast.success(t('activitiesAdmin.deleteSuccess'));
       void fetchData(); // Ponovno učitaj aktivnosti
     } catch (error) {
       console.error('Greška prilikom brisanja aktivnosti:', error);
-      toast.error('Došlo je do pogreške prilikom brisanja aktivnosti');
+      toast.error(t('activitiesAdmin.deleteError'));
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
@@ -164,7 +164,7 @@ const ActivityCategoryPage: React.FC = () => {
     activities.filter(activity => activity.status === 'COMPLETED')
   );
 
-  if (loading) return <div className="p-6">Učitavanje...</div>;
+  if (loading) return <div className="p-6">{t('activityCategoryPage.loading')}</div>;
   if (error) return (
     <div className="p-6">
       <Alert variant="destructive">
@@ -174,10 +174,10 @@ const ActivityCategoryPage: React.FC = () => {
   );
 
   const pageTitle = isYearView
-    ? t('activities.summary.allActivitiesForYear', { year })
+    ? t('activityCategoryPage.summary.allActivitiesForYear', { year })
     : activityType
-      ? t(`activities.types.${activityType.key}`)
-      : t('activities.loading');
+      ? t(`activitiesAdmin.types.${activityType.key}`)
+      : t('activityCategoryPage.loading');
 
   return (
     <div className="p-6">
@@ -185,7 +185,7 @@ const ActivityCategoryPage: React.FC = () => {
         <Button asChild variant="outline" className="mb-4">
           <Link to={yearParam && !isYearView ? `/activities/year/${yearParam}` : "/activities"}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {isYearView ? t('activities.summary.allYears') : (yearParam ? t('activities.summary.activitiesInYear', { year: yearParam }) : t('activities.summary.allCategories'))}
+            {isYearView ? t('activityCategoryPage.summary.allYears') : (yearParam ? t('activityCategoryPage.summary.activitiesInYear', { year: yearParam }) : t('activityCategoryPage.summary.allCategories'))}
           </Link>
         </Button>
         <div className="flex justify-between items-center">
@@ -193,7 +193,7 @@ const ActivityCategoryPage: React.FC = () => {
             {isYearView ? (
               <>
                 <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
-                <span className="text-xl sm:text-3xl">{t('activities.summary.yearActivitiesTitle', { year: yearParam })}</span>
+                <span className="text-xl sm:text-3xl">{t('activityCategoryPage.summary.yearActivitiesTitle', { year: yearParam })}</span>
               </>
             ) : (
               <>
@@ -205,11 +205,11 @@ const ActivityCategoryPage: React.FC = () => {
           {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
             <Button onClick={() => setCreateModalOpen(true)} size="sm" className="sm:text-base sm:px-4 sm:py-2">
               <PlusCircle className="mr-1 sm:mr-2 h-4 w-4" />
-              <span>{t('activitiesList.create')}</span>
+              <span>{t('activitiesAdmin.addNewActivity')}</span>
             </Button>
           )}
         </div>
-        {!isYearView && <p className="text-sm text-muted-foreground pt-1">{t(`activities.descriptions.${activityType?.key}`)}</p>}
+        {!isYearView && <p className="text-sm text-muted-foreground pt-1">{t(`activityCategoryPage.descriptions.${activityType?.key}`)}</p>}
       </div>
 
       <div className="mb-6">
@@ -218,13 +218,13 @@ const ActivityCategoryPage: React.FC = () => {
             <CardTitle>
               <span className="hidden sm:inline">
                 {isYearView 
-                  ? t('activities.totalHoursInYear', { year: yearParam }) 
-                  : t('activities.totalHoursInCategory')}
+                  ? t('activityCategoryPage.totalHoursInYear', { year: yearParam }) 
+                  : t('activityCategoryPage.totalHoursInCategory')}
               </span>
               <span className="inline sm:hidden">
                 {isYearView 
-                  ? t('activities.hoursInYear', { year: yearParam }) 
-                  : t('activities.hoursInCategory')}
+                  ? t('activityCategoryPage.hoursInYear', { year: yearParam }) 
+                  : t('activityCategoryPage.hoursInCategory')}
               </span>
             </CardTitle>
             <Badge variant="secondary" className="text-lg">{formatHoursToHHMM(totalCompletedHours)} h</Badge>
@@ -265,7 +265,7 @@ const ActivityCategoryPage: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           {React.createElement(iconMap[type.key] || iconMap.default, { className: 'h-6 w-6 text-primary' })}
-                          <CardTitle className="text-base sm:text-lg">{t(`activities.types.${type.key}`).toUpperCase()}</CardTitle>
+                          <CardTitle className="text-base sm:text-lg">{t(`activitiesAdmin.types.${type.key}`).toUpperCase()}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
                           {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
@@ -273,7 +273,7 @@ const ActivityCategoryPage: React.FC = () => {
                         </div>
                       </div>
                       {type.description && (
-                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{t(`activities.descriptions.${type.key}`)}</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{t(`activityCategoryPage.descriptions.${type.key}`)}</p>
                       )}
                     </CardHeader>
                     <CardFooter className="pt-2 flex flex-col gap-2 activity-card-footer">
@@ -281,7 +281,7 @@ const ActivityCategoryPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
                             <ListChecks className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t('activities.summary.total')}</span>
+                            <span className="text-muted-foreground">{t('activityCategoryPage.summary.total')}</span>
                           </div>
                           <Badge variant="secondary">{totalActivitiesCount}</Badge>
                         </div>
@@ -289,7 +289,7 @@ const ActivityCategoryPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
                             <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t('activities.summary.hours')}</span>
+                            <span className="text-muted-foreground">{t('activityCategoryPage.summary.hours')}</span>
                           </div>
                           <Badge variant="outline">{formatHoursToHHMM(typeHours)} h</Badge>
                         </div>
@@ -307,7 +307,7 @@ const ActivityCategoryPage: React.FC = () => {
           
           {activityTypes.length > 0 && activities.length === 0 && (
             <div className="col-span-full text-center text-muted-foreground">
-              <p>Nema aktivnosti u {yearParam}. godini.</p>
+              <p>{t('activityYear.noActivities')}</p>
             </div>
           )}
         </div>
@@ -341,7 +341,7 @@ const ActivityCategoryPage: React.FC = () => {
                         </div>
                         <div className="pt-2 text-right">
                           {(() => {
-                            const statusKey = `activities.status.${activity.status.toLowerCase()}`;
+                            const statusKey = `activitiesAdmin.statuses.${activity.status.toLowerCase()}`;
                             const statusText = t(statusKey);
                             switch (activity.status) {
                               case 'PLANNED':
@@ -369,7 +369,7 @@ const ActivityCategoryPage: React.FC = () => {
                             onClick={(e) => handleDeleteClick(activity, e)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {t('activities.deleteActivity')}
+                            {t('activityCategoryPage.deleteActivity')}
                           </Button>
                         </CardFooter>
                       )}
@@ -380,7 +380,7 @@ const ActivityCategoryPage: React.FC = () => {
             })
           ) : (
             <div className="col-span-full text-center text-muted-foreground">
-              <p>{t('activities.noActivitiesInCategory')}</p>
+              <p>{t('activityCategoryPage.noActivitiesInCategory')}</p>
             </div>
           )}
         </div>
@@ -400,9 +400,9 @@ const ActivityCategoryPage: React.FC = () => {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t('activities.confirmDeletion')}</DialogTitle>
+              <DialogTitle>{t('activityCategoryPage.confirmDeletion')}</DialogTitle>
               <DialogDescription>
-                {t('activities.deleteConfirmationMessage', { name: activityToDelete?.name })}
+                {t('activityCategoryPage.deleteConfirmationMessage', { name: activityToDelete?.name })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -418,7 +418,7 @@ const ActivityCategoryPage: React.FC = () => {
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
               >
-                {isDeleting ? t('activities.deleting') : t('activities.delete')}
+                {isDeleting ? t('activityCategoryPage.deleting') : t('activityCategoryPage.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -14,7 +14,7 @@ interface MemberSelectProps {
 }
 
 export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, onSelectionChange }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('activities');
   const [isFocused, setIsFocused] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -69,7 +69,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
         <Command>
           <CommandInput 
             ref={inputRef}
-            placeholder={t('activities.participants.searchPlaceholder')}
+            placeholder={t('participants.searchPlaceholder')}
             value={inputValue}
             onValueChange={setInputValue}
             onFocus={() => setIsFocused(true)}

@@ -15,11 +15,15 @@
     "backToCalendar": "Natrag na kalendar",
     "backToCategory": "Natrag na kategoriju",
     "backToCategories": "Natrag na kategorije",
+    "backToYear": "Natrag na godinu",
     "editActivity": "Uredi aktivnost",
+    "edit": "Uredi",
     "joinActivity": "Prijavi se na aktivnost",
     "join": "Pridruži se",
     "leaveActivity": "Napusti aktivnost",
+    "leave": "Napusti",
     "cancelActivity": "Otkaži aktivnost",
+    "cancel": "Otkaži",
     "activityCancelled": "Aktivnost je otkazana",
     "reason": "Razlog:",
     "cancellationReasonTitle": "Razlog otkazivanja:",
@@ -50,6 +54,7 @@
     "cancelModalDescription": "Molimo unesite razlog otkazivanja aktivnosti. Ova akcija je nepovratna.",
     "cancelModalPlaceholder": "Unesite razlog otkazivanja...",
     "confirmCancellation": "Potvrdi otkazivanje",
+    "loading": "Učitavanje...",
     "statuses": {
       "planned": "Planirana",
       "in_progress": "U tijeku",
@@ -132,33 +137,12 @@
       "sastanci": "Sastanci"
     }
   },
-  "activityCategory": {
-    "hiking": {
-      "title": "Planinarske ture",
-      "description": "Planiraj i upravljaj planinarskim turama"
-    },
-    "excursion": {
-      "title": "Izleti",
-      "description": "Planiraj i upravljaj izletima"
-    },
-    "training": {
-      "title": "Trening sesije",
-      "description": "Planiraj i upravljaj trening sesijama"
-    },
-    "meeting": {
-      "title": "Sastanci",
-      "description": "Planiraj i upravljaj sastancima"
-    },
-    "other": {
-      "title": "Ostale aktivnosti",
-      "description": "Planiraj i upravljaj ostalim aktivnostima"
-    }
-  },
   "activityYear": {
     "title": "Aktivnosti za {{year}}",
     "noActivities": "Nema planiranih aktivnosti za ovu godinu.",
     "loading": "Učitavanje aktivnosti...",
-    "backToOverview": "Natrag na pregled aktivnosti"
+    "backToOverview": "Natrag na pregled aktivnosti",
+    "errorFetchingData": "Nije moguće učitati aktivnosti. Molimo pokušajte ponovno."
   },
   "activityOverview": {
     "title": "Pregled aktivnosti",
@@ -189,5 +173,148 @@
     "driver": "Vozač",
     "equipmentManager": "Upravitelj opremom",
     "noRole": "Nema dodijeljene uloge"
+  },
+  "activityCategoryPage": {
+    "summary": {
+      "allActivitiesForYear": "Sve aktivnosti za {{year}}. godinu",
+      "allYears": "Sve godine",
+      "activitiesInYear": "Aktivnosti u {{year}}. godini",
+      "allCategories": "Sve kategorije aktivnosti",
+      "yearActivitiesTitle": "Aktivnosti {{year}}.",
+      "total": "Ukupno",
+      "hours": "Sati"
+    },
+    "totalHoursInYear": "Ukupno sati za {{year}}. godinu",
+    "hoursInYear": "Sati za {{year}}.",
+    "totalHoursInCategory": "Ukupno sati u kategoriji",
+    "hoursInCategory": "Sati u kategoriji",
+    "deleteActivity": "Obriši aktivnost",
+    "noActivitiesInCategory": "Nema aktivnosti u ovoj kategoriji",
+    "confirmDeletion": "Potvrda brisanja",
+    "deleteConfirmationMessage": "Jeste li sigurni da želite obrisati aktivnost {{name}}?",
+    "deleting": "Brisanje...",
+    "delete": "Obriši",
+    "loading": "Učitavanje...",
+    "descriptions": {
+      "akcija-drustvo": "Planiraj i upravljaj akcijama društva",
+      "akcija-trail": "Planiraj i upravljaj trail akcijama",
+      "dezurstva": "Planiraj i upravljaj dežurstvima",
+      "izleti": "Planiraj i upravljaj izletima",
+      "razno": "Planiraj i upravljaj raznim aktivnostima",
+      "sastanci": "Planiraj i upravljaj sastancima"
+    }
+  },
+  "admin": {
+    "messages": {
+      "errorFetchingData": "Greška pri dohvaćanju podataka o aktivnostima.",
+      "errorCreatingActivity": "Došlo je do greške prilikom kreiranja aktivnosti.",
+      "loading": "Učitavanje..."
+    },
+    "title": "Administracija aktivnosti",
+    "addNewActivity": "Dodaj novu aktivnost",
+    "newActivity": "Nova aktivnost",
+    "form": {
+      "name": "Naziv",
+      "description": "Opis",
+      "activityType": "Tip aktivnosti",
+      "selectType": "Odaberite tip",
+      "startDate": "Datum početka"
+    },
+    "table": {
+      "name": "Naziv",
+      "startDate": "Datum početka",
+      "status": "Status",
+      "actions": "Akcije",
+      "edit": "Uredi",
+      "delete": "Obriši"
+    }
+  },
+  "list": {
+    "error": "Greška pri dohvaćanju podataka o aktivnostima.",
+    "loading": "Učitavanje...",
+    "title": "Pregled aktivnosti",
+    "description": "Pregled svih aktivnosti organiziranih po godinama",
+    "create": "Nova aktivnost",
+    "totalCompletedHours": "Ukupno priznatih sati",
+    "totalHours": "Ukupno sati",
+    "activities": "Aktivnosti",
+    "totalHoursLabel": "Ukupno sati",
+    "noActivities": "Nema aktivnosti za prikaz.",
+    "tooltips": {
+      "activeActivities": "Ima aktivnih aktivnosti",
+      "plannedActivities": "Ima planiranih aktivnosti"
+    }
+  },
+  "roles": {
+    "guide": "Vodič",
+    "assistantGuide": "Pomoćnik vodiča",
+    "driver": "Vozač",
+    "regular": "Sudionik"
+  },
+  "participants": {
+    "searchPlaceholder": "Pretraži sudionike..."
+  },
+  "editing": {
+    "error": "Greška",
+    "fetchFailed": "Neuspješno dohvaćanje aktivnosti.",
+    "validationFailed": "Validacija nije prošla.",
+    "success": "Uspješno spremljeno!",
+    "activityUpdated": "Aktivnost je ažurirana.",
+    "updateFailed": "Greška pri spremanju.",
+    "loading": "Učitavanje...",
+    "title": "Uredi aktivnost",
+    "activityName": "Naziv aktivnosti",
+    "description": "Opis",
+    "startDateTime": "Datum i vrijeme početka",
+    "actualStartTime": "Stvarno vrijeme početka",
+    "actualEndTime": "Stvarno vrijeme završetka",
+    "manualHours": "Ručno uneseni sati",
+    "manualHoursPlaceholder": "Unesi broj sati...",
+    "recognitionPercentage": "Postotak priznavanja",
+    "participants": "Sudionici"
+  },
+  "creation": {
+    "errors": {
+      "fetchTypes": "Greška pri dohvaćanju tipova aktivnosti."
+    },
+    "success": "Aktivnost je uspješno kreirana!",
+    "activityCreated": "Nova aktivnost je dodana.",
+    "error": "Greška pri spremanju aktivnosti.",
+    "title": "Kreiraj aktivnost",
+    "description": "Unesi detalje aktivnosti.",
+    "activityType": "Tip aktivnosti",
+    "selectActivityType": "Odaberi tip aktivnosti",
+    "loadingTypes": "Učitavanje tipova...",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Unesi opis aktivnosti...",
+    "validation": {
+      "activityTypeRequired": "Tip aktivnosti je obavezan.",
+      "descriptionRequired": "Opis je obavezan.",
+      "startDateRequired": "Datum početka je obavezan.",
+      "startTimeRequired": "Vrijeme početka je obavezno."
+    },
+    "startDate": "Datum početka",
+    "actualStartDate": "Stvarni datum početka",
+    "actualEndDate": "Stvarni datum završetka",
+    "manualHours": "Ručno uneseni sati",
+    "manualHoursPlaceholder": "Unesi broj sati...",
+    "recognitionPercentage": "Postotak priznavanja",
+    "participants": "Sudionici"
+  },
+  "types": {
+    "akcija-drustvo": "Akcija Društvo",
+    "akcija-trail": "Akcija Trail",
+    "dezurstva": "Dežurstva",
+    "izleti": "Izleti",
+    "razno": "Razno",
+    "sastanci": "Sastanci"
+  },
+  "descriptions": {
+    "akcija-drustvo": "Radne akcije u organizaciji Društva",
+    "akcija-trail": "Radne akcije za Trail",
+    "dezurstva": "Dežurstva u domu",
+    "izleti": "Organizacija, vođenje i sudjelovanje na izletima",
+    "razno": "Ostale razne aktivnosti",
+    "sastanci": "Sastanci članova i upravnog odbora"
   }
 }

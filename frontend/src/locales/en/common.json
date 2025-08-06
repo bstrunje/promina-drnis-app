@@ -28,5 +28,18 @@
   "refreshData": "Refresh Data",
   "actions": "Actions",
   "selectSize": "Select size",
-  "notSpecified": "Not specified"
+  "notSpecified": "Not specified",
+  "navigation": {
+        "title": "Mountaineering Club \"Promina\" Drniš",
+        "titleShort": "MC \"Promina\" Drniš",
+        "profile": "Profile",
+        "activities": "Activities",
+        "messages": "Messages",
+        "members": "Members",
+        "administrator": "Administrator",
+        "assignPasswords": "Assign Passwords",
+        "superuser": "Superuser",
+        "dashboard": "Dashboard",
+        "logout": "Logout"
+    }
 }

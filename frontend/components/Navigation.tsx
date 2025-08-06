@@ -15,7 +15,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { unreadCount: unreadMessageCount } = useUnreadMessages();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('common');
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

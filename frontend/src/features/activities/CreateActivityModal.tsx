@@ -17,9 +17,8 @@ import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
-import RecognitionPercentageInput from '@components/RecognitionPercentageInput';
 import { MemberSelect } from './MemberSelect';
-import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
+import MemberRoleSelect, { MemberWithRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { ActivityType } from '@shared/activity.types';
 import { SelectPortal } from '@radix-ui/react-select';
 
@@ -31,7 +30,7 @@ interface CreateActivityModalProps {
 }
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('activities');
   const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -68,7 +67,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           setActivityTypes(types);
         } catch (err) {
           console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
-          setError(t('activities.creation.errors.fetchTypes'));
+          setError(t('creation.errors.fetchTypes'));
         } finally {
           setLoadingTypes(false);
         }
@@ -184,7 +183,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       onClose();
     } catch (err) {
       console.error('Greška prilikom kreiranja aktivnosti:', err);
-      setError(t('activities.creation.error'));
+      setError(t('error', { ns: 'common' }));
     } finally {
       setIsLoading(false);
     }
@@ -197,14 +196,14 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       <DialogPortal>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">{t('activities.creation.title')}</DialogTitle>
-          <DialogDescription>{t('activities.creation.description')}</DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">{t('creation.title')}</DialogTitle>
+          <DialogDescription>{t('creation.description')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
           {/* Odabir tipa aktivnosti */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="activityType" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.activityType')}
+              {t('creation.activityType')}
             </Label>
             <div className="sm:col-span-3">
               <Select value={selectedTypeId} onValueChange={(value) => {
@@ -212,13 +211,13 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 setFieldErrors(prev => ({ ...prev, selectedTypeId: '' }));
               }} disabled={loadingTypes}>
                 <SelectTrigger className={fieldErrors.selectedTypeId ? 'border-red-500' : ''}>
-                  <SelectValue placeholder={t('activities.creation.selectActivityType')} />
+                  <SelectValue placeholder={t('creation.selectActivityType')} />
                 </SelectTrigger>
                 <SelectPortal>
                   <SelectContent className="z-[9999]" position="popper" sideOffset={5}>
                     {activityTypes.map((type) => (
                       <SelectItem key={type.type_id} value={String(type.type_id)}>
-                        {t(`activities.types.${type.key}`).toUpperCase()}
+                        {t(`types.${type.key}`).toUpperCase()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -232,7 +231,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Opis aktivnosti */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="description" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.descriptionLabel')}
+              {t('creation.descriptionLabel')}
             </Label>
             <div className="sm:col-span-3">
               <Input
@@ -242,7 +241,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   setDescription(e.target.value);
                   setFieldErrors(prev => ({ ...prev, description: '' }));
                 }}
-                placeholder={t('activities.creation.descriptionPlaceholder')}
+                placeholder={t('creation.descriptionPlaceholder')}
                 className={`w-full ${fieldErrors.description ? 'border-red-500' : ''}`}
               />
               {fieldErrors.description && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.descriptionRequired')}</p>}
@@ -252,7 +251,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Datum početka */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="startDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.startDate')}
+              {t('creation.startDate')}
             </Label>
             <div className="sm:col-span-3">
               <div className="flex items-center gap-2">
@@ -290,7 +289,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Polje za stvarni početak */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="actualStartDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.actualStartDate')}
+              {t('creation.actualStartDate')}
             </Label>
             <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
@@ -347,7 +346,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Polje za stvarni završetak */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="actualEndDate" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.actualEndDate')}
+              {t('creation.actualEndDate')}
             </Label>
             <div className="sm:col-span-3 flex flex-wrap sm:flex-nowrap items-center gap-2">
               <Input
@@ -404,7 +403,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {/* Polje za ručni unos sati */}
           <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
             <Label htmlFor="manualHours" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-              {t('activities.creation.manualHours')}
+              {t('creation.manualHours')}
             </Label>
             <div className="sm:col-span-3 flex items-center gap-2">
               <Input
@@ -412,7 +411,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 type="number"
                 min="0"
                 step="0.5"
-                placeholder={t('activities.creation.manualHoursPlaceholder')}
+                placeholder={t('creation.manualHoursPlaceholder')}
                 value={manualHours}
                 onChange={e => {
                   const value = e.target.value;
@@ -435,7 +434,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {!isExcursion && (
             <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
               <Label htmlFor="recognition_percentage" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
-                {t('activities.creation.recognitionPercentage')}
+                {t('creation.recognitionPercentage')}
               </Label>
               <div className="sm:col-span-3">
                 <Input
@@ -451,7 +450,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           {/* Odabir sudionika */}
           <div className="grid sm:grid-cols-4 items-start gap-1 sm:gap-4">
-            <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">{t('activities.creation.participants')}</Label>
+            <Label className="sm:text-right pt-0 sm:pt-2 text-sm sm:text-base mb-1 sm:mb-0">{t('creation.participants')}</Label>
             <div className="sm:col-span-3">
               {/* Prikazujemo različite komponente ovisno o tipu aktivnosti */}
               {activityTypes.find(type => type.type_id === Number(selectedTypeId))?.key === 'izleti' ? (
@@ -470,17 +469,17 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
 
           {error && (
             <div className="col-span-4 bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-red-700 text-sm font-medium">{t('common.error')}</p>
+              <p className="text-red-700 text-sm font-medium">{t('error', { ns: 'common' })}</p>
               <p className="text-red-600 text-sm">{t('activities.creation.error')}</p>
             </div>
           )}
 
           <DialogFooter className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-0">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
-              {t('common.cancel')}
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
-              {isLoading ? t('common.saving') : t('common.save')}
+              {isLoading ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
             </Button>
           </DialogFooter>
         </div>
