@@ -322,11 +322,11 @@ const AdminMessageSender: React.FC = () => {
           <TabsContent value="group" className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="group-member-search" className="text-sm font-medium">
-                {t('memberProfile.messages.addMemberToGroup')}
+                {t('messages.addMemberToGroup')}
               </label>
               <Input
                 id="group-member-search"
-                placeholder={t('memberProfile.messages.searchPlaceholder')}
+                placeholder={t('messages.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 ref={searchInputRef}

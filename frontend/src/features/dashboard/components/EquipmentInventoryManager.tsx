@@ -37,7 +37,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   member
 }) => {
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboards');
   const [inventory, setInventory] = useState<EquipmentInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'tshirt' | 'shell_jacket' | 'hat'>('tshirt');
@@ -253,11 +253,11 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
       });
       
       toast({
-        title: t("dashboard.equipmentInventory.giftActions.giftMarked"),
-        description: t("dashboard.equipmentInventory.giftActions.giftMarkedDescription", {
-          equipmentType: t(`dashboard.equipmentInventory.equipmentTypes.${item.equipment_type}`),
+        title: t("equipmentInventory.giftActions.giftMarked"),
+        description: t("equipmentInventory.giftActions.giftMarkedDescription", {
+          equipmentType: t(`equipmentInventory.equipmentTypes.${item.equipment_type}`),
           size: item.size,
-          gender: t(`dashboard.equipmentInventory.gender.${item.gender}`)
+          gender: t(`equipmentInventory.gender.${item.gender}`)
         }),
         variant: "success",
       });
@@ -267,8 +267,8 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     } catch (error) {
       console.error("Error incrementing gift:", error);
       toast({
-        title: t("dashboard.equipmentInventory.giftActions.error"),
-        description: error instanceof Error ? error.message : t("dashboard.equipmentInventory.giftActions.giftMarkError"),
+        title: t("equipmentInventory.giftActions.error"),
+        description: error instanceof Error ? error.message : t("equipmentInventory.giftActions.giftMarkError"),
         variant: "destructive",
       });
     } finally {
@@ -290,11 +290,11 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
       });
       
       toast({
-        title: t("dashboard.equipmentInventory.giftActions.giftReturned"),
-        description: t("dashboard.equipmentInventory.giftActions.giftReturnedDescription", {
-          equipmentType: t(`dashboard.equipmentInventory.equipmentTypes.${item.equipment_type}`),
+        title: t("equipmentInventory.giftActions.giftReturned"),
+        description: t("equipmentInventory.giftActions.giftReturnedDescription", {
+          equipmentType: t(`equipmentInventory.equipmentTypes.${item.equipment_type}`),
           size: item.size,
-          gender: t(`dashboard.equipmentInventory.gender.${item.gender}`)
+          gender: t(`equipmentInventory.gender.${item.gender}`)
         }),
         variant: "success",
       });
@@ -304,8 +304,8 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     } catch (error) {
       console.error("Error decrementing gift:", error);
       toast({
-        title: t("dashboard.equipmentInventory.giftActions.error"),
-        description: error instanceof Error ? error.message : t("dashboard.equipmentInventory.giftActions.giftReturnError"),
+        title: t("equipmentInventory.giftActions.error"),
+        description: error instanceof Error ? error.message : t("equipmentInventory.giftActions.giftReturnError"),
         variant: "destructive",
       });
     } finally {
@@ -319,7 +319,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
           <div className="flex items-center">
             <Package className="h-5 w-5 mr-2 text-purple-600" />
-            <h2 className="text-lg font-semibold">{t("dashboard.equipmentInventory.title")}</h2>
+            <h2 className="text-lg font-semibold">{t("equipmentInventory.title")}</h2>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-2">
@@ -331,7 +331,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
               className="w-full sm:w-auto"
             >
               <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-              {t("dashboard.equipmentInventory.refresh")}
+              {t("equipmentInventory.refresh")}
             </Button>
             
             <Button
@@ -342,7 +342,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
               className="w-full sm:w-auto"
             >
               <Edit className="h-4 w-4 mr-1" />
-              {t("dashboard.equipmentInventory.editInventory")}
+              {t("equipmentInventory.editInventory")}
             </Button>
           </div>
         </div>
@@ -378,7 +378,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                       <div>
                         <span className="font-medium text-lg">{item.size}</span>
                         <span className="ml-2 text-sm text-gray-500">
-                        ({t(`dashboard.equipmentInventory.gender.${item.gender}`)})
+                        ({t(`equipmentInventory.gender.${item.gender}`)})
                         </span>
                       </div>
                       <span className={`text-lg font-bold ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -388,15 +388,15 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-500">{t("dashboard.equipmentInventory.cardLabels.initial")}</span>
+                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.initial")}</span>
                         <div className="font-medium">{item.initial_count}</div>
                       </div>
                       <div>
-                        <span className="text-gray-500">{t("dashboard.equipmentInventory.cardLabels.issued")}</span>
+                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.issued")}</span>
                         <div className="font-medium">{item.issued_count}</div>
                       </div>
                       <div>
-                        <span className="text-gray-500">{t("dashboard.equipmentInventory.cardLabels.gifts")}</span>
+                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.gifts")}</span>
                         <div className="flex items-center gap-1">
                           <Button
                             variant="outline"
@@ -420,7 +420,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                         </div>
                       </div>
                       <div>
-                        <span className="text-gray-500">{t("dashboard.equipmentInventory.cardLabels.remaining")}</span>
+                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.remaining")}</span>
                         <div className={`font-medium ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
                           {item.remaining}
                         </div>
@@ -436,22 +436,22 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.size")}
+                        {t("equipmentInventory.tableHeaders.size")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.gender")}
+                        {t("equipmentInventory.tableHeaders.gender")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.initial")}
+                        {t("equipmentInventory.tableHeaders.initial")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.issued")}
+                        {t("equipmentInventory.tableHeaders.issued")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.gifts")}
+                        {t("equipmentInventory.tableHeaders.gifts")}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("dashboard.equipmentInventory.tableHeaders.remaining")}
+                        {t("equipmentInventory.tableHeaders.remaining")}
                       </th>
                     </tr>
                   </thead>
@@ -462,7 +462,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                           {item.size}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-700">
-                        {t(`dashboard.equipmentInventory.gender.${item.gender}`)}
+                        {t(`equipmentInventory.gender.${item.gender}`)}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                           {item.initial_count}
@@ -506,7 +506,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              {t("dashboard.equipmentInventory.noData", { equipmentType: equipmentTypeLabels[activeTab] })}
+              {t("equipmentInventory.noData", { equipmentType: equipmentTypeLabels[activeTab] })}
             </div>
           )}
         </div>
@@ -518,7 +518,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold">
-                {t("dashboard.equipmentInventory.modal.title", { 
+                {t("equipmentInventory.modal.title", { 
                   equipmentType: equipmentTypeLabels[editModalTab] 
                 })}
               </h3>
@@ -539,18 +539,18 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                   return (
                     <div key={key} className="border rounded-lg p-4 space-y-3">
                       <div className="font-medium text-center">
-                        {size} - {t(`dashboard.equipmentInventory.gender.${gender}`)}
+                        {size} - {t(`equipmentInventory.gender.${gender}`)}
                       </div>
                       
                       {existingItem && (
                         <div className="text-sm text-gray-600 space-y-1">
-                          <div>{t("dashboard.equipmentInventory.cardLabels.issued")} {existingItem.issued_count}</div>
-                          <div>{t("dashboard.equipmentInventory.cardLabels.gifts")} {existingItem.gift_count}</div>
+                          <div>{t("equipmentInventory.cardLabels.issued")} {existingItem.issued_count}</div>
+                          <div>{t("equipmentInventory.cardLabels.gifts")} {existingItem.gift_count}</div>
                         </div>
                       )}
                       
                       <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-600">{t("dashboard.equipmentInventory.cardLabels.initial")}</label>
+                        <label className="text-sm text-gray-600">{t("equipmentInventory.cardLabels.initial")}</label>
                         <input
                           type="number"
                           min="0"
@@ -562,7 +562,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                       
                       {existingItem && (
                         <div className="mt-2 text-sm">
-                          <span className="text-gray-600">{t("dashboard.equipmentInventory.cardLabels.remaining")} </span>
+                          <span className="text-gray-600">{t("equipmentInventory.cardLabels.remaining")} </span>
                           <span className={`font-medium ${
                             (currentValue - existingItem.issued_count - existingItem.gift_count) <= 0 
                               ? 'text-red-600' 
@@ -581,10 +581,10 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
             {/* Modal Footer */}
             <div className="flex justify-end gap-3 p-6 border-t">
               <Button variant="outline" onClick={handleCloseModal}>
-                {t("dashboard.equipmentInventory.modal.cancel")}
+                {t("equipmentInventory.modal.cancel")}
               </Button>
               <Button onClick={() => void handleSaveModal()} disabled={isLoading}>
-                {isLoading ? t("common.saving") : t("dashboard.equipmentInventory.modal.save")}
+                {isLoading ? t("common.saving") : t("equipmentInventory.modal.save")}
               </Button>
             </div>
           </div>

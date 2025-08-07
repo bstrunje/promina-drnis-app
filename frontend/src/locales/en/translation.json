@@ -143,31 +143,7 @@
         "shellJacket": "Fleece jacket",
         "shellJacketPlaceholder": "Select size"
     },
-    "navigation": {
-        "title": "Mountaineering Club \"Promina\" Drniš",
-        "titleShort": "MC \"Promina\" Drniš",
-        "profile": "Profile",
-        "activities": "Activities",
-        "messages": "Messages",
-        "members": "Members",
-        "memberSince": "Member since",
-        "duration": {
-            "years_one": "{{count}} year",
-            "years_other": "{{count}} years",
-            "months_one": "{{count}} month",
-            "months_other": "{{count}} months",
-            "days_one": "{{count}} day",
-            "days_other": "{{count}} days",
-            "noDuration": "No duration data"
-        },
-        "administrator": "Administrator",
-        "assignPasswords": "Assign Passwords",
-        "superuser": "Superuser",
-        "dashboard": "Dashboard",
-        "hours_one": "{{count}} hour",
-        "hours_other": "{{count}} hours",
-        "logout": "Logout"
-    },
+
     "memberProfile": {
         "title": "Member Profile",
         "saving": "Saving...",
@@ -190,6 +166,17 @@
             "title": "Activity History",
             "totalActivities": "Total Activities",
             "totalHours": "Total Hours"
+        },  
+        "duration": {
+            "years_one": "{{count}} year",
+            "years_other": "{{count}} years",
+            "months_one": "{{count}} month",
+            "months_other": "{{count}} months",
+            "days_one": "{{count}} day",
+            "days_other": "{{count}} days",
+            "noDuration": "No duration data",
+            "hours_one": "{{count}} hour",
+            "hours_other": "{{count}} hours"
         },
         "messages": {
             "title": "Send Message to Administrator",
@@ -395,7 +382,7 @@
     "roles": {
         "member": "Member",
         "member_administrator": "Administrator",
-        "member_superuser": "Super Administrator"
+        "member_superuser": "Super Admin"
     },
     "skills": {
         "basic_mountaineering_school": "Basic Mountaineering School",

@@ -1,6 +1,7 @@
 import React from "react";
 import { StampHistoryItem } from "./types";
 import { formatDate } from "../../../utils/dateUtils";
+import { useTranslation } from "react-i18next";
 
 interface StampHistorySectionProps {
   isLoading: boolean;
@@ -14,17 +15,19 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
   isLoading,
   stampHistory
 }) => {
+  const { t, i18n } = useTranslation('dashboards');
+
   if (isLoading) {
     return (
       <div className="w-full mt-6 bg-white shadow rounded-lg overflow-hidden sm:col-span-2">
         <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
           <h2 className="text-lg font-medium text-gray-900">
-            Stamp Inventory History
+            {t('stampHistory.title')}
           </h2>
         </div>
         <div className="p-4">
           <div className="flex justify-center items-center h-24">
-            <p>Loading history...</p>
+            <p>{t('stampHistory.loading')}</p>
           </div>
         </div>
       </div>
@@ -36,12 +39,12 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
       <div className="w-full mt-6 bg-white shadow rounded-lg overflow-hidden sm:col-span-2">
         <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
           <h2 className="text-lg font-medium text-gray-900">
-            Stamp Inventory History
+          {t('stampHistory.title')}
           </h2>
         </div>
         <div className="p-4">
           <div className="text-center p-4 text-gray-500">
-            No history records found. History is created when inventory is archived for a new year.
+          {t('stampHistory.empty')}
           </div>
         </div>
       </div>
@@ -52,7 +55,7 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
     <div className="w-full mt-6 bg-white shadow rounded-lg overflow-hidden sm:col-span-2">
       <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
         <h2 className="text-lg font-medium text-gray-900">
-          Stamp Inventory History
+        {t('stampHistory.title')}
         </h2>
       </div>
       <div className="p-4">
@@ -111,19 +114,19 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
                   </th>
                   {/* Ukloni Type stupac */}
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Initial
+                  {t('stampHistory.initial')}
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Issued
+                  {t('stampHistory.issued')}
                   </th>
                   <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                  {t('stampHistory.date')}
                   </th>
                   <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    By
+                  {t('stampHistory.by')}
                   </th>
                   <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
+                  {t('stampHistory.notes')}
                   </th>
                 </tr>
               </thead>
@@ -157,7 +160,7 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
                         {record.reset_by_name}
                       </td>
                       <td className="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
-                        {record.notes ?? "-"}
+                        {record.notes ?? "{t('stampHistory.noNotes')}"}
                       </td>
                     </tr>
                   );

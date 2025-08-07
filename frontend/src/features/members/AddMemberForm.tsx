@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Member, MembershipTypeEnum, MemberSkill } from '@shared/member';
-import { formatInputDate } from '../../utils/dateUtils';
+import { formatInputDate, formatDateLocalized } from '../../utils/dateUtils';
 import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -26,24 +26,24 @@ const sizeOptions: SizeOptions[] = [
 ];
 
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   
   // Opcije za dropdown-ove - koriste postojeće ključeve
   const lifeStatusOptions = [
-    { value: 'employed/unemployed', label: t('options.lifeStatus.employed') },
-    { value: 'child/pupil/student', label: t('options.lifeStatus.child') },
-    { value: 'pensioner', label: t('options.lifeStatus.pensioner') }
+    { value: 'employed/unemployed', label: t('options.lifeStatus.employed', { ns: 'profile' }) },
+    { value: 'child/pupil/student', label: t('options.lifeStatus.child', { ns: 'profile' }) },
+    { value: 'pensioner', label: t('options.lifeStatus.pensioner', { ns: 'profile' }) }
   ];
   
   const genderOptions = [
-    { value: 'male', label: t('options.gender.male') },
-    { value: 'female', label: t('options.gender.female') }
+    { value: 'male', label: t('options.gender.male', { ns: 'profile' }) },
+    { value: 'female', label: t('options.gender.female', { ns: 'profile' }) }
   ];
   const [member, setMember] = useState<Omit<Member, 'member_id'>>({
     first_name: '',
     last_name: '',
     date_of_birth: '',
-    gender: 'male', // Default gender
+    gender: 'male',
     street_address: '',
     city: '',
     oib: '',
@@ -98,14 +98,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('members.addMemberForm.title')}</h3>
+        <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{t('addMemberForm.title')}</h3>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
             name="first_name"
             value={member.first_name}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.firstName')}
+            placeholder={t('addMemberForm.firstName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -114,7 +114,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="last_name"
             value={member.last_name}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.lastName')}
+            placeholder={t('addMemberForm.lastName')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -145,7 +145,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="street_address"
             value={member.street_address}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.streetAddress')}
+            placeholder={t('addMemberForm.streetAddress')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -154,7 +154,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="city"
             value={member.city}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.city')}
+            placeholder={t('addMemberForm.city')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -163,9 +163,9 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="oib"
             value={member.oib}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.oib')}
+            placeholder={t('addMemberForm.oib')}
             pattern="[0-9]{11}"
-            title={t('members.addMemberForm.oibTitle')}
+            title={t('addMemberForm.oibTitle')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -174,7 +174,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="cell_phone"
             value={member.cell_phone}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.cellPhone')}
+            placeholder={t('addMemberForm.cellPhone')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -183,7 +183,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="email"
             value={member.email}
             onChange={handleChange}
-            placeholder={t('members.addMemberForm.email')}
+            placeholder={t('addMemberForm.email')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
@@ -233,7 +233,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               onClick={() => setShowSkills(!showSkills)}
               className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             >
-              <span>{t('skills.title')}</span>
+              <span>{t('skills.title', { ns: 'profile' })}</span>
               {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </button>
             {showSkills && (
@@ -246,7 +246,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
                   }
                   isEditing={true}
                 />
-                <p className="text-xs text-gray-500 mt-1">{t('skills.description')}</p>
+                <p className="text-xs text-gray-500 mt-1">{t('skills.description', { ns: 'profile' })}</p>
               </div>
             )}
           </div>
@@ -256,14 +256,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               type="submit" 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              {t('members.addMemberForm.addButton')}
+              {t('addMemberForm.addButton')}
             </button>
             <button 
               type="button" 
               onClick={onClose} 
               className="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
             >
-              {t('members.addMemberForm.cancelButton')}
+              {t('addMemberForm.cancelButton')}
             </button>
           </div>
         </form>

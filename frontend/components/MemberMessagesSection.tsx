@@ -13,7 +13,7 @@ interface MemberMessagesSectionProps {
 }
 
 const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   const [comment, setComment] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -28,13 +28,13 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
       setComment('');
       toast({
         title: t('common.success'),
-        description: t('memberProfile.messages.sendSuccess'),
+        description: t('messages.sendSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
         title: t('common.error'),
-        description: error instanceof Error ? error.message : t('memberProfile.messages.sendError'),
+        description: error instanceof Error ? error.message : t('messages.sendError'),
         variant: "destructive"
       });
     }
@@ -51,7 +51,7 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
         <CardTitle>
           <div className="flex items-center">
             <MessageSquare className="w-5 h-5 mr-2" />
-            {t('memberProfile.messages.title')}
+            {t('messages.title')}
           </div>
         </CardTitle>
       </CardHeader>
@@ -62,10 +62,10 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
             onChange={(e) => setComment(e.target.value)}
             className="w-full p-2 border rounded-md mb-4"
             rows={4}
-            placeholder={t('memberProfile.messages.placeholder')}
+            placeholder={t('messages.placeholder')}
           />
           <Button type="submit" className="px-4 py-2 bg-black text-white rounded hover:bg-blue-700">
-            {t('memberProfile.messages.sendButton')}
+            {t('messages.sendButton')}
           </Button>
         </form>
       </CardContent>

@@ -36,14 +36,14 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onClose, onEdit
   const { t } = useTranslation();
 
   const lifeStatusOptions = [
-    { value: 'employed/unemployed', label: t('memberProfile.personalInfo.employed') },
-    { value: 'child/pupil/student', label: t('memberProfile.personalInfo.child') },
-    { value: 'pensioner', label: t('memberProfile.personalInfo.pensioner') }
+    { value: 'employed/unemployed', label: t('personalInfo.employed') },
+    { value: 'child/pupil/student', label: t('personalInfo.child') },
+    { value: 'pensioner', label: t('personalInfo.pensioner') }
   ];
 
   const genderOptions = [
-    { value: 'male', label: t('memberProfile.personalInfo.male') },
-    { value: 'female', label: t('memberProfile.personalInfo.female') }
+    { value: 'male', label: t('personalInfo.male') },
+    { value: 'female', label: t('personalInfo.female') }
   ];
   const [editedMember, setEditedMember] = useState<EditMemberLocal>(() => ({
     ...member,

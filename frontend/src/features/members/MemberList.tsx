@@ -18,7 +18,6 @@ import { Member } from "@shared/member";
 import { MemberWithDetails } from "@shared/memberDetails.types"; // Already updated above
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "@components/EditMemberForm";
-import ConfirmationModal from "@components/ConfirmationModal";
 import AssignCardNumberForm from "@components/AssignCardNumberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { Button } from "@components/ui/button";
@@ -28,7 +27,7 @@ import { formatDate, getCurrentDate } from "../../utils/dateUtils";
 // Import custom hook for fetching member data
 import { useMemberData } from "./hooks/useMemberData";
 // Import filter component
-import MemberListFilters, { MemberListFiltersProps } from "./components/MemberListFilters";
+import MemberListFilters from "./components/MemberListFilters";
 // Import table display component
 import { filterOnlyColoredRows } from "./components/memberTableUtils";
 // Import statistics component
@@ -38,7 +37,7 @@ import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Dobavi članove pomoću custom hooka
@@ -406,7 +405,7 @@ export default function MemberList(): JSX.Element {
             onClick={() => window.print()}
           >
             <Printer className="w-4 h-4 md:mr-1" />
-            <span className="hidden md:inline">{t('members.printList')}</span>
+            <span className="hidden md:inline">{t('printList')}</span>
           </Button>
 
                   {isAdmin && (
@@ -417,7 +416,7 @@ export default function MemberList(): JSX.Element {
                       onClick={() => setShowAddForm(true)}
                     >
                       <UserPlus className="w-4 h-4 md:mr-1" />
-                      <span className="hidden md:inline">{t('members.addMember')}</span>
+                      <span className="hidden md:inline">{t('addMember')}</span>
                     </Button>
                   )}
                 </div>

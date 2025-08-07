@@ -15,7 +15,7 @@ interface PendingMember {
 }
 
 const AssignPassword: React.FC = () => {
-    const { t } = useTranslation();
+    const { t } = useTranslation('members');
     const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
     const [selectedMember, setSelectedMember] = useState<number | ''>('');
     const [password, setPassword] = useState('');

@@ -81,7 +81,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation();								 
+  const { t } = useTranslation('profile');								 
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
@@ -118,7 +118,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
   const validatePaymentDate = useCallback((dateString: string): boolean => {
     if (!dateString) {
-      setPaymentError(t('memberProfile.feeSection.paymentDateRequired'));
+      setPaymentError(t('feeSection.paymentDateRequired'));
       setIsValidPayment(false);
       return false;
     }
@@ -133,7 +133,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const date = parseISO(dateString);
 
       if (!isValidDate(date)) {
-        setPaymentError(t('memberProfile.feeSection.invalidDate'));
+        setPaymentError(t('feeSection.invalidDate'));
         setIsValidPayment(false);
         return false;
       }
@@ -141,7 +141,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // DODANO: Validacija godine
       const year = date.getFullYear();
       if (year < 1850 || year > 2850) {
-        setPaymentError(t('memberProfile.feeSection.invalidYear'));
+        setPaymentError(t('feeSection.invalidYear'));
         setIsValidPayment(false);
         return false;
       }
@@ -150,7 +150,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // kako bismo podržali simulirani datum
       const currentDate = getCurrentDate();
       if (date > currentDate) {
-        setPaymentError(t('memberProfile.feeSection.futureDate'));
+        setPaymentError(t('feeSection.futureDate'));
         setIsValidPayment(false);
         return false;
       }
@@ -171,13 +171,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         if (isNewMember) {
           toast({
             title: t('common.info'),
-            description: t('memberProfile.feeSection.newMemberNovDecPayment'),
+            description: t('feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
         } else {
           toast({
             title: t('common.info'),
-            description: t('memberProfile.feeSection.novDecPaymentNextYear'),
+            description: t('feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
         }
@@ -192,7 +192,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
     } catch (error) {
       console.error("Error validating date:", error);
-      setPaymentError(t('memberProfile.feeSection.validationError'));
+      setPaymentError(t('feeSection.validationError'));
       setIsValidPayment(false);
       return false;
     }
@@ -257,13 +257,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         if (!isNewMember) {
           toast({
             title: t('common.info'),
-            description: t('memberProfile.feeSection.novDecPaymentNextYear'),
+            description: t('feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
         } else {
           toast({
             title: t('common.info'),
-            description: t('memberProfile.feeSection.newMemberNovDecPayment'),
+            description: t('feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
         }
@@ -277,8 +277,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
 
       toast({
-        title: t('memberProfile.feeSection.success'),
-        description: t('memberProfile.feeSection.paymentProcessed'),
+        title: t('feeSection.success'),
+        description: t('feeSection.paymentProcessed'),
         variant: "success"
       });
 
@@ -303,7 +303,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       console.error("Error updating membership:", error);
       toast({
         title: t('common.error'),
-        description: t('memberProfile.feeSection.paymentError'),
+        description: t('feeSection.paymentError'),
         variant: "destructive"
       });
     } finally {
@@ -321,13 +321,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setIsEditingHistory(false);
       toast({
         title: t('common.success'),
-        description: t('memberProfile.feeSection.historyUpdated'),
+        description: t('feeSection.historyUpdated'),
         variant: "success"
       });
     } catch {
       toast({
         title: t('common.error'),
-        description: t('memberProfile.feeSection.historyUpdateFailed'),
+        description: t('feeSection.historyUpdateFailed'),
         variant: "destructive"
       });
     } finally {
@@ -375,7 +375,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="w-5 h-5 mr-2" />
-            {t('memberProfile.feeSection.title')}
+            {t('feeSection.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -384,16 +384,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Display Fee Payment Information */}
             <div>
               <div className="mb-3">
-                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.lastPaymentDate')}</span>
+                <span className="text-sm text-gray-500">{t('feeSection.lastPaymentDate')}</span>
                 <p>
                 {member.membership_details?.fee_payment_date
                   ? formatDate(cleanISODateString(member.membership_details.fee_payment_date), 'dd.MM.yyyy.')
-                  : t('memberProfile.feeSection.noPaymentData')}
+                  : t('feeSection.noPaymentData')}
                 </p>
               </div>
                             
               <div className="mb-3">
-                <span className="text-sm text-gray-500">{t('memberProfile.feeSection.paymentStatus')}:</span>
+                <span className="text-sm text-gray-500">{t('feeSection.paymentStatus')}:</span>
                 {(() => {
                   const feeStatus = determineFeeStatus(member);
                   return (
@@ -403,15 +403,15 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   }`}
                 >
                   {isFeeCurrent
-                    ? t('memberProfile.feeSection.statusCurrent')
-                    : t('memberProfile.feeSection.statusPaymentRequired')}
+                    ? t('feeSection.statusCurrent')
+                    : t('feeSection.statusPaymentRequired')}
                 </span>
                   );
                 })()}
 
                 {member.membership_details?.fee_payment_year && (
                   <p className="text-xs text-gray-500 mt-1">
-                    {t('memberProfile.feeSection.paidForYear')}: {member.membership_details.fee_payment_year}
+                    {t('feeSection.paidForYear')}: {member.membership_details.fee_payment_year}
                   </p>
                 )}
               </div>
@@ -426,20 +426,20 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   const currentMonth = today.getMonth(); // 0 = Siječanj, 1 = Veljača
 
                   let statusInfo = {
-                    text: t('memberProfile.feeSection.membershipEnded'),
+                    text: t('feeSection.membershipEnded'),
                     className: 'bg-red-100 text-red-800',
                   };
 
                   if (lastPeriod.end_reason === 'non_payment' && (currentMonth === 0 || currentMonth === 1)) {
                     statusInfo = {
-                      text: t('memberProfile.feeSection.membershipExpired'),
+                      text: t('feeSection.membershipExpired'),
                       className: 'bg-yellow-100 text-yellow-800',
                     };
                   }
 
                   return (
                     <div className="flex items-center mb-4">
-                      <span className="text-sm text-gray-500 mr-2">{t('memberProfile.feeSection.memberStatus')}:</span>
+                      <span className="text-sm text-gray-500 mr-2">{t('feeSection.memberStatus')}:</span>
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
                         {statusInfo.text}
                       </span>
@@ -465,11 +465,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
                 const getMembershipDisplay = (status: string) => {
                   if (status === 'registered') {
-                    return { text: t('memberProfile.feeSection.validMembership'), className: 'bg-green-100 text-green-800' };
+                    return { text: t('feeSection.validMembership'), className: 'bg-green-100 text-green-800' };
                   } else if (status === 'inactive') {
-                    return { text: t('memberProfile.feeSection.inactive'), className: 'bg-red-100 text-red-800' };
+                    return { text: t('feeSection.inactive'), className: 'bg-red-100 text-red-800' };
                   } else {
-                    return { text: t('memberProfile.feeSection.pending'), className: 'bg-yellow-100 text-yellow-800' };
+                    return { text: t('feeSection.pending'), className: 'bg-yellow-100 text-yellow-800' };
                   }
                 };
 
@@ -478,14 +478,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 return (
                   <div className="mb-4">
                     <div className="flex items-center">
-                      <span className="text-sm text-gray-500 mr-2">{t('memberProfile.feeSection.memberStatus')}:</span>
+                      <span className="text-sm text-gray-500 mr-2">{t('feeSection.memberStatus')}:</span>
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${display.className}`}>
                         {display.text}
                       </span>
                     </div>
                     {detailedMembershipStatus.reason &&
                       finalMembershipStatus !== 'registered' &&
-                      !(finalMembershipStatus === 'inactive' && [t('memberProfile.history.reasons.expulsion'), t('memberProfile.history.reasons.death'), t('memberProfile.history.reasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
+                      !(finalMembershipStatus === 'inactive' && [t('history.reasons.expulsion'), t('history.reasons.death'), t('history.reasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
                         <p className="text-sm text-gray-700 mt-1">
                           {detailedMembershipStatus.reason}
                         </p>
@@ -493,11 +493,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                     {detailedMembershipStatus.date && detailedMembershipStatus.status === 'inactive' && (
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">
-                          {t('memberProfile.history.endDate')}: {new Date(detailedMembershipStatus.date).toLocaleDateString('hr-HR')}
+                          {t('history.endDate')}: {new Date(detailedMembershipStatus.date).toLocaleDateString('hr-HR')}
                         </p>
                         {detailedMembershipStatus.endReason && (
                           <p className="text-sm text-gray-500">
-                            {t('memberProfile.history.endReason')}: {translateEndReason(detailedMembershipStatus.endReason, )}
+                            {t('history.endReason')}: {translateEndReason(detailedMembershipStatus.endReason, )}
                           </p>
                         )}
                       </div>
@@ -510,16 +510,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Membership Card Management - visible only if fee is current */}
             {isEditing && isFeeCurrent && cardManagerProps && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">{t('memberProfile.feeSection.membershipCardManagement')}</h3>
+                <h3 className="text-lg font-medium mb-3">{t('feeSection.membershipCardManagement')}</h3>
                 <MembershipCardManagerAdapter {...cardManagerProps} />
               </div>
             )}
             
             {isEditing && !isFeeCurrent && cardManagerProps && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3 text-amber-700">{t('memberProfile.feeSection.membershipCardManagement')}</h3>
+                <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
                 <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
-                  <p>{t('memberProfile.feeSection.membershipCardManagementInfo')}</p>
+                  <p>{t('feeSection.membershipCardManagementInfo')}</p>
                 </div>
               </div>
             )}
@@ -527,12 +527,12 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
             {/* Payment Form - visible only for administrators */}
             {canEdit && isEditing && (
               <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">{t('memberProfile.feeSection.processPayment')}</h3>
+                <h3 className="text-lg font-medium mb-3">{t('feeSection.processPaymentTitle')}</h3>
                 <form onSubmit={(e) => { void handleFeePayment(e); } }>
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="paymentDate" className="block text-sm font-medium text-gray-700">
-                        {t('memberProfile.feeSection.paymentDate')}
+                        {t('feeSection.paymentDate')}
                       </label>
                       <div className="mt-1 relative">
                         <Input
@@ -557,8 +557,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           : 'bg-amber-600 text-white'
                       }`}>
                         {isNewMemberPayment
-                          ? t('memberProfile.feeSection.newMemberNovDecPayment')
-                          : t('memberProfile.feeSection.novDecPaymentNextYear')}
+                          ? t('feeSection.newMemberNovDecPayment')
+                          : t('feeSection.novDecPaymentNextYear')}
                       </div>
                     )}
 
@@ -574,12 +574,12 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           isSubmitting && "opacity-50"
                         )}
                       >
-                        {t('memberProfile.feeSection.processPayment')}
+                        {t('feeSection.processPayment')}
                       </Button>
                     ) : (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-700">
-                        {t('memberProfile.feeSection.confirmPaymentQuestion', { 
+                        {t('feeSection.confirmPaymentQuestion', { 
                           firstName: member?.first_name || '', 
                           lastName: member?.last_name || '' 
                         })}
@@ -623,14 +623,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 <ChevronRight className="w-5 h-5 mr-2" />
               )}
               <Clock className="w-5 h-5 mr-2" />
-              {t('memberProfile.feeSection.membershipHistory')}
+              {t('feeSection.membershipHistory')}
             </button>
 
             {showHistory && (
               <div className="mt-4 space-y-4">
                 {/* Header with Title and Buttons */}
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-sm font-medium">{t('memberProfile.feeSection.membershipPeriods')}</h4>
+                  <h4 className="text-sm font-medium">{t('feeSection.membershipPeriods')}</h4>
                   {canEdit && !isEditingHistory && (
                     <Button
                       size="sm"
@@ -638,7 +638,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       onClick={() => setIsEditingHistory(true)}
                     >
                       <Edit className="h-4 w-4 mr-1" />
-                      {t('memberProfile.feeSection.editHistory')}
+                      {t('feeSection.editHistory')}
                     </Button>
                   )}
                   {canEdit && isEditingHistory && (
@@ -650,7 +650,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                         disabled={isSubmittingHistory}
                       >
                         <Save className="h-4 w-4 mr-1" />
-                        {t('memberProfile.feeSection.saveHistory')}
+                        {t('feeSection.saveHistory')}
                       </Button>
                       <Button
                         size="sm"
@@ -676,7 +676,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           <div key={period.period_id ?? index} className="p-3 border rounded-md bg-gray-50">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</label>
+                                <label className="text-xs text-gray-500">{t('history.startDate')}</label>
                                 <Input
                                   type="date"
                                   value={formatInputDate(period.start_date) ?? ''}
@@ -684,7 +684,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</label>
+                                <label className="text-xs text-gray-500">{t('history.endDate')}</label>
                                 <Input
                                   type="date"
                                   value={formatInputDate(period.end_date) ?? ''}
@@ -692,13 +692,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</label>
+                                <label className="text-xs text-gray-500">{t('history.endReason')}</label>
                                 <select
                                   className="w-full p-2 border rounded"
                                   value={period.end_reason ?? ''}
                                   onChange={(e) => handlePeriodChange(index, "end_reason", e.target.value as MembershipEndReason)}
                                 >
-                                  <option value="">{t('memberProfile.history.selectReason')}</option>
+                                  <option value="">{t('history.selectReason')}</option>
                                   {endReasonOptions.map(reason => (
                                     <option key={reason} value={reason}>
                                       {t(`memberProfile.history.reasons.${reason}`)}
@@ -712,17 +712,17 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 onClick={() => handleDeletePeriod(index)}
                               >
                                 <X className="h-4 w-4 mr-1" />
-                                {t('memberProfile.history.delete')}
+                                {t('history.delete')}
                               </Button>
                             </div>
                           </div>
                         ))}
                         {/* Add new period */}
                         <div className="p-3 border rounded-md bg-gray-50 border-dashed">
-                          <h5 className="text-sm font-medium mb-2">{t('memberProfile.history.addNewPeriod')}</h5>
+                          <h5 className="text-sm font-medium mb-2">{t('history.addNewPeriod')}</h5>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</label>
+                              <label className="text-xs text-gray-500">{t('history.startDate')}</label>
                               <Input
                                 type="date"
                                 value={formatInputDate(newPeriod?.start_date) ?? ''}
@@ -730,7 +730,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</label>
+                              <label className="text-xs text-gray-500">{t('history.endDate')}</label>
                               <Input
                                 type="date"
                                 value={formatInputDate(newPeriod?.end_date) ?? ''}
@@ -738,13 +738,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</label>
+                              <label className="text-xs text-gray-500">{t('history.endReason')}</label>
                               <select
                                 className="w-full p-2 border rounded"
                                 value={newPeriod?.end_reason ?? ""}
                                 onChange={(e) => setNewPeriod({ ...(newPeriod ?? {}), end_reason: e.target.value as MembershipEndReason })}
                               >
-                                <option value="">{t('memberProfile.history.selectReason')}</option>
+                                <option value="">{t('history.selectReason')}</option>
                                 {endReasonOptions.map(reason => (
                                   <option key={reason} value={reason}>
                                     {t(`memberProfile.history.reasons.${reason}`)}
@@ -758,7 +758,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                               onClick={handleAddPeriod}
                               disabled={!newPeriod?.start_date}
                             >
-                              {t('memberProfile.history.addPeriod')}
+                              {t('history.addPeriod')}
                             </Button>
                           </div>
                         </div>
@@ -770,16 +770,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           <div key={period.period_id ?? index} className="p-3 border rounded-md bg-gray-50">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <p className="text-xs text-gray-500">{t('memberProfile.history.startDate')}</p>
+                                <p className="text-xs text-gray-500">{t('history.startDate')}</p>
                                 <p>{format(new Date(period.start_date), 'dd.MM.yyyy')}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">{t('memberProfile.history.endDate')}</p>
+                                <p className="text-xs text-gray-500">{t('history.endDate')}</p>
                                 <p>{period.end_date ? format(new Date(period.end_date), 'dd.MM.yyyy') : ''}</p>
                               </div>
                               {period.end_reason && (
                                 <div className="col-span-2">
-                                  <p className="text-xs text-gray-500">{t('memberProfile.history.endReason')}</p>
+                                  <p className="text-xs text-gray-500">{t('history.endReason')}</p>
                                   <p>{translateEndReason(period.end_reason)}</p>
                                 </div>
                               )}
@@ -790,13 +790,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                     )}
                   </div>
                 ) : (
-                  <p className="text-gray-500 italic">{t('memberProfile.history.noHistory')}</p>
+                  <p className="text-gray-500 italic">{t('history.noHistory')}</p>
                 )}
 
                 {/* Prikaz ukupnog trajanja članstva */}
                 {membershipHistory?.totalDuration && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm font-medium">{t('memberProfile.feeSection.totalDuration')}:</p>
+                    <p className="text-sm font-medium">{t('feeSection.totalDuration')}:</p>
                     <p className="font-semibold text-lg">{membershipHistory.totalDuration}</p>
                   </div>
                 )}

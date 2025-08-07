@@ -1,0 +1,200 @@
+{
+    "welcome_male": "Dobrodošao {{name}}",
+    "welcome_female": "Dobrodošla {{name}}",
+    "overview": "Pregled nadzorne ploče",
+    "refreshing": "Osvježavam...",
+    "refreshData": "Osvježi podatke",
+    "messages": {
+        "title": "Poruke",
+        "unreadMessages": "Postoje nepročitane poruke",
+        "noUnreadMessages": "Nema nepročitanih poruka"
+    },
+    "activities": {
+        "allMyActivities": "Sve moje aktivnosti",
+        "totalActivities": "Ukupno aktivnosti",
+        "totalHours": "Ukupno sati",
+        "recentActivities": "Nedavne aktivnosti",
+        "inLast30Days": "U zadnjih 30 dana"
+    },
+    "members": {
+        "members": "Članovi",
+        "totalActiveMembers": "Ukupno redovnih članova",
+        "registered": "registrirano",
+        "active": "aktivno"
+    },
+    "profile": {
+        "profile": "Profil",
+        "yourUserProfile": "Vaš korisnički profil"
+    },
+    "membership": {
+        "myMembership": "Moje članstvo",
+        "membershipStatus": "Status članstva:",
+        "active": "Aktivan",
+        "passive": "Pasivan",
+        "membershipYear": "Godina članarine:",
+        "lifeStatus": "Životni status:",
+        "annualStamp": "Godišnja markica:",
+        "issued": "Izdana",
+        "notIssued": "Nije izdana"
+    },
+    "upcomingEvents": {
+        "title": "Nadolazeći događaji",
+        "noUpcomingEvents": "Trenutno nema nadolazećih događaja.",
+        "planned": "Najavljeno",
+        "active": "U tijeku"
+    },
+    "pendingRegistrations": {
+        "title": "Registracije na čekanju",
+        "awaitPasswordAssignment": "Čeka dodjelu lozinke"
+    },
+    "quickActions": {
+        "title": "Brze akcije",
+        "memberManagement": "Upravljanje članovima",
+        "activityApprovals": "Odobravanje aktivnosti",
+        "systemSettings": "Postavke sustava"
+    },
+    "errors": {
+        "errorCheckingMessages": "Greška prilikom provjere poruka"
+    },
+    "header": {
+        "welcome": "Dobrodošli, {{name}}",
+        "adminDashboard": "Administratorska nadzorna ploča",
+        "memberDashboard": "Članska nadzorna ploča",
+        "superUserDashboard": "Nadzorna ploča superusera"
+    },
+    "navigation": {
+        "memberManagement": {
+            "title": "Upravljanje članovima",
+            "description": "Upravljanje korisničkim računima i dozvolama"
+        },
+        "activityManagement": {
+            "title": "Upravljanje aktivnostima",
+            "description": "Upravljanje i praćenje aktivnosti"
+        },
+        "messages": {
+            "title": "Poruke",
+            "unreadMessages": "Postoje nepročitane poruke",
+            "noUnreadMessages": "Nema nepročitanih poruka"
+        }
+    },
+    "stampInventory": {
+        "title": "Inventar markica",
+        "editInventory": "Uredi inventar",
+        "showHistory": "Prikaži povijest",
+        "hideHistory": "Sakrij povijest",
+        "archiveYear": "Arhiviraj godinu",
+        "selectYear": "Odaberi godinu:",
+        "refresh": "Osvježi",
+        "save": "Spremi",
+        "cancel": "Odustani",
+        "stampTypes": {
+            "employedUnemployed": "Markice za zaposlene/nezaposlene članove",
+            "studentPupil": "Markice za djecu/učenike/studente",
+            "pensioner": "Markice za umirovljenike"
+        },
+        "fetchInventoryError": "Neuspjelo dohvaćanje inventara",
+        "fetchHistoryError": "Neuspjelo dohvaćanje povijesti markica",
+        "archiveSuccess": "Inventar uspješno arhiviran",
+        "archiveError": "Neuspjelo arhiviranje inventara",
+        "updatingInventory": "Ažuriranje inventara markica u tijeku...",
+        "updateInventoryError": "Neuspjelo ažuriranje inventara",
+        "inventoryUpdated": "Inventar markica za godinu {{year}} uspješno ažuriran",
+        "updateInventoryFailed": "Neuspješno ažuriranje inventara",
+        "refreshInventoryData": "Osvježi podatke inventara"
+    },
+    "stampHistory": {
+        "title": "Povijest inventara markica",
+        "loading": "Učitavanje povijesti...",
+        "empty": "Nema pronađenih zapisa. Povijest se kreira kada se inventar arhivira za novu godinu.",
+        "year": "Godina",
+        "initial": "Početno",
+        "issued": "Isporučeno",
+        "date": "Datum",
+        "by": "Arhivirao",
+        "notes": "Bilješke",
+        "noNotes": "-"
+    },
+    "equipmentInventory": {
+        "title": "Inventar opreme",
+        "refresh": "Osvježi",
+        "noData": "Nema podataka u tablicama",
+        "editInventory": "Uredi inventar",
+        "equipmentTypes": {
+            "tshirt": "Majica",
+            "shell_jacket": "Jakna (shell)",
+            "hat": "Kapa"
+        },
+        "tableHeaders": {
+            "size": "Veličina",
+            "gender": "Spol",
+            "initial": "Početno",
+            "issued": "Isporučeno",
+            "gifts": "Pokloni",
+            "remaining": "Preostalo"
+        },
+        "cardLabels": {
+            "initial": "Početno:",
+            "issued": "Isporučeno:",
+            "gifts": "Pokloni:",
+            "remaining": "Preostalo:"
+        },
+        "giftActions": {
+            "giftMarked": "Poklon označen",
+            "giftMarkedDescription": "{{equipmentType}} ({{size}}, {{gender}}) označen kao poklon",
+            "giftReturned": "Poklon vraćen",
+            "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) vraćen u inventar",
+            "error": "Greška",
+            "giftMarkError": "Neuspješno označavanje poklona",
+            "giftReturnError": "Neuspješno vraćanje poklona"
+        },
+        "modal": {
+            "title": "Uredi inventar - {{equipmentType}}",
+            "save": "Spremi promjene",
+            "cancel": "Odustani",
+            "saveSuccess": "Inventar uspješno ažuriran",
+            "saveError": "Greška pri ažuriranju inventara"
+        },
+        "gender": {
+            "male": "M",
+            "female": "Ž"
+        }
+    },
+    "equipmentDelivery": {
+        "title": "Status isporuke opreme",
+        "management": "Upravljanje isporukom opreme",
+        "tShirt": "Majica",
+        "shellJacket": "Jakna (shell)",
+        "hat": "Kapa",
+        "delivered": "isporučeno",
+        "notDelivered": "nije isporučeno",
+        "markAsDelivered": "označeno kao isporučeno",
+        "markAsUndelivered": "označeno kao neisporučeno",
+        "success": "Uspjeh",
+        "error": "Greška",
+        "failedToUpdate": "Neuspješno ažuriranje statusa isporuke",
+        "sizes": {
+            "tShirt": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "shellJacket": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "hat": {
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large"
+            }
+        }
+    }
+}

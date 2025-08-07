@@ -26,7 +26,7 @@ export default function MembershipCardForm({
   currentCardNumber 
 }: MembershipCardFormProps) {
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   const { length: cardNumberLength } = useCardNumberLength();
   const [cardNumber, setCardNumber] = useState<string>(currentCardNumber ?? "");
   const [stampIssued, setStampIssued] = useState(false);

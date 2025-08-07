@@ -1,0 +1,155 @@
+{
+    "statistics": {
+        "genderDistribution": "Gender Distribution",
+        "male": "Male:",
+        "female": "Female:",
+        "totalMembers": "Total members",
+        "activeMembers": "Active members",
+        "passiveMembers": "Passive members",
+        "categoryDistribution": "Category distribution",
+        "validMembership": "Valid membership",
+        "inactive": "Inactive",
+        "pending": "Pending",
+        "feeDistribution": "Membership fee distribution",
+        "feePaid": "Fee paid",
+        "feeRequired": "Payment required",
+        "ageDistribution": "Age group statistics",
+        "years": "{{range}} years"
+    },
+    "permissions": {
+        "addMemberPermissions": "Add administrative permissions to member",
+        "categories": {
+            "membership": "Membership",
+            "activities": "Activities",
+            "finances": "Finances",
+            "messages": "Messages",
+            "other": "Other"
+        },
+        "labels": {
+            "can_view_members": "View members",
+            "can_edit_members": "Edit members",
+            "can_add_members": "Add members",
+            "can_manage_membership": "Manage membership",
+            "can_view_activities": "View activities",
+            "can_create_activities": "Create activities",
+            "can_approve_activities": "Approve activities",
+            "can_view_financials": "View finances",
+            "can_manage_financials": "Manage finances",
+            "can_send_group_messages": "Send group messages",
+            "can_manage_all_messages": "Manage all messages",
+            "can_view_statistics": "View statistics",
+            "can_export_data": "Export data",
+            "can_manage_end_reasons": "Manage end reasons",
+            "can_manage_card_numbers": "Manage card numbers",
+            "can_assign_passwords": "Assign passwords"
+        },
+        "templates": {
+            "fullAdmin": "Full administrative access",
+            "operational": "Operational access"
+        },
+        "savePermissions": "Save Permissions",
+        "permissionsRemovedSuccess": "Permissions successfully removed.",
+        "removePermissionsError": "An error occurred while removing permissions.",
+        "managePermissions": "Manage Member Permissions",
+        "searchMembers": "Search members...",
+        "noMembersWithPermissions": "No members with permissions",
+        "noMembersWithPermissionsDescription": "There are currently no members assigned administrative permissions.",
+        "member": "Member",
+        "permissions": "Permissions",
+        "granted": "Granted",
+        "viewMembers": "View Members",
+        "editMembers": "Edit Members",
+        "more": "more",
+        "remove": "Remove"
+    },
+    "memberList": {
+        "printHeader": {
+            "title": "Mountaineering Club \"Promina\" Drniš",
+            "subtitle": "Member Enrollment List",
+            "totalMembers": "Total members",
+            "active": "Active",
+            "inactive": "Inactive",
+            "generated": "Generated"
+        },
+        "tabs": {
+            "list": "Member List",
+            "statistics": "Statistics"
+        },
+        "found": "Found",
+        "buttons": {
+            "filters": "Filters"
+        }
+    },
+    "printList": "Print List",
+    "addMember": "Add Member",
+    "addMemberForm": {
+        "title": "Add New Member",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "streetAddress": "Street Address",
+        "city": "City",
+        "oib": "OIB",
+        "cellPhone": "Cell Phone",
+        "email": "Email",
+        "addButton": "Add Member",
+        "cancelButton": "Cancel",
+        "oibTitle": "OIB must have exactly 11 digits"
+    },
+    "memberTable": {
+    "headers": {
+        "number": "NO.",
+        "member": "MEMBER",
+        "membership": "MEMBERSHIP",
+        "hours": "HOURS",
+        "actions": "ACTIONS",
+        "signature": "SIGNATURE"
+    },
+    "tooltips": {
+        "assignNumber": "Assign number",
+        "managePermissions": "Manage permissions"
+    },
+    "status": {
+        "pending": "Pending"
+    }
+},
+    "memberListFilters": {
+        "search": {
+            "placeholder": "Search name, surname...",
+            "clearSearch": "Clear search"
+        },
+        "filters": {
+            "activityStatus": "Activity status",
+            "sortBy": "Sort by"
+        },
+        "options": {
+            "allMembers": "All members",
+            "active": "Active",
+            "passive": "Passive",
+            "paid": "Paid",
+            "unpaid": "Unpaid",
+            "sortByName": "Sort by name",
+            "sortByHours": "Sort by hours"
+        },
+        "buttons": {
+            "adults": "Adults",
+            "group": "Group",
+            "colored": "Colored"
+        },
+        "tooltips": {
+            "showAllMembers": "Show all members",
+            "showOnlyAdults": "Show only adults",
+            "sortAscending": "Sort ascending",
+            "sortDescending": "Sort descending",
+            "disableGrouping": "Disable grouping",
+            "groupByMemberType": "Group by member type",
+            "showOnlyColoredRows": "Show only colored rows"
+        }
+    },
+    "membershipStatus": {
+        "pending": "Pending",
+        "regularMember": "Regular Member",
+        "honoraryMember": "Honorary Member",
+        "supportingMember": "Supporting Member",
+        "formerMember": "Former Member"
+    }
+}

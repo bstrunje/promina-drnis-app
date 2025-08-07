@@ -43,7 +43,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       toast({
         title: t("common.error"),
         description:
-          error instanceof Error ? error.message : t("dashboard.errors.errorCheckingMessages"),
+          error instanceof Error ? error.message : t("errors.errorCheckingMessages"),
         variant: "destructive",
       });
     }

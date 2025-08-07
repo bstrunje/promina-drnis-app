@@ -35,7 +35,7 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboards');
   const [isLoading, setIsLoading] = useState(false);
   const [equipmentStatus, setEquipmentStatus] = useState<EquipmentStatus | null>(null);
 

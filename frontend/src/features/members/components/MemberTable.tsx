@@ -42,7 +42,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   onAssignPassword,
   onAssignRole,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
 
   // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx

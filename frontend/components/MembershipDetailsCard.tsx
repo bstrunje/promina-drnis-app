@@ -15,7 +15,7 @@ interface MembershipDetailsCardProps {
 const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
   member,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   const { user } = useAuth();
 
   const getStatusColor = (status: Member["life_status"]) => {
@@ -45,14 +45,14 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
         <CardTitle>
           <div className="flex items-center">
             <CreditCard className="w-5 h-5 mr-2" />
-            {t('memberProfile.membershipDetails.title')}
+            {t('membershipDetails.title')}
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.cardNumber')}</label>
+            <label className="text-sm text-gray-500">{t('membershipDetails.cardNumber')}</label>
             {cardNumber ? (
               canViewCardNumber ? (
                 <p
@@ -65,43 +65,43 @@ const MembershipDetailsCard: React.FC<MembershipDetailsCardProps> = ({
               ) : (
                 <p className="text-gray-500">
                   <span className="inline-block px-3 py-1 bg-gray-100 rounded-lg">
-                    {t('memberProfile.membershipDetails.hidden')}
+                    {t('membershipDetails.hidden')}
                   </span>
                   <span className="text-xs ml-2 text-gray-400">
-                    {t('memberProfile.membershipDetails.visibleToAdmins')}
+                    {t('membershipDetails.visibleToAdmins')}
                   </span>
                 </p>
               )
             ) : (
-              <p className="text-gray-400 ml-2">{t('memberProfile.membershipDetails.noCardNumber')}</p>
+              <p className="text-gray-400 ml-2">{t('membershipDetails.noCardNumber')}</p>
             )}
           </div>
           <div>
-            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.stampStatus')}</label>
+            <label className="text-sm text-gray-500">{t('membershipDetails.stampStatus')}</label>
             <div className="flex items-center mt-1">
               <div className={`w-4 h-4 rounded-sm flex items-center justify-center mr-3 ${member.membership_details?.card_stamp_issued ? 'bg-black text-white' : 'border border-gray-300'}`}>
                 {member.membership_details?.card_stamp_issued && '✓'}
               </div>
               <span className="text-sm">
                 {member.membership_details?.card_stamp_issued
-                  ? t('memberProfile.membershipDetails.stampIssued')
-                  : t('memberProfile.membershipDetails.stampNotIssued')}
+                  ? t('membershipDetails.stampIssued')
+                  : t('membershipDetails.stampNotIssued')}
               </span>
             </div>
           </div>
           <div>
-            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.membershipType')}</label>
-            <p>{t(`membershipType.${member.membership_type}`)}</p>
+            <label className="text-sm text-gray-500">{t('membershipDetails.membershipType')}</label>
+            <p>{t(`membershipDetailsCard.membershipType.${member.membership_type}`)}</p>
           </div>
           {member.functions_in_society && member.functions_in_society.trim() !== '' && (
             <div>
-              <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.functionsInSocietyLabel')}</label>
+              <label className="text-sm text-gray-500">{t('personalInfo.functionsInSocietyLabel')}</label>
               <p>{member.functions_in_society}</p>
             </div>
           )}
           <div>
-            <label className="text-sm text-gray-500">{t('memberProfile.membershipDetails.role')}</label>
-            <p>{t(`roles.${member.role}`)}</p>
+            <label className="text-sm text-gray-500">{t('membershipDetails.role')}</label>
+            <p>{t(`membershipDetailsCard.roles.${member.role}`)}</p>
           </div>
 
           {(member.skills && member.skills.length > 0) || (member.other_skills && member.other_skills.trim() !== '') ? (

@@ -1,0 +1,200 @@
+{
+    "welcome_male": "Welcome {{name}}",
+    "welcome_female": "Welcome {{name}}",
+    "overview": "Dashboard Overview",
+    "refreshing": "Refreshing...",
+    "refreshData": "Refresh Data",
+    "messages": {
+        "title": "Messages",
+        "unreadMessages": "There are unread messages",
+        "noUnreadMessages": "No unread messages"
+    },
+    "activities": {
+        "allMyActivities": "All My Activities",
+        "totalActivities": "Total Activities",
+        "totalHours": "Total Hours",
+        "recentActivities": "Recent Activities",
+        "inLast30Days": "In the last 30 days"
+    },
+    "members": {
+        "members": "Members",
+        "totalActiveMembers": "Total Regular Members",
+        "registered": "registered",
+        "active": "active"
+    },
+    "profile": {
+        "profile": "Profile",
+        "yourUserProfile": "Your User Profile"
+    },
+    "membership": {
+        "myMembership": "My Membership",
+        "membershipStatus": "Membership Status:",
+        "active": "Active",
+        "passive": "Passive",
+        "membershipYear": "Membership Year:",
+        "lifeStatus": "Life Status:",
+        "annualStamp": "Annual Stamp:",
+        "issued": "Issued",
+        "notIssued": "Not Issued"
+    },
+    "upcomingEvents": {
+        "title": "Upcoming Events",
+        "noUpcomingEvents": "No upcoming events at the moment.",
+        "planned": "Planned",
+        "active": "Active"
+    },
+    "pendingRegistrations": {
+        "title": "Pending Registrations",
+        "awaitPasswordAssignment": "Await password assignment"
+    },
+    "quickActions": {
+        "title": "Quick Actions",
+        "memberManagement": "Member Management",
+        "activityApprovals": "Activity Approvals",
+        "systemSettings": "System Settings"
+    },
+    "errors": {
+        "errorCheckingMessages": "Error checking messages"
+    },
+    "header": {
+        "welcome": "Welcome, {{name}}",
+        "adminDashboard": "Admin Dashboard",
+        "memberDashboard": "Member Dashboard",
+        "superUserDashboard": "Super User Dashboard"
+    },
+    "navigation": {
+        "memberManagement": {
+            "title": "Member Management",
+            "description": "Manage member accounts and permissions"
+        },
+        "activityManagement": {
+            "title": "Activity Management",
+            "description": "Manage and monitor activities"
+        },
+        "messages": {
+            "title": "Messages",
+            "unreadMessages": "There are unread messages",
+            "noUnreadMessages": "No unread messages"
+        }
+    },
+    "stampInventory": {
+        "title": "Stamp Inventory",
+        "editInventory": "Edit Inventory",
+        "showHistory": "Show History",
+        "hideHistory": "Hide History",
+        "archiveYear": "Archive Year",
+        "selectYear": "Select Year:",
+        "refresh": "Refresh",
+        "save": "Save",
+        "cancel": "Cancel",
+        "stampTypes": {
+            "employedUnemployed": "Stamps for employed/unemployed members",
+            "studentPupil": "Stamps for pupils/students",
+            "pensioner": "Stamps for pensioners"
+        },
+        "fetchInventoryError": "Failed to fetch inventory",
+        "fetchHistoryError": "Failed to fetch stamp history",
+        "archiveSuccess": "Inventory successfully archived",
+        "archiveError": "Failed to archive inventory",
+        "updatingInventory": "Updating stamp inventory...",
+        "updateInventoryError": "Failed to update inventory",
+        "inventoryUpdated": "Stamp inventory for year {{year}} successfully updated",
+        "updateInventoryFailed": "Failed to update inventory",
+        "refreshInventoryData": "Refresh inventory data"
+    },
+    "stampHistory": {
+        "title": "Stamp Inventory History",
+        "loading": "Loading history...",
+        "empty": "No history records found. History is created when inventory is archived for a new year.",
+        "year": "Year",
+        "initial": "Initial",
+        "issued": "Issued",
+        "date": "Date",
+        "by": "By",
+        "notes": "Notes",
+        "noNotes": "-"
+    },
+    "equipmentInventory": {
+        "title": "Equipment Inventory",
+        "refresh": "Refresh",
+        "noData": "No data in the table",
+        "editInventory": "Edit Inventory",
+        "equipmentTypes": {
+            "tshirt": "T-Shirt",
+            "shell_jacket": "Shell Jacket",
+            "hat": "Hat"
+        },
+        "tableHeaders": {
+            "size": "Size",
+            "gender": "Gender",
+            "initial": "Initial",
+            "issued": "Issued",
+            "gifts": "Gifts",
+            "remaining": "Remaining"
+        },
+        "cardLabels": {
+            "initial": "Initial:",
+            "issued": "Issued:",
+            "gifts": "Gifts:",
+            "remaining": "Remaining:"
+        },
+        "giftActions": {
+            "giftMarked": "Gift Marked",
+            "giftMarkedDescription": "{{equipmentType}} ({{size}}, {{gender}}) marked as gift",
+            "giftReturned": "Gift Returned",
+            "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) returned to inventory",
+            "error": "Error",
+            "giftMarkError": "Failed to mark as gift",
+            "giftReturnError": "Failed to return gift"
+        },
+        "modal": {
+            "title": "Edit Inventory - {{equipmentType}}",
+            "save": "Save Changes",
+            "cancel": "Cancel",
+            "saveSuccess": "Inventory successfully updated",
+            "saveError": "Error updating inventory"
+        },
+        "gender": {
+            "male": "M",
+            "female": "F"
+        }
+    },
+    "equipmentDelivery": {
+        "title": "Equipment Delivery Status",
+        "management": "Equipment Delivery Management",
+        "tShirt": "T-Shirt",
+        "shellJacket": "Shell Jacket",
+        "hat": "Hat",
+        "delivered": "delivered",
+        "notDelivered": "not delivered",
+        "markAsDelivered": "marked as delivered",
+        "markAsUndelivered": "marked as undelivered",
+        "success": "Success",
+        "error": "Error",
+        "failedToUpdate": "Failed to update delivery status",
+        "sizes": {
+            "tShirt": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "shellJacket": {
+                "XS": "Extra Small",
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large",
+                "XXL": "Extra Extra Large"
+            },
+            "hat": {
+                "S": "Small",
+                "M": "Medium",
+                "L": "Large",
+                "XL": "Extra Large"
+            }
+        }
+    }
+}

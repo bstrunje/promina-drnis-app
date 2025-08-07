@@ -23,7 +23,7 @@ interface SkillsSelectorProps {
 }
 
 const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onChange, isEditing = true }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

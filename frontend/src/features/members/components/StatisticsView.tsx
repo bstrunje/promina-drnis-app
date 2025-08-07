@@ -12,7 +12,7 @@ interface StatisticsViewProps {
  * Komponenta za prikaz statistike članstva
  */
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   // Računanje dobnih skupina u rasponima od 5 godina
   const ageGroups = useMemo(() => {
     const groups: Record<string, number> = {};

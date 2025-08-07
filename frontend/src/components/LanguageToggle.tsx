@@ -3,16 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@components/ui/button';
 import { Globe } from 'lucide-react';
 
-const LanguageToggle: React.FC = () => {
+interface LanguageToggleProps {
+  onLanguageChange?: () => void;
+}
+
+const LanguageToggle: React.FC<LanguageToggleProps> = ({ onLanguageChange }) => {
   const { i18n } = useTranslation();
 
   const toggleLanguage = () => {
     const newLanguage = i18n.language === 'hr' ? 'en' : 'hr';
     i18n.changeLanguage(newLanguage);
+    if (onLanguageChange) onLanguageChange();
   };
 
   const currentLanguage = i18n.language === 'hr' ? 'HR' : 'EN';
-  const nextLanguage = i18n.language === 'hr' ? 'EN' : 'HR';
 
   return (
     <Button
@@ -20,7 +24,7 @@ const LanguageToggle: React.FC = () => {
       size="sm"
       onClick={toggleLanguage}
       className="flex items-center space-x-2 min-w-[70px]"
-      title={`Switch to ${nextLanguage}`}
+      title={`Switch to ${currentLanguage === 'HR' ? 'EN' : 'HR'}`}
     >
       <Globe className="h-4 w-4" />
       <span className="font-medium">{currentLanguage}</span>

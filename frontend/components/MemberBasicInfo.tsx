@@ -31,7 +31,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   onMemberChange,
 }) => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   const [showDetails, setShowDetails] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
 
@@ -58,7 +58,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <User className="h-5 w-5 mr-2" />
-              {t('memberProfile.personalInfo.title')}
+              {t('personalInfo.title')}
             </div>
             {canViewDetails && (
               showDetails ?
@@ -71,65 +71,65 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           {canViewDetails && showDetails ? (
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.fullName')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.fullName')}</label>
                 <p>
                   {member.first_name} {member.last_name}{member.nickname ? ` - ${member.nickname}` : ''}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.dateOfBirth')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.dateOfBirth')}</label>
                 <span className="ml-2">{formatDate(member?.date_of_birth)}</span>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.gender')}</label>
-                <span className="ml-2">{member?.gender ? t(`memberProfile.personalInfo.${member.gender}`) : ''}</span>
+                <label className="text-sm text-gray-500">{t('personalInfo.gender')}</label>
+                <span className="ml-2">{member?.gender ? t(`personalInfo.${member.gender}`) : ''}</span>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.oib')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.oib')}</label>
                 <span className="ml-2">{member?.oib}</span>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.email')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.email')}</label>
                 <p>{member.email}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.phone')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.phone')}</label>
                 <span className="ml-2">{member.cell_phone}</span>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.address')}</label>
+                <label className="text-sm text-gray-500">{t('personalInfo.address')}</label>
                 <p>{member.street_address},{member.city}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.lifeStatus')}</label>
-                <p>{t(`memberProfile.personalInfo.${member.life_status?.split('/')[0]}`)}</p>
+                <label className="text-sm text-gray-500">{t('personalInfo.lifeStatus')}</label>
+                <p>{t(`personalInfo.${member.life_status?.split('/')[0]}`)}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.tShirtSize')}</label>
-                <span className="ml-2">{member?.tshirt_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                <label className="text-sm text-gray-500">{t('personalInfo.tShirtSize')}</label>
+                <span className="ml-2">{member?.tshirt_size ?? t('personalInfo.notSet')}</span>
                 {member?.tshirt_delivered && (
                   <span className="ml-2 text-green-500 font-bold">✓</span>
                 )}
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.shellJacketSize')}</label>
-                <span className="ml-2">{member?.shell_jacket_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                <label className="text-sm text-gray-500">{t('personalInfo.shellJacketSize')}</label>
+                <span className="ml-2">{member?.shell_jacket_size ?? t('personalInfo.notSet')}</span>
                 {member?.shell_jacket_delivered && (
                   <span className="ml-2 text-green-500 font-bold">✓</span>
                 )}
               </div>
               <div>
-                <label className="text-sm text-gray-500">{t('memberProfile.personalInfo.hatSize')}</label>
-                <span className="ml-2">{member?.hat_size ?? t('memberProfile.personalInfo.notSet')}</span>
+                <label className="text-sm text-gray-500">{t('personalInfo.hatSize')}</label>
+                <span className="ml-2">{member?.hat_size ?? t('personalInfo.notSet')}</span>
                 {member?.hat_delivered && (
                   <span className="ml-2 text-green-500 font-bold">✓</span>
                 )}
               </div>
             </div>
           ) : canViewDetails ? (
-            <p className="text-sm text-gray-500 italic">{t('memberProfile.personalInfo.viewPrompt')}</p>
+            <p className="text-sm text-gray-500 italic">{t('personalInfo.viewPrompt')}</p>
           ) : (
-            <p className="text-sm text-gray-500 italic">{t('memberProfile.personalInfo.privatePrompt')}</p>
+            <p className="text-sm text-gray-500 italic">{t('personalInfo.privatePrompt')}</p>
           )}
         </CardContent>
       </Card>
@@ -141,13 +141,13 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
       <CardHeader>
         <CardTitle>
           <User className="h-5 w-5" />
-          {t('memberProfile.personalInfo.editTitle')}
+          {t('personalInfo.editTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.firstName')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.firstName')}</label>
             <input
               type="text"
               name="first_name"
@@ -160,7 +160,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.lastName')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.lastName')}</label>
             <input
               type="text"
               name="last_name"
@@ -173,19 +173,19 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.nickname')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.nickname')}</label>
             <input
               type="text"
               name="nickname"
               value={editedMember?.nickname ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
-              placeholder={t('memberProfile.personalInfo.nicknamePlaceholder')}
+              placeholder={t('personalInfo.nicknamePlaceholder')}
             />
           </div>
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium mb-1">
-              {t('memberProfile.personalInfo.dateOfBirth')}
+              {t('personalInfo.dateOfBirth')}
             </label>
             <input
               type="date"
@@ -201,22 +201,22 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.gender')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.gender')}</label>
             <select
               name="gender"
               value={editedMember?.gender ?? ""}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="male">{t('memberProfile.personalInfo.male')}</option>
-              <option value="female">{t('memberProfile.personalInfo.female')}</option>
+              <option value="male">{t('options.gender.male', { ns: 'profile' })}</option>
+              <option value="female">{t('options.gender.female', { ns: 'profile' })}</option>
             </select>
             {validationErrors?.gender && (
               <p className="text-sm text-red-500">{validationErrors.gender}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.oib')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.oib')}</label>
             <input
               type="text"
               name="oib"
@@ -231,7 +231,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.email')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.email')}</label>
             <input
               type="email"
               name="email"
@@ -244,7 +244,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.phone')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.phone')}</label>
             <input
               type="tel"
               name="cell_phone"
@@ -258,7 +258,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              {t('memberProfile.personalInfo.address')}
+              {t('personalInfo.address')}
             </label>
             <input
               type="text"
@@ -272,7 +272,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.city')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.city')}</label>
             <input
               type="text"
               name="city"
@@ -286,7 +286,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              {t('memberProfile.personalInfo.lifeStatus')}
+              {t('personalInfo.lifeStatus')}
             </label>
             <select
               name="life_status"
@@ -294,9 +294,9 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="employed/unemployed">{t('memberProfile.personalInfo.employed')}</option>
-              <option value="child/pupil/student">{t('memberProfile.personalInfo.child')}</option>
-              <option value="pensioner">{t('memberProfile.personalInfo.pensioner')}</option>
+              <option value="employed/unemployed">{t('personalInfo.employed')}</option>
+              <option value="child/pupil/student">{t('personalInfo.child')}</option>
+              <option value="pensioner">{t('personalInfo.pensioner')}</option>
             </select>
             {validationErrors?.life_status && (
               <p className="text-sm text-red-500">{validationErrors.life_status}</p>
@@ -305,16 +305,16 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
 
           {/* Add membership type dropdown */}
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.membershipType')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.membershipType')}</label>
             <select
               name="membership_type"
               value={editedMember?.membership_type ?? "regular"}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="regular">{t('membershipType.regular')}</option>
-              <option value="supporting">{t('membershipType.supporting')}</option>
-              <option value="honorary">{t('membershipType.honorary')}</option>
+              <option value="regular">{t('membershipDetailsCard.membershipType.regular', { ns: 'profile'})}</option>
+              <option value="supporting">{t('membershipDetailsCard.membershipType.supporting', { ns: 'profile'})}</option>
+              <option value="honorary">{t('membershipDetailsCard.membershipType.honorary', { ns: 'profile'})}</option>
             </select>
             {validationErrors?.membership_type && (
               <p className="text-sm text-red-500">{validationErrors.membership_type}</p>
@@ -322,7 +322,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.tShirtSize')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.tShirtSize')}</label>
             <select
               name="tshirt_size"
               value={editedMember?.tshirt_size ?? ""}
@@ -343,7 +343,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.shellJacketSize')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.shellJacketSize')}</label>
             <select
               name="shell_jacket_size"
               value={editedMember?.shell_jacket_size ?? ""}
@@ -364,7 +364,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">{t('memberProfile.personalInfo.hatSize')}</label>
+            <label className="block text-sm font-medium mb-1">{t('personalInfo.hatSize')}</label>
             <select
               name="hat_size"
               value={editedMember?.hat_size ?? ""}
@@ -386,8 +386,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              {t('memberProfile.personalInfo.functionsInSocietyLabel')}
-              <span className="text-xs text-gray-400 ml-1" title={t('memberProfile.personalInfo.functionsInSocietyTooltip')}>
+              {t('personalInfo.functionsInSocietyLabel')}
+              <span className="text-xs text-gray-400 ml-1" title={t('personalInfo.functionsInSocietyTooltip')}>
                 (?)
               </span>
             </label>
@@ -396,7 +396,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               name="functions_in_society"
               value={editedMember?.functions_in_society ?? ""}
               onChange={handleChange}
-              placeholder={t('memberProfile.personalInfo.functionsInSocietyPlaceholder')}
+              placeholder={t('personalInfo.functionsInSocietyPlaceholder')}
               className="w-full p-2 border rounded"
               maxLength={250}
             />

@@ -63,7 +63,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onToggleColoredRows,
   onCloseFilters
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
 
   // Handler funkcije s boljim tipovima
   const handleActiveFilterChange = (value: string) => {

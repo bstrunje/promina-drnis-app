@@ -2,7 +2,7 @@
  * Utility funkcije za rad s datumima, uključujući mogućnost simulacije datuma za testiranje
  */
 import { format, parseISO, isValid, parse } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { hr, enUS } from 'date-fns/locale';
 
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
 let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
@@ -471,4 +471,27 @@ export const formatMinutesToHoursAndMinutes = (totalMinutes: number | null | und
   const minutes = totalMinutes % 60;
 
   return `${hours}h ${minutes}m`;
+}
+/**
+ * Lokalizirani prikaz datuma prema jeziku ('hr', 'en', ...)
+ * @param dateString ISO string ili Date objekt
+ * @param localeCode 'hr' | 'en' (default 'hr')
+ * @param formatStr npr. 'P' (default), ili custom 'dd.MM.yyyy'
+ * @returns Lokalizirani string datuma
+ */
+export function formatDateLocalized(
+  dateString: string | Date,
+  localeCode: string = 'hr',
+  formatStr: string = 'P'
+): string {
+  if (!dateString) return '';
+  let dateObj: Date;
+  if (typeof dateString === 'string') {
+    dateObj = parseISO(dateString);
+  } else {
+    dateObj = dateString;
+  }
+  const locale = localeCode === 'hr' ? hr : enUS;
+  if (!isValid(dateObj)) return '';
+  return format(dateObj, formatStr, { locale });
 };

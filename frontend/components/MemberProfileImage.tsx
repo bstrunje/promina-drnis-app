@@ -16,7 +16,7 @@ interface Props {
 const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,8 +73,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
     // Validate file type
     if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
       toast({
-        title: t('memberProfile.profileImage.uploadErrorTitle'),
-        description: t('memberProfile.profileImage.unsupportedFormat'),
+        title: t('profileImage.uploadErrorTitle'),
+        description: t('profileImage.unsupportedFormat'),
         variant: "destructive",
       });
       return;
@@ -118,15 +118,15 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
       setImgKey(Date.now());
 
       toast({
-        title: t('memberProfile.profileImage.uploadSuccessTitle'),
-        description: t('memberProfile.profileImage.uploadSuccessDescription'),
+        title: t('profileImage.uploadSuccessTitle'),
+        description: t('profileImage.uploadSuccessDescription'),
         variant: "success",
       });
     } catch (error) {
       console.error('Image upload error:', error);
       toast({
-        title: t('memberProfile.profileImage.uploadErrorTitle'),
-        description: error instanceof Error ? error.message : t('memberProfile.profileImage.uploadFailed'),
+        title: t('profileImage.uploadErrorTitle'),
+        description: error instanceof Error ? error.message : t('profileImage.uploadFailed'),
         variant: "destructive",
       });
     } finally {
@@ -159,7 +159,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
         {isAdminOrSuperuser ? (
           <CardTitle>
             <User className="h-5 w-5 inline-block mr-2" />
-            {t('memberProfile.profileImage.title')}
+            {t('profileImage.title')}
           </CardTitle>
         ) : null}
         <button
@@ -184,14 +184,14 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt={t('memberProfile.profileImage.previewAlt')}
+                alt={t('profileImage.previewAlt')}
                 className="w-full h-full object-cover"
               />
             ) : displayImageSrc ? (
               <img
                 key={imgKey}
                 src={displayImageSrc}
-                alt={t('memberProfile.profileImage.profileAlt')}
+                alt={t('profileImage.profileAlt')}
                 className="w-full h-full object-cover"
                 onError={handleImageError}
                 crossOrigin="anonymous"
@@ -221,17 +221,17 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
                 className={`px-4 py-2 bg-black text-white rounded cursor-pointer hover:bg-blue-700 transition-colors ${isUploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
               >
-                {isUploading ? t('memberProfile.profileImage.uploading') : t('memberProfile.profileImage.uploadButton')}
+                {isUploading ? t('profileImage.uploading') : t('profileImage.uploadButton')}
               </label>
             </>
           )}
 
 {debugMode && (
             <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">
-              <p>{t('memberProfile.profileImage.imagePath')}: {imagePath ?? 'none'}</p>
-              <p>{t('memberProfile.profileImage.imageUrl')}: {displayImageSrc ?? 'none'}</p>
-              <p>{t('memberProfile.profileImage.failedToLoad')}: {imageFailed ? t('common.yes') : t('common.no')}</p>
-              <p>{t('memberProfile.profileImage.lastUpdated')}: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
+              <p>{t('profileImage.imagePath')}: {imagePath ?? 'none'}</p>
+              <p>{t('profileImage.imageUrl')}: {displayImageSrc ?? 'none'}</p>
+              <p>{t('profileImage.failedToLoad')}: {imageFailed ? t('common.yes') : t('common.no')}</p>
+              <p>{t('profileImage.lastUpdated')}: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
             </div>
           )}
         </div>

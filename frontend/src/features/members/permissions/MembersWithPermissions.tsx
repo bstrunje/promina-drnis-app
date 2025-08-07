@@ -14,7 +14,7 @@ interface MembersWithPermissionsProps {
 }
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   const { membersWithPermissions, loading, error, refreshMembersWithPermissions } = useMembersWithPermissions(activeTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   

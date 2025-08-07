@@ -98,7 +98,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <span>{t('navigation.dashboard')}</span>
             </Link>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
-              <LanguageToggle />
+            <LanguageToggle onLanguageChange={closeMenu} />
 
               <button
                 onClick={() => {

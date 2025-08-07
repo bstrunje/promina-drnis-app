@@ -249,7 +249,7 @@ useEffect(() => {
                   className="flex items-center space-x-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('memberProfile.messages.deleteAll')}</span>
+                  <span className="hidden sm:inline">{t('messages.deleteAll')}</span>
                   <span className="sm:hidden">{t('memberProfilemessages.deleteAllShort')}</span>
                 </Button>
               </div>

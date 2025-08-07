@@ -16,7 +16,7 @@ interface AnnualStat {
 }
 
 export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('profile');
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +52,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
       {/* Naslov s ikonom na lijevoj strani */}
       <div className="flex items-center mb-4">
         <History className="h-5 w-5 mr-3 text-gray-500" />
-        <h3 className="text-gray-700 font-semibold">{t('memberProfile.activityHistory.title')}</h3>
+        <h3 className="text-gray-700 font-semibold">{t('activityHistory.title')}</h3>
       </div>
       
       {/* Prikaz samo ukupnog broja aktivnosti */}
@@ -62,7 +62,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
         ) : (
           <div>
             <p className="text-3xl font-bold text-gray-800">{activityTotals.activities}</p>
-            <p className="text-sm text-gray-500">{t('memberProfile.activityHistory.totalActivities')}</p>
+            <p className="text-sm text-gray-500">{t('activityHistory.totalActivities')}</p>
           </div>
         )}
       </div>

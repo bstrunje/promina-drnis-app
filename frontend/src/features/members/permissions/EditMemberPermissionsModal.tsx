@@ -25,7 +25,7 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
   onClose,
   onSave
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   // Početne prazne ovlasti - koristi useMemo da objekt bude stabilan između rendera
   const emptyPermissions = React.useMemo<AdminPermissionsModel>(() => ({
     can_view_members: false,

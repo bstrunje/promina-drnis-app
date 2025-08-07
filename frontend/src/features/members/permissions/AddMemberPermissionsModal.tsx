@@ -14,7 +14,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
   onClose,
   onMemberSelect
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('members');
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

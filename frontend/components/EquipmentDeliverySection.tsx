@@ -22,7 +22,7 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
   onMemberUpdate,
 }) => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboards');
   const { toast } = useToast();
   
   // Lokalni state za equipment delivery status (po uzoru na StampManagementSection)
