@@ -114,16 +114,16 @@
         "notes": "Notes",
         "noNotes": "-"
     },
+    "equipmentTypes": {
+        "tshirt": "T-Shirt",
+        "shell_jacket": "Shell Jacket",
+        "hat": "Hat"
+    },
     "equipmentInventory": {
         "title": "Equipment Inventory",
         "refresh": "Refresh",
         "noData": "No data in the table",
         "editInventory": "Edit Inventory",
-        "equipmentTypes": {
-            "tshirt": "T-Shirt",
-            "shell_jacket": "Shell Jacket",
-            "hat": "Hat"
-        },
         "tableHeaders": {
             "size": "Size",
             "gender": "Gender",

@@ -114,16 +114,16 @@
         "notes": "Bilješke",
         "noNotes": "-"
     },
+    "equipmentTypes": {
+        "tshirt": "Majica",
+        "shell_jacket": "Jakna (shell)",
+        "hat": "Kapa"
+    },
     "equipmentInventory": {
         "title": "Inventar opreme",
         "refresh": "Osvježi",
         "noData": "Nema podataka u tablicama",
         "editInventory": "Uredi inventar",
-        "equipmentTypes": {
-            "tshirt": "Majica",
-            "shell_jacket": "Jakna (shell)",
-            "hat": "Kapa"
-        },
         "tableHeaders": {
             "size": "Veličina",
             "gender": "Spol",

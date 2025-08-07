@@ -83,7 +83,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
   };
 
   if (loading) {
-    return <div>{t('common.loading')}...</div>;
+    return <div>{t('loading', { ns: 'common'})}...</div>;
   }
 
   if (error) {

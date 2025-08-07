@@ -165,8 +165,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
         <button
           onClick={() => setDebugMode(!debugMode)}
           className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
-          title={t('common.toggleDebug')}
-          aria-label={t('common.toggleDebug')}
+          title={t('toggleDebug', { ns: 'common'})}
+          aria-label={t('toggleDebug', { ns: 'common'})}
           style={{ opacity: 0 }}
         >
           <Info className="h-4 w-4" />

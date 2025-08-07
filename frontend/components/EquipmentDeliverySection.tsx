@@ -69,7 +69,7 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
       
       toast({
         title: t('equipmentDelivery.success'),
-        description: `${t(`equipmentDelivery.${equipmentType === 'shell_jacket' ? 'shellJacket' : equipmentType}`)} ${newState ? t('equipmentDelivery.markAsDelivered') : t('equipmentDelivery.markAsUndelivered')}`,
+        description: `${t(`equipmentTypes.${equipmentType}`)} ${newState ? t('equipmentDelivery.markAsDelivered') : t('equipmentDelivery.markAsUndelivered')}`,
         variant: "default",
       });
       
