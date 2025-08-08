@@ -20,7 +20,7 @@ import {
 import { formatDate } from "../../../utils/dateUtils";
 import { Message } from '../types/messageTypes';
 import { convertApiMessagesToMessages } from '../utils/messageConverters';
-import { useAuth as useAuthHook } from '@/context/AuthContext';
+import { useAuth as useAuthHook } from '@/context/useAuth';
 
 interface ReceivedMessagesProps {
   userRole: string;
@@ -54,9 +54,14 @@ const fetchMessages = useCallback(async () => {
     setMessages(convertedData);
     const unreadCount = convertedData.filter(m => m.status === 'unread').length;
     onUnreadCountChange(unreadCount);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
-    if (error?.config?._retry === true) {
+    const isRetryFlagTrue = (
+      typeof error === 'object' && error !== null && 'config' in error &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error as any).config?._retry === true
+    );
+    if (isRetryFlagTrue) {
       toast({
         title: t('common.error'),
         description: error instanceof Error ? error.message : t('receivedMessages.messages.fetchError'),
@@ -67,7 +72,7 @@ const fetchMessages = useCallback(async () => {
   } finally {
     setLoading(false);
   }
-}, [userRole, user?.member_id, toast, onUnreadCountChange]);
+}, [userRole, user?.member_id, toast, onUnreadCountChange, t]);
 
 useEffect(() => {
     void fetchMessages();

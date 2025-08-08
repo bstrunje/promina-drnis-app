@@ -3,24 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@components/ui/collapsible';
-import { Separator } from '@components/ui/separator';
-import { Badge } from '@components/ui/badge';
-import { Bell, CheckCircle, MessageCircle, AlertCircle, ChevronDown, ChevronUp, Mail, RefreshCw, Send } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+// import {
+//   Collapsible,
+//   CollapsibleContent,
+//   CollapsibleTrigger,
+// } from '@components/ui/collapsible';
+// import { Separator } from '@components/ui/separator';
+// import { Badge } from '@components/ui/badge';
+import { Bell, CheckCircle, MessageCircle } from "lucide-react";
+import { useAuth } from "@/context/useAuth";
 import { Message as MessageType } from './types/messageTypes';
 import { getMemberMessages, markMessageAsRead, getMemberSentMessages, getGenericMessages } from '../../utils/api/apiMessages';
 import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from './utils/messageConverters';
 import SentMessageCard from './components/SentMessageCard';
-import { ApiAdminMessage, ApiGenericMessage } from '../../utils/api/apiTypes';
+import { ApiGenericMessage } from '../../utils/api/apiTypes';
 import BackToDashboard from "../../../components/BackToDashboard";
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";
-import { parseDate } from '../../utils/dateUtils';
+// import { parseDate } from '../../utils/dateUtils';
 
 interface MemberMessageRecipient {
   member_id: number;
@@ -73,7 +73,7 @@ const MemberMessageList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.member_id, toast]);
+  }, [user?.member_id, toast, t]);
 
   // Dohvaćanje poslanih poruka člana
   const fetchSentMessages = useCallback(async () => {
@@ -84,7 +84,6 @@ const MemberMessageList: React.FC = () => {
       const convertedData = apiData.map(convertMemberApiMessageToMessage);
       setSentMessages(convertedData);
     } catch (error) {
-      console.error("Error fetching sent messages:", error);
       toast({
         title: t('error'),
         description: t('fetchSentMessagesError'),
@@ -92,7 +91,7 @@ const MemberMessageList: React.FC = () => {
       });
     }
     setLoadingSent(false);
-  }, [user, toast]);
+  }, [user, toast, t]);
 
   // Označavanje poruke kao pročitane
   const handleMarkAsRead = useCallback(async (messageId: number) => {
@@ -114,7 +113,6 @@ const MemberMessageList: React.FC = () => {
       window.dispatchEvent(event);
 
     } catch (error) {
-      console.error(`Failed to mark message ${messageId} as read`, error);
       // Ovdje ne prikazujemo toast da ne ometamo korisnika
     }
   }, []); // Prazan niz ovisnosti jer unutra nema vanjskih varijabli
@@ -183,7 +181,7 @@ const MemberMessageList: React.FC = () => {
           <CardContent className="p-4 space-y-4">
             {genericMessages.map((msg) => (
               <div key={msg.id} className="p-4 rounded-md border bg-gray-50">
-                <div className="mb-2 text-sm text-gray-500">{formatDate(msg.timestamp || '', 'dd.MM.yyyy HH:mm:ss')}</div>
+                <div className="mb-2 text-sm text-gray-500">{formatDate(msg.timestamp ?? '', 'dd.MM.yyyy HH:mm:ss')}</div>
                 <div className="font-medium mb-1">{msg.sender}</div>
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               </div>

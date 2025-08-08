@@ -3,7 +3,7 @@
 import { FormEvent, useState, useEffect } from "react"; 
 import { Eye, EyeOff, LogIn, FileText, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";

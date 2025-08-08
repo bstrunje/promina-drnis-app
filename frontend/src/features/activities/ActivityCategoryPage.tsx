@@ -10,7 +10,7 @@ import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActiviti
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format, parseISO } from 'date-fns';
 import { hr, enUS } from 'date-fns/locale';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import CreateActivityModal from './CreateActivityModal';
 import { Badge } from '@components/ui/badge';
 import { calculateActivityHours, calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';

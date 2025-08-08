@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './activities.css';
 import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@components/ui/card';
+import { Card, CardHeader, CardTitle, CardFooter } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { getActivityTypes, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
 import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
-import { parseISO, format } from 'date-fns';
-import { Activity as ActivityIcon, Clock, Calendar, PlusCircle, AlertCircle, CheckCircle2, PlayCircle } from 'lucide-react';
-import { calculateGrandTotalHours, calculateTotalActivityHours, formatHoursToHHMM } from '@/utils/activityHours';
-import { useAuth } from '@/context/AuthContext';
+import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
+import { calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';
+import { useAuth } from '@/context/useAuth';
 import { useTranslation } from 'react-i18next';
 import CreateActivityModal from './CreateActivityModal';
 
@@ -38,13 +37,13 @@ const ActivitiesList: React.FC = () => {
       setActivityTypes(types);
       setAllActivities(activitiesWithDetails);
       setError(null);
-    } catch (err) {
-      console.error('Greška prilikom dohvaćanja podataka:', err);
+    } catch {
+      // Tihi fallback bez console logova radi ESLint pravila
       setError(t('list.error'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void fetchData();
@@ -59,7 +58,7 @@ const ActivitiesList: React.FC = () => {
         if (!activity.start_date) return new Date().getFullYear(); // Defaultno trenutna godina
         
         // Izvlačimo godinu iz ISO formata ili direktno iz datuma
-        let year;
+        let year: number;
         if (typeof activity.start_date === 'string') {
           // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
           year = parseInt(activity.start_date.substring(0, 4), 10);
@@ -79,7 +78,7 @@ const ActivitiesList: React.FC = () => {
   }, [allActivities]);
 
   // Dohvaćamo aktivnosti po statusu (ali zadržavamo sve aktivnosti u memoriji)
-  const completedActivities = allActivities.filter(activity => activity.status === 'COMPLETED');
+  const completedActivities = allActivities.filter(activity => activity.status === ActivityStatus.COMPLETED);
   
   // Direktno računamo ukupne sate svih aktivnosti, uključujući sve sudionike
   const totalCompletedHours = calculateGrandTotalHours(completedActivities);
@@ -88,7 +87,7 @@ const ActivitiesList: React.FC = () => {
   const yearHoursMap: Record<number, number> = {};
   activityYears.forEach(year => {
     const yearActivities = completedActivities.filter(activity => {
-      const activityYear = new Date(activity.start_date).getFullYear();
+      const activityYear: number = new Date(activity.start_date).getFullYear();
       return activityYear === year;
     });
     
@@ -148,7 +147,7 @@ const ActivitiesList: React.FC = () => {
               if (!activity.start_date) return false;
               
               // Izvlačimo godinu iz ISO formata ili direktno iz datuma
-              let activityYear;
+              let activityYear: number;
               if (typeof activity.start_date === 'string') {
                 // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
                 activityYear = parseInt(activity.start_date.substring(0, 4), 10);
@@ -158,7 +157,7 @@ const ActivitiesList: React.FC = () => {
                 activityYear = date.getFullYear();
               }
               
-              return activityYear === year && activity.status === 'COMPLETED';
+              return activityYear === year && activity.status === ActivityStatus.COMPLETED;
             });
             
             // Računamo ukupni broj aktivnosti u toj godini (sve aktivnosti, bez obzira na status)
@@ -167,7 +166,7 @@ const ActivitiesList: React.FC = () => {
               if (!activity.start_date) return false;
               
               // Izvlačimo godinu iz ISO formata ili direktno iz datuma
-              let activityYear;
+              let activityYear: number;
               if (typeof activity.start_date === 'string') {
                 // Ako je string, izvlačimo godinu iz ISO string formata (yyyy-mm-dd...)
                 activityYear = parseInt(activity.start_date.substring(0, 4), 10);
@@ -182,8 +181,8 @@ const ActivitiesList: React.FC = () => {
             const yearHours = calculateGrandTotalHours(yearActivities);
 
             // Provjera za aktivne i najavljene aktivnosti unutar godine
-            const hasActive = totalYearActivities.some(a => a.status === 'ACTIVE');
-            const hasPlanned = totalYearActivities.some(a => a.status === 'PLANNED');
+            const hasActive = totalYearActivities.some(a => a.status === ActivityStatus.ACTIVE);
+            const hasPlanned = totalYearActivities.some(a => a.status === ActivityStatus.PLANNED);
             
             // Link bi vodio na posebnu stranicu za pregled aktivnosti po godini
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi

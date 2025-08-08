@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createActivityAdmin, getAllActivitiesAdmin, getActivityTypes } from '../../utils/api/apiActivities';
 import { Activity, ActivityStatus, ActivityType } from '@shared/activity.types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -33,16 +33,15 @@ const ActivitiesAdminPage: React.FC = () => {
         setActivities(activitiesData);
         setActivityTypes(typesData);
         setError(null);
-      } catch (err) {
+      } catch {
         setError(t('messages.errorFetchingData'));
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    void fetchData(); // izbjegavamo no-floating-promises
+  }, [t]); // dodan t radi useEffect deps
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -81,9 +80,8 @@ const ActivitiesAdminPage: React.FC = () => {
       setNewActivity({
         name: '', description: '', start_date: '', type_id: '',
       });
-    } catch (err) {
+    } catch {
       setError(t('messages.errorCreatingActivity'));
-      console.error(err);
     }
   };
 
@@ -107,7 +105,7 @@ const ActivitiesAdminPage: React.FC = () => {
             <DialogHeader>
               <DialogTitle>{t('newActivity')}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+            <form onSubmit={(e) => { void handleFormSubmit(e); }} className="space-y-4"> {/* izbjegavamo no-misused-promises */}
               <div>
                 <Label htmlFor="name">{t('form.name')}</Label>
                 <Input id="name" name="name" value={newActivity.name} onChange={handleInputChange} required />

@@ -12,7 +12,7 @@ const LanguageToggle: React.FC<LanguageToggleProps> = ({ onLanguageChange }) => 
 
   const toggleLanguage = () => {
     const newLanguage = i18n.language === 'hr' ? 'en' : 'hr';
-    i18n.changeLanguage(newLanguage);
+    void i18n.changeLanguage(newLanguage); // namjerno ignoriramo Promise radi ESLint pravila
     if (onLanguageChange) onLanguageChange();
   };
 

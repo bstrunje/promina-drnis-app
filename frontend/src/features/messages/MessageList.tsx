@@ -11,7 +11,7 @@ import {
   PlusCircle, 
   Bell 
 } from "lucide-react";
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import AdminMessageSender from './AdminMessageSender';
 import MemberMessageList from './MemberMessageList';
 import BackToDashboard from '../../../components/BackToDashboard';

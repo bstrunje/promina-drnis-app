@@ -4,7 +4,7 @@ import './activities.css';
 import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getActivityById, cancelActivity as apiCancelActivity, joinActivity, leaveActivity } from '../../utils/api/apiActivities';
 import { Activity } from '@shared/activity.types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
 import { formatHoursToHHMM, calculateActivityHours } from '@/utils/activityHours';
 import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban, AlertCircle, CheckCircle2, PlayCircle, Clock } from 'lucide-react';

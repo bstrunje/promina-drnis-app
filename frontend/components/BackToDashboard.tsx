@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, LayoutDashboard } from 'lucide-react';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../src/context/useAuth';
 
 /**
  * Komponenta koja prikazuje gumb za povratak na dashboard

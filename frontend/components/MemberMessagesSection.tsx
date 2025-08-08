@@ -5,7 +5,7 @@ import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { sendMemberMessage } from '../src/utils/api';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../src/context/useAuth';
 import { MessageSquare } from 'lucide-react';
 
 interface MemberMessagesSectionProps {

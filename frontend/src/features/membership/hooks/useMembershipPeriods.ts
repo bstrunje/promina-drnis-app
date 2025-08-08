@@ -5,7 +5,7 @@ import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
 import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { useTranslation } from "react-i18next";
 
 // Ispravno deklariran interface, koristi isključivo tipove

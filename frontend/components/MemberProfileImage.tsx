@@ -5,7 +5,7 @@ import { Member } from '@shared/member';
 import { API_BASE_URL } from '../src/utils/config';
 import { User, Info } from 'lucide-react';
 import { formatDate } from '../src/utils/dateUtils';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../src/context/useAuth';
 import { useTranslation } from 'react-i18next';
 
 interface Props {

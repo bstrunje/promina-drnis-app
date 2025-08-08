@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@components/ui/collapsible";
 import { Badge } from "@components/ui/badge";
 import { Separator } from "@components/ui/separator";
-import { ChevronDown, ChevronUp, Users, User, MessageSquare, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Users, User, Clock } from 'lucide-react';
 import { formatDate } from "../../../utils/dateUtils";
 import { Message as MessageType } from '../types/messageTypes';
 
@@ -17,7 +17,7 @@ export default function SentMessageCard({ message, currentUserId }: SentMessageC
 
   const isMessageToAdmin = message.recipient_type === 'member_administrator';
 
-  const recipients = message.read_by?.filter(r => r.member_id !== String(currentUserId)) || [];
+  const recipients = message.read_by?.filter(r => r.member_id !== String(currentUserId)) ?? [];
   const readCount = recipients.filter(r => r.read_at).length;
 
   const getMessageTitle = () => {

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 /**
  * Komponenta koja upravlja preusmjeravanjem nakon uspješne prijave
@@ -13,13 +13,12 @@ const LoginRedirect: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Dobavi putanju iz URL-a ili session storage-a
-      const redirectPath = searchParams.get('redirect') || sessionStorage.getItem('lastPath');
+      const redirectPath = searchParams.get('redirect') ?? sessionStorage.getItem('lastPath');
       
       // Očisti spremljenu putanju
       sessionStorage.removeItem('lastPath');
       
       if (redirectPath && redirectPath !== '/' && redirectPath !== '/login') {
-        console.log(`Preusmjeravanje na spremljenu putanju: ${redirectPath}`);
         navigate(redirectPath);
       } else {
         // Preusmjeri korisnika na odgovarajući dashboard prema ulozi (role)

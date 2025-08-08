@@ -1,26 +1,16 @@
 // frontend/src/context/AuthContext.tsx
-import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
-import axios from "axios";
+import React, { useState, ReactNode, useEffect } from "react";
 import { Member } from "@shared/member";
 import { tokenStorage } from '../utils/auth/tokenStorage';
 import { setupAxiosInterceptors } from '../utils/auth/axiosInterceptors';
 import { AuthTokenService } from '../utils/auth/AuthTokenService';
 import { useNavigate } from 'react-router-dom';
 import { setNavigateInstance } from '../utils/auth/navigationHelper';
+import { AuthContext, AuthContextType } from './authContextObject';
 
-interface AuthContextType {
-  user: Member | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  login: (user: Member, token: string, refreshToken?: string) => void;
-  logout: () => void | Promise<void>;
-  refreshToken: () => Promise<string | null>;
-  isLoading: boolean;
-  softLogout: () => void; // Dodano za 'soft logout'
-  lastPath: string | null; // Dodano za praćenje posljednje putanje
-}
+// Tip premješten u 'context/authContextObject.ts'
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Objekt konteksta je izdvojen u 'context/authContextObject.ts'
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -37,8 +27,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Ne radimo preusmjeravanje ovdje jer to radi App.tsx
   const logout = React.useCallback(async () => {
     try {
-      console.log("Započinjem proces odjave korisnika...");
-      
       // Spremimo trenutnu putanju u slučaju da je kasnije trebamo
       if (window?.location && window.location.pathname !== '/' && window.location.pathname !== '/login') {
         sessionStorage.setItem('lastPath', window.location.pathname);
@@ -46,15 +34,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       
       // Pozovi backend za odjavu
       await AuthTokenService.logout();
-    } catch (error) {
-      console.error("Greška pri odjavi na backendu:", error);
+    } catch {
+      // Tihi fallback: backend odjava nije uspjela
     } finally {
       // Lokalno brisanje podataka o korisniku
       setUser(null);
       setToken(null);
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
-      console.log("Korisnik odjavljen lokalno");
     }
   }, []);
   
@@ -74,8 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       
       // Preusmjeri na login stranicu s query parametrom koji kaže da je soft-logout
       navigate(`/login?soft=true&redirect=${encodeURIComponent(currentPath)}`);
-    } catch (error) {
-      console.error("Greška pri soft-logout:", error);
+    } catch {
       // U slučaju greške, napravi puni logout
       void logout();
     }
@@ -85,7 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Funkcija za obnavljanje tokena - koristi AuthTokenService s retry mehanizmom
   const refreshToken = React.useCallback(async (): Promise<string | null> => {
     try {
-      // console.log('Pokušavam osvježiti token...');
       const newToken = await AuthTokenService.refreshToken();
       
       if (newToken) {
@@ -96,8 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Ako nije uspjelo osvježavanje, NE čistimo odmah stanje korisnika
       // Ovo je ključna promjena koja će spriječiti automatsko odjavljivanje
       return null;
-    } catch (error) {
-      console.error("Greška pri obnavljanju tokena:", error);
+    } catch {
       return null;
     }
   }, []);
@@ -113,7 +97,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
     
     // Pokreni automatsko osvježavanje tokena
-    // console.log('Pokrećem automatsko osvježavanje tokena nakon prijave');
     AuthTokenService.startAutoRefresh();
   }, []);
 
@@ -152,32 +135,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           
           // Pokušaj osvježiti token kako bi provjerili je li još valjan
           try {
-            //console.log('Provjera valjanosti tokena pri inicijalizaciji...');
             const newToken = await refreshToken();
             
             if (!newToken) {
-              // console.log('Token nije mogao biti osvježen, ali nećemo odmah odjaviti korisnika');
               // VAŽNA PROMJENA: Ne čistimo odmah stanje korisnika, postavljamo timer
               // koji će pokušati ponovno osvježiti token kasnije
               setTimeout(() => {
-                // console.log('Pokušavam ponovno osvježiti token nakon odgode...');
                 void refreshToken();
               }, 5000);  // Pokušaj ponovno nakon 5 sekundi
             } else {
-              // console.log('Token je uspješno osvježen pri inicijalizaciji');
               // Pokreni automatsko osvježavanje tokena
-              // console.log('Pokrećem automatsko osvježavanje tokena pri inicijalizaciji');
               AuthTokenService.startAutoRefresh();
             }
-          } catch (refreshError) {
-            // Greška pri osvježavanju tokena
-            console.error('Greška pri provjeri tokena:', refreshError);
+          } catch {
             // VAŽNA PROMJENA: Ne čistimo odmah stanje, postavljamo flag da je token možda nevažeći
-            // console.log('Token je možda nevažeći, ali zadržavamo stanje korisnika');
           }
         }
-      } catch (error) {
-        console.error("Greška pri učitavanju korisničkih podataka iz localStorage:", error);
+      } catch {
+        // Tihi fallback: ne prekidamo inicijalizaciju ako localStorage/dohvat korisnika padne
       } finally {
         setIsLoading(false);
       }
@@ -194,8 +169,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // Čišćenje interceptora pri unmount-u
     return cleanup;
   }, [token, refreshToken, logout]); // Ponovno postavi interceptore kada se token, logout ili refreshToken promijeni
-
-  // Napomena: login funkcija je definirana iznad
 
   // Vrijednosti koje se pružaju kroz context
   const contextValue: AuthContextType = {
@@ -217,18 +190,5 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
-
-// Tip za odgovor prilikom osvježavanja tokena
-export interface RefreshTokenResponse {
-  accessToken: string;
-  refreshToken?: string;
-}
-
-export default AuthContext;
+// Ova datoteka izvozi SAMO komponentu (radi react-refresh pravila)
+export default AuthProvider;

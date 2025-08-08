@@ -6,7 +6,7 @@ import { Button } from "@components/ui/button";
 import { Message as MessageType } from '../types/messageTypes';
 import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from '../utils/messageConverters';
 import SentMessageCard from './SentMessageCard';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 
 interface SentMessagesProps {
   userRole: string;
@@ -19,7 +19,6 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
   const [loadingSent, setLoadingSent] = useState(true);
 
   const fetchSentMessages = useCallback(async (): Promise<void> => {
-    console.log('--- PROVJERA ULOGE --- Trenutna userRole je:', userRole);
     setLoadingSent(true);
     try {
       let convertedData: MessageType[];
@@ -44,7 +43,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
     } finally {
       setLoadingSent(false);
     }
-  }, [userRole, toast]);
+  }, [userRole, toast, t]);
 
   useEffect(() => {
     void fetchSentMessages();

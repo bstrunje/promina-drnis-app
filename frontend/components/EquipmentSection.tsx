@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { Package, CheckCircle, XCircle, Gift } from "lucide-react";
 import { Member } from "@shared/member";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../src/context/useAuth";
 import { useToast } from "@components/ui/use-toast";
 import api from "../src/utils/api/apiConfig";
 

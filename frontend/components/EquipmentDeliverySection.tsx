@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { Label } from "@components/ui/label";
 import { Checkbox } from "@components/ui/checkbox";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../src/context/useAuth";
 import { useToast } from "@components/ui/use-toast";
 import api from "../src/utils/api/apiConfig";
 

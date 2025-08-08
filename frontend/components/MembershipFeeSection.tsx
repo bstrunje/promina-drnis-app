@@ -19,7 +19,7 @@ import {
   X 
 } from 'lucide-react';
 import { formatInputDate } from '../src/utils/dateUtils';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../src/context/useAuth';
 // Zamijenjeno: koristi novi adapter iz modularnog membership feature-a
 import MembershipCardManagerAdapter from '../src/features/membership/MembershipCardManagerAdapter';
 // Ako koristiš MembershipCardManager u JSX-u, zamijeni ga s MembershipCardManagerAdapter

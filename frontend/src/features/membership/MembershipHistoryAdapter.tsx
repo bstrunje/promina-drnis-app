@@ -1,7 +1,7 @@
 import React from "react";
 import { MembershipPeriod } from "@shared/membership";
 import { Member } from "@shared/member";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import MembershipPeriodsSection from "./components/MembershipPeriodsSection";
 
 /**

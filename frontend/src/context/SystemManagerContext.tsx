@@ -5,7 +5,7 @@ import { systemManagerLogin, systemManagerLogout, systemManagerRefreshToken } fr
 import { SystemManagerLoginData, SystemManager } from '@shared/systemManager';
 
 // Definicija tipa za kontekst
-type SystemManagerContextType = {
+interface SystemManagerContextType {
   isAuthenticated: boolean;
   manager: SystemManager | null;
   login: (credentials: SystemManagerLoginData) => Promise<void>;
@@ -13,17 +13,17 @@ type SystemManagerContextType = {
   loading: boolean;
   refreshManager: () => Promise<void>;
   refreshToken: () => Promise<void>;
-};
+}
 
 // Default vrijednosti za kontekst
 const defaultContext: SystemManagerContextType = {
   isAuthenticated: false,
   manager: null,
-  login: async () => { /* Implementacija će biti dostavljena kroz Provider */ },
+  login: () => Promise.resolve(), // Implementacija će biti dostavljena kroz Provider
   logout: () => { /* Implementacija će biti dostavljena kroz Provider */ },
   loading: true,
-  refreshManager: async () => { /* Implementacija će biti dostavljena kroz Provider */ },
-  refreshToken: async () => { /* Implementacija će biti dostavljena kroz Provider */ }
+  refreshManager: () => Promise.resolve(), // Implementacija će biti dostavljena kroz Provider
+  refreshToken: () => Promise.resolve() // Implementacija će biti dostavljena kroz Provider
 };
 
 // Kreiranje konteksta
@@ -84,7 +84,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   }, []);
 
   // Funkcija za osvježavanje podataka managera
-  const refreshManager = React.useCallback(async () => {
+  const refreshManager = React.useCallback((): Promise<void> => {
     // console.log('Osvježavam podatke System Managera...');
     
     const systemManagerToken = localStorage.getItem('systemManagerToken');
@@ -107,7 +107,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       console.warn('System Manager token nedostaje - odjavljujem System Managera');
       setManager(null);
       setIsAuthenticated(false);
-      return;
+      return Promise.resolve();
     }
     
     if (storedManager) {
@@ -132,6 +132,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       setManager(null);
       setIsAuthenticated(false);
     }
+    return Promise.resolve();
   }, [setManager, setIsAuthenticated]);
 
   // Funkcija za prijavu

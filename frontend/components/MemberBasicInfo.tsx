@@ -6,7 +6,7 @@ import { Member, MemberSkill } from "@shared/member";
 import SkillsSelector from './SkillsSelector';
 import EquipmentDeliverySection from './EquipmentDeliverySection';
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../src/context/useAuth";
 
 
 interface MemberBasicInfoProps {

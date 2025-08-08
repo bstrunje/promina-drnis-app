@@ -154,7 +154,7 @@ Za zaštitu frontend ruta koristi se ProtectedRoute komponenta:
 ```tsx
 // ProtectedRoute.tsx
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -558,7 +558,7 @@ if (req.cookies.systemManagerRefreshToken) {
 ```tsx
 // LoginForm.tsx
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export function LoginForm() {
@@ -620,7 +620,7 @@ export function LoginForm() {
 
 ```tsx
 // AdminPanel.tsx
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 export function AdminPanel() {
   const { isAdmin, isSuperUser } = useAuth();

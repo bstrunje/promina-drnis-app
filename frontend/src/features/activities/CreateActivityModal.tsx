@@ -16,7 +16,7 @@ import {
 import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { MemberSelect } from './MemberSelect';
 import MemberRoleSelect, { MemberWithRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { ActivityType } from '@shared/activity.types';

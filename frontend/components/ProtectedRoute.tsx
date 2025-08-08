@@ -1,7 +1,7 @@
 // frontend/components/ProtectedRoute.tsx
 import React, { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../src/context/useAuth';
 import { API_BASE_URL } from '../src/utils/config';
 import axios from 'axios';
 

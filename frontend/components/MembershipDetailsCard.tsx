@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
 import { Clock, CreditCard, Star } from 'lucide-react';
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../src/context/useAuth";
 import { formatMinutesToHoursAndMinutes } from "../src/utils/dateUtils";
 import SkillsSelector from './SkillsSelector';
 import MemberActivityStatus from './MemberActivityStatus';

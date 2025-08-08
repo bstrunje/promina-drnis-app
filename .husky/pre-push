@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+# Husky pre-push hook
+# Delegira lint na PowerShell skriptu, u skladu s projektnim pravilima
+
+# Provjera postoji li PowerShell (pwsh)
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoLogo -NoProfile -File ./scripts/lint.ps1
+  exit $?
+fi
+
+# Fallback: pokušaj powershell (Windows)
+if command -v powershell >/dev/null 2>&1; then
+  powershell -NoLogo -NoProfile -File ./scripts/lint.ps1
+  exit $?
+fi
+
+# Ako nema PowerShella, nemoj blokirati push, samo upozori
+echo "[Husky] PowerShell nije pronađen; preskačem lint."
+exit 0

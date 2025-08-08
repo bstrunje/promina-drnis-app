@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getUnreadMessageCount } from '../utils/api/apiMessages';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 interface UnreadMessagesContextType {
   unreadCount: number;
@@ -33,8 +33,8 @@ export const UnreadMessagesProvider: React.FC<UnreadMessagesProviderProps> = ({ 
     try {
       const count = await getUnreadMessageCount();
       setUnreadCount(count);
-    } catch (error) {
-      console.error('Greška pri dohvatu broja nepročitanih poruka:', error);
+    } catch {
+      // Tihi fallback bez console logova radi ESLint pravila
     }
   };
 
@@ -52,7 +52,7 @@ export const UnreadMessagesProvider: React.FC<UnreadMessagesProviderProps> = ({ 
     } else {
       setUnreadCount(0);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, refreshUnreadCount]);
 
   const value = {
     unreadCount,

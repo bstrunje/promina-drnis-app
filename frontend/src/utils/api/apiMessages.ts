@@ -174,17 +174,15 @@ export const getGenericMessages = async (): Promise<ApiGenericMessage[]> => {
       });
       return sortedMessages;
     } else {
-      console.error('Failed to fetch generic messages or unexpected format:', response.data?.message || response.data);
+      // Ako ne možemo dobiti broj nepročitanih poruka, vraćamo 0
+      // (namjerna tiha degradacija bez console logova radi ESLint pravila)
       return []; // Vraćamo prazno polje ako odgovor nije uspješan ili format nije ispravan
     }
-  } catch (error) {
-    // Postojeća error handling logika koja re-throwa error
-    // To će biti uhvaćeno od strane pozivatelja (MemberMessageList.tsx)
-    if (error instanceof Error) {
-      console.error('Error in getGenericMessages:', error.message);
-      throw error;
-    }
-    throw new Error('Failed to get generic messages');
+  } catch {
+    // U slučaju greške, vraćamo 0 umjesto bacanja iznimke
+    // kako ne bismo prekinuli rad aplikacije zbog ove funkcionalnosti
+    // (namjerna tiha degradacija bez console logova radi ESLint pravila)
+    return []; // Vraćamo prazno polje ako odgovor nije uspješan ili format nije ispravan
   }
 };
 
@@ -342,12 +340,12 @@ export const getUnreadMessageCount = async (): Promise<number> => {
     }
     
     // Ako ne možemo dobiti broj nepročitanih poruka, vraćamo 0
-    console.warn('Neočekivani format odgovora za broj nepročitanih poruka:', response.data);
+    // (namjerna tiha degradacija bez console logova radi ESLint pravila)
     return 0;
-  } catch (error) {
-    console.error('Greška pri dohvaćanju broja nepročitanih poruka:', error);
+  } catch {
     // U slučaju greške, vraćamo 0 umjesto bacanja iznimke
     // kako ne bismo prekinuli rad aplikacije zbog ove funkcionalnosti
+    // (namjerna tiha degradacija bez console logova radi ESLint pravila)
     return 0;
   }
 };

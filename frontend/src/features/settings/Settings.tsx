@@ -7,7 +7,7 @@ import axios from "axios";
 import { API_BASE_URL } from "@/utils/config";
 import { getCurrentDate } from "../../utils/dateUtils";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 import CardNumberManagement from './CardNumberManagement';
 

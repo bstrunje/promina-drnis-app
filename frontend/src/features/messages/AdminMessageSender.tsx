@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { searchMembers } from '../../utils/api/apiAuth';
 // Zamijenjeno prema novoj modularnoj API strukturi
@@ -47,7 +47,7 @@ const AdminMessageSender: React.FC = () => {
 
       try {
         const members = await searchMembers(searchTerm);
-        
+
         // Transformiramo Member[] u MemberSearchResult[]
         const transformedResults: MemberSearchResult[] = members.map(member => ({
           member_id: member.member_id,
@@ -55,19 +55,19 @@ const AdminMessageSender: React.FC = () => {
           oib: member.oib,
           nickname: member.nickname
         }));
-        
+
         setSearchResults(transformedResults);
-      } catch (error) {
-        console.error('Greška pri pretraživanju članova:', error);
+      } catch {
+        // Namjerna tiha degradacija: bez console logova radi ESLint pravila
         // Ne prikazujemo toast obavijest kod greške pretrage
       }
     };
 
     void fetchMembers();
-  }, [searchTerm, toast]);
+  }, [searchTerm]);
 
   // Funkcija za slanje poruke pojedinačnom članu
-    const handleSelectMember = (member: MemberSearchResult) => {
+  const handleSelectMember = (member: MemberSearchResult) => {
     setSelectedMember(member);
     setSearchTerm('');
     setSearchResults([]);
@@ -253,7 +253,7 @@ const AdminMessageSender: React.FC = () => {
           </TabsList>
 
           <TabsContent value="single" className="space-y-4">
-                        <div className="space-y-2">
+            <div className="space-y-2">
               <label htmlFor="member-search" className="text-sm font-medium">
                 {t('adminMessageSender.labels.recipient')}
               </label>

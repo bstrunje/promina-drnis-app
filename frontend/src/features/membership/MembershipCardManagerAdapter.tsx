@@ -1,7 +1,7 @@
 import React from "react";
 import { Member } from "@shared/member";
 import MembershipCardManagerModular from "./components/MembershipCardManagerModular";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 /**
  * Adapter za MembershipCardManager komponentu koji koristi modularnu arhitekturu
