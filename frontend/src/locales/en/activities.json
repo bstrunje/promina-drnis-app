@@ -252,7 +252,10 @@
             "regular": "Participant"
         },
         "participants": {
-            "searchPlaceholder": "Search participants..."
+            "searchPlaceholder": "Search and add participants...",
+            "role": "Role",
+            "selectedParticipants": "Selected Participants",
+            "addFromList": "Add participants from the list."
         },
         "editing": {
             "error": "Error",

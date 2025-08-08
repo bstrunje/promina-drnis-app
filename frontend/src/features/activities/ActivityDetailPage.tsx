@@ -22,7 +22,7 @@ import {
 } from '@components/ui/dialog';
 import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
-import { ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
+import { ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
 
 // Mapiraj oznake uloga; tipizirano bez 'any'
 const getRoleLabels = (t: TFunction): Record<ParticipantRole, string> => ({

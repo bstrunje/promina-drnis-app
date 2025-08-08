@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { getCurrentDate } from '../../../utils/dateUtils';

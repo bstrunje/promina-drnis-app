@@ -52,7 +52,7 @@ export function getMembershipDisplayStatusExternal(
     if (!detailedStatus) return { key: "unknown", displayText: "" };
 
   // Fallback funkcija ako t nije proslijeđena (za backward compatibility)
-  const translate = t || ((key: string) => {
+  const translate = t ?? ((key: string) => {
     const fallbacks: Record<string, string> = {
       'membershipStatus.pending': 'Na čekanju',
       'membershipStatus.regularMember': 'Redovni član',

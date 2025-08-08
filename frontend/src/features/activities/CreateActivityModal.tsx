@@ -17,7 +17,8 @@ import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { MemberSelect } from './MemberSelect';
-import MemberRoleSelect, { MemberWithRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
+import MemberRoleSelect from './MemberRoleSelect';
+import { MemberWithRole, rolesToRecognitionPercentage } from './memberRole';
 import { ActivityType } from '@shared/activity.types';
 import { SelectPortal } from '@radix-ui/react-select';
 

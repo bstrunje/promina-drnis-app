@@ -252,8 +252,11 @@
     "regular": "Sudionik"
   },
   "participants": {
-    "searchPlaceholder": "Pretraži sudionike..."
-  },
+        "searchPlaceholder": "Pretraži i dodaj sudionike...",
+        "role": "Uloga",
+        "selectedParticipants": "Odabrani sudionici",
+        "addFromList": "Dodajte sudionike iz liste."
+      },
   "editing": {
     "error": "Greška",
     "fetchFailed": "Neuspješno dohvaćanje aktivnosti.",

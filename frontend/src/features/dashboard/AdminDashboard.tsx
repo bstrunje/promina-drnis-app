@@ -5,7 +5,6 @@ import { Member } from "@shared/member";
 import { useToast } from "@components/ui/use-toast";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { getAdminMessages } from '@/utils/api/apiMessages';
-import { AdminMessage } from "./components/types";
 
 // Uvoz komponenti
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -47,7 +46,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, t]);
   
   // Efekt za dohvaćanje nepročitanih poruka
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Member, MembershipTypeEnum, MemberSkill } from '@shared/member';
-import { formatInputDate, formatDateLocalized } from '../../utils/dateUtils';
+import { Member, MembershipTypeEnum } from '@shared/member';
+import { formatInputDate } from '../../utils/dateUtils';
 import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';

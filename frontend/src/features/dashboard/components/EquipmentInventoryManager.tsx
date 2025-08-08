@@ -28,7 +28,15 @@ const ALL_GENDERS = ['male', 'female'] as const;
 const EQUIPMENT_TYPES = ['tshirt', 'shell_jacket', 'hat'] as const;
 
 // Size ordering for proper display
-const SIZE_ORDER = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6, 'XXXL': 7 };
+const SIZE_ORDER: Record<EquipmentInventoryItem['size'], number> = {
+  XS: 1,
+  S: 2,
+  M: 3,
+  L: 4,
+  XL: 5,
+  XXL: 6,
+  XXXL: 7,
+};
 
 /**
  * Komponenta za upravljanje inventarom opreme s tabbed interface-om
@@ -38,6 +46,8 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
 }) => {
   const { toast } = useToast();
   const { t } = useTranslation('dashboards');
+  // Referenca na member prop kako bismo zadržali postojeći API bez lint upozorenja o nekorištenoj varijabli
+  void member;
   const [inventory, setInventory] = useState<EquipmentInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'tshirt' | 'shell_jacket' | 'hat'>('tshirt');
@@ -49,7 +59,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   const fetchInventory = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiInstance.get("/members/equipment/inventory");
+      const response = await apiInstance.get<EquipmentInventoryItem[]>("/members/equipment/inventory");
       if (!response.data) throw new Error(t("equipmentDelivery.error"));
       
       setInventory(response.data);
@@ -163,13 +173,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     }
   };
 
-  // Handle input change u modalu
-  const handleInputChange = (key: string, value: number) => {
-    setEditValues(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
+  // Napomena: promjene unosa obrađujemo inline u onChange handleru kako bi se izbjegla nepotrebna dodatna funkcija
 
   // Dohvati inventar na početku
   useEffect(() => {
@@ -185,7 +189,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     return acc;
   }, {} as Record<string, EquipmentInventoryItem[]>);
 
-  const equipmentTypeLabels = {
+  const equipmentTypeLabels: Record<(typeof EQUIPMENT_TYPES)[number], string> = {
     tshirt: t('equipmentDelivery.tShirt'),
     shell_jacket: t('equipmentDelivery.shellJacket'),
     hat: t('equipmentDelivery.hat')
@@ -201,21 +205,21 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
       return a.gender === 'female' ? -1 : 1;
     }
     // Zatim sortirati po veličini unutar istog spola
-    const sizeOrderA = SIZE_ORDER[a.size as keyof typeof SIZE_ORDER] || 999;
-    const sizeOrderB = SIZE_ORDER[b.size as keyof typeof SIZE_ORDER] || 999;
+    const sizeOrderA = SIZE_ORDER[a.size] ?? 999;
+    const sizeOrderB = SIZE_ORDER[b.size] ?? 999;
     return sizeOrderA - sizeOrderB;
   });
 
   // Generiraj sve kombinacije za edit modal
   const generateAllCombinations = (equipmentType: string) => {
-    const combinations: Array<{
+    const combinations: {
       key: string;
       equipmentType: string;
       size: string;
       gender: string;
       currentValue: number;
       existingItem?: EquipmentInventoryItem;
-    }> = [];
+    }[] = [];
 
     [...ALL_SIZES].sort((a, b) => SIZE_ORDER[a] - SIZE_ORDER[b]).forEach(size => {
       ALL_GENDERS.forEach(gender => {
@@ -231,7 +235,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
           equipmentType,
           size,
           gender,
-          currentValue: editValues[key] ?? (existingItem?.initial_count || 0),
+          currentValue: editValues[key] ?? (existingItem?.initial_count ?? 0),
           existingItem
         });
       });
@@ -534,7 +538,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {generateAllCombinations(editModalTab).map(({ key, size, gender, existingItem }) => {
-                  const currentValue = editValues[key] ?? (existingItem?.initial_count || 0);
+                  const currentValue = editValues[key] ?? (existingItem?.initial_count ?? 0);
                   
                   return (
                     <div key={key} className="border rounded-lg p-4 space-y-3">
@@ -555,7 +559,12 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                           type="number"
                           min="0"
                           value={currentValue}
-                          onChange={(e) => setEditValues(prev => ({ ...prev, [key]: parseInt(e.target.value) || 0 }))}
+                          // Parsiramo unos i ako je NaN postavljamo 0 (bez korištenja || zbog lint pravila)
+                          onChange={(e) => {
+                            const parsed = Number.parseInt(e.target.value, 10);
+                            const normalized = Number.isNaN(parsed) ? 0 : parsed;
+                            setEditValues(prev => ({ ...prev, [key]: normalized }));
+                          }}
                           className="w-20 px-2 py-1 border rounded text-sm"
                         />
                       </div>

@@ -5,8 +5,7 @@ import {
   Filter, 
   Search, 
   XCircle,
-  Palette,
-  CheckCircle2
+  Palette
 } from 'lucide-react';
 import { Button } from '@components/ui/button'; // Promijenio @ putanju
 import { Input } from '@components/ui/input';

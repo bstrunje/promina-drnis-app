@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getActivityById, updateActivity } from '../../utils/api/apiActivities';
-import { Activity, ActivityStatus } from '@shared/activity.types';
+import { ActivityStatus } from '@shared/activity.types';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Input } from '@components/ui/input';
@@ -11,11 +11,12 @@ import { Label } from '@components/ui/label';
 import { useToast } from '@components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import { Clock, X } from 'lucide-react';
-import MemberRoleSelect, { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
+import MemberRoleSelect from './MemberRoleSelect';
+import { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
 import { MemberSelect } from './MemberSelect';
 
 const EditActivityPage: React.FC = () => {
-  const { t, i18n } = useTranslation('activities');
+  const { t } = useTranslation('activities');
   const { activityId } = useParams<{ activityId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,8 +51,8 @@ const EditActivityPage: React.FC = () => {
         const data = await getActivityById(activityId);
         
         // Popunjavanje stanja forme s postojećim podacima
-        setName(data.name || '');
-        setDescription(data.description || '');
+        setName(data.name ?? '');
+        setDescription(data.description ?? '');
         setStatus(data.status);
 
         const formatDate = (dateInput: Date | string | null | undefined) => {
@@ -96,21 +97,21 @@ const EditActivityPage: React.FC = () => {
             fullName: p.member.full_name,
             role: getRoleByPercentage(p.recognition_override),
             manualRecognition: !Object.values(rolesToRecognitionPercentage).includes(p.recognition_override ?? -1) ? p.recognition_override ?? undefined : undefined,
-          })) || [];
+          })) ?? [];
           setParticipantsWithRoles(initialParticipants);
         } else {
-          setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) || []);
-          setRecognitionPercentage(data.recognition_percentage?.toString() || '100');
+          setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) ?? []);
+          setRecognitionPercentage(data.recognition_percentage?.toString() ?? '100');
         }
 
-      } catch (err) {
+      } catch {
         toast({ title: t('editing.error'), description: t('editing.fetchFailed'), variant: 'destructive' });
       } finally {
         setLoading(false);
       }
     };
-    fetchActivity();
-  }, [activityId, toast]);
+    void fetchActivity();
+  }, [activityId, toast, t]);
 
   const handleSetNow = (
     dateSetter: React.Dispatch<React.SetStateAction<string>>,
@@ -154,7 +155,7 @@ const EditActivityPage: React.FC = () => {
       await updateActivity(Number(activityId), dataToUpdate);
       toast({ title: t('editing.success'), description: t('editing.activityUpdated') });
       navigate(`/activities/${activityId}`);
-    } catch (error) {
+    } catch {
       toast({ title: t('editing.error'), description: t('editing.updateFailed'), variant: 'destructive' });
     }
   };
@@ -168,7 +169,7 @@ const EditActivityPage: React.FC = () => {
           <CardTitle>{t('editing.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => { void handleSubmit(e); }}>
             <div className="grid gap-6">
               <div>
                 <Label htmlFor="name">{t('editing.activityName')}</Label>
@@ -238,7 +239,7 @@ const EditActivityPage: React.FC = () => {
                   >
                     <Clock className="h-4 w-4" />
                   </Button>
-                  {(status === 'PLANNED' || status === 'ACTIVE') && actualStartDate && (
+                  {(status === ActivityStatus.PLANNED || status === ActivityStatus.ACTIVE) && actualStartDate && (
                     <Button
                       type="button"
                       variant="destructive"
@@ -303,7 +304,7 @@ const EditActivityPage: React.FC = () => {
                   >
                     <Clock className="h-4 w-4" />
                   </Button>
-                  {(status === 'PLANNED' || status === 'ACTIVE') && actualEndDate && (
+                  {(status === ActivityStatus.PLANNED || status === ActivityStatus.ACTIVE) && actualEndDate && (
                    <Button
                      type="button"
                      variant="destructive"

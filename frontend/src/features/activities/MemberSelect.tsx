@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@components/ui/command';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@components/ui/command';
 import { Badge } from '@components/ui/badge';
 import { getActiveMembers } from '@/utils/api/apiMembers';
 import { Member } from '@shared/member';
@@ -14,7 +14,7 @@ interface MemberSelectProps {
 }
 
 export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, onSelectionChange }) => {
-  const { t, i18n } = useTranslation('activities');
+  const { t } = useTranslation('activities');
   const [isFocused, setIsFocused] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -42,8 +42,8 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
         console.error('Failed to fetch active members:', error);
       }
     };
-
-    fetchMembers();
+    
+    void fetchMembers();
   }, []);
 
   const handleSelect = (memberId: number) => {

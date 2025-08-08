@@ -7,7 +7,7 @@ import { useUnreadMessages } from '../../contexts/useUnreadMessages';
 import { formatHoursToHHMM } from '../../utils/activityHours';
 import { Users, Activity as ActivityIcon, Mail, User, RefreshCw, Bell, Calendar } from 'lucide-react';
 import { Member } from '@shared/member';
-import { Activity } from '@shared/activity.types';
+import { Activity, ActivityStatus } from '@shared/activity.types';
 import { getAllActivitiesWithParticipants } from '../../utils/api/apiActivities';
 import { API_BASE_URL } from '@/utils/config';
 import axios from 'axios';
@@ -100,7 +100,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
       // Filtriramo ih na klijentu da prikažemo samo PLANNED i ACTIVE
       const upcoming = allActivities.filter(
-        activity => activity.status === 'PLANNED' || activity.status === 'ACTIVE'
+        activity => activity.status === ActivityStatus.PLANNED || activity.status === ActivityStatus.ACTIVE
       );
 
       // Sortiramo aktivnosti po datumu početka kako bi bile kronološki poredane
@@ -129,7 +129,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
           const totals = response.data.reduce((acc, stat) => {
             acc.activities += stat.total_activities;
-            acc.hours += parseFloat(stat.total_hours as any) || 0; // Pretvaramo string u broj
+            acc.hours += Number(stat.total_hours ?? 0);
             return acc;
           }, { activities: 0, hours: 0 });
 
@@ -142,11 +142,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
       }
     };
 
-    const fetchMemberDetails = async () => {
+    const fetchMemberDetails = () => {
       const fetchMemberData = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await axios.get(`${API_BASE_URL}/members/${member.member_id}`, {
+          const response = await axios.get<Member>(`${API_BASE_URL}/members/${member.member_id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setFullMember(response.data);
@@ -163,7 +163,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
     void fetchMemberDetails();
     void fetchAnnualStats();
-  }, [member?.member_id]);
+  }, [member?.member_id, refreshUnreadCount]);
 
   return (
     <div className="p-6">
@@ -345,9 +345,9 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                       </div>
                       {(() => {
                         switch (activity.status) {
-                          case 'PLANNED':
+                          case ActivityStatus.PLANNED:
                             return <span className="font-semibold text-green-600 text-sm">{t("upcomingEvents.planned")}</span>;
-                          case 'ACTIVE':
+                          case ActivityStatus.ACTIVE:
                             return <span className="font-semibold text-blue-500 text-sm">{t("upcomingEvents.active")}</span>;
                           default:
                             return null;

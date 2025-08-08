@@ -3,37 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@components/ui/command';
-import { Badge } from '@components/ui/badge';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@components/ui/command';
 import { getActiveMembers } from '@/utils/api/apiMembers';
 import { Member } from '@shared/member';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Button } from '@components/ui/button';
-
-// Uloge sudionika za izlete
-export enum ParticipantRole {
-  GUIDE = 'GUIDE',
-  ASSISTANT_GUIDE = 'ASSISTANT_GUIDE',
-  DRIVER = 'DRIVER',
-  REGULAR = 'REGULAR'
-}
+import { ParticipantRole, MemberWithRole } from './memberRole';
 
 // Uloge se sada lokaliziraju putem i18next
-
-// Mapiranje uloga na postotke priznavanja
-export const rolesToRecognitionPercentage: Record<ParticipantRole, number> = {
-  [ParticipantRole.GUIDE]: 100,
-  [ParticipantRole.ASSISTANT_GUIDE]: 50,
-  [ParticipantRole.DRIVER]: 100,
-  [ParticipantRole.REGULAR]: 10,
-};
-
-// Tip za sudionika s ulogom
-export interface MemberWithRole {
-  memberId: string;
-  role: ParticipantRole;
-  manualRecognition?: number | null;
-}
 
 interface MemberRoleSelectProps {
   selectedMembers: MemberWithRole[];
@@ -70,8 +47,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
         console.error('Failed to fetch active members:', error);
       }
     };
-
-    fetchMembers();
+    void fetchMembers();
   }, []);
 
   // Dodaje novog sudionika s odabranom ulogom

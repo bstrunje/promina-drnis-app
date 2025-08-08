@@ -5,13 +5,21 @@ import { User, RefreshCw } from 'lucide-react';
 import useMembersWithPermissions from './hooks/useMembersWithPermissions';
 import EditMemberPermissionsModal from './EditMemberPermissionsModal';
 import { removeMemberPermissions } from './api/memberPermissionsApi';
-import { Member } from '@shared/member';
+import type { MemberRole } from '@shared/member';
+import type { MemberWithPermissions } from '@shared/systemManager';
 import { parseDate } from '../../../utils/dateUtils';
 
 // Komponenta za prikaz i upravljanje članovima s administratorskim ovlastima
 interface MembersWithPermissionsProps {
   activeTab: string;
 }
+
+type EditableMember = {
+  member_id: number;
+  full_name: string;
+  email?: string;
+  role?: MemberRole;
+};
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
   const { t } = useTranslation('members');
@@ -20,22 +28,27 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
   
   // State za modalni prozor uređivanja ovlasti
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [selectedMember, setSelectedMember] = useState<EditableMember | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   // Filtriranje članova prema searchTerm
-  const filteredMembers = membersWithPermissions.filter(memberWithPermissions => {
+  const filteredMembers = (membersWithPermissions.filter((memberWithPermissions: MemberWithPermissions) => {
     const fullName = memberWithPermissions.member.full_name.toLowerCase();
     const email = (memberWithPermissions.member.email ?? '').toLowerCase();
     const term = searchTerm.toLowerCase();
     
     return fullName.includes(term) || email.includes(term);
-  });
+  }) as MemberWithPermissions[]);
   
   // Funkcija za otvaranje modalnog prozora za uređivanje ovlasti
-  const handleEditClick = (memberWithPermissions: any) => {
-    setSelectedMember(memberWithPermissions.member);
+  const handleEditClick = (memberWithPermissions: MemberWithPermissions) => {
+    setSelectedMember({
+      member_id: memberWithPermissions.member.member_id,
+      full_name: memberWithPermissions.member.full_name,
+      email: memberWithPermissions.member.email ?? undefined,
+      role: memberWithPermissions.member.role as MemberRole | undefined,
+    });
     setIsEditModalOpen(true);
   };
   

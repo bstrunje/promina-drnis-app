@@ -34,7 +34,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t, i18n } = useTranslation('profile');
+  const { t } = useTranslation('profile');
   // Ako id nije definiran, koristi user.member_id ili fallback na "0" (default)
 const memberId = useMemo(() => {
   if (id) return parseInt(id, 10);
@@ -190,7 +190,7 @@ setEditedMember(memberData);
         }, 100);
       }
     }
-  }, [memberId, savedScrollPosition]);
+  }, [memberId, savedScrollPosition, t]);
   
     useEffect(() => {
   if (memberId) {
@@ -460,7 +460,7 @@ setEditedMember(memberData);
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <MemberProfileImage member={member} onUpdate={fetchMemberDetails} />
+        <MemberProfileImage member={member} onUpdate={async () => { await fetchMemberDetails(); }} />
 
         <MembershipDetailsCard member={member} />
 
@@ -471,7 +471,7 @@ setEditedMember(memberData);
           handleChange={handleChange}
           handleSkillsChange={handleSkillsChange}
           validationErrors={validationErrors}
-          onUpdate={fetchMemberDetails}
+          onUpdate={() => { void fetchMemberDetails(); }}
           onMemberChange={(updatedMember) => setEditedMember(updatedMember)}
         />
 
@@ -485,7 +485,7 @@ setEditedMember(memberData);
           onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
           cardManagerProps={canEdit ? {
             member,
-            onUpdate: (updatedMember: Member) => handleMemberUpdate(updatedMember),
+            onUpdate: async (updatedMember: Member) => { await handleMemberUpdate(updatedMember); },
             isFeeCurrent,
             hideTitle: true  
           } : undefined}

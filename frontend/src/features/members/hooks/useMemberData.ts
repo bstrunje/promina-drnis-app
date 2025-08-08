@@ -129,7 +129,7 @@ export const useMemberData = () => {
           try {
             const memberDetailsPromises = membersWithDetails.map((member) => {
               try {
-                let periods = Array.isArray(member.membership_history)
+                const periods = Array.isArray(member.membership_history)
                   ? member.membership_history
                   : (member.membership_history?.periods ?? []);
 

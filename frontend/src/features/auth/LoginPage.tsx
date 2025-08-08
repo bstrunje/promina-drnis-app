@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAuth } from "../../context/useAuth";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { login, register } from '../../utils/api/apiAuth';
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import { formatInputDate } from "@/utils/dateUtils";
@@ -36,7 +36,7 @@ const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const location = useLocation();
+  // location nije potreban, uklonjen zbog lint upozorenja
   const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
@@ -50,7 +50,7 @@ const LoginPage = () => {
   
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
-  const isSoftLogout = searchParams.get('soft') === 'true';
+  // isSoftLogout se ne koristi, uklonjeno radi lint čistoće
 
   // Inicijalizacija stanja koristi ažurirani MemberLoginData tip
   const [loginData, setLoginData] = useState<MemberLoginData>({

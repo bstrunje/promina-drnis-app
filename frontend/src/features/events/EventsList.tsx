@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
@@ -19,11 +19,7 @@ const EventsList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/events');
@@ -50,7 +46,11 @@ const EventsList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    void fetchEvents();
+  }, [fetchEvents]);
 
   if (loading) {
     return <div className="p-6">{t('eventsList.loading')}</div>;

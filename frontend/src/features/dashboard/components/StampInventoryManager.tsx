@@ -130,7 +130,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
         variant: "destructive",
       });
     }
-  }, [selectedYear, toast]);
+  }, [selectedYear, toast, t]);
 
   // Dohvati povijest markica
   const fetchStampHistory = useCallback(async () => {
@@ -148,7 +148,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   // Arhiviraj inventar
   const handleArchiveInventory = async (year: number, notes: string, force: boolean) => {

@@ -6,11 +6,7 @@ import {
 } from "@shared/memberStatus.types";
 
 import { Button } from "@components/ui/button";
-import {
-  Trash2,
-  UserCog,
-  Key,
-} from "lucide-react";
+import { UserCog, Key } from "lucide-react";
 
 import { Member } from "@shared/member";
 import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
@@ -30,7 +26,6 @@ interface MemberTableProps {
   isSuperuser?: boolean;
   onViewDetails?: (memberId: number) => void;
   onAssignPassword?: (member: Member) => void;
-  onAssignRole?: (member: Member) => void;
 }
 
 // Komponenta za prikaz tablice članova
@@ -40,7 +35,6 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   isSuperuser,
   onViewDetails,
   onAssignPassword,
-  onAssignRole,
 }) => {
   const { t } = useTranslation('members');
 

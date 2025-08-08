@@ -15,7 +15,7 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
   isLoading,
   stampHistory
 }) => {
-  const { t, i18n } = useTranslation('dashboards');
+  const { t } = useTranslation('dashboards');
 
   if (isLoading) {
     return (
@@ -160,7 +160,7 @@ export const StampHistorySection: React.FC<StampHistorySectionProps> = ({
                         {record.reset_by_name}
                       </td>
                       <td className="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
-                        {record.notes ?? "{t('stampHistory.noNotes')}"}
+                        {record.notes ?? t('stampHistory.noNotes')}
                       </td>
                     </tr>
                   );

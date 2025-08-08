@@ -45,8 +45,8 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
   // Filtriranje članova prema pojmu za pretragu
   const filteredMembers = members.filter(member => {
     const fullName = `${member.first_name} ${member.last_name}`.toLowerCase();
-    return fullName.includes(searchTerm.toLowerCase()) || 
-           (member.email && member.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const term = searchTerm.toLowerCase();
+    return fullName.includes(term) || (member.email?.toLowerCase()?.includes(term) ?? false);
   });
 
   // Odabir člana

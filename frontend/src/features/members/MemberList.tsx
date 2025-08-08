@@ -38,7 +38,7 @@ import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
   const { t } = useTranslation('members');
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   // Dobavi članove pomoću custom hooka
   const {
@@ -61,7 +61,7 @@ export default function MemberList(): JSX.Element {
     printStyle.innerHTML = `
       @media print {
         /* Sakrivanje svih nepotrebnih elemenata za print */
-        .print\\:hidden,
+        [class~="print:hidden"],
         .filter-section,
         nav,
         header,
@@ -75,13 +75,13 @@ export default function MemberList(): JSX.Element {
         
         /* Osiguravanje da je tablica za printanje vidljiva */
         .print-table,
-        .print\\:table,
-        .print\\:!table {
+        [class~="print:table"],
+        [class~="print:!table"] {
           display: table !important;
         }
 
         /* Osiguravanje da je header za printanje vidljiv */
-        .print\\:block,
+        [class~="print:block"],
         #print-header {
           display: block !important;
         }
@@ -250,7 +250,7 @@ export default function MemberList(): JSX.Element {
       @media print {
         /* Hide everything that should not be printed */
         header, nav, .logo-container, button, .navigation-menu, .primary-navigation,
-        .print\:hidden, #global-header, .items-center.gap-2, .amber-50, 
+        [class~="print:hidden"], #global-header, .items-center.gap-2, .amber-50, 
         [aria-label="${t('memberList.buttons.filters')}"], [class*="${t('memberList.found')}"], .flex.items-center.bg-amber-50 {
           display: none !important;
         }
@@ -457,10 +457,6 @@ export default function MemberList(): JSX.Element {
                   isSuperuser={isSuperuser}
                   onViewDetails={(memberId) => navigate(`/members/${memberId}`)}                  
                   onAssignPassword={setAssigningPasswordMember}
-                  onAssignRole={setRoleAssignmentMember}
-          
-          
-           // Prikazujemo zaglavlje tablice jer smo uklonili fiksirani header
                 />
               </div>
             </TabsContent>

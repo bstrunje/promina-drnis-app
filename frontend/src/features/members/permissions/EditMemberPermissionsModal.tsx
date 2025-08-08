@@ -1,7 +1,8 @@
 // features/members/permissions/EditMemberPermissionsModal.tsx
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AdminPermissionsModel, UpdateMemberPermissionsDto } from '@shared/systemManager';
+import type { TFunction } from 'i18next';
+import { AdminPermissionsModel } from '@shared/systemManager';
 import { getMemberPermissions, updateMemberPermissions } from './api/memberPermissionsApi';
 import { X } from 'lucide-react';
 import MemberRoleSelector from './components/MemberRoleSelector';
@@ -51,10 +52,10 @@ const EditMemberPermissionsModal: React.FC<EditMemberPermissionsModalProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<boolean>(false);
+  // const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<boolean>(false); // uklonjeno jer se ne koristi
 
 // Funkcija za grupiranje ovlasti po kategorijama
-function categorizePermissions(permissions: AdminPermissionsModel, t: any) {
+function categorizePermissions(permissions: AdminPermissionsModel, t: TFunction) {
   return [
     {
       name: t('permissions.categories.membership'),
@@ -300,7 +301,6 @@ const permissionCategories = categorizePermissions(permissions, t);
               memberId={member.member_id}
               currentRole={member.role}
               onSuccess={() => {
-                setRoleUpdateSuccess(true);
                 setSuccessMessage('Rola člana je uspješno ažurirana.');
                 // Nakon kratke pauze, zatvori modal i osvježi listu
                 setTimeout(() => {

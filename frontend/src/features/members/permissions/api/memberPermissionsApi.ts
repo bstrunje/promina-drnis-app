@@ -17,21 +17,21 @@ memberPermissionsApi.interceptors.request.use((config) => {
 });
 
 export const getMembersWithPermissions = async (): Promise<MemberWithPermissions[]> => {
-  const response = await memberPermissionsApi.get('/members/permissions');
+  const response = await memberPermissionsApi.get<MemberWithPermissions[]>('/members/permissions');
   return response.data;
 };
 
 export const getMemberPermissions = async (memberId: number): Promise<AdminPermissionsModel | null> => {
-  const response = await memberPermissionsApi.get(`/members/permissions/${memberId}`);
+  const response = await memberPermissionsApi.get<AdminPermissionsModel | null>(`/members/permissions/${memberId}`);
   return response.data;
 };
 
 export const updateMemberPermissions = async (updateData: UpdateMemberPermissionsDto): Promise<void> => {
-  await memberPermissionsApi.put(`/members/permissions/${updateData.member_id}`, updateData);
+  await memberPermissionsApi.put<void>(`/members/permissions/${updateData.member_id}`, updateData);
 };
 
 export const removeMemberPermissions = async (memberId: number): Promise<void> => {
-  await memberPermissionsApi.delete(`/members/${memberId}/permissions`);
+  await memberPermissionsApi.delete<void>(`/members/${memberId}/permissions`);
 };
 
 /**
@@ -41,7 +41,7 @@ export const removeMemberPermissions = async (memberId: number): Promise<void> =
  * @returns Ažurirani član
  */
 export const updateMemberRole = async (memberId: number, role: MemberRole): Promise<Member> => {
-  const response = await memberPermissionsApi.put(`/members/${memberId}/role`, { role });
+  const response = await memberPermissionsApi.put<Member>(`/members/${memberId}/role`, { role });
   return response.data;
 };
 
