@@ -43,7 +43,8 @@ const resources = {
   }
 };
 
-i18n
+// Ignoriramo promise inicijalizacije jer nije potrebno awaitati u ovom kontekstu
+void i18n
   .use(LanguageDetector) // Detektira jezik korisnikovog preglednika
   .use(initReactI18next) // Povezuje i18next s Reactom
   .init({

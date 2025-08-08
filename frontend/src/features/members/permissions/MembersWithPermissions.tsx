@@ -14,12 +14,12 @@ interface MembersWithPermissionsProps {
   activeTab: string;
 }
 
-type EditableMember = {
+interface EditableMember {
   member_id: number;
   full_name: string;
   email?: string;
   role?: MemberRole;
-};
+}
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
   const { t } = useTranslation('members');
@@ -33,13 +33,13 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   // Filtriranje članova prema searchTerm
-  const filteredMembers = (membersWithPermissions.filter((memberWithPermissions: MemberWithPermissions) => {
+  const filteredMembers = membersWithPermissions.filter((memberWithPermissions: MemberWithPermissions) => {
     const fullName = memberWithPermissions.member.full_name.toLowerCase();
     const email = (memberWithPermissions.member.email ?? '').toLowerCase();
     const term = searchTerm.toLowerCase();
     
     return fullName.includes(term) || email.includes(term);
-  }) as MemberWithPermissions[]);
+  });
   
   // Funkcija za otvaranje modalnog prozora za uređivanje ovlasti
   const handleEditClick = (memberWithPermissions: MemberWithPermissions) => {

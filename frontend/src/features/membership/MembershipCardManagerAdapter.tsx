@@ -34,7 +34,7 @@ const MembershipCardManagerAdapter: React.FC<MembershipCardManagerAdapterProps> 
   
   // Koristimo userRole iz propsa ako je dostupan, inače koristimo ulogu iz AuthContext-a
   // Ovo je konačno rješenje koje osigurava da userRole nikad nije undefined
-  const effectiveUserRole = userRole || (auth.user ? auth.user.role : null) || 'member_administrator';
+  const effectiveUserRole = userRole ?? auth.user?.role ?? 'member_administrator';
   
   return (
     <MembershipCardManagerModular

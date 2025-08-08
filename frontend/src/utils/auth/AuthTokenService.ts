@@ -136,24 +136,27 @@ export class AuthTokenService {
     // console.log('Započeto automatsko osvježavanje tokena');
 
     // Postavi interval koji će provjeravati treba li osvježiti token svakih 30 sekundi
-    refreshTimerId = window.setInterval(async () => {
-      try {
-        if (this.shouldRefreshToken()) {
-          // console.log('Automatsko osvježavanje tokena...');
-          const newToken = await this.refreshToken();
+    refreshTimerId = window.setInterval(() => {
+      // Ne prosljeđujemo async funkciju direktno setInterval-u (lint: no-misused-promises)
+      void (async () => {
+        try {
+          if (this.shouldRefreshToken()) {
+            // console.log('Automatsko osvježavanje tokena...');
+            const newToken = await this.refreshToken();
 
-          if (newToken) {
-            // console.log('Token uspješno osvježen automatski');
-          } else {
-            console.warn('Automatsko osvježavanje tokena nije uspjelo. Pokrećem odjavu korisnika.');
-            // Ako osvježavanje nije uspjelo, zaustavi automatsko osvježavanje i odjavi korisnika
-            this.stopAutoRefresh();
-            void this.logout(); // Pozivamo logout
+            if (newToken) {
+              // console.log('Token uspješno osvježen automatski');
+            } else {
+              console.warn('Automatsko osvježavanje tokena nije uspjelo. Pokrećem odjavu korisnika.');
+              // Ako osvježavanje nije uspjelo, zaustavi automatsko osvježavanje i odjavi korisnika
+              this.stopAutoRefresh();
+              void this.logout(); // Pozivamo logout
+            }
           }
+        } catch (error) {
+          console.error('Greška pri automatskom osvježavanju tokena:', error);
         }
-      } catch (error) {
-        console.error('Greška pri automatskom osvježavanju tokena:', error);
-      }
+      })();
     }, 30000); // Provjera svakih 30 sekundi
   }
 

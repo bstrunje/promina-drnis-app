@@ -207,20 +207,20 @@ export default function CardNumberManagement() {
 
   // Add utility functions to handle pagination and filtering
   // Filtriraj po statusu, osim za potrošene kartice
-  const filteredByStatus = statusFilter === 'consumed'
-    ? []
+  const filteredByStatus: typeof allCardNumbers = statusFilter === 'consumed'
+    ? ([] as typeof allCardNumbers)
     : allCardNumbers.filter(card => {
         if (statusFilter === 'all') return true;
         return card.status === statusFilter;
       });
 
   // Za prikaz potrošenih kartica koristi zasebno filtriranje
-  const filteredConsumed = consumedCardNumbers.filter(card =>
+  const filteredConsumed: typeof consumedCardNumbers = consumedCardNumbers.filter(card =>
     card.card_number.includes(consumedSearch) ||
     (card.member_name?.toLowerCase().includes(consumedSearch.toLowerCase()) ?? false)
   );
 
-  const filteredCardNumbers = filteredByStatus.filter(card => 
+  const filteredCardNumbers: typeof allCardNumbers = filteredByStatus.filter(card => 
     card.card_number.includes(searchTerm)
   );
 
@@ -228,9 +228,8 @@ export default function CardNumberManagement() {
     ? Math.ceil(filteredConsumed.length / itemsPerPage)
     : Math.ceil(filteredCardNumbers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCardNumbers = statusFilter === 'consumed'
-    ? filteredConsumed.slice(startIndex, startIndex + itemsPerPage)
-    : filteredCardNumbers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedConsumed: typeof consumedCardNumbers = filteredConsumed.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedAvailable: typeof allCardNumbers = filteredCardNumbers.slice(startIndex, startIndex + itemsPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -554,16 +553,16 @@ export default function CardNumberManagement() {
                   ) : filteredConsumed.length > 0 ? (
                     <>
                       <div className="mb-2 text-sm text-muted-foreground">
-                        {t('cardNumberManagement.forms.manage.consumed.showing', { count: paginatedCardNumbers.length, total: filteredConsumed.length })}
+                        {t('cardNumberManagement.forms.manage.consumed.showing', { count: paginatedConsumed.length, total: filteredConsumed.length })}
                       </div>
                       <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
-                        {paginatedCardNumbers.map(card => (
+                        {paginatedConsumed.map(card => (
                           <div key={card.card_number} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 hover:bg-gray-50">
                             <div className="flex flex-col">
                             <span className="font-medium select-all cursor-pointer text-gray-700" onClick={() => { void navigator.clipboard.writeText(card.card_number); }} title={t('cardNumberManagement.forms.manage.consumed.copyTooltip')}>
                                 {card.card_number}
                               </span>
-                              <span className="text-xs text-gray-500">{t('cardNumberManagement.forms.manage.consumed.member', { member: card.member_name || 'N/A' })}</span>
+                              <span className="text-xs text-gray-500">{t('cardNumberManagement.forms.manage.consumed.member', { member: card.member_name ?? 'N/A' })}</span>
                               <span className="text-xs text-gray-400">{t('cardNumberManagement.forms.manage.consumed.issued', { date: card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : (card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-') })}</span>
                             </div>
                           </div>
@@ -605,13 +604,13 @@ export default function CardNumberManagement() {
                 <>
                   {/* Stats */}
                   <div className="mb-2 text-sm text-muted-foreground">
-                    {t('cardNumberManagement.forms.manage.stats.showing', { current: paginatedCardNumbers.length, total: filteredCardNumbers.length })}
+                    {t('cardNumberManagement.forms.manage.stats.showing', { current: paginatedAvailable.length, total: filteredCardNumbers.length })}
                     {searchTerm && ` ${t('cardNumberManagement.forms.manage.stats.filtered', { total: filteredByStatus.length })}`} {t('cardNumberManagement.forms.manage.stats.numbers')}
                   </div>
                   
                   {/* Dropdown style list */}
                   <div className="border rounded-md max-h-[400px] overflow-y-auto divide-y">
-                    {paginatedCardNumbers.map(card => (
+                    {paginatedAvailable.map(card => (
                       <div 
                         key={card.card_number} 
                         className={`flex items-center justify-between p-3 hover:bg-gray-50 ${

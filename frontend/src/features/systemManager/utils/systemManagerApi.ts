@@ -89,21 +89,21 @@ systemManagerApi.interceptors.request.use(
 // Pratimo jesmo li već u procesu osvježavanja tokena kako bismo izbjegli beskonačnu petlju
 let isRefreshing = false;
 // Red čekajućih zahtjeva koji čekaju na osvježavanje tokena
-let failedQueue: Array<{
+let failedQueue: {
   resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;
   config: AxiosRequestConfig;
-}> = [];
+}[] = [];
 
 // Funkcija za procesiranje reda zahtjeva nakon osvježavanja tokena
-const processQueue = (error: unknown | null, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach(promise => {
     if (error) {
       promise.reject(error);
     } else {
       // Dodaj novi token u zahtjev
       if (token && promise.config.headers) {
-        promise.config.headers['Authorization'] = `Bearer ${token}`;
+        promise.config.headers.Authorization = `Bearer ${token}`;
       }
       promise.resolve(systemManagerApi(promise.config));
     }
@@ -141,7 +141,7 @@ systemManagerApi.interceptors.response.use(
         
         // Postavi novi token u header originalnog zahtjeva
         if (originalRequest.headers) {
-          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
         }
         
         // Procesiraj red čekajućih zahtjeva s novim tokenom
@@ -527,7 +527,13 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
       console.error('AxiosError:', error.response?.data);
       console.error('Status:', error.response?.status);
       console.error('Headers:', error.response?.headers);
-      throw new Error(error.response?.data?.message || error.message);
+      const respData: unknown = error.response?.data;
+      let apiMessage: string | undefined;
+      if (respData && typeof respData === 'object' && 'message' in (respData as Record<string, unknown>)) {
+        const maybe = (respData as { message?: unknown }).message;
+        apiMessage = typeof maybe === 'string' ? maybe : undefined;
+      }
+      throw new Error(apiMessage ?? error.message);
     }
     console.error('Nepoznata greška:', error);
     throw new Error('Dogodila se greška.');

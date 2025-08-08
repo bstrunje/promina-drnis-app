@@ -54,7 +54,6 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
     const interval = setInterval(() => {
       void fetchSentMessages();
     }, 30000); // 30 sekundi
-    // eslint-disable-next-line consistent-return
     return () => clearInterval(interval);
   }, [userRole, fetchSentMessages]);
 

@@ -1,7 +1,60 @@
 import api from './apiConfig';
 import { ApiAdminMessage, ApiGenericMessage } from './apiTypes';
 import { AxiosResponse } from 'axios';
-import { parseDate, getCurrentDate } from '../../utils/dateUtils';
+import { parseDate } from '../../utils/dateUtils';
+
+// Tip koji opisuje backend poruku (sva polja opcionalna jer dolaze iz vanjskog izvora)
+interface BackendMessage {
+  message_id?: unknown;
+  message_text?: unknown;
+  sender_id?: unknown;
+  sender_name?: unknown;
+  sender_type?: unknown; // nepoznato s backend-a, kasnije normaliziramo na podržane literalne tipove
+  recipient_id?: unknown;
+  recipient_type?: unknown; // nepoznato s backend-a, kasnije normaliziramo na podržane literalne tipove
+  created_at?: unknown;
+  read?: unknown;
+  status?: unknown;
+  priority?: unknown;
+  read_by?: unknown;
+  sender?: unknown;
+}
+
+interface SenderLike { full_name?: unknown; first_name?: unknown; last_name?: unknown }
+interface ReadByLike { member_id?: unknown; read_at?: unknown; full_name?: unknown }
+
+// Sigurna konverzija u string bez oslanjanja na Object default stringification
+const safeToString = (val: unknown): string => {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return '';
+};
+
+// Pretvara nepoznatu vrijednost u ISO datum ili vraća trenutni datum
+const toIsoOrNow = (val: unknown): string => {
+  const s = safeToString(val);
+  if (!s) return new Date().toISOString();
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+};
+
+const mapReadByArray = (arr: unknown): { member_id: string; read_at: string | null; full_name?: string }[] => {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((rb: unknown) => {
+    const r = rb as Partial<ReadByLike>;
+    return {
+      member_id: safeToString(r.member_id),
+      read_at: (() => {
+        if (r.read_at == null) return null;
+        const ds = safeToString(r.read_at);
+        if (!ds) return null;
+        const d = new Date(ds);
+        return isNaN(d.getTime()) ? null : d.toISOString();
+      })(),
+      full_name: typeof r.full_name === 'string' ? r.full_name : undefined
+    };
+  });
+};
 
 /**
  * Dohvaćanje poruka
@@ -22,26 +75,40 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
     
     // Dohvati poruke s backenda
     const response = await api.get('/messages/member_administrator');
+    const raw: unknown = response.data;
+    const arr: unknown[] = Array.isArray(raw) ? raw : [];
     
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
-      // Izvuci ime pošiljatelja iz sender objekta ako postoji
-      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+    const transformedData: ApiAdminMessage[] = arr.map((msg: unknown) => {
+      const m = msg as Partial<BackendMessage>;
+      const senderObj: Partial<SenderLike> | undefined = (m.sender && typeof m.sender === 'object') ? (m.sender as Partial<SenderLike>) : undefined;
+      const firstName = senderObj && typeof senderObj.first_name === 'string' ? senderObj.first_name : '';
+      const lastName = senderObj && typeof senderObj.last_name === 'string' ? senderObj.last_name : '';
+      const fullName = senderObj && typeof senderObj.full_name === 'string' ? senderObj.full_name : '';
+      const composedName = `${firstName} ${lastName}`.trim();
+      const senderName = fullName || composedName || (typeof m.sender_name === 'string' ? m.sender_name : '');
+      const sender_type = m.sender_type === 'member' || m.sender_type === 'member_administrator' || m.sender_type === 'member_superuser'
+        ? m.sender_type
+        : 'member';
+      const recipient_type = m.recipient_type === 'member' || m.recipient_type === 'member_administrator' || m.recipient_type === 'all' || m.recipient_type === 'group'
+        ? m.recipient_type
+        : 'member';
+      const priority: 'normal' | 'high' = m.priority === 'high' ? 'high' : 'normal';
       
       return {
-        id: String(msg.message_id),
-        content: msg.message_text,
-        sender_id: String(msg.sender_id),
+        id: safeToString(m.message_id),
+        content: typeof m.message_text === 'string' ? m.message_text : '',
+        sender_id: safeToString(m.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
-        sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
-        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+        sender_name: senderName,
+        sender_type,
+        recipient_id: m.recipient_id != null ? safeToString(m.recipient_id) : '',
+        recipient_type,
+        timestamp: toIsoOrNow(m.created_at),
         // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
-        read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
-        priority: msg.priority || 'normal',
-        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
+        read: typeof m.read === 'boolean' ? m.read : (m.status === 'read' || !!(m as { read_at?: unknown }).read_at),
+        priority,
+        read_by: mapReadByArray(m.read_by)
       };
     });
     
@@ -61,33 +128,41 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
 export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
   try {
     const response = await api.get('/messages/sent');
+    const raw: unknown = response.data;
+    const arr: unknown[] = Array.isArray(raw) ? raw : [];
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
-      // Izvuci ime pošiljatelja iz sender objekta ako postoji
-      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+    const transformedData: ApiAdminMessage[] = arr.map((msg: unknown) => {
+      const m = msg as Partial<BackendMessage>;
+      const senderObj: Partial<SenderLike> | undefined = (m.sender && typeof m.sender === 'object') ? (m.sender as Partial<SenderLike>) : undefined;
+      const firstName = senderObj && typeof senderObj.first_name === 'string' ? senderObj.first_name : '';
+      const lastName = senderObj && typeof senderObj.last_name === 'string' ? senderObj.last_name : '';
+      const fullName = senderObj && typeof senderObj.full_name === 'string' ? senderObj.full_name : '';
+      const composedName = `${firstName} ${lastName}`.trim();
+      const senderName = fullName || composedName || (typeof m.sender_name === 'string' ? m.sender_name : '');
+      const sender_type = m.sender_type === 'member' || m.sender_type === 'member_administrator' || m.sender_type === 'member_superuser'
+        ? m.sender_type
+        : 'member';
+      const recipient_type = m.recipient_type === 'member' || m.recipient_type === 'member_administrator' || m.recipient_type === 'all' || m.recipient_type === 'group'
+        ? m.recipient_type
+        : 'member';
+      const priority: 'normal' | 'high' = m.priority === 'high' ? 'high' : 'normal';
       
       return {
-        id: String(msg.message_id),
-        content: msg.message_text,
-        sender_id: String(msg.sender_id),
+        id: safeToString(m.message_id),
+        content: typeof m.message_text === 'string' ? m.message_text : '',
+        sender_id: safeToString(m.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
-        sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-        recipient_id: msg.recipient_id ? String(msg.recipient_id) : (msg.recipient_type === 'all' ? 'all' : ''),
-      recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
-      timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
-      // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
-      read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
-      read_by: Array.isArray(msg.read_by)
-        ? msg.read_by.map((rb: any) => ({
-            member_id: String(rb.member_id),
-            read_at: rb.read_at ? new Date(rb.read_at).toISOString() : null,
-            full_name: rb.full_name || undefined // Mapiramo full_name ako postoji
-          }))
-        : [],
-      priority: msg.priority || 'normal'
-    };
-  });
+        sender_name: senderName,
+        sender_type,
+        recipient_id: m.recipient_id != null ? safeToString(m.recipient_id) : (recipient_type === 'all' ? 'all' : ''),
+        recipient_type,
+        timestamp: toIsoOrNow(m.created_at),
+        // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
+        read: typeof m.read === 'boolean' ? m.read : (m.status === 'read' || !!(m as { read_at?: unknown }).read_at),
+        read_by: mapReadByArray(m.read_by),
+        priority
+      };
+    });
     return transformedData;
   } catch (error) {
     if (error instanceof Error) {
@@ -105,25 +180,35 @@ export const getAdminSentMessages = async (): Promise<ApiAdminMessage[]> => {
 export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessage[]> => {
   try {
     const response = await api.get(`/members/${memberId}/messages`);
+    const raw: unknown = response.data;
+    const arr: unknown[] = Array.isArray(raw) ? raw : [];
     // Transformiraj poruke iz backend formata u ApiAdminMessage format
-    const transformedData: ApiAdminMessage[] = response.data.map((msg: any) => {
-      // Izvuci ime pošiljatelja iz sender objekta ako postoji
-      const senderName = msg.sender ? msg.sender.full_name || `${msg.sender.first_name} ${msg.sender.last_name}`.trim() : '';
+    const transformedData: ApiAdminMessage[] = arr.map((msg: unknown) => {
+      const m = msg as Partial<BackendMessage>;
+      const senderObj: Partial<SenderLike> | undefined = (m.sender && typeof m.sender === 'object') ? (m.sender as Partial<SenderLike>) : undefined;
+      const firstName = senderObj && typeof senderObj.first_name === 'string' ? senderObj.first_name : '';
+      const lastName = senderObj && typeof senderObj.last_name === 'string' ? senderObj.last_name : '';
+      const fullName = senderObj && typeof senderObj.full_name === 'string' ? senderObj.full_name : '';
+      const composedName = `${firstName} ${lastName}`.trim();
+      const senderName = fullName || composedName || (typeof m.sender_name === 'string' ? m.sender_name : '');
+      const sender_type = m.sender_type === 'member' || m.sender_type === 'member_administrator' || m.sender_type === 'member_superuser' ? m.sender_type : 'member';
+      const recipient_type = m.recipient_type === 'member' || m.recipient_type === 'member_administrator' || m.recipient_type === 'all' || m.recipient_type === 'group' ? m.recipient_type : 'member';
+      const priority: 'normal' | 'high' = m.priority === 'high' ? 'high' : 'normal';
       
       return {
-        id: String(msg.message_id),
-        content: msg.message_text,
-        sender_id: String(msg.sender_id),
+        id: safeToString(m.message_id),
+        content: typeof m.message_text === 'string' ? m.message_text : '',
+        sender_id: safeToString(m.sender_id),
         // Koristi ime pošiljatelja iz sender objekta ili fallback na staro polje
-        sender_name: senderName || msg.sender_name || '',
-        sender_type: msg.sender_type as 'member_administrator' | 'member' | 'member_superuser',
-        recipient_id: msg.recipient_id ? String(msg.recipient_id) : '',
-        recipient_type: msg.recipient_type as 'member_administrator' | 'member' | 'all' | 'group',
-        timestamp: msg.created_at ? new Date(msg.created_at).toISOString() : new Date().toISOString(),
+        sender_name: senderName,
+        sender_type,
+        recipient_id: m.recipient_id != null ? safeToString(m.recipient_id) : '',
+        recipient_type,
+        timestamp: toIsoOrNow(m.created_at),
         // Koristi read polje koje smo dodali u backend mapperu ili fallback na staru logiku
-        read: typeof msg.read === 'boolean' ? msg.read : (msg.status === 'read' || !!msg.read_at),
-        priority: msg.priority || 'normal',
-        read_by: msg.read_by || [] // Dodajemo read_by ako postoji
+        read: typeof m.read === 'boolean' ? m.read : (m.status === 'read' || !!(m as { read_at?: unknown }).read_at),
+        priority,
+        read_by: mapReadByArray(m.read_by)
       };
     });
     return transformedData;
@@ -139,13 +224,17 @@ export const getMemberMessages = async (memberId: number): Promise<ApiAdminMessa
  * Dohvaćanje poslanih poruka člana
  * @returns Lista poslanih poruka
  */
-export const getMemberSentMessages = async (): Promise<any[]> => {
+export const getMemberSentMessages = async (): Promise<unknown[]> => {
   try {
     const response = await api.get('/members/sent');
-    return response.data;
+    const raw: unknown = response.data;
+    const result: unknown[] = Array.isArray(raw) ? (raw as unknown[]) : [];
+    return result;
   } catch (error) {
-    console.error('Error fetching sent member messages:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to fetch sent member messages');
   }
 };
 
@@ -168,8 +257,8 @@ export const getGenericMessages = async (): Promise<ApiGenericMessage[]> => {
       const messagesArray = response.data.data;
       // Sortiranje poruka po datumu (najnovije prve)
       const sortedMessages = [...messagesArray].sort((a, b) => {
-        const dateA = parseDate(a.created_at || '') || new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
-        const dateB = parseDate(b.created_at || '') || new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
+        const dateA = parseDate(a.created_at ?? '') ?? new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
+        const dateB = parseDate(b.created_at ?? '') ?? new Date(0); // Koristimo new Date(0) kao fallback za sortiranje
         return dateB.getTime() - dateA.getTime(); // Novije prvo
       });
       return sortedMessages;
@@ -328,15 +417,19 @@ export const getUnreadMessageCount = async (): Promise<number> => {
     // Dodajemo timestamp kao query parametar da izbjegnemo keširanje
     const timestamp = new Date().getTime();
     const response = await api.get(`/members/unread-count?t=${timestamp}`);
+    const data: unknown = response.data;
     
     // Ako backend vraća objekt s count svojstvom, koristimo ga
-    if (response.data && typeof response.data.count === 'number') {
-      return response.data.count;
+    if (typeof data === 'object' && data !== null && 'count' in (data as Record<string, unknown>)) {
+      const cnt = (data as { count: unknown }).count;
+      if (typeof cnt === 'number') {
+        return cnt;
+      }
     }
     
     // Ako backend vraća samo broj, koristimo ga direktno
-    if (typeof response.data === 'number') {
-      return response.data;
+    if (typeof data === 'number') {
+      return data;
     }
     
     // Ako ne možemo dobiti broj nepročitanih poruka, vraćamo 0

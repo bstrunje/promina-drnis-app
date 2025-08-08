@@ -45,7 +45,7 @@ export const getActivitiesByStatus = async (status: string): Promise<Activity[]>
 export const getAllActivities = async (): Promise<Activity[]> => {
   // Standardna funkcija za dohvaćanje svih aktivnosti, koristi se gdje nije potreban
   // detaljan izračun sati s uključenim podacima o sudionicima
-  const response = await apiInstance.get('/activities');
+  const response = await apiInstance.get<Activity[]>('/activities');
   return response.data;
 };
 
@@ -59,13 +59,13 @@ export const getAllActivities = async (): Promise<Activity[]> => {
  * @returns Promise koji razrješava u polje aktivnosti s potpunim detaljima sudionika.
  */
 export const getActivitiesByYearWithParticipants = async (year: number): Promise<Activity[]> => {
-  const response = await apiInstance.get(`/activities/by-year/${year}/with-participants`);
+  const response = await apiInstance.get<Activity[]>(`/activities/by-year/${year}/with-participants`);
   return response.data;
 };
 
 export const getAllActivitiesWithParticipants = async (): Promise<Activity[]> => {
   // Koristi novu specijaliziranu rutu koja vraća potpune podatke o sudionicima
-  const response = await apiInstance.get('/activities/with-participants');
+  const response = await apiInstance.get<Activity[]>('/activities/with-participants');
   return response.data;
 };
 
@@ -164,14 +164,16 @@ export const updateParticipationAdmin = async (participationId: number, data: Pa
   return response.data;
 };
 
-export const cancelActivity = async (activityId: number, cancellation_reason: string) => {
-  const response = await apiInstance.patch(`/activities/${activityId}/cancel`, { cancellation_reason });
-  return response.data;
+export const cancelActivity = async (activityId: number, cancellation_reason: string): Promise<unknown> => {
+  const response = await apiInstance.patch<unknown>(`/activities/${activityId}/cancel`, { cancellation_reason });
+  const data: unknown = response.data;
+  return data;
 };
 
-export const deleteActivity = async (activityId: number) => {
-  const response = await apiInstance.delete(`/activities/${activityId}`);
-  return response.data;
+export const deleteActivity = async (activityId: number): Promise<unknown> => {
+  const response = await apiInstance.delete<unknown>(`/activities/${activityId}`);
+  const data: unknown = response.data;
+  return data;
 };
 
 /**
@@ -198,7 +200,8 @@ export const leaveActivity = async (activityId: number): Promise<void> => {
  * @param memberId ID člana.
  * @returns Promise koji razrješava u polje godišnjih statistika.
  */
-export const getMemberAnnualStats = async (memberId: number) => {
-  const response = await apiInstance.get(`/members/${memberId}/annual-stats`);
-  return response.data;
+export const getMemberAnnualStats = async (memberId: number): Promise<unknown> => {
+  const response = await apiInstance.get<unknown>(`/members/${memberId}/annual-stats`);
+  const data: unknown = response.data;
+  return data;
 };

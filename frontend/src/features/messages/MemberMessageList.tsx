@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 // import {
@@ -13,7 +13,7 @@ import { useToast } from "@components/ui/use-toast";
 import { Bell, CheckCircle, MessageCircle } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { Message as MessageType } from './types/messageTypes';
-import { getMemberMessages, markMessageAsRead, getMemberSentMessages, getGenericMessages } from '../../utils/api/apiMessages';
+import { getMemberMessages, markMessageAsRead, getMemberSentMessages } from '../../utils/api/apiMessages';
 import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from './utils/messageConverters';
 import SentMessageCard from './components/SentMessageCard';
 import { ApiGenericMessage } from '../../utils/api/apiTypes';
@@ -22,36 +22,19 @@ import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";
 // import { parseDate } from '../../utils/dateUtils';
 
-interface MemberMessageRecipient {
-  member_id: number;
-  read_at: string | null; // Koristimo string jer JSON ne podržava Date objekte direktno
-  full_name?: string; // Ime člana, ako ga backend pošalje
-}
-
-interface MemberMessage {
-  message_id: number;
-  message_text: string;
-  created_at: string;
-  status: 'unread' | 'read' | 'archived';
-  sender_id: number | null;
-  sender_type: 'member_administrator' | 'member' | 'member_superuser';
-  recipient_id: number | null;
-  recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
-  read_by?: MemberMessageRecipient[]; // Lista primatelja i njihov status čitanja
-}
+// Uklonjeni nekorišteni tipovi MemberMessage/MemberMessageRecipient
 
 const MemberMessageList: React.FC = () => {
   const { t } = useTranslation('messages');
   const { toast } = useToast();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageType[]>([]);
-  const [openCollapsibleId, setOpenCollapsibleId] = useState<number | null>(null);
+  const [openCollapsibleId] = useState<number | null>(null);
   const openedMessageIdsRef = useRef<Set<number>>(new Set());
   const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
-  const [genericMessages, setGenericMessages] = useState<ApiGenericMessage[]>([]);
+  const [genericMessages] = useState<ApiGenericMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingSent, setLoadingSent] = useState(true);
-  const [loadingGeneric, setLoadingGeneric] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('unread');
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
 
@@ -83,7 +66,7 @@ const MemberMessageList: React.FC = () => {
       const apiData = await getMemberSentMessages();
       const convertedData = apiData.map(convertMemberApiMessageToMessage);
       setSentMessages(convertedData);
-    } catch (error) {
+    } catch {
       toast({
         title: t('error'),
         description: t('fetchSentMessagesError'),
@@ -112,56 +95,52 @@ const MemberMessageList: React.FC = () => {
       const event = new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED);
       window.dispatchEvent(event);
 
-    } catch (error) {
+    } catch {
       // Ovdje ne prikazujemo toast da ne ometamo korisnika
     }
   }, []); // Prazan niz ovisnosti jer unutra nema vanjskih varijabli
 
   // EFEKT ZA OZNAČAVANJE PORUKA KAO PROČITANIH
   useEffect(() => {
+    // Kopiramo referencu u lokalnu varijablu kako bismo izbjegli promjene tijekom cleanupa
+    const openedIdsRef = openedMessageIdsRef.current;
     // Cleanup funkcija se izvršava prije sljedećeg renderiranja ili pri unmountu.
     // Ovo je idealno mjesto za poziv API-ja jer hvatamo sve ID-jeve
     // koji su dodani u ref tijekom prethodnog stanja.
     return () => {
-      const idsToMark = Array.from(openedMessageIdsRef.current);
+      const idsToMark = Array.from(openedIdsRef);
       if (idsToMark.length > 0) {
         idsToMark.forEach(id => {
           void handleMarkAsRead(id);
         });
         // Isprazni set nakon što smo poslali zahtjeve
-        openedMessageIdsRef.current.clear();
+        openedIdsRef.clear();
       }
     };
   }, [handleMarkAsRead, openCollapsibleId, filter, activeTab]); // Ponovno pokreni efekt na svaku relevantnu promjenu
 
 
 
-  const handleRefresh = () => {
-    if (activeTab === 'received') {
-      void fetchMessages();
-    } else {
-      void fetchSentMessages();
-    }
-  };
+  // Uklonjen handleRefresh jer se ne koristi
 
   // Učitavanje poruka kad se komponenta montira
   useEffect(() => {
     if (user) {
-      fetchMessages();
-      fetchSentMessages();
+      void fetchMessages();
+      void fetchSentMessages();
       // fetchGenericMessages(); // Uklonjeno jer uzrokuje greške
     }
     // Postavljanje intervala za periodično dohvaćanje
     const interval = setInterval(() => {
       if (user) {
-        fetchMessages();
-        fetchSentMessages();
+        void fetchMessages();
+        void fetchSentMessages();
         // fetchGenericMessages(); // Uklonjeno jer uzrokuje greške
       }
     }, 30000); // 30 sekundi
 
     return () => clearInterval(interval);
-  }, [activeTab, fetchMessages, fetchSentMessages]); // Ovisimo o user.member_id i funkcijama za dohvat poruka
+  }, [activeTab, fetchMessages, fetchSentMessages, user]); // Ovisimo o user i funkcijama za dohvat poruka
 
 
 
@@ -371,7 +350,7 @@ const MemberMessageList: React.FC = () => {
                   {sentMessages.map(message => (
                     <SentMessageCard
                       key={message.message_id}
-                      message={message as MessageType}
+                      message={message}
                       currentUserId={user?.member_id}
                     />
                   ))}

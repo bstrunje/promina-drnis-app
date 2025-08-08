@@ -1,6 +1,6 @@
 // features/systemManager/components/common/ManagerTabNav.tsx
 import React from 'react';
-import { Activity, Users, Settings, UserPlus, FileText } from 'lucide-react';
+import { Activity, Settings, FileText } from 'lucide-react';
 
 // Komponenta za navigacijske tabove u System Manager panelu
 interface ManagerTabNavProps {

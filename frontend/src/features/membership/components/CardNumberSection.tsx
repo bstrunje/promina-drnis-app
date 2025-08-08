@@ -62,8 +62,8 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
     }
   };
   
-  // Dohvati stilove za trenutnog člana
-  const { bg, text, cardBg } = getStatusColors();
+  // Dohvati stilove za trenutnog člana (koristimo samo cardBg)
+  const { cardBg } = getStatusColors();
 
   // Stil za karticu ovisno o statusu člana (zadržavamo postojeću funkciju za kompatibilnost)
   const getStatusColor = () => cardBg;

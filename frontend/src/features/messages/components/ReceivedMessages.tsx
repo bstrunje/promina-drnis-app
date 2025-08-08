@@ -20,6 +20,7 @@ import {
 import { formatDate } from "../../../utils/dateUtils";
 import { Message } from '../types/messageTypes';
 import { convertApiMessagesToMessages } from '../utils/messageConverters';
+import type { ApiAdminMessage } from '../../../utils/api/apiTypes';
 import { useAuth as useAuthHook } from '@/context/useAuth';
 
 interface ReceivedMessagesProps {
@@ -40,7 +41,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
 const fetchMessages = useCallback(async () => {
   setLoading(true);
   try {
-    let apiData;
+    let apiData: ApiAdminMessage[];
     if (userRole === 'member' && user?.member_id) {
       // Ako je običan član, dohvati njegove poruke
       apiData = await getMemberMessages(user.member_id);
@@ -56,11 +57,11 @@ const fetchMessages = useCallback(async () => {
     onUnreadCountChange(unreadCount);
   } catch (error: unknown) {
     // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
-    const isRetryFlagTrue = (
-      typeof error === 'object' && error !== null && 'config' in error &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (error as any).config?._retry === true
-    );
+    let isRetryFlagTrue = false;
+    if (typeof error === 'object' && error !== null) {
+      const maybe = error as { config?: { _retry?: unknown } };
+      isRetryFlagTrue = maybe.config?._retry === true;
+    }
     if (isRetryFlagTrue) {
       toast({
         title: t('common.error'),

@@ -64,8 +64,11 @@ export function formatDate(
       dateObj = date.includes('T') ? parseISO(date) : new Date(date);
     } else if (typeof date === 'number') {
       dateObj = new Date(date);
+    } else if (date instanceof Date) {
+      dateObj = date;
     } else {
-      dateObj = date as Date;
+      // Nepoznat tip – vraćamo prazan string
+      return '';
     }
   
     if (!isValid(dateObj)) {
@@ -221,7 +224,6 @@ export function parseDate(
   const dateString = dateStringInput.trim(); // Trim string
 
   let parsedDateInstance: Date | null = null;
-  let consoleWarnMessage = '';
 
   try {
     // Prioritetno pokušaj parsirati kao puni ISO string ako nema specifičnog formata
@@ -232,8 +234,9 @@ export function parseDate(
 
     // Rukovanje specifičnim formatima uz UTC konverziju
     if (dateFormat === 'dd.MM.yyyy') {
-      const parts = dateString.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-      if (parts) {
+      const re = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+      const parts = re.exec(dateString);
+      if (parts?.[1] && parts[2] && parts[3]) {
         const day = parseInt(parts[1], 10);
         const month = parseInt(parts[2], 10) - 1; // Mjeseci su 0-indeksirani u Date
         const year = parseInt(parts[3], 10);
@@ -242,15 +245,16 @@ export function parseDate(
         if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
           parsedDateInstance = utcDate;
         } else {
-          consoleWarnMessage = `parseDate (dd.MM.yyyy): Nevažeći datum ${dateString}`;
+          console.warn(`parseDate (dd.MM.yyyy): Nevažeći datum ${dateString}`);
         }
       } else {
-        consoleWarnMessage = `parseDate (dd.MM.yyyy): String '${dateString}' ne odgovara formatu.`;
+        console.warn(`parseDate (dd.MM.yyyy): String '${dateString}' ne odgovara formatu.`);
       }
     } else if (dateFormat === 'yyyy-MM-dd') {
       // Ovdje želimo striktno YYYY-MM-DD bez vremena
-      const parts = dateString.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-      if (parts) {
+      const re = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+      const parts = re.exec(dateString);
+      if (parts?.[1] && parts[2] && parts[3]) {
         const year = parseInt(parts[1], 10);
         const month = parseInt(parts[2], 10) - 1;
         const day = parseInt(parts[3], 10);
@@ -258,7 +262,7 @@ export function parseDate(
         if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
           parsedDateInstance = utcDate;
         } else {
-          consoleWarnMessage = `parseDate (yyyy-MM-dd): Nevažeći datum ${dateString}`;
+          console.warn(`parseDate (yyyy-MM-dd): Nevažeći datum ${dateString}`);
         }
       } else {
         // Ako ne odgovara YYYY-MM-DD, ali je možda puni ISO, pokušaj s parseISO
@@ -266,7 +270,7 @@ export function parseDate(
         if (isValid(isoDate)) {
           return isoDate; // Vrati kao UTC ako je puni ISO
         }
-        consoleWarnMessage = `parseDate (yyyy-MM-dd): String '${dateString}' ne odgovara formatu yyyy-MM-dd.`;
+        console.warn(`parseDate (yyyy-MM-dd): String '${dateString}' ne odgovara formatu yyyy-MM-dd.`);
       }
     } else {
       // Za sve ostale formate, koristi date-fns/parse
@@ -453,8 +457,8 @@ export function cleanISODateString(isoString: string | null): string {
   
   // Zamjenjuje sve dodatne navodnike oko T i Z znakova
   return isoString
-    .replace(/\'T\'/g, "T")
-    .replace(/\'Z\'/g, "Z");
+    .replace(/'T'/g, "T")
+    .replace(/'Z'/g, "Z");
 }
 
 /**
@@ -481,8 +485,8 @@ export const formatMinutesToHoursAndMinutes = (totalMinutes: number | null | und
  */
 export function formatDateLocalized(
   dateString: string | Date,
-  localeCode: string = 'hr',
-  formatStr: string = 'P'
+  localeCode = 'hr',
+  formatStr = 'P'
 ): string {
   if (!dateString) return '';
   let dateObj: Date;

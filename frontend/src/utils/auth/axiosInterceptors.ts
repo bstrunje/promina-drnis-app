@@ -2,8 +2,7 @@
  * Utility za konfiguraciju axios interceptora za automatsko osvježavanje tokena
  */
 
-import axios, { AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
-import { MAX_REFRESH_RETRIES, REFRESH_RETRY_DELAY, delay } from './refreshUtils';
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 
 // Prošireni tip za axios request konfiguraciju
 type AxiosRequestConfigWithRetry = AxiosRequestConfig & {
@@ -27,7 +26,7 @@ function isAxiosError(err: unknown): err is AxiosError {
  * Konfigurira axios interceptore za automatsko osvježavanje tokena
  */
 export function setupAxiosInterceptors(
-  token: string | null,
+  _token: string | null,
   refreshTokenFn: () => Promise<string | null>,
   logoutFn: () => void | Promise<void>
 ): () => void {
@@ -53,10 +52,10 @@ export function setupAxiosInterceptors(
     (response) => response,
     async (error: unknown) => {
       if (!isAxiosError(error)) {
-        return Promise.reject(error);
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
       }
 
-      const originalRequest: AxiosRequestConfigWithRetry = error.config || {};
+      const originalRequest: AxiosRequestConfigWithRetry = error.config ?? {};
 
       // Ako greška nije 401 ili ako je zahtjev već bio ponovljen, ne pokušavaj ponovno.
       if (error.response?.status !== 401 || originalRequest._retry) {
@@ -71,19 +70,19 @@ export function setupAxiosInterceptors(
         if (newToken) {
           console.log('Token uspješno osvježen, ponavljam originalni zahtjev.');
           if (originalRequest.headers) {
-            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
           }
           return axios(originalRequest);
         } else {
           // Ako refreshTokenFn vrati null, to znači da je i refresh token nevažeći.
           console.log('Refresh token nije valjan, odjavljujem korisnika.');
           await logoutFn();
-          return Promise.reject(error);
+          return Promise.reject(error instanceof Error ? error : new Error(String(error)));
         }
       } catch (refreshError) {
         console.error('Greška pri osvježavanju tokena, odjavljujem korisnika:', refreshError);
         await logoutFn();
-        return Promise.reject(refreshError);
+        return Promise.reject(refreshError instanceof Error ? refreshError : new Error(String(refreshError)));
       }
     }
   );

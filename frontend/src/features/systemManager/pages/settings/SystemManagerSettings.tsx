@@ -1,7 +1,6 @@
 // features/systemManager/pages/settings/SystemManagerSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { Shield, RefreshCw, Save } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
@@ -317,7 +316,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 };
 
 const SystemManagerSettings: React.FC = () => {
-  const { manager } = useSystemManager();
+  
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",

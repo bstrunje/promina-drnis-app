@@ -18,10 +18,8 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
   onSuccess,
   onError
 }) => {
-  // Osiguravamo da selectedRole uvijek ima definiranu vrijednost
-  // Koristimo useMemo kako bi se inicijalna vrijednost postavila samo jednom
-  const initialRole = React.useMemo<MemberRole>(() => currentRole || 'member', []);
-  const [selectedRole, setSelectedRole] = useState<MemberRole>(initialRole);
+  // Inicijalno stanje iz currentRole; promjene currentRole syncamo u useEffect ispod
+  const [selectedRole, setSelectedRole] = useState<MemberRole>(currentRole);
   const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
@@ -75,7 +73,7 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
         </div>
         <div>
           <button
-            onClick={handleSaveRole}
+            onClick={() => { void handleSaveRole(); }}
             disabled={saving || selectedRole === currentRole}
             className={`px-4 py-2 rounded-md ${
               saving || selectedRole === currentRole

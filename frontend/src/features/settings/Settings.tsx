@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { SystemSettings } from "@shared/settings.types";
 import { Alert, AlertDescription } from "@components/ui/alert";
-import { useToast } from "@components/ui/use-toast";
-import axios from "axios";
-import { API_BASE_URL } from "@/utils/config";
+ 
 import { getCurrentDate } from "../../utils/dateUtils";
 
 import { useAuth } from "../../context/useAuth";
@@ -28,7 +26,7 @@ const Settings: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
   // const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const { toast } = useToast();
+  
 
 
   // Submission handler - trenutno nekorišten jer se postavke ne ažuriraju

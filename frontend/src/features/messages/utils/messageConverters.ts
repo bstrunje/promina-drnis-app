@@ -15,11 +15,11 @@ interface ApiMemberMessage {
   sender_type: 'member_administrator' | 'member' | 'member_superuser';
   recipient_id: number | null;
   recipient_type: 'member_administrator' | 'member' | 'group' | 'all';
-  read_by?: Array<{
+  read_by?: {
     member_id: string | number;
     read_at?: string | null;
     full_name?: string | null;
-  }>; // opcionalno
+  }[]; // opcionalno
 }
 
 /**

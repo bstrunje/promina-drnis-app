@@ -7,8 +7,6 @@ import { InventoryStatus } from "../types/membershipTypes";
 import { getCurrentYear } from "../../../utils/dateUtils";
 
 export const useStampManagement = (member: Member, onUpdate: (member: Member) => Promise<void>, userRoleFromProps?: string) => {
-  // Spremamo userRole iz propsa u state da bude dostupan u svim funkcijama
-  const [userRole] = useState<string | undefined>(userRoleFromProps);
   const { toast } = useToast();
   
   // Inicijaliziraj stanje iz membership_details (izvor istine)
@@ -96,7 +94,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   // Upravljanje izdavanjem markice za tekuću godinu
   const handleStampToggle = async (newState: boolean, providedUserRole?: string) => {
     // Koristimo userRole iz propsa ako je dostupan, inače koristimo providedUserRole
-    const effectiveUserRole = userRoleFromProps || providedUserRole;
+    const effectiveUserRole = userRoleFromProps ?? providedUserRole;
     
     // Provjera prava pristupa
     const canEdit = effectiveUserRole === "member_administrator" || effectiveUserRole === "member_superuser";
@@ -205,7 +203,7 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
   // Upravljanje izdavanjem markice za sljedeću godinu
   const handleNextYearStampToggle = async (newState: boolean, providedUserRole?: string) => {
     // Koristimo userRole iz propsa ako je dostupan, inače koristimo providedUserRole
-    const effectiveUserRole = userRoleFromProps || providedUserRole;
+    const effectiveUserRole = userRoleFromProps ?? providedUserRole;
     
     // Provjera prava pristupa
     const canEdit = effectiveUserRole === "member_administrator" || effectiveUserRole === "member_superuser";

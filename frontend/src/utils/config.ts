@@ -7,7 +7,8 @@ const isLocalDevelopment = import.meta.env.DEV && window.location.hostname === '
 
 // Omogućava prebacivanje između lokalnog (3000) i Docker (3001) backend-a
 // Postavite VITE_BACKEND_PORT=3001 za Docker backend, inače koristi lokalni (3000)
-const backendPort = import.meta.env.VITE_BACKEND_PORT || '3000';
+const envPort = (import.meta as { env: Record<string, unknown> }).env.VITE_BACKEND_PORT;
+const backendPort = typeof envPort === 'string' && envPort.length > 0 ? envPort : '3000';
 
 export const API_BASE_URL = isLocalDevelopment 
   ? `http://localhost:${backendPort}/api`  // Dinamički port (3001=Docker, 3000=lokalni)

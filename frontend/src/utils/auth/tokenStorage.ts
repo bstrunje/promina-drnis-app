@@ -58,7 +58,8 @@ export const tokenStorage = {
   clearRefreshToken: clearStoredRefreshToken,
   
   clearAllTokens(): void {
-    this.clearAccessToken();
-    this.clearRefreshToken();
+    // Ne oslanjamo se na `this` radi čistoće linta; izravno brišemo ključeve
+    localStorage.removeItem("token");
+    clearStoredRefreshToken();
   }
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { StampManagementSectionProps } from "../types/membershipTypes";
 import { Label } from "@components/ui/label";
 import { Checkbox } from "@components/ui/checkbox";
@@ -89,7 +89,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                 <Checkbox 
                   id="stamp-checkbox"
                   checked={stampIssued}
-                  onCheckedChange={(newState) => onStampToggle(newState === true, userRole)}
+                  onCheckedChange={(newState) => { void onStampToggle(newState === true, userRole); }}
                   disabled={isIssuingStamp || 
                     /* Administrator ne može vratiti markicu nakon što je izdana */
                     (stampIssued && userRole === 'member_administrator')}
@@ -154,7 +154,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                   <Checkbox
                     id="next-year-stamp-checkbox"
                     checked={nextYearStampIssued}
-                    onCheckedChange={(newState) => onNextYearStampToggle(newState === true, userRole)}
+                    onCheckedChange={(newState) => { void onNextYearStampToggle(newState === true, userRole); }}
                     disabled={isIssuingNextYearStamp || 
                       /* Administrator ne može vratiti markicu nakon što je izdana */
                       (nextYearStampIssued && userRole === 'member_administrator') || 

@@ -6,7 +6,7 @@ import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
 import { API_BASE_URL } from "../../../utils/config";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/useAuth";
-import { useTranslation } from "react-i18next";
+// import { useTranslation } from "react-i18next";
 
 // Ispravno deklariran interface, koristi isključivo tipove
 export interface UseMembershipPeriodsReturn {
@@ -38,7 +38,7 @@ export const useMembershipPeriods = (
   feePaymentDate?: string,
   onUpdate?: (periods: MembershipPeriod[]) => Promise<void>
 ) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation(); // nije korišteno
   const { toast } = useToast();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);

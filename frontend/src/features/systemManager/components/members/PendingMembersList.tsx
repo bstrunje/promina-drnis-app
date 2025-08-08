@@ -1,6 +1,6 @@
 // features/systemManager/components/members/PendingMembersList.tsx
-import React, { useState, useEffect } from 'react';
-import { Check, X, Clock, User, AlertCircle, UserCog, RefreshCw, UserPlus, Search, Key, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, AlertCircle, UserCog, RefreshCw, UserPlus, Search, Key, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@components/ui/use-toast';
 import { getPendingMembers, assignPasswordToMember, assignRoleToMember, PendingMember } from '../../utils/systemManagerApi';
 
@@ -25,7 +25,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
   const [assignSuperuserRole, setAssignSuperuserRole] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const loadPendingMembers = async () => {
+  const loadPendingMembers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -43,11 +43,11 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadPendingMembers();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, loadPendingMembers]);
 
   const filteredMembers = pendingMembers.filter(member => {
     const fullName = (member.full_name ?? `${member.first_name} ${member.last_name}`).toLowerCase();
@@ -151,7 +151,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
               />
             </div>
             <button 
-              onClick={() => loadPendingMembers()} 
+              onClick={() => { void loadPendingMembers(); }} 
               disabled={loading}
               className="flex items-center text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-wait"
             >
@@ -169,7 +169,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
 
       {loading ? (
         <div className="space-y-2">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-gray-200 animate-pulse rounded-md"></div>)}
+          {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 bg-gray-200 animate-pulse rounded-md"></div>)}
         </div>
       ) : filteredMembers.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-lg">
@@ -213,7 +213,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-medium mb-4">Approve Member: {selectedMember.full_name}</h3>
-            <form onSubmit={handleApprove} className="space-y-4">
+            <form onSubmit={(e) => { void handleApprove(e); }} className="space-y-4">
               <div>
                 <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">Membership Card Number (optional)</label>
                 <input

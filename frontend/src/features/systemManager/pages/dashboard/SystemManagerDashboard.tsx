@@ -6,7 +6,6 @@ import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigati
 import ManagerHeader from '../../components/common/ManagerHeader';
 import ManagerTabNav from '../../components/common/ManagerTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
-import MembersWithPermissions from '../../../members/permissions/MembersWithPermissions';
 import PendingMembersList from '../../components/members/PendingMembersList';
 import SystemManagerSettings from '../settings/SystemManagerSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
