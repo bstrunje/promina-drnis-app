@@ -34,10 +34,10 @@ const ActivityYearPage: React.FC = () => {
       const token = localStorage.getItem('token');
 
       try {
-        const response = await axios.get(`${API_BASE_URL}/activities/member/${memberId}/${year}`, {
+        const response = await axios.get<ActivityParticipation[]>(`${API_BASE_URL}/activities/member/${memberId}/${year}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setParticipations(response.data || []);
+        setParticipations(response.data ?? []);
       } catch (err) {
         console.error(`Error fetching activities for year ${year}:`, err);
         setError(t('activityYear.errorFetchingData'));
@@ -47,7 +47,7 @@ const ActivityYearPage: React.FC = () => {
     };
 
     void fetchData();
-  }, [memberId, year]);
+  }, [memberId, year, t]);
 
   if (loading) {
     return <div className="p-6"><div className="h-16 bg-gray-200 animate-pulse rounded-md w-1/2 mx-auto"></div></div>;

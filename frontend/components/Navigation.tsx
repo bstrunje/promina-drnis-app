@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
 import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
-import { useUnreadMessages } from '../src/contexts/UnreadMessagesContext';
+import { useUnreadMessages } from '../src/contexts/useUnreadMessages';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../src/components/LanguageToggle';
 

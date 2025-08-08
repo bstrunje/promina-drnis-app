@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { useUnreadMessages } from '../../contexts/UnreadMessagesContext';
+import { useUnreadMessages } from '../../contexts/useUnreadMessages';
 import { formatHoursToHHMM } from '../../utils/activityHours';
 import { Users, Activity as ActivityIcon, Mail, User, RefreshCw, Bell, Calendar } from 'lucide-react';
 import { Member } from '@shared/member';

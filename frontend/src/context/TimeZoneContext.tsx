@@ -1,39 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/config';
 import { useAuth } from './useAuth';
 import { setCurrentTimeZone } from '../utils/dateUtils';
+import { TIME_ZONE_CACHE_KEY, TimeZoneContext, type TimeZoneContextType } from './timeZone-core';
 
-// Ključ za localStorage
-const TIME_ZONE_CACHE_KEY = 'promina_app_timezone';
-
-// Tip konteksta
-interface TimeZoneContextType {
-  timeZone: string;
-  loading: boolean;
-  error: string | null;
-  setTimeZone: (timeZone: string) => void;
-  refreshTimeZone: () => Promise<void>;
-}
-
-// Kreiraj kontekst
-const TimeZoneContext = createContext<TimeZoneContextType>({
-  timeZone: 'Europe/Zagreb', // Zadana vrijednost
-  loading: false,
-  error: null,
-  setTimeZone: () => { /* Implementacija će biti dostavljena kroz Provider */ }, 
-  refreshTimeZone: async () => { /* Implementacija će biti dostavljena kroz Provider */ }
-});
-
-// Hook za korištenje konteksta
-// Implementirano kao named funkcija za bolju kompatibilnost s Fast Refresh
-function useTimeZoneHook() {
-  return useContext(TimeZoneContext);
-}
-
-export const useTimeZone = useTimeZoneHook;
-
-// Provider komponenta
 export const TimeZoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [timeZone, setTimeZone] = useState<string>(() => {
     // Pokušaj dohvatiti iz cache-a, ili koristi default

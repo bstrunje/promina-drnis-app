@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '@/utils/config';
 import { Calendar, ChevronRight } from 'lucide-react';
@@ -21,7 +21,6 @@ interface AnnualStat {
 
 const ActivityOverviewPage: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
-  const navigate = useNavigate();
   const { t } = useTranslation('activities');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +37,12 @@ const ActivityOverviewPage: React.FC = () => {
       try {
         // Dohvaćamo samo podatke o članu i godišnje statistike
         const [memberRes, statsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/members/${memberId}`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_BASE_URL}/members/${memberId}/annual-stats`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.get<Member>(`${API_BASE_URL}/members/${memberId}`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get<AnnualStat[]>(`${API_BASE_URL}/members/${memberId}/annual-stats`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
         setMember(memberRes.data);
-        setAnnualStats(statsRes.data || []);
+        setAnnualStats(statsRes.data ?? []);
 
       } catch (err) {
         console.error("Error fetching activity overview data:", err);
@@ -54,7 +53,7 @@ const ActivityOverviewPage: React.FC = () => {
     };
 
     void fetchData();
-  }, [memberId]);
+  }, [memberId, t]);
 
   const sortedStats = annualStats.sort((a, b) => b.year - a.year);
 

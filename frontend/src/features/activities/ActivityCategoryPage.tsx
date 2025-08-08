@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './activities.css'; // Dodajemo CSS za custom stilove
 import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
-import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, MapPin, PlusCircle, Trash2, MountainSnow, Users, ClipboardList, ListChecks, Axe, Route, ConciergeBell } from 'lucide-react';
+import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, PlusCircle, Trash2, MountainSnow, Users, ClipboardList, ListChecks, Axe, Route, ConciergeBell } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
 import { Button } from '@components/ui/button';
-import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getAllActivities, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
+import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { hr, enUS } from 'date-fns/locale';
 import { useAuth } from '@/context/useAuth';
 import CreateActivityModal from './CreateActivityModal';
@@ -34,7 +34,7 @@ const ActivityCategoryPage: React.FC = () => {
   
   // Dohvat godine iz URL parametra ili query stringa
   const yearQueryParam = searchParams.get('year');
-  const yearParam = yearUrlParam || yearQueryParam;
+  const yearParam = yearUrlParam ?? yearQueryParam;
   
   // Određujemo način prikaza na temelju URL-a (po kategoriji ili po godini)
   const isYearView = location.pathname.includes('/activities/year/');
@@ -53,7 +53,7 @@ const ActivityCategoryPage: React.FC = () => {
   // Pretvaramo year parametar u broj
   const year = yearParam ? parseInt(yearParam, 10) : null;
 
-  const iconMap: { [key: string]: React.ElementType } = {
+  const iconMap: Record<string, React.ElementType> = {
     'akcija-drustvo': Axe,
     'akcija-trail': Route,
     dezurstva: ConciergeBell,
@@ -72,33 +72,27 @@ const ActivityCategoryPage: React.FC = () => {
       setActivityTypes(types);
       
       // Način dohvata ovisi o tome prikazujemo li po kategoriji ili po godini
-      if (isYearView && yearParam) {
+      if (isYearView && activityTypeId && yearParam) {
+        // Prikaz aktivnosti za određeni tip unutar godine
+        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
+        setActivityType(currentType ?? null);
+        const year = parseInt(yearParam, 10);
+        const activitiesForTypeInYear = await getActivitiesByTypeId(activityTypeId, year);
+        setActivities(activitiesForTypeInYear);
+      } else if (isYearView && yearParam) {
         // U prikazu po godini, želimo prikazati kategorije a ne aktivnosti
         // Tako da trebamo samo tipove koje već imamo
-        
         // Dohvaćamo aktivnosti te godine za računanje statistike s detaljima o sudionicima
-        // Koristimo novu funkciju koja dohvaća sve podatke o sudionicima za pravilni izračun sati
         const year = parseInt(yearParam, 10);
         const activitiesForYear = await getActivitiesByYearWithParticipants(year);
         setActivities(activitiesForYear);
         setActivityType(null); // Nema specifičnog tipa aktivnosti u prikazu po godini
-        
-      } else if (isYearView && activityTypeId && yearParam) {
-        // Prikaz aktivnosti za određeni tip unutar godine
-        const currentType = types.find(t => t.type_id.toString() === activityTypeId);
-        setActivityType(currentType || null);
-        
-        const year = parseInt(yearParam, 10);
-        const activitiesForTypeInYear = await getActivitiesByTypeId(activityTypeId, year);
-        setActivities(activitiesForTypeInYear);
-        
       } else if (activityTypeId) {
         // Standardni dohvat po kategoriji (bez filtriranja po godini)
         const currentType = types.find(t => t.type_id.toString() === activityTypeId);
-        setActivityType(currentType || null);
-
+        setActivityType(currentType ?? null);
         if (currentType) {
-          const activitiesData = await getActivitiesByTypeId(activityTypeId, year || undefined);
+          const activitiesData = await getActivitiesByTypeId(activityTypeId, year ?? undefined);
           setActivities(activitiesData);
         }
       }
@@ -110,12 +104,11 @@ const ActivityCategoryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isYearView, activityTypeId, yearParam]);
+  }, [isYearView, activityTypeId, yearParam, year, t]);
 
   useEffect(() => {
     void fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityTypeId, yearParam, isYearView]);
+  }, [fetchData]);
 
   const handleActivityCreated = () => {
     setCreateModalOpen(false);
@@ -161,7 +154,7 @@ const ActivityCategoryPage: React.FC = () => {
 
   // Računamo ukupne sate za kategoriju, uključujući sate svih sudionika
   const totalCompletedHours = calculateGrandTotalHours(
-    activities.filter(activity => activity.status === 'COMPLETED')
+    activities.filter(activity => activity.status === ActivityStatus.COMPLETED)
   );
 
   if (loading) return <div className="p-6">{t('activityCategoryPage.loading')}</div>;
@@ -193,11 +186,11 @@ const ActivityCategoryPage: React.FC = () => {
             {isYearView ? (
               <>
                 <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
-                <span className="text-xl sm:text-3xl">{t('activityCategoryPage.summary.yearActivitiesTitle', { year: yearParam })}</span>
+                <span className="text-xl sm:text-3xl">{t('activityCategoryPage.summary.yearActivitiesTitle', { year: yearParam ?? '' })}</span>
               </>
             ) : (
               <>
-                {React.createElement(iconMap[activityType?.key ?? 'default'] || iconMap.default, { className: 'h-8 w-8' })}
+                {React.createElement(iconMap[activityType?.key ?? 'default'], { className: 'h-8 w-8' })}
                 {pageTitle}
               </>
             )}
@@ -244,15 +237,15 @@ const ActivityCategoryPage: React.FC = () => {
               
               // Računamo sate za ovaj tip aktivnosti u odabranoj godini
               const typeHours = calculateGrandTotalHours(
-                activitiesForType.filter(activity => activity.status === 'COMPLETED')
+                activitiesForType.filter(activity => activity.status === ActivityStatus.COMPLETED)
               );
               
               // Ukupan broj aktivnosti u ovoj kategoriji
               const totalActivitiesCount = activitiesForType.length;
 
               // Provjera za aktivne i najavljene aktivnosti
-              const hasActive = activitiesForType.some(a => a.status === 'ACTIVE');
-              const hasPlanned = activitiesForType.some(a => a.status === 'PLANNED');
+              const hasActive = activitiesForType.some(a => a.status === ActivityStatus.ACTIVE);
+              const hasPlanned = activitiesForType.some(a => a.status === ActivityStatus.PLANNED);
               
               return (
                 <Link 
@@ -264,7 +257,7 @@ const ActivityCategoryPage: React.FC = () => {
                     <CardHeader className="activity-card-header">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          {React.createElement(iconMap[type.key] || iconMap.default, { className: 'h-6 w-6 text-primary' })}
+                          {React.createElement(iconMap[type.key] ?? iconMap.default, { className: 'h-6 w-6 text-primary' })}
                           <CardTitle className="text-base sm:text-lg">{t(`activitiesAdmin.types.${type.key}`).toUpperCase()}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
@@ -323,7 +316,7 @@ const ActivityCategoryPage: React.FC = () => {
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <CardTitle>{activity.name}</CardTitle>
-                          {activity.status === 'COMPLETED' && (
+                          {activity.status === ActivityStatus.COMPLETED && (
                             <Badge variant="outline">
                               {formatDuration(calculateActivityHours(activity))}
                             </Badge>
@@ -344,13 +337,13 @@ const ActivityCategoryPage: React.FC = () => {
                             const statusKey = `activitiesAdmin.statuses.${activity.status.toLowerCase()}`;
                             const statusText = t(statusKey);
                             switch (activity.status) {
-                              case 'PLANNED':
+                              case ActivityStatus.PLANNED:
                                 return <span className="font-semibold text-green-600">{statusText}</span>;
-                              case 'ACTIVE':
+                              case ActivityStatus.ACTIVE:
                                 return <span className="font-semibold text-blue-500">{statusText}</span>;
-                              case 'COMPLETED':
+                              case ActivityStatus.COMPLETED:
                                 return <span className="font-semibold text-black">{statusText}</span>;
-                              case 'CANCELLED':
+                              case ActivityStatus.CANCELLED:
                                 return <span className="font-semibold text-red-500">{statusText}</span>;
                               default:
                                 return null;
@@ -391,7 +384,7 @@ const ActivityCategoryPage: React.FC = () => {
           isOpen={isCreateModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onActivityCreated={handleActivityCreated}
-          activityTypeId={activityTypeId || null}
+          activityTypeId={activityTypeId ?? null}
         />
       )}
 
@@ -415,7 +408,7 @@ const ActivityCategoryPage: React.FC = () => {
               </Button>
               <Button 
                 variant="destructive" 
-                onClick={handleDeleteConfirm}
+                onClick={() => void handleDeleteConfirm()}
                 disabled={isDeleting}
               >
                 {isDeleting ? t('activityCategoryPage.deleting') : t('activityCategoryPage.delete')}

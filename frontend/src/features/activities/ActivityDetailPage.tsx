@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import './activities.css';
-import { useParams, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { getActivityById, cancelActivity as apiCancelActivity, joinActivity, leaveActivity } from '../../utils/api/apiActivities';
-import { Activity } from '@shared/activity.types';
+import { Activity, ActivityStatus } from '@shared/activity.types';
 import { useAuth } from '../../context/useAuth';
-import { format, differenceInHours, differenceInMinutes } from 'date-fns';
+import { format } from 'date-fns';
 import { formatHoursToHHMM, calculateActivityHours } from '@/utils/activityHours';
 import { ArrowLeft, Calendar, User, Edit, Users, Info, Ban, AlertCircle, CheckCircle2, PlayCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -23,7 +24,8 @@ import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
 import { ParticipantRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 
-const getRoleLabels = (t: any): { [key in ParticipantRole]: string } => ({
+// Mapiraj oznake uloga; tipizirano bez 'any'
+const getRoleLabels = (t: TFunction): Record<ParticipantRole, string> => ({
   [ParticipantRole.GUIDE]: t('activities.roles.guide'),
   [ParticipantRole.ASSISTANT_GUIDE]: t('activities.roles.assistantGuide'),
   [ParticipantRole.DRIVER]: t('activities.roles.driver'),
@@ -31,7 +33,7 @@ const getRoleLabels = (t: any): { [key in ParticipantRole]: string } => ({
 });
 
 // Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
-const getRoleNameByPercentage = (percentage: number, t: any): string | null => {
+const getRoleNameByPercentage = (percentage: number, t: TFunction): string | null => {
   const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
   if (roleEntry) {
     const roleLabels = getRoleLabels(t);
@@ -51,14 +53,13 @@ const ActivityDetailPage: React.FC = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState('');
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   // Provjeravamo dolazimo li iz prikaza po godini
-  const yearParam = searchParams.get('year') || '';
+  const yearParam = searchParams.get('year') ?? '';
 
-  const fetchActivity = async () => {
+  // Dohvat aktivnosti memoiziran zbog ovisnosti u useEffect
+  const fetchActivity = React.useCallback(async () => {
     if (!activityId) return;
     try {
       setLoading(true);
@@ -70,11 +71,11 @@ const ActivityDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activityId, t]);
 
   useEffect(() => {
-    fetchActivity();
-  }, [activityId]);
+    void fetchActivity();
+  }, [fetchActivity]);
 
   const handleCancelConfirm = async () => {
     if (!activityId || !cancellationReason) {
@@ -88,8 +89,8 @@ const ActivityDetailPage: React.FC = () => {
       toast.success(t('activityDetail.cancelSuccess'));
       setIsCancelModalOpen(false);
       setCancellationReason('');
-      fetchActivity(); // Ponovno dohvati podatke da se osvježi status
-    } catch (error) {
+      void fetchActivity(); // Ponovno dohvati podatke da se osvježi status
+    } catch (error: unknown) {
       toast.error(t('activityDetail.cancelError'));
       console.error(error);
     }
@@ -100,9 +101,13 @@ const ActivityDetailPage: React.FC = () => {
     try {
       await joinActivity(parseInt(activityId, 10));
       toast.success(t('activityDetail.joinSuccess'));
-      fetchActivity(); // Osvježi podatke da se prikaže novi sudionik
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || t('activityDetail.joinError');
+      void fetchActivity(); // Osvježi podatke da se prikaže novi sudionik
+    } catch (error: unknown) {
+      let errorMessage = t('activityDetail.joinError');
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const resp = (error as { response?: { data?: { message?: string } } }).response;
+        errorMessage = resp?.data?.message ?? errorMessage;
+      }
       toast.error(errorMessage);
       console.error(error);
     }
@@ -113,10 +118,15 @@ const ActivityDetailPage: React.FC = () => {
     try {
       await leaveActivity(parseInt(activityId, 10));
       toast.success(t('activityDetail.leaveSuccess'));
-      fetchActivity(); // Osvježi podatke
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || t('activityDetail.leaveError');
+      void fetchActivity(); // Osvježi podatke
+    } catch (error: unknown) {
+      let errorMessage = t('activityDetail.leaveError');
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const resp = (error as { response?: { data?: { message?: string } } }).response;
+        errorMessage = resp?.data?.message ?? errorMessage;
+      }
       toast.error(errorMessage);
+      console.error(error);
     }
   };
 
@@ -126,13 +136,12 @@ const ActivityDetailPage: React.FC = () => {
 
   const canEdit = user?.role === 'member_superuser' || user?.member_id === activity.organizer?.member_id;
   const isParticipant = activity.participants?.some(p => p.member_id === user?.member_id);
-  const canJoin = activity.status === 'PLANNED' && !isParticipant && user;
-  const isCancelled = activity.status === 'CANCELLED';
-  const isCompleted = activity.status === 'COMPLETED';
+  const canJoin = activity.status === ActivityStatus.PLANNED && !isParticipant && Boolean(user);
+  const isCancelled = activity.status === ActivityStatus.CANCELLED;
+  const isCompleted = activity.status === ActivityStatus.COMPLETED;
 
   // Provjera je li aktivnost tipa SASTANCI ili IZLETI prema ključu (key) - stabilniji identifikator
   const isMeetingType = activity.activity_type?.key === 'sastanci';
-  const isExcursionType = activity.activity_type?.key === 'izleti';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -213,13 +222,13 @@ const ActivityDetailPage: React.FC = () => {
             {(canJoin || (canEdit && !isCancelled)) && (
               <div className="flex flex-wrap items-start gap-2 mt-2 sm:mt-0">
                 {isParticipant && !isCompleted && !isCancelled && (
-                  <Button onClick={handleLeaveActivity} variant="outline" className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
+                  <Button onClick={() => { void handleLeaveActivity(); }} variant="outline" className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
                     <Ban className="mr-2 h-4 w-4" />
                     {t('activityDetail.leaveActivity')}
                   </Button>
                 )}
                 {canJoin && (
-                  <Button onClick={handleJoinActivity} className="bg-primary hover:bg-primary/90 text-white">
+                  <Button onClick={() => { void handleJoinActivity(); }} className="bg-primary hover:bg-primary/90 text-white">
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     {t('activityDetail.joinActivity')}
                   </Button>
@@ -262,7 +271,7 @@ const ActivityDetailPage: React.FC = () => {
                 <Info className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.description')}</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">{activity.description || t('activityDetail.noDescription')}</p>
+                  <p className="text-gray-600 text-sm sm:text-base">{activity.description ?? t('activityDetail.noDescription')}</p>
                 </div>
               </div>
 
@@ -272,7 +281,7 @@ const ActivityDetailPage: React.FC = () => {
                   <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.dateTime')}</h3>
                   
                   {/* Provjera ima li ručnog unosa sati */}
-                  {activity.participants && activity.participants.some(p => p.manual_hours) ? (
+                  {activity.participants?.some(p => p.manual_hours) ? (
                     <p className="text-gray-600 text-sm sm:text-base">
                       <span className="font-medium">{t('activityDetail.manualEntry')}</span>
                     </p>
@@ -299,7 +308,7 @@ const ActivityDetailPage: React.FC = () => {
                   {(!isMeetingType || (activity.recognition_percentage && activity.recognition_percentage < 100)) && (
                     <div className="mt-2 border-t border-gray-100 pt-2">
                       <p className="text-gray-600 text-sm sm:text-base">
-                        <span className="font-medium">{t('activityDetail.recognitionPercentage')}</span> {activity.recognition_percentage || 100}%
+                        <span className="font-medium">{t('activityDetail.recognitionPercentage')}</span> {activity.recognition_percentage ?? 100}%
                       </p>
                     </div>
                   )}
@@ -314,7 +323,7 @@ const ActivityDetailPage: React.FC = () => {
                   <User className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                   <div>
                     <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.organizer')}</h3>
-                    <p className="text-gray-600 text-sm sm:text-base">{activity.organizer?.full_name || t('activityDetail.notAvailable')}</p>
+                    <p className="text-gray-600 text-sm sm:text-base">{activity.organizer?.full_name ?? t('activityDetail.notAvailable')}</p>
                   </div>
                 </div>
               )}
@@ -322,7 +331,7 @@ const ActivityDetailPage: React.FC = () => {
               <div className="flex items-start">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>
-                  <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.participants', { count: activity.participants?.length || 0 })}</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.participants', { count: activity.participants?.length ?? 0 })}</h3>
                   {activity.participants && activity.participants.length > 0 ? (
                     <ul className="list-disc list-outside ml-5 text-gray-600 text-xs sm:text-sm space-y-1">
                       {activity.participants.map((p) => (
@@ -371,7 +380,7 @@ const ActivityDetailPage: React.FC = () => {
             <Button variant="ghost" onClick={() => setIsCancelModalOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="destructive" onClick={handleCancelConfirm} disabled={!cancellationReason.trim()}>
+            <Button variant="destructive" onClick={() => { void handleCancelConfirm(); }} disabled={!cancellationReason.trim()}>
               {t('activityDetail.confirmCancellation')}
             </Button>
           </DialogFooter>

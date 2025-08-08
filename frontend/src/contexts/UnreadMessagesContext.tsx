@@ -1,22 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { getUnreadMessageCount } from '../utils/api/apiMessages';
 import { useAuth } from '../context/useAuth';
-
-interface UnreadMessagesContextType {
-  unreadCount: number;
-  refreshUnreadCount: () => Promise<void>;
-  setUnreadCount: (count: number) => void;
-}
-
-const UnreadMessagesContext = createContext<UnreadMessagesContextType | undefined>(undefined);
-
-export const useUnreadMessages = () => {
-  const context = useContext(UnreadMessagesContext);
-  if (context === undefined) {
-    throw new Error('useUnreadMessages must be used within an UnreadMessagesProvider');
-  }
-  return context;
-};
+import { UnreadMessagesContext, type UnreadMessagesContextType } from './unreadMessages-core';
 
 interface UnreadMessagesProviderProps {
   children: ReactNode;
@@ -26,17 +11,16 @@ export const UnreadMessagesProvider: React.FC<UnreadMessagesProviderProps> = ({ 
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const { user, isAuthenticated } = useAuth();
 
-  // Dohvat broja nepročitanih poruka
-  const refreshUnreadCount = async () => {
+  // Dohvat broja nepročitanih poruka - memoiziran radi stabilnog dependency-a
+  const refreshUnreadCount = React.useCallback(async () => {
     if (!isAuthenticated || !user) return;
-    
     try {
       const count = await getUnreadMessageCount();
       setUnreadCount(count);
     } catch {
       // Tihi fallback bez console logova radi ESLint pravila
     }
-  };
+  }, [isAuthenticated, user]);
 
   // Automatski dohvat broja nepročitanih poruka pri učitavanju i kada se korisnik prijavi
   useEffect(() => {
@@ -54,7 +38,7 @@ export const UnreadMessagesProvider: React.FC<UnreadMessagesProviderProps> = ({ 
     }
   }, [isAuthenticated, user, refreshUnreadCount]);
 
-  const value = {
+  const value: UnreadMessagesContextType = {
     unreadCount,
     refreshUnreadCount,
     setUnreadCount

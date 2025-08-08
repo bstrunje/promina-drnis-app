@@ -8,7 +8,7 @@ import { formatDate, parseDate, setCurrentTimeZone } from "../../../../utils/dat
 import { useToast } from '@components/ui/use-toast';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
-import { useTimeZone } from '../../../../context/TimeZoneContext';
+import { useTimeZone } from '../../../../context/useTimeZone';
 import { useNavigate } from 'react-router-dom';
 
 const SystemManagerAuditLogs: React.FC = () => {

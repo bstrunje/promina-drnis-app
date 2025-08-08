@@ -16,7 +16,6 @@ import {
 import { useToast } from '@components/ui/use-toast';
 import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { useAuth } from '../../context/useAuth';
 import { MemberSelect } from './MemberSelect';
 import MemberRoleSelect, { MemberWithRole, rolesToRecognitionPercentage } from './MemberRoleSelect';
 import { ActivityType } from '@shared/activity.types';
@@ -31,7 +30,6 @@ interface CreateActivityModalProps {
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
   const { t } = useTranslation('activities');
-  const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -50,7 +48,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
   
   // Dodajemo stanje za tipove aktivnosti i odabrani tip
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
-  const [selectedTypeId, setSelectedTypeId] = useState<string>(activityTypeId || '');
+  const [selectedTypeId, setSelectedTypeId] = useState<string>(activityTypeId ?? '');
   const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
 
   const startTimeRef = useRef<HTMLInputElement>(null);
@@ -83,7 +81,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       setSelectedTypeId(String(activityTypes[0].type_id));
     }
     // Ovaj hook ovisi samo o `activityTypes`. Ne želimo ga ponovno pokretati kad se `selectedTypeId` promijeni.
-  }, [activityTypes]);
+  }, [activityTypes, selectedTypeId]);
   
   // Efekt koji prati promjenu tipa aktivnosti
   useEffect(() => {
@@ -478,7 +476,12 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto text-sm sm:text-base">
+            <Button
+              type="button"
+              onClick={() => { void handleSubmit(); }}
+              disabled={isLoading}
+              className="w-full sm:w-auto text-sm sm:text-base"
+            >
               {isLoading ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
             </Button>
           </DialogFooter>
