@@ -99,9 +99,18 @@
       "deleteAllSuccess": "Sve poruke uspješno obrisane",
       "deleteAllError": "Greška prilikom brisanja svih poruka"
     },
+    "filters": {
+      "unread": "Nepročitane",
+      "read": "Pročitane",
+      "all": "Sve poruke",
+      "archived": "Arhivirane"
+    },
     "confirmDialogs": {
       "deleteMessage": "Jeste li sigurni da želite obrisati ovu poruku?",
       "deleteAllMessages": "Jeste li sigurni da želite obrisati SVE poruke? Ova akcija se ne može poništiti."
+    },
+    "tooltips": {
+      "delete": "Obriši poruku"
     },
     "buttons": {
       "unread": "Označi kao nepročitano",
@@ -120,5 +129,9 @@
         "deleteAllShort": "Obriši sve"
       }
     }
+  },
+  "messages": {
+    "deleteAll": "Obriši sve poruke",
+    "deleteAllShort": "Obriši sve"
   }
 }

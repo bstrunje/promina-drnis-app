@@ -40,7 +40,7 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
 }
 
 export async function assignCardNumberHandler(
-  req: Request<{}, {}, { member_id: number; card_number: string }>,
+  req: Request<Record<string, never>, Record<string, never>, { member_id: number; card_number: string }>,
   res: Response
 ): Promise<void> {
   try {
@@ -91,7 +91,7 @@ export async function assignCardNumberHandler(
 }
 
 export async function assignPasswordHandler(
-  req: Request<{}, {}, { memberId: number; password: string }>,
+  req: Request<Record<string, never>, Record<string, never>, { memberId: number; password: string }>,
   res: Response
 ): Promise<void> {
   try {

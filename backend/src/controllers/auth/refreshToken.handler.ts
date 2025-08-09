@@ -16,7 +16,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
   console.log('Cookies:', JSON.stringify(req.cookies));
   console.log('User-Agent:', req.headers['user-agent']);
   
-  let refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies.refreshToken;
   
   console.log('Provjera refresh tokena iz kolačića...');
   

@@ -13,7 +13,7 @@ import { MembershipEndReason, MembershipPeriod as OriginalMembershipPeriod } fro
  * Vraća trenutni datum
  * @returns Trenutni datum kao Date objekt
  */
-function getCurrentDate(): Date {
+function _getCurrentDate(): Date {
   return new Date();
 }
 
@@ -22,7 +22,7 @@ function getCurrentDate(): Date {
  * @param date Datum kao string ili Date objekt
  * @returns Date objekt
  */
-function parseDate(date: string | Date): Date {
+function _parseDate(date: string | Date): Date {
   if (date instanceof Date) return date;
   return new Date(date);
 }

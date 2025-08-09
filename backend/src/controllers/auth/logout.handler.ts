@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../../utils/prisma.js';
-import { generateCookieOptions, generateClearCookieOptions } from './auth.utils.js';
+import { generateCookieOptions } from './auth.utils.js';
 
 // Funkcija za odjavu korisnika i poništavanje refresh tokena
 export async function logoutHandler(req: Request, res: Response): Promise<void | Response> {

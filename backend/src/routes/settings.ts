@@ -39,7 +39,7 @@ router.get('/card-length', async (req, res) => {
   try {
     const settings = await prisma.systemSettings.findFirst();
     return res.json({ cardNumberLength: settings?.cardNumberLength ?? 5 });
-  } catch (error) {
+  } catch (_error) {
     return res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
@@ -58,7 +58,7 @@ router.put('/card-length', authMiddleware, roles.requireSystemManager, async (re
       }
     });
     return res.json(settings);
-  } catch (error) {
+  } catch (_error) {
     return res.status(500).json({ error: 'Failed to update settings' });
   }
 });

@@ -29,7 +29,7 @@ export function mapToMemberMessage(raw: PrismaMemberMessage | TransformedMessage
     // Dodajemo status, read_at i read polja za kompatibilnost s frontendnom
     return {
         ...baseMessage,
-        ...(typeof (raw as any).read_by !== 'undefined' ? { read_by: (raw as any).read_by } : {}),
+        ...(typeof (raw as TransformedMessage).read_by !== 'undefined' ? { read_by: (raw as TransformedMessage).read_by } : {}),
         status: baseMessage.currentUserStatus,
         read_at: baseMessage.currentUserReadAt,
         read: baseMessage.currentUserStatus === 'read' || !!baseMessage.currentUserReadAt

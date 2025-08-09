@@ -50,7 +50,7 @@ async function checkUnreadMessages() {
           if (member) {
             memberName = `${member.first_name} ${member.last_name}`;
           }
-        } catch (e) {
+        } catch {
           // Ignoriraj grešku ako ne možemo dohvatiti ime člana
         }
         

@@ -2,18 +2,10 @@
 import { Request, Response } from 'express';
 import memberService from '../services/member.service.js';
 import prisma from '../utils/prisma.js';
-import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
-    }
-  }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 const memberStatsController = {
   async getMemberDashboardStats(req: Request, res: Response): Promise<void> {
@@ -45,7 +37,7 @@ const memberStatsController = {
         const thirtyDaysAgo = new Date(getCurrentDate());
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        recentActivities = await (prisma as any).activity.count({
+        recentActivities = await prisma.activity.count({
           where: {
             organizer_id: memberId,
             created_at: {
@@ -57,7 +49,7 @@ const memberStatsController = {
         console.error('Error fetching recent activities:', error);
       }
 
-      const currentYear = getCurrentDate().getFullYear();
+      // const currentYear = getCurrentDate().getFullYear(); // neiskorišteno, uklonjeno radi lint upozorenja
       let memberCount = 0;
       try {
         const members = await prisma.member.findMany({

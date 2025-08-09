@@ -2,18 +2,10 @@
 import type { Request, Response } from 'express';
 import memberService from "../services/member.service.js";
 import memberRepository from "../repositories/member.repository.js";
-import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
-import { DatabaseUser } from "../middleware/authMiddleware.js";
+import { parseDate, formatDate } from '../utils/dateUtils.js';
 import prisma from "../utils/prisma.js";
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
-    }
-  }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 function handleControllerError(error: unknown, res: Response): void {
   console.error("Controller error:", error);

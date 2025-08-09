@@ -1,4 +1,3 @@
-import { DatabaseUser } from '../middleware/authMiddleware.js';
 import {
   assignCardNumberHandler,
   assignPasswordHandler,
@@ -11,15 +10,7 @@ import {
   searchMembersHandler,
 } from './auth/auth.handlers.core.js';
 
-// Extend Express Request to include user.
-// This is kept in case any of the delegated handlers rely on `req.user`.
-declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
-    }
-  }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 const authController = {
   // Core Auth Handlers

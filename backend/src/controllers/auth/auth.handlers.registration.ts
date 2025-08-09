@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
-import { PoolClient } from 'pg';
 import { Member } from '../../shared/types/member.js';
 import prisma from '../../utils/prisma.js';
 import { parseDate, cleanISODateString } from '../../utils/dateUtils.js';
 
 export async function registerInitialHandler(
   req: Request<
-    {},
-    {},
+    Record<string, never>,
+    Record<string, never>,
     Omit<
       Member,
       |
@@ -80,12 +79,12 @@ export async function registerInitialHandler(
 
 export async function registerMemberHandler(
   req: Request<
-    {},
-    {},
+    Record<string, never>,
+    Record<string, never>,
     Omit<
       Member,
       'member_id' | 'password_hash' | 'total_hours' | 'last_login' | 'full_name'
-    > & { skills?: any, other_skills?: string }
+    > & { skills?: { skill_id: number; is_instructor?: boolean }[]; other_skills?: string }
   >,
   res: Response
 ): Promise<void> {

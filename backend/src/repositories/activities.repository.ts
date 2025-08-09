@@ -34,7 +34,7 @@ export const findAllActivities = async () => {
  * Ova funkcija je specijalizirana verzija findAllActivities koja uključuje i podatke o sudionicima
  */
 export const findActivitiesByYearWithParticipants = async (year: number) => {
-  const whereClause: any = {
+  const whereClause: Prisma.ActivityWhereInput = {
     start_date: {
       gte: new Date(`${year}-01-01T00:00:00.000Z`),
       lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
@@ -128,7 +128,7 @@ export const findActivityById = async (activity_id: number) => {
 };
 
 export const getActivitiesByTypeId = (type_id: number, year?: number) => {
-  const whereClause: any = { type_id };
+  const whereClause: Prisma.ActivityWhereInput = { type_id } as Prisma.ActivityWhereInput;
 
   if (year) {
     whereClause.start_date = {

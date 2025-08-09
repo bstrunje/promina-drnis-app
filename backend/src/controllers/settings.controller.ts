@@ -1,20 +1,13 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma.js';
-import { SystemSettings } from '../shared/types/settings.types.js';
+// Removed unused type import: SystemSettings
 import { validateSettings } from '../utils/validation.js';
 import { sanitizeInput } from '../utils/sanitization.js';
 import { createRateLimit } from '../middleware/rateLimit.js';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
-import { PerformerType } from '@prisma/client';
+// Removed unused import: PerformerType
 import auditService from '../services/audit.service.js';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
-    }
-  }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
@@ -98,7 +91,7 @@ export const updateSettings = [
         console.log('Updated settings:', settings);
 
         const changes = Object.fromEntries(
-          Object.entries(sanitizedInput).filter(([key, value]) => value !== undefined)
+          Object.entries(sanitizedInput).filter(([_key, value]) => value !== undefined)
         );
 
         // Dodana dijagnostika za req.user

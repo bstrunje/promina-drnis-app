@@ -1,19 +1,15 @@
 import React from "react";
 import { MemberWithDetails } from "@shared/memberDetails.types";
-import {
-  DetailedMembershipStatus,
-  MembershipPeriod,
-} from "@shared/memberStatus.types";
+
 
 import { Button } from "@components/ui/button";
-import { UserCog, Key } from "lucide-react";
+import { UserCog } from "lucide-react";
 
-import { Member } from "@shared/member";
 import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
 import { useState } from "react";
 import { formatMinutesToHoursAndMinutes } from '../../../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
-import { getMembershipDisplayStatusExternal } from "./memberTableUtils";
+import { getMembershipDisplayStatusExternal as getMembershipDisplayStatus } from "./memberTableUtils";
 
 
 interface MemberTableProps {
@@ -25,7 +21,6 @@ interface MemberTableProps {
   isAdmin?: boolean;
   isSuperuser?: boolean;
   onViewDetails?: (memberId: number) => void;
-  onAssignPassword?: (member: Member) => void;
 }
 
 // Komponenta za prikaz tablice članova
@@ -34,7 +29,6 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   isAdmin,
   isSuperuser,
   onViewDetails,
-  onAssignPassword,
 }) => {
   const { t } = useTranslation('members');
 
@@ -61,16 +55,17 @@ export const MemberTable: React.FC<MemberTableProps> = ({
     let baseClass = "hover:bg-gray-50";
 
     // Dohvati status člana
-    const status = getMembershipDisplayStatus(
+    const { key } = getMembershipDisplayStatus(
       member.detailedStatus,
       !!isAdmin,
       !!isSuperuser,
       member.membership_type,
-      member.periods
+      member.periods,
+      t
     );
 
     // Samo za redovne članove primijeni bojanje prema životnom statusu
-    if (status.key === "regularMember") {
+    if (key === "regularMember") {
       const lifeStatus = member.life_status;
 
       switch (lifeStatus) {
@@ -91,58 +86,17 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 
 
 
-  // Helper funkcija za prikaz statusa u koloni ČLANSTVO
-  function getMembershipDisplayStatus(
-    detailedStatus: DetailedMembershipStatus | undefined,
-    isAdmin: boolean,
-    isSuperuser: boolean,
-    membershipType?: string,
-    periods?: MembershipPeriod[]
-  ): { key: string; displayText: string } {
-    return getMembershipDisplayStatusExternal(
-      detailedStatus,
-      isAdmin,
-      isSuperuser,
-      membershipType,
-      periods,
-      t // Proslijedi translation funkciju
-    );
-  }
+
 
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberWithDetails | null>(null);
 
   const renderActionButtons = (member: MemberWithDetails) => {
-    // Dohvati status člana
-    const status = getMembershipDisplayStatus(
-      member.detailedStatus,
-      !!isAdmin,
-      !!isSuperuser,
-      member.membership_type,
-      member.periods
-    );
-
     return (
       <div
         className="flex justify-center space-x-1"
         style={{ minWidth: "120px" }}
       >
-        <div style={{ width: "32px", textAlign: "center" }}>
-          {status.key === 'pending' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onAssignPassword) { onAssignPassword(member); }
-              }}
-              title={t('memberTable.tooltips.assignNumber')}
-            >
-              <Key className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-
         <div style={{ width: "32px", textAlign: "center" }}>
           {isSuperuser && (
             <Button
@@ -294,7 +248,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                             !!isAdmin,
                             !!isSuperuser,
                             member.membership_type,
-                            member.periods
+                            member.periods,
+                            t
                           );
                           return (
                             <span
@@ -361,7 +316,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                             !!isAdmin,
                             !!isSuperuser,
                             member.membership_type,
-                            member.periods
+                            member.periods,
+                            t
                           );
                           return (
                             <span

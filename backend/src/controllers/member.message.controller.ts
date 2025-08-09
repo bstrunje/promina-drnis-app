@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import messageService from '../services/message.service.js';
 import auditService from '../services/audit.service.js';
 import { SenderType } from '@prisma/client';
-import { mapToMemberMessage, mapToMemberMessageWithSender } from '../utils/memberMessageMapper.js';
+import { mapToMemberMessage } from '../utils/memberMessageMapper.js';
 
 const messageController = {
     async createMessage(req: Request, res: Response): Promise<void> {

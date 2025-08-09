@@ -1,5 +1,6 @@
 // repositories/systemManager.repository.ts
 import prisma from '../utils/prisma.js';
+import { SystemManager } from '@prisma/client';
 import { getCurrentDate } from '../utils/dateUtils.js';
 // import { SystemManager, CreateSystemManagerDto } from '../shared/types/systemManager.js'; // Can be used for typing if necessary
 import bcrypt from 'bcrypt';
@@ -12,36 +13,36 @@ const hashPassword = async (password: string): Promise<string> => {
 
 const systemManagerRepository = {
     // Find manager by username
-    async findByUsername(username: string): Promise<any> {
+    async findByUsername(username: string): Promise<SystemManager | null> {
         return prisma.systemManager.findUnique({
             where: { username }
         });
     },
     
     // Find manager by email
-    async findByEmail(email: string): Promise<any> {
+    async findByEmail(email: string): Promise<SystemManager | null> {
         return prisma.systemManager.findUnique({
             where: { email }
         });
     },
     
     // Find manager by ID
-    async findById(id: number): Promise<any> {
+    async findById(id: number): Promise<SystemManager | null> {
         return prisma.systemManager.findUnique({
             where: { id }
         });
     },
     
     // Create a new manager
-    async create(managerData: any): Promise<any> {
+    async create(managerData: { username: string; email?: string | null | undefined; password: string; display_name?: string | null | undefined }): Promise<SystemManager> {
         const passwordHash = await hashPassword(managerData.password);
         
         return prisma.systemManager.create({
             data: {
                 username: managerData.username,
-                email: managerData.email,
+                email: managerData.email ?? '',
                 password_hash: passwordHash,
-                display_name: managerData.display_name
+                display_name: managerData.display_name ?? ''
             }
         });
     },
@@ -71,7 +72,7 @@ const systemManagerRepository = {
     },
     
     // Find all managers
-    async findAll(): Promise<any[]> {
+    async findAll(): Promise<Pick<SystemManager, 'id' | 'username' | 'email' | 'display_name' | 'last_login' | 'created_at' | 'updated_at'>[]> {
         return prisma.systemManager.findMany({
             select: {
                 id: true,

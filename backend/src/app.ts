@@ -13,7 +13,6 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
 import { getCurrentDate, formatDate } from './utils/dateUtils.js';
-import timezoneService from './services/timezone.service.js';
 import permissionsRouter from './routes/permissions.js';
 import genericMessagesRouter from './routes/generic.messages.js';
 
@@ -36,8 +35,7 @@ import systemManagerRoutes from './routes/systemManager.js';
 
 import skillRoutes from './routes/skillRoutes.js';
 
-// Import the directory preparation functions
-import { prepareDirectories, migrateExistingFiles } from './init/prepareDirectories.js';
+// (prepareDirectories, migrateExistingFiles) se više ne koriste
 
 
 
@@ -49,7 +47,6 @@ const app: Express = express();
 
 // Dinamički ESM-safe import middleware-a u development/test okruženju
 if (process.env.NODE_ENV !== 'production') {
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   (async () => {
     // Ovdje koristimo poboljšanu tipizaciju i fallback
     type MiddlewareModule = {
@@ -59,7 +56,6 @@ if (process.env.NODE_ENV !== 'production') {
     const mod = (await import('./middleware/test-mode.middleware.js')) as MiddlewareModule;
     // Logiramo rezultat importa za lakši debug u developmentu
     if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
       console.log('test-mode.middleware.js dynamic import result:', mod);
     }
     // Fallback: koristi named export, a ako ne postoji koristi default.testModeMiddleware
@@ -67,7 +63,6 @@ if (process.env.NODE_ENV !== 'production') {
     if (typeof testModeMiddleware === 'function') {
       app.use(testModeMiddleware);
     } else if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
       console.warn('testModeMiddleware nije pronađen ni kao named ni kao default export.');
     }
   })();

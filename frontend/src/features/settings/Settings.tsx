@@ -13,7 +13,7 @@ import CardNumberManagement from './CardNumberManagement';
 // const MONTHS = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'];
 
 const Settings: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const { user } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [settings, setSettings] = useState<SystemSettings>({

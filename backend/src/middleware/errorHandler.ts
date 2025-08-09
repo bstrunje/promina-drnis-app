@@ -7,7 +7,7 @@ export const errorHandler = (
     err: Error | DatabaseError,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
 ) => {
     console.error('Error occurred:', err);
 

@@ -12,13 +12,7 @@ interface JWTPayload {
 
 import { PerformerType } from '@prisma/client';
 
-// Types
-interface JWTPayload {
-    id: number;
-    full_name?: string;
-    type?: 'member' | 'SystemManager';
-    role?: string;
-}
+// Napomena: JWTPayload je definiran jednom; uklonjeni duplikati.
 
 export interface DatabaseUser {
     id: number;
@@ -30,14 +24,7 @@ export interface DatabaseUser {
     performer_type: PerformerType;
 }
 
-// Extend Express Request type to include user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: DatabaseUser;
-        }
-    }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 // Main authentication middleware
 const authenticateToken = async (

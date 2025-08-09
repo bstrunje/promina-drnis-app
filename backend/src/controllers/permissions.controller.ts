@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import permissionsService from '../services/permissions.service.js';
 import auditService from '../services/audit.service.js';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
+import type { DatabaseUser } from '../middleware/authMiddleware.js';
 
 interface AuthRequest extends Request {
     user?: DatabaseUser;

@@ -2,11 +2,7 @@ import { Request, Response } from 'express';
 import membershipService from '../services/membership.service.js';
 import stampService from '../services/stamp.service.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
-import { getCurrentDate, parseDate } from '../utils/dateUtils.js';
-import {
-  MembershipPeriod,
-  MembershipEndReason,
-} from '../shared/types/membership.js';
+// Uklonjene neiskorištene importirane vrijednosti radi lint čistoće
 
 const membershipController = {
   async updateMembership(

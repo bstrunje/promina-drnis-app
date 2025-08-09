@@ -1,33 +1,37 @@
 // controllers/systemManager.controller.ts
 import { Request, Response } from 'express';
 import systemManagerService from '../services/systemManager.service.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
 import { JWT_SECRET } from '../config/jwt.config.js';
 import jwt from 'jsonwebtoken';
-// Using 'any' instead of specific types - temporary solution
+// Privremeno bez preciznih tipova dok se ne uvedu završne definicije
 // import { SystemManager, SystemManagerLoginData, CreateSystemManagerDto, UpdateMemberPermissionsDto } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
 import auditService from '../services/audit.service.js';
-import auditRepository from '../repositories/audit.repository.js';
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
-import { Prisma, PerformerType } from '@prisma/client';
+import { PerformerType, SystemManager } from '@prisma/client';
 
 // Temporary type definition until a full solution is implemented
 interface SystemManagerLoginData {
     username: string;
     password: string;
-};
-
-// Extend Express Request type to include user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: DatabaseUser;
-        }
-    }
 }
+
+// Tip tijela zahtjeva za kreiranje system managera
+interface CreateSystemManagerBody {
+    username: string;
+    password: string;
+    email?: string;
+    display_name?: string;
+}
+
+// Tip tijela zahtjeva za ažuriranje ovlasti člana
+interface UpdateMemberPermissionsBody {
+    memberId: number;
+    permissions: Record<string, boolean>;
+}
+
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 // Change system manager password
 export const changePassword = async (req: Request, res: Response) => {
@@ -194,7 +198,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
                     last_login: manager.last_login
                 }
             });
-        } catch (error) {
+        } catch (_error) {
             // If the token has expired or is invalid
             res.status(403).json({ message: 'Invalid or expired refresh token' });
         }
@@ -207,7 +211,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
 const systemManagerController = {
     // System manager login
     async login(
-        req: Request<{}, {}, SystemManagerLoginData>,
+        req: Request<Record<string, never>, Record<string, never>, SystemManagerLoginData>,
         res: Response
     ): Promise<void> {
         try {
@@ -309,7 +313,7 @@ const systemManagerController = {
 
     // Kreiranje novog system managera (može napraviti samo postojeći system manager)
     async createSystemManager(
-        req: Request<{}, {}, any>,
+        req: Request<Record<string, never>, Record<string, never>, CreateSystemManagerBody>,
         res: Response
     ): Promise<void> {
         try {
@@ -332,8 +336,8 @@ const systemManagerController = {
             const newAdmin = await systemManagerService.createSystemManager({
                 username,
                 password,
-                email,
-                display_name
+                ...(email !== undefined ? { email } : {}),
+                ...(display_name !== undefined ? { display_name } : {})
             });
 
             // Zabilježi kreiranje u audit log
@@ -386,7 +390,7 @@ const systemManagerController = {
             const managers = await systemManagerService.getAllSystemManagers();
             
             // Vrati listu system managera bez osjetljivih podataka
-            res.json(managers.map(manager => ({
+                        res.json(managers.map((manager: Pick<SystemManager, 'id' | 'username' | 'email' | 'display_name' | 'last_login' | 'created_at' | 'updated_at'>) => ({
                 id: manager.id,
                 username: manager.username,
                 email: manager.email,
@@ -429,7 +433,7 @@ const systemManagerController = {
 
     // Ažuriranje ovlasti za člana
     async updateMemberPermissions(
-        req: Request<{}, {}, any>,
+        req: Request<Record<string, never>, Record<string, never>, UpdateMemberPermissionsBody>,
         res: Response
     ): Promise<void> {
         try {
@@ -574,7 +578,7 @@ const systemManagerController = {
     async getDashboardStats(
         req: Request,
         res: Response
-    ): Promise<any> { 
+    ): Promise<void> { 
         try {
             const totalMembers = await prisma.member.count();
             const registeredMembers = await prisma.member.count({ where: { status: 'registered' } });
@@ -592,10 +596,12 @@ const systemManagerController = {
                 lastBackup: 'Never', // Placeholder
             };
 
-            return res.json(stats);
+            res.json(stats);
+            return;
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            return res.status(500).json({ message: 'Error fetching dashboard stats' });
+            res.status(500).json({ message: 'Error fetching dashboard stats' });
+            return;
         }
     },
 
@@ -753,8 +759,8 @@ const systemManagerController = {
     // Dodjeljivanje lozinke članu (aktivacija korisničkog računa)
     async assignPasswordToMember(
         req: Request<
-            {},
-            {},
+            Record<string, never>,
+            Record<string, never>,
             { memberId: number; password: string; cardNumber?: string }
         >,
         res: Response
@@ -788,7 +794,7 @@ const systemManagerController = {
             const hashedPassword = await bcrypt.hash(password, saltRounds);
             
             // Ažuriranje člana
-            const updatedMember = await prisma.member.update({
+            await prisma.member.update({
                 where: { member_id: memberId },
                 data: {
                     password_hash: hashedPassword,
@@ -936,7 +942,7 @@ const systemManagerController = {
 
     // Dodjeljivanje uloge članu (member_superuser)
     async assignRoleToMember(
-        req: Request<{}, {}, { memberId: number; role: 'member' | 'member_administrator' | 'member_superuser' }>,
+        req: Request<Record<string, never>, Record<string, never>, { memberId: number; role: 'member' | 'member_administrator' | 'member_superuser' }>,
         res: Response
     ): Promise<void> {
         try {
@@ -986,7 +992,7 @@ function isValidTimeZone(timeZone: string): boolean {
     try {
         Intl.DateTimeFormat(undefined, { timeZone });
         return true;
-    } catch (error) {
+    } catch (_error) {
         return false;
     }
 }

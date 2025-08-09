@@ -10,6 +10,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { Request } from "express";
 import prisma from "../utils/prisma.js";
+import { Prisma } from "@prisma/client";
 import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
 import { updateAnnualStatistics } from './statistics.service.js';
 import { PerformerType } from "@prisma/client";
@@ -48,12 +49,11 @@ const membershipService = {
       }
 
       const paymentYear = paymentDate.getFullYear();
-      const paymentMonth = paymentDate.getMonth();
-      const paymentDay = paymentDate.getDate();
+
 
       // Create cutoff date (October 31st of current year)
       const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
-      let startDate = validPaymentDate; // Koristi stvarni datum uplate kao početni datum
+
 
       // Provjeri je li ovo novi član (koji nikad nije platio članarinu)
       // ili postojeći član koji obnavlja članstvo
@@ -71,7 +71,7 @@ const membershipService = {
       // Ako je plaćanje nakon cutoff datuma, članstvo počinje sljedeće godine
       if (validPaymentDate > cutoffDate && !isNewMember) {
         console.log(`Payment after cutoff date for EXISTING member - counting for next year`);
-        startDate = new Date(paymentYear + 1, 0, 1); // Postavi na 1. siječnja sljedeće godine
+
       } else if (validPaymentDate > cutoffDate && isNewMember) {
         console.log(`Payment after cutoff date for NEW member - still counting for current year`);
         // Za nove članove ne mijenjamo godinu, čak i ako je kasno u godini
@@ -198,7 +198,7 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, performerId?: number): Promise<void> {
+  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, _performerId?: number): Promise<void> {
     try {
       // Prvo dohvatimo trenutni broj kartice
       const details = await membershipRepository.getMembershipDetails(memberId);
@@ -282,7 +282,7 @@ const membershipService = {
           });
         } else {
           // Pripremi podatke za update
-          const updateData: any = {};
+          const updateData: Prisma.MembershipDetailsUpdateInput = {};
           
           // Ako je proslijeden broj kartice, ažuriramo ga
           if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
@@ -491,7 +491,7 @@ const membershipService = {
   },
 
 
-  async getMembershipHistory(memberId: number, req?: Request): Promise<{
+  async getMembershipHistory(memberId: number, _req?: Request): Promise<{
     periods: MembershipPeriod[];
     totalDuration: string;
     currentPeriod?: MembershipPeriod;
@@ -526,13 +526,12 @@ const membershipService = {
       const currentDate = getCurrentDate();
 
       // Dohvati postavke sustava
-      const settings = await prisma.systemSettings.findFirst({
+      const _settings = await prisma.systemSettings.findFirst({
         where: { id: "default" },
       });
 
       // Koristi postavke ili zadane vrijednosti
-      const cutoffMonth = settings?.renewalStartMonth || 10; // Default je studeni (10)
-      const cutoffDay = settings?.renewalStartDay || 1;
+
 
       // Definiramo rok za obnovu članstva (1. ožujak tekuće godine)
       const renewalDeadline = new Date(currentYear, 2, 1); // Mjesec 2 je ožujak

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { parseDate, formatDate } from '../utils/dateUtils.js';
+import { parseDate } from '../utils/dateUtils.js';
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
     const { 

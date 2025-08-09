@@ -6,8 +6,7 @@ import systemManagerController, {
   refreshToken,
   logoutHandler
 } from '../controllers/systemManager.controller.js';
-import { authMiddleware, roles, requireSystemManager } from '../middleware/authMiddleware.js';
-import prisma from '../utils/prisma.js';
+import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

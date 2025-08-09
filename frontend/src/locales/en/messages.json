@@ -61,7 +61,8 @@
       "filters": {
         "unread": "Unread",
         "read": "Read",
-        "all": "All Messages"
+        "all": "All Messages",
+        "archived": "Archived"
       },
       "unreadCount": {
         "single": "unread",
@@ -99,9 +100,17 @@
         "deleteAllSuccess": "All messages deleted successfully",
         "deleteAllError": "Failed to delete all messages"
       },
+      "filters": {
+        "unread": "Unread",
+        "read": "Read",
+        "all": "All Messages"
+      },
       "confirmDialogs": {
         "deleteMessage": "Are you sure you want to delete this message?",
         "deleteAllMessages": "Are you sure you want to delete ALL messages? This action cannot be undone."
+      },
+      "tooltips": {
+        "delete": "Delete message"
       },
       "buttons": {
         "unread": "Mark as Unread",
@@ -120,5 +129,9 @@
           "deleteAllShort": "Delete All"
         }
       }
+    },
+    "messages": {
+      "deleteAll": "Delete All Messages",
+      "deleteAllShort": "Delete All"
     }
   }

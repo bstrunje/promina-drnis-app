@@ -37,7 +37,7 @@
     "components/ActivityHistory.tsx",
     "components/EditMemberForm.tsx",
     "components/ConfirmationModal.tsx",
-    "components/AssignCardNumberForm.tsx",
+    
     "components/MemberBasicInfo.tsx",
     "components/MemberActivityStatus.tsx",
     "components/ui/button.tsx",

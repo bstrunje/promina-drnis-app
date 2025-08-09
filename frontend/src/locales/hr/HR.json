@@ -996,6 +996,11 @@
         "read": "Pročitane",
         "archived": "Arhivirane"
       },
+      "filters": {
+        "unread": "Nepročitane",
+        "read": "Pročitane",
+        "archived": "Arhivirane"
+      },
       "messages": {
         "fetchError": "Nije moguće dohvatiti poruke",
         "markAsReadSuccess": "Poruka je označena kao pročitana",

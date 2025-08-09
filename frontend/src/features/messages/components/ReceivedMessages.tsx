@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  getAdminMessages, 
-  getMemberMessages, 
-  markMessageAsRead, 
-  archiveMessage, 
-  deleteMessage, 
-  deleteAllMessages 
+import {
+  getAdminMessages,
+  getMemberMessages,
+  markMessageAsRead,
+  archiveMessage,
+  deleteMessage,
+  deleteAllMessages
 } from '../../../utils/api/apiMessages';
 import { useToast } from "@components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { 
-  CheckCircle, 
-  Archive, 
-  Trash2, 
+import {
+  CheckCircle,
+  Archive,
+  Trash2,
   Bell
 } from "lucide-react";
 import { formatDate } from "../../../utils/dateUtils";
@@ -38,44 +38,44 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
 
   // Učitaj poruke pri prvom renderiranju
   // Zamotaj fetchMessages u useCallback
-const fetchMessages = useCallback(async () => {
-  setLoading(true);
-  try {
-    let apiData: ApiAdminMessage[];
-    if (userRole === 'member' && user?.member_id) {
-      // Ako je običan član, dohvati njegove poruke
-      apiData = await getMemberMessages(user.member_id);
-    } else {
-      // Inače, dohvati poruke za admina
-      // Koristi forceLoad=true jer je korisnik aktivno na dijelu aplikacije gdje se prikazuju poruke
-      apiData = await getAdminMessages(true);
-    }
+  const fetchMessages = useCallback(async () => {
+    setLoading(true);
+    try {
+      let apiData: ApiAdminMessage[];
+      if (userRole === 'member' && user?.member_id) {
+        // Ako je običan član, dohvati njegove poruke
+        apiData = await getMemberMessages(user.member_id);
+      } else {
+        // Inače, dohvati poruke za admina
+        // Koristi forceLoad=true jer je korisnik aktivno na dijelu aplikacije gdje se prikazuju poruke
+        apiData = await getAdminMessages(true);
+      }
 
-    const convertedData = convertApiMessagesToMessages(apiData);
-    setMessages(convertedData);
-    const unreadCount = convertedData.filter(m => m.status === 'unread').length;
-    onUnreadCountChange(unreadCount);
-  } catch (error: unknown) {
-    // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
-    let isRetryFlagTrue = false;
-    if (typeof error === 'object' && error !== null) {
-      const maybe = error as { config?: { _retry?: unknown } };
-      isRetryFlagTrue = maybe.config?._retry === true;
+      const convertedData = convertApiMessagesToMessages(apiData);
+      setMessages(convertedData);
+      const unreadCount = convertedData.filter(m => m.status === 'unread').length;
+      onUnreadCountChange(unreadCount);
+    } catch (error: unknown) {
+      // Prikazujemo grešku samo ako je refresh već pokušan i nije uspio
+      let isRetryFlagTrue = false;
+      if (typeof error === 'object' && error !== null) {
+        const maybe = error as { config?: { _retry?: unknown } };
+        isRetryFlagTrue = maybe.config?._retry === true;
+      }
+      if (isRetryFlagTrue) {
+        toast({
+          title: t('common.error'),
+          description: error instanceof Error ? error.message : t('receivedMessages.messages.fetchError'),
+          variant: "destructive"
+        });
+      }
+      // Inače, ne prikazujemo grešku korisniku (tihi retry)
+    } finally {
+      setLoading(false);
     }
-    if (isRetryFlagTrue) {
-      toast({
-        title: t('common.error'),
-        description: error instanceof Error ? error.message : t('receivedMessages.messages.fetchError'),
-        variant: "destructive"
-      });
-    }
-    // Inače, ne prikazujemo grešku korisniku (tihi retry)
-  } finally {
-    setLoading(false);
-  }
-}, [userRole, user?.member_id, toast, onUnreadCountChange, t]);
+  }, [userRole, user?.member_id, toast, onUnreadCountChange, t]);
 
-useEffect(() => {
+  useEffect(() => {
     void fetchMessages();
   }, [userRole, fetchMessages]);
 
@@ -83,20 +83,20 @@ useEffect(() => {
   const onMarkAsRead = async (messageId: number) => {
     try {
       await markMessageAsRead(messageId);
-      
+
       // Ažuriraj lokalno stanje
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.message_id === messageId 
-            ? { ...msg, status: 'read' } 
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.message_id === messageId
+            ? { ...msg, status: 'read' }
             : msg
         )
       );
-      
+
       // Ažuriraj brojač nepročitanih poruka
       const updatedUnreadCount = messages.filter(m => m.status === 'unread' && m.message_id !== messageId).length;
       onUnreadCountChange(updatedUnreadCount);
-      
+
       toast({
         title: t('common.success'),
         description: t('receivedMessages.messages.markAsReadSuccess'),
@@ -115,23 +115,23 @@ useEffect(() => {
   const onArchive = async (messageId: number) => {
     try {
       await archiveMessage(messageId);
-      
+
       // Ažuriraj lokalno stanje
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.message_id === messageId 
-            ? { ...msg, status: 'archived' } 
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.message_id === messageId
+            ? { ...msg, status: 'archived' }
             : msg
         )
       );
-      
+
       // Ako je poruka bila nepročitana, ažuriraj brojač
       const archivedMessage = messages.find(m => m.message_id === messageId);
       if (archivedMessage && archivedMessage.status === 'unread') {
         const updatedUnreadCount = messages.filter(m => m.status === 'unread' && m.message_id !== messageId).length;
         onUnreadCountChange(updatedUnreadCount);
       }
-      
+
       toast({
         title: t('common.success'),
         description: t('receivedMessages.messages.archiveSuccess'),
@@ -151,22 +151,22 @@ useEffect(() => {
     if (!window.confirm(t('receivedMessages.confirmDialogs.deleteMessage'))) {
       return;
     }
-    
+
     try {
       await deleteMessage(messageId);
-      
+
       // Ako je poruka bila nepročitana, ažuriraj brojač
       const deletedMessage = messages.find(m => m.message_id === messageId);
       if (deletedMessage && deletedMessage.status === 'unread') {
         const updatedUnreadCount = messages.filter(m => m.status === 'unread' && m.message_id !== messageId).length;
         onUnreadCountChange(updatedUnreadCount);
       }
-      
+
       // Ažuriraj lokalno stanje
-      setMessages(prevMessages => 
+      setMessages(prevMessages =>
         prevMessages.filter(msg => msg.message_id !== messageId)
       );
-      
+
       toast({
         title: t('common.success'),
         description: t('receivedMessages.messages.deleteSuccess'),
@@ -186,16 +186,16 @@ useEffect(() => {
     if (!window.confirm(t('receivedMessages.confirmDialogs.deleteAllMessages'))) {
       return;
     }
-    
+
     try {
       await deleteAllMessages();
-      
+
       // Ažuriraj lokalno stanje
       setMessages([]);
-      
+
       // Resetiraj brojač nepročitanih poruka
       onUnreadCountChange(0);
-      
+
       toast({
         title: t('common.success'),
         description: t('receivedMessages.messages.deleteAllSuccess'),
@@ -223,7 +223,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Bell className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">{t('receivedMessages.buttons.unread')}</span>
+            <span className="hidden sm:inline">{t('receivedMessages.filters.unread')}</span>
           </Button>
           <Button
             variant={filter === 'read' ? 'default' : 'outline'}
@@ -231,7 +231,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <CheckCircle className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">{t('receivedMessages.buttons.read')}</span>
+            <span className="hidden sm:inline">{t('receivedMessages.filters.read')}</span>
           </Button>
           <Button
             variant={filter === 'archived' ? 'default' : 'outline'}
@@ -239,7 +239,7 @@ useEffect(() => {
             className="flex items-center space-x-2"
           >
             <Archive className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">{t('receivedMessages.buttons.archived')}</span>
+            <span className="hidden sm:inline">{t('receivedMessages.filters.archived')}</span>
           </Button>
         </div>
       </div>
@@ -263,13 +263,13 @@ useEffect(() => {
 
             {filteredMessages.map((message) => {
               // Uzmi prvih 50 znakova poruke za pregled
-              const previewText = message.message_text.length > 50 
-                ? `${message.message_text.substring(0, 50)}...` 
+              const previewText = message.message_text.length > 50
+                ? `${message.message_text.substring(0, 50)}...`
                 : message.message_text;
-                
+
               return (
-                <Card 
-                  key={message.message_id} 
+                <Card
+                  key={message.message_id}
                   className={`${message.status === 'unread' ? 'border-blue-500' : ''} cursor-pointer hover:shadow-md transition-all`}
                   onClick={() => {
                     // Samo otvaranje/zatvaranje detalja poruke bez automatskog označavanja kao pročitano
@@ -294,12 +294,12 @@ useEffect(() => {
                       <div className="flex flex-wrap gap-2">
                         {/* Uklonili smo gumbe za označavanje kao pročitano */}
                         {message.status !== 'archived' && (
-                          <Button 
+                          <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => { 
+                            onClick={(e) => {
                               e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
-                              void onArchive(message.message_id); 
+                              void onArchive(message.message_id);
                             }}
                             title="Arhiviraj poruku"
                           >
@@ -310,12 +310,12 @@ useEffect(() => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => { 
+                            onClick={(e) => {
                               e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
-                              void onDelete(message.message_id); 
+                              void onDelete(message.message_id);
                             }}
                             className="text-red-500 hover:text-red-700"
-                            title="Obriši poruku"
+                            title={t('receivedMessages.tooltips.delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -325,24 +325,24 @@ useEffect(() => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-2 text-gray-500 text-sm">
-  {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
-</div>
-                    
+                      {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
+                    </div>
+
                     {/* Pregled poruke */}
                     <p className="text-sm text-gray-700">{previewText}</p>
-                    
+
                     {/* Puni sadržaj poruke - sakriven po defaultu */}
                     <div id={`admin-message-content-${message.message_id}`} className="mt-3 pt-3 border-t border-gray-200 whitespace-pre-wrap hidden">
                       <div className="mb-3">{message.message_text}</div>
-                      
+
                       {message.status === 'unread' && (
                         <div className="mt-4">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={(e) => { 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
                               e.stopPropagation(); // Spriječi da klik na gumb aktivira klik na karticu
-                              void onMarkAsRead(message.message_id); 
+                              void onMarkAsRead(message.message_id);
                             }}
                             className="flex items-center"
                           >
@@ -360,8 +360,8 @@ useEffect(() => {
         ) : (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <p className="text-gray-500">
-              {loading 
-                ? "Učitavanje poruka..." 
+              {loading
+                ? "Učitavanje poruka..."
                 : `Nema ${filter === 'unread' ? 'nepročitanih' : filter === 'read' ? 'pročitanih' : 'arhiviranih'} poruka`}
             </p>
           </div>

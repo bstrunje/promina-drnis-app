@@ -9,6 +9,32 @@ import { updateAnnualStatistics } from './statistics.service.js';
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
+// DTO tipovi za ulazne podatke (precizno umjesto any)
+// Napomena: Isključivo tipizacijska poboljšanja, bez promjene ponašanja
+type ParticipationInput = { member_id: number; recognition_override: number };
+
+type CreateActivityDTO = Partial<Prisma.ActivityUncheckedCreateInput> & {
+  name: string; // obavezno polje prema Activity modelu
+  start_date: string | Date; // obavezno prema Activity modelu
+  activity_type_id: number;
+  participant_ids?: number[];
+  participations?: ParticipationInput[];
+  recognition_percentage?: number;
+  manual_hours?: number;
+  actual_start_time?: string | Date | null;
+  actual_end_time?: string | Date | null;
+};
+
+type UpdateActivityDTO = Partial<Prisma.ActivityUpdateInput> & {
+  participant_ids?: number[];
+  participations?: ParticipationInput[];
+  recognition_percentage?: number;
+  manual_hours?: number;
+  type_id?: number;
+  actual_start_time?: string | Date | null;
+  actual_end_time?: string | Date | null;
+};
+
 const determineActivityStatus = (
   startTime: string | Date | null | undefined,
   endTime: string | Date | null | undefined
@@ -34,13 +60,15 @@ export const getActivityTypesServiceNew = async () => {
 
 // --- Aktivnosti --- //
 
-export const createActivityService = async (data: any, organizer_id: number) => {
+export const createActivityService = async (data: CreateActivityDTO, organizer_id: number) => {
   const { 
     activity_type_id, 
     participant_ids, 
     participations, // Novi parametar za sudionike s ulogama i priznavanjem
     recognition_percentage, 
     manual_hours, 
+    name,
+    start_date,
     ...rest 
   } = data;
 
@@ -61,7 +89,7 @@ export const createActivityService = async (data: any, organizer_id: number) => 
   // Provjeri imamo li podatke o sudionicima s ulogama (za izlete)
   if (participations && participations.length > 0) {
     participantsData = {
-      create: participations.map((p: { member_id: number; recognition_override: number }) => ({
+      create: participations.map((p: ParticipationInput) => ({
         member_id: p.member_id,
         // Automatsko popunjavanje vremena sudionika ili manual_hours ako je uneseno
         start_time: rest.actual_start_time ? new Date(rest.actual_start_time) : null,
@@ -71,7 +99,7 @@ export const createActivityService = async (data: any, organizer_id: number) => 
         recognition_override: p.recognition_override, // Individualni postotak priznavanja na temelju uloge
       })),
     };
-    memberIdsForUpdate = participations.map((p: { member_id: number }) => p.member_id);
+    memberIdsForUpdate = participations.map((p: ParticipationInput) => p.member_id);
   } 
   // Standardni način s običnim ID-ovima sudionika (za aktivnosti koje nisu izleti)
   else if (participant_ids && participant_ids.length > 0) {
@@ -90,6 +118,8 @@ export const createActivityService = async (data: any, organizer_id: number) => 
 
   const activityData: Prisma.ActivityUncheckedCreateInput = {
     ...rest,
+    name,
+    start_date,
     organizer_id,
     type_id: activity_type_id,
     status,
@@ -265,7 +295,7 @@ export const getParticipationsByMemberIdAndYearService = async (member_id: numbe
   return participationsWithRecognizedHours;
 };
 
-export const updateActivityService = async (activity_id: number, data: any) => {
+export const updateActivityService = async (activity_id: number, data: UpdateActivityDTO) => {
   return prisma.$transaction(async (tx: TransactionClient) => {
     const existingActivity = await tx.activity.findUnique({
       where: { activity_id },
@@ -308,8 +338,8 @@ export const updateActivityService = async (activity_id: number, data: any) => {
       let createData: Prisma.ActivityParticipationUncheckedCreateInput[] = [];
 
       if (isExcursion && participations) {
-        newParticipantIds = participations.map((p: any) => p.member_id);
-        createData = participations.map((p: any) => ({
+        newParticipantIds = participations.map((p: ParticipationInput) => p.member_id);
+        createData = participations.map((p: ParticipationInput) => ({
           activity_id,
           member_id: p.member_id,
           recognition_override: p.recognition_override,
@@ -554,7 +584,7 @@ export const updateParticipationService = async (
   console.log('DEBUG: data.recognition_override:', data.recognition_override);
   console.log('DEBUG: Tip data.recognition_override:', typeof data.recognition_override);
   
-  const processedUpdateData: any = {
+  const processedUpdateData: Prisma.ActivityParticipationUncheckedUpdateInput = {
     ...restUpdateData,
     // Postavi recognition_override na 100 ako nije definiran
     recognition_override: data.recognition_override === undefined ? 100 : Number(data.recognition_override)
@@ -570,7 +600,8 @@ export const updateParticipationService = async (
       if (start_time.set === null) {
         processedUpdateData.start_time = null;
       } else {
-        processedUpdateData.start_time = new Date(start_time.set as any);
+        // @ts-expect-error – Prisma NullableDateTimeFieldUpdateOperationsInput.set može biti string | Date | null
+        processedUpdateData.start_time = new Date(start_time.set);
       }
     } else if (start_time instanceof Date || typeof start_time === 'string' || typeof start_time === 'number') {
       processedUpdateData.start_time = new Date(start_time);
@@ -590,7 +621,8 @@ export const updateParticipationService = async (
       if (end_time.set === null) {
         processedUpdateData.end_time = null;
       } else {
-        processedUpdateData.end_time = new Date(end_time.set as any);
+        // @ts-expect-error – Prisma NullableDateTimeFieldUpdateOperationsInput.set može biti string | Date | null
+        processedUpdateData.end_time = new Date(end_time.set);
       }
     } else if (end_time instanceof Date || typeof end_time === 'string' || typeof end_time === 'number') {
       processedUpdateData.end_time = new Date(end_time);

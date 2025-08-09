@@ -137,7 +137,7 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
 
     const updatedActivity = await activityService.cancelActivityService(activity_id, cancellation_reason);
     res.status(200).json(updatedActivity);
-  } catch (error: any) {
+  } catch (error) {
     next(error);
   }
 };

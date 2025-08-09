@@ -2,6 +2,7 @@ import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../sha
 import { Request } from 'express';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import prisma from '../utils/prisma.js';
+import { Prisma } from '@prisma/client';
 
 const membershipRepository = {
   async getMembershipDetails(memberId: number): Promise<MembershipDetails | null> {
@@ -68,22 +69,28 @@ const membershipRepository = {
         }
 
         // OPTIMIZACIJA: Priprema podataka za Prisma upsert
-        const updateData: any = {};
+        const updateData: Prisma.MembershipDetailsUpdateInput = {};
+        const createData: Prisma.MembershipDetailsUncheckedCreateInput = { member_id: memberId };
 
         if (details.fee_payment_year !== undefined) {
           updateData.fee_payment_year = details.fee_payment_year;
+          createData.fee_payment_year = details.fee_payment_year;
         }
         if (details.fee_payment_date !== undefined) {
           updateData.fee_payment_date = details.fee_payment_date;
+          createData.fee_payment_date = details.fee_payment_date as Date | null;
         }
         if (details.card_number !== undefined) {
           updateData.card_number = details.card_number;
+          createData.card_number = details.card_number;
         }
         if (details.card_stamp_issued !== undefined) {
           updateData.card_stamp_issued = details.card_stamp_issued;
+          createData.card_stamp_issued = details.card_stamp_issued;
         }
         if (details.next_year_stamp_issued !== undefined) {
           updateData.next_year_stamp_issued = details.next_year_stamp_issued;
+          createData.next_year_stamp_issued = details.next_year_stamp_issued;
         }
 
         console.log(`[MEMBERSHIP] Izvršavam UPSERT za detalje članstva s ${Object.keys(updateData).length} polja`);
@@ -92,10 +99,7 @@ const membershipRepository = {
         await tx.membershipDetails.upsert({
           where: { member_id: memberId },
           update: updateData,
-          create: {
-            member_id: memberId,
-            ...updateData
-          }
+          create: createData,
         });
 
         console.log(`[MEMBERSHIP] Uspješno ažurirani detalji članstva za člana ${memberId}`);
@@ -115,7 +119,7 @@ const membershipRepository = {
 
     await prisma.$transaction(async (tx) => {
       // Sigurna provjera jest li u testnom načinu rada
-      const isTestMode = req ? (req as any).isTestMode || false : false;
+      const isTestMode = req?.isTestMode ?? false;
       if (isTestMode) {
         console.log(`[MEMBERSHIP] 🧪 Testni način rada: Ažuriranje razdoblja članstva za člana ${memberId}`);
       }
@@ -203,7 +207,7 @@ const membershipRepository = {
 
   async createMembershipPeriod(memberId: number, startDate: Date, req?: Request): Promise<void> {
     // Sigurna provjera jest li u testnom načinu rada
-    const isTestMode = req ? (req as any).isTestMode || false : false;
+    const isTestMode = req?.isTestMode ?? false;
     if (isTestMode) {
       console.log(`🧪 Testni način rada: Stvaranje novog razdoblja članstva za člana ${memberId}`);
     }

@@ -4,21 +4,13 @@ import bcrypt from 'bcrypt';
 import memberService from '../services/member.service.js';
 import auditService from '../services/audit.service.js';
 import memberRepository, { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
 
-// Extend Express Request to include user and file
-declare global {
-  namespace Express {
-    interface Request {
-      user?: DatabaseUser;
-    }
-  }
-}
+// Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 const memberProfileController = {
   async createMember(
-    req: Request<{}, {}, MemberCreateData>,
+    req: Request<Record<string, never>, Record<string, never>, MemberCreateData>,
     res: Response
   ): Promise<void> {
     try {
@@ -41,7 +33,7 @@ const memberProfileController = {
     }
   },
   async updateMember(
-    req: Request<{ memberId: string }, {}, MemberUpdateData>,
+    req: Request<{ memberId: string }, Record<string, never>, MemberUpdateData>,
     res: Response
   ): Promise<void> {
     try {
@@ -76,7 +68,7 @@ const memberProfileController = {
   async updateMemberRole(
     req: Request<
       { memberId: string },
-      {},
+      Record<string, never>,
       { role: 'member' | 'member_administrator' | 'member_superuser' }
     >,
     res: Response
@@ -109,14 +101,14 @@ const memberProfileController = {
 
   async assignPassword(
     req: Request<
-      {},
-      {},
+      Record<string, never>,
+      Record<string, never>,
       { memberId: number; password: string; cardNumber?: string }
     >,
     res: Response
   ): Promise<void> {
     try {
-      const { memberId, password, cardNumber } = req.body;
+      const { memberId, password, cardNumber: _cardNumber } = req.body; // _cardNumber je neiskorišteno, ali zadržano zbog API kompatibilnosti
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);

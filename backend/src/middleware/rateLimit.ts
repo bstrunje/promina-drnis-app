@@ -46,7 +46,7 @@ export const createRefreshTokenRateLimit = () => {
             }
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Ignoriramo greške pri parsiranju tokena
       }
       

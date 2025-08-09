@@ -17,11 +17,11 @@ import {
   formatMinuteText,
 } from './auth.utils.js';
 import auditService from "../../services/audit.service.js";
-import { Prisma, PerformerType } from "@prisma/client";
+import { PerformerType } from "@prisma/client";
 
 // Funkcija za prijavu korisnika
 export async function loginHandler(
-  req: Request<{}, {}, MemberLoginData>,
+  req: Request<Record<string, never>, Record<string, never>, MemberLoginData>,
   res: Response
 ): Promise<void | Response> {
   try {
@@ -253,7 +253,7 @@ export async function loginHandler(
       PerformerType.MEMBER
     );
 
-    const permissions = member.permissions ? {
+    const _permissions = member.permissions ? {
       can_view_members: member.permissions.can_view_members || false,
       can_edit_members: member.permissions.can_edit_members || false,
       can_add_members: member.permissions.can_add_members || false,
@@ -284,7 +284,7 @@ export async function loginHandler(
 
   } catch (error) {
     console.error("Login error:", error);
-    const userIP = req.ip || req.socket.remoteAddress || 'unknown';
+    const _userIP = req.ip || req.socket.remoteAddress || 'unknown';
     const emailAttempt = req.body?.email || 'unknown email';
     await auditService.logAction(
         'LOGIN_FAILED_SERVER_ERROR',

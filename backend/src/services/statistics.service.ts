@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
 

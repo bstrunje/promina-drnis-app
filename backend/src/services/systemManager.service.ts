@@ -6,6 +6,7 @@ import { getCurrentDate } from '../utils/dateUtils.js';
 // import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { SystemManager, MemberPermissions } from '@prisma/client';
 import { JWT_SECRET } from '../config/jwt.config.js';
 
 interface SystemSettings {
@@ -18,34 +19,76 @@ interface SystemSettings {
     updatedBy?: string | null;
 }
 
+type MemberSummary = {
+    member_id: number;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    email: string;
+    role?: string;
+};
+
+type ExistingPermissionsResponse = {
+    member_id: number;
+    can_manage_end_reasons: boolean;
+    grantedByMember?: unknown;
+    granted_at: Date | null;
+    updated_at?: Date | null;
+    member: MemberSummary;
+};
+
+type DefaultSuperuserPermissionsResponse = {
+    member_id: number;
+    can_view_members: boolean;
+    can_edit_members: boolean;
+    can_add_members: boolean;
+    can_manage_membership: boolean;
+    can_view_activities: boolean;
+    can_create_activities: boolean;
+    can_approve_activities: boolean;
+    can_view_financials: boolean;
+    can_manage_financials: boolean;
+    can_send_group_messages: boolean;
+    can_manage_all_messages: boolean;
+    can_view_statistics: boolean;
+    can_export_data: boolean;
+    can_manage_end_reasons: boolean;
+    can_manage_card_numbers: boolean;
+    can_assign_passwords: boolean;
+    granted_by: null;
+    granted_at: Date;
+    updated_at: Date;
+    member: MemberSummary;
+};
+
 const systemManagerService = {
     // Check credentials and log in manager
-    async authenticate(username: string, password: string): Promise<any> {
+    async authenticate(username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
         // Get manager by username
         const manager = await systemManagerRepository.findByUsername(username);
         
         // If manager does not exist or has no password
-        if (!manager || !(manager as any).password_hash) {
+        if (!manager || !manager.password_hash) {
             return null;
         }
         
         // Compare password with hash
-        const passwordMatch = await bcrypt.compare(password, (manager as any).password_hash);
+        const passwordMatch = await bcrypt.compare(password, manager.password_hash);
         
         if (!passwordMatch) {
             return null;
         }
         
         // Update last login time
-        await systemManagerRepository.updateLastLogin((manager as any).id);
+        await systemManagerRepository.updateLastLogin(manager.id);
         
         // Return manager without password
-        const { password_hash, ...managerWithoutPassword } = manager as any;
+        const { password_hash: _password_hash, ...managerWithoutPassword } = manager; // _password_hash: ignoriramo vrijednost radi lint pravila
         return managerWithoutPassword;
     },
     
     // Create JWT access token for manager
-    generateToken(manager: any): string {
+    generateToken(manager: Pick<SystemManager, 'id'>): string {
         return jwt.sign(
             { 
                 id: manager.id, 
@@ -58,7 +101,7 @@ const systemManagerService = {
     },
     
     // Create JWT refresh token for manager
-    generateRefreshToken(manager: any): string {
+    generateRefreshToken(manager: Pick<SystemManager, 'id'>): string {
         return jwt.sign(
             { 
                 id: manager.id, 
@@ -72,7 +115,7 @@ const systemManagerService = {
     },
     
     // Create new manager
-    async createSystemManager(managerData: any): Promise<any> {
+    async createSystemManager(managerData: { username: string; email?: string | null; password: string; display_name?: string | null }): Promise<SystemManager> {
         return systemManagerRepository.create(managerData);
     },
     
@@ -82,12 +125,12 @@ const systemManagerService = {
     },
     
     // Get all managers
-    async getAllSystemManagers(): Promise<any[]> {
+    async getAllSystemManagers(): Promise<Pick<SystemManager, 'id' | 'username' | 'email' | 'display_name' | 'last_login' | 'created_at' | 'updated_at'>[]> {
         return systemManagerRepository.findAll();
     },
     
     // Get member permissions
-    async getMemberPermissions(memberId: number): Promise<any | null> {
+    async getMemberPermissions(memberId: number): Promise<ExistingPermissionsResponse | DefaultSuperuserPermissionsResponse | null> {
         try {
             // Check if member exists
             const member = await prisma.member.findUnique({
@@ -102,7 +145,7 @@ const systemManagerService = {
 
             console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
             
-            let permissions = null;
+            let permissions: MemberPermissions | null = null;
             try {
                 // Koristimo ispravno ime Prisma modela prema shemi
                 permissions = await prisma.memberPermissions.findUnique({
@@ -148,7 +191,7 @@ const systemManagerService = {
                             first_name: member.first_name,
                             last_name: member.last_name,
                             full_name: `${member.first_name} ${member.last_name}`,
-                            email: member.email,
+                            email: member.email || '',
                             role: member.role
                         }
                     };
@@ -158,13 +201,19 @@ const systemManagerService = {
 
             // Return permissions with additional member data
             return {
-                ...permissions,
+                member_id: member.member_id,
+                can_manage_end_reasons: !!permissions.can_manage_end_reasons,
+                // Nismo dohvaćali relaciju, pa ovo ostaje nepopunjeno
+                grantedByMember: undefined,
+                granted_at: permissions.granted_at ?? null,
+                updated_at: permissions.updated_at ?? null,
                 member: {
                     member_id: member.member_id,
                     first_name: member.first_name,
                     last_name: member.last_name,
                     full_name: `${member.first_name} ${member.last_name}`,
-                    email: member.email
+                    email: member.email || '',
+                    role: member.role
                 }
             };
         } catch (error) {
@@ -176,7 +225,7 @@ const systemManagerService = {
     // Update member permissions
     async updateMemberPermissions(
         memberId: number, 
-        permissions: any,
+        permissions: { can_manage_end_reasons?: unknown },
         grantedById: number
     ): Promise<void> {
         try {
@@ -241,7 +290,7 @@ const systemManagerService = {
     },
     
     // Dohvat svih članova s admin ovlastima
-    async getMembersWithPermissions(): Promise<any[]> {
+    async getMembersWithPermissions(): Promise<Array<Record<string, unknown>>> {
         try {
             // Prvo dohvaćamo članove sa member_superuser ili member_administrator ulogom
             const specialRoleMembers = await prisma.member.findMany({
@@ -366,7 +415,7 @@ const systemManagerService = {
     },
     
     // Dohvat članova koji nemaju admin ovlasti
-    async getMembersWithoutPermissions(): Promise<any[]> {
+    async getMembersWithoutPermissions(): Promise<Array<{ member_id: number; first_name: string; last_name: string; email: string; role: string }>> {
         try {
             console.log('[SYSTEM-MANAGER] Dohvaćam članove koji nemaju admin ovlasti...');
             
@@ -403,7 +452,13 @@ const systemManagerService = {
             });
             
             console.log(`[SYSTEM-MANAGER] Pronađeno ${membersWithoutPermissions.length} članova bez admin ovlasti`);
-            return membersWithoutPermissions;
+            return membersWithoutPermissions.map(m => ({
+                member_id: m.member_id,
+                first_name: m.first_name || '',
+                last_name: m.last_name || '',
+                email: m.email || '',
+                role: m.role || 'member'
+            }));
         } catch (error) {
             console.error('Error in getMembersWithoutPermissions:', error);
             throw error;

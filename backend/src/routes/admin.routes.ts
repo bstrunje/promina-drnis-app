@@ -1,15 +1,9 @@
 import express, { Response } from 'express';
 import permissionsController from '../controllers/permissions.controller.js';
-import { authMiddleware as authenticateToken, checkRole, roles } from '../middleware/authMiddleware.js';
+import { authMiddleware as authenticateToken, checkRole } from '../middleware/authMiddleware.js';
 import type { Request } from 'express';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
-import { getCurrentDate } from '../utils/dateUtils.js';
-// Import types
-import { Member as MemberType, MembershipDetails, MembershipPeriod } from '../shared/types/index.js';
-// Import actual models for database operations
+import type { DatabaseUser } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
-import fs from 'fs/promises';
-import path from 'path';
 
 
 interface AuthRequest extends Request {

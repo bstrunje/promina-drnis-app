@@ -1,20 +1,17 @@
 // src/services/member.service.ts
-import db, { DatabaseError } from '../utils/db.js';
 import membershipService from './membership.service.js';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { Member } from '../shared/types/member.js';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
 import membershipRepository from '../repositories/membership.repository.js';
-import { MembershipPeriod } from '../shared/types/membership.js';
 import authRepository from '../repositories/auth.repository.js';
 import auditService from './audit.service.js';
 import { MembershipTypeEnum } from '../shared/types/member.js';
-import { getCurrentDate, parseDate, formatDate } from '../utils/dateUtils.js';
+import { getCurrentDate } from '../utils/dateUtils.js';
 import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
-import type { PrismaClient, Prisma } from '@prisma/client';
-import { updateAnnualStatistics } from './statistics.service.js';
+import type { PrismaClient } from '@prisma/client';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -28,19 +25,7 @@ interface MemberWithActivities extends Member {
     }[];
 }
 
-// Sučelje za člana s dodatnim poljima koja dolaze iz repozitorija
-interface MemberWithExtendedDetails extends Member {
-    card_number?: string;
-    fee_payment_year?: number;
-    card_stamp_issued?: boolean;
-    fee_payment_date?: string | Date;
-    next_year_stamp_issued?: boolean;
-    calculated_full_name?: string;
-}
 
-interface MemberWithTotalHours extends Member {
-    total_hours: number;
-}
 
 export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | undefined): MembershipTypeEnum {
   if (typeof value === 'string') {
@@ -81,7 +66,15 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
       }
     });
 
-    const totalMinutes = participations.reduce((acc: number, p: any) => {
+    const totalMinutes = participations.reduce((acc: number, p: {
+      manual_hours: number | null;
+      recognition_override?: number | null;
+      activity: {
+        actual_start_time: Date | string | null;
+        actual_end_time: Date | string | null;
+        recognition_percentage?: number | null;
+      };
+    }) => {
       let minuteValue = 0;
 
       // Prioritet imaju manual_hours ako su postavljeni
@@ -178,7 +171,7 @@ const memberService = {
                 }
 
                 console.log('[updateMember] memberToUpdate.functions_in_society neposredno prije update:', memberToUpdate.functions_in_society);
-                const updatedCoreMember = await tx.member.update({
+                await tx.member.update({
                     where: { member_id: memberId },
                     data: {
                         first_name: memberToUpdate.first_name,
@@ -276,7 +269,7 @@ const memberService = {
 
 
 
-    async createMember(memberData: MemberCreateData & { skills?: any, other_skills?: string }): Promise<Member> {
+    async createMember(memberData: MemberCreateData & { skills?: { skill_id: number; is_instructor?: boolean }[], other_skills?: string }): Promise<Member> {
         const { skills, other_skills, ...basicMemberData } = memberData;
 
         try {
@@ -505,7 +498,7 @@ const memberService = {
         }
     },
 
-    async getMemberAnnualStats(memberId: number): Promise<any> {
+    async getMemberAnnualStats(memberId: number): Promise<Awaited<ReturnType<typeof memberRepository.getAnnualStats>>> {
         try {
             const stats = await memberRepository.getAnnualStats(memberId);
             if (!stats) {
@@ -651,15 +644,13 @@ const memberService = {
                 return { rows: [] };
             }
 
+            const { membership_details: _omit, ...memberWithoutDetails } = memberWithCard as typeof memberWithCard & { membership_details?: unknown };
             const result = {
-                ...memberWithCard,
+                ...memberWithoutDetails,
                 card_number: memberWithCard.membership_details?.card_number || null,
                 card_stamp_issued: memberWithCard.membership_details?.card_stamp_issued || null,
                 fee_payment_date: memberWithCard.membership_details?.fee_payment_date || null
             };
-            
-            // Uklanjamo nested membership_details jer smo ih već "spljoštili"
-            delete (result as any).membership_details;
             
             console.log(`[MEMBER] Uspješno dohvaćeni detalji člana ${memberId} s karticom`);
             

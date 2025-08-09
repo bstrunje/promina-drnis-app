@@ -1,6 +1,5 @@
 // backend/src/routes/members.ts
 import express, { Request, Response } from 'express';
-import type { RequestHandler } from 'express';
 import { put, del } from '@vercel/blob';
 import multer from 'multer';
 import fs from 'fs/promises';
@@ -17,7 +16,6 @@ import memberStatsController from '../controllers/memberStats.controller.js';
 import memberMessageController from '../controllers/member.message.controller.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
-import { MembershipEndReason } from '../shared/types/membership.js';
 import memberService from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
 import equipmentService from '../services/equipment.service.js';
@@ -153,7 +151,7 @@ router.post('/:memberId/equipment/:type/deliver', authenticateToken, roles.requi
   try {
     const memberId = parseInt(req.params.memberId);
     const equipmentType = req.params.type;
-    const performerId = (req as any).user?.member_id;
+    const performerId = req.user?.member_id;
     const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
 
     if (!performerId) {
@@ -192,7 +190,7 @@ router.post('/:memberId/equipment/:type/undeliver', authenticateToken, roles.req
   try {
     const memberId = parseInt(req.params.memberId);
     const equipmentType = req.params.type;
-    const performerId = (req as any).user?.member_id;
+    const performerId = req.user?.member_id;
     const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
 
     if (!performerId) {
@@ -300,7 +298,7 @@ router.put('/equipment/inventory', authenticateToken, roles.requireSuperUser, as
 router.post('/equipment/gift', authenticateToken, roles.requireSuperUser, async (req, res) => {
   try {
     const { equipment_type, size, gender, notes } = req.body;
-    const performerId = (req as any).user?.member_id;
+    const performerId = req.user?.member_id;
     const performerType = 'MEMBER'; // Svi članovi su MEMBER bez obzira na ovlasti
 
     if (!performerId) {

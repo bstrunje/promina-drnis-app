@@ -8,7 +8,7 @@ router.get('/inventory', authenticateToken, roles.requireAdmin, async (req, res)
     try {
         const inventory = await stampService.getInventoryStatus();
         res.json(inventory);
-    } catch (error) {
+    } catch (_error) {
         res.status(500).json({ message: 'Failed to fetch inventory' });
     }
 });
@@ -23,9 +23,9 @@ router.get('/inventory/:year', authenticateToken, roles.requireAdmin, async (req
         
         const inventory = await stampService.getInventoryStatusByYear(year);
         res.json(inventory);
-    } catch (error) {
+    } catch (_error) {
         res.status(500).json({ 
-            message: error instanceof Error ? error.message : 'Failed to fetch inventory for year' 
+            message: _error instanceof Error ? _error.message : 'Failed to fetch inventory for year' 
         });
     }
 });
@@ -77,10 +77,10 @@ router.put('/inventory',
                 message: `Inventory for year ${yearValue} updated successfully`,
                 inventory: updatedInventory
             });
-        } catch (error) {
-            console.error('Error updating inventory:', error);
+        } catch (_error) {
+            console.error('Error updating inventory:', _error);
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to update inventory' 
+                message: _error instanceof Error ? _error.message : 'Failed to update inventory' 
             });
         }
     }
@@ -94,9 +94,9 @@ router.get('/history',
         try {
             const history = await stampService.getStampHistory();
             res.json(history);
-        } catch (error) {
+        } catch (_error) {
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to fetch stamp history' 
+                message: _error instanceof Error ? _error.message : 'Failed to fetch stamp history' 
             });
         }
     }
@@ -115,9 +115,9 @@ router.get('/history/:year',
             
             const history = await stampService.getStampHistoryByYear(year);
             res.json(history);
-        } catch (error) {
+        } catch (_error) {
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to fetch stamp history' 
+                message: _error instanceof Error ? _error.message : 'Failed to fetch stamp history' 
             });
         }
     }
@@ -146,9 +146,9 @@ router.post('/archive-year',
             );
             
             res.json(result);
-        } catch (error) {
+        } catch (_error) {
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to archive inventory' 
+                message: _error instanceof Error ? _error.message : 'Failed to archive inventory' 
             });
         }
     }
@@ -181,9 +181,9 @@ router.post('/reset-year',
                 ...result,
                 message: 'Inventory successfully archived. Reset functionality is deprecated, please use /archive-year endpoint instead.'
             });
-        } catch (error) {
+        } catch (_error) {
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to archive inventory' 
+                message: _error instanceof Error ? _error.message : 'Failed to archive inventory' 
             });
         }
     }

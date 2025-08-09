@@ -2,15 +2,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Server } from 'http';
 import app from './app.js';
-import config from './config/config.js';
-import { prepareDirectories } from './init/prepareDirectories.js';
 import { startPasswordUpdateJob } from './jobs/passwordUpdateJob.js';
 import debugRoutes from './routes/debug.js';
 
 // import { runAllMigrations } from './runMigrations.js';
-import scheduledService from './services/scheduled.service.js';
 import { initScheduledTasks } from './utils/scheduledTasks.js';
 import prisma from './utils/prisma.js';
 
@@ -64,7 +60,8 @@ const JWT_SECRET: string = process.env.JWT_SECRET;
 export { JWT_SECRET };
 
 // Database connection check
-async function checkDatabaseConnection(): Promise<boolean> {
+// Prefiks _ označava da funkcija trenutačno nije pozvana, ali zadržavamo je za buduću dijagnostiku
+async function _checkDatabaseConnection(): Promise<boolean> {
     try {
         await prisma.$queryRaw`SELECT 1`;
         console.log('✅ Database connection successful');
@@ -109,7 +106,7 @@ process.on('uncaughtException', (error: Error) => {
     process.exit(1);
 });
 
-process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
     console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
 });
 

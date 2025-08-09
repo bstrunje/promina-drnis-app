@@ -9,6 +9,7 @@ import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 // Import db
 import prisma from '../utils/prisma.js';
+import { Member, MembershipDetails, MembershipPeriod, StampInventory, Activity, ActivityParticipation } from '@prisma/client';
 
 // Import member service
 
@@ -274,12 +275,12 @@ router.post('/reset-test-database', async (req, res) => {
     let backupData: { 
       timestamp?: string; 
       filename?: string;
-      members?: any[];
-      membership_details?: any[];
-      membership_periods?: any[];
-      stamp_inventory?: any[];
-      activities?: any[];
-      activity_participants?: any[];
+      members?: Member[];
+      membership_details?: MembershipDetails[];
+      membership_periods?: MembershipPeriod[];
+      stamp_inventory?: StampInventory[];
+      activities?: Activity[];
+      activity_participants?: ActivityParticipation[];
     } = {};
     
     try {
@@ -414,7 +415,7 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
     // Provjera postojanja datoteke
     try {
       await fsPromises.access(backupPath, fs.constants.F_OK);
-    } catch (err) {
+    } catch (_err) {
       return res.status(404).json({ 
         error: `Backup datoteka nije pronađena: ${filename}` 
       });
@@ -456,7 +457,7 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       
       // Inserti za members tablicu
       for (const member of backupData.members) {
-        const { member_id, ...memberData } = member;
+        const { member_id: _member_id, ...memberData } = member;
         
         await tx.member.create({
           data: {
@@ -467,7 +468,7 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       
       // Inserti za membership_details tablicu
       for (const detail of backupData.membership_details) {
-        const { detail_id, ...detailData } = detail;
+        const { detail_id: _detail_id, ...detailData } = detail;
         
         await tx.membershipDetails.create({
           data: {
@@ -509,7 +510,7 @@ router.get('/list-backups', async (req, res) => {
     
     try {
       await fsPromises.access(backupDir, fs.constants.F_OK);
-    } catch (err) {
+    } catch (_err) {
       // Ako direktorij ne postoji, kreiraj ga
       await fsPromises.mkdir(backupDir, { recursive: true });
       return res.json({ backups: [] });
@@ -528,7 +529,7 @@ router.get('/list-backups', async (req, res) => {
       try {
         const data = JSON.parse(await fsPromises.readFile(filePath, 'utf8'));
         fileTimestamp = data.timestamp;
-      } catch (err) {
+      } catch (_err) {
         // Ignoriramo grešku
       }
       
@@ -544,10 +545,10 @@ router.get('/list-backups', async (req, res) => {
     backups.sort((a, b) => b.created.getTime() - a.created.getTime());
     
     res.json({ backups });
-  } catch (error) {
-    console.error('Greška prilikom listanja backupa:', error);
+  } catch (_error) {
+    console.error('Greška prilikom listanja backupa:', _error);
     res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Nepoznata greška' 
+      error: _error instanceof Error ? _error.message : 'Nepoznata greška' 
     });
   }
 });
@@ -641,7 +642,7 @@ router.post('/cleanup-test-data', authMiddleware, roles.requireAdmin, async (req
 });
 
 // Funkcija za brisanje svih datoteka iz direktorija
-async function cleanDirectory(directory: string): Promise<void> {
+async function _cleanDirectory(directory: string): Promise<void> {
   try {
     // Provjeri postoji li direktorij
     await fsPromises.access(directory);
@@ -656,23 +657,29 @@ async function cleanDirectory(directory: string): Promise<void> {
       
       if (stats.isDirectory()) {
         // Rekurzivno obriši poddirektorije
-        await cleanDirectory(filePath);
+        await _cleanDirectory(filePath);
         await fsPromises.rmdir(filePath);
       } else {
         // Obriši datoteku
         await fsPromises.unlink(filePath);
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Ako direktorij ne postoji, to je OK
-    if (error.code !== 'ENOENT') {
+    if (error instanceof Error) {
+      const code = (error as { code?: string }).code;
+      if (code !== 'ENOENT') {
+        throw error;
+      }
+    } else {
+      // Ne očekivani tip greške – propagiramo
       throw error;
     }
   }
 }
 
 // Funkcija za sortiranje datoteka po vremenu promjene (od najnovije do najstarije)
-function sortFilesByDate(a: { mtime: Date }, b: { mtime: Date }): number {
+function _sortFilesByDate(a: { mtime: Date }, b: { mtime: Date }): number {
   return b.mtime.getTime() - a.mtime.getTime();
 }
 

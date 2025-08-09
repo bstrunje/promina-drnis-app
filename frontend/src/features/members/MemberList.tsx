@@ -18,7 +18,6 @@ import { Member } from "@shared/member";
 import { MemberWithDetails } from "@shared/memberDetails.types"; // Already updated above
 import AddMemberForm from "./AddMemberForm";
 import EditMemberForm from "@components/EditMemberForm";
-import AssignCardNumberForm from "@components/AssignCardNumberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { Button } from "@components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
@@ -111,7 +110,6 @@ export default function MemberList(): JSX.Element {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   
-  const [assigningPasswordMember, setAssigningPasswordMember] = useState<Member | null>(null);
   const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
 
   // Check if user has admin privileges (for editing, deleting, adding members)
@@ -456,7 +454,6 @@ export default function MemberList(): JSX.Element {
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
                   onViewDetails={(memberId) => navigate(`/members/${memberId}`)}                  
-                  onAssignPassword={setAssigningPasswordMember}
                 />
               </div>
             </TabsContent>
@@ -484,13 +481,7 @@ export default function MemberList(): JSX.Element {
         />
       )}
 
-      {assigningPasswordMember && (
-        <AssignCardNumberForm
-          member={assigningPasswordMember}
-          onClose={() => setAssigningPasswordMember(null)}
-          onAssign={() => refreshMembers()}
-        />
-      )}
+      {/* Uklonjeno: AssignCardNumberForm modal jer se dodjela kartice radi na drugom mjestu */}
 
       {roleAssignmentMember && (
         <RoleAssignmentModal

@@ -8,6 +8,19 @@ interface StampInventory {
     issued_count: number;
 }
 
+// Tip retka povijesti markica za API kompatibilnost
+type StampHistoryRow = {
+    id: number;
+    year: number;
+    stamp_type: string;
+    initial_count: number;
+    issued_count: number;
+    reset_date: Date | null;
+    reset_by: number | null;
+    notes: string | null;
+    reset_by_name: string | null;
+};
+
 const stampRepository = {
     async getInventory(): Promise<StampInventory[]> {
         try {
@@ -175,7 +188,7 @@ const stampRepository = {
         }
     },
 
-    async getStampHistory(): Promise<any[]> {
+    async getStampHistory(): Promise<StampHistoryRow[]> {
         try {
             console.log('[STAMP-HISTORY] Dohvaćam povijest markica s Prisma...');
             
@@ -218,7 +231,7 @@ const stampRepository = {
         }
     },
 
-    async getStampHistoryByYear(year: number): Promise<any[]> {
+    async getStampHistoryByYear(year: number): Promise<StampHistoryRow[]> {
         try {
             console.log(`[STAMP-HISTORY-YEAR] Dohvaćam povijest markica za godinu ${year} s Prisma...`);
             

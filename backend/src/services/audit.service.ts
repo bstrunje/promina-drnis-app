@@ -1,7 +1,6 @@
 // backend/src/services/audit.service.ts
 import { Request } from 'express';
 import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
-import { DatabaseUser } from '../middleware/authMiddleware.js';
 import { PerformerType } from '@prisma/client';
 
 interface LogEventParams {
@@ -9,12 +8,9 @@ interface LogEventParams {
     user_id: number | null;
     user_type: string | null;
     ip_address: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     details: Record<string, any>;
     performer_type?: PerformerType;
-}
-
-interface AuditLogDetails {
-    user_id: number | null;
 }
 
 // Helper funkcija za određivanje performer_type-a

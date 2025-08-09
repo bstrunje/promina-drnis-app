@@ -15,7 +15,7 @@ const stampService = {
         ...item,
         remaining: item.initial_count - item.issued_count,
       }));
-    } catch (error) {
+    } catch (_error) {
       throw new DatabaseError("Error fetching stamp inventory");
     }
   },
@@ -27,7 +27,7 @@ const stampService = {
         ...item,
         remaining: item.initial_count - item.issued_count,
       }));
-    } catch (error) {
+    } catch (_error) {
       throw new DatabaseError(`Error fetching stamp inventory for year ${year}`);
     }
   },

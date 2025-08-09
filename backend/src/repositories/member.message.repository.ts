@@ -1,6 +1,6 @@
 import prisma from '../utils/prisma.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
-import { Member, MemberMessage as PrismaMemberMessage, Prisma } from '@prisma/client'; // Importing Member type and Prisma types
+import { MemberMessage as PrismaMemberMessage, Prisma } from '@prisma/client'; // Importing Member type and Prisma types
 import memberRepository from './member.repository.js';
 
 export interface TransformedMessage {
@@ -168,7 +168,8 @@ const memberMessageRepository = {
         });
 
         // Definiranje tipa za payload s uključenim relacijama
-        const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
+        // Definiranje tipa za payload s uključenim relacijama
+        const _messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
             recipient_statuses: { 
@@ -177,7 +178,7 @@ const memberMessageRepository = {
             },
           },
         });
-        type MessageWithDetails = Prisma.MemberMessageGetPayload<typeof messageWithDetailsPayload>;
+        type MessageWithDetails = Prisma.MemberMessageGetPayload<typeof _messageWithDetailsPayload>;
 
         // Mapiranje rezultata
         return (messagesData as MessageWithDetails[]).map((msg): TransformedMessage => {

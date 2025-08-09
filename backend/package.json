@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node dist/src/server.js",
-    "build": "prisma generate && tsc",
+    "build": "rimraf dist && prisma generate && tsc",
     "build:vercel": "prisma migrate deploy && prisma generate && tsc -p tsconfig.vercel.json && npm run seed",
     "postinstall": "prisma generate",
     "seed": "node dist/prisma/seed.js",
@@ -51,7 +51,6 @@
     "multer": "^2.0.1",
     "nodemailer": "^6.9.16",
     "pg": "^8.13.1",
-    "rimraf": "^5.0.5",
     "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
@@ -74,6 +73,7 @@
     "eslint-plugin-node": "^11.1.0",
     "globals": "^16.1.0",
     "prisma": "^6.13.0",
+    "rimraf": "^6.0.1",
     "supertest": "^7.1.1",
     "typescript-eslint": "^8.32.1",
     "vitest": "^3.1.3"

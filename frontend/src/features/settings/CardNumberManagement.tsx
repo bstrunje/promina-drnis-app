@@ -10,7 +10,7 @@ import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers,
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 
 export default function CardNumberManagement() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const { toast } = useToast(); 
   
   // Dohvati duljinu broja kartice iz postavki

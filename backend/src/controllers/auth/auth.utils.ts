@@ -1,8 +1,9 @@
 import { Request } from "express";
+import type { CookieOptions } from "express";
 import prisma from "../../utils/prisma.js"; // Potrebno za getCardNumberLength
 
 // Funkcija za generiranje konzistentnih opcija kolačića
-export const generateCookieOptions = (req: Request): any => {
+export const generateCookieOptions = (req: Request): CookieOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (isProduction) {
@@ -13,7 +14,7 @@ export const generateCookieOptions = (req: Request): any => {
       try {
         const originUrl = new URL(origin);
         isSecureFrontendInProd = originUrl.protocol === 'https:';
-      } catch (error) {
+      } catch {
         // console.error('Invalid Origin header in prod:', origin);
       }
     }
@@ -39,7 +40,7 @@ export const generateCookieOptions = (req: Request): any => {
 };
 
 // OPTIMIZACIJA: Funkcija za brisanje kolačića bez maxAge opcije (Express 5 kompatibilnost)
-export const generateClearCookieOptions = (req: Request): any => {
+export const generateClearCookieOptions = (req: Request): CookieOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (isProduction) {
@@ -50,7 +51,7 @@ export const generateClearCookieOptions = (req: Request): any => {
       try {
         const originUrl = new URL(origin);
         isSecureFrontendInProd = originUrl.protocol === 'https:';
-      } catch (error) {
+      } catch {
         // console.error('Invalid Origin header in prod:', origin);
       }
     }

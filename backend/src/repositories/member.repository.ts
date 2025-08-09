@@ -1,8 +1,7 @@
 // backend/src/repositories/member.repository.ts
 import prisma from '../utils/prisma.js';
 import { mapToMember } from '../utils/memberMapper.js';
-import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSize } from '../shared/types/member.js';
-import { MembershipEndReason } from '../shared/types/membership.js';
+import { Member, Gender, MembershipTypeEnum } from '../shared/types/member.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { Prisma } from '@prisma/client';
 

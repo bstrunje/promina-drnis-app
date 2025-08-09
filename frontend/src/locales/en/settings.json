@@ -1,0 +1,94 @@
+{
+    "settings": {
+        "title": "Member Management Settings"
+    },
+    "cardNumberManagement": {
+        "title": "Card Number Management",
+        "description": "Add and manage membership card numbers",
+        "stats": {
+            "total": "Total card numbers: {{count}}",
+            "available": "Available: {{count}}",
+            "assigned": "Assigned: {{count}}",
+            "refreshing": "refreshing...",
+            "refreshTitle": "Refresh card statistics"
+        },
+        "actions": {
+            "addSingle": {
+                "title": "Add Single Number",
+                "description": "Add an individual card number to the system"
+            },
+            "addRange": {
+                "title": "Add Number Range",
+                "description": "Add a sequential range of card numbers"
+            },
+            "manage": {
+                "title": "Manage Numbers",
+                "description": "View, search and delete existing card numbers"
+            }
+        },
+        "forms": {
+            "addSingle": {
+                "title": "Add Single Card Number",
+                "placeholder": "Enter new card number ({{length}} digits)",
+                "submit": "Add Card Number",
+                "adding": "Adding...",
+                "back": "Back",
+                "cancel": "Cancel"
+            },
+            "addRange": {
+                "title": "Add Card Number Range",
+                "startLabel": "Start Number",
+                "endLabel": "End Number",
+                "startPlaceholder": "e.g., {{example}}",
+                "endPlaceholder": "e.g., {{example}}",
+                "submit": "Add Range",
+                "adding": "Adding...",
+                "cancel": "Cancel",
+                "back": "Back",
+                "note": "Numbers will be padded with leading zeros based on your system settings."
+            },
+            "manage": {
+                "title": "Manage Card Numbers",
+                "searchPlaceholder": "Search card numbers...",
+                "consumedSearchPlaceholder": "Search by number or member name...",
+                "filters": {
+                    "all": "All ({{count}})",
+                    "available": "Available ({{count}})",
+                    "assigned": "Assigned ({{count}})",
+                    "consumed": "Spent/Consumed"
+                },
+                "stats": {
+                    "showing": "Showing {{current}} of {{total}}",
+                    "filtered": "(filtered from {{total}})",
+                    "numbers": "numbers",
+                    "consumedCards": "consumed cards"
+                },
+                "consumed": {
+                    "loading": "Loading consumed cards...",
+                    "noCards": "No consumed cards to display",
+                    "member": "Member: {{member}}",
+                    "issued": "Issued: {{date}}",
+                    "copyTooltip": "Click to copy",
+                    "note": "Here are all consumed (used) cards, including member and dates.",
+                    "showing": "Showing {{count}} of {{total}} consumed cards"
+                },
+                "assigned": {
+                    "assignedTo": "Assigned to: {{name}}",
+                    "copyTooltip": "Click to copy"
+                },
+                "pagination": {
+                    "previous": "Previous",
+                    "next": "Next",
+                    "page": "Page {{page}} of {{totalPages}}",
+                    "prevPage": "Previous",
+                    "nextPage": "Next"
+                },
+                "notes": {
+                    "deleteNote": "Note: Only unused card numbers can be deleted. Click on a number to copy it.",
+                    "assignedNote": "Cards already assigned to members are shown in blue."
+                },
+                "back": "Back"
+            }
+        }
+    }
+}
