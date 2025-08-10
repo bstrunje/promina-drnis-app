@@ -1,7 +1,7 @@
 {
     "adminMessageSender": {
       "title": "Send Message to Members",
-      "tabs Tanguta": {
+      "tabs": {
         "single": "To Individual Member",
         "group": "To Group of Members",
         "all": "To All Members"
@@ -72,6 +72,7 @@
         "noReceivedMessages": "You have no received messages",
         "noUnreadMessages": "No unread messages",
         "noReadMessages": "No read messages",
+        "noArchivedMessages": "No archived messages",
         "noSentMessages": "No sent messages."
       },
       "loading": {
@@ -89,6 +90,7 @@
       }
     },
     "receivedMessages": {
+      "loading": "Loading messages...",
       "messages": {
         "fetchError": "Failed to fetch messages",
         "markAsReadSuccess": "Message marked as read",
@@ -103,7 +105,8 @@
       "filters": {
         "unread": "Unread",
         "read": "Read",
-        "all": "All Messages"
+        "all": "All Messages",
+		"archived": "Archived"					  
       },
       "confirmDialogs": {
         "deleteMessage": "Are you sure you want to delete this message?",
@@ -128,10 +131,40 @@
           "deleteAll": "Delete All Messages",
           "deleteAllShort": "Delete All"
         }
+      },
+      "card": {
+        "titles": {
+          "toAdmins": "Message to: Administrators",
+          "toAll": "Message to all members",
+          "group": "Group message",
+          "toMember": "Message to: {{name}}"
+        },
+        "labels": {
+          "sentAt": "Sent",
+          "readCounter": "{{readCount}}/{{total}} read",
+          "readAt": "Read",
+          "unread": "Unread"
+        },
+        "actions": {
+          "showRecipients": "Show recipients"
+        }
       }
     },
     "messages": {
       "deleteAll": "Delete All Messages",
       "deleteAllShort": "Delete All"
+    },
+    "messageList": {
+      "title": "Messages",
+      "subtitle": "Communication with members",
+      "unreadCount": "{{count}} unread",
+      "tabs": {
+        "receivedFull": "Received Messages",
+        "receivedShort": "Received",
+        "sentFull": "Sent Messages",
+        "sentShort": "Sent",
+        "composeFull": "New Message",
+        "composeShort": "New"
+      }
     }
   }

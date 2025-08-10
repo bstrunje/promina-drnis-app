@@ -6,5 +6,34 @@
     "forbidden": "Zabranjen pristup",
     "badRequest": "Neispravan zahtjev",
     "validationFailed": "Validacija nije uspjela"
+  },
+  "errorsByCode": {
+    "AUTH_MISSING_CREDENTIALS": "Potrebni su email i lozinka",
+    "AUTH_INVALID_CREDENTIALS": "Neispravni podaci za prijavu",
+    "AUTH_MEMBERSHIP_INVALID": "Prijava nije moguća. Članarina za tekuću godinu nije važeća",
+    "AUTH_ACCOUNT_NOT_ACTIVE": "Račun nije aktivan. Kontaktirajte administratora.",
+    "AUTH_ACCOUNT_LOCKED": "Račun je zaključan. Pokušajte kasnije.",
+    "AUTH_REFRESH_TOKEN_INVALID": "Refresh token je neispravan ili nije pronađen",
+    "AUTH_REFRESH_TOKEN_EXPIRED": "Refresh token je istekao",
+    "AUTH_USER_NOT_FOUND": "Korisnik nije pronađen",
+    "AUTH_SERVER_ERROR": "Greška autentikacijskog poslužitelja",
+    "AUTH_LOGOUT_FAILED": "Odjava nije uspjela zbog greške na poslužitelju",
+    "AUTH_REGISTRATION_DUP_EMAIL": "Član s ovom email adresom već postoji",
+    "AUTH_REGISTRATION_DUP_OIB": "Član s ovim OIB-om već postoji",
+    "AUTH_REGISTRATION_FAILED": "Registracija nije uspjela",
+    "VALIDATION_ERROR": "Greška validacije",
+    "MEMBER_NOT_FOUND": "Član nije pronađen",
+    "MEMBER_ONLY_PENDING": "Broj iskaznice se može dodijeliti samo članovima u statusu 'pending'",
+    "CARDNUM_LENGTH_INVALID": "Neispravna duljina broja iskaznice",
+    "CARDNUM_ASSIGN_FAILED": "Greška pri dodjeli broja iskaznice",
+    "AUTH_PASSWORD_ASSIGN_FAILED": "Greška pri dodjeli lozinke",
+    "SERVER_ERROR": "Greška na poslužitelju"
+  },
+  "success": {
+    "AUTH_LOGOUT_OK": "Odjava je uspješna",
+    "AUTH_REGISTER_PRE_CREATED_OK": "Član je pred-registriran. Čeka se postavljanje lozinke od administratora.",
+    "AUTH_REGISTER_COMPLETED_OK": "Član je uspješno registriran",
+    "AUTH_CARDNUM_ASSIGNED_OK": "Broj iskaznice dodijeljen i lozinka generirana",
+    "AUTH_PASSWORD_ASSIGNED_OK": "Lozinka je uspješno dodijeljena"
   }
 }

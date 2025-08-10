@@ -32,7 +32,7 @@ export const getSettings = async (req: Request, res: Response) => {
     return res.json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return res.status(500).json({ error: 'Failed to fetch settings' });
+    return res.status(500).json({ code: 'SETTINGS_FETCH_FAILED', error: 'Failed to fetch settings' });
   }
 };
 
@@ -57,16 +57,16 @@ export const updateSettings = [
 
     const validationError = validateSettings(sanitizedInput);
     if (validationError) {
-      return res.status(400).json({ error: validationError });
+      return res.status(400).json({ code: 'SETTINGS_VALIDATION_ERROR', error: validationError });
     }
 
     if (!req.user) {
-      return res.status(403).json({ error: 'Unauthorized' });
+      return res.status(403).json({ code: 'AUTH_UNAUTHORIZED', error: 'Unauthorized' });
     }
 
     // Dozvoli pristup ako je korisnik SystemManager ILI member_superuser
     if (!req.user.is_SystemManager && req.user.role_name !== 'member_superuser') {
-      return res.status(403).json({ error: 'Unauthorized to update settings' });
+      return res.status(403).json({ code: 'SETTINGS_FORBIDDEN_UPDATE', error: 'Unauthorized to update settings' });
     }
 
     const user = req.user;
@@ -121,7 +121,7 @@ export const updateSettings = [
       });
     } catch (error) {
       console.error('Error updating settings:', error);
-      return res.status(500).json({ error: 'Failed to update settings' });
+      return res.status(500).json({ code: 'SETTINGS_UPDATE_FAILED', error: 'Failed to update settings' });
     }
   }
 ];

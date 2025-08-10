@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Member } from '../../shared/types/member.js';
 import prisma from '../../utils/prisma.js';
 import { parseDate, cleanISODateString } from '../../utils/dateUtils.js';
+import { tOrDefault } from '../../utils/i18n.js';
 
 export async function registerInitialHandler(
   req: Request<
@@ -20,6 +21,7 @@ export async function registerInitialHandler(
   >,
   res: Response
 ): Promise<void> {
+  const locale: 'en' | 'hr' = req.locale ?? 'en';
   try {
     const { first_name, last_name, email } = req.body;
 
@@ -32,7 +34,7 @@ export async function registerInitialHandler(
     if (memberExists) {
       res
         .status(400)
-        .json({ message: 'Member with this email already exists' });
+        .json({ code: 'AUTH_REGISTRATION_DUP_EMAIL', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_DUP_EMAIL', locale, 'Member with this email already exists') });
       return;
     }
 
@@ -61,8 +63,7 @@ export async function registerInitialHandler(
     });
 
     res.status(201).json({
-      message:
-        'Member pre-registered successfully. Awaiting administrator password configuration.',
+      message: tOrDefault('success.AUTH_REGISTER_PRE_CREATED_OK', locale, 'Member pre-registered successfully. Awaiting administrator password configuration.'),
       member_id: member.member_id,
       full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
       email: member.email,
@@ -70,9 +71,9 @@ export async function registerInitialHandler(
   } catch (error) {
     console.error('Registration error:', error);
     if (error instanceof Error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_FAILED', locale, error.message) });
     } else {
-      res.status(500).json({ message: 'Error registering member' });
+      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_FAILED', locale, 'Error registering member') });
     }
   }
 }
@@ -88,6 +89,7 @@ export async function registerMemberHandler(
   >,
   res: Response
 ): Promise<void> {
+  const locale: 'en' | 'hr' = req.locale ?? 'en';
   try {
     const {
       first_name,
@@ -109,7 +111,8 @@ export async function registerMemberHandler(
     const existingMember = await prisma.member.findUnique({ where: { oib } });
     if (existingMember) {
       res.status(400).json({
-        message: 'Member with this OIB already exists',
+        code: 'AUTH_REGISTRATION_DUP_OIB',
+        message: tOrDefault('errorsByCode.AUTH_REGISTRATION_DUP_OIB', locale, 'Member with this OIB already exists'),
       });
       return;
     }
@@ -167,14 +170,14 @@ export async function registerMemberHandler(
     });
 
     res.status(201).json({
-      message: 'Member registered successfully',
+      message: tOrDefault('success.AUTH_REGISTER_COMPLETED_OK', locale, 'Member registered successfully'),
       member: newMember,
     });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
-      message:
-        error instanceof Error ? error.message : 'Registration failed',
+      code: 'AUTH_REGISTRATION_FAILED',
+      message: tOrDefault('errorsByCode.AUTH_REGISTRATION_FAILED', locale, error instanceof Error ? error.message : 'Registration failed'),
     });
   }
 }

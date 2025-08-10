@@ -189,15 +189,25 @@ const LoginPage = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      // Ažuriran prikaz greške
+      // Lokalizirani prikaz greške na temelju code polja iz backenda (Opcija C)
       if (axios.isAxiosError(error) && error.response?.data) {
-         // Eksplicitno definiramo tip za error.response.data
-         const errorData = error.response.data as { message: string };
-         setError(errorData.message); // Prikaz poruke s backenda
+        const errorData = error.response.data as { code?: string; message?: string };
+        let localized = '';
+        if (errorData.code) {
+          // Pokušaj prevesti preko i18n ključa auth.errors.<CODE>
+          const key = `errors.${errorData.code}` as const;
+          const translated = t(key);
+          // Ako i18n vrati ključ, smatramo da prijevod ne postoji
+          localized = translated && translated !== key ? translated : '';
+        }
+        if (!localized) {
+          localized = errorData.message || t('errors.GENERIC');
+        }
+        setError(localized);
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Login failed due to an unexpected error.');
+        setError(t('errors.GENERIC'));
       }
     } finally {
       setLoading(false);

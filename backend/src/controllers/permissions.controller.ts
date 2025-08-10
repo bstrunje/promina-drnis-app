@@ -16,7 +16,7 @@ export const permissionsController = {
             if (isDev) console.log('Getting permissions for member:', memberId); // Debug log
             
             if (req.user?.role_name !== 'member_superuser' && req.user?.id !== memberId) {
-                return res.status(403).json({ message: 'Forbidden' });
+                return res.status(403).json({ code: 'PERM_FORBIDDEN', message: 'Forbidden' });
             }
 
             const permissions = await permissionsService.getAdminPermissions(memberId);
@@ -24,7 +24,7 @@ export const permissionsController = {
             res.json(permissions);
         } catch (error) {
             console.error('Error fetching admin permissions:', error);
-            res.status(500).json({ message: 'Failed to fetch permissions' });
+            res.status(500).json({ code: 'PERM_FETCH_FAILED', message: 'Failed to fetch permissions' });
         }
     },
 
@@ -34,7 +34,7 @@ export const permissionsController = {
             const grantedBy = req.user?.id;
             
             if (!grantedBy) {
-                return res.status(401).json({ message: 'Unauthorized' });
+                return res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
             }
 
             await permissionsService.updateAdminPermissions(
@@ -56,7 +56,7 @@ export const permissionsController = {
             res.json({ message: 'Permissions updated successfully' });
         } catch (error) {
             console.error('Error updating admin permissions:', error);
-            res.status(500).json({ message: 'Failed to update permissions' });
+            res.status(500).json({ code: 'PERM_UPDATE_FAILED', message: 'Failed to update permissions' });
         }
     }
 };

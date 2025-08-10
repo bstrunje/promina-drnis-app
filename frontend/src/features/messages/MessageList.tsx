@@ -17,11 +17,13 @@ import MemberMessageList from './MemberMessageList';
 import BackToDashboard from '../../../components/BackToDashboard';
 import ReceivedMessages from './components/ReceivedMessages';
 import SentMessages from './components/SentMessages';
+import { useTranslation } from 'react-i18next';
 
 export default function MessageList() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'compose'>('received');
   const [unreadCount, setUnreadCount] = useState(0);
+  const { t } = useTranslation('messages');
 
   // Ako je običan član, prikaži pojednostavljeni prikaz poruka
   if (user?.role === 'member') {
@@ -39,13 +41,13 @@ export default function MessageList() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold mb-2">Poruke</h1>
-            <p className="opacity-90">Komunikacija s članovima</p>
+            <h1 className="text-2xl font-bold mb-2">{t('messageList.title')}</h1>
+            <p className="opacity-90">{t('messageList.subtitle')}</p>
           </div>
           {activeTab === 'received' && (
             <div className="flex items-center space-x-2">
               <Bell className="h-6 w-6" />
-              <span className="text-lg font-bold">{unreadCount} nepročitano</span>
+              <span className="text-lg font-bold">{t('messageList.unreadCount',{ count: unreadCount })}</span>
             </div>
           )}
         </div>
@@ -63,18 +65,18 @@ export default function MessageList() {
         <TabsList className="w-full mb-4">
           <TabsTrigger value="received" className="flex items-center">
             <Inbox className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Primljene poruke</span>
-            <span className="sm:hidden">Primljene</span>
+            <span className="hidden sm:inline">{t('messageList.tabs.receivedFull')}</span>
+            <span className="sm:hidden">{t('messageList.tabs.receivedShort')}</span>
           </TabsTrigger>
           <TabsTrigger value="sent" className="flex items-center">
             <Send className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Poslane poruke</span>
-            <span className="sm:hidden">Poslane</span>
+            <span className="hidden sm:inline">{t('messageList.tabs.sentFull')}</span>
+            <span className="sm:hidden">{t('messageList.tabs.sentShort')}</span>
           </TabsTrigger>
           <TabsTrigger value="compose" className="flex items-center">
             <PlusCircle className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Nova poruka</span>
-            <span className="sm:hidden">Nova</span>
+            <span className="hidden sm:inline">{t('messageList.tabs.composeFull')}</span>
+            <span className="sm:hidden">{t('messageList.tabs.composeShort')}</span>
           </TabsTrigger>
         </TabsList>
 

@@ -16,7 +16,7 @@ interface Props {
 const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation('profile');
+  const { t } = useTranslation(['profile', 'common']);
   
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -230,7 +230,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
             <div className="mt-2 p-2 border rounded bg-gray-50 w-full overflow-auto text-xs">
               <p>{t('profileImage.imagePath')}: {imagePath ?? 'none'}</p>
               <p>{t('profileImage.imageUrl')}: {displayImageSrc ?? 'none'}</p>
-              <p>{t('profileImage.failedToLoad')}: {imageFailed ? t('common.yes') : t('common.no')}</p>
+              <p>{t('profileImage.failedToLoad')}: {imageFailed ? t('common:yes') : t('common:no')}</p>
               <p>{t('profileImage.lastUpdated')}: {formatDate(new Date(imgKey), "HH:mm:ss")}</p>
             </div>
           )}

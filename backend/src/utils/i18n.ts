@@ -55,3 +55,17 @@ export function tBackend(key: string, locale: Locale, params?: Record<string, st
   // fallback na key ako nema prijevoda
   return key;
 }
+
+// Vraća prijevod ili zadani (defaultMessage) ako ključ ne postoji
+export function tOrDefault(
+  key: string,
+  locale: Locale,
+  defaultMessage: string,
+  params?: Record<string, string | number>
+): string {
+  const translated = tBackend(key, locale, params);
+  if (translated === key || !translated) {
+    return interpolate(defaultMessage, params);
+  }
+  return translated;
+}

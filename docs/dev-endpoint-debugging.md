@@ -12,6 +12,8 @@ Prilikom registracije novih članova u razvojnom okruženju, javljala se greška
 }
 ```
 
+Napomena: Ovo je sirova ORM greška prikazana tijekom dijagnostike. Standardni API odgovori s greškom u aplikaciji aditivno uključuju i stabilno polje `code` (vidi `docs/api-docs.md`).
+
 Ova greška ukazuje na to da je baza podataka pokušavala dodijeliti `member_id` koji već postoji, što znači da se sekvenca (auto-increment) za tablicu `members` nije ispravno resetirala nakon brisanja testnih podataka.
 
 ## Proces Dijagnostike

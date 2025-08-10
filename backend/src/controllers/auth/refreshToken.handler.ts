@@ -7,6 +7,7 @@ import {
   generateCookieOptions,
   generateClearCookieOptions,
 } from './auth.utils.js';
+import { tOrDefault } from "../../utils/i18n.js";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -19,12 +20,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
   if (isDev) console.log('User-Agent:', req.headers['user-agent']);
   
   const refreshToken = req.cookies.refreshToken;
+  const locale: 'en' | 'hr' = req.locale ?? 'en';
   
   if (isDev) console.log('Provjera refresh tokena iz kolačića...');
   
   if (!refreshToken) {
     if (isDev) console.log('Refresh token nije pronađen u kolačiću');
-    return res.status(401).json({ error: 'Refresh token nije pronađen' });
+    return res.status(401).json({ code: 'AUTH_REFRESH_TOKEN_INVALID', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_INVALID', locale, 'Refresh token nije pronađen') });
   }
   
   if (isDev) console.log('Refresh token pronađen u kolačiću:', refreshToken.substring(0, 20) + '...');
@@ -52,7 +54,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
           if (isDev) console.log(`Trenutni fingerprint: ${currentFingerprint.substring(0, 10)}...`);
           
           if (process.env.NODE_ENV === 'production') {
-            return res.status(401).json({ error: 'Neispravan uređaj za refresh token' });
+            return res.status(401).json({ code: 'AUTH_REFRESH_TOKEN_INVALID', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_INVALID', locale, 'Neispravan uređaj za refresh token') });
           } else {
             if (isDev) console.warn('Razlika u fingerprintu ignorirana u razvojnom okruženju');
           }
@@ -62,13 +64,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       }
     } catch (jwtError) {
       console.error('JWT verifikacija nije uspjela:', jwtError);
-      return res.status(401).json({ error: 'Neispravan refresh token' });
+      return res.status(401).json({ code: 'AUTH_REFRESH_TOKEN_INVALID', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_INVALID', locale, 'Neispravan refresh token') });
     }
     
     if (!prisma.refresh_tokens) {
       console.error('RefreshToken model nije dostupan u Prisma klijentu!');
       if (isDev) console.log('Dostupni modeli u Prisma klijentu:', Object.keys(prisma));
-      res.status(500).json({ error: 'Interna greška servera' });
+      res.status(500).json({ code: 'AUTH_SERVER_ERROR', error: tOrDefault('errorsByCode.AUTH_SERVER_ERROR', locale, 'Interna greška servera') });
       return;
     }
     
@@ -89,7 +91,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       
       // JEDNOSTAVNO RJEŠENJE: Ako token nije u bazi, odbaci zahtjev
       // Korisnik će se morati ponovno prijaviti
-      res.status(401).json({ error: 'Refresh token nije valjan ili je istekao' });
+      res.status(401).json({ code: 'AUTH_REFRESH_TOKEN_INVALID', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_INVALID', locale, 'Refresh token nije valjan ili je istekao') });
       return;
     }
     
@@ -109,7 +111,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         
         if (isDev) console.log(`Obrisano ${deleteResult.count} isteklih tokena`);
         
-        res.status(401).json({ error: 'Refresh token je istekao' });
+        res.status(401).json({ code: 'AUTH_REFRESH_TOKEN_EXPIRED', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_EXPIRED', locale, 'Refresh token je istekao') });
         return;
       }
     }
@@ -120,7 +122,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     if (!member) {
       console.error(`Korisnik s ID ${decoded.id} nije pronađen u bazi`);
-      res.status(403).json({ error: 'Korisnik nije pronađen' });
+      res.status(403).json({ code: 'AUTH_USER_NOT_FOUND', error: tOrDefault('errorsByCode.AUTH_USER_NOT_FOUND', locale, 'Korisnik nije pronađen') });
       return;
     }
     
@@ -246,6 +248,6 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     }
   } catch (error) {
     console.error('Greška pri obnavljanju tokena:', error);
-    res.status(403).json({ error: 'Refresh token nije valjan ili je došlo do interne greške servera pri obnavljanju tokena.' });
+    return res.status(403).json({ code: 'AUTH_REFRESH_TOKEN_INVALID', error: tOrDefault('errorsByCode.AUTH_REFRESH_TOKEN_INVALID', locale, 'Refresh token nije valjan ili je došlo do interne greške servera pri obnavljanju tokena.') });
   }
 }

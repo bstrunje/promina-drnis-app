@@ -13,7 +13,7 @@ interface MemberMessagesSectionProps {
 }
 
 const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member }) => {
-  const { t } = useTranslation('profile');
+  const { t } = useTranslation(['profile', 'common']);
   const [comment, setComment] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -27,13 +27,13 @@ const MemberMessagesSection: React.FC<MemberMessagesSectionProps> = ({ member })
       await sendMemberMessage(member.member_id, comment);
       setComment('');
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('messages.sendSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('messages.sendError'),
         variant: "destructive"
       });

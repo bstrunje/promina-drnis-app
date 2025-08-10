@@ -22,6 +22,7 @@ const cardNumberController = {
     } catch (error) {
       console.error('Error fetching available card numbers:', error);
       res.status(500).json({
+        code: 'CARDNUM_FETCH_AVAILABLE_FAILED',
         message: 'Failed to fetch available card numbers',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -34,7 +35,7 @@ const cardNumberController = {
       const { cardNumber } = req.body;
       
       if (!cardNumber || typeof cardNumber !== 'string') {
-        res.status(400).json({ message: 'Valid card number is required' });
+        res.status(400).json({ code: 'CARDNUM_INVALID_INPUT', message: 'Valid card number is required' });
         return;
       }
       
@@ -48,6 +49,7 @@ const cardNumberController = {
       // Validate card number format
       if (cardNumber.length !== cardNumberLength) {
         res.status(400).json({ 
+          code: 'CARDNUM_LENGTH_INVALID',
           message: `Card number must be ${cardNumberLength} characters long` 
         });
         return;
@@ -68,7 +70,7 @@ const cardNumberController = {
       res.status(201).json({ message: 'Card number added successfully' });
     } catch (error) {
       console.error('Error adding card number:', error);
-      res.status(500).json({ message: 'Failed to add card number' });
+      res.status(500).json({ code: 'CARDNUM_ADD_FAILED', message: 'Failed to add card number' });
     }
   },
   
@@ -78,17 +80,17 @@ const cardNumberController = {
       const { start, end } = req.body;
       
       if (typeof start !== 'number' || typeof end !== 'number') {
-        res.status(400).json({ message: 'Valid start and end numbers are required' });
+        res.status(400).json({ code: 'CARDNUM_RANGE_INVALID_INPUT', message: 'Valid start and end numbers are required' });
         return;
       }
       
       if (start > end) {
-        res.status(400).json({ message: 'Start must be less than or equal to end' });
+        res.status(400).json({ code: 'CARDNUM_RANGE_INVALID_ORDER', message: 'Start must be less than or equal to end' });
         return;
       }
       
       if (end - start > 1000) {
-        res.status(400).json({ message: 'Cannot add more than 1000 card numbers at once' });
+        res.status(400).json({ code: 'CARDNUM_RANGE_TOO_LARGE', message: 'Cannot add more than 1000 card numbers at once' });
         return;
       }
       
@@ -114,7 +116,7 @@ const cardNumberController = {
       res.status(201).json({ message: `${added} card numbers added successfully` });
     } catch (error) {
       console.error('Error adding card number range:', error);
-      res.status(500).json({ message: 'Failed to add card number range' });
+      res.status(500).json({ code: 'CARDNUM_RANGE_ADD_FAILED', message: 'Failed to add card number range' });
     }
   },
 
@@ -124,14 +126,14 @@ const cardNumberController = {
       const { cardNumber } = req.params;
       
       if (!cardNumber) {
-        res.status(400).json({ message: 'Card number is required' });
+        res.status(400).json({ code: 'CARDNUM_MISSING_PARAM', message: 'Card number is required' });
         return;
       }
       
       const deleted = await cardNumberRepository.deleteCardNumber(cardNumber);
       
       if (!deleted) {
-        res.status(404).json({ message: 'Card number not found or already assigned to a member' });
+        res.status(404).json({ code: 'CARDNUM_NOT_FOUND_OR_ASSIGNED', message: 'Card number not found or already assigned to a member' });
         return;
       }
       
@@ -153,7 +155,7 @@ const cardNumberController = {
       });
     } catch (error) {
       console.error('Error deleting card number:', error);
-      res.status(500).json({ message: 'Failed to delete card number' });
+      res.status(500).json({ code: 'CARDNUM_DELETE_FAILED', message: 'Failed to delete card number' });
     }
   },
 
@@ -181,6 +183,7 @@ const cardNumberController = {
     } catch (error) {
       console.error('Error fetching all card numbers:', error);
       res.status(500).json({
+        code: 'CARDNUM_FETCH_ALL_FAILED',
         message: 'Failed to fetch card numbers',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -192,7 +195,7 @@ const cardNumberController = {
     try {
       // Potrebna je admin/superuser razina pristupa
       if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-        res.status(403).json({ message: 'Unauthorized. Only admins and superusers can sync card number status.' });
+        res.status(403).json({ code: 'CARDNUM_FORBIDDEN_SYNC', message: 'Unauthorized. Only admins and superusers can sync card number status.' });
         return;
       }
 
@@ -219,6 +222,7 @@ const cardNumberController = {
     } catch (error) {
       console.error('Error syncing card number status:', error);
       res.status(500).json({ 
+        code: 'CARDNUM_SYNC_FAILED',
         message: 'Failed to sync card number status',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -233,7 +237,7 @@ const cardNumberController = {
     try {
       // Provjeri administratorska prava
       if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-        res.status(403).json({ message: 'Unauthorized. Only admins and superusers can access consumed card numbers.' });
+        res.status(403).json({ code: 'CARDNUM_FORBIDDEN_CONSUMED', message: 'Unauthorized. Only admins and superusers can access consumed card numbers.' });
         return;
       }
       const search = typeof req.query.search === 'string' ? req.query.search : undefined;
@@ -242,6 +246,7 @@ const cardNumberController = {
     } catch (error) {
       console.error('Greška u getConsumedCardNumbers:', error);
       res.status(500).json({
+        code: 'CARDNUM_FETCH_CONSUMED_FAILED',
         message: 'Neuspješno dohvaćanje potrošenih kartica',
         error: error instanceof Error ? error.message : 'Nepoznata greška'
       });
@@ -265,14 +270,14 @@ const cardNumberController = {
       // Dinamička validacija broja iskaznice prema postavkama
       const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
       if (!cardNumberRegex.test(cardNumber)) {
-        res.status(400).json({ message: `Card number must be exactly ${cardNumberLength} digits` });
+        res.status(400).json({ code: 'CARDNUM_FORMAT_INVALID', message: `Card number must be exactly ${cardNumberLength} digits` });
         return;
       }
 
       // Dohvati podatke o članu
       const member = await memberRepository.findById(parseInt(memberId));
       if (!member) {
-        res.status(404).json({ message: "Member not found" });
+        res.status(404).json({ code: 'CARDNUM_MEMBER_NOT_FOUND', message: "Member not found" });
         return;
       }
 
@@ -297,6 +302,7 @@ const cardNumberController = {
       if (existingCardCheck) {
         const existingMember = existingCardCheck.member;
         res.status(400).json({ 
+          code: 'CARDNUM_ALREADY_ASSIGNED',
           message: `Card number ${cardNumber} is already assigned to member: ${existingMember.full_name}`,
           existingMember: {
             member_id: existingMember.member_id,
@@ -308,7 +314,7 @@ const cardNumberController = {
 
       // Provjeri je li član već registriran
       if (member.registration_completed) {
-        res.status(400).json({ message: "Can only assign card number for pending members" });
+        res.status(400).json({ code: 'CARDNUM_ONLY_PENDING', message: "Can only assign card number for pending members" });
         return;
       }
 

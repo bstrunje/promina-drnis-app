@@ -32,6 +32,7 @@ const messageController = {
         } catch (error) {
             console.error('Error creating message:', error);
             res.status(500).json({ 
+                code: 'MSG_CREATE_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to create message' 
             });
         }
@@ -44,7 +45,7 @@ const messageController = {
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
 
@@ -73,6 +74,7 @@ const messageController = {
         } catch (error) {
             console.error('Error sending admin message:', error);
             res.status(500).json({ 
+                code: 'MSG_SEND_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to send message' 
             });
         }
@@ -84,12 +86,12 @@ const messageController = {
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
             
             if (!Array.isArray(recipientMemberIds) || recipientMemberIds.length === 0) {
-                res.status(400).json({ message: 'No recipients specified' });
+                res.status(400).json({ code: 'MSG_NO_RECIPIENTS', message: 'No recipients specified' });
                 return;
             }
 
@@ -118,6 +120,7 @@ const messageController = {
         } catch (error) {
             console.error('Error sending group message:', error);
             res.status(500).json({ 
+                code: 'MSG_SEND_GROUP_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to send group message' 
             });
         }
@@ -129,7 +132,7 @@ const messageController = {
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
 
@@ -157,6 +160,7 @@ const messageController = {
         } catch (error) {
             console.error('Error sending message to all members:', error);
             res.status(500).json({ 
+                code: 'MSG_SEND_ALL_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to send message to all members' 
             });
         }
@@ -167,7 +171,7 @@ const messageController = {
             const adminId = req.user?.id;
             
             if (!adminId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
             
@@ -178,6 +182,7 @@ const messageController = {
         } catch (error) {
             console.error('Error fetching admin sent messages:', error);
             res.status(500).json({ 
+                code: 'MSG_FETCH_SENT_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to fetch sent messages' 
             });
         }
@@ -187,7 +192,7 @@ const messageController = {
         try {
             const currentMemberId = req.user?.id;
             if (!currentMemberId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
             const messages = await messageService.getAdminMessages(currentMemberId);
@@ -197,6 +202,7 @@ const messageController = {
         } catch (error) {
             console.error('Error fetching admin messages:', error);
             res.status(500).json({ 
+                code: 'MSG_FETCH_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to fetch messages' 
             });
         }
@@ -220,6 +226,7 @@ const messageController = {
         } catch (error) {
             console.error('Error fetching member messages:', error);
             res.status(500).json({ 
+                code: 'MSG_FETCH_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to fetch messages' 
             });
         }
@@ -230,7 +237,7 @@ const messageController = {
             const memberId = req.user?.id;
 
             if (!memberId) {
-                res.status(401).json({ message: 'Niste prijavljeni.' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Niste prijavljeni.' });
                 return;
             }
 
@@ -239,7 +246,10 @@ const messageController = {
             res.json(mappedMessages);
         } catch (error) {
             console.error('Greška pri dohvaćanju poslanih poruka:', error);
-            res.status(500).json({ message: 'Greška servera' });
+            res.status(500).json({ 
+                code: 'MSG_FETCH_SENT_FAILED',
+                message: error instanceof Error ? error.message : 'Failed to fetch sent messages' 
+            });
         }
     },
 
@@ -249,7 +259,7 @@ const messageController = {
             const memberId = req.user?.id; // Preimenovano iz userId
 
             if (!memberId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
 
@@ -288,6 +298,7 @@ const messageController = {
                 req.user?.performer_type
             );
             res.status(500).json({ 
+                code: 'MSG_MARK_READ_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to mark message as read' 
             });
         }
@@ -299,7 +310,7 @@ const messageController = {
             const memberId = req.user?.id;
 
             if (!memberId) {
-                res.status(401).json({ message: 'Unauthorized' });
+                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
 
@@ -320,6 +331,7 @@ const messageController = {
         } catch (error) {
             console.error('Error archiving message:', error);
             res.status(500).json({ 
+                code: 'MSG_ARCHIVE_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to archive message' 
             });
         }
@@ -330,7 +342,7 @@ const messageController = {
             const messageId = parseInt(req.params.messageId);
             const exists = await messageService.messageExists(messageId);
             if (!exists) {
-                res.status(404).json({ message: 'Message not found' });
+                res.status(404).json({ code: 'MSG_NOT_FOUND', message: 'Message not found' });
                 return;
             }
             await messageService.deleteMessage(messageId);
@@ -352,6 +364,7 @@ const messageController = {
             console.error('Error deleting message:', error);
             const statusCode = error instanceof Error && error.message === 'Message not found' ? 404 : 500;
             res.status(statusCode).json({ 
+                code: statusCode === 404 ? 'MSG_NOT_FOUND' : 'MSG_DELETE_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to delete message' 
             });
         }
@@ -377,6 +390,7 @@ const messageController = {
         } catch (error) {
             console.error('Error deleting all messages:', error);
             res.status(500).json({ 
+                code: 'MSG_DELETE_ALL_FAILED',
                 message: error instanceof Error ? error.message : 'Failed to delete all messages' 
             });
         }
@@ -392,13 +406,13 @@ async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
         // Provjera postoji li poruka
         const messageExists = await messageService.messageExists(messageId);
         if (!messageExists) {
-            res.status(404).json({ message: 'Message not found' });
+            res.status(404).json({ code: 'MSG_NOT_FOUND', message: 'Message not found' });
             return;
         }
 
         // Provjera je li korisnik autoriziran za ovu akciju
         if (req.user?.id !== memberId && req.user?.role_name !== 'member_administrator' && req.user?.role_name !== 'member_superuser') {
-            res.status(403).json({ message: 'Unauthorized to mark this message as read' });
+            res.status(403).json({ code: 'MSG_MARK_READ_FORBIDDEN', message: 'Unauthorized to mark this message as read' });
             return;
         }
 
@@ -461,7 +475,7 @@ async getUnreadMessageCount(req: Request, res: Response): Promise<void> {
         res.status(200).json({ count });
     } catch (error) {
         console.error('Error getting unread message count:', error);
-        res.status(500).json({ message: 'Failed to get unread message count' });
+        res.status(500).json({ code: 'MSG_UNREAD_COUNT_FAILED', message: 'Failed to get unread message count' });
     }
 }
 };

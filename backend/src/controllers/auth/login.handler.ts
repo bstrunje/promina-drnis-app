@@ -17,6 +17,7 @@ import {
   formatMinuteText,
 } from './auth.utils.js';
 import auditService from "../../services/audit.service.js";
+import { tOrDefault } from "../../utils/i18n.js";
 import { PerformerType } from "@prisma/client";
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -26,13 +27,17 @@ export async function loginHandler(
   req: Request<Record<string, never>, Record<string, never>, MemberLoginData>,
   res: Response
 ): Promise<void | Response> {
+  const locale: 'en' | 'hr' = req.locale ?? 'en';
   try {
     const { email, password } = req.body;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (!email || !password) {
       if (isDev) console.warn(`Login attempt without credentials from IP ${userIP}`);
-      return res.status(400).json({ message: "Email and password are required" });
+      return res.status(400).json({
+        code: 'AUTH_MISSING_CREDENTIALS',
+        message: tOrDefault('errorsByCode.AUTH_MISSING_CREDENTIALS', locale, 'Email and password are required')
+      });
     }
 
     if (isDev) console.log(`Login attempt for email: ${email} from IP: ${userIP}`);
@@ -53,7 +58,10 @@ export async function loginHandler(
     if (!member) {
       if (isDev) console.log(`Member not found for email: ${email}`);
       await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS));
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        code: 'AUTH_INVALID_CREDENTIALS',
+        message: tOrDefault('errorsByCode.AUTH_INVALID_CREDENTIALS', locale, 'Invalid credentials')
+      });
     }
 
     if (isDev) console.log(`Member found: ${member.member_id}, status: ${member.status}, role: ${member.role}`);
@@ -88,7 +96,10 @@ export async function loginHandler(
         member.member_id,
         PerformerType.MEMBER
       );
-      return res.status(403).json({ message: `Prijava nije moguća. Članarina za ${currentYear} godinu nije važeća.` });
+      return res.status(403).json({
+        code: 'AUTH_MEMBERSHIP_INVALID',
+        message: tOrDefault('errorsByCode.AUTH_MEMBERSHIP_INVALID', locale, `Login not possible. Membership for the ${currentYear} year is not valid`, { year: currentYear })
+      });
     }
 
     if (member.status !== 'registered' && member.status !== 'active') {
@@ -102,7 +113,10 @@ export async function loginHandler(
         member ? member.member_id : undefined,
         PerformerType.MEMBER
       );
-      return res.status(403).json({ message: "Account not active. Please contact administrator." });
+      return res.status(403).json({
+        code: 'AUTH_ACCOUNT_NOT_ACTIVE',
+        message: tOrDefault('errorsByCode.AUTH_ACCOUNT_NOT_ACTIVE', locale, 'Account not active. Please contact administrator.')
+      });
     }
 
     if (member.locked_until && member.locked_until > new Date()) {
@@ -117,7 +131,10 @@ export async function loginHandler(
         member.member_id,
         PerformerType.MEMBER
       );
-      return res.status(403).json({ message: `Račun je zaključan. Molimo pokušajte ponovno nakon ${member.locked_until.toLocaleTimeString()}.` });
+      return res.status(403).json({
+        code: 'AUTH_ACCOUNT_LOCKED',
+        message: tOrDefault('errorsByCode.AUTH_ACCOUNT_LOCKED', locale, `Account is locked. Please try again after ${member.locked_until.toLocaleTimeString()}.`)
+      });
     }
 
     const passwordMatch = await bcrypt.compare(password, member.password_hash || "");
@@ -171,7 +188,10 @@ export async function loginHandler(
             member.member_id,
             PerformerType.MEMBER
           );
-          return res.status(403).json({ message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.` });
+          return res.status(403).json({
+            code: 'AUTH_ACCOUNT_LOCKED',
+            message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.`
+          });
         } else {
           if (isDev) console.log(`Admin account ${member.email} reached max login attempts, but lockout is disabled for admins.`);
            auditService.logAction(
@@ -187,7 +207,10 @@ export async function loginHandler(
       }
 
       await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS));
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        code: 'AUTH_INVALID_CREDENTIALS',
+        message: "Invalid credentials"
+      });
     }
 
     if (member.failed_login_attempts && member.failed_login_attempts > 0) {
@@ -275,7 +298,7 @@ export async function loginHandler(
     } : {};
 
     res.json({
-      message: "Prijava uspješna.",
+      message: tOrDefault('success.AUTH_LOGIN_OK', locale, 'Login successful'),
       token: accessToken, 
       member: {
         id: member.member_id,
@@ -297,6 +320,9 @@ export async function loginHandler(
         undefined,
         PerformerType.MEMBER
     );
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({
+      code: 'AUTH_SERVER_ERROR',
+      message: tOrDefault('errorsByCode.AUTH_SERVER_ERROR', locale, 'Internal server error')
+    });
   }
 }

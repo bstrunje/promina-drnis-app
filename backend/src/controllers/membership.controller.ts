@@ -15,7 +15,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
 
       if (!performerId || !performerType) {
-        res.status(401).json({ message: 'Unauthorized' });
+        res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
         return;
       }
 
@@ -42,7 +42,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
 
       if (!performerId || !performerType) {
-        res.status(401).json({ message: 'Unauthorized' });
+        res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
         return;
       }
 
@@ -64,7 +64,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
 
       if (!performerId || !performerType) {
-        res.status(401).json({ message: 'Unauthorized' });
+        res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
         return;
       }
 
@@ -92,7 +92,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
 
       if (!performerId || !performerType) {
-        res.status(401).json({ message: 'Unauthorized' });
+        res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
         return;
       }
 
@@ -120,7 +120,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
 
       if (!performerId || !performerType) {
-        res.status(401).json({ message: 'Unauthorized' });
+        res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
         return;
       }
 

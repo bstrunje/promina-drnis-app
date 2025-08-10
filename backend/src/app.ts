@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import { localeMiddleware } from './middleware/locale.js';
 import path from 'path';
 import fs from 'fs/promises';
 import _config from './config/config.js';
@@ -87,6 +88,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
+app.use(localeMiddleware); // Detekcija jezika (X-Lang / Accept-Language), fallback: en
 
 // Set up static file serving with better error handling
 // Set up static file serving with better error handling

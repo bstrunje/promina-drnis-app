@@ -361,8 +361,14 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <p className="text-gray-500">
               {loading
-                ? "Učitavanje poruka..."
-                : `Nema ${filter === 'unread' ? 'nepročitanih' : filter === 'read' ? 'pročitanih' : 'arhiviranih'} poruka`}
+                ? t('receivedMessages.loading')
+                : (
+                  filter === 'unread'
+                    ? t('memberMessageList.emptyStates.noUnreadMessages')
+                    : filter === 'read'
+                      ? t('memberMessageList.emptyStates.noReadMessages')
+                      : t('memberMessageList.emptyStates.noArchivedMessages')
+                )}
             </p>
           </div>
         )}
@@ -374,7 +380,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
           onClick={() => { void fetchMessages(); }}
           className="w-full"
         >
-          Osvježi poruke
+          {t('memberMessageList.buttons.refreshMessages')}
         </Button>
       </div>
     </div>

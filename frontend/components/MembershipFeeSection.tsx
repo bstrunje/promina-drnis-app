@@ -81,7 +81,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation('profile');								 
+  const { t } = useTranslation(['profile', 'common']);								 
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
@@ -170,13 +170,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         // Prikaži odgovarajuću toast poruku o plaćanju u studenom/prosincu
         if (isNewMember) {
           toast({
-            title: t('common.info'),
+            title: t('common:info'),
             description: t('feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
         } else {
           toast({
-            title: t('common.info'),
+            title: t('common:info'),
             description: t('feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
@@ -256,13 +256,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         
         if (!isNewMember) {
           toast({
-            title: t('common.info'),
+            title: t('common:info'),
             description: t('feeSection.novDecPaymentNextYear'),
             variant: "default"
           });
         } else {
           toast({
-            title: t('common.info'),
+            title: t('common:info'),
             description: t('feeSection.newMemberNovDecPayment'),
             variant: "default"
           });
@@ -302,7 +302,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
     } catch (error) {
       console.error("Error updating membership:", error);
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: t('feeSection.paymentError'),
         variant: "destructive"
       });
@@ -320,13 +320,13 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       await onMembershipHistoryUpdate(editedPeriods);
       setIsEditingHistory(false);
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('feeSection.historyUpdated'),
         variant: "success"
       });
     } catch {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: t('feeSection.historyUpdateFailed'),
         variant: "destructive"
       });
@@ -591,7 +591,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             variant="default"
                             className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                           >
-                            {isSubmitting ? "Processing..." : t('common.confirm')}
+                            {isSubmitting ? "Processing..." : t('common:confirm')}
                           </Button>
                           <Button
                             type="button"
@@ -599,7 +599,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                             variant="outline"
                             className="flex-1 bg-red-500 hover:bg-red-600 text-white"
                           >
-                            {t('common.cancel')}
+                            {t('common:cancel')}
                           </Button>
                         </div>
                       </div>
@@ -661,7 +661,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                         }}
                       >
                         <X className="h-4 w-4 mr-1" />
-                        {t('common.cancel')}
+                        {t('common:cancel')}
                       </Button>
                     </div>
                   )}

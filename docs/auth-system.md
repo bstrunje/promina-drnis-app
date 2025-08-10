@@ -282,6 +282,8 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 };
 ```
 
+Napomena: Backend odgovori s greškom aditivno vraćaju i stabilno polje `code` (npr. `AUTH_UNAUTHORIZED`, `AUTH_INVALID_CREDENTIALS`) koje frontend koristi za i18n mapiranje. Polje `message` ostaje prisutno kao fallback. Detalji i popis kodova nalaze se u `docs/api-docs.md`.
+
 ### Middleware za autentifikaciju
 
 Za zaštitu API ruta koristi se middleware:

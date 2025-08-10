@@ -15,8 +15,8 @@ const LanguageToggle: React.FC<LanguageToggleProps> = ({ onLanguageChange }) => 
     void i18n.changeLanguage(newLanguage); // namjerno ignoriramo Promise radi ESLint pravila
     if (onLanguageChange) onLanguageChange();
   };
-
-  const currentLanguage = i18n.language === 'hr' ? 'HR' : 'EN';
+  // Prikazujemo JEZIK NA KOJI ĆEMO PREBACITI (ciljni jezik)
+  const targetLanguageLabel = i18n.language === 'hr' ? 'EN' : 'HR';
 
   return (
     <Button
@@ -24,10 +24,10 @@ const LanguageToggle: React.FC<LanguageToggleProps> = ({ onLanguageChange }) => 
       size="sm"
       onClick={toggleLanguage}
       className="flex items-center space-x-2 min-w-[70px]"
-      title={`Switch to ${currentLanguage === 'HR' ? 'EN' : 'HR'}`}
+      title={`Switch to ${targetLanguageLabel}`}
     >
       <Globe className="h-4 w-4" />
-      <span className="font-medium">{currentLanguage}</span>
+      <span className="font-medium">{targetLanguageLabel}</span>
     </Button>
   );
 };

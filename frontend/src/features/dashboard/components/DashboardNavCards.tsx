@@ -48,14 +48,14 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">{t("navigation.messages.title")}</h3>
+          <h3 className="font-medium">{t("messages.title")}</h3>
           <Mail className="h-5 w-5 text-purple-600" />
         </div>
         <p className="text-sm text-gray-600">
           {unreadMessages ? (
-            <span className="text-red-600">{t("navigation.messages.unreadMessages")}</span>
+            <span className="text-red-600">{t("messages.unreadMessages")}</span>
           ) : (
-            t("navigation.messages.noUnreadMessages")
+            t("messages.noUnreadMessages")
           )}
         </p>
       </div>

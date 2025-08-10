@@ -23,6 +23,7 @@ Svi endpointi vraćaju JSON odgovore u sljedećem formatu:
 **Greška**:
 ```json
 {
+  "code": "STABLE_ERROR_CODE",  // Stabilni kod za frontend i18n mapiranje
   "message": "Opis greške",
   "status": "error"
 }
@@ -820,6 +821,7 @@ API koristi standardne HTTP statusne kodove za indikaciju uspjeha ili neuspjeha 
 
 ```json
 {
+  "code": "VALIDATION_ERROR",
   "message": "Nedostaju obavezna polja: first_name, last_name",
   "status": "error"
 }
@@ -827,6 +829,7 @@ API koristi standardne HTTP statusne kodove za indikaciju uspjeha ili neuspjeha 
 
 ```json
 {
+  "code": "AUTH_ERROR",
   "message": "Neispravno korisničko ime ili lozinka",
   "status": "error"
 }
@@ -834,10 +837,75 @@ API koristi standardne HTTP statusne kodove za indikaciju uspjeha ili neuspjeha 
 
 ```json
 {
+  "code": "RESOURCE_NOT_FOUND",
   "message": "Član s ID-om 999 nije pronađen",
   "status": "error"
 }
 ```
+
+### Stabilni kodovi grešaka
+
+Sljedeći stabilni kodovi dodani su u backend kako bi frontend mogao dosljedno mapirati poruke grešaka na i18n prijevode. Poruke (message) ostaju zbog kompatibilnosti i koriste se kao fallback.
+
+- Autentikacija (`backend/src/controllers/auth/login.handler.ts`)
+  - AUTH_MISSING_CREDENTIALS
+  - AUTH_INVALID_CREDENTIALS
+  - AUTH_MEMBERSHIP_INVALID
+  - AUTH_ACCOUNT_NOT_ACTIVE
+  - AUTH_ACCOUNT_LOCKED
+  - AUTH_SERVER_ERROR
+
+ - Autentikacija – Refresh token (`backend/src/controllers/auth/refreshToken.handler.ts`)
+   - AUTH_REFRESH_TOKEN_INVALID
+   - AUTH_REFRESH_TOKEN_EXPIRED
+   - AUTH_USER_NOT_FOUND
+   - AUTH_SERVER_ERROR
+
+ - Autentikacija – Odjava (`backend/src/controllers/auth/logout.handler.ts`)
+   - AUTH_LOGOUT_FAILED
+
+ - Autentikacija – Registracija (`backend/src/controllers/auth/auth.handlers.registration.ts`)
+   - AUTH_REGISTRATION_DUP_EMAIL
+   - AUTH_REGISTRATION_DUP_OIB
+   - AUTH_REGISTRATION_FAILED
+
+ - Autentikacija – Članski pomoćni handleri (`backend/src/controllers/auth/auth.handlers.member.ts`)
+   - VALIDATION_ERROR
+   - MEMBER_NOT_FOUND
+   - MEMBER_ONLY_PENDING
+   - CARDNUM_LENGTH_INVALID
+   - CARDNUM_ASSIGN_FAILED
+   - AUTH_PASSWORD_ASSIGN_FAILED
+   - SERVER_ERROR
+
+- Brojevi iskaznica (`backend/src/controllers/cardnumber.controller.ts`)
+  - CARDNUM_FETCH_AVAILABLE_FAILED
+  - CARDNUM_INVALID_INPUT, CARDNUM_LENGTH_INVALID
+  - CARDNUM_ADD_FAILED
+  - CARDNUM_RANGE_INVALID_INPUT, CARDNUM_RANGE_INVALID_ORDER, CARDNUM_RANGE_TOO_LARGE, CARDNUM_RANGE_ADD_FAILED
+  - CARDNUM_MISSING_PARAM, CARDNUM_NOT_FOUND_OR_ASSIGNED, CARDNUM_DELETE_FAILED
+  - CARDNUM_FETCH_ALL_FAILED
+  - CARDNUM_FORBIDDEN_SYNC, CARDNUM_SYNC_FAILED
+  - CARDNUM_FORBIDDEN_CONSUMED, CARDNUM_FETCH_CONSUMED_FAILED
+  - CARDNUM_FORMAT_INVALID, CARDNUM_MEMBER_NOT_FOUND, CARDNUM_ALREADY_ASSIGNED, CARDNUM_ONLY_PENDING
+
+- Poruke članova (`backend/src/controllers/member.message.controller.ts`)
+  - AUTH_UNAUTHORIZED
+  - MSG_CREATE_FAILED, MSG_SEND_FAILED, MSG_NO_RECIPIENTS, MSG_SEND_GROUP_FAILED, MSG_SEND_ALL_FAILED
+  - MSG_FETCH_SENT_FAILED, MSG_FETCH_FAILED
+  - MSG_MARK_READ_FAILED, MSG_ARCHIVE_FAILED
+  - MSG_NOT_FOUND, MSG_DELETE_FAILED, MSG_DELETE_ALL_FAILED
+  - MSG_MARK_READ_FORBIDDEN
+  - MSG_UNREAD_COUNT_FAILED
+
+- Članstvo (`backend/src/controllers/membership.controller.ts`)
+  - AUTH_UNAUTHORIZED (na Unauthorized granama; ostale greške idu kroz handleControllerError)
+
+- Dozvole (`backend/src/controllers/permissions.controller.ts`)
+  - PERM_FORBIDDEN, PERM_FETCH_FAILED, AUTH_UNAUTHORIZED, PERM_UPDATE_FAILED
+
+- Postavke (`backend/src/controllers/settings.controller.ts`)
+  - SETTINGS_FETCH_FAILED, SETTINGS_VALIDATION_ERROR, AUTH_UNAUTHORIZED, SETTINGS_FORBIDDEN_UPDATE, SETTINGS_UPDATE_FAILED
 
 ## Razvojne i produkcijske okoline
 
@@ -852,3 +920,12 @@ API je dostupan na sljedećim URL-ovima:
 - Polja koja prihvaćaju enumeracije (npr. gender, role) imaju ograničen skup vrijednosti
 - Za postizanje boljih performansi, koristite filtriranje i paginaciju
 - Za testiranje vremenski ovisnih funkcionalnosti, koristite x-test-mode i x-test-date headere
+
+### Lokalizacija odgovora (backend)
+
+- Backend detektira jezik iz HTTP zaglavlja u ovom redoslijedu:
+  - `X-Lang` ili `X-Language` (npr. `hr`, `en`)
+  - `Accept-Language` (uzima se prvi jezik, bez regionalnog sufiksa)
+  - default: `en`
+- Svi korisnički vidljivi tekstovi (poruke o uspjehu i greškama) mogu biti lokalizirani. API oblik odgovora ostaje nepromijenjen (npr. polja `code`, `message`, `error`).
+- Frontend treba mapirati stabilne kodove grešaka (polje `code`) na vlastite i18n prijevode ili koristiti vraćenu lokaliziranu poruku iz polja `message`/`error` kao fallback.

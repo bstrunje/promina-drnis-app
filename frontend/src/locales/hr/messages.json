@@ -61,7 +61,8 @@
     "filters": {
       "unread": "Nepročitane",
       "read": "Pročitane",
-      "all": "Sve poruke"
+      "all": "Sve poruke",
+      "archived": "Arhivirane"
     },
     "unreadCount": {
       "single": "nepročitana",
@@ -71,6 +72,7 @@
       "noReceivedMessages": "Nemaš primljenih poruka",
       "noUnreadMessages": "Nema nepročitanih poruka",
       "noReadMessages": "Nema pročitanih poruka",
+      "noArchivedMessages": "Nema arhiviranih poruka",
       "noSentMessages": "Nema poslanih poruka."
     },
     "loading": {
@@ -88,6 +90,7 @@
     }
   },
   "receivedMessages": {
+    "loading": "Učitavanje poruka...",
     "messages": {
       "fetchError": "Greška prilikom dohvaćanja poruka",
       "markAsReadSuccess": "Poruka označena kao pročitana",
@@ -128,10 +131,40 @@
         "deleteAll": "Obriši sve poruke",
         "deleteAllShort": "Obriši sve"
       }
+    },
+    "card": {
+      "titles": {
+        "toAdmins": "Poruka za: Administratori",
+        "toAll": "Poruka svim članovima",
+        "group": "Grupna poruka",
+        "toMember": "Poruka za: {{name}}"
+      },
+      "labels": {
+        "sentAt": "Poslano",
+        "readCounter": "{{readCount}}/{{total}} pročitano",
+        "readAt": "Pročitano",
+        "unread": "Nije pročitano"
+      },
+      "actions": {
+        "showRecipients": "Prikaži primatelje"
+      }
     }
   },
   "messages": {
     "deleteAll": "Obriši sve poruke",
     "deleteAllShort": "Obriši sve"
+  },
+  "messageList": {
+    "title": "Poruke",
+    "subtitle": "Komunikacija s članovima",
+    "unreadCount": "{{count}} nepročitano",
+    "tabs": {
+      "receivedFull": "Primljene poruke",
+      "receivedShort": "Primljene",
+      "sentFull": "Poslane poruke",
+      "sentShort": "Poslane",
+      "composeFull": "Nova poruka",
+      "composeShort": "Nova"
+    }
   }
 }
