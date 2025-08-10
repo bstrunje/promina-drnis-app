@@ -7,7 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "dev:local": "vite",
     "dev:docker": "cross-env VITE_BACKEND_PORT=3001 vite",
     "build": "tsc && vite build",
