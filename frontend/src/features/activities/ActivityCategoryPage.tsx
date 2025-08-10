@@ -25,7 +25,7 @@ import {
 import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
-  const { t, i18n } = useTranslation('activities');
+  const { t, i18n } = useTranslation(['activities', 'common']);
   const currentLocale = i18n.language === 'hr' ? hr : enUS;
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
   const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
@@ -404,7 +404,7 @@ const ActivityCategoryPage: React.FC = () => {
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
               >
-                {t('common.cancel')}
+                {t('common:cancel')}
               </Button>
               <Button 
                 variant="destructive" 

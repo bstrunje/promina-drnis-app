@@ -14,6 +14,8 @@ import prisma from './utils/prisma.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Load environment variables - Windows path style
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -25,14 +27,14 @@ let port = parseInt(process.env.PORT || '3000');
 
 // Validate port (avoid PostgreSQL default port)
 if (port === 5432) {
-    console.warn('⚠️  Warning: Port 5432 is typically used by PostgreSQL. Using default port 3000 instead.');
+    if (isDev) console.warn('⚠️  Warning: Port 5432 is typically used by PostgreSQL. Using default port 3000 instead.');
     port = DEFAULT_PORT;
 }
 
 // Windows-style environment logging
-console.log('🏃 Current directory:', path.resolve(__dirname));
-console.log('📁 Loading .env from:', path.resolve(__dirname, '.env'));
-console.log('⚙️  Environment configuration:', {
+if (isDev) console.log('🏃 Current directory:', path.resolve(__dirname));
+if (isDev) console.log('📁 Loading .env from:', path.resolve(__dirname, '.env'));
+if (isDev) console.log('⚙️  Environment configuration:', {
     PORT: `${port} (Web Server)`,
     DATABASE_URL: process.env.DATABASE_URL ? 'Set (Hidden for security)' : 'Not set',
     // Diagnostic log for Vercel
@@ -64,7 +66,7 @@ export { JWT_SECRET };
 async function _checkDatabaseConnection(): Promise<boolean> {
     try {
         await prisma.$queryRaw`SELECT 1`;
-        console.log('✅ Database connection successful');
+        if (isDev) console.log('✅ Database connection successful');
         return true;
     } catch (error) {
         console.error('❌ Database connection error:', error);
@@ -81,18 +83,18 @@ initScheduledTasks();
 
 // Pokretanje servera
 const server = app.listen(port, () => {
-    console.log(`\n🚀 Server is running on port ${port}`);
-    console.log(`   Environment: ${process.env.NODE_ENV}`);
-    console.log(`   Health Check: http://localhost:${port}/health`);
+    if (isDev) console.log(`\n🚀 Server is running on port ${port}`);
+    if (isDev) console.log(`   Environment: ${process.env.NODE_ENV}`);
+    if (isDev) console.log(`   Health Check: http://localhost:${port}/health`);
 });
 
 // Graceful shutdown
 const gracefulShutdown = (signal: string) => {
-    console.log(`\n📥 ${signal} received. Shutting down gracefully...`);
+    if (isDev) console.log(`\n📥 ${signal} received. Shutting down gracefully...`);
     server.close(() => {
-        console.log('👋 Server stopped.');
+        if (isDev) console.log('👋 Server stopped.');
         prisma.$disconnect().then(() => {
-            console.log('🔗 Database connection closed.');
+            if (isDev) console.log('🔗 Database connection closed.');
             process.exit(0);
         });
     });

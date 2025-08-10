@@ -284,7 +284,7 @@ const permissionCategories = categorizePermissions(permissions, t);
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-lg font-semibold">Uređivanje ovlasti za člana</h2>
+          <h2 className="text-lg font-semibold">{t('permissions.editMemberPermissionsTitle')}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -316,7 +316,7 @@ const permissionCategories = categorizePermissions(permissions, t);
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-              <p className="mt-2 text-gray-600">Učitavanje ovlasti...</p>
+              <p className="mt-2 text-gray-600">{t('permissions.loadingPermissions')}</p>
             </div>
           ) : error && !successMessage ? (
             <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4">
@@ -330,12 +330,12 @@ const permissionCategories = categorizePermissions(permissions, t);
             <>
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900">{member.full_name}</h3>
-                <p className="text-sm text-gray-600">{member.email ?? 'Nema email adrese'}</p>
+                <p className="text-sm text-gray-600">{member.email ?? t('members:noEmail')}</p>
               </div>
 
               {/* Predlošci ovlasti */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Predlošci ovlasti</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">{t('permissions.templatesTitle')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {permissionTemplates.map((template, index) => (
                     <button
@@ -350,7 +350,7 @@ const permissionCategories = categorizePermissions(permissions, t);
                     onClick={clearAllPermissions}
                     className="px-3 py-1 bg-red-100 hover:bg-red-200 text-sm rounded-md text-red-700"
                   >
-                    Ukloni sve ovlasti
+                    {t('permissions.clearAll')}
                   </button>
                 </div>
               </div>

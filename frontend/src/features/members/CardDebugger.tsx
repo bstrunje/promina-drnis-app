@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 // Definiramo tip za podatke koji dolaze s API-ja
 interface CardApiResponse {
@@ -11,6 +12,7 @@ export default function CardDebugger(): JSX.Element {
   const [data, setData] = useState<CardApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation(['members', 'common']);
   
   useEffect(() => {
     // Definiramo asinkronu funkciju za dohvaćanje podataka
@@ -79,8 +81,8 @@ export default function CardDebugger(): JSX.Element {
   
   return (
     <div style={{ margin: '20px', padding: '10px', border: '1px solid #ddd' }}>
-      <h3>Card API Debug</h3>
-      {loading && <p>Loading...</p>}
+      <h3>{t('members:cardDebugger.title')}</h3>
+      {loading && <p>{t('common:loading')}</p>}
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       {data && (
         <>

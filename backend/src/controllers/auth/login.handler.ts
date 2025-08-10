@@ -19,6 +19,8 @@ import {
 import auditService from "../../services/audit.service.js";
 import { PerformerType } from "@prisma/client";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Funkcija za prijavu korisnika
 export async function loginHandler(
   req: Request<Record<string, never>, Record<string, never>, MemberLoginData>,
@@ -29,11 +31,11 @@ export async function loginHandler(
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (!email || !password) {
-      console.warn(`Login attempt without credentials from IP ${userIP}`);
+      if (isDev) console.warn(`Login attempt without credentials from IP ${userIP}`);
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    console.log(`Login attempt for email: ${email} from IP: ${userIP}`);
+    if (isDev) console.log(`Login attempt for email: ${email} from IP: ${userIP}`);
 
     const member = await prisma.member.findFirst({
       where: { email },
@@ -49,12 +51,12 @@ export async function loginHandler(
     });
 
     if (!member) {
-      console.log(`Member not found for email: ${email}`);
+      if (isDev) console.log(`Member not found for email: ${email}`);
       await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS));
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    console.log(`Member found: ${member.member_id}, status: ${member.status}, role: ${member.role}`);
+    if (isDev) console.log(`Member found: ${member.member_id}, status: ${member.status}, role: ${member.role}`);
 
     // Provjera statusa članstva i plaćene članarine
     const isAdmin = member.role === 'member_administrator' || member.role === 'member_superuser';
@@ -76,7 +78,7 @@ export async function loginHandler(
     }
 
     if (!isAdmin && !isMembershipValid) {
-      console.log(`Login denied for member: ${member.member_id}. Membership for ${currentYear} is not valid.`);
+      if (isDev) console.log(`Login denied for member: ${member.member_id}. Membership for ${currentYear} is not valid.`);
       await auditService.logAction(
         'LOGIN_FAILED_MEMBERSHIP_EXPIRED',
         member.member_id,
@@ -90,7 +92,7 @@ export async function loginHandler(
     }
 
     if (member.status !== 'registered' && member.status !== 'active') {
-      console.log(`Login attempt for inactive member: ${member.member_id}, status: ${member.status}`);
+      if (isDev) console.log(`Login attempt for inactive member: ${member.member_id}, status: ${member.status}`);
       await auditService.logAction(
         'LOGIN_LOCKOUT',
         member ? member.member_id : null,
@@ -105,7 +107,7 @@ export async function loginHandler(
 
     if (member.locked_until && member.locked_until > new Date()) {
       const lockoutTimeLeft = Math.ceil((member.locked_until.getTime() - new Date().getTime()) / (1000 * 60));
-      console.log(`Account locked for member: ${member.member_id}. Time left: ${lockoutTimeLeft} minutes.`);
+      if (isDev) console.log(`Account locked for member: ${member.member_id}. Time left: ${lockoutTimeLeft} minutes.`);
       await auditService.logAction(
         'LOGIN_FAILED_LOCKED',
         member.member_id,
@@ -120,7 +122,7 @@ export async function loginHandler(
 
     const passwordMatch = await bcrypt.compare(password, member.password_hash || "");
     if (!passwordMatch) {
-      console.log(`Password mismatch for member: ${member.member_id}`);
+      if (isDev) console.log(`Password mismatch for member: ${member.member_id}`);
 
             const now = new Date();
       let currentFailedAttempts = member.failed_login_attempts || 0;
@@ -159,7 +161,7 @@ export async function loginHandler(
               locked_until: lockoutUntil,
             },
           });
-          console.log(`Account locked for member: ${member.member_id} until ${lockoutUntil}`);
+          if (isDev) console.log(`Account locked for member: ${member.member_id} until ${lockoutUntil}`);
           auditService.logAction(
             'ACCOUNT_LOCKED',
             member.member_id,
@@ -171,7 +173,7 @@ export async function loginHandler(
           );
           return res.status(403).json({ message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.` });
         } else {
-          console.log(`Admin account ${member.email} reached max login attempts, but lockout is disabled for admins.`);
+          if (isDev) console.log(`Admin account ${member.email} reached max login attempts, but lockout is disabled for admins.`);
            auditService.logAction(
               'LOGIN_FAILED_ADMIN_MAX_ATTEMPTS',
               member.member_id,

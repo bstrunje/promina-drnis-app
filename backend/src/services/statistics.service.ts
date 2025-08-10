@@ -1,6 +1,8 @@
 import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -85,5 +87,5 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
     },
   });
 
-  console.log(`Ažurirana statistika za člana ${memberId} za godinu ${year}. Sati: ${totalHours.toFixed(2)}, Aktivnosti: ${totalActivities}`);
+  if (isDev) console.log(`Ažurirana statistika za člana ${memberId} za godinu ${year}. Sati: ${totalHours.toFixed(2)}, Aktivnosti: ${totalActivities}`);
 };

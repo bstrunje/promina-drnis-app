@@ -47,7 +47,14 @@
             "fullAdmin": "Full administrative access",
             "operational": "Operational access"
         },
+        "templatesTitle": "Permission templates",
         "savePermissions": "Save Permissions",
+        "clearAll": "Remove all permissions",
+        "loadingPermissions": "Loading permissions...",
+        "editMemberPermissionsTitle": "Edit member permissions",
+        "noMembersMatchSearch": "No members match the search \"{{term}}\"",
+        "allMembersAlreadyHavePermissions": "All members already have administrative permissions",
+        "fetchMembersError": "An error occurred while fetching members.",
         "permissionsRemovedSuccess": "Permissions successfully removed.",
         "removePermissionsError": "An error occurred while removing permissions.",
         "managePermissions": "Manage Member Permissions",
@@ -96,22 +103,22 @@
         "oibTitle": "OIB must have exactly 11 digits"
     },
     "memberTable": {
-    "headers": {
-        "number": "NO.",
-        "member": "MEMBER",
-        "membership": "MEMBERSHIP",
-        "hours": "HOURS",
-        "actions": "ACTIONS",
-        "signature": "SIGNATURE"
+        "headers": {
+            "number": "NO.",
+            "member": "MEMBER",
+            "membership": "MEMBERSHIP",
+            "hours": "HOURS",
+            "actions": "ACTIONS",
+            "signature": "SIGNATURE"
+        },
+        "tooltips": {
+            "assignNumber": "Assign number",
+            "managePermissions": "Manage permissions"
+        },
+        "status": {
+            "pending": "Pending"
+        }
     },
-    "tooltips": {
-        "assignNumber": "Assign number",
-        "managePermissions": "Manage permissions"
-    },
-    "status": {
-        "pending": "Pending"
-    }
-},
     "memberListFilters": {
         "search": {
             "placeholder": "Search name, surname...",
@@ -145,11 +152,27 @@
             "showOnlyColoredRows": "Show only colored rows"
         }
     },
+    "memberRole": {
+        "title": "Member role",
+        "changeRole": "Change role",
+        "changeError": "An error occurred while changing the member role.",
+        "descriptions": {
+            "member": "Standard role without administrative permissions.",
+            "admin": "Can manage members and other features depending on assigned permissions.",
+            "superuser": "Has access to all system features, including assigning roles and permissions."
+        }
+    },
     "membershipStatus": {
         "pending": "Pending",
         "regularMember": "Regular Member",
         "honoraryMember": "Honorary Member",
         "supportingMember": "Supporting Member",
         "formerMember": "Former Member"
-    }
+    },
+    "roles": {
+        "superuser": "Superuser",
+        "admin": "Admin",
+        "member": "Member"
+    },
+    "noEmail": "No email address"
 }

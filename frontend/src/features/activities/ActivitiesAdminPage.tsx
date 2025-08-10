@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 const ActivitiesAdminPage: React.FC = () => {
   const { user } = useAuth();
-  const { t } = useTranslation('activities');
+  const { t } = useTranslation(['activities', 'common']);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,8 +134,8 @@ const ActivitiesAdminPage: React.FC = () => {
                 <Input id="start_date" name="start_date" type="datetime-local" value={newActivity.start_date} onChange={handleInputChange} required />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-                <Button type="submit">{t('common.save')}</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>{t('common:cancel')}</Button>
+                <Button type="submit">{t('common:save')}</Button>
               </div>
             </form>
           </DialogContent>

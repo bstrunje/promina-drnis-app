@@ -35,11 +35,13 @@ const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'product
   ? '/app/uploads' // Fallback za legacy ili non-disk setups
   : path.resolve(__dirname, '..', '..', 'uploads'));
 
-console.log(`[UPLOAD] Konfiguracija:`);
-console.log(`[UPLOAD] NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`[UPLOAD] BLOB_READ_WRITE_TOKEN: ${hasVercelBlobToken ? 'postoji' : 'ne postoji'}`);
-console.log(`[UPLOAD] useVercelBlob: ${useVercelBlob}`);
-console.log(`[UPLOAD] uploadsDir: ${uploadsDir}`);
+const isDev = process.env.NODE_ENV === 'development';
+
+if (isDev) console.log(`[UPLOAD] Konfiguracija:`);
+if (isDev) console.log(`[UPLOAD] NODE_ENV: ${process.env.NODE_ENV}`);
+if (isDev) console.log(`[UPLOAD] BLOB_READ_WRITE_TOKEN: ${hasVercelBlobToken ? 'postoji' : 'ne postoji'}`);
+if (isDev) console.log(`[UPLOAD] useVercelBlob: ${useVercelBlob}`);
+if (isDev) console.log(`[UPLOAD] uploadsDir: ${uploadsDir}`);
 
 // Funkcija za kreiranje direktorija ako ne postoji
 const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
@@ -47,7 +49,7 @@ const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
     await fs.access(dirPath);
   } catch {
     await fs.mkdir(dirPath, { recursive: true });
-    console.log(`[UPLOAD] Kreiran direktorij: ${dirPath}`);
+    if (isDev) console.log(`[UPLOAD] Kreiran direktorij: ${dirPath}`);
   }
 };
 
@@ -113,7 +115,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
         where: { member_id: memberId },
         data: { next_year_stamp_issued: false }
       });
-      console.log(`Returning next year stamp for member ${memberId} - Updated in database`);
+      if (isDev) console.log(`Returning next year stamp for member ${memberId} - Updated in database`);
     }
     
     // Get updated member to return in response
@@ -421,8 +423,8 @@ router.post(
     const memberIdNum = parseInt(memberId, 10);
 
     try {
-      console.log(`[UPLOAD] Početak upload-a slike za člana ${memberId}`);
-      console.log(`[UPLOAD] Datoteka: ${req.file.originalname}, veličina: ${req.file.size} bytes`);
+      if (isDev) console.log(`[UPLOAD] Početak upload-a slike za člana ${memberId}`);
+      if (isDev) console.log(`[UPLOAD] Datoteka: ${req.file.originalname}, veličina: ${req.file.size} bytes`);
       
       // Prvo obriši staru sliku ako postoji
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
@@ -430,15 +432,15 @@ router.post(
       let imagePath: string;
       
       if (useVercelBlob) {
-        console.log(`[UPLOAD] Korištenje Vercel Blob za upload...`);
+        if (isDev) console.log(`[UPLOAD] Korištenje Vercel Blob za upload...`);
         
         // Obriši staru sliku s Vercel Blob-a
         if (member?.profile_image_path && member.profile_image_path.includes('vercel-storage.com')) {
           try {
             await del(member.profile_image_path);
-            console.log(`[UPLOAD] Stara slika obrisana s Vercel Blob-a`);
+            if (isDev) console.log(`[UPLOAD] Stara slika obrisana s Vercel Blob-a`);
           } catch (delError) {
-            console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s Vercel Blob-a:`, delError);
+            if (isDev) console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s Vercel Blob-a:`, delError);
           }
         }
         
@@ -449,9 +451,9 @@ router.post(
         });
         
         imagePath = blob.url;
-        console.log(`[UPLOAD] Slika uspješno upload-ana na Vercel Blob: ${imagePath}`);
+        if (isDev) console.log(`[UPLOAD] Slika uspješno upload-ana na Vercel Blob: ${imagePath}`);
       } else {
-        console.log(`[UPLOAD] Korištenje lokalnog uploads foldera...`);
+        if (isDev) console.log(`[UPLOAD] Korištenje lokalnog uploads foldera...`);
         
         // Kreiraj profile_images direktorij ako ne postoji
         const profileImagesDir = path.join(uploadsDir, 'profile_images');
@@ -462,9 +464,9 @@ router.post(
           try {
             const oldFilePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
             await fs.unlink(oldFilePath);
-            console.log(`[UPLOAD] Stara slika obrisana s lokalnog diska: ${oldFilePath}`);
+            if (isDev) console.log(`[UPLOAD] Stara slika obrisana s lokalnog diska: ${oldFilePath}`);
           } catch (delError) {
-            console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s lokalnog diska:`, delError);
+            if (isDev) console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s lokalnog diska:`, delError);
           }
         }
         
@@ -477,8 +479,8 @@ router.post(
         await fs.writeFile(filePath, req.file.buffer);
         
         imagePath = `/uploads/profile_images/${fileName}`;
-        console.log(`[UPLOAD] Slika uspješno spremljena lokalno: ${filePath}`);
-        console.log(`[UPLOAD] Relativna putanja: ${imagePath}`);
+        if (isDev) console.log(`[UPLOAD] Slika uspješno spremljena lokalno: ${filePath}`);
+        if (isDev) console.log(`[UPLOAD] Relativna putanja: ${imagePath}`);
       }
 
       const updatedMember = await prisma.member.update({
@@ -489,7 +491,7 @@ router.post(
         },
       });
       
-      console.log(`[UPLOAD] Baza podataka ažurirana za člana ${memberId}`);
+      if (isDev) console.log(`[UPLOAD] Baza podataka ažurirana za člana ${memberId}`);
 
       res.json(updatedMember);
     } catch (error) {
@@ -508,31 +510,31 @@ router.delete(
     const memberIdNum = parseInt(memberId, 10);
 
     try {
-      console.log(`[DELETE] Početak brisanja slike za člana ${memberId}`);
+      if (isDev) console.log(`[DELETE] Početak brisanja slike za člana ${memberId}`);
       
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
       
       if (member?.profile_image_path) {
         if (useVercelBlob && member.profile_image_path.includes('vercel-storage.com')) {
-          console.log(`[DELETE] Brisanje slike s Vercel Blob-a...`);
+          if (isDev) console.log(`[DELETE] Brisanje slike s Vercel Blob-a...`);
           try {
             await del(member.profile_image_path);
-            console.log(`[DELETE] Slika uspješno obrisana s Vercel Blob-a`);
+            if (isDev) console.log(`[DELETE] Slika uspješno obrisana s Vercel Blob-a`);
           } catch (delError) {
-            console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s Vercel Blob-a:`, delError);
+            if (isDev) console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s Vercel Blob-a:`, delError);
           }
         } else if (member.profile_image_path.startsWith('/uploads')) {
-          console.log(`[DELETE] Brisanje slike s lokalnog diska...`);
+          if (isDev) console.log(`[DELETE] Brisanje slike s lokalnog diska...`);
           try {
             const filePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
             await fs.unlink(filePath);
-            console.log(`[DELETE] Slika uspješno obrisana s lokalnog diska: ${filePath}`);
+            if (isDev) console.log(`[DELETE] Slika uspješno obrisana s lokalnog diska: ${filePath}`);
           } catch (delError) {
-            console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s lokalnog diska:`, delError);
+            if (isDev) console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s lokalnog diska:`, delError);
           }
         }
       } else {
-        console.log(`[DELETE] Član ${memberId} nema profilnu sliku za brisanje`);
+        if (isDev) console.log(`[DELETE] Član ${memberId} nema profilnu sliku za brisanje`);
       }
 
       const updatedMember = await prisma.member.update({
@@ -543,7 +545,7 @@ router.delete(
         },
       });
       
-      console.log(`[DELETE] Baza podataka ažurirana za člana ${memberId}`);
+      if (isDev) console.log(`[DELETE] Baza podataka ažurirana za člana ${memberId}`);
 
       res.json(updatedMember);
     } catch (error) {
@@ -555,7 +557,7 @@ router.delete(
 );
 
 router.get('/test', (req, res) => {
-    console.log('Test route hit');
+    if (isDev) console.log('Test route hit');
     res.json({ message: 'Member routes are working' });
   });
   

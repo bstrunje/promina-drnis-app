@@ -2,6 +2,8 @@ import stampRepository from "../repositories/stamp.repository.js";
 import { getCurrentDate } from "../utils/dateUtils.js";
 import prisma from "../utils/prisma.js";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 /**
  * Servis za zakazane zadatke koji se izvršavaju automatski
  */
@@ -39,7 +41,7 @@ const scheduledService = {
    */
   async isArchivingDoneForYear(year: number): Promise<boolean> {
     try {
-      console.log(`[SCHEDULED] Provjeravam je li arhiviranje već izvršeno za godinu ${year}`);
+      if (isDev) console.log(`[SCHEDULED] Provjeravam je li arhiviranje već izvršeno za godinu ${year}`);
 
       const count = await prisma.stamp_history.count({
         where: {
@@ -48,7 +50,7 @@ const scheduledService = {
       });
       
       const isDone = count > 0;
-      console.log(`[SCHEDULED] Arhiviranje za godinu ${year}: ${isDone ? 'već izvršeno' : 'nije izvršeno'} (${count} zapisa)`);
+      if (isDev) console.log(`[SCHEDULED] Arhiviranje za godinu ${year}: ${isDone ? 'već izvršeno' : 'nije izvršeno'} (${count} zapisa)`);
       
       return isDone;
     } catch (error) {
@@ -74,11 +76,11 @@ const scheduledService = {
       // Provjeri je li arhiviranje već izvršeno za ovu godinu
       const isDone = await this.isArchivingDoneForYear(currentYear);
       if (isDone) {
-        console.log(`Arhiviranje za godinu ${currentYear} je već izvršeno.`);
+        if (isDev) console.log(`Arhiviranje za godinu ${currentYear} je već izvršeno.`);
         return;
       }
       
-      console.log(`🔄 Izvršavam automatsko arhiviranje stanja markica za godinu ${currentYear}...`);
+      if (isDev) console.log(`🔄 Izvršavam automatsko arhiviranje stanja markica za godinu ${currentYear}...`);
       
       // Koristi system manager ID 1 za automatsko arhiviranje
       const systemManagerId = 1; 
@@ -86,7 +88,7 @@ const scheduledService = {
       
       await stampRepository.archiveStampInventory(currentYear, systemManagerId, notes);
       
-      console.log(`✅ Uspješno arhivirano stanje markica za godinu ${currentYear}`);
+      if (isDev) console.log(`✅ Uspješno arhivirano stanje markica za godinu ${currentYear}`);
     } catch (error) {
       console.error('❌ Greška prilikom automatskog arhiviranja markica:', error);
     }

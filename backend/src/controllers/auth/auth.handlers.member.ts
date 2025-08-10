@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import authRepository from '../../repositories/auth.repository.js';
 import prisma from '../../utils/prisma.js';
+const isDev = process.env.NODE_ENV === 'development';
 
 export async function searchMembersHandler(req: Request, res: Response): Promise<void> {
   try {
@@ -18,17 +19,17 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
       return;
     }
 
-    console.log(`Member search request from IP ${userIP}: "${searchTerm}"`);
+    if (isDev) console.log(`Member search request from IP ${userIP}: "${searchTerm}"`);
 
     if (searchTerm.includes("'") || searchTerm.includes(';') || searchTerm.includes('--')) {
-      console.warn(`Potential SQL injection attempt from IP ${userIP}: "${searchTerm}"`);
+      if (isDev) console.warn(`Potential SQL injection attempt from IP ${userIP}: "${searchTerm}"`);
       res.status(400).json({ message: 'Invalid search term' });
       return;
     }
 
     const results = await authRepository.searchMembers(searchTerm);
 
-    console.log(`Search for "${searchTerm}" returned ${results.length} results`);
+    if (isDev) console.log(`Search for "${searchTerm}" returned ${results.length} results`);
 
     res.json(results);
   } catch (error) {

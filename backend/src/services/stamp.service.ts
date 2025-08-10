@@ -6,6 +6,8 @@ import { DatabaseError } from "../utils/errors.js";
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { PerformerType } from '@prisma/client';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const stampService = {
   async getInventoryStatus() {
     try {
@@ -104,7 +106,7 @@ const stampService = {
       await stampRepository.incrementIssuedCount(type, stampYear);
       
       // We'll handle the membership details update in the controller
-      console.log(`Stamp issued successfully for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
+      if (isDev) console.log(`Stamp issued successfully for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
 
       return { success: true };
     } catch (error) {
@@ -126,7 +128,7 @@ const stampService = {
       
       // We'll handle the membership details update in the controller
       if (memberId) {
-        console.log(`Stamp returned for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
+        if (isDev) console.log(`Stamp returned for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
       }
 
       return { success: true };
@@ -233,7 +235,7 @@ const stampService = {
   async archiveAndResetInventory(year: number, memberId: number, notes: string = '') {
     try {
       // Ova metoda je zastarjela, samo poziva novu metodu za arhiviranje bez resetiranja
-      console.warn("archiveAndResetInventory is deprecated, use archiveStampInventory instead");
+      if (isDev) console.warn("archiveAndResetInventory is deprecated, use archiveStampInventory instead");
       return await this.archiveStampInventory(year, memberId, notes);
     } catch (error) {
       console.error("Error during stamp inventory reset:", error);

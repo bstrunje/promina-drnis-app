@@ -13,7 +13,7 @@ interface LoggedHours {
 }
 
 const HoursLog: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['hours', 'common']);
   const [hours, setHours] = useState<LoggedHours[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ const HoursLog: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('common:loading')}</div>;
   }
 
   if (error) {

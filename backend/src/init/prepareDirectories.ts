@@ -6,10 +6,12 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export function prepareDirectories() {
   // Skip directory creation on Vercel serverless environment
   if (process.env.VERCEL) {
-    console.log('Skipping directory creation on Vercel serverless environment');
+    if (isDev) console.log('Skipping directory creation on Vercel serverless environment');
     return;
   }
   
@@ -32,12 +34,12 @@ export function prepareDirectories() {
     if (!fs.existsSync(dir)) {
       try {
         fs.mkdirSync(dir, { recursive: true });
-        console.log(`Created directory: ${dir}`);
+        if (isDev) console.log(`Created directory: ${dir}`);
       } catch (error) {
         console.error(`Failed to create directory ${dir}:`, error);
       }
     } else {
-      console.log(`Directory already exists: ${dir}`);
+      if (isDev) console.log(`Directory already exists: ${dir}`);
     }
   });
 }
@@ -51,7 +53,7 @@ export async function migrateExistingFiles() {
 
   // First, check if the source directory even exists. If not, do nothing.
   if (!fs.existsSync(baseUploadsDir)) {
-    console.log(`Skipping file migration: Source directory ${baseUploadsDir} not found.`);
+    if (isDev) console.log(`Skipping file migration: Source directory ${baseUploadsDir} not found.`);
     return;
   }
   
@@ -66,7 +68,7 @@ export async function migrateExistingFiles() {
         
         try {
           await fs.promises.rename(sourcePath, destPath);
-          console.log(`Moved ${file} to profile_images directory`);
+          if (isDev) console.log(`Moved ${file} to profile_images directory`);
         } catch (error) {
           console.error(`Failed to move file ${file}:`, error);
         }

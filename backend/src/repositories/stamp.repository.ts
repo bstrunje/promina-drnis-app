@@ -1,6 +1,8 @@
 import { getCurrentDate, formatDate } from '../utils/dateUtils.js';
 import prisma from '../utils/prisma.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface StampInventory {
     stamp_type: 'employed' | 'student' | 'pensioner';
     stamp_year: number;
@@ -24,7 +26,7 @@ type StampHistoryRow = {
 const stampRepository = {
     async getInventory(): Promise<StampInventory[]> {
         try {
-            console.log('[STAMP-INVENTORY] Dohvaćam inventar markica s Prisma...');
+            if (isDev) console.log('[STAMP-INVENTORY] Dohvaćam inventar markica s Prisma...');
             
             const stampInventory = await prisma.stampInventory.findMany({
                 select: {
@@ -58,7 +60,7 @@ const stampRepository = {
 
     async getInventoryByYear(year: number): Promise<StampInventory[]> {
         try {
-            console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za godinu ${year} s Prisma...`);
+            if (isDev) console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za godinu ${year} s Prisma...`);
             
             const stampInventory = await prisma.stampInventory.findMany({
                 where: {
@@ -98,7 +100,7 @@ const stampRepository = {
         stamp_year: number
     ): Promise<void> {
         try {
-            console.log(`[STAMP-UPDATE] Ažuriram inventar markica: ${stamp_type}, godina ${stamp_year}, početni broj ${initial_count}`);
+            if (isDev) console.log(`[STAMP-UPDATE] Ažuriram inventar markica: ${stamp_type}, godina ${stamp_year}, početni broj ${initial_count}`);
             
             const updatedInventory = await prisma.stampInventory.upsert({
                 where: {
@@ -120,7 +122,7 @@ const stampRepository = {
                 }
             });
             
-            console.log(`[STAMP-UPDATE] Inventar uspješno ažuriran: ID ${updatedInventory.id}, tip ${updatedInventory.stamp_type}`);
+            if (isDev) console.log(`[STAMP-UPDATE] Inventar uspješno ažuriran: ID ${updatedInventory.id}, tip ${updatedInventory.stamp_type}`);
         } catch (error: unknown) {
             console.error(`[STAMP-UPDATE] Greška prilikom ažuriranja inventara markica za ${stamp_type}/${stamp_year}:`, error);
             throw error;
@@ -129,7 +131,7 @@ const stampRepository = {
 
     async incrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
         try {
-            console.log(`[STAMP-INCREMENT] Povećavam broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
+            if (isDev) console.log(`[STAMP-INCREMENT] Povećavam broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
             
             const updatedInventory = await prisma.stampInventory.upsert({
                 where: {
@@ -153,7 +155,7 @@ const stampRepository = {
                 }
             });
             
-            console.log(`[STAMP-INCREMENT] Broj izdanih markica uspješno povećan: ${updatedInventory.stamp_type}, nova vrijednost: ${updatedInventory.issued_count}`);
+            if (isDev) console.log(`[STAMP-INCREMENT] Broj izdanih markica uspješno povećan: ${updatedInventory.stamp_type}, nova vrijednost: ${updatedInventory.issued_count}`);
         } catch (error: unknown) {
             console.error(`[STAMP-INCREMENT] Greška prilikom povećanja broja izdanih markica za ${stamp_type}/${stamp_year}:`, error);
             throw error;
@@ -162,7 +164,7 @@ const stampRepository = {
 
     async decrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
         try {
-            console.log(`[STAMP-DECREMENT] Smanjujem broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
+            if (isDev) console.log(`[STAMP-DECREMENT] Smanjujem broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
             
              const updatedInventory = await prisma.stampInventory.updateMany({
                 where: {
@@ -178,9 +180,9 @@ const stampRepository = {
             });
             
             if (updatedInventory.count > 0) {
-                console.log(`[STAMP-DECREMENT] Broj izdanih markica uspješno smanjen za ${stamp_type}/${stamp_year}`);
+                if (isDev) console.log(`[STAMP-DECREMENT] Broj izdanih markica uspješno smanjen za ${stamp_type}/${stamp_year}`);
             } else {
-                console.warn(`[STAMP-DECREMENT] Nema zapisa za ${stamp_type}/${stamp_year} - nema što smanjiti`);
+                if (isDev) console.warn(`[STAMP-DECREMENT] Nema zapisa za ${stamp_type}/${stamp_year} - nema što smanjiti`);
             }
         } catch (error: unknown) {
             console.error(`[STAMP-DECREMENT] Greška prilikom smanjenja broja izdanih markica za ${stamp_type}/${stamp_year}:`, error);
@@ -190,7 +192,7 @@ const stampRepository = {
 
     async getStampHistory(): Promise<StampHistoryRow[]> {
         try {
-            console.log('[STAMP-HISTORY] Dohvaćam povijest markica s Prisma...');
+            if (isDev) console.log('[STAMP-HISTORY] Dohvaćam povijest markica s Prisma...');
             
             const stampHistory = await prisma.stamp_history.findMany({
                 include: {
@@ -233,7 +235,7 @@ const stampRepository = {
 
     async getStampHistoryByYear(year: number): Promise<StampHistoryRow[]> {
         try {
-            console.log(`[STAMP-HISTORY-YEAR] Dohvaćam povijest markica za godinu ${year} s Prisma...`);
+            if (isDev) console.log(`[STAMP-HISTORY-YEAR] Dohvaćam povijest markica za godinu ${year} s Prisma...`);
             
             const stampHistory = await prisma.stamp_history.findMany({
                 where: {
@@ -284,7 +286,7 @@ const stampRepository = {
      */
     async archiveStampInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
         try {
-            console.log(`[STAMP-ARCHIVE] Arhiviram inventar markica za godinu ${year}, član ID: ${memberId}`);
+            if (isDev) console.log(`[STAMP-ARCHIVE] Arhiviram inventar markica za godinu ${year}, član ID: ${memberId}`);
             
             // Koristimo simulirani datum iz getCurrentDate funkcije
             const currentDate = getCurrentDate();
@@ -327,7 +329,7 @@ const stampRepository = {
                     data: historyRecords
                 });
                 
-                console.log(`[STAMP-ARCHIVE] Uspješno arhivirano ${historyRecords.length} zapisa za godinu ${year}`);
+                if (isDev) console.log(`[STAMP-ARCHIVE] Uspješno arhivirano ${historyRecords.length} zapisa za godinu ${year}`);
 
                 // Nema resetiranja markica, samo arhiviramo stanje
             });
@@ -341,7 +343,7 @@ const stampRepository = {
      * @deprecated Ova metoda je zastarjela, koristite archiveStampInventory umjesto nje
      */
     async archiveAndResetInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
-        console.warn('archiveAndResetInventory je zastarjela metoda, koristite archiveStampInventory umjesto nje');
+        if (isDev) console.warn('archiveAndResetInventory je zastarjela metoda, koristite archiveStampInventory umjesto nje');
         return this.archiveStampInventory(year, memberId, notes);
     }
 };

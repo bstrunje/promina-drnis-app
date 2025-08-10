@@ -5,6 +5,7 @@
 
 let mockDate: Date | null = null;
 let systemTimeZone: string = 'Europe/Zagreb'; // Zadana vremenska zona
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
  * Postavlja vremensku zonu sustava
@@ -12,7 +13,7 @@ let systemTimeZone: string = 'Europe/Zagreb'; // Zadana vremenska zona
  */
 export function setSystemTimeZone(timeZone: string): void {
   systemTimeZone = timeZone;
-  console.log(`🌐 Vremenska zona sustava postavljena na: ${timeZone}`);
+  if (isDev) console.log(`🌐 Vremenska zona sustava postavljena na: ${timeZone}`);
 }
 
 /**
@@ -88,7 +89,7 @@ export function getTokenExpiryDate(durationDays: number): Date {
  */
 export function setMockDate(date: Date): void {
   mockDate = date;
-  console.log(`📅 Mock datum postavljen na: ${formatDate(date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);  
+  if (isDev) console.log(`📅 Mock datum postavljen na: ${formatDate(date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')}`);  
 }
 
 /**
@@ -96,7 +97,7 @@ export function setMockDate(date: Date): void {
  */
 export function resetMockDate(): void {
   mockDate = null;
-  console.log('📅 Mock datum resetiran, koristi se stvarni datum');
+  if (isDev) console.log('📅 Mock datum resetiran, koristi se stvarni datum');
 }
 
 /**

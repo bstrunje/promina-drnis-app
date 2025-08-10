@@ -207,15 +207,20 @@ export default function MemberList(): JSX.Element {
     setFilteredMembers(groupMembers(filteredMembersRaw));
   }, [filteredMembersRaw, groupByType, groupMembers]);
 
+  // Kada se mijenja showOnlyColored ili ulazni podaci, izračunaj prikaz iz izvornog niza
+  // Napomena (HR): uvijek polazimo od izvora (filteredMembersRaw) kako bismo pouzdano vratili stanje
   useEffect(() => {
+    const base = groupMembers(filteredMembersRaw);
     if (showOnlyColored) {
-      const updatedMembers = filteredMembers.map(group => ({
+      const updatedMembers = base.map(group => ({
         ...group,
         members: filterOnlyColoredRows(group.members)
       }));
       setFilteredMembers(updatedMembers);
+    } else {
+      setFilteredMembers(base);
     }
-  }, [showOnlyColored, filteredMembers]);
+  }, [showOnlyColored, filteredMembersRaw, groupByType, groupMembers]);
 
   useEffect(() => {
     const checkIsMobile = () => {

@@ -22,7 +22,7 @@ interface EditableMember {
 }
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
-  const { t } = useTranslation('members');
+  const { t } = useTranslation(['members', 'common']);
   const { membersWithPermissions, loading, error, refreshMembersWithPermissions } = useMembersWithPermissions(activeTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
@@ -100,7 +100,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? t('common.refreshing') : t('common.refreshData')}
+          {loading ? t('common:refreshing') : t('common:refreshData')}
         </button>
       </div>
 
@@ -171,7 +171,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                   {t('permissions.granted')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common.actions')}
+                  {t('common:actions')}
                 </th>
               </tr>
             </thead>
@@ -227,7 +227,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                       className="text-blue-600 hover:text-blue-900 mr-4"
                       onClick={() => handleEditClick(memberWithPermissions)}
                     >
-                      {t('common.edit')}
+                      {t('common:edit')}
                     </button>
                     <button 
                       className="text-red-600 hover:text-red-900"

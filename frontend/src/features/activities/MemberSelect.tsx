@@ -14,7 +14,7 @@ interface MemberSelectProps {
 }
 
 export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, onSelectionChange }) => {
-  const { t } = useTranslation('activities');
+  const { t } = useTranslation(['activities', 'common']);
   const [isFocused, setIsFocused] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -79,7 +79,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
             <div className="absolute top-full mt-1 w-full rounded-md border bg-popover p-0 text-popover-foreground shadow-md z-[100]">
               <CommandList>
                 {inputValue && filteredMembers.length === 0 && (
-                  <CommandEmpty>{t('common.noResults')}</CommandEmpty>
+                  <CommandEmpty>{t('common:noResults')}</CommandEmpty>
                 )}
                 {filteredMembers.map((member) => (
                   <CommandItem

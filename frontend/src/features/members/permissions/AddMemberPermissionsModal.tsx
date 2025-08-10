@@ -1,5 +1,5 @@
 // features/members/permissions/AddMemberPermissionsModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Search, UserPlus } from 'lucide-react';
 import { getMembersWithoutPermissions } from '../../../features/systemManager/utils/systemManagerApi';
@@ -21,7 +21,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Dohvat članova bez ovlasti
-  const fetchMembersWithoutPermissions = async () => {
+  const fetchMembersWithoutPermissions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -31,16 +31,16 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Došlo je do greške prilikom dohvata članova.');
+        setError(t('permissions.fetchMembersError'));
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     void fetchMembersWithoutPermissions();
-  }, []);
+  }, [fetchMembersWithoutPermissions]);
 
   // Filtriranje članova prema pojmu za pretragu
   const filteredMembers = members.filter(member => {
@@ -72,7 +72,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
         <div className="relative mb-6">
           <input
             type="text"
-            placeholder="Pretraži članove..."
+            placeholder={t('permissions.searchMembers')}
             className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -101,9 +101,9 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
             <div className="text-center py-8">
               <UserPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               {searchTerm ? (
-                <p className="text-gray-600">Nema članova koji odgovaraju pretrazi "{searchTerm}"</p>
+                <p className="text-gray-600">{t('permissions.noMembersMatchSearch', { term: searchTerm })}</p>
               ) : (
-                <p className="text-gray-600">Svi članovi već imaju administratorske ovlasti</p>
+                <p className="text-gray-600">{t('permissions.allMembersAlreadyHavePermissions')}</p>
               )}
             </div>
           ) : (
@@ -123,7 +123,7 @@ const AddMemberPermissionsModal: React.FC<AddMemberPermissionsModalProps> = ({
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {member.role === 'member_superuser' ? 'Superuser' : member.role === 'member_administrator' ? 'Admin' : 'Član'}
+                    {member.role === 'member_superuser' ? t('roles.superuser') : member.role === 'member_administrator' ? t('roles.admin') : t('roles.member')}
                   </div>
                 </div>
               ))}

@@ -7,18 +7,20 @@ interface AuthRequest extends Request {
     user?: DatabaseUser;
 }
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export const permissionsController = {
     async getAdminPermissions(req: AuthRequest, res: Response) {
         try {
             const memberId = parseInt(req.params.memberId);
-            console.log('Getting permissions for member:', memberId); // Debug log
+            if (isDev) console.log('Getting permissions for member:', memberId); // Debug log
             
             if (req.user?.role_name !== 'member_superuser' && req.user?.id !== memberId) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
 
             const permissions = await permissionsService.getAdminPermissions(memberId);
-            console.log('Found permissions:', permissions); // Debug log
+            if (isDev) console.log('Found permissions:', permissions); // Debug log
             res.json(permissions);
         } catch (error) {
             console.error('Error fetching admin permissions:', error);

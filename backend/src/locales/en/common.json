@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "unexpected": "An unexpected error occurred",
+    "notFound": "Resource not found",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "badRequest": "Bad request",
+    "validationFailed": "Validation failed"
+  }
+}

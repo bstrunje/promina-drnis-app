@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface EmailParams {
     to: string;
     full_name: string;
@@ -11,7 +13,7 @@ interface EmailParams {
 export const sendPasswordEmail = async ({ to, full_name, password, firstName, lastName }: EmailParams): Promise<void> => {
     // Ako SMTP podaci nisu postavljeni, nemoj slati email i samo zabilježi u log
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-        console.log('SMTP varijable nisu postavljene. Preskačem slanje emaila.');
+        if (isDev) console.log('SMTP varijable nisu postavljene. Preskačem slanje emaila.');
         return;
     }
 

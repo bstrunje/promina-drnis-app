@@ -3,6 +3,8 @@ import { Request } from 'express';
 import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
 import { PerformerType } from '@prisma/client';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface LogEventParams {
     event_type: string;
     user_id: number | null;
@@ -15,38 +17,38 @@ interface LogEventParams {
 
 // Helper funkcija za određivanje performer_type-a
 function getPerformerType(req: Request | undefined): PerformerType | null {
-    console.log('DEBUG getPerformerType - req?.user:', req?.user);
+    if (isDev) console.log('DEBUG getPerformerType - req?.user:', req?.user);
     
     if (!req?.user) {
-        console.log('DEBUG getPerformerType - no req.user, returning null');
+        if (isDev) console.log('DEBUG getPerformerType - no req.user, returning null');
         return null;
     }
     
     // Ako je performer_type eksplicitno postavljen, koristi ga
     if (req.user.performer_type) {
-        console.log('DEBUG getPerformerType - using explicit performer_type:', req.user.performer_type);
+        if (isDev) console.log('DEBUG getPerformerType - using explicit performer_type:', req.user.performer_type);
         return req.user.performer_type;
     }
     
     // Fallback logika na osnovu user_type ili is_SystemManager
     if (req.user.is_SystemManager || req.user.user_type === 'SystemManager') {
-        console.log('DEBUG getPerformerType - detected SystemManager, returning SYSTEM_MANAGER');
+        if (isDev) console.log('DEBUG getPerformerType - detected SystemManager, returning SYSTEM_MANAGER');
         return PerformerType.SYSTEM_MANAGER;
     }
     
     if (req.user.user_type === 'member') {
-        console.log('DEBUG getPerformerType - detected member, returning MEMBER');
+        if (isDev) console.log('DEBUG getPerformerType - detected member, returning MEMBER');
         return PerformerType.MEMBER;
     }
     
     // Zadnji fallback - pokušaj na osnovu role
     if (req.user.role === 'SystemManager') {
-        console.log('DEBUG getPerformerType - detected SystemManager role, returning SYSTEM_MANAGER');
+        if (isDev) console.log('DEBUG getPerformerType - detected SystemManager role, returning SYSTEM_MANAGER');
         return PerformerType.SYSTEM_MANAGER;
     }
     
     // Ako ništa nije jasno, pretpostavi da je član
-    console.log('DEBUG getPerformerType - fallback to MEMBER');
+    if (isDev) console.log('DEBUG getPerformerType - fallback to MEMBER');
     return PerformerType.MEMBER;
 }
 

@@ -4,6 +4,8 @@ import auditService from '../services/audit.service.js';
 import { SenderType } from '@prisma/client';
 import { mapToMemberMessage } from '../utils/memberMessageMapper.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const messageController = {
     async createMessage(req: Request, res: Response): Promise<void> {
         try {
@@ -423,35 +425,35 @@ async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
 
 async getUnreadMessageCount(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    console.log('[UNREAD-COUNT] Početak zahtjeva');
+    if (isDev) console.log('[UNREAD-COUNT] Početak zahtjeva');
     
     try {
         // Dohvati ID člana iz parametra ili iz autentificiranog korisnika
         let memberId: number;
         
-        console.log('[UNREAD-COUNT] Provjera autorizacije...');
+        if (isDev) console.log('[UNREAD-COUNT] Provjera autorizacije...');
         if (req.params.memberId) {
             memberId = parseInt(req.params.memberId);
             
             // Provjera je li korisnik autoriziran za dohvat broja nepročitanih poruka drugog člana
             if (req.user?.id !== memberId && req.user?.role_name !== 'member_administrator' && req.user?.role_name !== 'member_superuser') {
-                console.log('[UNREAD-COUNT] Neautoriziran pristup');
+                if (isDev) console.log('[UNREAD-COUNT] Neautoriziran pristup');
                 res.status(403).json({ message: 'Unauthorized to get unread message count for this member' });
                 return;
             }
         } else if (req.user?.id) {
             memberId = req.user.id;
         } else {
-            console.log('[UNREAD-COUNT] Nema korisničkih podataka');
+            if (isDev) console.log('[UNREAD-COUNT] Nema korisničkih podataka');
             res.status(401).json({ message: 'Unauthorized' });
             return;
         }
 
-        console.log(`[UNREAD-COUNT] Dohvaćam broj nepročitanih poruka za člana ${memberId}...`);
+        if (isDev) console.log(`[UNREAD-COUNT] Dohvaćam broj nepročitanih poruka za člana ${memberId}...`);
         const count = await messageService.countUnreadMessages(memberId);
         
         const duration = Date.now() - startTime;
-        console.log(`[UNREAD-COUNT] Uspješno dohvaćen broj: ${count} u ${duration}ms`);
+        if (isDev) console.log(`[UNREAD-COUNT] Uspješno dohvaćen broj: ${count} u ${duration}ms`);
         
         // Cache headers za smanjenje opterećenja serverless funkcija
         res.set('Cache-Control', 'public, max-age=30'); // 30 sekundi cache

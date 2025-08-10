@@ -34,7 +34,8 @@ export default tseslint.config(
       // Jednostavnija pravila za početak
       '@typescript-eslint/no-unused-vars': ['warn', { 
         'argsIgnorePattern': '^_', 
-        'varsIgnorePattern': '^_' 
+        'varsIgnorePattern': '^_',
+        'caughtErrorsIgnorePattern': '^_'
       }],
       '@typescript-eslint/no-explicit-any': 'warn',
       

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Member } from "@shared/member";
 import { useCardManagement } from "../hooks/useCardManagement";
@@ -23,6 +24,7 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
   hideTitle = false
 
 }) => {
+  const { t } = useTranslation('profile');
   // Koristimo custom hooks za upravljanje karticama i markicama
   const {
     cardNumber,
@@ -54,12 +56,12 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
     <Card>
       {!hideTitle && (
         <CardHeader>
-          <CardTitle className="text-lg">Upravljanje članskom karticom</CardTitle>
+          <CardTitle className="text-lg">{t('membershipCardManagement')}</CardTitle>
         </CardHeader>
       )}
       <CardContent>
         <div className="p-4 bg-gray-50 rounded-lg space-y-6">
-          <h4 className="font-medium mb-2">Trenutni status</h4>
+          <h4 className="font-medium mb-2">{t('membershipCard.currentStatus')}</h4>
           
           {/* Sekcija za broj kartice */}
           <CardNumberSection 

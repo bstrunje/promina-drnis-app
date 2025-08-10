@@ -203,6 +203,41 @@
         "membershipFeeStatus": "Membership Fee Status",
         "delete": "Delete"
     },
+    "membershipCard": {
+        "currentStatus": "Current Status",
+        "cardNumberLabel": "Membership Card Number",
+        "refresh": "Refresh",
+        "currentCardNumber": "Current card number:",
+        "notAssigned": "Not assigned",
+        "stats": {
+            "total": "Total",
+            "available": "Available",
+            "assigned": "Assigned"
+        },
+        "changeCardNumber": "Change Card Number",
+        "selectPlaceholder": "Select a card number",
+        "currentSuffix": "(Current)",
+        "loadingNumbers": "Loading card numbers...",
+        "noNumbers": "No card numbers available. Add them in Settings.",
+        "inputTitle": "Card number must be exactly {{length}} digits",
+        "submit": {
+            "submitting": "Changing...",
+            "change": "Change Card Number"
+        }
+    },
+    "stamp": {
+        "title": "Stamp Management",
+        "currentYearSuffix": "current year",
+        "availableShort": "Available",
+        "availableUnit": "pcs",
+        "issuedLabel": "Stamp issued",
+        "notIssuedLabel": "Stamp not issued",
+        "feeNotPaidCurrent": "Membership fee for {{year}} not paid",
+        "nextYearSuffix": "next year",
+        "issuedNextYear": "Stamp for {{year}} issued",
+        "notIssuedNextYear": "Stamp for {{year}} not issued",
+        "feeNotPaidNext": "Membership fee for {{year}} not paid"
+    },
     "history": {
         "startDate": "Start Date",
         "endDate": "End Date",

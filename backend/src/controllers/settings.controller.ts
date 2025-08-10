@@ -7,6 +7,8 @@ import { createRateLimit } from '../middleware/rateLimit.js';
 // Removed unused import: PerformerType
 import auditService from '../services/audit.service.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 export const getSettings = async (req: Request, res: Response) => {
@@ -43,7 +45,7 @@ export const updateSettings = [
       renewalStartMonth = 11 
     } = req.body;
 
-    console.log('Received settings update:', { cardNumberLength, renewalStartDay, renewalStartMonth });
+    if (isDev) console.log('Received settings update:', { cardNumberLength, renewalStartDay, renewalStartMonth });
     
     const sanitizedInput = sanitizeInput({ 
       cardNumberLength, 
@@ -51,7 +53,7 @@ export const updateSettings = [
       renewalStartMonth 
     });
 
-    console.log('Sanitized input:', sanitizedInput);
+    if (isDev) console.log('Sanitized input:', sanitizedInput);
 
     const validationError = validateSettings(sanitizedInput);
     if (validationError) {
@@ -88,14 +90,14 @@ export const updateSettings = [
           }
         });
 
-        console.log('Updated settings:', settings);
+        if (isDev) console.log('Updated settings:', settings);
 
         const changes = Object.fromEntries(
           Object.entries(sanitizedInput).filter(([_key, value]) => value !== undefined)
         );
 
-        // Dodana dijagnostika za req.user
-        console.log('DEBUG - req.user u settings.controller:', {
+        // Dodana dijagnostika za req.user (samo u razvojnom okruženju)
+        if (isDev) console.log('DEBUG - req.user u settings.controller:', {
           id: req.user!.id,
           is_SystemManager: req.user!.is_SystemManager,
           role: req.user!.role,

@@ -8,24 +8,26 @@ import {
   generateClearCookieOptions,
 } from './auth.utils.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Funkcija za obnavljanje access tokena pomoću refresh tokena
 export async function refreshTokenHandler(req: Request, res: Response): Promise<void | Response> {
-  console.log('Refresh token zahtjev primljen');
-  console.log('Origin:', req.headers.origin);
-  console.log('Cookies primljeni na backendu:', req.cookies);
-  console.log('Cookies:', JSON.stringify(req.cookies));
-  console.log('User-Agent:', req.headers['user-agent']);
+  if (isDev) console.log('Refresh token zahtjev primljen');
+  if (isDev) console.log('Origin:', req.headers.origin);
+  if (isDev) console.log('Cookies primljeni na backendu:', req.cookies);
+  if (isDev) console.log('Cookies:', JSON.stringify(req.cookies));
+  if (isDev) console.log('User-Agent:', req.headers['user-agent']);
   
   const refreshToken = req.cookies.refreshToken;
   
-  console.log('Provjera refresh tokena iz kolačića...');
+  if (isDev) console.log('Provjera refresh tokena iz kolačića...');
   
   if (!refreshToken) {
-    console.log('Refresh token nije pronađen u kolačiću');
+    if (isDev) console.log('Refresh token nije pronađen u kolačiću');
     return res.status(401).json({ error: 'Refresh token nije pronađen' });
   }
   
-  console.log('Refresh token pronađen u kolačiću:', refreshToken.substring(0, 20) + '...');
+  if (isDev) console.log('Refresh token pronađen u kolačiću:', refreshToken.substring(0, 20) + '...');
   
   try {
     let decoded;
@@ -35,27 +37,27 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         role: string, 
         fingerprint?: string 
       };
-      console.log('JWT verifikacija uspješna, decoded:', { id: decoded.id, role: decoded.role });
+      if (isDev) console.log('JWT verifikacija uspješna, decoded:', { id: decoded.id, role: decoded.role });
       
       if (decoded.fingerprint) {
         const userAgent = req.headers['user-agent'] || 'unknown';
         const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
         const currentFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
         
-        console.log('Provjera fingerprinta uređaja...');
+        if (isDev) console.log('Provjera fingerprinta uređaja...');
         
         if (decoded.fingerprint !== currentFingerprint) {
           console.error('Fingerprint uređaja ne odgovara pohranjenom fingerprintu');
-          console.log(`Token fingerprint: ${decoded.fingerprint.substring(0, 10)}...`);
-          console.log(`Trenutni fingerprint: ${currentFingerprint.substring(0, 10)}...`);
+          if (isDev) console.log(`Token fingerprint: ${decoded.fingerprint.substring(0, 10)}...`);
+          if (isDev) console.log(`Trenutni fingerprint: ${currentFingerprint.substring(0, 10)}...`);
           
           if (process.env.NODE_ENV === 'production') {
             return res.status(401).json({ error: 'Neispravan uređaj za refresh token' });
           } else {
-            console.warn('Razlika u fingerprintu ignorirana u razvojnom okruženju');
+            if (isDev) console.warn('Razlika u fingerprintu ignorirana u razvojnom okruženju');
           }
         } else {
-          console.log('Fingerprint uređaja uspješno verificiran');
+          if (isDev) console.log('Fingerprint uređaja uspješno verificiran');
         }
       }
     } catch (jwtError) {
@@ -65,12 +67,12 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     if (!prisma.refresh_tokens) {
       console.error('RefreshToken model nije dostupan u Prisma klijentu!');
-      console.log('Dostupni modeli u Prisma klijentu:', Object.keys(prisma));
+      if (isDev) console.log('Dostupni modeli u Prisma klijentu:', Object.keys(prisma));
       res.status(500).json({ error: 'Interna greška servera' });
       return;
     }
     
-    console.log(`Tražim refresh token u bazi za korisnika ID: ${decoded.id}`);
+    if (isDev) console.log(`Tražim refresh token u bazi za korisnika ID: ${decoded.id}`);
     
     let storedToken = await prisma.refresh_tokens.findFirst({
       where: { 
@@ -79,11 +81,11 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       }
     });
     
-    console.log('Rezultat pretrage tokena:', storedToken ? `Token pronađen (ID: ${storedToken.id})` : 'Token nije pronađen');
+    if (isDev) console.log('Rezultat pretrage tokena:', storedToken ? `Token pronađen (ID: ${storedToken.id})` : 'Token nije pronađen');
     
     if (!storedToken) {
       console.error(`Refresh token nije pronađen u bazi za korisnika ID: ${decoded.id}`);
-      console.log('Token je valjan ali nije u bazi - odbacujem zahtjev');
+      if (isDev) console.log('Token je valjan ali nije u bazi - odbacujem zahtjev');
       
       // JEDNOSTAVNO RJEŠENJE: Ako token nije u bazi, odbaci zahtjev
       // Korisnik će se morati ponovno prijaviti
@@ -95,7 +97,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       const currentDate = new Date();
       const expiryDate = new Date(storedToken.expires_at);
       
-      console.log(`Provjera isteka tokena: trenutno vrijeme=${formatUTCDate(currentDate)}, vrijeme isteka=${formatUTCDate(expiryDate)}`);
+      if (isDev) console.log(`Provjera isteka tokena: trenutno vrijeme=${formatUTCDate(currentDate)}, vrijeme isteka=${formatUTCDate(expiryDate)}`);
       
       if (currentDate > expiryDate) {
         console.error(`Refresh token je istekao u bazi podataka: ${formatUTCDate(expiryDate)}`);
@@ -105,7 +107,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
           where: { id: storedToken.id }
         });
         
-        console.log(`Obrisano ${deleteResult.count} isteklih tokena`);
+        if (isDev) console.log(`Obrisano ${deleteResult.count} isteklih tokena`);
         
         res.status(401).json({ error: 'Refresh token je istekao' });
         return;
@@ -122,7 +124,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       return;
     }
     
-    console.log(`Korisnik pronađen: ID=${member.member_id}, uloga=${member.role}`);
+    if (isDev) console.log(`Korisnik pronađen: ID=${member.member_id}, uloga=${member.role}`);
     
     const accessToken = jwt.sign(
       { id: member.member_id, role: member.role },
@@ -134,7 +136,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
     
-    console.log('Generiran fingerprint uređaja za token');
+    if (isDev) console.log('Generiran fingerprint uređaja za token');
     
     const newRefreshToken = jwt.sign(
       { 
@@ -147,23 +149,23 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       { expiresIn: '7d' }
     );
     
-    console.log(`Zamjenjujem refresh token u bazi (brišem stari ID: ${storedToken.id}, kreiram novi)`);
+    if (isDev) console.log(`Zamjenjujem refresh token u bazi (brišem stari ID: ${storedToken.id}, kreiram novi)`);
     
     try {
       const expiresAt = getTokenExpiryDate(7);
       
       // KRITIČNA ISPRAVKA: Umjesto UPDATE koji uzrokuje duplicate key constraint,
       // koristimo DELETE + CREATE operaciju za potpuno izbjegavanje konflikata
-      console.log(`[REFRESH-TOKEN] Brišem stari token ID: ${storedToken.id}`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Brišem stari token ID: ${storedToken.id}`);
       
       // Koristimo deleteMany umjesto delete da izbjegnemo P2025 grešku ako token ne postoji
       const deleteResult = await prisma.refresh_tokens.deleteMany({
         where: { id: storedToken.id }
       });
       
-      console.log(`[REFRESH-TOKEN] Obrisano ${deleteResult.count} starih tokena`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Obrisano ${deleteResult.count} starih tokena`);
       
-      console.log(`[REFRESH-TOKEN] Kreiram novi token za člana ${member.member_id}`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Kreiram novi token za člana ${member.member_id}`);
       
       const newTokenRecord = await prisma.refresh_tokens.create({
         data: {
@@ -173,7 +175,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         }
       });
       
-      console.log(`[REFRESH-TOKEN] Novi token uspješno kreiran s ID: ${newTokenRecord.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Novi token uspješno kreiran s ID: ${newTokenRecord.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
       
       // Ažuriramo storedToken referencu za daljnju upotrebu
       storedToken = newTokenRecord;
@@ -183,7 +185,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       });
       
       if (verifyToken) {
-        console.log(`[REFRESH-TOKEN] Potvrda: novi token je uspješno kreiran u bazi s ID: ${verifyToken.id}`);
+        if (isDev) console.log(`[REFRESH-TOKEN] Potvrda: novi token je uspješno kreiran u bazi s ID: ${verifyToken.id}`);
       } else {
         console.error('[REFRESH-TOKEN] KRITIČNA GREŠKA: novi token nije pronađen u bazi nakon kreiranja!');
       }
@@ -192,7 +194,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       
       // Dodatna provjera za duplicate key grešku
       if (error instanceof Error && error.message.includes('duplicate key')) {
-        console.log('[REFRESH-TOKEN] Duplicate key greška - pokušavam pronaći postojeći token...');
+        if (isDev) console.log('[REFRESH-TOKEN] Duplicate key greška - pokušavam pronaći postojeći token...');
         
         const existingToken = await prisma.refresh_tokens.findFirst({
           where: { 
@@ -202,7 +204,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         });
         
         if (existingToken) {
-          console.log('[REFRESH-TOKEN] Postojeći token pronađen, koristim ga...');
+          if (isDev) console.log('[REFRESH-TOKEN] Postojeći token pronađen, koristim ga...');
           storedToken = existingToken;
         } else {
           console.error('[REFRESH-TOKEN] Duplicate key greška, ali token nije pronađen!');
@@ -216,13 +218,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     const isProduction = process.env.NODE_ENV === 'production';
     
     if (req.cookies.systemManagerRefreshToken) {
-      console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
+      if (isDev) console.log('Brišem systemManagerRefreshToken kolačić za izbjegavanje konflikta');
       const systemManagerCookieOptions = generateClearCookieOptions(req);
       res.clearCookie('systemManagerRefreshToken', systemManagerCookieOptions);
     }
     
     if (req.cookies.refreshToken) {
-      console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
+      if (isDev) console.log('Brišem stari refreshToken kolačić prije postavljanja novog');
       const memberCookieOptions = generateClearCookieOptions(req);
       res.clearCookie('refreshToken', memberCookieOptions);
     }
@@ -231,10 +233,10 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     res.cookie('refreshToken', newRefreshToken, cookieOptions);
     
-    console.log('Postavljen novi refresh token kolačić s opcijama:', cookieOptions);
+    if (isDev) console.log('Postavljen novi refresh token kolačić s opcijama:', cookieOptions);
     
     if (isProduction) {
-      console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
+      if (isDev) console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
       res.json({ 
         accessToken,
         refreshToken: newRefreshToken

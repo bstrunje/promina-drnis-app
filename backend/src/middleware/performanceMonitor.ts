@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 
 export const performanceMonitor = (req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
+  const isDev = process.env.NODE_ENV === 'development';
   
   // Log početak zahtjeva
-  console.log(`[PERF] START ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  if (isDev) console.log(`[PERF] START ${req.method} ${req.path} - ${new Date().toISOString()}`);
   
   // Presretni završetak odgovora
   const originalSend = res.send;
@@ -13,11 +14,11 @@ export const performanceMonitor = (req: Request, res: Response, next: NextFuncti
     const status = res.statusCode;
     
     // Log završetak zahtjeva s performansama
-    console.log(`[PERF] END ${req.method} ${req.path} - ${duration}ms - Status: ${status}`);
+    if (isDev) console.log(`[PERF] END ${req.method} ${req.path} - ${duration}ms - Status: ${status}`);
     
     // Upozorenje za spore zahtjeve (>2s)
     if (duration > 2000) {
-      console.warn(`[PERF] SLOW REQUEST: ${req.method} ${req.path} took ${duration}ms`);
+      if (isDev) console.warn(`[PERF] SLOW REQUEST: ${req.method} ${req.path} took ${duration}ms`);
     }
     
     // Kritično upozorenje za vrlo spore zahtjeve (>5s)

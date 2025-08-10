@@ -6,6 +6,8 @@
 import prisma from '../utils/prisma.js';
 import { setSystemTimeZone, getSystemTimeZone } from '../utils/dateUtils.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 class TimezoneService {
   private initialized = false;
   private static instance: TimezoneService;
@@ -34,11 +36,11 @@ class TimezoneService {
 
       if (settings?.timeZone) {
         setSystemTimeZone(settings.timeZone);
-        console.log(`🌐 Vremenska zona inicijalizirana iz baze: ${settings.timeZone}`);
+        if (isDev) console.log(`🌐 Vremenska zona inicijalizirana iz baze: ${settings.timeZone}`);
       } else {
         // Koristi zadanu zonu 'Europe/Zagreb' ako nije definirana u postavkama
         setSystemTimeZone('Europe/Zagreb');
-        console.log('🌐 Vremenska zona postavljena na zadanu: Europe/Zagreb');
+        if (isDev) console.log('🌐 Vremenska zona postavljena na zadanu: Europe/Zagreb');
       }
 
       this.initialized = true;
@@ -61,7 +63,7 @@ class TimezoneService {
       });
 
       setSystemTimeZone(timeZone);
-      console.log(`🌐 Vremenska zona ažurirana na: ${timeZone}`);
+      if (isDev) console.log(`🌐 Vremenska zona ažurirana na: ${timeZone}`);
     } catch (error) {
       console.error('Greška pri ažuriranju vremenske zone:', error);
       throw error;

@@ -23,7 +23,7 @@ import { CornerDownLeft, Send, Users, UserCheck, Mail, X } from 'lucide-react';
 import { MemberSearchResult } from '@shared/member';
 
 const AdminMessageSender: React.FC = () => {
-  const { t } = useTranslation('messages');
+  const { t } = useTranslation(['messages', 'common']);
   // Ref za automatski fokus na input za pretragu članova
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -81,7 +81,7 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToSingle = async () => {
     if (!selectedMember) {
       toast({
-        title: t('common.warning'),
+        title: t('common:warning'),
         description: t('adminMessageSender.messages.selectMemberWarning'),
         variant: "default"
       });
@@ -90,7 +90,7 @@ const AdminMessageSender: React.FC = () => {
 
     if (!messageText.trim()) {
       toast({
-        title: t('common.warning'),
+        title: t('common:warning'),
         description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
@@ -107,7 +107,7 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('adminMessageSender.messages.singleSuccess', { memberName: selectedMember.full_name }),
         variant: "success"
       });
@@ -116,7 +116,7 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('adminMessageSender.messages.singleError'),
         variant: "destructive"
       });
@@ -142,7 +142,7 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToGroup = async () => {
     if (selectedMembers.length === 0) {
       toast({
-        title: t('common.warning'),
+        title: t('common:warning'),
         description: t('adminMessageSender.messages.selectGroupWarning'),
         variant: "default"
       });
@@ -151,7 +151,7 @@ const AdminMessageSender: React.FC = () => {
 
     if (!messageText.trim()) {
       toast({
-        title: t('common.warning'),
+        title: t('common:warning'),
         description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
@@ -169,7 +169,7 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('adminMessageSender.messages.groupSuccess', { count: memberIds.length }),
         variant: "success"
       });
@@ -178,7 +178,7 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('adminMessageSender.messages.groupError'),
         variant: "destructive"
       });
@@ -191,7 +191,7 @@ const AdminMessageSender: React.FC = () => {
   const handleSendToAll = async () => {
     if (!messageText.trim()) {
       toast({
-        title: t('common.warning'),
+        title: t('common:warning'),
         description: t('adminMessageSender.messages.emptyMessageWarning'),
         variant: "default"
       });
@@ -209,7 +209,7 @@ const AdminMessageSender: React.FC = () => {
       setShowSuccess(true);
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('adminMessageSender.messages.allSuccess'),
         variant: "success"
       });
@@ -218,7 +218,7 @@ const AdminMessageSender: React.FC = () => {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('adminMessageSender.messages.allError'),
         variant: "destructive"
       });

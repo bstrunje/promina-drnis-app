@@ -41,13 +41,23 @@
             "can_export_data": "Izvoz podataka",
             "can_manage_end_reasons": "Upravljanje razlozima prestanka",
             "can_manage_card_numbers": "Upravljanje brojevima iskaznica",
-            "can_assign_passwords": "Dodjela lozinki"
+            "can_assign_passwords": "Dodjela lozinki",
+            "can_manage_permissions": "Upravljanje ovlastima",
+            "can_view_member_list": "Pregled liste članova",
+            "can_edit_member_list": "Uređivanje liste članova"
         },
         "templates": {
             "fullAdmin": "Puni administratorski pristup",
             "operational": "Operativni pristup"
         },
+        "templatesTitle": "Predlošci ovlasti",
         "savePermissions": "Spremi ovlasti",
+        "clearAll": "Ukloni sve ovlasti",
+        "loadingPermissions": "Učitavanje ovlasti...",
+        "editMemberPermissionsTitle": "Uređivanje ovlasti za člana",
+        "noMembersMatchSearch": "Nema članova koji odgovaraju pretrazi \"{{term}}\"",
+        "allMembersAlreadyHavePermissions": "Svi članovi već imaju administratorske ovlasti",
+        "fetchMembersError": "Došlo je do greške prilikom dohvata članova.",
         "permissionsRemovedSuccess": "Ovlasti uspješno uklonjene.",
         "removePermissionsError": "Došlo je do greške prilikom uklanjanja ovlasti.",
         "managePermissions": "Upravljanje ovlastima članova",
@@ -96,22 +106,22 @@
         "oibTitle": "OIB mora imati točno 11 znamenki"
     },
     "memberTable": {
-    "headers": {
-        "number": "BR.",
-        "member": "ČLAN",
-        "membership": "ČLANSTVO",
-        "hours": "SATI",
-        "actions": "AKCIJE",
-        "signature": "POTPIS"
+        "headers": {
+            "number": "BR.",
+            "member": "ČLAN",
+            "membership": "ČLANSTVO",
+            "hours": "SATI",
+            "actions": "AKCIJE",
+            "signature": "POTPIS"
+        },
+        "tooltips": {
+            "assignNumber": "Dodijeli broj",
+            "managePermissions": "Upravljanje ovlastima"
+        },
+        "status": {
+            "pending": "Na čekanju"
+        }
     },
-    "tooltips": {
-        "assignNumber": "Dodijeli broj",
-        "managePermissions": "Upravljanje ovlastima"
-    },
-    "status": {
-        "pending": "Na čekanju"
-    }
-},
     "memberListFilters": {
         "search": {
             "placeholder": "Pretraži ime, prezime...",
@@ -145,11 +155,27 @@
             "showOnlyColoredRows": "Prikaži samo obojane retke"
         }
     },
+    "roles": {
+        "superuser": "Superuser",
+        "admin": "Admin",
+        "member": "Član"
+    },
+    "noEmail": "Nema email adrese",
+    "memberRole": {
+        "title": "Rola člana",
+        "changeRole": "Promijeni rolu",
+        "changeError": "Došlo je do greške prilikom promjene role člana.",
+        "descriptions": {
+            "member": "Standardna korisnička rola bez administratorskih ovlasti.",
+            "admin": "Može upravljati članovima i drugim funkcionalnostima ovisno o dodijeljenim ovlastima.",
+            "superuser": "Ima pristup svim funkcionalnostima sustava, uključujući dodjelu rola i ovlasti."
+        }
+    },
     "membershipStatus": {
-      "pending": "Na čekanju",
-      "regularMember": "Redovni član",
-      "honoraryMember": "Počasni član",
-      "supportingMember": "Podržavajući član",
-      "formerMember": "Bivši član"
+        "pending": "Na čekanju",
+        "regularMember": "Redovni član",
+        "honoraryMember": "Počasni član",
+        "supportingMember": "Podržavajući član",
+        "formerMember": "Bivši član"
     }
 }

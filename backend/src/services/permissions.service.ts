@@ -1,9 +1,11 @@
 import { MemberPermissions } from '../shared/types/permissions.js';
 import prisma from '../utils/prisma.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const permissionsService = {
   async getMemberPermissions(memberId: number): Promise<MemberPermissions> {
-    console.log(`[PERMISSIONS] Dohvaćam ovlasti za člana ${memberId}...`);
+    if (isDev) console.log(`[PERMISSIONS] Dohvaćam ovlasti za člana ${memberId}...`);
     try {
       const permissions = await prisma.memberPermissions.findUnique({
         where: { member_id: memberId },
@@ -27,7 +29,7 @@ const permissionsService = {
         }
       });
 
-      console.log(`[PERMISSIONS] Ovlasti za člana ${memberId}:`, permissions ? 'PRONAĐENE' : 'PRAZNE');
+      if (isDev) console.log(`[PERMISSIONS] Ovlasti za člana ${memberId}:`, permissions ? 'PRONAĐENE' : 'PRAZNE');
       // Type casting za kompatibilnost s MemberPermissions tipom
       return permissions ? {
         can_view_members: permissions.can_view_members || false,
@@ -59,7 +61,7 @@ const permissionsService = {
   },
 
   async getAllMembersWithPermissions() {
-    console.log('[PERMISSIONS] Dohvaćam sve članove s ovlastima...');
+    if (isDev) console.log('[PERMISSIONS] Dohvaćam sve članove s ovlastima...');
     try {
       const membersWithPermissions = await prisma.member.findMany({
         include: {
@@ -87,7 +89,7 @@ const permissionsService = {
           ...member.permissions
         }));
       
-      console.log(`[PERMISSIONS] Pronađeno ${result.length} članova s ovlastima`);
+      if (isDev) console.log(`[PERMISSIONS] Pronađeno ${result.length} članova s ovlastima`);
       return result;
     } catch (error) {
       console.error('[PERMISSIONS] Greška pri dohvaćanju članova s ovlastima:', error);
@@ -100,7 +102,7 @@ const permissionsService = {
     permissions: MemberPermissions,
     grantedBy: number
   ): Promise<void> {
-    console.log(`[PERMISSIONS] Ažuriram ovlasti za člana ${memberId}...`);
+    if (isDev) console.log(`[PERMISSIONS] Ažuriram ovlasti za člana ${memberId}...`);
     
     try {
       // OPTIMIZACIJA: Priprema podataka za Prisma upsert
@@ -151,7 +153,7 @@ const permissionsService = {
         create: permissionData
       });
       
-      console.log(`[PERMISSIONS] Uspješno ažurirane ovlasti za člana ${memberId}`);
+      if (isDev) console.log(`[PERMISSIONS] Uspješno ažurirane ovlasti za člana ${memberId}`);
     } catch (error) {
       console.error(`[PERMISSIONS] Greška pri ažuriranju ovlasti za člana ${memberId}:`, error);
       throw error;
@@ -164,8 +166,8 @@ const permissionsService = {
     permissions: MemberPermissions,
     grantedBy: number
   ): Promise<void> {
-    console.log('Korištenje legacy metode updateAdminPermissions za člana ID:', memberId);
-    console.log('Primljene ovlasti:', permissions);
+    if (isDev) console.log('Korištenje legacy metode updateAdminPermissions za člana ID:', memberId);
+    if (isDev) console.log('Primljene ovlasti:', permissions);
     return this.updateMemberPermissions(memberId, permissions, grantedBy);
   }
 };

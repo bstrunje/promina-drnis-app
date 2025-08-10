@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { CardNumberSectionProps } from "../types/membershipTypes";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
@@ -29,6 +30,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   handleCardNumberAssign,
   userRole
 }) => {
+  const { t } = useTranslation('profile');
   // Možemo li uređivati podatke? Dopušteno samo za admin i superuser
   const canEdit = userRole === 'member_administrator' || userRole === 'member_superuser';
 
@@ -73,7 +75,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
       {/* Trenutni status kartice */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium">Broj članske kartice</h4>
+          <h4 className="font-medium">{t('membershipCard.cardNumberLabel')}</h4>
           
           {/* Gumb za osvježavanje statistike */}
           {canEdit && (
@@ -88,14 +90,14 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                 "w-3 h-3 mr-1",
                 isLoadingCardStats && "animate-spin"
               )} />
-              Osvježi
+              {t('membershipCard.refresh')}
             </Button>
           )}
         </div>
         
         {/* Trenutni broj kartice */}
         <div className="mb-3">
-          <span className="text-sm text-gray-500">Trenutni broj kartice:</span>
+          <span className="text-sm text-gray-500">{t('membershipCard.currentCardNumber')}</span>
           {(() => {
             const cardNumber =
               member.membership_details?.card_number;
@@ -106,7 +108,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                 {cardNumber}
               </span>
             ) : (
-              <span className="ml-2 text-gray-400">Nije dodijeljen</span>
+              <span className="ml-2 text-gray-400">{t('membershipCard.notAssigned')}</span>
             );
           })()}
         </div>
@@ -115,9 +117,9 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
         {canEdit && cardStats && (
           <div className="mb-3 text-sm">
             <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-              <span className="hidden sm:inline">Ukupno: <span className="font-bold">{cardStats.total}</span> &nbsp;|&nbsp;</span> 
-              Dostupno: <span className="font-bold">{cardStats.available}</span>
-              <span className="hidden sm:inline"> &nbsp;|&nbsp; Dodijeljeno: <span className="font-bold">{cardStats.assigned}</span></span>
+              <span className="hidden sm:inline">{t('membershipCard.stats.total')}: <span className="font-bold">{cardStats.total}</span> &nbsp;|&nbsp;</span> 
+              {t('membershipCard.stats.available')}: <span className="font-bold">{cardStats.available}</span>
+              <span className="hidden sm:inline"> &nbsp;|&nbsp; {t('membershipCard.stats.assigned')}: <span className="font-bold">{cardStats.assigned}</span></span>
             </span>
           </div>
         )}
@@ -127,7 +129,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
       {canEdit && (
         <form onSubmit={(e) => { void handleCardNumberAssign(e); }} className="space-y-3">
           <div>
-            <Label htmlFor="card-number">Promijeni broj kartice</Label>
+            <Label htmlFor="card-number">{t('membershipCard.changeCardNumber')}</Label>
             <div className="mt-1">
               {/* Odabir broja kartice - prikaži select ako ima dostupnih brojeva, inače input */}
               {availableCardNumbers && availableCardNumbers.length > 0 ? (
@@ -137,13 +139,13 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Odaberi broj kartice" />
+                    <SelectValue placeholder={t('membershipCard.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {/* Opcija za trenutni broj kartice ako postoji */}
                     {typeof member?.membership_details?.card_number === 'string' && member.membership_details.card_number !== '' && (
                       <SelectItem value={member.membership_details.card_number}>
-                        {member.membership_details.card_number} (Trenutni)
+                        {member.membership_details.card_number} {t('membershipCard.currentSuffix')}
                       </SelectItem>
                     )}
 
@@ -165,12 +167,11 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                 <div>
                   {isLoadingCardNumbers ? (
                     <p className="text-sm text-gray-500">
-                      Učitavanje brojeva kartica...
+                      {t('membershipCard.loadingNumbers')}
                     </p>
                   ) : (
                     <p className="text-sm text-amber-500">
-                      Nema dostupnih brojeva kartica. Dodajte ih u
-                      Postavkama.
+                      {t('membershipCard.noNumbers')}
                     </p>
                   )}
                   <Input
@@ -179,7 +180,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
                     pattern={`[0-9]{${cardNumberLength}}`}
-                    title={`Broj kartice mora imati točno ${cardNumberLength} znamenki`}
+                    title={t('membershipCard.inputTitle', { length: cardNumberLength })}
                     maxLength={cardNumberLength}
                     className="w-full p-2 border rounded mt-1"
                     required
@@ -199,7 +200,7 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
               cardNumber === originalCardNumber && !isSubmitting && cardNumber && "bg-gray-300 hover:bg-gray-300 cursor-not-allowed"
             )}
           >
-            {isSubmitting ? "Promjena u tijeku..." : "Promijeni broj kartice"}
+            {isSubmitting ? t('membershipCard.submit.submitting') : t('membershipCard.submit.change')}
           </Button>
         </form>
       )}

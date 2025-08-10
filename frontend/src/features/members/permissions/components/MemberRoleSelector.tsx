@@ -1,5 +1,6 @@
 // features/members/permissions/components/MemberRoleSelector.tsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MemberRole } from '@shared/member';
 import { updateMemberRole } from '../api/memberPermissionsApi';
 
@@ -18,6 +19,7 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
   onSuccess,
   onError
 }) => {
+  const { t } = useTranslation('members');
   // Inicijalno stanje iz currentRole; promjene currentRole syncamo u useEffect ispod
   const [selectedRole, setSelectedRole] = useState<MemberRole>(currentRole);
   const [saving, setSaving] = useState<boolean>(false);
@@ -46,9 +48,9 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
         onSuccess();
       }
     } catch (err) {
-      console.error('Greška prilikom promjene role:', err);
+      console.error('[MemberRoleSelector] change role error:', err);
       if (onError) {
-        onError(err instanceof Error ? err.message : 'Došlo je do greške prilikom promjene role člana.');
+        onError(err instanceof Error ? err.message : t('memberRole.changeError'));
       }
     } finally {
       setSaving(false);
@@ -57,7 +59,7 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
 
   return (
     <div className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-      <h3 className="text-md font-semibold mb-3">Rola člana</h3>
+      <h3 className="text-md font-semibold mb-3">{t('memberRole.title')}</h3>
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex-grow">
           <select
@@ -66,9 +68,9 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
             className="w-full p-2 border border-gray-300 rounded-md"
             disabled={saving}
           >
-            <option value="member">Član</option>
-            <option value="member_administrator">Administrator</option>
-            <option value="member_superuser">Superuser</option>
+            <option value="member">{t('roles.member')}</option>
+            <option value="member_administrator">{t('roles.admin')}</option>
+            <option value="member_superuser">{t('roles.superuser')}</option>
           </select>
         </div>
         <div>
@@ -81,14 +83,14 @@ const MemberRoleSelector: React.FC<MemberRoleSelectorProps> = ({
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
-            {saving ? 'Spremanje...' : 'Promijeni rolu'}
+            {saving ? t('saving', { ns: 'common' }) : t('memberRole.changeRole')}
           </button>
         </div>
       </div>
       <p className="text-sm text-gray-600 mt-2">
-        <strong>Član:</strong> Standardna korisnička rola bez administratorskih ovlasti.<br />
-        <strong>Administrator:</strong> Može upravljati članovima i drugim funkcionalnostima ovisno o dodijeljenim ovlastima.<br />
-        <strong>Superuser:</strong> Ima pristup svim funkcionalnostima sustava, uključujući dodjelu rola i ovlasti.
+        <strong>{t('roles.member')}:</strong> {t('memberRole.descriptions.member')}<br />
+        <strong>{t('roles.admin')}:</strong> {t('memberRole.descriptions.admin')}<br />
+        <strong>{t('roles.superuser')}:</strong> {t('memberRole.descriptions.superuser')}
       </p>
     </div>
   );

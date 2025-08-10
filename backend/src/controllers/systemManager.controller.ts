@@ -11,6 +11,8 @@ import systemManagerRepository from '../repositories/systemManager.repository.js
 import prisma from '../utils/prisma.js';
 import { PerformerType, SystemManager } from '@prisma/client';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Temporary type definition until a full solution is implemented
 interface SystemManagerLoginData {
     username: string;
@@ -625,7 +627,7 @@ const systemManagerController = {
         res: Response
     ): Promise<void> {
         try {
-            console.log('--- USER OBJECT IN updateSystemSettings ---', req.user);
+            if (isDev) console.log('--- USER OBJECT IN updateSystemSettings ---', req.user);
 
             if (!req.user) {
                 res.status(401).json({ message: 'Unauthorized' });

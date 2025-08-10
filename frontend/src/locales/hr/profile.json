@@ -203,6 +203,41 @@
         "membershipFeeStatus": "Status članarine",
         "delete": "Izbriši"
     },
+    "membershipCard": {
+      "currentStatus": "Trenutni status",
+      "cardNumberLabel": "Broj članske iskaznice",
+      "refresh": "Osvježi",
+      "currentCardNumber": "Trenutni broj iskaznice:",
+      "notAssigned": "Nije dodijeljen",
+      "stats": {
+          "total": "Ukupno",
+          "available": "Dostupno",
+          "assigned": "Dodijeljeno"
+      },
+      "changeCardNumber": "Promijeni broj iskaznice",
+      "selectPlaceholder": "Izaberi broj",
+      "currentSuffix": "(Trenutni)",
+      "loadingNumbers": "Učitavam brojeve iskaznica...",
+      "noNumbers": "Nema dostupnih brojeva iskaznica. Dodaj ih u postavkama.",
+      "inputTitle": "Broj iskaznice mora sadržavati točno {{length}} znamenki",
+      "submit": {
+          "submitting": "Mijenjam...",
+          "change": "Promijeni broj iskaznice"
+      }
+  },
+  "stamp": {
+      "title": "Upravljanje markicama",
+      "currentYearSuffix": "tekuća godina",
+      "availableShort": "Dostupno",
+      "availableUnit": "kom",
+      "issuedLabel": "Markica izdana",
+      "notIssuedLabel": "Markica nije izdana",
+      "feeNotPaidCurrent": "Članarina za godinu {{year}} nije plaćena",
+      "nextYearSuffix": "sljedeća godina",
+      "issuedNextYear": "Markica za {{year}} dodijeljena",
+      "notIssuedNextYear": "Markica za {{year}} nije dodijeljena",
+      "feeNotPaidNext": "Članarina za {{year}} nije plaćena"
+  },
     "history": {
         "startDate": "Datum početka",
         "endDate": "Datum završetka",

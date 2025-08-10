@@ -18,7 +18,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   feePaymentDate,
   onUpdatePeriods,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['membership', 'common']);
   const {
     isEditing,
     editedPeriods,
@@ -168,7 +168,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       }}
                       className="h-7 text-xs"
                     >
-                      <Save className="w-3 h-3 mr-1" /> {t('common.save')}
+                      <Save className="w-3 h-3 mr-1" /> {t('common:save')}
                     </Button>
                     <Button
                       variant="outline"
@@ -176,7 +176,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                       onClick={() => setNewPeriod(null)}
                       className="h-7 text-xs"
                     >
-                      <X className="w-3 h-3 mr-1" /> {t('common.cancel')}
+                      <X className="w-3 h-3 mr-1" /> {t('common:cancel')}
                     </Button>
                   </div>
                 </div>

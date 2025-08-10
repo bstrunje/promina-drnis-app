@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken';
 import { SystemManager, MemberPermissions } from '@prisma/client';
 import { JWT_SECRET } from '../config/jwt.config.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface SystemSettings {
     id: string;
     cardNumberLength?: number | null;
@@ -143,7 +145,7 @@ const systemManagerService = {
                 return null;
             }
 
-            console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
+            if (isDev) console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
             
             let permissions: MemberPermissions | null = null;
             try {
@@ -154,11 +156,11 @@ const systemManagerService = {
                     }
                 });
                 
-                console.log(`[SYSTEM-MANAGER] Prisma upit uspješan za člana ${memberId}, ovlasti pronađene: ${!!permissions}`);
+                if (isDev) console.log(`[SYSTEM-MANAGER] Prisma upit uspješan za člana ${memberId}, ovlasti pronađene: ${!!permissions}`);
             } catch (prismaError) {
                 console.error(`[SYSTEM-MANAGER] Prisma greška za člana ${memberId}:`, prismaError);
                 
-               console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
+               if (isDev) console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
                 permissions = null;
             }
 
@@ -230,13 +232,13 @@ const systemManagerService = {
     ): Promise<void> {
         try {
             // Log received data for diagnostics
-            console.log('updateMemberPermissions called with:', { memberId, permissions, grantedById });
+            if (isDev) console.log('updateMemberPermissions called with:', { memberId, permissions, grantedById });
             
             // Filter and extract only the fields that exist in the database
             // According to the Prisma schema, the only permission field is 'can_manage_end_reasons'
             const can_manage_end_reasons = permissions.can_manage_end_reasons === true;
             
-            console.log('Using permission:', { can_manage_end_reasons });
+            if (isDev) console.log('Using permission:', { can_manage_end_reasons });
             
             // First, try to find existing permissions
             const existingPermissions = await prisma.memberPermissions.findUnique({
@@ -248,7 +250,7 @@ const systemManagerService = {
             const now = getCurrentDate();
             
             if (existingPermissions) {
-                console.log('Existing permissions found, updating...');
+                if (isDev) console.log('Existing permissions found, updating...');
                 // Ako ovlasti već postoje, ažuriramo ih
                 await prisma.memberPermissions.update({
                     where: {
@@ -261,9 +263,9 @@ const systemManagerService = {
                         }
                     }
                 });
-                console.log('[SYSTEM-MANAGER] Permissions updated successfully via Prisma');
+                if (isDev) console.log('[SYSTEM-MANAGER] Permissions updated successfully via Prisma');
             } else {
-                console.log('No existing permissions found, creating new entry...');
+                if (isDev) console.log('No existing permissions found, creating new entry...');
                 // Ako ovlasti ne postoje, kreiramo ih
                 await prisma.memberPermissions.create({
                     data: {
@@ -277,7 +279,7 @@ const systemManagerService = {
                         granted_at: now
                     }
                 });
-                console.log('[SYSTEM-MANAGER] Permissions created successfully via Prisma');
+                if (isDev) console.log('[SYSTEM-MANAGER] Permissions created successfully via Prisma');
             }
         } catch (error) {
             console.error('Error in updateMemberPermissions:', error);
@@ -380,7 +382,7 @@ const systemManagerService = {
                 return Array.from(memberMap.values());
             } catch (prismaError) {
                 // Ako Prisma upit za ovlasti ne uspije, vrati samo članove s posebnim ulogama
-                console.warn('Error fetching admin permissions, falling back to special role members only:', prismaError);
+                if (isDev) console.warn('Error fetching admin permissions, falling back to special role members only:', prismaError);
                 
                 // Kreiraj mapu članova iz posebnih uloga
                 const memberMap = new Map();
@@ -417,7 +419,7 @@ const systemManagerService = {
     // Dohvat članova koji nemaju admin ovlasti
     async getMembersWithoutPermissions(): Promise<Array<{ member_id: number; first_name: string; last_name: string; email: string; role: string }>> {
         try {
-            console.log('[SYSTEM-MANAGER] Dohvaćam članove koji nemaju admin ovlasti...');
+            if (isDev) console.log('[SYSTEM-MANAGER] Dohvaćam članove koji nemaju admin ovlasti...');
             
             // Dohvaćamo članove koji nemaju zapis u tablici member_permissions
             // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'member_administrator', 'member_superuser' ili 'member'
@@ -451,7 +453,7 @@ const systemManagerService = {
                 ]
             });
             
-            console.log(`[SYSTEM-MANAGER] Pronađeno ${membersWithoutPermissions.length} članova bez admin ovlasti`);
+            if (isDev) console.log(`[SYSTEM-MANAGER] Pronađeno ${membersWithoutPermissions.length} članova bez admin ovlasti`);
             return membersWithoutPermissions.map(m => ({
                 member_id: m.member_id,
                 first_name: m.first_name || '',
@@ -625,7 +627,7 @@ const systemManagerService = {
                     
                 const timeZone = data.timeZone || existingSettings.time_zone || 'Europe/Zagreb';
                 
-                console.log('Ažuriranje postavki s parametrima:', {
+                if (isDev) console.log('Ažuriranje postavki s parametrima:', {
                     cardNumberLength,
                     renewalStartMonth,
                     renewalStartDay,
@@ -634,7 +636,7 @@ const systemManagerService = {
                 });
                 
                 // OPTIMIZACIJA: Zamjena legacy $executeRaw i $queryRaw s Prisma update operacijom
-                console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za ID: ${data.id}`);
+                if (isDev) console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za ID: ${data.id}`);
                 
                 const updatedSettings = await prisma.systemSettings.update({
                     where: {
@@ -650,7 +652,7 @@ const systemManagerService = {
                     }
                 });
                 
-                console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za ID: ${updatedSettings.id}`);
+                if (isDev) console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za ID: ${updatedSettings.id}`);
                 
                 return {
                     id: updatedSettings.id,

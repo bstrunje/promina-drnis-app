@@ -58,7 +58,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onSortOrderChange,
   groupType,
   onGroupTypeChange,
-  showOnlyColored = false, // Dodana default vrijednost
+  showOnlyColored = false,
   onToggleColoredRows,
   onCloseFilters
 }) => {

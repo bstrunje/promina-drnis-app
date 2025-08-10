@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { StampManagementSectionProps } from "../types/membershipTypes";
 import { Label } from "@components/ui/label";
 import { Checkbox } from "@components/ui/checkbox";
@@ -19,6 +20,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   userRole,
 
 }) => {
+  const { t } = useTranslation('profile');
   const canEdit = userRole === 'member_administrator' || userRole === 'member_superuser';
   
   // Helper funkcija za određivanje stilova na temelju životnog statusa člana
@@ -54,25 +56,25 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between mb-2">
-        <h4 className="font-medium">Status markica:</h4>
+        <h4 className="font-medium">{t('stamp.title')}</h4>
       </div>
       
       {/* Sekcija za markice tekuće godine */}
       <div className="bg-white border rounded-md p-3 mb-3">
         <div className="flex justify-between mb-2">
-          <h5 className="font-medium text-sm">{getCurrentYear()} <span className="hidden sm:inline">(Tekuća godina)</span></h5>
+          <h5 className="font-medium text-sm">{getCurrentYear()} <span className="hidden sm:inline">{t('stamp.currentYearSuffix')}</span></h5>
           
           {/* Status inventara za tekuću godinu */}
           {inventoryStatus ? (
             <span className={`text-xs ${bg} px-2 py-1 rounded`}>
-              <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+              <span className="sm:inline">{t('stamp.availableShort')}</span><span className="hidden sm:inline"> {t('stamp.availableUnit')}</span>:{" "}
               <span className={`font-bold ${text}`}>
                 {inventoryStatus.remaining}
               </span>
             </span>
           ) : (
             <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-              <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+              <span className="sm:inline">{t('stamp.availableShort')}</span><span className="hidden sm:inline"> {t('stamp.availableUnit')}</span>:{" "}
               <span className="font-bold">
                 --
               </span>
@@ -95,7 +97,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                     (stampIssued && userRole === 'member_administrator')}
                 />
                 <Label htmlFor="stamp-checkbox" className="text-sm font-medium cursor-pointer">
-                  Markica izdana
+                  {t('stamp.issuedLabel')}
                   {isIssuingStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
                 </Label>
               </>
@@ -106,14 +108,14 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                   {stampIssued && '✓'}
                 </div>
                 <span className="text-sm font-medium">
-                  {stampIssued ? 'Markica izdana' : 'Markica nije izdana'}
+                  {stampIssued ? t('stamp.issuedLabel') : t('stamp.notIssuedLabel')}
                 </span>
               </div>
             )}
           </div>
         ) : (
           <div className="text-sm text-amber-600 italic">
-            Članarina za {getCurrentYear()} nije plaćena. Nije moguće upravljati markicom.
+            {t('stamp.feeNotPaidCurrent', { year: getCurrentYear() })}
           </div>
         )}
       </div>
@@ -124,19 +126,19 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
         ((member?.membership_details?.next_year_stamp_issued) ?? false)) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
           <div className="flex justify-between mb-2">
-            <h5 className="font-medium text-sm">{getCurrentYear() + 1} <span className="hidden sm:inline">(Sljedeća godina)</span></h5>
+            <h5 className="font-medium text-sm">{getCurrentYear() + 1} <span className="hidden sm:inline">{t('stamp.nextYearSuffix')}</span></h5>
             
             {/* Status inventara za sljedeću godinu */}
             {nextYearInventoryStatus ? (
               <span className={`text-xs ${bg} px-2 py-1 rounded`}>
-                <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+                <span className="sm:inline">{t('stamp.availableShort')}</span><span className="hidden sm:inline"> {t('stamp.availableUnit')}</span>:{" "}
                 <span className={`font-bold ${text}`}>
                   {nextYearInventoryStatus.remaining}
                 </span>
               </span>
             ) : (
               <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                <span className="sm:inline">Dostupno</span><span className="hidden sm:inline"> markica</span>:{" "}
+                <span className="sm:inline">{t('stamp.availableShort')}</span><span className="hidden sm:inline"> {t('stamp.availableUnit')}</span>:{" "}
                 <span className="font-bold">
                   --
                 </span>
@@ -162,7 +164,7 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                       (!nextYearStampIssued && nextYearInventoryStatus?.remaining === 0)}
                   />
                   <Label htmlFor="next-year-stamp-checkbox" className="text-sm font-medium cursor-pointer">
-                    Markica za {getCurrentYear() + 1} izdana
+                    {t('stamp.issuedNextYear', { year: getCurrentYear() + 1 })}
                     {isIssuingNextYearStamp && <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />}
                   </Label>
                 </>
@@ -173,14 +175,14 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
                     {nextYearStampIssued && '✓'}
                   </div>
                   <span className="text-sm font-medium">
-                    {nextYearStampIssued ? `Markica za ${getCurrentYear() + 1} izdana` : `Markica za ${getCurrentYear() + 1} nije izdana`}
+                    {nextYearStampIssued ? t('stamp.issuedNextYear', { year: getCurrentYear() + 1 }) : t('stamp.notIssuedNextYear', { year: getCurrentYear() + 1 })}
                   </span>
                 </div>
               )}
             </div>
           ) : (
             <div className="text-sm text-amber-600 italic">
-              Članarina za {getCurrentYear() + 1} nije plaćena. Nije moguće upravljati markicom.
+              {t('stamp.feeNotPaidNext', { year: getCurrentYear() + 1 })}
             </div>
           )}
         </div>

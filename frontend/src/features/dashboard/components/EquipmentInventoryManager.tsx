@@ -45,7 +45,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   member
 }) => {
   const { toast } = useToast();
-  const { t } = useTranslation('dashboards');
+  const { t } = useTranslation(['dashboards', 'common']);
   // Referenca na member prop kako bismo zadržali postojeći API bez lint upozorenja o nekorištenoj varijabli
   void member;
   const [inventory, setInventory] = useState<EquipmentInventoryItem[]>([]);
@@ -593,7 +593,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                 {t("equipmentInventory.modal.cancel")}
               </Button>
               <Button onClick={() => void handleSaveModal()} disabled={isLoading}>
-                {isLoading ? t("common.saving") : t("equipmentInventory.modal.save")}
+                {isLoading ? t("common:saving") : t("equipmentInventory.modal.save")}
               </Button>
             </div>
           </div>

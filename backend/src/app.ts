@@ -39,6 +39,9 @@ import skillRoutes from './routes/skillRoutes.js';
 
 
 
+// Dev flag za kontrolu verbose logiranja
+const isDev = process.env.NODE_ENV === 'development';
+
 // U produkciji nije potrebno koristiti testModeMiddleware
 // U razvoju ga uvjetno uključujemo zbog simulacije testnog načina rada
 let testModeMiddleware: ((req: Request, res: Response, next: NextFunction) => void) | undefined = undefined;
@@ -55,14 +58,15 @@ if (process.env.NODE_ENV !== 'production') {
     };
     const mod = (await import('./middleware/test-mode.middleware.js')) as MiddlewareModule;
     // Logiramo rezultat importa za lakši debug u developmentu
-    if (process.env.NODE_ENV === 'development') {
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
       console.log('test-mode.middleware.js dynamic import result:', mod);
     }
     // Fallback: koristi named export, a ako ne postoji koristi default.testModeMiddleware
     testModeMiddleware = mod.testModeMiddleware || mod.default?.testModeMiddleware;
     if (typeof testModeMiddleware === 'function') {
       app.use(testModeMiddleware);
-    } else if (process.env.NODE_ENV === 'development') {
+    } else if (isDev) {
       console.warn('testModeMiddleware nije pronađen ni kao named ni kao default export.');
     }
   })();
@@ -91,7 +95,7 @@ const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'product
   ? '/app/uploads' // Fallback for legacy or non-disk setups
   : path.resolve(__dirname, '..', 'uploads'));
   
-console.log(`Serving static files from: ${uploadsDir}`);
+if (isDev) console.log(`Serving static files from: ${uploadsDir}`);
 
 // Replace the static file middleware with a more comprehensive version
 app.use('/uploads', (req, res, next) => {
@@ -102,7 +106,7 @@ app.use('/uploads', (req, res, next) => {
   res.header("Cross-Origin-Resource-Policy", "cross-origin");
   
   // Log CORS headers for debugging
-  console.log(`[CORS] Setting headers for ${req.url}`);
+  if (isDev) console.log(`[CORS] Setting headers for ${req.url}`);
   
   // Handle OPTIONS preflight request
   if (req.method === 'OPTIONS') {
@@ -115,12 +119,12 @@ app.use('/uploads', (req, res, next) => {
 // The rest of the static file middleware can remain the same
 app.use('/uploads', async (req, res, next) => {
   const fullPath = path.join(uploadsDir, req.url.split('?')[0]); // Remove query parameters
-  console.log(`Static file request: ${req.method} ${req.url}`);
-  console.log(`Looking for file at: ${fullPath}`);
+  if (isDev) console.log(`Static file request: ${req.method} ${req.url}`);
+  if (isDev) console.log(`Looking for file at: ${fullPath}`);
   
   try {
     await fs.access(fullPath, fs.constants.F_OK);
-    console.log(`File exists: ${fullPath}`);
+    if (isDev) console.log(`File exists: ${fullPath}`);
     next();
   } catch (err) {
     console.error(`File not found: ${fullPath}`, err);
@@ -147,10 +151,10 @@ const corsOptions = {
       origin.match(/https:\/\/promina-drnis.*\.vercel\.app/) ||
       origin.endsWith('vercel.app')
     ) {
-      console.log(`Origin ${origin} allowed by CORS`);
+      if (isDev) console.log(`Origin ${origin} allowed by CORS`);
       callback(null, true);
     } else {
-      console.log(`Origin ${origin} not allowed by CORS`);
+      if (isDev) console.log(`Origin ${origin} not allowed by CORS`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -201,7 +205,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     timeZone: 'Europe/Zagreb',
     hour12: false 
   });
-  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  if (isDev) console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
 });
 
@@ -259,8 +263,8 @@ app.get('/', (req: Request, res: Response) => {
 
 // Debug middleware za /api/messages
 app.use('/api/messages', (req, res, next) => {
-  console.log(`🔍 [DEBUG] Messages route: ${req.method} ${req.path}`);
-  console.log(`🔍 [DEBUG] Full URL: ${req.originalUrl}`);
+  if (isDev) console.log(`🔍 [DEBUG] Messages route: ${req.method} ${req.path}`);
+  if (isDev) console.log(`🔍 [DEBUG] Full URL: ${req.originalUrl}`);
   next();
 });
 
@@ -269,7 +273,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/system-manager', systemManagerRoutes);
 app.use('/api/skills', skillRoutes);
 
-console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
+if (isDev) console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
 app.use('/api/audit', authMiddleware, auditRoutes);
@@ -326,7 +330,7 @@ app.use((_err: Error, req: Request, res: Response, _next: NextFunction) => {
 // Initialize scheduled tasks in production
 if (process.env.NODE_ENV === 'production') {
   initScheduledTasks();
-  console.log('Scheduled tasks initialized for production environment.');
+  if (isDev) console.log('Scheduled tasks initialized for production environment.');
 }
 
 export default app;

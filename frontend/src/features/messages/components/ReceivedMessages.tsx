@@ -29,7 +29,7 @@ interface ReceivedMessagesProps {
 }
 
 export default function ReceivedMessages({ userRole, onUnreadCountChange }: ReceivedMessagesProps) {
-  const { t } = useTranslation('messages');
+  const { t } = useTranslation(['messages', 'common']);
   const { toast } = useToast();
   const { user } = useAuthHook();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -64,7 +64,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       }
       if (isRetryFlagTrue) {
         toast({
-          title: t('common.error'),
+          title: t('common:error'),
           description: error instanceof Error ? error.message : t('receivedMessages.messages.fetchError'),
           variant: "destructive"
         });
@@ -98,13 +98,13 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       onUnreadCountChange(updatedUnreadCount);
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('receivedMessages.messages.markAsReadSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('receivedMessages.messages.markAsReadError'),
         variant: "destructive"
       });
@@ -133,13 +133,13 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       }
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('receivedMessages.messages.archiveSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('receivedMessages.messages.archiveError'),
         variant: "destructive"
       });
@@ -168,13 +168,13 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       );
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('receivedMessages.messages.deleteSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('receivedMessages.messages.deleteError'),
         variant: "destructive"
       });
@@ -197,13 +197,13 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
       onUnreadCountChange(0);
 
       toast({
-        title: t('common.success'),
+        title: t('common:success'),
         description: t('receivedMessages.messages.deleteAllSuccess'),
         variant: "success"
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('common:error'),
         description: error instanceof Error ? error.message : t('receivedMessages.messages.deleteAllError'),
         variant: "destructive"
       });

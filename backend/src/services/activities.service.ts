@@ -7,6 +7,7 @@ import { differenceInMinutes } from 'date-fns';
 import { updateAnnualStatistics } from './statistics.service.js';
 
 // Tip za Prisma transakcijski klijent
+const isDev = process.env.NODE_ENV === 'development';
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 // DTO tipovi za ulazne podatke (precizno umjesto any)
@@ -81,7 +82,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
 
   // Koristimo recognition_percentage iz zahtjeva ako je dostupan, inače default 100
   const recognitionValue = recognition_percentage !== undefined ? recognition_percentage : 100;
-  console.log('Recognition value being set:', recognitionValue); // Logging za debug
+  if (isDev) console.log('Recognition value being set:', recognitionValue); // Logging za debug
 
   let participantsData;
   let memberIdsForUpdate: number[] = [];
@@ -558,8 +559,8 @@ export const updateParticipationService = async (
   data: Prisma.ActivityParticipationUncheckedUpdateInput
 ) => {
   // DEBUG: Dodano logiranje za debugiranje start_time problema
-  console.log('DEBUG: Primljeni payload za update participacije:', JSON.stringify(data, null, 2));
-  console.log('DEBUG: Tip start_time:', typeof data.start_time, data.start_time);
+  if (isDev) console.log('DEBUG: Primljeni payload za update participacije:', JSON.stringify(data, null, 2));
+  if (isDev) console.log('DEBUG: Tip start_time:', typeof data.start_time, data.start_time);
   // Ovdje se može dodati provjera da li zapis o sudjelovanju postoji
   const { member_id, start_time, end_time, ...restUpdateData } = data;
   
@@ -578,11 +579,11 @@ export const updateParticipationService = async (
   // Pretvaranje start_time i end_time u Date objekte ako su prisutni
   
   // DEBUG: Detaljno logiranje recognition_override
-  console.log('DEBUG: restUpdateData:', restUpdateData);
-  console.log('DEBUG: restUpdateData.recognition_override:', restUpdateData.recognition_override);
-  console.log('DEBUG: Tip restUpdateData.recognition_override:', typeof restUpdateData.recognition_override);
-  console.log('DEBUG: data.recognition_override:', data.recognition_override);
-  console.log('DEBUG: Tip data.recognition_override:', typeof data.recognition_override);
+  if (isDev) console.log('DEBUG: restUpdateData:', restUpdateData);
+  if (isDev) console.log('DEBUG: restUpdateData.recognition_override:', restUpdateData.recognition_override);
+  if (isDev) console.log('DEBUG: Tip restUpdateData.recognition_override:', typeof restUpdateData.recognition_override);
+  if (isDev) console.log('DEBUG: data.recognition_override:', data.recognition_override);
+  if (isDev) console.log('DEBUG: Tip data.recognition_override:', typeof data.recognition_override);
   
   const processedUpdateData: Prisma.ActivityParticipationUncheckedUpdateInput = {
     ...restUpdateData,

@@ -28,7 +28,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
   setShowHistory
 }) => {
   const { toast } = useToast();
-  const { t } = useTranslation('dashboards');
+  const { t } = useTranslation(['dashboards', 'common']);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
   const [inventory, setInventory] = useState<StampInventory>({});
@@ -124,7 +124,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       }
     } catch (error) {
       toast({
-        title: t("common.error"),
+        title: t("common:error"),
         description:
           error instanceof Error ? error.message : t("stampInventory.fetchInventoryError"),
         variant: "destructive",
@@ -140,7 +140,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       setStampHistory(data as StampHistoryItem[]);
     } catch (error) {
       toast({
-        title: t("common.error"),
+        title: t("common:error"),
         description:
           error instanceof Error ? error.message : t("stampInventory.fetchHistoryError"),
         variant: "destructive",
@@ -157,7 +157,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       const result = await archiveStampInventory(year, notes, force) as ArchiveResult;
       
       toast({
-        title: t("common.success"),
+        title: t("common:success"),
         description: result.message ?? t("stampInventory.archiveSuccess"),
       });
       
@@ -171,7 +171,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       setShowArchiveDialog(false);
     } catch (error) {
       toast({
-        title: t("common.error"),
+        title: t("common:error"),
         description:
           error instanceof Error ? error.message : t("stampInventory.archiveError"),
         variant: "destructive",
@@ -201,7 +201,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       
       // Prikaži povratnu informaciju da je spremanje u tijeku
       toast({
-        title: t("common.saving"),
+        title: t("common:saving"),
         description: t("stampInventory.updatingInventory"),
         duration: 2000,
       });
@@ -227,7 +227,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       
       // Prikaži jasnu povratnu informaciju o uspjehu
       toast({
-        title: t("common.success"),
+        title: t("common:success"),
         description: t("stampInventory.inventoryUpdated", { year: selectedYear }),
         variant: "success",
         duration: 3000,
@@ -240,7 +240,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       
       // Prikaži detaljnu povratnu informaciju o grešci
       toast({
-        title: t("common.error"),
+        title: t("common:error"),
         description:
           error instanceof Error ? error.message : t("stampInventory.updateInventoryFailed"),
         variant: "destructive",

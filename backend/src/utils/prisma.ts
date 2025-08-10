@@ -3,11 +3,13 @@ import { PrismaClient } from '@prisma/client';
 // Global Prisma instance za serverless okruženje
 let prisma: PrismaClient;
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Optimizirana Prisma konfiguracija za Vercel serverless okruženje s connection pooling
 if (process.env.VERCEL) {
-  console.log('[PRISMA] Inicijalizacija za Vercel serverless okruženje');
-  console.log('[PRISMA] DATABASE_URL postoji:', !!process.env.DATABASE_URL);
-  console.log('[PRISMA] DATABASE_URL duljina:', process.env.DATABASE_URL?.length || 0);
+  if (isDev) console.log('[PRISMA] Inicijalizacija za Vercel serverless okruženje');
+  if (isDev) console.log('[PRISMA] DATABASE_URL postoji:', !!process.env.DATABASE_URL);
+  if (isDev) console.log('[PRISMA] DATABASE_URL duljina:', process.env.DATABASE_URL?.length || 0);
   
   // KRITIČNA OPTIMIZACIJA: Connection pooling za serverless
   const connectionString = process.env.DATABASE_URL;
@@ -15,7 +17,7 @@ if (process.env.VERCEL) {
     ? `${connectionString}&connection_limit=5&pool_timeout=60&pgbouncer=true`
     : `${connectionString}?connection_limit=5&pool_timeout=60&pgbouncer=true`;
   
-  console.log('[PRISMA] Koristi connection pooling za serverless');
+  if (isDev) console.log('[PRISMA] Koristi connection pooling za serverless');
   
   // Vercel serverless optimizacije s connection pooling
   prisma = new PrismaClient({
@@ -51,10 +53,10 @@ process.on('beforeExit', async () => {
 export const testDatabaseConnection = async () => {
   const startTime = Date.now();
   try {
-    console.log('[PRISMA] Testiranje konekcije prema bazi...');
+    if (isDev) console.log('[PRISMA] Testiranje konekcije prema bazi...');
     await prisma.$queryRaw`SELECT 1 as test`;
     const duration = Date.now() - startTime;
-    console.log(`[PRISMA] Konekcija uspješna - ${duration}ms`);
+    if (isDev) console.log(`[PRISMA] Konekcija uspješna - ${duration}ms`);
     return true;
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -69,7 +71,7 @@ export const warmUpPrisma = async () => {
     try {
       const connected = await testDatabaseConnection();
       if (connected) {
-        console.log('[PRISMA] Warm-up uspješan');
+        if (isDev) console.log('[PRISMA] Warm-up uspješan');
       } else {
         console.error('[PRISMA] Warm-up neuspješan - nema konekcije');
       }

@@ -45,7 +45,7 @@ const getRoleNameByPercentage = (percentage: number, t: TFunction): string | nul
 
 
 const ActivityDetailPage: React.FC = () => {
-  const { t } = useTranslation('activities');
+  const { t } = useTranslation(['activities', 'common']);
   const { activityId } = useParams<{ activityId: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ const ActivityDetailPage: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="text-center p-4">{t('common.loading')}</div>;
+  if (loading) return <div className="text-center p-4">{t('common:loading')}</div>;
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">{t('activityDetail.notFound')}</div>;
 
@@ -198,7 +198,7 @@ const ActivityDetailPage: React.FC = () => {
             // Ako nemamo parametar godine, standardni povratak na kategoriju
             <Link to={activity.type_id ? `/activities/category/${activity.type_id}` : "/activities"}>
               <ArrowLeft className="mr-2 h-4 w-4" /> 
-              {activity.type_id ? t('activityDetail.backToCategory') : t('common.back')}
+              {activity.type_id ? t('activityDetail.backToCategory') : t('common:back')}
             </Link>
           )}
         </Button>
@@ -378,7 +378,7 @@ const ActivityDetailPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsCancelModalOpen(false)}>
-              {t('common.cancel')}
+              {t('common:cancel')}
             </Button>
             <Button variant="destructive" onClick={() => { void handleCancelConfirm(); }} disabled={!cancellationReason.trim()}>
               {t('activityDetail.confirmCancellation')}

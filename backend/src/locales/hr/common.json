@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "unexpected": "Došlo je do neočekivane pogreške",
+    "notFound": "Resurs nije pronađen",
+    "unauthorized": "Neautorizirano",
+    "forbidden": "Zabranjen pristup",
+    "badRequest": "Neispravan zahtjev",
+    "validationFailed": "Validacija nije uspjela"
+  }
+}

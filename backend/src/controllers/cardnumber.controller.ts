@@ -7,13 +7,15 @@ import bcrypt from 'bcrypt';
 import membershipService from '../services/membership.service.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const cardNumberController = {
   // Get all available card numbers
   async getAvailable(req: Request, res: Response): Promise<void> {
-    console.log("Fetching available card numbers - user role:", req.user?.role);
+    if (isDev) console.log("Fetching available card numbers - user role:", req.user?.role);
     try {
       const availableNumbers = await cardNumberRepository.getAvailable();
-      console.log(`Found ${availableNumbers.length} available card numbers:`, availableNumbers);
+      if (isDev) console.log(`Found ${availableNumbers.length} available card numbers:`, availableNumbers);
       
       // Always return an array
       res.json(availableNumbers || []);
@@ -157,7 +159,7 @@ const cardNumberController = {
 
   // Add this method to the controller
   async getAllCardNumbers(req: Request, res: Response): Promise<void> {
-    console.log("Fetching all card numbers - user role:", req.user?.role);
+    if (isDev) console.log("Fetching all card numbers - user role:", req.user?.role);
     try {
       const allCardNumbers = await cardNumberRepository.getAllCardNumbers();
       
@@ -166,7 +168,7 @@ const cardNumberController = {
       const assigned = allCardNumbers.filter(card => card.status === 'assigned').length;
       const total = allCardNumbers.length;
       
-      console.log(`Found ${total} card numbers (${available} available, ${assigned} assigned)`);
+      if (isDev) console.log(`Found ${total} card numbers (${available} available, ${assigned} assigned)`);
       
       res.json({
         cards: allCardNumbers,
@@ -194,7 +196,7 @@ const cardNumberController = {
         return;
       }
 
-      console.log("Starting card number status synchronization...");
+      if (isDev) console.log("Starting card number status synchronization...");
       
       // Pozovi metodu u repozitoriju koja će sinkronizirati statuse
       const result = await cardNumberRepository.syncCardNumberStatus();

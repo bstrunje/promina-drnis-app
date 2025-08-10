@@ -4,6 +4,8 @@ import auditService from "./audit.service.js";
 import { DatabaseError } from "../utils/errors.js";
 import { PerformerType } from '@prisma/client';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Helper funkcije izdvojene izvan objekta kako bi se izbjegla self-referential tipizacija
 function getGenderFromMember(memberGender: string | undefined): 'male' | 'female' {
     if (!memberGender) {
@@ -190,7 +192,7 @@ const equipmentService = {
                 performerType
             );
 
-            console.log(`Equipment delivered: ${equipmentType} to member ${memberId}`);
+            if (isDev) console.log(`Equipment delivered: ${equipmentType} to member ${memberId}`);
         } catch (error) {
             throw new DatabaseError(
                 "Error marking equipment as delivered: " +
@@ -254,7 +256,7 @@ const equipmentService = {
                 performerType
             );
 
-            console.log(`Equipment returned: ${equipmentType} from member ${memberId}`);
+            if (isDev) console.log(`Equipment returned: ${equipmentType} from member ${memberId}`);
         } catch (error) {
             throw new DatabaseError(
                 "Error unmarking equipment as delivered: " +
@@ -311,7 +313,7 @@ const equipmentService = {
                 performerType
             );
 
-            console.log(`Equipment gifted: ${equipmentType} (${size}, ${gender})`);
+            if (isDev) console.log(`Equipment gifted: ${equipmentType} (${size}, ${gender})`);
         } catch (error) {
             throw new DatabaseError(
                 "Error issuing equipment as gift: " +
@@ -367,7 +369,7 @@ const equipmentService = {
                 performerType
             );
 
-            console.log(`Equipment gift returned: ${equipmentType} (${size}, ${gender})`);
+            if (isDev) console.log(`Equipment gift returned: ${equipmentType} (${size}, ${gender})`);
         } catch (error) {
             throw new DatabaseError(
                 "Error returning gifted equipment: " +
