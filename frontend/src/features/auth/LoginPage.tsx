@@ -201,7 +201,7 @@ const LoginPage = () => {
           localized = translated && translated !== key ? translated : '';
         }
         if (!localized) {
-          localized = errorData.message || t('errors.GENERIC');
+          localized = errorData.message ?? t('errors.GENERIC');
         }
         setError(localized);
       } else if (error instanceof Error) {
