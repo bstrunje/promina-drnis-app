@@ -10,7 +10,7 @@ import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
 // import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
 import { getCurrentDate, getCurrentYear, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
-import { parseISO, isValid, isBefore } from "date-fns";
+import { parse, parseISO, isValid, isBefore, format } from "date-fns";
 import { useTranslation } from "react-i18next";
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -272,8 +272,31 @@ setEditedMember(memberData);
     updatedPeriods: MembershipPeriod[]
   ) => {
     try {
+      // Normalizacija datuma prije slanja backendu (sigurnosni korak)
+      const toIsoMidnight = (dateStr: string): string => {
+        try {
+          if (!dateStr) return dateStr;
+          let d: Date;
+          if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+            d = parse(dateStr, "dd.MM.yyyy", new Date());
+          } else {
+            d = parseISO(dateStr);
+          }
+          if (!isValid(d)) return dateStr;
+          return format(d, "yyyy-MM-dd'T'00:00:00.000'Z'");
+        } catch {
+          return dateStr;
+        }
+      };
+
+      const normalized = updatedPeriods.map(p => ({
+        ...p,
+        start_date: typeof p.start_date === 'string' ? toIsoMidnight(p.start_date) : p.start_date,
+        end_date: p.end_date ? (typeof p.end_date === 'string' ? toIsoMidnight(p.end_date) : p.end_date) : null,
+      }));
+
       await api.put(`/members/${memberId}/membership-history`, {
-        periods: updatedPeriods,
+        periods: normalized,
         updateMemberStatus: true // Zahtjev backendu da ažurira status člana na temelju perioda
       });
 

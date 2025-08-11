@@ -45,6 +45,27 @@ export const useMembershipPeriods = (
   const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>(periods ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPeriod, setNewPeriod] = useState<Partial<MembershipPeriod> | null>(null);
+  
+  // Pomoćna funkcija: normalizira različite ulazne formate datuma na ISO-8601 (UTC ponoć)
+  // Prihvaća: "dd.MM.yyyy", "yyyy-MM-dd" ili već ISO string i vraća "yyyy-MM-dd'T'00:00:00.000'Z'"
+  const toIsoMidnight = (dateStr: string): string => {
+    try {
+      if (!dateStr) return dateStr;
+      let d: Date;
+      // dd.MM.yyyy
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+        d = parse(dateStr, "dd.MM.yyyy", getCurrentDate());
+      } else {
+        // parseISO pokriva i "yyyy-MM-dd" i već ISO stringove
+        d = parseISO(dateStr);
+      }
+      if (!isValid(d)) return dateStr;
+      return format(d, "yyyy-MM-dd'T'00:00:00.000'Z'");
+    } catch {
+      // Ako dođe do greške, vrati original (backend će validirati)
+      return dateStr;
+    }
+  };
   // adminPermissions tipiziran prema očekivanom obliku s can_manage_end_reasons
 interface MemberPermissions {
   can_manage_end_reasons: boolean;
@@ -158,7 +179,14 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
     if (!onUpdate) return;
     setIsSubmitting(true);
     try {
-      await onUpdate(editedPeriods);
+      // Normalizacija datuma prije slanja backendu
+      const normalized = editedPeriods.map(p => ({
+        ...p,
+        start_date: typeof p.start_date === 'string' ? toIsoMidnight(p.start_date) : p.start_date,
+        // U hooku koristimo undefined umjesto null radi TS tipova; API sloj kasnije pretvara u null
+        end_date: p.end_date ? (typeof p.end_date === 'string' ? toIsoMidnight(p.end_date) : p.end_date) : undefined,
+      }));
+      await onUpdate(normalized);
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update periods:", error);
@@ -221,7 +249,7 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
           return;
         }
         if (periodToUpdate.end_date && typeof periodToUpdate.end_date === 'string') {
-          const endDate = parse(periodToUpdate.end_date, "dd.MM.yyyy", getCurrentDate());
+          const endDate = parseISO(periodToUpdate.end_date);
           if (isAfter(date, endDate)) {
             toast({
               title: "Greška",
@@ -233,7 +261,7 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
         }
       } else if (field === "end_date") {
         if (typeof periodToUpdate.start_date === 'string') {
-          const startDate = parse(periodToUpdate.start_date, "dd.MM.yyyy", getCurrentDate());
+          const startDate = parseISO(periodToUpdate.start_date);
           if (isBefore(date, startDate)) {
             toast({
               title: "Greška", 
@@ -253,8 +281,8 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
         }
       }
       
-      // Konvertiraj u ISO format za spremanje u bazi, ali prikaži u HR formatu
-      const isoDate = format(date, "yyyy-MM-dd");
+      // Konvertiraj u ISO format s UTC ponoć za spremanje u bazi (RFC3339)
+      const isoDate = format(date, "yyyy-MM-dd'T'00:00:00.000'Z'");
       
       const periodIndex = updatedPeriods.findIndex(
         p => p.period_id === periodId
@@ -301,8 +329,8 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
           return;
         }
         
-        // Konvertiraj u ISO format za spremanje
-        const isoDate = format(date, "yyyy-MM-dd");
+        // Konvertiraj u ISO format s UTC ponoć za spremanje (RFC3339)
+        const isoDate = format(date, "yyyy-MM-dd'T'00:00:00.000'Z'");
         
         setNewPeriod(prev => prev ? {
           ...prev,
@@ -314,7 +342,7 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
           if (!prev) return null;
           
           // Ako brišemo end_date, brišemo i end_reason
-          const updates: Partial<MembershipPeriod> = { [field]: null };
+          const updates: Partial<MembershipPeriod> = { [field]: undefined };
           if (field === 'end_date') {
             updates.end_reason = undefined;
           }
@@ -333,10 +361,10 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
 
   const handleAddPeriod = () => {
     const today = getCurrentDate();
-    const formattedDate = format(today, 'yyyy-MM-dd');
+    const formattedIso = toIsoMidnight(format(today, "yyyy-MM-dd"));
     
     setNewPeriod({
-      start_date: formattedDate,
+      start_date: formattedIso,
       end_date: undefined,
       end_reason: undefined,
     });
@@ -400,13 +428,14 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
         }
       }
 
+      // Normalizacija unosa prije dodavanja u stanje
       const updatedPeriods = [
         ...editedPeriods,
         {
-          period_id: Math.floor(Math.random() * -1000),
+          period_id: Date.now(), // privremeni lokalni ID
           member_id: editedPeriods.length > 0 ? editedPeriods[0]?.member_id : memberId,
-          start_date: newPeriod.start_date, // Već je u ISO formatu
-          end_date: newPeriod.end_date ?? null, // Eksplicitno postavljanje na null
+          start_date: typeof newPeriod.start_date === 'string' ? toIsoMidnight(newPeriod.start_date) : newPeriod.start_date,
+          end_date: newPeriod.end_date ? (typeof newPeriod.end_date === 'string' ? toIsoMidnight(newPeriod.end_date) : newPeriod.end_date) : undefined,
           end_reason: newPeriod.end_reason,
         } as MembershipPeriod,
       ];

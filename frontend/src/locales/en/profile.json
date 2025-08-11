@@ -246,13 +246,7 @@
         "delete": "Delete",
         "addNewPeriod": "Add New Period",
         "addPeriod": "Add Period",
-        "noHistory": "No membership history available",
-        "reasons": {
-            "withdrawal": "Withdrawal",
-            "non_payment": "Non-payment of membership fee",
-            "expulsion": "Expulsion",
-            "death": "Death"
-        }
+        "noHistory": "No membership history available"
     },
     "membershipDetailsCard": {
         "title": "Membership Details",

@@ -170,14 +170,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         // Prikaži odgovarajuću toast poruku o plaćanju u studenom/prosincu
         if (isNewMember) {
           toast({
-            title: t('common:info'),
-            description: t('feeSection.newMemberNovDecPayment'),
+            title: t('feeSection.info'),
+            description: t('feeSection.newMemberPaymentInfo'),
             variant: "default"
           });
         } else {
           toast({
-            title: t('common:info'),
-            description: t('feeSection.novDecPaymentNextYear'),
+            title: t('feeSection.info'),
+            description: t('feeSection.nextYearPaymentInfo'),
             variant: "default"
           });
         }
@@ -256,14 +256,14 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         
         if (!isNewMember) {
           toast({
-            title: t('common:info'),
-            description: t('feeSection.novDecPaymentNextYear'),
+            title: t('feeSection.info'),
+            description: t('feeSection.nextYearPaymentInfo'),
             variant: "default"
           });
         } else {
           toast({
-            title: t('common:info'),
-            description: t('feeSection.newMemberNovDecPayment'),
+            title: t('feeSection.info'),
+            description: t('feeSection.newMemberPaymentInfo'),
             variant: "default"
           });
         }
@@ -487,7 +487,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                     </div>
                     {detailedMembershipStatus.reason &&
                       finalMembershipStatus !== 'registered' &&
-                      !(finalMembershipStatus === 'inactive' && [t('history.reasons.expulsion'), t('history.reasons.death'), t('history.reasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
+                      !(finalMembershipStatus === 'inactive' && [t('feeSection.endReasons.expulsion'), t('feeSection.endReasons.death'), t('feeSection.endReasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
                         <p className="text-sm text-gray-700 mt-1">
                           {detailedMembershipStatus.reason}
                         </p>
@@ -559,8 +559,8 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                           : 'bg-amber-600 text-white'
                       }`}>
                         {isNewMemberPayment
-                          ? t('feeSection.newMemberNovDecPayment')
-                          : t('feeSection.novDecPaymentNextYear')}
+                          ? t('feeSection.newMemberPaymentInfo')
+                          : t('feeSection.nextYearPaymentInfo')}
                       </div>
                     )}
 
@@ -703,7 +703,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                   <option value="">{t('history.selectReason')}</option>
                                   {endReasonOptions.map(reason => (
                                     <option key={reason} value={reason}>
-                                      {t(`memberProfile.history.reasons.${reason}`)}
+                                      {t(`feeSection.endReasons.${reason}`)}
                                     </option>
                                   ))}
                                 </select>
@@ -749,7 +749,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                                 <option value="">{t('history.selectReason')}</option>
                                 {endReasonOptions.map(reason => (
                                   <option key={reason} value={reason}>
-                                    {t(`memberProfile.history.reasons.${reason}`)}
+                                    {t(`feeSection.endReasons.${reason}`)}
                                   </option>
                                 ))}
                               </select>

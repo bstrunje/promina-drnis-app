@@ -246,13 +246,7 @@
         "delete": "Izbriši",
         "addNewPeriod": "Dodaj novi period",
         "addPeriod": "Dodaj period",
-        "noHistory": "Nema dostupne povijesti članstva",
-        "reasons": {
-            "withdrawal": "Istupanje",
-            "non_payment": "Neplaćanje članarine",
-            "expulsion": "Isključenje",
-            "death": "Smrt"
-        }
+        "noHistory": "Nema dostupne povijesti članstva"
     },
     "membershipDetailsCard": {
         "title": "Detalji članstva",

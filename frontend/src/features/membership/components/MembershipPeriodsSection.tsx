@@ -18,7 +18,8 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
   feePaymentDate,
   onUpdatePeriods,
 }) => {
-  const { t } = useTranslation(['membership', 'common']);
+  // Dodajemo 'profile' namespace za lokalizaciju povijesti i razloga završetka
+  const { t } = useTranslation(['membership', 'common', 'profile']);
   const {
     isEditing,
     editedPeriods,
@@ -45,18 +46,6 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
     onUpdatePeriods
   );
 
-  if (!periods || periods.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Povijest članstva</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Nema podataka o povijesti članstva.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -64,7 +53,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Povijest članstva
+            {t('profile:feeSection.membershipHistory', { defaultValue: 'Povijest članstva' })}
           </CardTitle>
           {canEdit && !isEditing && (
             <Button
@@ -221,7 +210,7 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                   </div>
                   {newPeriod.end_date && (
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
+                      <label className="block text-xs text-gray-500 mb-1">{t('profile:history.endReason', { defaultValue: 'Razlog završetka' })}</label>
                       <select
                         // Zamijenjeno || s ?? zbog ESLint pravila
                         value={newPeriod.end_reason ?? ""}
@@ -233,11 +222,11 @@ const MembershipPeriodsSection: React.FC<MembershipPeriodsSectionProps> = ({
                         }
                         className="w-full p-2 border rounded"
                       >
-                        <option value="">Nije specificirano</option>
-                        <option value="withdrawal">Istupanje</option>
-                        <option value="non_payment">Neplaćanje članarine</option>
-                        <option value="expulsion">Isključenje</option>
-                        <option value="death">Smrt</option>
+                        <option value="">{t('profile:membershipDetails.notSet', { defaultValue: 'Nije specificirano' })}</option>
+                        <option value="withdrawal">{t('profile:feeSection.endReasons.withdrawal', { defaultValue: 'Istupanje' })}</option>
+                        <option value="non_payment">{t('profile:feeSection.endReasons.non_payment', { defaultValue: 'Neplaćanje članarine' })}</option>
+                        <option value="expulsion">{t('profile:feeSection.endReasons.expulsion', { defaultValue: 'Isključenje' })}</option>
+                        <option value="death">{t('profile:feeSection.endReasons.death', { defaultValue: 'Smrt' })}</option>
                       </select>
                     </div>
                   )}

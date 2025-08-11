@@ -2,18 +2,20 @@ import React from "react";
 import { Input } from "@components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { formatDate } from "../../../utils/dateUtils";
+import { useTranslation } from 'react-i18next';
 
 import { PeriodFormRowProps } from '../types/membershipTypes';
 
 const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
   period,
-  index,
   isEditing,
   canSeeEndReason,
   canManageEndReasons,
   onPeriodChange,
   onEndReasonChange
 }) => {
+  // Lokalizacija (koristimo profile namespace)
+  const { t } = useTranslation('profile');
   if (isEditing) {
     return (
       <div className="space-y-2">
@@ -26,7 +28,7 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
             value={formatDate(String(period.start_date))}
             onChange={(e) =>
               onPeriodChange(
-                index,
+                period.period_id,
                 "start_date",
                 e.target.value
               )
@@ -43,7 +45,7 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
             value={period.end_date ? formatDate(String(period.end_date)) : ""}
             onChange={(e) =>
               onPeriodChange(
-                index,
+                period.period_id,
                 "end_date",
                 e.target.value
               )
@@ -53,24 +55,24 @@ const PeriodFormRow: React.FC<PeriodFormRowProps> = ({
         </div>
         {canManageEndReasons && (
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Razlog završetka</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('history.endReason')}</label>
             <Select
               // Zamijenjeno || s ?? zbog ESLint pravila
 value={period.end_reason ?? ""}
               // Zamijenjeno || s ?? zbog ESLint pravila
 onValueChange={(value) => 
-  onPeriodChange(index, "end_reason", value)
+  onPeriodChange(period.period_id, "end_reason", value)
 }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberite razlog završetka" />
+                <SelectValue placeholder={t('history.selectReason')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nije specificirano</SelectItem>
-                <SelectItem value="withdrawal">Istupanje</SelectItem>
-                <SelectItem value="non_payment">Neplaćanje članarine</SelectItem>
-                <SelectItem value="expulsion">Isključenje</SelectItem>
-                <SelectItem value="death">Smrt</SelectItem>
+                <SelectItem value="">{t('membershipDetails.notSet')}</SelectItem>
+                <SelectItem value="withdrawal">{t('feeSection.endReasons.withdrawal')}</SelectItem>
+                <SelectItem value="non_payment">{t('feeSection.endReasons.non_payment')}</SelectItem>
+                <SelectItem value="expulsion">{t('feeSection.endReasons.expulsion')}</SelectItem>
+                <SelectItem value="death">{t('feeSection.endReasons.death')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -98,13 +100,9 @@ onValueChange={(value) =>
         {/* Prikaz razloga završetka samo ako postoji i korisnik ima pravo vidjeti */}
         {canSeeEndReason && period.end_reason && (
           <div className="text-xs text-gray-600 mt-1 flex justify-between items-center">
-            <span>Razlog završetka: 
+            <span>{t('history.endReason')}: 
               <span className="ml-1 font-medium">
-                {period.end_reason === "withdrawal" && "Istupanje"}
-                {period.end_reason === "non_payment" && "Neplaćanje članarine"}
-                {period.end_reason === "expulsion" && "Isključenje"}
-                {period.end_reason === "death" && "Smrt"}
-                {period.end_reason && !["withdrawal", "non_payment", "expulsion", "death"].includes(period.end_reason) && period.end_reason}
+                {t(`feeSection.endReasons.${period.end_reason}` as const, { defaultValue: period.end_reason })}
               </span>
             </span>
             
@@ -125,14 +123,14 @@ onValueChange={(value) => {
 }}
                 >
                   <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Odaberi razlog" />
+                    <SelectValue placeholder={t('history.selectReason')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nije specificirano</SelectItem>
-                    <SelectItem value="withdrawal">Istupanje</SelectItem>
-                    <SelectItem value="non_payment">Neplaćanje članarine</SelectItem>
-                    <SelectItem value="expulsion">Isključenje</SelectItem>
-                    <SelectItem value="death">Smrt</SelectItem>
+                    <SelectItem value="">{t('membershipDetails.notSet')}</SelectItem>
+                    <SelectItem value="withdrawal">{t('feeSection.endReasons.withdrawal')}</SelectItem>
+                    <SelectItem value="non_payment">{t('feeSection.endReasons.non_payment')}</SelectItem>
+                    <SelectItem value="expulsion">{t('feeSection.endReasons.expulsion')}</SelectItem>
+                    <SelectItem value="death">{t('feeSection.endReasons.death')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
