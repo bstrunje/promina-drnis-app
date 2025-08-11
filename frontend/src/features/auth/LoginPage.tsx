@@ -9,6 +9,7 @@ import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
+import { appSettings } from '../../config/appSettings';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
@@ -316,11 +317,11 @@ const LoginPage = () => {
             {/* Logo */}
             <img 
               src={logoImage} 
-              alt="PD Promina Logo" 
+              alt={t('login.logoAlt')}
               className="w-28 h-28 mx-auto rounded-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-bold">{t('login.clubTitle', 'Planinarsko društvo "Promina" Drniš')}</h2>
+          <h2 className="text-2xl font-bold">{t('login.clubTitle')}</h2>
         </div>
 
         <div className="p-6 bg-blue-600 text-white text-center">
@@ -344,25 +345,25 @@ const LoginPage = () => {
           {showDocuments && (
             <div className="mt-3 space-y-2">
               <a
-                href="https://www.pd-promina.hr/dokumenti/eticki-kodeks-pd-promina"
+                href={appSettings.documents.ethicsCodeUrl}
                 className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Etički kodeks PD Promina
+                {t('docs.ethicsCode')}
               </a>
               <a
-                href="https://pd-promina.hr/dokumenti/pravo-na-pristup-informacijama"
+                href={appSettings.documents.privacyPolicyUrl}
                 className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Politika zaštite osobnih podataka
+                {t('docs.privacyPolicy')}
               </a>
               <a
-                href="https://pd-promina.hr/dokumenti/poslovnici-i-pravilnici/pravilnik-o-clanstvu"
+                href={appSettings.documents.membershipRulesUrl}
                 className="flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <ChevronRight className="w-4 h-4 mr-1" />
-                Pravilnik o članstvu
+                {t('docs.membershipRules')}
               </a>
             </div>
           )}

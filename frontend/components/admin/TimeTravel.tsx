@@ -11,7 +11,7 @@ const TimeTravel: React.FC = () => {
       return;
     }
     try {
-      const response = await axios.post('/api/dev/set-date', { date });
+      const response = await axios.post<{ fakeTime: string }>('/api/dev/set-date', { date });
       setMessage(`Vrijeme uspješno postavljeno na: ${response.data.fakeTime}`);
     } catch (error) {
       console.error('Greška prilikom postavljanja datuma:', error);
@@ -42,13 +42,13 @@ const TimeTravel: React.FC = () => {
           className="p-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
         />
         <button
-          onClick={handleSetDate}
+          onClick={() => { void handleSetDate(); }}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300"
         >
           Postavi Datum
         </button>
         <button
-          onClick={handleResetDate}
+          onClick={() => { void handleResetDate(); }}
           className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-300"
         >
           Resetiraj Vrijeme

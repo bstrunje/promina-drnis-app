@@ -15,24 +15,35 @@ interface EquipmentDeliverySectionProps {
   onMemberUpdate?: (updatedMember: Member) => void;
 }
 
+// Dopuštene vrste opreme
+type EquipmentType = 'tshirt' | 'shell_jacket' | 'hat';
+
+// Tip lokalnog state-a za isporuku opreme
+interface EquipmentDeliveryState {
+  tshirt_delivered: boolean;
+  shell_jacket_delivered: boolean;
+  hat_delivered: boolean;
+}
+
+type IsUpdatingEquipment = Record<EquipmentType, boolean>;
+
 const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
   member,
   onUpdate,
   isEditing = false,
-  onMemberUpdate,
-}) => {
+}: EquipmentDeliverySectionProps) => {
   const { user } = useAuth();
   const { t } = useTranslation('dashboards');
   const { toast } = useToast();
   
   // Lokalni state za equipment delivery status (po uzoru na StampManagementSection)
-  const [equipmentState, setEquipmentState] = useState({
-    tshirt_delivered: member?.tshirt_delivered || false,
-    shell_jacket_delivered: member?.shell_jacket_delivered || false,
-    hat_delivered: member?.hat_delivered || false,
+  const [equipmentState, setEquipmentState] = useState<EquipmentDeliveryState>({
+    tshirt_delivered: member?.tshirt_delivered ?? false,
+    shell_jacket_delivered: member?.shell_jacket_delivered ?? false,
+    hat_delivered: member?.hat_delivered ?? false,
   });
   
-  const [isUpdatingEquipment, setIsUpdatingEquipment] = useState({
+  const [isUpdatingEquipment, setIsUpdatingEquipment] = useState<IsUpdatingEquipment>({
     tshirt: false,
     shell_jacket: false,
     hat: false,
@@ -41,9 +52,9 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
   // Ažuriraj lokalni state kada se member prop promijeni
   useEffect(() => {
     setEquipmentState({
-      tshirt_delivered: member?.tshirt_delivered || false,
-      shell_jacket_delivered: member?.shell_jacket_delivered || false,
-      hat_delivered: member?.hat_delivered || false,
+      tshirt_delivered: member?.tshirt_delivered ?? false,
+      shell_jacket_delivered: member?.shell_jacket_delivered ?? false,
+      hat_delivered: member?.hat_delivered ?? false,
     });
   }, [member?.tshirt_delivered, member?.shell_jacket_delivered, member?.hat_delivered]);
 
@@ -52,17 +63,21 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
   const isAdminOrSuperuser = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canViewDetails = isOwnProfile || isAdminOrSuperuser;
   const canManageEquipment = isAdminOrSuperuser;
-  const canUndeliver = user?.role === "member_superuser";
 
   // Equipment delivery toggle function
-  const handleEquipmentToggle = async (equipmentType: string, newState: boolean) => {
+  const handleEquipmentToggle = async (equipmentType: EquipmentType, newState: boolean) => {
     try {
-      setIsUpdatingEquipment(prev => ({ ...prev, [equipmentType]: true }));
-
-      setEquipmentState(prev => ({
-        ...prev,
-        [`${equipmentType}_delivered`]: newState
-      }));
+      setIsUpdatingEquipment((prev: IsUpdatingEquipment) => ({ ...prev, [equipmentType]: true }));
+      // Izbjegni computed key zbog TS tipizacije – eksplicitno po ključevima
+      setEquipmentState((prev: EquipmentDeliveryState) => {
+        if (equipmentType === 'tshirt') {
+          return { ...prev, tshirt_delivered: newState };
+        }
+        if (equipmentType === 'shell_jacket') {
+          return { ...prev, shell_jacket_delivered: newState };
+        }
+        return { ...prev, hat_delivered: newState };
+      });
       
       const endpoint = newState ? 'deliver' : 'undeliver';
       await api.post(`/members/${member.member_id}/equipment/${equipmentType}/${endpoint}`);
@@ -77,26 +92,40 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
       if (onUpdate) {
         onUpdate();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating equipment delivery:', error);
 
-      setEquipmentState(prev => ({
-        ...prev,
-        [`${equipmentType}_delivered`]: !newState
-      }));
+      setEquipmentState((prev: EquipmentDeliveryState) => {
+        if (equipmentType === 'tshirt') {
+          return { ...prev, tshirt_delivered: !newState };
+        }
+        if (equipmentType === 'shell_jacket') {
+          return { ...prev, shell_jacket_delivered: !newState };
+        }
+        return { ...prev, hat_delivered: !newState };
+      });
       
+      // Izvuci poruku na siguran način
+      const description = (() => {
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+          const resp = (error as { response?: { data?: { message?: unknown } } }).response;
+          if (typeof resp?.data?.message === 'string') return resp.data.message;
+        }
+        return `Failed to update ${equipmentType} delivery status`;
+      })();
+
       toast({
         title: "Error",
-        description: error.response?.data?.message || `Failed to update ${equipmentType} delivery status`,
+        description,
         variant: "destructive",
       });
     } finally {
-      setIsUpdatingEquipment(prev => ({ ...prev, [equipmentType]: false }));
+      setIsUpdatingEquipment((prev: IsUpdatingEquipment) => ({ ...prev, [equipmentType]: false }));
     }
   };
 
   // Equipment items configuration
-  const equipmentItems = [
+  const equipmentItems: { type: EquipmentType; label: string; delivered: boolean }[] = [
     {
       type: 'tshirt',
       label: `${t('equipmentDelivery.tShirt')} ${t('equipmentDelivery.delivered')}`,
@@ -132,8 +161,8 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
                 <Checkbox 
                   id={`${type}-delivery-checkbox-${isEditing ? 'edit' : 'view'}`}
                   checked={delivered}
-                  onCheckedChange={(newState) => handleEquipmentToggle(type, newState === true)}
-                  disabled={isUpdatingEquipment[type as keyof typeof isUpdatingEquipment] || 
+                  onCheckedChange={(newState: boolean | 'indeterminate') => { void handleEquipmentToggle(type, newState === true); }}
+                  disabled={isUpdatingEquipment[type] || 
                     (delivered && user?.role === 'member_administrator')}
                 />
                 <Label 
@@ -141,7 +170,7 @@ const EquipmentDeliverySection: React.FC<EquipmentDeliverySectionProps> = ({
                   className="text-sm cursor-pointer"
                 >
                   {label}
-                  {isUpdatingEquipment[type as keyof typeof isUpdatingEquipment] && (
+                  {isUpdatingEquipment[type] && (
                     <RefreshCw className="w-3 h-3 ml-2 inline animate-spin" />
                   )}
                 </Label>

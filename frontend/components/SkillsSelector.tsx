@@ -52,12 +52,13 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
       }
     };
 
-    fetchSkills();
+    // Namjerno ignoriramo obećanje jer nema potrebe čekati u efektu
+    void fetchSkills();
   }, [t]);
 
   const handleSkillChange = (skillId: number) => {
     const isSelected = internalSelected.some(s => s.skill_id === skillId);
-    let newSelection;
+    let newSelection: SelectedSkill[];
 
     if (isSelected) {
       newSelection = internalSelected.filter(s => s.skill_id !== skillId);

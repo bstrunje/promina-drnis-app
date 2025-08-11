@@ -145,7 +145,8 @@
             "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) vraćen u inventar",
             "error": "Greška",
             "giftMarkError": "Neuspješno označavanje poklona",
-            "giftReturnError": "Neuspješno vraćanje poklona"
+            "giftReturnError": "Neuspješno vraćanje poklona",
+            "superuserOnly": "Poklon može vratiti samo superuser"
         },
         "modal": {
             "title": "Uredi inventar - {{equipmentType}}",
@@ -170,6 +171,7 @@
         "markAsDelivered": "označeno kao isporučeno",
         "markAsUndelivered": "označeno kao neisporučeno",
         "success": "Uspjeh",
+        "successDescription": "Promijenjeno stanje veličine",
         "error": "Greška",
         "failedToUpdate": "Neuspješno ažuriranje statusa isporuke",
         "sizes": {

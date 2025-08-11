@@ -3,9 +3,27 @@
  */
 import { format, parseISO, isValid, parse } from 'date-fns';
 import { hr, enUS } from 'date-fns/locale';
+import { TIME_ZONE_CACHE_KEY } from '@/context/timeZone-core';
 
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
 let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
+
+// Migracija starog ključa vremenske zone na neutralni naziv
+// Ako postoji stari ključ 'promina_app_timezone' i nema novog 'app_timezone', preseli vrijednost
+if (typeof window !== 'undefined') {
+  try {
+    const OLD_KEY = 'promina_app_timezone';
+    const oldTz = localStorage.getItem(OLD_KEY);
+    const newTz = localStorage.getItem(TIME_ZONE_CACHE_KEY);
+    if (oldTz && !newTz) {
+      localStorage.setItem(TIME_ZONE_CACHE_KEY, oldTz);
+      localStorage.removeItem(OLD_KEY);
+      currentTimeZone = oldTz;
+    }
+  } catch {
+    // ignore
+  }
+}
 
 /**
  * Postavlja vremensku zonu koja će se koristiti za sve funkcije formatiranja datuma
@@ -16,8 +34,8 @@ export function setCurrentTimeZone(timeZone: string): void {
     // Spremamo u globalnu varijablu
     currentTimeZone = timeZone;
     
-    // Spremi i u localStorage za trajno pohranjivanje
-    localStorage.setItem('promina_app_timezone', timeZone);
+    // Spremi i u localStorage za trajno pohranjivanje (neutralan ključ)
+    localStorage.setItem(TIME_ZONE_CACHE_KEY, timeZone);
   }
 }
 

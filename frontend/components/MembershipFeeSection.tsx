@@ -196,7 +196,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setIsValidPayment(false);
       return false;
     }
-  }, [member, setPaymentError, setIsValidPayment, setIsNovemberDecemberPayment, setIsNewMemberPayment, toast]);
+  }, [member, setPaymentError, setIsValidPayment, setIsNovemberDecemberPayment, setIsNewMemberPayment, toast, t]);
 
   useEffect(() => {
     // Only validate when full date is entered
@@ -401,6 +401,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${
                     feeStatusColors[isFeeCurrent ? 'current' : 'payment required']
                   }`}
+                  data-fee-status={String(feeStatus)}
                 >
                   {isFeeCurrent
                     ? t('feeSection.statusCurrent')
@@ -419,9 +420,10 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               {/* Prikaz statusa članstva (active/inactive) */}
               {/* Uvijek prikazujemo status članstva */}
               {(() => {
-                const lastPeriod = membershipHistory?.periods?.[membershipHistory.periods.length - 1];
+                // Koristi optional chaining s .at(-1) za čitljivost
+                const lastPeriod = membershipHistory?.periods?.at?.(-1);
 
-                if (lastPeriod && lastPeriod.end_date && lastPeriod.end_reason) {
+                if (lastPeriod?.end_date && lastPeriod?.end_reason) {
                   const today = getCurrentDate();
                   const currentMonth = today.getMonth(); // 0 = Siječanj, 1 = Veljača
 

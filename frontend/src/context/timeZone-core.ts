@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 
-// Ključ za localStorage
-export const TIME_ZONE_CACHE_KEY = 'promina_app_timezone';
+// Ključ za localStorage (neutralan, bez brandinga)
+export const TIME_ZONE_CACHE_KEY = 'app_timezone';
 
 // Tip konteksta
 export interface TimeZoneContextType {

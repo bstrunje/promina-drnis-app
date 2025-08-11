@@ -48,6 +48,9 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   const { t } = useTranslation(['dashboards', 'common']);
   // Referenca na member prop kako bismo zadržali postojeći API bez lint upozorenja o nekorištenoj varijabli
   void member;
+  // Provjera korisničke uloge iz localStorage (isti pristup kao ostatak aplikacije)
+  const userRole = typeof window !== 'undefined' ? localStorage.getItem('userRole') : null;
+  const isSuperuser = userRole === 'member_superuser';
   const [inventory, setInventory] = useState<EquipmentInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'tshirt' | 'shell_jacket' | 'hat'>('tshirt');
@@ -259,7 +262,8 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
       toast({
         title: t("equipmentInventory.giftActions.giftMarked"),
         description: t("equipmentInventory.giftActions.giftMarkedDescription", {
-          equipmentType: t(`equipmentInventory.equipmentTypes.${item.equipment_type}`),
+          // Ispravan namespace za nazive opreme je na rootu: equipmentTypes.*
+          equipmentType: t(`equipmentTypes.${item.equipment_type}`),
           size: item.size,
           gender: t(`equipmentInventory.gender.${item.gender}`)
         }),
@@ -281,6 +285,15 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   };
 
   const decrementGift = async (item: EquipmentInventoryItem) => {
+    // Admin može vidjeti minus, ali vraćanje poklona dozvoljeno je samo superuseru
+    if (!isSuperuser) {
+      toast({
+        title: t("equipmentInventory.giftActions.error"),
+        description: t("equipmentInventory.giftActions.superuserOnly"),
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       setIsLoading(true);
       
@@ -296,7 +309,8 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
       toast({
         title: t("equipmentInventory.giftActions.giftReturned"),
         description: t("equipmentInventory.giftActions.giftReturnedDescription", {
-          equipmentType: t(`equipmentInventory.equipmentTypes.${item.equipment_type}`),
+          // Ispravan namespace za nazive opreme je na rootu: equipmentTypes.*
+          equipmentType: t(`equipmentTypes.${item.equipment_type}`),
           size: item.size,
           gender: t(`equipmentInventory.gender.${item.gender}`)
         }),
@@ -338,16 +352,18 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
               {t("equipmentInventory.refresh")}
             </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEditModal}
-              disabled={isLoading}
-              className="w-full sm:w-auto"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              {t("equipmentInventory.editInventory")}
-            </Button>
+            {isSuperuser && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditModal}
+                disabled={isLoading}
+                className="w-full sm:w-auto"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                {t("equipmentInventory.editInventory")}
+              </Button>
+            )}
           </div>
         </div>
 

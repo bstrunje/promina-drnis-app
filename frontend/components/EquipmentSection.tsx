@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useCallback, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/card";
 import { Button } from "@components/ui/button";
-import { Package, CheckCircle, XCircle, Gift } from "lucide-react";
+import { Package, CheckCircle, XCircle } from "lucide-react";
 import { Member } from "@shared/member";
 import { useAuth } from "../src/context/useAuth";
 import { useToast } from "@components/ui/use-toast";
@@ -35,31 +34,31 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation('dashboards');
   const [isLoading, setIsLoading] = useState(false);
-  const [equipmentStatus, setEquipmentStatus] = useState<EquipmentStatus | null>(null);
+  const [, setEquipmentStatus] = useState<EquipmentStatus | null>(null);
 
   // Check if user can manage equipment - only admins and superusers
   const canManageEquipment = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canUndeliver = user?.role === "member_superuser";
 
   // Load equipment status
-  const loadEquipmentStatus = async () => {
+  const loadEquipmentStatus = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await api.get(`/members/${member.member_id}/equipment/status`);
-      setEquipmentStatus(response.data);
-    } catch (error) {
+      // Očekujemo oblik EquipmentStatus; lokalna asercija tipa
+      setEquipmentStatus(response.data as EquipmentStatus);
+    } catch (error: unknown) {
       console.error('Error loading equipment status:', error);
       toast({
         title: "Error",
-        description: "Failed to load equipment status",
+        description: 'Failed to load equipment status',
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [member.member_id, toast]);
 
   // Mark equipment as delivered
   const markAsDelivered = async (equipmentType: string) => {
@@ -75,11 +74,18 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
       
       await loadEquipmentStatus();
       onUpdate();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error marking equipment as delivered:', error);
+      const description = (() => {
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+          const resp = (error as { response?: { data?: { message?: unknown } } }).response;
+          if (typeof resp?.data?.message === 'string') return resp.data.message;
+        }
+        return `Failed to mark ${equipmentType} as delivered`;
+      })();
       toast({
         title: "Error",
-        description: error.response?.data?.message || `Failed to mark ${equipmentType} as delivered`,
+        description,
         variant: "destructive",
       });
     } finally {
@@ -101,11 +107,18 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
       
       await loadEquipmentStatus();
       onUpdate();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error marking equipment as undelivered:', error);
+      const description = (() => {
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+          const resp = (error as { response?: { data?: { message?: unknown } } }).response;
+          if (typeof resp?.data?.message === 'string') return resp.data.message;
+        }
+        return `Failed to mark ${equipmentType} as undelivered`;
+      })();
       toast({
         title: "Error",
-        description: error.response?.data?.message || `Failed to mark ${equipmentType} as undelivered`,
+        description,
         variant: "destructive",
       });
     } finally {
@@ -116,9 +129,10 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
   // Load equipment status on component mount
   React.useEffect(() => {
     if (canManageEquipment) {
-      loadEquipmentStatus();
+      // Označi kao ignoriran plivajući Promise
+      void loadEquipmentStatus();
     }
-  }, [member.member_id, canManageEquipment]);
+  }, [member.member_id, canManageEquipment, loadEquipmentStatus]);
 
   if (!canManageEquipment) {
     return null; // Don't show equipment section for regular members
@@ -129,19 +143,19 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
       type: 'tshirt',
       name: 'T-Shirt',
       size: member.tshirt_size,
-      delivered: member.tshirt_delivered || false,
+      delivered: member.tshirt_delivered ?? false,
     },
     {
       type: 'shell_jacket',
       name: 'Shell Jacket',
       size: member.shell_jacket_size,
-      delivered: member.shell_jacket_delivered || false,
+      delivered: member.shell_jacket_delivered ?? false,
     },
     {
       type: 'hat',
       name: 'Hat',
       size: member.hat_size,
-      delivered: member.hat_delivered || false,
+      delivered: member.hat_delivered ?? false,
     },
   ];
 
@@ -171,7 +185,7 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
                   <div>
                     <div className="font-medium">{item.name}</div>
                     <div className="text-sm text-gray-500">
-                      Size: {item.size || 'Not set'}
+                      Size: {item.size ?? 'Not set'}
                     </div>
                     <div className="text-sm">
                       Status: {item.delivered ? (
@@ -186,7 +200,7 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
                 <div className="flex space-x-2">
                   {!item.delivered ? (
                     <Button
-                      onClick={() => markAsDelivered(item.type)}
+                      onClick={() => { void markAsDelivered(item.type); }}
                       disabled={isLoading || !item.size}
                       size="sm"
                       className="bg-green-500 hover:bg-green-600"
@@ -195,7 +209,7 @@ const EquipmentSection: React.FC<EquipmentSectionProps> = ({
                     </Button>
                   ) : canUndeliver ? (
                     <Button
-                      onClick={() => markAsUndelivered(item.type)}
+                      onClick={() => { void markAsUndelivered(item.type); }}
                       disabled={isLoading}
                       size="sm"
                       variant="outline"

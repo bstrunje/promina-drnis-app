@@ -296,8 +296,8 @@ router.put('/equipment/inventory', authenticateToken, roles.requireSuperUser, as
   }
 });
 
-// Issue equipment as gift (superuser only)
-router.post('/equipment/gift', authenticateToken, roles.requireSuperUser, async (req, res) => {
+// Issue equipment as gift (admin or superuser)
+router.post('/equipment/gift', authenticateToken, roles.requireAdmin, async (req, res) => {
   try {
     const { equipment_type, size, gender, notes } = req.body;
     const performerId = req.user?.member_id;

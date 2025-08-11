@@ -6,7 +6,7 @@ import { Button } from '@components/ui/button';
 import { CalendarIcon } from 'lucide-react';
 import { hr } from 'date-fns/locale';
 import { formatDate, parseDate, formatDateToIsoDateString } from '../src/utils/dateUtils';
-import { isValid, parseISO } from 'date-fns';
+import { isValid } from 'date-fns';
 
 interface CustomDateInputProps {
   value: string | null | undefined;
@@ -31,7 +31,7 @@ const CustomDateInput: React.FC<CustomDateInputProps> = ({
   // Sinkroniziraj prikazani datum kad se promijeni value iz parenta
   useEffect(() => {
     if (value) {
-      const dateObj = parseDate(value, 'yyyy-MM-dd') || parseDate(value, 'dd.MM.yyyy');
+      const dateObj = parseDate(value, 'yyyy-MM-dd') ?? parseDate(value, 'dd.MM.yyyy');
       if (dateObj && isValid(dateObj)) {
         setDisplayedDate(formatDate(dateObj, 'dd.MM.yyyy'));
       } else {
@@ -92,7 +92,7 @@ const CustomDateInput: React.FC<CustomDateInputProps> = ({
 
   // Kalendar očekuje Date objekt ili undefined (nikad null)
   const calendarSelectedProp = value
-    ? (parseDate(value, 'yyyy-MM-dd') || parseDate(value, 'dd.MM.yyyy')) || undefined
+    ? (parseDate(value, 'yyyy-MM-dd') ?? parseDate(value, 'dd.MM.yyyy')) ?? undefined
     : undefined;
 
   return (

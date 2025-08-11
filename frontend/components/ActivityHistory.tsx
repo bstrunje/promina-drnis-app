@@ -24,11 +24,12 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
     if (!memberId) return;
     setLoading(true);
     try {
-      const stats = await getMemberAnnualStats(memberId);
-      const totals = stats.reduce((acc, stat) => {
+      // Tipičan odgovor API-ja je lista AnnualStat; lokalna asercija tipa bez mijenjanja API utila
+      const stats = (await getMemberAnnualStats(memberId)) as AnnualStat[];
+      const totals = stats.reduce<{ activities: number; hours: number }>((acc, stat: AnnualStat) => {
         acc.activities += stat.total_activities;
         // Sate i dalje dohvaćamo, ali ih nećemo prikazati
-        acc.hours += parseFloat(stat.total_hours as any) || 0;
+        acc.hours += Number(stat.total_hours ?? 0);
         return acc;
       }, { activities: 0, hours: 0 });
 

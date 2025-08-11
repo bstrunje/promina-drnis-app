@@ -58,7 +58,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       // Osiguraj da se React moduli tretiraju kao external dependencies
-      external: (id) => {
+      external: () => {
         // Ne tretiramo ništa kao external - sve bundlamo
         return false;
       },

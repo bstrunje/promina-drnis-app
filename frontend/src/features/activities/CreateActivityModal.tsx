@@ -166,7 +166,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           participant_ids: participantIds.map(id => Number(id)),
         });
       }
-      toast({ title: t('activities.creation.success'), description: t('activities.creation.activityCreated') });
+      toast({ title: t('creation.success'), description: t('creation.activityCreated') });
       onActivityCreated();
       // Reset form
       setDescription('');
@@ -222,8 +222,8 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   </SelectContent>
                 </SelectPortal>
               </Select>
-              {fieldErrors.selectedTypeId && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.activityTypeRequired')}</p>}
-              {loadingTypes && <p className="text-sm text-muted-foreground mt-1">{t('activities.creation.loadingTypes')}</p>}
+              {fieldErrors.selectedTypeId && <p className="text-red-500 text-xs mt-1">{t('creation.validation.activityTypeRequired')}</p>}
+              {loadingTypes && <p className="text-sm text-muted-foreground mt-1">{t('creation.loadingTypes')}</p>}
             </div>
           </div>
             
@@ -243,7 +243,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                 placeholder={t('creation.descriptionPlaceholder')}
                 className={`w-full ${fieldErrors.description ? 'border-red-500' : ''}`}
               />
-              {fieldErrors.description && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.descriptionRequired')}</p>}
+              {fieldErrors.description && <p className="text-red-500 text-xs mt-1">{t('creation.validation.descriptionRequired')}</p>}
             </div>
           </div>
 
@@ -265,7 +265,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                     }}
                     className={fieldErrors.startDate ? 'border-red-500' : ''}
                   />
-                  {fieldErrors.startDate && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.startDateRequired')}</p>}
+                  {fieldErrors.startDate && <p className="text-red-500 text-xs mt-1">{t('creation.validation.startDateRequired')}</p>}
                 </div>
                 <div className="flex-1">
                   <Input
@@ -279,7 +279,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                     className={fieldErrors.startTime ? 'border-red-500' : ''}
                     ref={startTimeRef}
                   />
-                  {fieldErrors.startTime && <p className="text-red-500 text-xs mt-1">{t('activities.creation.validation.startTimeRequired')}</p>}
+                  {fieldErrors.startTime && <p className="text-red-500 text-xs mt-1">{t('creation.validation.startTimeRequired')}</p>}
                 </div>
               </div>
             </div>
@@ -469,7 +469,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           {error && (
             <div className="col-span-4 bg-red-50 border border-red-200 rounded-md p-3">
               <p className="text-red-700 text-sm font-medium">{t('error', { ns: 'common' })}</p>
-              <p className="text-red-600 text-sm">{t('activities.creation.error')}</p>
+              <p className="text-red-600 text-sm">{t('creation.error')}</p>
             </div>
           )}
 

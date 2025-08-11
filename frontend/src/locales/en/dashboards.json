@@ -145,7 +145,8 @@
             "giftReturnedDescription": "{{equipmentType}} ({{size}}, {{gender}}) returned to inventory",
             "error": "Error",
             "giftMarkError": "Failed to mark as gift",
-            "giftReturnError": "Failed to return gift"
+            "giftReturnError": "Failed to return gift",
+            "superuserOnly": "Only superuser can return a gifted item"
         },
         "modal": {
             "title": "Edit Inventory - {{equipmentType}}",
@@ -170,6 +171,7 @@
         "markAsDelivered": "marked as delivered",
         "markAsUndelivered": "marked as undelivered",
         "success": "Success",
+        "successDescription": "Size status changed",
         "error": "Error",
         "failedToUpdate": "Failed to update delivery status",
         "sizes": {
