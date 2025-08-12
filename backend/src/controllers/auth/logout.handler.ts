@@ -39,6 +39,6 @@ export async function logoutHandler(req: Request, res: Response): Promise<void |
       maxAge: 0, // Osiguraj brisanje kolačića
     });
 
-    return res.status(500).json({ code: 'AUTH_LOGOUT_FAILED', message: tOrDefault('errorsByCode.AUTH_LOGOUT_FAILED', locale, 'Logout failed due to a server error') });
+    return res.status(500).json({ code: 'AUTH_LOGOUT_FAILED', message: tOrDefault('auth.errorsByCode.AUTH_LOGOUT_FAILED', locale, 'Logout failed due to a server error') });
   }
 }

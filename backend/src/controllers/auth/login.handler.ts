@@ -36,7 +36,7 @@ export async function loginHandler(
       if (isDev) console.warn(`Login attempt without credentials from IP ${userIP}`);
       return res.status(400).json({
         code: 'AUTH_MISSING_CREDENTIALS',
-        message: tOrDefault('errorsByCode.AUTH_MISSING_CREDENTIALS', locale, 'Email and password are required')
+        message: tOrDefault('auth.errorsByCode.AUTH_MISSING_CREDENTIALS', locale, 'Email and password are required')
       });
     }
 
@@ -60,7 +60,7 @@ export async function loginHandler(
       await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS));
       return res.status(401).json({
         code: 'AUTH_INVALID_CREDENTIALS',
-        message: tOrDefault('errorsByCode.AUTH_INVALID_CREDENTIALS', locale, 'Invalid credentials')
+        message: tOrDefault('auth.errorsByCode.AUTH_INVALID_CREDENTIALS', locale, 'Invalid credentials')
       });
     }
 
@@ -98,7 +98,7 @@ export async function loginHandler(
       );
       return res.status(403).json({
         code: 'AUTH_MEMBERSHIP_INVALID',
-        message: tOrDefault('errorsByCode.AUTH_MEMBERSHIP_INVALID', locale, `Login not possible. Membership for the ${currentYear} year is not valid`, { year: currentYear })
+        message: tOrDefault('auth.errorsByCode.AUTH_MEMBERSHIP_INVALID', locale, 'Login not possible. Membership for the {year} year is not valid', { year: currentYear.toString() })
       });
     }
 
@@ -115,7 +115,7 @@ export async function loginHandler(
       );
       return res.status(403).json({
         code: 'AUTH_ACCOUNT_NOT_ACTIVE',
-        message: tOrDefault('errorsByCode.AUTH_ACCOUNT_NOT_ACTIVE', locale, 'Account not active. Please contact administrator.')
+        message: tOrDefault('auth.errorsByCode.AUTH_ACCOUNT_NOT_ACTIVE', locale, 'Account not active. Please contact administrator.')
       });
     }
 
@@ -133,7 +133,7 @@ export async function loginHandler(
       );
       return res.status(403).json({
         code: 'AUTH_ACCOUNT_LOCKED',
-        message: tOrDefault('errorsByCode.AUTH_ACCOUNT_LOCKED', locale, `Account is locked. Please try again after ${member.locked_until.toLocaleTimeString()}.`)
+        message: tOrDefault('auth.errorsByCode.AUTH_ACCOUNT_LOCKED_UNTIL', locale, 'Account is locked. Please try again after {time}.', { time: member.locked_until.toLocaleTimeString() })
       });
     }
 
@@ -190,7 +190,7 @@ export async function loginHandler(
           );
           return res.status(403).json({
             code: 'AUTH_ACCOUNT_LOCKED',
-            message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES)}.`
+            message: `Invalid credentials. Account locked for ${ACCOUNT_LOCKOUT_DURATION_MINUTES} ${formatMinuteText(ACCOUNT_LOCKOUT_DURATION_MINUTES, locale)}.`
           });
         } else {
           if (isDev) console.log(`Admin account ${member.email} reached max login attempts, but lockout is disabled for admins.`);
@@ -209,7 +209,7 @@ export async function loginHandler(
       await new Promise(resolve => setTimeout(resolve, LOGIN_DELAY_MS));
       return res.status(401).json({
         code: 'AUTH_INVALID_CREDENTIALS',
-        message: "Invalid credentials"
+        message: tOrDefault('auth.errorsByCode.AUTH_INVALID_CREDENTIALS', locale, 'Invalid credentials')
       });
     }
 
@@ -298,7 +298,7 @@ export async function loginHandler(
     } : {};
 
     res.json({
-      message: tOrDefault('success.AUTH_LOGIN_OK', locale, 'Login successful'),
+      message: tOrDefault('auth.success.AUTH_LOGIN_OK', locale, 'Login successful'),
       token: accessToken, 
       member: {
         id: member.member_id,
@@ -322,7 +322,7 @@ export async function loginHandler(
     );
     res.status(500).json({
       code: 'AUTH_SERVER_ERROR',
-      message: tOrDefault('errorsByCode.AUTH_SERVER_ERROR', locale, 'Internal server error')
+      message: tOrDefault('auth.errorsByCode.AUTH_SERVER_ERROR', locale, 'Internal server error')
     });
   }
 }

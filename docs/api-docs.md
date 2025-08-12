@@ -929,3 +929,68 @@ API je dostupan na sljedećim URL-ovima:
   - default: `en`
 - Svi korisnički vidljivi tekstovi (poruke o uspjehu i greškama) mogu biti lokalizirani. API oblik odgovora ostaje nepromijenjen (npr. polja `code`, `message`, `error`).
 - Frontend treba mapirati stabilne kodove grešaka (polje `code`) na vlastite i18n prijevode ili koristiti vraćenu lokaliziranu poruku iz polja `message`/`error` kao fallback.
+
+### Struktura prijevoda
+
+Prijevodi su organizirani u JSON datoteke unutar `backend/src/locales/{en,hr}/` direktorija. Svaka datoteka sadrži prijevode za određeni kontekst (npr. `auth.json` za autentifikacijske poruke).
+
+Primjer strukture `auth.json`:
+
+```json
+{
+  "errorsByCode": {
+    "AUTH_MISSING_CREDENTIALS": "Email i lozinka su obavezni",
+    "AUTH_INVALID_CREDENTIALS": "Neispravni podaci za prijavu",
+    "AUTH_MEMBERSHIP_INVALID": "Prijava nije moguća. Članarina za tekuću godinu nije važeća",
+    "AUTH_ACCOUNT_NOT_ACTIVE": "Račun nije aktivan. Molimo kontaktirajte administratora.",
+    "AUTH_ACCOUNT_LOCKED": "Račun je zaključan. Pokušajte ponovno kasnije.",
+    "AUTH_REFRESH_TOKEN_INVALID": "Osvježeni token nije važeć ili nije pronađen",
+    "AUTH_REFRESH_TOKEN_EXPIRED": "Osvježeni token je istekao",
+    "AUTH_USER_NOT_FOUND": "Korisnik nije pronađen",
+    "AUTH_SERVER_ERROR": "Greška na autentifikacijskom poslužitelju",
+    "AUTH_LOGOUT_FAILED": "Odjava nije uspjela zbog greške na poslužitelju",
+    "AUTH_REGISTRATION_DUP_EMAIL": "Član s ovom e-poštom već postoji",
+    "AUTH_REGISTRATION_DUP_OIB": "Član s ovim OIB-om već postoji",
+    "AUTH_REGISTRATION_FAILED": "Registracija nije uspjela",
+    "AUTH_PASSWORD_ASSIGN_FAILED": "Dodjela lozinke nije uspjela"
+  },
+  "success": {
+    "LOGIN_OK": "Prijava uspješna",
+    "LOGOUT_OK": "Odjava uspješna",
+    "REGISTER_PRE_CREATED_OK": "Član je uspješno pred-registriran. Čeka se konfiguracija lozinke od strane administratora.",
+    "REGISTER_COMPLETED_OK": "Član je uspješno registriran",
+    "CARDNUM_ASSIGNED_OK": "Broj članske kartice i lozinka su uspješno dodijeljeni",
+    "PASSWORD_ASSIGNED_OK": "Lozinka je uspješno dodijeljena"
+  },
+  "validation": {
+    "EMAIL_REQUIRED": "Email je obavezan",
+    "EMAIL_INVALID": "Unesite ispravnu email adresu",
+    "PASSWORD_REQUIRED": "Lozinka je obavezna",
+    "PASSWORD_TOO_SHORT": "Lozinka mora sadržavati najmanje 8 znakova"
+  }
+}
+```
+
+### Korištenje u kodu
+
+Za pristup prijevodima u backend kodu koristi se funkcija `tOrDefault` iz `i18n.ts` modula:
+
+```typescript
+import { tOrDefault } from '../../utils/i18n';
+
+// Primjer korištenja u kontroleru
+const errorMessage = tOrDefault('errorsByCode.AUTH_INVALID_CREDENTIALS', req.locale, 'Neispravni podaci za prijavu');
+```
+
+Za pristup prijevodima u `auth.json` datoteci, koristi se prefiks `auth.` ispred ključa:
+
+```typescript
+const successMessage = tOrDefault('auth.success.LOGIN_OK', req.locale, 'Prijava uspješna');
+```
+
+### Konvencije imenovanja
+
+- Svi ključevi u `errorsByCode` moraju biti u konstantnom zapisu (UPPER_SNAKE_CASE)
+- Ključevi u `success` i `validation` sekcijama također su u konstantnom zapisu
+- Ključevi moraju biti konzistentni između jezika
+- Poruke trebaju biti jasne i korisnički orijentirane

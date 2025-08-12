@@ -34,7 +34,7 @@ export async function registerInitialHandler(
     if (memberExists) {
       res
         .status(400)
-        .json({ code: 'AUTH_REGISTRATION_DUP_EMAIL', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_DUP_EMAIL', locale, 'Member with this email already exists') });
+        .json({ code: 'AUTH_REGISTRATION_DUP_EMAIL', message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_DUP_EMAIL', locale, 'Member with this email already exists') });
       return;
     }
 
@@ -63,7 +63,7 @@ export async function registerInitialHandler(
     });
 
     res.status(201).json({
-      message: tOrDefault('success.AUTH_REGISTER_PRE_CREATED_OK', locale, 'Member pre-registered successfully. Awaiting administrator password configuration.'),
+      message: tOrDefault('auth.success.AUTH_REGISTER_PRE_CREATED_OK', locale, 'Member pre-registered successfully. Awaiting administrator password configuration.'),
       member_id: member.member_id,
       full_name: `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`,
       email: member.email,
@@ -71,9 +71,9 @@ export async function registerInitialHandler(
   } catch (error) {
     console.error('Registration error:', error);
     if (error instanceof Error) {
-      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_FAILED', locale, error.message) });
+      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_FAILED', locale, error.message) });
     } else {
-      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('errorsByCode.AUTH_REGISTRATION_FAILED', locale, 'Error registering member') });
+      res.status(500).json({ code: 'AUTH_REGISTRATION_FAILED', message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_FAILED', locale, 'Error registering member') });
     }
   }
 }
@@ -112,7 +112,7 @@ export async function registerMemberHandler(
     if (existingMember) {
       res.status(400).json({
         code: 'AUTH_REGISTRATION_DUP_OIB',
-        message: tOrDefault('errorsByCode.AUTH_REGISTRATION_DUP_OIB', locale, 'Member with this OIB already exists'),
+        message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_DUP_OIB', locale, 'Member with this OIB already exists'),
       });
       return;
     }

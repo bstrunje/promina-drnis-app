@@ -12,12 +12,12 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (typeof searchTerm !== 'string' || searchTerm.length < 2) {
-      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('errorsByCode.VALIDATION_ERROR', locale, 'Valid search term is required') });
+      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Valid search term is required') });
       return;
     }
 
     if (searchTerm.length < 2) {
-      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('errorsByCode.VALIDATION_ERROR', locale, 'Search term must be at least 2 characters long') });
+      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Search term must be at least 2 characters long') });
       return;
     }
 
@@ -25,7 +25,7 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
 
     if (searchTerm.includes("'") || searchTerm.includes(';') || searchTerm.includes('--')) {
       if (isDev) console.warn(`Potential SQL injection attempt from IP ${userIP}: "${searchTerm}"`);
-      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('errorsByCode.VALIDATION_ERROR', locale, 'Invalid search term') });
+      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Invalid search term') });
       return;
     }
 
@@ -38,7 +38,7 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
     console.error('Search error:', error);
     res.status(500).json({
       code: 'SERVER_ERROR',
-      message: tOrDefault('errorsByCode.SERVER_ERROR', locale, error instanceof Error ? error.message : 'Error searching members'),
+      message: tOrDefault('common.errorsByCode.SERVER_ERROR', locale, error instanceof Error ? error.message : 'Error searching members'),
     });
   }
 }
@@ -58,7 +58,7 @@ export async function assignCardNumberHandler(
 
     const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
     if (!cardNumberRegex.test(card_number)) {
-      res.status(400).json({ code: 'CARDNUM_LENGTH_INVALID', message: tOrDefault('errorsByCode.CARDNUM_LENGTH_INVALID', locale, `Card number must be exactly ${cardNumberLength} digits`) });
+      res.status(400).json({ code: 'CARDNUM_LENGTH_INVALID', message: tOrDefault('common.errorsByCode.CARDNUM_LENGTH_INVALID', locale, `Card number must be exactly ${cardNumberLength} digits`) });
       return;
     }
 
@@ -69,7 +69,7 @@ export async function assignCardNumberHandler(
     }
 
     if (member.registration_completed) {
-      res.status(400).json({ code: 'MEMBER_ONLY_PENDING', message: tOrDefault('errorsByCode.MEMBER_ONLY_PENDING', locale, 'Can only assign card number for pending members') });
+      res.status(400).json({ code: 'MEMBER_ONLY_PENDING', message: tOrDefault('common.errorsByCode.MEMBER_ONLY_PENDING', locale, 'Can only assign card number for pending members') });
       return;
     }
 
@@ -84,14 +84,14 @@ export async function assignCardNumberHandler(
     );
 
     res.json({
-      message: tOrDefault('success.AUTH_CARDNUM_ASSIGNED_OK', locale, 'Card number assigned and password generated successfully'),
+      message: tOrDefault('auth.success.AUTH_CARDNUM_ASSIGNED_OK', locale, 'Card number assigned and password generated successfully'),
       member_id,
       status: 'registered',
       card_number,
     });
   } catch (error) {
     console.error('Card number assignment error:', error);
-    res.status(500).json({ code: 'CARDNUM_ASSIGN_FAILED', message: tOrDefault('errorsByCode.CARDNUM_ASSIGN_FAILED', locale, 'Error assigning card number') });
+    res.status(500).json({ code: 'CARDNUM_ASSIGN_FAILED', message: tOrDefault('common.errorsByCode.CARDNUM_ASSIGN_FAILED', locale, 'Error assigning card number') });
   }
 }
 
@@ -106,10 +106,10 @@ export async function assignPasswordHandler(
     const hashedPassword = await bcrypt.hash(password, 10);
     await authRepository.updateMemberWithCardAndPassword(memberId, hashedPassword, '');
 
-    res.json({ message: tOrDefault('success.AUTH_PASSWORD_ASSIGNED_OK', locale, 'Password assigned successfully') });
+    res.json({ message: tOrDefault('auth.success.AUTH_PASSWORD_ASSIGNED_OK', locale, 'Password assigned successfully') });
   } catch (error) {
     console.error('Password assignment error:', error);
-    res.status(500).json({ code: 'AUTH_PASSWORD_ASSIGN_FAILED', message: tOrDefault('errorsByCode.AUTH_PASSWORD_ASSIGN_FAILED', locale, 'Failed to assign password') });
+    res.status(500).json({ code: 'AUTH_PASSWORD_ASSIGN_FAILED', message: tOrDefault('auth.errorsByCode.AUTH_PASSWORD_ASSIGN_FAILED', locale, 'Failed to assign password') });
   }
 }
 

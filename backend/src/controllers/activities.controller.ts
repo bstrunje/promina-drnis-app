@@ -1,5 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import * as activityService from '../services/activities.service.js';
+import { tBackend } from '../utils/i18n.js';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      locale?: 'en' | 'hr';
+    }
+  }
+}
 
 
 // --- Tipovi Aktivnosti ---
@@ -18,8 +28,13 @@ export const getActivityTypes = async (req: Request, res: Response, next: NextFu
 export const createActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const organizer_id = req.user?.id;
+    const locale = req.locale || 'hr';
+    
     if (!organizer_id) {
-      return res.status(401).json({ message: 'Unauthorized: User ID is missing.' });
+      return res.status(401).json({ 
+        code: 'UNAUTHORIZED',
+        message: tBackend('auth.unauthorized', locale)
+      });
     }
 
     const activity = await activityService.createActivityService(req.body, organizer_id);
@@ -45,8 +60,12 @@ export const getAllActivities = async (req: Request, res: Response, next: NextFu
 export const getActivitiesByYearWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const year = parseInt(req.params.year, 10);
+    const locale = req.locale || 'hr';
     if (isNaN(year)) {
-      return res.status(400).json({ message: 'Invalid year provided.' });
+      return res.status(400).json({
+        code: 'INVALID_YEAR',
+        message: tBackend('validations.invalid_year', locale)
+      });
     }
     const activities = await activityService.getActivitiesByYearWithParticipantsService(year);
     res.status(200).json(activities);
@@ -131,8 +150,12 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
     const activity_id = parseInt(req.params.activityId, 10);
     const { cancellation_reason } = req.body;
 
+    const locale = req.locale || 'hr';
     if (!cancellation_reason) {
-      return res.status(400).json({ message: 'Cancellation reason is required.' });
+      return res.status(400).json({
+        code: 'MISSING_CANCELLATION_REASON',
+        message: tBackend('validations.missing_cancellation_reason', locale)
+      });
     }
 
     const updatedActivity = await activityService.cancelActivityService(activity_id, cancellation_reason);
@@ -158,9 +181,13 @@ export const joinActivity = async (req: Request, res: Response, next: NextFuncti
   try {
     const activity_id = parseInt(req.params.activityId, 10);
     const member_id = req.user?.member_id;
+    const locale = req.locale || 'hr';
 
     if (!member_id) {
-      return res.status(401).json({ message: 'User not authenticated' });
+      return res.status(401).json({ 
+        code: 'UNAUTHORIZED',
+        message: tBackend('auth.unauthorized', locale)
+      });
     }
 
     const participation = await activityService.addParticipantService(activity_id, member_id);
@@ -174,13 +201,17 @@ export const leaveActivity = async (req: Request, res: Response, next: NextFunct
   try {
     const activity_id = parseInt(req.params.activityId, 10);
     const member_id = req.user?.member_id;
+    const locale = req.locale || 'hr';
 
     if (!member_id) {
-      return res.status(401).json({ message: 'User not authenticated' });
+      return res.status(401).json({ 
+        code: 'UNAUTHORIZED',
+        message: tBackend('auth.unauthorized', locale)
+      });
     }
 
     await activityService.leaveActivityService(activity_id, member_id);
-    res.status(204).send(); // No Content
+    res.status(204).send();
   } catch (error) {
     next(error);
   }
@@ -189,10 +220,19 @@ export const leaveActivity = async (req: Request, res: Response, next: NextFunct
 export const addParticipantToActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;
-    const participation = await activityService.addParticipantService(
-      parseInt(activityId, 10),
-      parseInt(memberId, 10)
-    );
+    const locale = req.locale || 'hr';
+    
+    const activity_id = parseInt(activityId, 10);
+    const member_id = parseInt(memberId, 10);
+    
+    if (isNaN(activity_id) || isNaN(member_id)) {
+      return res.status(400).json({
+        code: 'INVALID_INPUT',
+        message: tBackend('validations.invalid_input', locale)
+      });
+    }
+    
+    const participation = await activityService.addParticipantService(activity_id, member_id);
     res.status(201).json(participation);
   } catch (error) {
     next(error);
@@ -202,10 +242,19 @@ export const addParticipantToActivity = async (req: Request, res: Response, next
 export const removeParticipantFromActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;
-    await activityService.removeParticipantFromActivityService(
-      parseInt(activityId, 10),
-      parseInt(memberId, 10)
-    );
+    const locale = req.locale || 'hr';
+    
+    const activity_id = parseInt(activityId, 10);
+    const member_id = parseInt(memberId, 10);
+    
+    if (isNaN(activity_id) || isNaN(member_id)) {
+      return res.status(400).json({
+        code: 'INVALID_INPUT',
+        message: tBackend('validations.invalid_input', locale)
+      });
+    }
+    
+    await activityService.removeParticipantFromActivityService(activity_id, member_id);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -215,14 +264,31 @@ export const removeParticipantFromActivity = async (req: Request, res: Response,
 export const updateParticipationDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.participationId, 10);
+    const locale = req.locale || 'hr';
     
-    // DEBUG: Logiranje payloada koji dolazi s frontenda
-    console.log('DEBUG updateParticipationDetails: participationId=', id);
-    console.log('DEBUG updateParticipationDetails: req.body=', JSON.stringify(req.body, null, 2));
-    console.log('DEBUG updateParticipationDetails: start_time tip=', typeof req.body.start_time);
-    console.log('DEBUG updateParticipationDetails: start_time vrijednost=', req.body.start_time);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        code: 'INVALID_INPUT',
+        message: tBackend('validations.invalid_input', locale)
+      });
+    }
+    
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        code: 'MISSING_DATA',
+        message: tBackend('validations.missing_data', locale)
+      });
+    }
     
     const updatedParticipation = await activityService.updateParticipationService(id, req.body);
+    
+    if (!updatedParticipation) {
+      return res.status(404).json({
+        code: 'NOT_FOUND',
+        message: tBackend('errors.not_found', locale)
+      });
+    }
+    
     res.status(200).json(updatedParticipation);
   } catch (error) {
     next(error);

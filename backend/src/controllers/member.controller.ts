@@ -1,22 +1,39 @@
 // backend/src/controllers/member.controller.ts
 import type { Request, Response } from 'express';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Response {
+      locale?: 'en' | 'hr';
+    }
+  }
+}
 import memberService from "../services/member.service.js";
 import memberRepository from "../repositories/member.repository.js";
 import { parseDate, formatDate } from '../utils/dateUtils.js';
 import prisma from "../utils/prisma.js";
+import { tOrDefault } from '../utils/i18n.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 function handleControllerError(error: unknown, res: Response): void {
+  const locale: 'en' | 'hr' = res.locale || 'hr';
   console.error("Controller error:", error);
   if (error instanceof Error) {
     if (error.message.includes("not found")) {
-      res.status(404).json({ message: error.message });
+      res.status(404).json({ 
+        message: tOrDefault('common.errors.NOT_FOUND', locale, error.message) 
+      });
     } else {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ 
+        message: tOrDefault('common.errors.SERVER_ERROR', locale, error.message) 
+      });
     }
   } else {
-    res.status(500).json({ message: "Unknown error" });
+    res.status(500).json({ 
+      message: tOrDefault('common.errors.UNKNOWN_ERROR', locale, 'An unknown error occurred') 
+    });
   }
 }
 
@@ -29,7 +46,11 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
   try {
     const memberId = req.user?.id;
     if (!memberId) {
-      res.status(401).json({ message: 'Unauthorized access' });
+      const locale: 'en' | 'hr' = res.locale || 'hr';
+      res.status(401).json({ 
+        code: 'UNAUTHORIZED_ACCESS',
+        message: tOrDefault('auth.errors.UNAUTHORIZED_ACCESS', locale, 'Unauthorized access')
+      });
       return;
     }
 
@@ -97,8 +118,12 @@ export const memberController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
+      const locale: 'en' | 'hr' = res.locale || 'hr';
       if (isNaN(memberId)) {
-        res.status(400).json({ message: "Invalid member ID" });
+        res.status(400).json({ 
+          code: 'INVALID_MEMBER_ID',
+          message: tOrDefault('member.errors.INVALID_MEMBER_ID', locale, 'Invalid member ID')
+        });
         return;
       }
 
@@ -108,7 +133,11 @@ export const memberController = {
 
       const member = await memberService.getMemberById(memberId);
       if (member === null) {
-        res.status(404).json({ message: "Member not found" });
+        const locale: 'en' | 'hr' = res.locale || 'hr';
+        res.status(404).json({ 
+          code: 'MEMBER_NOT_FOUND',
+          message: tOrDefault('member.errors.MEMBER_NOT_FOUND', locale, 'Member not found')
+        });
       } else {
         if (member.membership_details?.fee_payment_date) {
           const paymentDate = member.membership_details.fee_payment_date;

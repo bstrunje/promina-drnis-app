@@ -676,7 +676,7 @@ const LoginPage = () => {
                       isEditing={true}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {t('skills.description', 'Odaberite vještine koje član posjeduje.')}
+                    {t('skills.description', { ns: 'profile'})}
                     </p>
                   </div>
                 )}

@@ -2,38 +2,43 @@
   "errors": {
     "unexpected": "Došlo je do neočekivane pogreške",
     "notFound": "Resurs nije pronađen",
-    "unauthorized": "Neautorizirano",
     "forbidden": "Zabranjen pristup",
     "badRequest": "Neispravan zahtjev",
     "validationFailed": "Validacija nije uspjela"
   },
+  "auth": {
+    "unauthorized": "Neovlašten pristup. Molimo prijavite se ponovno.",
+    "forbidden": "Nemate ovlaštenje za ovu radnju"
+  },
+  "validations": {
+    "missing_name": "Ime i prezime su obavezni",
+    "invalid_email": "Unesite ispravnu email adresu",
+    "invalid_oib": "OIB mora sadržavati točno 11 znamenki",
+    "missing_dob": "Datum rođenja je obavezan",
+    "missing_phone": "Broj mobitela je obavezan",
+    "missing_address": "Adresa je obavezna",
+    "invalid_gender": "Odaberite ispravan spol",
+    "invalid_life_status": "Odaberite ispravan životni status",
+    "missing_sizes": "Veličine odjeće su obavezne",
+    "missing_password": "Lozinka je obavezna",
+    "invalid_title": "Unesite ispravan naslov",
+    "missing_dates": "Početni i završni datum su obavezni",
+    "invalid_date_format": "Neispravan format datuma",
+    "invalid_date_range": "Završni datum mora biti nakon početnog datuma",
+    "invalid_input": "Neispravni ulazni podaci",
+    "missing_data": "Nedostaju potrebni podaci",
+    "invalid_year": "Neispravna godina",
+    "missing_cancellation_reason": "Razlog otkazivanja je obavezan"
+  },
   "errorsByCode": {
-    "AUTH_MISSING_CREDENTIALS": "Potrebni su email i lozinka",
-    "AUTH_INVALID_CREDENTIALS": "Neispravni podaci za prijavu",
-    "AUTH_MEMBERSHIP_INVALID": "Prijava nije moguća. Članarina za tekuću godinu nije važeća",
-    "AUTH_ACCOUNT_NOT_ACTIVE": "Račun nije aktivan. Kontaktirajte administratora.",
-    "AUTH_ACCOUNT_LOCKED": "Račun je zaključan. Pokušajte kasnije.",
-    "AUTH_REFRESH_TOKEN_INVALID": "Refresh token je neispravan ili nije pronađen",
-    "AUTH_REFRESH_TOKEN_EXPIRED": "Refresh token je istekao",
-    "AUTH_USER_NOT_FOUND": "Korisnik nije pronađen",
-    "AUTH_SERVER_ERROR": "Greška autentikacijskog poslužitelja",
-    "AUTH_LOGOUT_FAILED": "Odjava nije uspjela zbog greške na poslužitelju",
-    "AUTH_REGISTRATION_DUP_EMAIL": "Član s ovom email adresom već postoji",
-    "AUTH_REGISTRATION_DUP_OIB": "Član s ovim OIB-om već postoji",
-    "AUTH_REGISTRATION_FAILED": "Registracija nije uspjela",
-    "VALIDATION_ERROR": "Greška validacije",
+    "VALIDATION_ERROR": "Pogreška pri validaciji",
     "MEMBER_NOT_FOUND": "Član nije pronađen",
-    "MEMBER_ONLY_PENDING": "Broj iskaznice se može dodijeliti samo članovima u statusu 'pending'",
-    "CARDNUM_LENGTH_INVALID": "Neispravna duljina broja iskaznice",
-    "CARDNUM_ASSIGN_FAILED": "Greška pri dodjeli broja iskaznice",
-    "AUTH_PASSWORD_ASSIGN_FAILED": "Greška pri dodjeli lozinke",
+    "MEMBER_ONLY_PENDING": "Broj članske kartice se može dodijeliti samo članovima na čekanju",
+    "CARDNUM_LENGTH_INVALID": "Broj članske kartice mora imati točno 6 znamenki",
+    "CARDNUM_ASSIGN_FAILED": "Dodjela broja članske kartice nije uspjela",
     "SERVER_ERROR": "Greška na poslužitelju"
   },
   "success": {
-    "AUTH_LOGOUT_OK": "Odjava je uspješna",
-    "AUTH_REGISTER_PRE_CREATED_OK": "Član je pred-registriran. Čeka se postavljanje lozinke od administratora.",
-    "AUTH_REGISTER_COMPLETED_OK": "Član je uspješno registriran",
-    "AUTH_CARDNUM_ASSIGNED_OK": "Broj iskaznice dodijeljen i lozinka generirana",
-    "AUTH_PASSWORD_ASSIGNED_OK": "Lozinka je uspješno dodijeljena"
+    "ok": "Operacija uspješno izvršena"
   }
 }

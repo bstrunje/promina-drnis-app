@@ -1,40 +1,44 @@
 {
+  "auth": {
+    "unauthorized": "Unauthorized access. Please log in again.",
+    "forbidden": "You don't have permission to perform this action"
+  },
+  "validations": {
+    "missing_name": "First and last name are required",
+    "invalid_email": "Please enter a valid email address",
+    "invalid_oib": "OIB must contain exactly 11 digits",
+    "missing_dob": "Date of birth is required",
+    "missing_phone": "Phone number is required",
+    "missing_address": "Address is required",
+    "invalid_gender": "Please select a valid gender",
+    "invalid_life_status": "Please select a valid life status",
+    "missing_sizes": "Clothing sizes are required",
+    "missing_password": "Password is required",
+    "invalid_title": "Please enter a valid title",
+    "missing_dates": "Start and end dates are required",
+    "invalid_date_format": "Invalid date format",
+    "invalid_date_range": "End date must be after start date",
+    "invalid_input": "Invalid input data",
+    "missing_data": "Required data is missing",
+    "invalid_year": "Invalid year",
+    "missing_cancellation_reason": "Cancellation reason is required"
+  },
   "errors": {
     "unexpected": "An unexpected error occurred",
     "notFound": "Resource not found",
-    "unauthorized": "Unauthorized",
     "forbidden": "Forbidden",
     "badRequest": "Bad request",
     "validationFailed": "Validation failed"
   },
   "errorsByCode": {
-    "AUTH_MISSING_CREDENTIALS": "Email and password are required",
-    "AUTH_INVALID_CREDENTIALS": "Invalid credentials",
-    "AUTH_MEMBERSHIP_INVALID": "Login not possible. Membership for the current year is not valid",
-    "AUTH_ACCOUNT_NOT_ACTIVE": "Account not active. Please contact administrator.",
-    "AUTH_ACCOUNT_LOCKED": "Account is locked. Please try again later.",
-    "AUTH_REFRESH_TOKEN_INVALID": "Refresh token is invalid or not found",
-    "AUTH_REFRESH_TOKEN_EXPIRED": "Refresh token has expired",
-    "AUTH_USER_NOT_FOUND": "User not found",
-    "AUTH_SERVER_ERROR": "Authentication server error",
-    "AUTH_LOGOUT_FAILED": "Logout failed due to a server error",
-    "AUTH_REGISTRATION_DUP_EMAIL": "Member with this email already exists",
-    "AUTH_REGISTRATION_DUP_OIB": "Member with this OIB already exists",
-    "AUTH_REGISTRATION_FAILED": "Registration failed",
     "VALIDATION_ERROR": "Validation error",
     "MEMBER_NOT_FOUND": "Member not found",
     "MEMBER_ONLY_PENDING": "Can only assign card number for pending members",
-    "CARDNUM_LENGTH_INVALID": "Card number has invalid length",
-    "CARDNUM_ASSIGN_FAILED": "Error assigning card number",
-    "AUTH_PASSWORD_ASSIGN_FAILED": "Failed to assign password",
+    "CARDNUM_LENGTH_INVALID": "Card number must be exactly 6 digits long",
+    "CARDNUM_ASSIGN_FAILED": "Failed to assign card number",
     "SERVER_ERROR": "Server error"
   },
   "success": {
-    "AUTH_LOGIN_OK": "Login successful",
-    "AUTH_LOGOUT_OK": "Logout successful",
-    "AUTH_REGISTER_PRE_CREATED_OK": "Member pre-registered successfully. Awaiting administrator password configuration.",
-    "AUTH_REGISTER_COMPLETED_OK": "Member registered successfully",
-    "AUTH_CARDNUM_ASSIGNED_OK": "Card number assigned and password generated successfully",
-    "AUTH_PASSWORD_ASSIGNED_OK": "Password assigned successfully"
+    "ok": "Operation completed successfully"
   }
 }

@@ -1,6 +1,7 @@
 import { Request } from "express";
 import type { CookieOptions } from "express";
-import prisma from "../../utils/prisma.js"; // Potrebno za getCardNumberLength
+import prisma from "../../utils/prisma.js";
+import { tOrDefault } from "../../utils/i18n.js";
 
 // Funkcija za generiranje konzistentnih opcija kolačića
 export const generateCookieOptions = (req: Request): CookieOptions => {
@@ -80,7 +81,11 @@ export const generateClearCookieOptions = (req: Request): CookieOptions => {
  * Pomoćna funkcija za formatiranje teksta za minute u hrvatskom jeziku
  * (pravilno gramatičko sklanjanje riječi "minuta")
  */
-export function formatMinuteText(minutes: number): string {
+export function formatMinuteText(minutes: number, locale: 'en' | 'hr' = 'hr'): string {
+  if (locale === 'en') {
+    return minutes === 1 ? 'minute' : 'minutes';
+  }
+  // Croatian plural forms
   if (minutes === 1) return 'minutu';
   if (minutes >= 2 && minutes <= 4) return 'minute';
   return 'minuta';
@@ -106,8 +111,7 @@ export async function validatePassword(
   if (password.length < 6) {
     return {
       isValid: false,
-      message:
-        "Password must be at least 6 characters long before the -isk- suffix",
+      message: tOrDefault('auth.errors.PASSWORD_TOO_SHORT', 'en', 'Password must be at least 6 characters long before the -isk- suffix'),
     };
   }
 
@@ -119,7 +123,7 @@ export async function validatePassword(
     if (!cardNumberRegex.test(suffixNumbers)) {
       return {
         isValid: false,
-        message: `Suffix must be exactly ${cardNumberLength} digits`,
+      message: tOrDefault('auth.errors.INVALID_SUFFIX_LENGTH', 'en', 'Suffix must be exactly {length} digits', { length: cardNumberLength.toString() }),
       };
     }
     return {
