@@ -26,6 +26,15 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Mapiranje enum vrijednosti na ključeve prijevoda u activities.roles
+  // Napomena: koristimo camelCase ključeve u prijevodima (npr. assistantGuide)
+  const roleKeyMap: Record<ParticipantRole, string> = {
+    [ParticipantRole.GUIDE]: 'guide',
+    [ParticipantRole.ASSISTANT_GUIDE]: 'assistantGuide',
+    [ParticipantRole.DRIVER]: 'driver',
+    [ParticipantRole.REGULAR]: 'regular',
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -144,7 +153,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
             <SelectContent>
               {Object.values(ParticipantRole).map((role) => (
                 <SelectItem key={role} value={role}>
-                  {t(`roles.${role.toLowerCase()}`)}
+                  {t(`roles.${roleKeyMap[role]}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -178,7 +187,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
                       <SelectContent>
                         {Object.values(ParticipantRole).map((role) => (
                           <SelectItem key={role} value={role}>
-                            {t(`roles.${role.toLowerCase()}`)}
+                            {t(`roles.${roleKeyMap[role]}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>

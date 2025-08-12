@@ -160,20 +160,6 @@
     "selectAll": "Odaberi sve",
     "clearAll": "Očisti sve"
   },
-  "memberRoleSelect": {
-    "selectRole": "Odaberi ulogu",
-    "organizer": "Organizator",
-    "participant": "Sudionik",
-    "leader": "Voditelj",
-    "assistant": "Pomoćnik",
-    "guide": "Vodič",
-    "firstAid": "Prva pomoć",
-    "cook": "Kuhar",
-    "photographer": "Fotograf",
-    "driver": "Vozač",
-    "equipmentManager": "Upravitelj opremom",
-    "noRole": "Nema dodijeljene uloge"
-  },
   "activityCategoryPage": {
     "summary": {
       "allActivitiesForYear": "Sve aktivnosti za {{year}}. godinu",
@@ -247,16 +233,16 @@
   },
   "roles": {
     "guide": "Vodič",
-    "assistantGuide": "Pomoćnik vodiča",
+    "assistantGuide": "Pomoćni vodič",
     "driver": "Vozač",
     "regular": "Sudionik"
   },
   "participants": {
-        "searchPlaceholder": "Pretraži i dodaj sudionike...",
-        "role": "Uloga",
-        "selectedParticipants": "Odabrani sudionici",
-        "addFromList": "Dodajte sudionike iz liste."
-      },
+    "searchPlaceholder": "Pretraži i dodaj sudionike...",
+    "role": "Uloga",
+    "selectedParticipants": "Odabrani sudionici",
+    "addFromList": "Dodajte sudionike iz liste."
+  },
   "editing": {
     "error": "Greška",
     "fetchFailed": "Neuspješno dohvaćanje aktivnosti.",

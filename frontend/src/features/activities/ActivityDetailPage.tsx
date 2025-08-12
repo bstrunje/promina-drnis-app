@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
+import type { TFunction, i18n as I18n } from 'i18next';
 import './activities.css';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { getActivityById, cancelActivity as apiCancelActivity, joinActivity, leaveActivity } from '../../utils/api/apiActivities';
@@ -25,18 +25,39 @@ import { toast } from 'sonner';
 import { ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
 
 // Mapiraj oznake uloga; tipizirano bez 'any'
-const getRoleLabels = (t: TFunction): Record<ParticipantRole, string> => ({
-  [ParticipantRole.GUIDE]: t('activities.roles.guide'),
-  [ParticipantRole.ASSISTANT_GUIDE]: t('activities.roles.assistantGuide'),
-  [ParticipantRole.DRIVER]: t('activities.roles.driver'),
-  [ParticipantRole.REGULAR]: t('activities.roles.regular'),
+// Napomena: eksplicitno navodimo namespace 'activities' i izbjegavamo prelazak na fallback jezik.
+// Koristimo i18n.getResource za dohvat iz aktivnog jezika, prvo 'roles.*', zatim 'activities.roles.*'.
+const getRoleLabel = (t: TFunction, i18n: I18n, key: string): string => {
+  // Podrži varijante jezika (npr. en-GB -> en)
+  const candidates = Array.from(new Set([
+    i18n.resolvedLanguage,
+    i18n.language,
+    ...(i18n.language?.includes('-') ? [i18n.language.split('-')[0]] : []),
+  ].filter(Boolean))) as string[];
+
+  for (const lng of candidates) {
+    const direct = i18n.getResource(lng, 'activities', `roles.${key}`) as string | undefined;
+    if (direct) return direct;
+    const nested = i18n.getResource(lng, 'activities', `activities.roles.${key}`) as string | undefined;
+    if (nested) return nested;
+  }
+
+  // Ako ništa nije pronađeno u aktivnom jeziku/varijanti, koristimo standardni t s namespace-om (prepustimo i18nextu fallback chain)
+  return t(`roles.${key}`, { ns: 'activities' });
+};
+
+const getRoleLabels = (t: TFunction, i18n: I18n): Record<ParticipantRole, string> => ({
+  [ParticipantRole.GUIDE]: getRoleLabel(t, i18n, 'guide'),
+  [ParticipantRole.ASSISTANT_GUIDE]: getRoleLabel(t, i18n, 'assistantGuide'),
+  [ParticipantRole.DRIVER]: getRoleLabel(t, i18n, 'driver'),
+  [ParticipantRole.REGULAR]: getRoleLabel(t, i18n, 'regular'),
 });
 
 // Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
-const getRoleNameByPercentage = (percentage: number, t: TFunction): string | null => {
+const getRoleNameByPercentage = (percentage: number, t: TFunction, i18n: I18n): string | null => {
   const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
   if (roleEntry) {
-    const roleLabels = getRoleLabels(t);
+    const roleLabels = getRoleLabels(t, i18n);
     return roleLabels[roleEntry[0] as ParticipantRole];
   }
   return null; // Vraća null ako nema definirane uloge
@@ -45,7 +66,7 @@ const getRoleNameByPercentage = (percentage: number, t: TFunction): string | nul
 
 
 const ActivityDetailPage: React.FC = () => {
-  const { t } = useTranslation(['activities', 'common']);
+  const { t, i18n } = useTranslation(['activities', 'common']);
   const { activityId } = useParams<{ activityId: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -339,7 +360,7 @@ const ActivityDetailPage: React.FC = () => {
                           {p.member.full_name}
                           {/* Prikaz uloge samo za izlete */}
                           {activity?.activity_type?.key === 'izleti' && p.recognition_override !== null && p.recognition_override !== undefined && (() => {
-                            const roleName = getRoleNameByPercentage(p.recognition_override, t);
+                            const roleName = getRoleNameByPercentage(p.recognition_override, t, i18n);
                             return roleName ? (
                               <Badge variant="outline" className="ml-2 border-amber-300 text-amber-700 bg-amber-50 text-xs">
                                 {roleName}
