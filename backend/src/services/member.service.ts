@@ -12,6 +12,7 @@ import { getCurrentDate } from '../utils/dateUtils.js';
 import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
 import type { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -630,11 +631,77 @@ const memberService = {
 
     async getMemberAnnualStats(memberId: number): Promise<Awaited<ReturnType<typeof memberRepository.getAnnualStats>>> {
         try {
-            const stats = await memberRepository.getAnnualStats(memberId);
-            if (!stats) {
-                throw new Error('Statistika nije pronađena za ovog člana.');
+            // 1. Dohvati postojeće statistike iz annual_statistics tablice
+            const existingStats = await memberRepository.getAnnualStats(memberId);
+            
+            // 2. Dohvati sve participacije za člana s aktivnostima
+            const participations = await prisma.activityParticipation.findMany({
+                where: { 
+                    member_id: memberId,
+                    activity: {
+                        status: 'COMPLETED' // Samo završene aktivnosti
+                    }
+                },
+                include: { 
+                    activity: true 
+                }
+            });
+            
+            // 3. Grupiraj participacije po godinama
+            const yearlyParticipations = new Map<number, typeof participations>();
+            participations.forEach(p => {
+                const year = new Date(p.activity.start_date).getFullYear();
+                if (!yearlyParticipations.has(year)) {
+                    yearlyParticipations.set(year, []);
+                }
+                yearlyParticipations.get(year)!.push(p);
+            });
+            
+            // 4. Kreiraj statistike za godine koje nedostaju
+            const allStats = [...existingStats];
+            const existingYears = new Set(existingStats.map(s => s.year));
+            
+            for (const [year, yearParticipations] of yearlyParticipations) {
+                if (!existingYears.has(year)) {
+                    // Izračunaj statistike za tu godinu koristeći istu logiku kao updateAnnualStatistics
+                    const totalActivities = yearParticipations.length;
+                    
+                    const totalHours = yearParticipations.reduce((acc, p) => {
+                        let minuteValue = 0;
+                        
+                        // Ista logika kao u updateAnnualStatistics
+                        if (p.manual_hours !== null && p.manual_hours !== undefined) {
+                            minuteValue = Math.round(p.manual_hours * 60);
+                        } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+                            const minutes = differenceInMinutes(
+                                new Date(p.activity.actual_end_time),
+                                new Date(p.activity.actual_start_time)
+                            );
+                            minuteValue = minutes > 0 ? minutes : 0;
+                        }
+                        
+                        const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
+                        const recognizedMinutes = minuteValue * (finalRecognitionPercentage / 100);
+                        
+                        return acc + recognizedMinutes;
+                    }, 0) / 60; // Pretvaramo u sate
+                    
+                    // Dodaj izračunatu statistiku
+                    allStats.push({
+                        stat_id: 0, // Privremeni ID za izračunate statistike
+                        member_id: memberId,
+                        year: year,
+                        total_hours: new Prisma.Decimal(totalHours),
+                        total_activities: totalActivities,
+                        membership_status: '', // Prazan status za izračunate statistike
+                        calculated_at: new Date()
+                    });
+                }
             }
-            return stats;
+            
+            // 5. Sortiraj po godini, najnovije prvo
+            return allStats.sort((a, b) => b.year - a.year);
+            
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching member annual statistics: ' + errorMessage);
