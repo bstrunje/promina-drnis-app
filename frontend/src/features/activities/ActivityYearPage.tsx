@@ -18,6 +18,10 @@ interface ActivityParticipation {
   recognized_hours: number;
 }
 
+interface Member {
+  full_name: string;
+}
+
 const ActivityYearPage: React.FC = () => {
   const { t } = useTranslation('activities');
   const { memberId, year } = useParams<{ memberId: string; year: string }>();
@@ -25,6 +29,7 @@ const ActivityYearPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [participations, setParticipations] = useState<ActivityParticipation[]>([]);
+  const [member, setMember] = useState<Member | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,10 +39,16 @@ const ActivityYearPage: React.FC = () => {
       const token = localStorage.getItem('token');
 
       try {
-        const response = await axios.get<ActivityParticipation[]>(`${API_BASE_URL}/activities/member/${memberId}/${year}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setParticipations(response.data ?? []);
+        const [participationsRes, memberRes] = await Promise.all([
+          axios.get<ActivityParticipation[]>(`${API_BASE_URL}/activities/member/${memberId}/${year}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get<Member>(`${API_BASE_URL}/members/${memberId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ]);
+        setParticipations(participationsRes.data ?? []);
+        setMember(memberRes.data);
       } catch (err) {
         console.error(`Error fetching activities for year ${year}:`, err);
         setError(t('activityYear.errorFetchingData'));
@@ -48,6 +59,11 @@ const ActivityYearPage: React.FC = () => {
 
     void fetchData();
   }, [memberId, year, t]);
+
+  // Izračunaj ukupne sate za godinu
+  const totalHoursForYear = participations.reduce((total, participation) => {
+    return total + (participation.recognized_hours || 0);
+  }, 0);
 
   if (loading) {
     return <div className="p-6"><div className="h-16 bg-gray-200 animate-pulse rounded-md w-1/2 mx-auto"></div></div>;
@@ -66,7 +82,16 @@ const ActivityYearPage: React.FC = () => {
         </button>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">{t('activityYear.title', { year })}</h1>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">{t('activityYear.title', { year })}</h1>
+              <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {member?.full_name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">{t('activityYear.totalHoursInYear', { year })}</p>
+              <p className="text-xl font-bold text-gray-800">{formatHoursToHHMM(totalHoursForYear)}</p>
+            </div>
+          </div>
         </div>
 
         {participations.length === 0 ? (

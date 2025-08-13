@@ -139,18 +139,21 @@
     },
     "activityYear": {
         "title": "Activities for {{year}}",
+        "totalHoursInYear": "Total hours in {{year}}",
         "noActivities": "No activities planned for this year.",
         "loading": "Loading activities...",
-        "backToOverview": "Back to Activity Overview",
+        "backToOverview": "Back to activity overview",
         "errorFetchingData": "Unable to load activities. Please try again."
     },
     "activityOverview": {
         "title": "Activity Overview",
-        "yearView": "Year View",
-        "categoryView": "Category View",
-        "calendarView": "Calendar View",
-        "noYears": "No activity years found.",
-        "loading": "Loading activity overview..."
+        "memberLabel": "Member:",
+        "totalHours": "Total hours through history",
+        "noActivities": "Member has no recorded activities.",
+        "yearView": "View by years",
+        "activitiesCount": "Activities",
+        "hoursCount": "Hours",
+        "errorFetchingData": "Unable to load data. Please try again."
     },
     "memberSelect": {
         "searchPlaceholder": "Search members by name...",

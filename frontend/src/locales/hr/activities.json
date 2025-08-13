@@ -139,6 +139,7 @@
   },
   "activityYear": {
     "title": "Aktivnosti za {{year}}",
+    "totalHoursInYear": "Ukupno sati u {{year}}. godini",
     "noActivities": "Nema planiranih aktivnosti za ovu godinu.",
     "loading": "Učitavanje aktivnosti...",
     "backToOverview": "Natrag na pregled aktivnosti",
@@ -147,6 +148,7 @@
   "activityOverview": {
     "title": "Pregled aktivnosti",
     "memberLabel": "Član:",
+    "totalHours": "Ukupni sati kroz povijest",
     "noActivities": "Član nema zabilježenih aktivnosti.",
     "yearView": "Pregled po godinama",
     "activitiesCount": "Aktivnosti",

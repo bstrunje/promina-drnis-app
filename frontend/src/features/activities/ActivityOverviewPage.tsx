@@ -7,9 +7,10 @@ import BackToDashboard from '@components/BackToDashboard';
 import { formatHoursToHHMM } from '@/utils/activityHours';
 import { useTranslation } from 'react-i18next';
 
-// Sučelje za člana ostaje isto
+// Sučelje za člana s ukupnim satima kroz povijest
 interface Member {
   full_name: string;
+  total_hours: number;
 }
 
 // Sučelje za godišnje statistike ostaje isto
@@ -73,8 +74,16 @@ const ActivityOverviewPage: React.FC = () => {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">{t('activityOverview.title')}</h1>
-          <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {member?.full_name}</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">{t('activityOverview.title')}</h1>
+              <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {member?.full_name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">{t('activityOverview.totalHours')}</p>
+              <p className="text-xl font-bold text-gray-800">{formatHoursToHHMM((member?.total_hours ?? 0) / 60)}</p>
+            </div>
+          </div>
         </div>
 
         {sortedStats.length === 0 ? (
