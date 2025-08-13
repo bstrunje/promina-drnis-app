@@ -14,7 +14,7 @@
       "selectedMembers": "Odabrani članovi ({{count}}):"
     },
     "placeholders": {
-      "searchMember": "Pretraži po imenu ili prezimenu... (minimalno 2 znaka)",
+      "searchMember": "Pretraži po imenu ili prezimenu...",
       "messageText": "Unesi tekst poruke...",
       "messageTextGroup": "Unesi tekst poruke za grupu članova...",
       "messageTextAll": "Unesi tekst poruke za sve članove..."
@@ -27,7 +27,7 @@
       "clearAll": "Očisti sve"
     },
     "messages": {
-      "searchMinLength": "Unesi minimalno 2 znaka za pretragu članova",
+      "searchMinLength": "Unesi minimalno 1 znak za pretragu članova",
       "selectMemberWarning": "Molimo odaberi člana kojem želiš poslati poruku",
       "selectGroupWarning": "Molimo odaberi barem jednog člana za slanje grupne poruke",
       "emptyMessageWarning": "Poruka ne može biti prazna",
@@ -152,7 +152,18 @@
   },
   "messages": {
     "deleteAll": "Obriši sve poruke",
-    "deleteAllShort": "Obriši sve"
+    "deleteAllShort": "Obriši sve",
+    "addMemberToGroup": "Dodaj člana u grupu:",
+    "searchPlaceholder": "Pretraži po imenu ili prezimenu..",
+    "title": "Pošalji poruku administratoru",
+    "placeholder": "Upišite vašu poruku ovdje...",
+    "sendButton": "Pošalji poruku",
+    "sendSuccess": "Poruka je uspješno poslana.",
+    "sendError": "Greška prilikom slanja poruke.",
+    "error": "Greška",
+    "fetchMessagesError": "Nije moguće dohvatiti poruke",
+    "fetchSentMessagesError": "Nije moguće dohvatiti poslane poruke",
+    "readMessageTitle": "Pročitana poruka"
   },
   "messageList": {
     "title": "Poruke",

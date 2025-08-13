@@ -1,6 +1,6 @@
 import express from 'express';
 import * as activityController from '../controllers/activities.controller.js';
-import { authMiddleware as authenticateToken, roles, canEditActivity } from '../middleware/authMiddleware.js';
+import { authMiddleware as authenticateToken, roles, canEditActivity, checkPermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -37,8 +37,8 @@ router.get('/member/:memberId', authenticateToken, activityController.getActivit
 // Dohvati sve aktivnosti za člana za određenu godinu (dostupno svim prijavljenim korisnicima)
 router.get('/member/:memberId/:year', authenticateToken, activityController.getParticipationsByMemberIdAndYear);
 
-// Kreiraj novu aktivnost (samo admin i superuser)
-router.post('/', authenticateToken, roles.requireAdmin, activityController.createActivity);
+// Kreiraj novu aktivnost (korisnici s can_create_activities dozvolom)
+router.post('/', authenticateToken, checkPermission('can_create_activities'), activityController.createActivity);
 
 // Ažuriraj aktivnost (samo organizator i superuser)
 router.put('/:activityId', authenticateToken, canEditActivity, activityController.updateActivity);

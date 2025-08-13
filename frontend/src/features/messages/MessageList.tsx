@@ -12,6 +12,7 @@ import {
   Bell 
 } from "lucide-react";
 import { useAuth } from '../../context/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
 import AdminMessageSender from './AdminMessageSender';
 import MemberMessageList from './MemberMessageList';
 import BackToDashboard from '../../../components/BackToDashboard';
@@ -21,12 +22,27 @@ import { useTranslation } from 'react-i18next';
 
 export default function MessageList() {
   const { user } = useAuth();
+  const { hasPermission, loading } = usePermissions();
   const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'compose'>('received');
   const [unreadCount, setUnreadCount] = useState(0);
   const { t } = useTranslation('messages');
 
-  // Ako je običan član, prikaži pojednostavljeni prikaz poruka
-  if (user?.role === 'member') {
+  // Provjeri ima li korisnik dozvole za slanje grupnih poruka ili upravljanje porukama
+  const canSendGroupMessages = hasPermission('can_send_group_messages');
+  const canManageMessages = hasPermission('can_manage_all_messages');
+  const hasMessagePermissions = canSendGroupMessages || canManageMessages;
+
+  // Ako se još učitavaju dozvole, prikaži loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Učitavanje...</div>
+      </div>
+    );
+  }
+
+  // Ako je običan član bez posebnih dozvola, prikaži pojednostavljeni prikaz poruka
+  if (user?.role === 'member' && !hasMessagePermissions) {
     return <MemberMessageList />;
   }
 

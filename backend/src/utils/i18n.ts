@@ -68,7 +68,11 @@ function interpolate(template: string, params?: Record<string, string | number>)
  * @param locale Jezik
  * @param params Parametri za interpolaciju
  */
-export function tBackend(key: string, locale: Locale, params?: Record<string, string | number>): string {
+export function tBackend(
+  key: string,
+  locale: Locale = 'en',
+  params?: Record<string, string | number>
+): string {
   // Odvoji namespace i ključ ako je naveden
   const [namespace, ...keyParts] = key.split('.');
   const finalKey = keyParts.join('.');

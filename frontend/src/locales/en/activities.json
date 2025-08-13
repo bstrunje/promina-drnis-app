@@ -304,5 +304,8 @@
         "izleti": "Organization, guiding and participation in excursions",
         "razno": "Other various activities",
         "sastanci": "Meetings of members and the board"
+    },
+    "permissions": {
+        "noActivityAccess": "You do not have permission to access activities."
     }
 }

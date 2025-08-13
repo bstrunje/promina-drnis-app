@@ -3,11 +3,14 @@ import messageService from '../services/message.service.js';
 import auditService from '../services/audit.service.js';
 import { SenderType } from '@prisma/client';
 import { mapToMemberMessage } from '../utils/memberMessageMapper.js';
+import { tBackend } from '../utils/i18n.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
 const messageController = {
     async createMessage(req: Request, res: Response): Promise<void> {
+        const locale = req.locale || 'en';
+        
         try {
             const { messageText } = req.body;
             const memberId = parseInt(req.params.memberId);
@@ -18,7 +21,7 @@ const messageController = {
                 await auditService.logAction(
                     'CREATE_MESSAGE',
                     req.user.id,
-                    `Message created by member ${memberId}`,
+                    tBackend('messages.audit.message_created', 'en', { memberId }), // Audit logovi uvijek na engleskom
                     req,
                     'success',
                     undefined,
@@ -31,21 +34,27 @@ const messageController = {
             res.status(201).json(mappedMessage);
         } catch (error) {
             console.error('Error creating message:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             res.status(500).json({ 
                 code: 'MSG_CREATE_FAILED',
-                message: error instanceof Error ? error.message : 'Failed to create message' 
+                message: tBackend('messages.create_failed', locale, { details: errorMessage })
             });
         }
     },
     
     async sendMessageToMember(req: Request, res: Response): Promise<void> {
+        const locale = req.locale || 'en';
+        
         try {
             const { messageText } = req.body;
             const recipientId = parseInt(req.params.memberId);
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
+                res.status(401).json({ 
+                    code: 'AUTH_UNAUTHORIZED', 
+                    message: tBackend('messages.unauthorized', locale) 
+                });
                 return;
             }
 
@@ -61,7 +70,7 @@ const messageController = {
             await auditService.logAction(
                 'ADMIN_SEND_MESSAGE',
                 senderId,
-                `Admin sent message to member ${recipientId}`,
+                tBackend('messages.audit.message_sent', 'en', { memberId: recipientId }),
                 req,
                 'success',
                 recipientId,
@@ -73,25 +82,34 @@ const messageController = {
             res.status(201).json(mappedMessage);
         } catch (error) {
             console.error('Error sending admin message:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             res.status(500).json({ 
                 code: 'MSG_SEND_FAILED',
-                message: error instanceof Error ? error.message : 'Failed to send message' 
+                message: tBackend('messages.send_failed', locale, { details: errorMessage })
             });
         }
     },
     
     async sendMessageToMembers(req: Request, res: Response): Promise<void> {
+        const locale = req.locale || 'en';
+        
         try {
             const { messageText, recipientMemberIds } = req.body;
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
+                res.status(401).json({ 
+                    code: 'AUTH_UNAUTHORIZED', 
+                    message: tBackend('messages.unauthorized', locale) 
+                });
                 return;
             }
             
             if (!Array.isArray(recipientMemberIds) || recipientMemberIds.length === 0) {
-                res.status(400).json({ code: 'MSG_NO_RECIPIENTS', message: 'No recipients specified' });
+                res.status(400).json({ 
+                    code: 'MSG_NO_RECIPIENTS', 
+                    message: tBackend('messages.validation_failed', locale, { details: 'No recipients specified' })
+                });
                 return;
             }
 
@@ -107,7 +125,7 @@ const messageController = {
             await auditService.logAction(
                 'ADMIN_SEND_GROUP_MESSAGE',
                 senderId,
-                `Admin sent message to ${recipientMemberIds.length} members`,
+                tBackend('messages.audit.message_sent_to_group', 'en', { count: recipientMemberIds.length }),
                 req,
                 'success',
                 undefined,
@@ -116,23 +134,29 @@ const messageController = {
 
             // Mapiramo poruku za frontend
             const mappedMessage = mapToMemberMessage(message);
-            res.status(201).json(mappedMessage); // Vraća se jedna kreirana poruka
+            res.status(201).json(mappedMessage);
         } catch (error) {
             console.error('Error sending group message:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             res.status(500).json({ 
                 code: 'MSG_SEND_GROUP_FAILED',
-                message: error instanceof Error ? error.message : 'Failed to send group message' 
+                message: tBackend('messages.send_failed', locale, { details: errorMessage })
             });
         }
     },
     
     async sendMessageToAll(req: Request, res: Response): Promise<void> {
+        const locale = req.locale || 'en';
+        
         try {
             const { messageText } = req.body;
             const senderId = req.user?.id;
             
             if (!senderId) {
-                res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
+                res.status(401).json({ 
+                    code: 'AUTH_UNAUTHORIZED', 
+                    message: tBackend('messages.unauthorized', locale) 
+                });
                 return;
             }
 
@@ -147,7 +171,7 @@ const messageController = {
             await auditService.logAction(
                 'ADMIN_SEND_ALL_MESSAGE',
                 senderId,
-                `Admin sent message to all members`,
+                tBackend('messages.audit.message_sent_to_all', 'en'),
                 req,
                 'success',
                 undefined,
@@ -159,9 +183,10 @@ const messageController = {
             res.status(201).json(mappedMessage);
         } catch (error) {
             console.error('Error sending message to all members:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             res.status(500).json({ 
                 code: 'MSG_SEND_ALL_FAILED',
-                message: error instanceof Error ? error.message : 'Failed to send message to all members' 
+                message: tBackend('messages.send_failed', locale, { details: errorMessage })
             });
         }
     },

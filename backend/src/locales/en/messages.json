@@ -1,0 +1,26 @@
+{
+  "create_success": "Message created successfully",
+  "create_failed": "Failed to create message: {{details}}",
+  "send_success": "Message sent successfully",
+  "send_failed": "Failed to send message: {{details}}",
+  "not_found": "Message not found",
+  "mark_read_success": "Message marked as read",
+  "mark_read_failed": "Failed to mark message as read: {{details}}",
+  "archive_success": "Message archived successfully",
+  "archive_failed": "Failed to archive message: {{details}}",
+  "delete_success": "Message deleted successfully",
+  "delete_failed": "Failed to delete message: {{details}}",
+  "delete_all_success": "All messages deleted successfully",
+  "delete_all_failed": "Failed to delete all messages: {{details}}",
+  "unauthorized": "You are not authorized to perform this action",
+  "validation_failed": "Validation failed: {{details}}",
+  "audit": {
+    "message_created": "Message created by member {{memberId}}",
+    "message_sent": "Message sent to member {{memberId}}",
+    "message_sent_to_all": "Message sent to all members",
+    "message_read": "Message marked as read by {{memberId}}",
+    "message_archived": "Message archived by {{memberId}}",
+    "message_deleted": "Message deleted by {{memberId}}",
+    "all_messages_deleted": "All messages deleted by {{memberId}}"
+  }
+}

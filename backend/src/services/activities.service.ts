@@ -2,7 +2,7 @@ import { ActivityStatus, Prisma, PrismaClient } from '@prisma/client';
 import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
-import { updateMemberTotalHours } from './member.service.js';
+import { updateMemberTotalHours, updateMemberActivityHours } from './member.service.js';
 import { differenceInMinutes } from 'date-fns';
 import { updateAnnualStatistics } from './statistics.service.js';
 
@@ -136,6 +136,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
     if (memberIdsForUpdate.length > 0) {
       for (const memberId of memberIdsForUpdate) {
         await updateMemberTotalHours(memberId, tx);
+        await updateMemberActivityHours(memberId, tx);
       }
     }
 
@@ -375,6 +376,7 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
 
     for (const memberId of allAffectedIds) {
       await updateMemberTotalHours(memberId, tx);
+      await updateMemberActivityHours(memberId, tx);
       await updateAnnualStatistics(memberId, year, tx);
     }
 
@@ -406,6 +408,7 @@ export const cancelActivityService = async (activity_id: number, cancellation_re
     const year = new Date(cancelledActivity.start_date).getFullYear();
     for (const memberId of participantIds) {
       await updateMemberTotalHours(memberId, tx);
+      await updateMemberActivityHours(memberId, tx);
       await updateAnnualStatistics(memberId, year, tx);
     }
 
@@ -427,6 +430,7 @@ export const deleteActivityService = async (activity_id: number) => {
     // Ažuriraj sate i godišnju statistiku za sve sudionike koji su bili dio izbrisane aktivnosti unutar transakcije
     for (const memberId of participantIds) {
       await updateMemberTotalHours(memberId, tx);
+      await updateMemberActivityHours(memberId, tx);
       if (activity.start_date) {
         const year = new Date(activity.start_date).getFullYear();
         await updateAnnualStatistics(memberId, year, tx);
@@ -466,6 +470,7 @@ export const leaveActivityService = async (activity_id: number, member_id: numbe
     });
 
     await updateMemberTotalHours(member_id, tx);
+    await updateMemberActivityHours(member_id, tx);
 
     if (activity.start_date) {
       const year = new Date(activity.start_date).getFullYear();
@@ -520,6 +525,7 @@ export const addParticipantService = async (activity_id: number, member_id: numb
 
     // Ažuriraj ukupne sate za člana
     await updateMemberTotalHours(member_id, tx);
+    await updateMemberActivityHours(member_id, tx);
 
     return newParticipation;
   });
@@ -545,6 +551,7 @@ export const removeParticipantFromActivityService = async (activity_id: number, 
 
     await activityRepository.removeParticipant(activity_id, member_id, tx);
     await updateMemberTotalHours(member_id, tx);
+    await updateMemberActivityHours(member_id, tx);
     if (activity.start_date) {
       const year = new Date(activity.start_date).getFullYear();
       await updateAnnualStatistics(member_id, year, tx);
@@ -637,6 +644,7 @@ export const updateParticipationService = async (
   return prisma.$transaction(async (tx: TransactionClient) => {
     await activityRepository.updateParticipation(participation_id, processedUpdateData, tx);
     await updateMemberTotalHours(memberId, tx);
+    await updateMemberActivityHours(memberId, tx);
     
     // Dohvati ažurirano sudjelovanje s podacima o aktivnosti
     const updatedParticipationWithActivity = await (tx as PrismaClient).activityParticipation.findUnique({
@@ -650,6 +658,7 @@ export const updateParticipationService = async (
 
     // Nakon ažuriranja, ponovno izračunaj ukupne sate i godišnju statistiku za tog člana
     await updateMemberTotalHours(memberId, tx);
+    await updateMemberActivityHours(memberId, tx);
     if (updatedParticipationWithActivity.activity.start_date) {
       const year = new Date(updatedParticipationWithActivity.activity.start_date).getFullYear();
       await updateAnnualStatistics(memberId, year, tx);

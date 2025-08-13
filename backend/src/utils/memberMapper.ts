@@ -55,7 +55,7 @@ type MemberRaw = {
   functions_in_society?: string | null;
 };
 
-export function mapToMember(raw: MemberRaw, total_hours: number = 0): Member {
+export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_hours: number = 0): Member {
   // Pomoćna funkcija za konverziju string | Date u Date
   const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
   const full_name = raw.nickname && raw.nickname !== ''
@@ -90,7 +90,8 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0): Member {
       return s === 'registered' || s === 'inactive' || s === 'pending' ? s : 'pending';
     })(),
     total_hours,
-    activity_status: total_hours >= 20 ? 'active' : 'passive',
+    activity_hours,
+    activity_status: activity_hours >= 20 ? 'active' : 'passive',
     membership_type: ((): MembershipTypeEnum | undefined => {
       const t = raw.membership_type ?? undefined;
       if (t === 'regular' || t === 'honorary' || t === 'supporting') {

@@ -298,7 +298,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">{t("membership.membershipStatus")}</span>
               <span className="font-medium">
-                {getActivityStatus(fullMember.total_hours) === 'active' ? (
+                {getActivityStatus(fullMember.activity_hours ?? 0) === 'active' ? (
                   <span className="text-green-600">{t("membership.active")}</span>
                 ) : (
                   <span className="text-yellow-600">{t("membership.passive")}</span>

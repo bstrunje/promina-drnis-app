@@ -11,13 +11,8 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
     const { searchTerm } = req.query;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
-    if (typeof searchTerm !== 'string' || searchTerm.length < 2) {
+    if (typeof searchTerm !== 'string' || searchTerm.length < 1) {
       res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Valid search term is required') });
-      return;
-    }
-
-    if (searchTerm.length < 2) {
-      res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Search term must be at least 2 characters long') });
       return;
     }
 

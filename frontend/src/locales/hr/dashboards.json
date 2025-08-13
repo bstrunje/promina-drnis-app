@@ -6,6 +6,7 @@
     "refreshData": "Osvježi podatke",
     "messages": {
         "title": "Poruke",
+        "messages": "Poruke",
         "unreadMessages": "Postoje nepročitane poruke",
         "noUnreadMessages": "Nema nepročitanih poruka"
     },
@@ -70,11 +71,6 @@
         "activityManagement": {
             "title": "Upravljanje aktivnostima",
             "description": "Upravljanje i praćenje aktivnosti"
-        },
-        "messages": {
-            "title": "Poruke",
-            "unreadMessages": "Postoje nepročitane poruke",
-            "noUnreadMessages": "Nema nepročitanih poruka"
         }
     },
     "stampInventory": {

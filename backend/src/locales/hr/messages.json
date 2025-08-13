@@ -1,0 +1,26 @@
+{
+  "create_success": "Poruka je uspješno kreirana",
+  "create_failed": "Neuspješno kreiranje poruke: {{details}}",
+  "send_success": "Poruka je uspješno poslana",
+  "send_failed": "Neuspješno slanje poruke: {{details}}",
+  "not_found": "Poruka nije pronađena",
+  "mark_read_success": "Poruka je označena kao pročitana",
+  "mark_read_failed": "Neuspješno označavanje poruke kao pročitane: {{details}}",
+  "archive_success": "Poruka je uspješno arhivirana",
+  "archive_failed": "Neuspješno arhiviranje poruke: {{details}}",
+  "delete_success": "Poruka je uspješno obrisana",
+  "delete_failed": "Neuspješno brisanje poruke: {{details}}",
+  "delete_all_success": "Sve poruke su uspješno obrisane",
+  "delete_all_failed": "Neuspješno brisanje svih poruka: {{details}}",
+  "unauthorized": "Nemate ovlaštenje za ovu radnju",
+  "validation_failed": "Validacija neuspješna: {{details}}",
+  "audit": {
+    "message_created": "Poruka kreirana od strane člana {{memberId}}",
+    "message_sent": "Poruka poslana članu {{memberId}}",
+    "message_sent_to_all": "Poruka poslana svim članovima",
+    "message_read": "Poruka označena kao pročitana od strane {{memberId}}",
+    "message_archived": "Poruka arhivirana od strane {{memberId}}",
+    "message_deleted": "Poruka obrisana od strane {{memberId}}",
+    "all_messages_deleted": "Sve poruke obrisane od strane {{memberId}}"
+  }
+}

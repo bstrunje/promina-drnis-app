@@ -305,5 +305,8 @@
     "izleti": "Organizacija, vođenje i sudjelovanje na izletima",
     "razno": "Ostale razne aktivnosti",
     "sastanci": "Sastanci članova i upravnog odbora"
+  },
+  "permissions": {
+    "noActivityAccess": "Nemate ovlasti za pristup aktivnostima."
   }
 }

@@ -170,6 +170,7 @@ const response = await api.get<Member>(`/members/${memberId}?t=${timestamp}`, {
         membership_type: data.membership_type ?? MembershipTypeEnum.Regular,
         registration_completed: data.registration_completed ?? false,
         total_hours: data.total_hours ?? 0,
+        activity_hours: data.activity_hours ?? 0,
         membership_history: data.membership_history ?? { periods: [] },
       };
 

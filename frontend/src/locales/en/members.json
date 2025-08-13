@@ -43,6 +43,8 @@
             "can_manage_card_numbers": "Manage card numbers",
             "can_assign_passwords": "Assign passwords"
         },
+        "updateSuccess": "Permissions updated successfully.",
+        "updateError": "An error occurred while updating permissions.",
         "templates": {
             "fullAdmin": "Full administrative access",
             "operational": "Operational access"
@@ -85,6 +87,9 @@
         "found": "Found",
         "buttons": {
             "filters": "Filters"
+        },
+        "groups": {
+            "allMembers": "All Members"
         }
     },
     "printList": "Print List",
@@ -129,6 +134,7 @@
             "sortBy": "Sort by"
         },
         "options": {
+            "regular": "Regular Members",
             "allMembers": "All members",
             "active": "Active",
             "passive": "Passive",

@@ -13,26 +13,30 @@ import memberService from "../services/member.service.js";
 import memberRepository from "../repositories/member.repository.js";
 import { parseDate, formatDate } from '../utils/dateUtils.js';
 import prisma from "../utils/prisma.js";
-import { tOrDefault } from '../utils/i18n.js';
+import { tBackend } from '../utils/i18n.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
 function handleControllerError(error: unknown, res: Response): void {
-  const locale: 'en' | 'hr' = res.locale || 'hr';
+  const locale = res.locale || 'en';
   console.error("Controller error:", error);
+  
   if (error instanceof Error) {
     if (error.message.includes("not found")) {
       res.status(404).json({ 
-        message: tOrDefault('common.errors.NOT_FOUND', locale, error.message) 
+        code: 'NOT_FOUND',
+        message: tBackend('errors.not_found', locale, { details: error.message })
       });
     } else {
-      res.status(500).json({ 
-        message: tOrDefault('common.errors.SERVER_ERROR', locale, error.message) 
+      res.status(500).json({
+        code: 'SERVER_ERROR',
+        message: tBackend('errors.server_error', locale, { details: error.message })
       });
     }
   } else {
-    res.status(500).json({ 
-      message: tOrDefault('common.errors.UNKNOWN_ERROR', locale, 'An unknown error occurred') 
+    res.status(500).json({
+      code: 'UNKNOWN_ERROR',
+      message: tBackend('errors.unknown', locale)
     });
   }
 }
@@ -43,13 +47,14 @@ function handleControllerError(error: unknown, res: Response): void {
  * Optimizirano za Vercel serverless okruženje
  */
 export const getMemberDashboardStats = async (req: Request, res: Response): Promise<void> => {
+  const locale = req.locale || 'en';
+  
   try {
     const memberId = req.user?.id;
     if (!memberId) {
-      const locale: 'en' | 'hr' = res.locale || 'hr';
       res.status(401).json({ 
-        code: 'UNAUTHORIZED_ACCESS',
-        message: tOrDefault('auth.errors.UNAUTHORIZED_ACCESS', locale, 'Unauthorized access')
+        code: 'UNAUTHORIZED',
+        message: tBackend('auth.unauthorized', locale)
       });
       return;
     }
@@ -102,13 +107,19 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
 };
 
 export const memberController = {
-  async getAllMembers(req: Request, res: Response) {
+  async getAllMembers(req: Request, res: Response): Promise<void> {
+    const locale = req.locale || 'en';
+    
     try {
-      const activeOnly = req.query.status === 'active';
-      const members = await memberRepository.findAll(activeOnly);
+      const members = await memberRepository.findAll();
       res.json(members);
     } catch (error) {
-      handleControllerError(error, res);
+      console.error('Error in getAllMembers:', error);
+      res.status(500).json({
+        code: 'FETCH_MEMBERS_FAILED',
+        message: tBackend('members.fetch_failed', locale),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   },
 
@@ -116,31 +127,41 @@ export const memberController = {
     req: Request<{ memberId: string }>,
     res: Response
   ): Promise<void> {
+    const locale = req.locale || 'en';
+    
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const locale: 'en' | 'hr' = res.locale || 'hr';
       if (isNaN(memberId)) {
         res.status(400).json({ 
           code: 'INVALID_MEMBER_ID',
-          message: tOrDefault('member.errors.INVALID_MEMBER_ID', locale, 'Invalid member ID')
+          message: tBackend('members.invalid_id', locale)
         });
         return;
       }
 
+      const member = await memberRepository.findById(memberId);
+      if (!member) {
+        res.status(404).json({ 
+          code: 'MEMBER_NOT_FOUND',
+          message: tBackend('members.not_found', locale, { id: memberId })
+        });
+        return;
+      }
+
+      // Postavi HTTP zaglavlja za sprječavanje cache-anja
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
 
-      const member = await memberService.getMemberById(memberId);
-      if (member === null) {
-        const locale: 'en' | 'hr' = res.locale || 'hr';
+      const memberDetails = await memberService.getMemberById(memberId);
+      if (memberDetails === null) {
         res.status(404).json({ 
           code: 'MEMBER_NOT_FOUND',
-          message: tOrDefault('member.errors.MEMBER_NOT_FOUND', locale, 'Member not found')
+          message: tBackend('members.not_found', locale, { id: memberId })
         });
       } else {
-        if (member.membership_details?.fee_payment_date) {
-          const paymentDate = member.membership_details.fee_payment_date;
+        if (memberDetails.membership_details?.fee_payment_date) {
+          const paymentDate = memberDetails.membership_details.fee_payment_date;
           const isDateObject = typeof paymentDate === 'object' && 
                               paymentDate !== null && 
                               'getTime' in paymentDate;

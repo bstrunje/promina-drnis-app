@@ -41,6 +41,7 @@ export function adaptMembershipPeriods(periods: OriginalMembershipPeriod[]): Mem
 export interface MemberStatusData {
   status?: MembershipStatus;
   total_hours?: string | number;
+  activity_hours?: string | number; // Sati za prošlu i tekuću godinu (za status aktivnosti)
   card_number?: string;
   membership_details?: {
     fee_payment_year?: number;
@@ -127,16 +128,16 @@ export function isFeePaidForYear(member: MemberStatusData, yearToCheck: number):
 }
 
 /**
- * Određuje status aktivnosti člana na temelju broja odrađenih sati
+ * Određuje status aktivnosti člana na temelju broja odrađenih sati za prošlu i tekuću godinu
  * @param member Podaci o članu
- * @returns 'active' ako član ima 20+ sati, 'passive' inače
+ * @returns 'active' ako član ima 20+ sati (activity_hours), 'passive' inače
  */
 export function determineMemberActivityStatus(member: MemberStatusData): ActivityStatus {
-  const totalHours = typeof member.total_hours === 'string' 
-    ? parseFloat(member.total_hours) 
-    : Number(member.total_hours ?? 0);
+  const activityHours = typeof member.activity_hours === 'string' 
+    ? parseFloat(member.activity_hours) 
+    : Number(member.activity_hours ?? 0);
     
-  return totalHours >= 20 ? 'active' : 'passive';
+  return activityHours >= 20 ? 'active' : 'passive';
 }
 
 // Prošireni tip rezultata statusa s više detalja

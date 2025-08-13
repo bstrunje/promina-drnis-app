@@ -31,6 +31,7 @@ model Member {
   shell_jacket_delivered   Boolean                  @default(false)
   hat_delivered            Boolean                  @default(false)
   total_hours              Decimal?                 @default(0) @db.Decimal(10, 2)
+  activity_hours           Decimal?                 @default(0) @db.Decimal(10, 2) // Sati za prošlu i tekuću godinu (za status aktivnosti)
   gender                   String?                  @db.VarChar(6) // "male", "female"
   registration_completed   Boolean?                 @default(false)
   profile_image_path       String?                  @db.VarChar(255)

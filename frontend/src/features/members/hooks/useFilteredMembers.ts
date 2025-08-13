@@ -3,11 +3,12 @@ import { MemberWithDetails } from '@shared/memberDetails.types';
 import { hasActiveMembershipPeriod } from '@shared/memberStatus.types';
 import { getCurrentDate, getCurrentYear, getMonth, getDate } from '../../../utils/dateUtils';
 import { parseISO } from 'date-fns';
+import { getMembershipDisplayStatusExternal } from '../components/memberTableUtils';
 
 interface UseFilteredMembersProps {
   members: MemberWithDetails[];
   searchTerm: string;
-  activeFilter: "all" | "active" | "passive" | "paid" | "unpaid" | "pending";
+  activeFilter: "regular" | "active" | "passive" | "paid" | "unpaid" | "all"| "pending";
   ageFilter: "all" | "adults";
   sortCriteria: "name" | "hours";
   sortOrder: "asc" | "desc";
@@ -44,7 +45,34 @@ export const useFilteredMembers = ({
     
     // Apply active/passive filter
     if (activeFilter !== "all") {
-      if (activeFilter === "active" || activeFilter === "passive") {
+      if (activeFilter === "regular") {
+        // Filtriraj redovne članove s obojenim retcima (ista logika kao stari "Obojani" gumb)
+        result = result.filter(member => {
+          // Dohvati status člana
+          const status = getMembershipDisplayStatusExternal(
+            member.detailedStatus,
+            false, // isAdmin
+            false, // isSuperuser
+            member.membership_type,
+            member.periods
+          );
+
+          // Samo za redovne članove primijeni bojanje prema životnom statusu
+          if (status.key === 'regularMember') {
+            const lifeStatus = member.life_status;
+
+            // Vrati true ako član ima životni status koji rezultira bojanjem
+            return (
+              lifeStatus === "employed/unemployed" ||
+              lifeStatus === "child/pupil/student" ||
+              lifeStatus === "pensioner"
+            );
+          }
+
+          return false;
+        });
+      }
+      else if (activeFilter === "active" || activeFilter === "passive") {
         const isActive = activeFilter === "active";
         // Aktivni su članovi koji imaju 20 ili više sati aktivnosti
         const requiredHoursForActive = 20 * 60; // 20 sati u minutama
@@ -59,8 +87,8 @@ export const useFilteredMembers = ({
             return false; // Izbaci bivše članove i one na čekanju
           }
 
-          const totalHours = member.total_hours ?? 0;
-          return isActive ? (totalHours >= requiredHoursForActive) : (totalHours < requiredHoursForActive);
+          const activityHours = member.activity_hours ?? 0;
+          return isActive ? (activityHours >= requiredHoursForActive) : (activityHours < requiredHoursForActive);
         });
       } 
       else if (activeFilter === "paid") {
@@ -118,8 +146,8 @@ export const useFilteredMembers = ({
       });
     } else if (sortCriteria === "hours") {
       result.sort((a, b) => {
-        const hoursA = a.total_hours ?? 0;
-        const hoursB = b.total_hours ?? 0;
+        const hoursA = a.activity_hours ?? 0;
+        const hoursB = b.activity_hours ?? 0;
         return sortOrder === "asc" 
           ? hoursA - hoursB 
           : hoursB - hoursA;

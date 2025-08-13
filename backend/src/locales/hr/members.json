@@ -1,0 +1,9 @@
+{
+  "invalid_id": "Nevažeći ID člana",
+  "not_found": "Član s ID-om {{id}} nije pronađen",
+  "fetch_failed": "Neuspjelo dohvaćanje članova. Molimo pokušajte ponovno kasnije.",
+  "update_success": "Član je uspješno ažuriran",
+  "update_failed": "Neuspješno ažuriranje člana",
+  "delete_success": "Član je uspješno obrisan",
+  "delete_failed": "Neuspješno brisanje člana"
+}

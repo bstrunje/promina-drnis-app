@@ -91,7 +91,8 @@ export interface Member {
 
     // Profile Information (UI/Display only)
     total_hours?: number;
-    activity_status?: ActivityStatus;  // Calculated from total_hours
+    activity_hours?: number;  // Sati za prošlu i tekuću godinu (za status aktivnosti)
+    activity_status?: ActivityStatus;  // Calculated from activity_hours
     membership_type?: MembershipTypeEnum; // Migrirano na enum
     tshirt_size?: ClothingSize;
     shell_jacket_size?: ClothingSize;
@@ -137,7 +138,8 @@ export interface MemberSearchResult {
  */
 export interface MemberProfile {
     total_hours: number;
-    activity_status: ActivityStatus;  // Calculated: 'active' if total_hours >= 20, otherwise 'passive'
+    activity_hours: number;  // Sati za prošlu i tekuću godinu (za status aktivnosti)
+    activity_status: ActivityStatus;  // Calculated: 'active' if activity_hours >= 20, otherwise 'passive'
     membership_type: MembershipTypeEnum; // Migrirano na enum
 }
 

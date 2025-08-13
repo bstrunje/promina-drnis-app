@@ -61,7 +61,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
   );
 
   const activeMembersCount = useMemo(
-    () => registeredMembers.filter(member => (member.total_hours ?? 0) >= 1200).length,
+    () => registeredMembers.filter(member => (member.activity_hours ?? 0) >= 1200).length,
     [registeredMembers]
   );
 

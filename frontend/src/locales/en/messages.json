@@ -14,7 +14,7 @@
         "selectedMembers": "Selected Members ({{count}}):"
       },
       "placeholders": {
-        "searchMember": "Search by first or last name... (minimum 2 characters)",
+        "searchMember": "Search by first or last name...",
         "messageText": "Enter message text...",
         "messageTextGroup": "Enter message text for group of members...",
         "messageTextAll": "Enter message text for all members..."
@@ -27,7 +27,7 @@
         "clearAll": "Clear All"
       },
       "messages": {
-        "searchMinLength": "Enter at least 2 characters to search members",
+        "searchMinLength": "Enter at least 1 character to search members",
         "selectMemberWarning": "Please select a member to send message",
         "selectGroupWarning": "Please select at least one member to send group message",
         "emptyMessageWarning": "Message cannot be empty",
@@ -152,7 +152,18 @@
     },
     "messages": {
       "deleteAll": "Delete All Messages",
-      "deleteAllShort": "Delete All"
+      "deleteAllShort": "Delete All",
+      "addMemberToGroup": "Add member to group:",
+      "searchPlaceholder": "Search by name or surname...",
+      "title": "Send Message to Administrator",
+      "placeholder": "Type your message here...",
+      "sendButton": "Send Message",
+      "sendSuccess": "Message sent successfully.",
+      "sendError": "Error sending message.",
+      "error": "Error",
+      "fetchMessagesError": "Unable to fetch messages",
+      "fetchSentMessagesError": "Unable to fetch sent messages",
+      "readMessageTitle": "Read message"
     },
     "messageList": {
       "title": "Messages",

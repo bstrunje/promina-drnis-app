@@ -4,6 +4,7 @@ import { authMiddleware as authenticateToken, checkRole } from '../middleware/au
 import type { Request } from 'express';
 import type { DatabaseUser } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
+import { updateAllMembersTotalHours } from '../services/member.service.js';
 
 
 interface AuthRequest extends Request {
@@ -166,6 +167,25 @@ router.post('/check-member-statuses', authenticateToken, checkRole(['member_supe
   } catch (error) {
     console.error('Error checking member statuses:', error);
     return res.status(500).json({ error: 'Failed to check member statuses' });
+  }
+});
+
+// Endpoint za masovno ažuriranje total_hours za sve članove (ograničeno na prošlu i tekuću godinu)
+router.post('/update-all-member-hours', authenticateToken, checkRole(['member_superuser']), async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('Pokretanje masovnog ažuriranja total_hours za sve članove...');
+    
+    await updateAllMembersTotalHours();
+    
+    return res.json({
+      message: 'Masovno ažuriranje total_hours za sve članove je uspješno završeno. Provjerite server logove za detalje.'
+    });
+  } catch (error) {
+    console.error('Greška prilikom masovnog ažuriranja total_hours:', error);
+    return res.status(500).json({ 
+      error: 'Neuspješno masovno ažuriranje total_hours',
+      details: error instanceof Error ? error.message : 'Nepoznata greška'
+    });
   }
 });
 

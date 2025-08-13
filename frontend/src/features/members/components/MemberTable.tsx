@@ -178,12 +178,12 @@ export const MemberTable: React.FC<MemberTableProps> = ({
           </thead>
           <tbody>
             {filteredMembers.flatMap((group) => {
-              // Odvajamo članove u dvije kategorije: ≥20 sati i <20 sati
+              // Odvajamo članove u dvije kategorije: ≥20 sati i <20 sati (koristimo activity_hours za status)
               const activeMembers = group.members.filter((m) => {
-                return Number(m.total_hours) >= 20;
+                return Number(m.activity_hours ?? 0) >= 20;
               });
               const inactiveMembers = group.members.filter(
-                (m) => Number(m.total_hours) < 20
+                (m) => Number(m.activity_hours ?? 0) < 20
               );
 
               let activeCounter = 1;
@@ -262,7 +262,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       }
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
-                      {formatMinutesToHoursAndMinutes(member.total_hours)}
+                      {formatMinutesToHoursAndMinutes(member.activity_hours)}
                     </td>
                     {isSuperuser && (
                       <td className={`px-3 py-4 text-center print:hidden ${getLifeStatusColor(member)}`}>
@@ -330,7 +330,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                       }
                     </td>
                     <td className={`px-3 py-4 border-r border-gray-300 text-center ${getLifeStatusColor(member)}`}>
-                      {formatMinutesToHoursAndMinutes(member.total_hours)}
+                      {formatMinutesToHoursAndMinutes(member.activity_hours)}
                     </td>
                     {isSuperuser && (
                       <td className={`px-3 py-4 text-center print:hidden ${getLifeStatusColor(member)}`}>
@@ -375,9 +375,9 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             {/* Aktivni članovi */}
             {filteredMembers
               .flatMap((group) => {
-                // Prvo izdvojimo sve aktivne članove iz svih grupa
+                // Prvo izdvojimo sve aktivne članove iz svih grupa (koristimo activity_hours za status)
                 const activeMembers = group.members.filter(
-                  (m) => Number(m.total_hours) >= 20
+                  (m) => Number(m.activity_hours ?? 0) >= 20
                 );
                 return activeMembers;
               })
@@ -397,7 +397,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     </div>
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300 text-center">
-                    {formatMinutesToHoursAndMinutes(member.total_hours)}
+                    {formatMinutesToHoursAndMinutes(member.activity_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300">
                     {/* Polje za potpis */}
@@ -415,9 +415,9 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             {/* Neaktivni članovi */}
             {filteredMembers
               .flatMap((group) => {
-                // Zatim izdvojimo sve neaktivne članove iz svih grupa
+                // Zatim izdvojimo sve neaktivne članove iz svih grupa (koristimo activity_hours za status)
                 const inactiveMembers = group.members.filter(
-                  (m) => Number(m.total_hours) < 20
+                  (m) => Number(m.activity_hours ?? 0) < 20
                 );
                 return inactiveMembers;
               })
@@ -437,7 +437,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     </div>
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300 text-center">
-                    {formatMinutesToHoursAndMinutes(member.total_hours)}
+                    {formatMinutesToHoursAndMinutes(member.activity_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300">
                     {/* Polje za potpis */}

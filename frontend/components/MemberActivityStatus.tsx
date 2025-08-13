@@ -10,15 +10,16 @@ interface MemberActivityStatusProps {
 
 const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) => {
   const { t } = useTranslation('profile');
-  const totalMinutes = member.total_hours ?? 0;
-  const totalHours = totalMinutes / 60;
+  // Koristimo activity_hours za status aktivnosti (prošla + tekuća godina)
+  const activityMinutes = member.activity_hours ?? 0;
+  const activityHours = activityMinutes / 60;
 
   const getActivityStatus = (hours: number) => {
     return hours >= 20 ? 'active' : 'passive';
   };
 
-  const status = getActivityStatus(totalHours);
-  const hoursNeeded = Math.max(0, 20 - totalHours);
+  const status = getActivityStatus(activityHours);
+  const hoursNeeded = Math.max(0, 20 - activityHours);
 
   return (
     <div className="mt-6 pt-4 border-t">
@@ -29,7 +30,7 @@ const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) =
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm text-gray-500">{t('activityStatus.totalHours')}</label>
-          <p className="font-bold text-lg">{formatMinutesToHoursAndMinutes(totalMinutes)}</p>
+          <p className="font-bold text-lg">{formatMinutesToHoursAndMinutes(activityMinutes)}</p>
         </div>
         <div>
           <label className="text-sm text-gray-500">{t('activityStatus.status')}</label>

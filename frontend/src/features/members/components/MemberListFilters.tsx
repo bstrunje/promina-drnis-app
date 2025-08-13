@@ -1,27 +1,26 @@
 import React from 'react';
-import { 
-  SortAsc, 
-  SortDesc, 
-  Filter, 
-  Search, 
-  XCircle,
-  Palette
+import {
+  SortAsc,
+  SortDesc,
+  Filter,
+  Search,
+  XCircle
 } from 'lucide-react';
 import { Button } from '@components/ui/button'; // Promijenio @ putanju
 import { Input } from '@components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@components/ui/select';
 import { useTranslation } from 'react-i18next';
 
 // Definirani tipovi za bolju type safety
 type SortOrder = 'asc' | 'desc';
 type SortCriteria = 'name' | 'hours';
-type ActiveFilter = 'all' | 'active' | 'passive' | 'paid' | 'unpaid';
+type ActiveFilter = 'regular' | 'active' | 'passive' | 'paid' | 'unpaid' | 'all';
 type AgeFilter = 'all' | 'adults';
 
 export interface MemberListFiltersProps {
@@ -37,8 +36,6 @@ export interface MemberListFiltersProps {
   onSortOrderChange: (value: SortOrder) => void;
   groupType: string;
   onGroupTypeChange: (value: string) => void;
-  showOnlyColored?: boolean;
-  onToggleColoredRows?: () => void;
   onCloseFilters?: () => void;
 }
 
@@ -58,8 +55,6 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onSortOrderChange,
   groupType,
   onGroupTypeChange,
-  showOnlyColored = false,
-  onToggleColoredRows,
   onCloseFilters
 }) => {
   const { t } = useTranslation('members');
@@ -86,7 +81,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   const handleGroupToggle = () => {
     onGroupTypeChange(groupType ? "" : "true");
   };
-  
+
   return (
     <div className="flex flex-col md:flex-row gap-4">
       <div className="flex flex-wrap md:flex-row flex-col gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 w-full">
@@ -113,7 +108,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
             )}
           </div>
         </div>
-        
+
         {/* Status filteri */}
         <div className="flex flex-col">
           <div className="flex flex-wrap md:flex-row flex-col gap-2">
@@ -126,6 +121,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 <SelectValue placeholder={t('memberListFilters.filters.activityStatus')} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="regular">{t('memberListFilters.options.regular')}</SelectItem>
                 <SelectItem value="all">{t('memberListFilters.options.allMembers')}</SelectItem>
                 <SelectItem value="active">{t('memberListFilters.options.active')}</SelectItem>
                 <SelectItem value="passive">{t('memberListFilters.options.passive')}</SelectItem>
@@ -133,13 +129,13 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 <SelectItem value="unpaid">{t('memberListFilters.options.unpaid')}</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button
               variant={ageFilter === "adults" ? "default" : "outline"}
               size="sm"
               onClick={handleAgeFilterToggle}
-              title={ageFilter === "adults" 
-                ? t('memberListFilters.tooltips.showAllMembers') 
+              title={ageFilter === "adults"
+                ? t('memberListFilters.tooltips.showAllMembers')
                 : t('memberListFilters.tooltips.showOnlyAdults')}
               className="min-w-[50px] md:min-w-[130px]"
             >
@@ -147,7 +143,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
             </Button>
           </div>
         </div>
-        
+
         {/* Sortiranje */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
@@ -165,13 +161,13 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleSortOrderToggle}
-              title={sortOrder === "asc" 
-                ? t('memberListFilters.tooltips.sortDescending') 
+              title={sortOrder === "asc"
+                ? t('memberListFilters.tooltips.sortDescending')
                 : t('memberListFilters.tooltips.sortAscending')}
               className="w-10 h-10 p-0 flex-shrink-0"
             >
@@ -183,7 +179,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
             </Button>
           </div>
         </div>
-        
+
         {/* Grupiranje i boje */}
         <div className="flex flex-col">
           <div className="flex gap-2">
@@ -191,28 +187,15 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
               variant={groupType ? "default" : "outline"}
               size="sm"
               onClick={handleGroupToggle}
-              title={groupType 
-                ? t('memberListFilters.tooltips.disableGrouping') 
+              title={groupType
+                ? t('memberListFilters.tooltips.disableGrouping')
                 : t('memberListFilters.tooltips.groupByMemberType')}
               className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
             >
               <span className="whitespace-nowrap">{t('memberListFilters.buttons.group')}</span>
             </Button>
-            
-            {onToggleColoredRows && (
-              <Button
-                variant={showOnlyColored ? "default" : "outline"}
-                size="sm"
-                onClick={onToggleColoredRows}
-                title={showOnlyColored 
-                  ? t('memberListFilters.tooltips.showAllMembers') 
-                  : t('memberListFilters.tooltips.showOnlyColoredRows')}
-                className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
-              >
-                <Palette className="h-4 w-4 mr-1" />
-                <span className="whitespace-nowrap">{t('memberListFilters.buttons.colored')}</span>
-              </Button>
-            )}
+
+
           </div>
         </div>
       </div>

@@ -1,17 +1,18 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import cardNumberRepository from '../repositories/cardnumber.repository.js';
 import auditService from '../services/audit.service.js';
 import prisma from "../utils/prisma.js";
 import memberRepository from '../repositories/member.repository.js';
 import bcrypt from 'bcrypt';
 import membershipService from '../services/membership.service.js';
-import { handleControllerError } from '../utils/controllerUtils.js';
+import { tBackend } from '../utils/i18n.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
 const cardNumberController = {
   // Get all available card numbers
-  async getAvailable(req: Request, res: Response): Promise<void> {
+  async getAvailable(req: Request, res: Response, _next: NextFunction): Promise<void> {
+    const locale = req.locale || 'hr';
     if (isDev) console.log("Fetching available card numbers - user role:", req.user?.role);
     try {
       const availableNumbers = await cardNumberRepository.getAvailable();
@@ -23,20 +24,23 @@ const cardNumberController = {
       console.error('Error fetching available card numbers:', error);
       res.status(500).json({
         code: 'CARDNUM_FETCH_AVAILABLE_FAILED',
-        message: 'Failed to fetch available card numbers',
+        message: tBackend('cardnumbers.fetch_failed', locale),
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   },
   
   // Add a single card number
-  async addSingle(req: Request, res: Response): Promise<void> {
+  async addSingle(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       const { cardNumber } = req.body;
       
       if (!cardNumber || typeof cardNumber !== 'string') {
-        res.status(400).json({ code: 'CARDNUM_INVALID_INPUT', message: 'Valid card number is required' });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_INVALID_INPUT', 
+          message: tBackend('cardnumbers.invalid_input', locale) 
+        });
       }
       
       // Get current card number length setting
@@ -48,11 +52,10 @@ const cardNumberController = {
       
       // Validate card number format
       if (cardNumber.length !== cardNumberLength) {
-        res.status(400).json({ 
+        return res.status(400).json({ 
           code: 'CARDNUM_LENGTH_INVALID',
-          message: `Card number must be ${cardNumberLength} characters long` 
+          message: tBackend('validations.invalid_oib', locale, { length: cardNumberLength })
         });
-        return;
       }
       
       await cardNumberRepository.addSingle(cardNumber);
@@ -67,31 +70,43 @@ const cardNumberController = {
         // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
-      res.status(201).json({ message: 'Card number added successfully' });
+      return res.status(201).json({ 
+        message: tBackend('cardnumbers.add_success', locale) 
+      });
     } catch (error) {
       console.error('Error adding card number:', error);
-      res.status(500).json({ code: 'CARDNUM_ADD_FAILED', message: 'Failed to add card number' });
+      return res.status(500).json({ 
+        code: 'CARDNUM_ADD_FAILED', 
+        message: tBackend('errors.unexpected', locale) 
+      });
     }
   },
   
   // Add a range of card numbers
-  async addRange(req: Request, res: Response): Promise<void> {
+  async addRange(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       const { start, end } = req.body;
       
       if (typeof start !== 'number' || typeof end !== 'number') {
-        res.status(400).json({ code: 'CARDNUM_RANGE_INVALID_INPUT', message: 'Valid start and end numbers are required' });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_RANGE_INVALID_INPUT', 
+          message: tBackend('cardnumbers.range_invalid_input', locale) 
+        });
       }
       
       if (start > end) {
-        res.status(400).json({ code: 'CARDNUM_RANGE_INVALID_ORDER', message: 'Start must be less than or equal to end' });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_RANGE_INVALID_ORDER', 
+          message: tBackend('cardnumbers.range_invalid_order', locale) 
+        });
       }
       
       if (end - start > 1000) {
-        res.status(400).json({ code: 'CARDNUM_RANGE_TOO_LARGE', message: 'Cannot add more than 1000 card numbers at once' });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_RANGE_TOO_LARGE', 
+          message: tBackend('cardnumbers.range_too_large', locale) 
+        });
       }
       
       // Get current card number length setting
@@ -113,28 +128,38 @@ const cardNumberController = {
         // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
-      res.status(201).json({ message: `${added} card numbers added successfully` });
+      return res.status(201).json({ 
+        message: tBackend('cardnumbers.add_range_success', locale, { count: added }) 
+      });
     } catch (error) {
       console.error('Error adding card number range:', error);
-      res.status(500).json({ code: 'CARDNUM_RANGE_ADD_FAILED', message: 'Failed to add card number range' });
+      return res.status(500).json({ 
+        code: 'CARDNUM_RANGE_ADD_FAILED', 
+        message: tBackend('errors.unexpected', locale) 
+      });
     }
   },
 
   // Delete a card number
-  async deleteCardNumber(req: Request, res: Response): Promise<void> {
+  async deleteCardNumber(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       const { cardNumber } = req.params;
       
       if (!cardNumber) {
-        res.status(400).json({ code: 'CARDNUM_MISSING_PARAM', message: 'Card number is required' });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_MISSING_PARAM', 
+          message: tBackend('cardnumbers.missing_param', locale) 
+        });
       }
       
       const deleted = await cardNumberRepository.deleteCardNumber(cardNumber);
       
       if (!deleted) {
-        res.status(404).json({ code: 'CARDNUM_NOT_FOUND_OR_ASSIGNED', message: 'Card number not found or already assigned to a member' });
-        return;
+        return res.status(404).json({ 
+          code: 'CARDNUM_NOT_FOUND_OR_ASSIGNED', 
+          message: tBackend('cardnumbers.not_found_or_assigned', locale) 
+        });
       }
       
       const performerId = req.user?.id || null;
@@ -149,18 +174,22 @@ const cardNumberController = {
         // performer_type se neće prosljeđivati - auditService će koristiti getPerformerType
       );
       
-      res.status(200).json({ 
-        message: 'Card number deleted successfully',
+      return res.status(200).json({ 
+        message: tBackend('cardnumbers.delete_success', locale),
         cardNumber 
       });
     } catch (error) {
       console.error('Error deleting card number:', error);
-      res.status(500).json({ code: 'CARDNUM_DELETE_FAILED', message: 'Failed to delete card number' });
+      return res.status(500).json({ 
+        code: 'CARDNUM_DELETE_FAILED', 
+        message: tBackend('errors.unexpected', locale) 
+      });
     }
   },
 
-  // Add this method to the controller
-  async getAllCardNumbers(req: Request, res: Response): Promise<void> {
+  // Get all card numbers with statistics
+  async getAllCardNumbers(req: Request, res: Response, _next: NextFunction): Promise<void> {
+    const locale = req.locale || 'hr';
     if (isDev) console.log("Fetching all card numbers - user role:", req.user?.role);
     try {
       const allCardNumbers = await cardNumberRepository.getAllCardNumbers();
@@ -184,19 +213,22 @@ const cardNumberController = {
       console.error('Error fetching all card numbers:', error);
       res.status(500).json({
         code: 'CARDNUM_FETCH_ALL_FAILED',
-        message: 'Failed to fetch card numbers',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: tBackend('cardnumbers.fetch_all_failed', locale),
+        error: error instanceof Error ? error.message : tBackend('errors.unexpected', locale)
       });
     }
   },
 
   // Nova metoda za sinkronizaciju statusa brojeva iskaznica
-  async syncCardNumberStatus(req: Request, res: Response): Promise<void> {
+  async syncCardNumberStatus(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       // Potrebna je admin/superuser razina pristupa
       if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-        res.status(403).json({ code: 'CARDNUM_FORBIDDEN_SYNC', message: 'Unauthorized. Only admins and superusers can sync card number status.' });
-        return;
+        return res.status(403).json({ 
+          code: 'CARDNUM_FORBIDDEN_SYNC', 
+          message: tBackend('cardnumbers.forbidden_sync', locale) 
+        });
       }
 
       if (isDev) console.log("Starting card number status synchronization...");
@@ -233,30 +265,35 @@ const cardNumberController = {
    * GET /api/card-numbers/consumed?search=...
    * Dostupno samo adminima i superuserima
    */
-  async getConsumedCardNumbers(req: Request, res: Response): Promise<void> {
+  async getConsumedCardNumbers(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       // Provjeri administratorska prava
       if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-        res.status(403).json({ code: 'CARDNUM_FORBIDDEN_CONSUMED', message: 'Unauthorized. Only admins and superusers can access consumed card numbers.' });
-        return;
+        return res.status(403).json({ 
+          code: 'CARDNUM_FORBIDDEN_CONSUMED', 
+          message: tBackend('cardnumbers.forbidden_consumed', locale) 
+        });
       }
       const search = typeof req.query.search === 'string' ? req.query.search : undefined;
       const consumedCards = await cardNumberRepository.getConsumedCardNumbers(search);
-      res.json(consumedCards);
+      return res.json(consumedCards);
     } catch (error) {
-      console.error('Greška u getConsumedCardNumbers:', error);
-      res.status(500).json({
+      console.error('Error in getConsumedCardNumbers:', error);
+      return res.status(500).json({
         code: 'CARDNUM_FETCH_CONSUMED_FAILED',
-        message: 'Neuspješno dohvaćanje potrošenih kartica',
-        error: error instanceof Error ? error.message : 'Nepoznata greška'
+        message: tBackend('cardnumbers.fetch_consumed_failed', locale),
+        error: error instanceof Error ? error.message : tBackend('errors.unexpected', locale)
       });
     }
   },
 
   async assignCardNumber(
     req: Request<{ memberId: string }>,
-    res: Response
-  ): Promise<void> {
+    res: Response,
+    _next: NextFunction
+  ): Promise<Response | void> {
+    const locale = req.locale || 'hr';
     try {
       const { memberId } = req.params;
       const { cardNumber } = req.body;
@@ -270,15 +307,19 @@ const cardNumberController = {
       // Dinamička validacija broja iskaznice prema postavkama
       const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
       if (!cardNumberRegex.test(cardNumber)) {
-        res.status(400).json({ code: 'CARDNUM_FORMAT_INVALID', message: `Card number must be exactly ${cardNumberLength} digits` });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_FORMAT_INVALID', 
+          message: tBackend('cardnumbers.card_format_invalid', locale, { length: cardNumberLength }) 
+        });
       }
 
       // Dohvati podatke o članu
       const member = await memberRepository.findById(parseInt(memberId));
       if (!member) {
-        res.status(404).json({ code: 'CARDNUM_MEMBER_NOT_FOUND', message: "Member not found" });
-        return;
+        return res.status(404).json({ 
+          code: 'CARDNUM_MEMBER_NOT_FOUND', 
+          message: tBackend('cardnumbers.member_not_found', locale) 
+        });
       }
 
       // Provjeri je li broj iskaznice već dodijeljen drugom članu
@@ -301,21 +342,22 @@ const cardNumberController = {
 
       if (existingCardCheck) {
         const existingMember = existingCardCheck.member;
-        res.status(400).json({ 
+        return res.status(400).json({ 
           code: 'CARDNUM_ALREADY_ASSIGNED',
-          message: `Card number ${cardNumber} is already assigned to member: ${existingMember.full_name}`,
+          message: tBackend('cardnumbers.member_has_card', locale, { cardNumber: existingMember.full_name }),
           existingMember: {
             member_id: existingMember.member_id,
             full_name: existingMember.full_name
           }
         });
-        return;
       }
 
       // Provjeri je li član već registriran
       if (member.registration_completed) {
-        res.status(400).json({ code: 'CARDNUM_ONLY_PENDING', message: "Can only assign card number for pending members" });
-        return;
+        return res.status(400).json({ 
+          code: 'CARDNUM_ONLY_PENDING', 
+          message: tBackend('cardnumbers.member_not_pending', locale) 
+        });
       }
 
       // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
@@ -361,21 +403,61 @@ const cardNumberController = {
         });
       });
 
-      if (req.user?.id) {
-        await auditService.logAction(
-          'ASSIGN_CARD_NUMBER',
-          req.user.id,
-          `Assigned card number ${cardNumber} to member ${member.full_name}`,
-          req,
-          'success',
-          parseInt(memberId),
-          req.user.performer_type
-        );
+      // Log the action if user is authenticated
+      const userId = req.user?.id;
+      if (userId) { // This ensures userId is truthy (not 0, null, or undefined)
+        try {
+          // Use the user's performer_type if available, otherwise default to MEMBER
+          const performerType = req.user?.performer_type || 'MEMBER' as const;
+          
+          // Ensure cardNumber is defined before using it in the audit message
+          if (typeof cardNumber === 'undefined') {
+            throw new Error('Broj iskazice nije definiran');
+          }
+          
+          // Use hardcoded string for audit log (not translated)
+          // Type assertion for member.full_name since it's required in the schema
+          const auditMessage = `Dodijeljen broj iskazice ${cardNumber} članu ${member.full_name as string}`;
+          
+          await auditService.logAction(
+            'ASSIGN_CARD_NUMBER',
+            userId, // We've already checked it's truthy
+            auditMessage,
+            req,
+            'success',
+            parseInt(memberId),
+            performerType
+          );
+        } catch (auditError) {
+          console.error('Failed to log audit action:', auditError);
+          // Continue with the response even if audit logging fails
+        }
       }
 
-      res.status(200).json({ message: "Card number assigned and member registered successfully" });
+      // Ensure cardNumber is defined and convert to string for the success message
+      if (typeof cardNumber === 'undefined') {
+        throw new Error(tBackend('cardnumbers.invalid_input', locale));
+      }
+      
+      // Ensure member.full_name is treated as a string
+      const successMessage = tBackend('cardnumbers.assign_success', locale, { 
+        cardNumber: String(cardNumber), // Explicitly convert to string
+        memberName: member.full_name as string // Type assertion since we know it's required in the schema
+      });
+      
+      return res.status(200).json({ 
+        message: successMessage
+      });
     } catch (error) {
-      handleControllerError(error, res);
+      console.error('Error in assignCardNumber:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error details:', errorMessage);
+      
+      return res.status(500).json({
+        code: 'CARDNUM_ASSIGN_FAILED',
+        message: tBackend('errors.unexpected', locale),
+        error: errorMessage
+      });
     }
   },
 

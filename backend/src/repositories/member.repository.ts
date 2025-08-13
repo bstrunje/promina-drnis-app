@@ -95,7 +95,8 @@ const memberRepository = {
         return members.map(m => {
             // Konverzija iz Decimal u number
             const totalHours = m.total_hours ? Number(m.total_hours) : 0;
-            return mapToMember(m, totalHours);
+            const activityHours = m.activity_hours ? Number(m.activity_hours) : 0;
+            return mapToMember(m, totalHours, activityHours);
         });
     },
 
@@ -117,8 +118,9 @@ const memberRepository = {
 
         // Konverzija iz Decimal u number za izbjegavanje TypeScript greške
         const totalMinutes = raw.total_hours ? Number(raw.total_hours) : 0;
+        const activityMinutes = raw.activity_hours ? Number(raw.activity_hours) : 0;
 
-        return mapToMember(raw, totalMinutes);
+        return mapToMember(raw, totalMinutes, activityMinutes);
     },
 
     async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {

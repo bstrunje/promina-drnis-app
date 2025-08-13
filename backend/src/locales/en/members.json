@@ -1,0 +1,9 @@
+{
+  "invalid_id": "Invalid member ID",
+  "not_found": "Member with ID {{id}} not found",
+  "fetch_failed": "Failed to fetch members. Please try again later.",
+  "update_success": "Member updated successfully",
+  "update_failed": "Failed to update member",
+  "delete_success": "Member deleted successfully",
+  "delete_failed": "Failed to delete member"
+}

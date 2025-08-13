@@ -28,7 +28,6 @@ import { useMemberData } from "./hooks/useMemberData";
 // Import filter component
 import MemberListFilters from "./components/MemberListFilters";
 // Import table display component
-import { filterOnlyColoredRows } from "./components/memberTableUtils";
 // Import statistics component
 import { StatisticsView } from "./components/StatisticsView";
 // Import custom hook for filtering and sorting
@@ -118,12 +117,12 @@ export default function MemberList(): JSX.Element {
 
   // States for filtering and sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "passive" | "paid" | "unpaid">("all");
+  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "paid" | "unpaid">("regular");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [groupByType, setGroupByType] = useState<boolean>(false);
-  const [showOnlyColored, setShowOnlyColored] = useState<boolean>(false);
+
   const [showFilters, setShowFilters] = useState<boolean>(false); // State for showing/hiding filters
   const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // State for showing/hiding navigation tabs - visible on desktop, but not on mobile
   const [refreshing, setRefreshing] = useState(false); // State for pull-to-refresh
@@ -135,8 +134,9 @@ export default function MemberList(): JSX.Element {
   useEffect(() => {
     const filterFromUrl = searchParams.get('filter');
     if (filterFromUrl === 'pending') {
-      setActiveFilter('all'); // ili 'active' ovisno što želiš kao default
+      setActiveFilter('regular'); // zadana vrijednost je 'regular'
     } else if (
+      filterFromUrl === 'regular' ||
       filterFromUrl === 'all' ||
       filterFromUrl === 'active' ||
       filterFromUrl === 'passive' ||
@@ -145,7 +145,7 @@ export default function MemberList(): JSX.Element {
     ) {
       setActiveFilter(filterFromUrl);
     } else {
-      setActiveFilter('all');
+      setActiveFilter('regular'); // zadana vrijednost je 'regular'
     }
   }, [searchParams]);
 
@@ -175,9 +175,9 @@ export default function MemberList(): JSX.Element {
         members
       }));
     } else {
-      return [{ key: 'all', title: 'All Members', members: memberList }];
+      return [{ key: 'all', title: t('memberList.groups.allMembers'), members: memberList }];
     }
-  }, [groupByType]);
+  }, [groupByType, t]);
 
   // Handlers as in a modular approach
   const handleAddMember = async (newMember: Member) => {
@@ -207,20 +207,10 @@ export default function MemberList(): JSX.Element {
     setFilteredMembers(groupMembers(filteredMembersRaw));
   }, [filteredMembersRaw, groupByType, groupMembers]);
 
-  // Kada se mijenja showOnlyColored ili ulazni podaci, izračunaj prikaz iz izvornog niza
-  // Napomena (HR): uvijek polazimo od izvora (filteredMembersRaw) kako bismo pouzdano vratili stanje
+  // Postavi filtrirane članove na temelju grupiranih podataka
   useEffect(() => {
-    const base = groupMembers(filteredMembersRaw);
-    if (showOnlyColored) {
-      const updatedMembers = base.map(group => ({
-        ...group,
-        members: filterOnlyColoredRows(group.members)
-      }));
-      setFilteredMembers(updatedMembers);
-    } else {
-      setFilteredMembers(base);
-    }
-  }, [showOnlyColored, filteredMembersRaw, groupByType, groupMembers]);
+    setFilteredMembers(groupMembers(filteredMembersRaw));
+  }, [filteredMembersRaw, groupByType, groupMembers]);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -267,15 +257,7 @@ export default function MemberList(): JSX.Element {
     };
   }, [t]);
 
-  const handleToggleColoredRows = () => {
-    if (showOnlyColored) {
-      // If we are already showing only colored, return all members
-      setShowOnlyColored(false);
-    } else {
-      // Otherwise, filter and show only colored
-      setShowOnlyColored(true);
-    }
-  };
+
 
   // Function for pull-to-refresh
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -431,7 +413,7 @@ export default function MemberList(): JSX.Element {
                     searchTerm={searchTerm}
                     onSearchChange={(value: string) => setSearchTerm(value)}
                     activeFilter={activeFilter}
-                    onActiveFilterChange={(value: string) => setActiveFilter(value as "all" | "active" | "passive" | "paid" | "unpaid")}
+                    onActiveFilterChange={(value: string) => setActiveFilter(value as "regular" | "all" | "active" | "passive" | "paid" | "unpaid")}
                     ageFilter={ageFilter}
                     onAgeFilterChange={(value: string) => setAgeFilter(value as "all" | "adults")}
                     sortCriteria={sortCriteria}
@@ -440,8 +422,7 @@ export default function MemberList(): JSX.Element {
                     onSortOrderChange={(value: string) => setSortOrder(value as "asc" | "desc")}
                     groupType={groupByType ? "true" : ""}
                     onGroupTypeChange={(value) => setGroupByType(!!value)}
-                    onToggleColoredRows={handleToggleColoredRows} 
-                    showOnlyColored={showOnlyColored}
+
                     onCloseFilters={() => setShowFilters(false)}
                   />
                 )}

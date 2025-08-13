@@ -73,6 +73,7 @@
         },
         "messages": {
             "title": "Messages",
+            "messages": "Messages",
             "unreadMessages": "There are unread messages",
             "noUnreadMessages": "No unread messages"
         }

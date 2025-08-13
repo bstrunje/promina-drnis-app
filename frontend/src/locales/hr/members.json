@@ -46,6 +46,8 @@
             "can_view_member_list": "Pregled liste članova",
             "can_edit_member_list": "Uređivanje liste članova"
         },
+        "updateSuccess": "Ovlasti uspješno ažurirane.",
+        "updateError": "Došlo je do greške prilikom ažuriranja ovlasti.",
         "templates": {
             "fullAdmin": "Puni administratorski pristup",
             "operational": "Operativni pristup"
@@ -88,6 +90,9 @@
         "found": "Pronađeno",
         "buttons": {
             "filters": "Filteri"
+        },
+        "groups": {
+            "allMembers": "Svi članovi"
         }
     },
     "printList": "Ispiši listu",
@@ -132,6 +137,7 @@
             "sortBy": "Sortiraj po"
         },
         "options": {
+            "regular": "Redovni članovi",
             "allMembers": "Svi članovi",
             "active": "Aktivni",
             "passive": "Pasivni",

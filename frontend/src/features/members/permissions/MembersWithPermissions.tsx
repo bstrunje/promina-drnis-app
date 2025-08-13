@@ -84,9 +84,15 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
     }
   };
   
-  // Funkcija koja se poziva nakon što se ovlasti uspješno spreme
-  const handleSaveSuccess = () => {
-    void refreshMembersWithPermissions();
+  // Funkcija koja se poziva nakon što se pokušaju spremiti ovlasti
+  const handleSaveSuccess = async () => {
+    try {
+      await refreshMembersWithPermissions();
+    } catch (err) {
+      console.error('Error refreshing members list:', err);
+      // Ne prikazujemo grešku korisniku ovdje jer će je već prikazati modal
+      throw err; // Propusti grešku dalje kako bi se prikazala u modalnom prozoru
+    }
   };
 
   return (
@@ -248,7 +254,7 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
         <EditMemberPermissionsModal
           member={selectedMember}
           onClose={handleCloseModal}
-          onSave={handleSaveSuccess}
+          onSave={() => { void handleSaveSuccess(); }}
         />
       )}
     </div>

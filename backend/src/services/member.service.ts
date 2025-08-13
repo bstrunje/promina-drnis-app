@@ -37,7 +37,9 @@ export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | und
 }
 
 /**
- * Izračunava ukupne sate (u minutama) za člana i sprema ih u bazu.
+ * Izračunava ukupne sate (u minutama) za člana za SVE GODINE i sprema ih u total_hours polje.
+ * Koristi se za ukupne statistike.
+ * 
  * Prioritet za izračun:
  * 1. manual_hours ako postoji (pretvoreno u minute)
  * 2. razlika između actual_start_time i actual_end_time ako manual_hours ne postoji
@@ -47,12 +49,100 @@ export function mapMembershipTypeToEnum(value: string | MembershipTypeEnum | und
  */
 export const updateMemberTotalHours = async (memberId: number, prismaClient: TransactionClient = prisma): Promise<void> => {
   try {
-    // Koristimo Prisma umjesto direktnog SQL upita
+    // Koristimo Prisma umjesto direktnog SQL upita - SVE GODINE
     const participations = await prismaClient.activityParticipation.findMany({
       where: {
         member_id: memberId,
         activity: {
           status: 'COMPLETED'
+        }
+      },
+      include: {
+        activity: {
+          select: {
+            actual_start_time: true,
+            actual_end_time: true,
+            recognition_percentage: true
+          }
+        }
+      }
+    });
+
+    const totalMinutes = participations.reduce((acc: number, p: {
+      manual_hours: number | null;
+      recognition_override?: number | null;
+      activity: {
+        actual_start_time: Date | string | null;
+        actual_end_time: Date | string | null;
+        recognition_percentage?: number | null;
+      };
+    }) => {
+      let minuteValue = 0;
+
+      if (p.manual_hours !== null && p.manual_hours !== undefined) {
+        minuteValue = Math.round(p.manual_hours * 60);
+      } 
+      else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+        const minutes = differenceInMinutes(
+          new Date(p.activity.actual_end_time),
+          new Date(p.activity.actual_start_time)
+        );
+        minuteValue = minutes > 0 ? minutes : 0;
+      }
+
+      const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
+      const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+
+      return acc + recognizedMinutes;
+    }, 0);
+
+    // Ažuriraj polje total_hours u tablici članova
+    await prismaClient.member.update({
+      where: { member_id: memberId },
+      data: {
+        total_hours: totalMinutes
+      }
+    });
+    
+    console.log(`Ažurirano ukupno sati za člana ${memberId}: ${totalMinutes} minuta (sve godine)`);
+  } catch (error) {
+    console.error(`Greška prilikom ažuriranja ukupnih sati za člana ${memberId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Izračunava sate aktivnosti (u minutama) za člana za PROŠLU I TEKUĆU GODINU i sprema ih u activity_hours polje.
+ * Koristi se za određivanje statusa aktivnosti člana (aktivan/pasivan).
+ * 
+ * Prioritet za izračun:
+ * 1. manual_hours ako postoji (pretvoreno u minute)
+ * 2. razlika između actual_start_time i actual_end_time ako manual_hours ne postoji
+ * 
+ * @param memberId ID člana
+ * @param prismaClient Opcionalni Prisma transakcijski klijent za izvršavanje unutar transakcije
+ */
+export const updateMemberActivityHours = async (memberId: number, prismaClient: TransactionClient = prisma): Promise<void> => {
+  try {
+    // Računamo sate samo za prošlu i tekuću godinu
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+    
+    // Datumi za ograničavanje na prošlu i tekuću godinu
+    const startOfPreviousYear = new Date(previousYear, 0, 1); // 1. siječnja prošle godine
+    const endOfCurrentYear = new Date(currentYear, 11, 31, 23, 59, 59); // 31. prosinca tekuće godine
+    
+    // Koristimo Prisma umjesto direktnog SQL upita
+    const participations = await prismaClient.activityParticipation.findMany({
+      where: {
+        member_id: memberId,
+        activity: {
+          status: 'COMPLETED',
+          // Ograničavamo na aktivnosti iz prošle i tekuće godine
+          start_date: {
+            gte: startOfPreviousYear,
+            lte: endOfCurrentYear
+          }
         }
       },
       include: {
@@ -66,7 +156,7 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
       }
     });
 
-    const totalMinutes = participations.reduce((acc: number, p: {
+    const activityMinutes = participations.reduce((acc: number, p: {
       manual_hours: number | null;
       recognition_override?: number | null;
       activity: {
@@ -100,20 +190,60 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
       return acc + recognizedMinutes;
     }, 0);
 
-    // Ažuriraj polje total_hours u tablici članova koristeći isti prismaClient
+    // Ažuriraj polje activity_hours u tablici članova
     await prismaClient.member.update({
       where: { member_id: memberId },
       data: {
-        total_hours: totalMinutes
+        activity_hours: activityMinutes
       }
     });
     
-    console.log(`Ažurirano ukupno sati za člana ${memberId}: ${totalMinutes} minuta`);
+    console.log(`Ažurirano activity_hours za člana ${memberId}: ${activityMinutes} minuta (prošla i tekuća godina: ${previousYear}-${currentYear})`);
   } catch (error) {
-    console.error(`Greška prilikom ažuriranja ukupnih sati za člana ${memberId}:`, error);
+    console.error(`Greška prilikom ažuriranja activity_hours za člana ${memberId}:`, error);
     throw error; // Propagiramo grešku kako bi transakcija bila poništena
   }
 }
+
+/**
+ * Ažurira total_hours i activity_hours za sve članove (korisno za migraciju ili periodično ažuriranje)
+ * - total_hours: sve godine (za statistike)
+ * - activity_hours: prošla i tekuća godina (za status aktivnosti)
+ */
+export const updateAllMembersTotalHours = async (): Promise<void> => {
+  try {
+    console.log('Pokretanje masovnog ažuriranja total_hours i activity_hours za sve članove...');
+    
+    // Dohvati sve članove
+    const allMembers = await prisma.member.findMany({
+      select: { member_id: true, first_name: true, last_name: true }
+    });
+    
+    console.log(`Pronađeno ${allMembers.length} članova za ažuriranje.`);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Ažuriraj svakog člana pojedinačno
+    for (const member of allMembers) {
+      try {
+        // Ažuriraj oba polja - total_hours (sve godine) i activity_hours (prošla+tekuća)
+        await updateMemberTotalHours(member.member_id);
+        await updateMemberActivityHours(member.member_id);
+        successCount++;
+        console.log(`✓ Ažuriran član ${member.first_name} ${member.last_name} (ID: ${member.member_id})`);
+      } catch (error) {
+        errorCount++;
+        console.error(`✗ Greška kod člana ${member.first_name} ${member.last_name} (ID: ${member.member_id}):`, error);
+      }
+    }
+    
+    console.log(`Masovno ažuriranje završeno. Uspješno: ${successCount}, Greške: ${errorCount}`);
+  } catch (error) {
+    console.error('Greška prilikom masovnog ažuriranja članova:', error);
+    throw error;
+  }
+};
 
 const memberService = {
     async getAllMembers(): Promise<Member[]> {

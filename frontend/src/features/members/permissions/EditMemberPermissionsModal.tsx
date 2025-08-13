@@ -227,9 +227,9 @@ const permissionCategories = categorizePermissions(permissions, t);
     try {
       setSaving(true);
       setError(null);
+      setSuccessMessage(null);
       
       // Osiguramo da imamo samo boolean vrijednosti za ovlasti
-      // Bez reference na članove, datum i ostale podatke
       const permissionsOnly = {
         can_view_members: Boolean(permissions.can_view_members),
         can_edit_members: Boolean(permissions.can_edit_members),
@@ -249,32 +249,25 @@ const permissionCategories = categorizePermissions(permissions, t);
         can_assign_passwords: Boolean(permissions.can_assign_passwords)
       };
       
-      console.log('Permissions format before API call:', { 
+      // Ažuriraj ovlasti
+      await updateMemberPermissions({
         member_id: member.member_id,
         permissions: permissionsOnly
       });
       
-      const updateData = {
-        member_id: member.member_id,
-        permissions: permissionsOnly
-      };
+      setSuccessMessage(t('permissions.updateSuccess'));
       
-      await updateMemberPermissions(updateData);
+      // Pričekaj da se osvježe podaci prije zatvaranja modala
+      await Promise.resolve(onSave());
       
-      setSuccessMessage('Ovlasti člana su uspješno ažurirane.');
-      
-      // Nakon kratke pauze, zatvori modal i osvježi listu
-      setTimeout(() => {
-        onSave();
-        onClose();
-      }, 1500);
+      // Zatvori modal nakon kratke pauze
+      setTimeout(onClose, 500);
       
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Došlo je do greške prilikom spremanja ovlasti.');
-      }
+      console.error('Error saving permissions:', err);
+      setError(err instanceof Error ? err.message : t('permissions.updateError'));
+      throw err; // Propusti grešku dalje kako bi se prikazala u sučelju
+    } finally {
       setSaving(false);
     }
   };

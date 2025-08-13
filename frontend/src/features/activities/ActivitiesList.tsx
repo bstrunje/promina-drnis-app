@@ -10,11 +10,14 @@ import { Button } from '@components/ui/button';
 import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
 import { calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';
 import { useAuth } from '@/context/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import CreateActivityModal from './CreateActivityModal';
 
 const ActivitiesList: React.FC = () => {
   const { t } = useTranslation('activities');
+  const { user } = useAuth();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,12 @@ const ActivitiesList: React.FC = () => {
   const [activityYears, setActivityYears] = useState<number[]>([]);
   // Dodajemo stanje za modalni prozor za kreiranje aktivnosti
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const { user } = useAuth();
+
+  // Provjeri ima li korisnik dozvole za upravljanje aktivnostima
+  const canViewActivities = hasPermission('can_view_activities');
+  const canCreateActivities = hasPermission('can_create_activities');
+  const canApproveActivities = hasPermission('can_approve_activities');
+  const hasActivityPermissions = canViewActivities || canCreateActivities || canApproveActivities;
 
   const fetchData = useCallback(async () => {
     try {
@@ -102,6 +110,28 @@ const ActivitiesList: React.FC = () => {
     void fetchData();
   };
 
+  // Ako se još učitavaju dozvole, prikaži loading
+  if (permissionsLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Učitavanje...</div>
+      </div>
+    );
+  }
+
+  // Ako je običan član bez dozvola za aktivnosti, prikaži poruku o nedostatku ovlasti
+  if (user?.role === 'member' && !hasActivityPermissions) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>
+            {t('permissions.noActivityAccess', 'Nemate ovlasti za pristup aktivnostima.')}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   if (loading) return <div className="p-6">{t('list.loading')}</div>;
   if (error) return (
     <div className="p-6">
@@ -117,7 +147,7 @@ const ActivitiesList: React.FC = () => {
         <h1 className="text-2xl sm:text-3xl font-bold">{t('list.title')}</h1>
         <div className="flex items-center gap-4">
           <p className="text-muted-foreground hidden md:block">{t('list.description')}</p>
-          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+          {canCreateActivities && (
             <Button size="sm" className="sm:size-md" onClick={() => setCreateModalOpen(true)}>
               <PlusCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-xs sm:text-sm">{t('list.create')}</span>
@@ -237,7 +267,7 @@ const ActivitiesList: React.FC = () => {
       </div>
 
       {/* Modal za kreiranje aktivnosti */}
-      {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+      {canCreateActivities && (
         <CreateActivityModal 
           isOpen={isCreateModalOpen}
           onClose={() => setCreateModalOpen(false)}

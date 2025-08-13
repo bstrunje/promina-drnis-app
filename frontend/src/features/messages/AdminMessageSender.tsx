@@ -39,8 +39,8 @@ const AdminMessageSender: React.FC = () => {
   // Pretražujemo članove kad se promijeni searchTerm
   useEffect(() => {
     const fetchMembers = async () => {
-      // Promijenjena logika - ne pokušavamo dohvaćati podatke dok se ne upiše najmanje 2 znaka
-      if (searchTerm.length < 2) {
+      // Promijenjena logika - ne pokušavamo dohvaćati podatke dok se ne upiše najmanje 1 znak
+      if (searchTerm.length < 1) {
         setSearchResults([]);
         return;
       }
@@ -287,7 +287,7 @@ const AdminMessageSender: React.FC = () => {
                       ))}
                     </div>
                   )}
-                  {searchTerm.length > 0 && searchTerm.length < 2 && (
+                  {searchTerm.length > 0 && searchTerm.length < 1 && (
                     <div className="text-sm text-gray-500 mt-1">
                       {t('adminMessageSender.messages.searchMinLength')}
                     </div>
@@ -358,11 +358,7 @@ const AdminMessageSender: React.FC = () => {
                 </div>
               )}
 
-              {searchTerm.length > 0 && searchTerm.length < 2 && (
-                <div className="text-sm text-gray-500 mt-1">
-                  {t('adminMessageSender.messages.searchMinLength')}
-                </div>
-              )}
+
             </div>
 
             {selectedMembers.length > 0 && (
