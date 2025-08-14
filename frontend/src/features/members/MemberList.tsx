@@ -149,6 +149,14 @@ export default function MemberList(): JSX.Element {
     }
   }, [searchParams]);
 
+  // Automatski postavi sortiranje po satima silazno kada je aktivan regular filter
+  useEffect(() => {
+    if (activeFilter === 'regular') {
+      setSortCriteria('hours');
+      setSortOrder('desc');
+    }
+  }, [activeFilter]);
+
   // We use a custom hook for filtering and sorting
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
     members,

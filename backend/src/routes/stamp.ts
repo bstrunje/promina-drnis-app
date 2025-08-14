@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import stampService from '../services/stamp.service.js';
 
@@ -184,6 +184,30 @@ router.post('/reset-year',
         } catch (_error) {
             res.status(500).json({ 
                 message: _error instanceof Error ? _error.message : 'Failed to archive inventory' 
+            });
+        }
+    }
+);
+
+// GET /api/stamps/members/:stampType/:year - Dohvati članove s određenim tipom markice za godinu
+router.get('/members/:stampType/:year', 
+    authenticateToken,
+    roles.requireAdmin,
+    async (req: Request, res: Response) => {
+        try {
+            const { stampType, year } = req.params;
+            const yearNumber = parseInt(year);
+            
+            if (isNaN(yearNumber)) {
+                return res.status(400).json({ message: 'Invalid year parameter' });
+            }
+
+            const members = await stampService.getMembersWithStamp(stampType, yearNumber);
+            res.json(members);
+        } catch (error) {
+            console.error('Error fetching members with stamps:', error);
+            res.status(500).json({ 
+                message: error instanceof Error ? error.message : 'Failed to fetch members with stamps' 
             });
         }
     }

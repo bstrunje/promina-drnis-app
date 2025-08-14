@@ -7,6 +7,7 @@ import { Member } from "@shared/member";
 import { StampTypeCard } from "./StampTypeCard";
 import { ArchiveDialog } from "./ArchiveDialog";
 import { StampHistorySection } from "./StampHistorySection";
+import { MembersWithStampModal } from "./MembersWithStampModal";
 import { StampInventory, YearlyInventory, InventoryData, StampHistoryItem, ArchiveResult } from "./types";
 import apiInstance from "@/utils/api/apiConfig";
 import { getCurrentYear } from "@/utils/dateUtils";
@@ -41,6 +42,11 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
   const [stampHistory, setStampHistory] = useState<StampHistoryItem[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([getCurrentYear(), getCurrentYear() + 1]);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  
+  // State za modal s članovima
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedStampType, setSelectedStampType] = useState<'employed' | 'student' | 'pensioner'>('employed');
+  const [selectedStampTypeName, setSelectedStampTypeName] = useState('');
 
   // Čuvaj posljednju vrijednost za input field
   const lastInputValue = useRef({
@@ -282,6 +288,21 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
     }
   };
 
+  // Handler za otvaranje modala s članovima
+  const handleStampCardClick = (stampType: string) => {
+    setSelectedStampType(stampType as 'employed' | 'student' | 'pensioner');
+    
+    // Postavi naziv tipa markice za prikaz u modalu
+    const stampTypeNames = {
+      'employed': t('stampInventory.stampTypes.employedUnemployed'),
+      'student': t('stampInventory.stampTypes.studentPupil'),
+      'pensioner': t('stampInventory.stampTypes.pensioner')
+    };
+    
+    setSelectedStampTypeName(stampTypeNames[stampType as keyof typeof stampTypeNames] || stampType);
+    setShowMembersModal(true);
+  };
+
   // Efekt za dohvaćanje inventara
   useEffect(() => {
     // Fetch immediately
@@ -436,6 +457,8 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
             onInputChange={handleInputChange}
             onInputBlur={handleInputBlur}
             onInputFocus={handleInputFocus}
+            onCardClick={handleStampCardClick}
+            year={selectedYear}
           />
 
           {/* Student/Pupil Stamps */}
@@ -449,6 +472,8 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
             onInputChange={handleInputChange}
             onInputBlur={handleInputBlur}
             onInputFocus={handleInputFocus}
+            onCardClick={handleStampCardClick}
+            year={selectedYear}
           />
 
           {/* Pensioner Stamps */}
@@ -462,6 +487,8 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
             onInputChange={handleInputChange}
             onInputBlur={handleInputBlur}
             onInputFocus={handleInputFocus}
+            onCardClick={handleStampCardClick}
+            year={selectedYear}
           />
         </div>
       </div>
@@ -478,6 +505,14 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
         isLoading={isLoading}
         onClose={() => setShowArchiveDialog(false)}
         onArchive={handleArchiveInventory}
+      />
+
+      <MembersWithStampModal
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        stampType={selectedStampType}
+        year={selectedYear}
+        stampTypeName={selectedStampTypeName}
       />
     </>
   );

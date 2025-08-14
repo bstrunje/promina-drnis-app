@@ -3,6 +3,7 @@ import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
 import { DatabaseError } from "../utils/errors.js";
 import { PerformerType } from '@prisma/client';
+import prisma from "../utils/prisma.js";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -408,6 +409,51 @@ const equipmentService = {
         } catch (error) {
             throw new DatabaseError(
                 "Error fetching member equipment status: " +
+                (error instanceof Error ? error.message : "Unknown error")
+            );
+        }
+    },
+
+    /**
+     * Dohvaća članove koji su primili određenu opremu
+     */
+    async getMembersWithEquipment(equipmentType: string, size: string, gender: string) {
+        try {
+            // Mapiranje tipova opreme na polja u bazi
+            const deliveryField = getEquipmentDeliveryField(equipmentType);
+            const sizeField = getEquipmentSizeField(equipmentType);
+
+            // Dohvati članove koji imaju isporučenu opremu određenog tipa, veličine i spola
+            const members = await prisma.member.findMany({
+                where: {
+                    [deliveryField]: true,
+                    [sizeField]: size,
+                    gender: gender.toLowerCase()
+                },
+                include: {
+                    membership_details: {
+                        select: {
+                            card_number: true
+                        }
+                    }
+                },
+                orderBy: [
+                    { last_name: 'asc' },
+                    { first_name: 'asc' }
+                ]
+            });
+
+            // Mapiranje rezultata u format koji frontend očekuje
+            return members.map((member) => ({
+                id: member.member_id,
+                first_name: member.first_name,
+                last_name: member.last_name,
+                card_number: member.membership_details?.card_number || null
+            }));
+
+        } catch (error) {
+            throw new DatabaseError(
+                "Error fetching members with equipment: " +
                 (error instanceof Error ? error.message : "Unknown error")
             );
         }

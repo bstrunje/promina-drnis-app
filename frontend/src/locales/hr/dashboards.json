@@ -96,7 +96,18 @@
         "updateInventoryError": "Neuspjelo ažuriranje inventara",
         "inventoryUpdated": "Inventar markica za godinu {{year}} uspješno ažuriran",
         "updateInventoryFailed": "Neuspješno ažuriranje inventara",
-        "refreshInventoryData": "Osvježi podatke inventara"
+        "refreshInventoryData": "Osvježi podatke inventara",
+        "membersWithStamp": {
+            "title": "Članovi s izdanim markicama",
+            "noMembers": "Nema članova s ovim tipom markice",
+            "totalCount": "Ukupno {{count}} članova",
+            "clickToView": "Kliknite za pregled članova",
+            "error": "Greška pri dohvaćanju članova"
+        },
+
+        "errors": {
+            "fetchMembers": "Greška prilikom dohvaćanja članova s markicama"
+        }
     },
     "stampHistory": {
         "title": "Povijest inventara markica",
@@ -154,6 +165,13 @@
         "gender": {
             "male": "M",
             "female": "Ž"
+        },
+        "membersWithEquipment": {
+            "title": "Članovi s izdanom opremom",
+            "noMembers": "Nema članova s ovom opremom",
+            "totalCount": "Ukupno {{count}} članova",
+            "clickToView": "Kliknite za pregled članova",
+            "error": "Greška pri dohvaćanju članova"
         }
     },
     "equipmentDelivery": {

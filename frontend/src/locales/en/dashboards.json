@@ -101,7 +101,18 @@
         "updateInventoryError": "Failed to update inventory",
         "inventoryUpdated": "Stamp inventory for year {{year}} successfully updated",
         "updateInventoryFailed": "Failed to update inventory",
-        "refreshInventoryData": "Refresh inventory data"
+        "refreshInventoryData": "Refresh inventory data",
+        "membersWithStamp": {
+            "title": "Members with issued stamps",
+            "noMembers": "No members with this stamp type",
+            "totalCount": "Total {{count}} members",
+            "clickToView": "Click to view members",
+            "error": "Error fetching members"
+        },
+
+        "errors": {
+            "fetchMembers": "Error fetching members with stamps"
+        }
     },
     "stampHistory": {
         "title": "Stamp Inventory History",
@@ -159,6 +170,13 @@
         "gender": {
             "male": "M",
             "female": "F"
+        },
+        "membersWithEquipment": {
+            "title": "Members with issued equipment",
+            "noMembers": "No members with this equipment",
+            "totalCount": "Total {{count}} members",
+            "clickToView": "Click to view members",
+            "error": "Error fetching members"
         }
     },
     "equipmentDelivery": {

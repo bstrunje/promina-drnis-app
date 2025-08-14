@@ -1,5 +1,5 @@
 import api from './apiConfig';
-import { ApiStampHistoryItem, ApiStampResetResult, ApiArchiveResult } from './apiTypes';
+import { ApiStampHistoryItem, ApiStampResetResult, ApiArchiveResult, ApiMemberWithStamp } from './apiTypes';
 import { AxiosResponse } from 'axios';
 
 /**
@@ -69,5 +69,23 @@ export const archiveStampInventory = async (year: number, notes = '', force = fa
       throw error;
     }
     throw new Error('Failed to archive stamp inventory');
+  }
+};
+
+/**
+ * Dohvaćanje članova s određenim tipom markice za godinu
+ * @param stampType Tip markice (employed, student, pensioner)
+ * @param year Godina
+ * @returns Lista članova s izdanim markicama
+ */
+export const getMembersWithStamp = async (stampType: string, year: number): Promise<ApiMemberWithStamp[]> => {
+  try {
+    const response: AxiosResponse<ApiMemberWithStamp[]> = await api.get(`/stamps/members/${stampType}/${year}`);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to fetch members with ${stampType} stamps for year ${year}`);
   }
 };

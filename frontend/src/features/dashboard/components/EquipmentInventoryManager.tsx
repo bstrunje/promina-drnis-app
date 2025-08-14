@@ -5,6 +5,7 @@ import { Button } from "@components/ui/button";
 import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
 import apiInstance from "@/utils/api/apiConfig";
+import { MembersWithEquipmentModal } from "./MembersWithEquipmentModal";
 
 interface EquipmentInventoryItem {
   equipment_type: 'tshirt' | 'shell_jacket' | 'hat';
@@ -57,6 +58,14 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
   const [showEditModal, setShowEditModal] = useState(false);
   const [editModalTab, setEditModalTab] = useState<'tshirt' | 'shell_jacket' | 'hat'>('tshirt');
   const [editValues, setEditValues] = useState<Record<string, number>>({});
+  
+  // State za members modal
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<{
+    type: string;
+    size: string;
+    gender: string;
+  } | null>(null);
 
   // Dohvati inventar opreme
   const fetchInventory = useCallback(async () => {
@@ -331,6 +340,25 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     }
   };
 
+  // Handler za klik na red inventara
+  const handleRowClick = (item: EquipmentInventoryItem) => {
+    // Prikaži modal samo ako ima izdane ili poklanjane komade
+    if (item.issued_count > 0 || item.gift_count > 0) {
+      setSelectedEquipment({
+        type: item.equipment_type,
+        size: item.size,
+        gender: item.gender
+      });
+      setShowMembersModal(true);
+    }
+  };
+
+  // Handler za zatvaranje modala
+  const handleCloseMembersModal = () => {
+    setShowMembersModal(false);
+    setSelectedEquipment(null);
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -477,7 +505,12 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedCurrentTabData.map((item) => (
-                      <tr key={`${item.equipment_type}-${item.size}-${item.gender}`} className="hover:bg-gray-50">
+                      <tr 
+                        key={`${item.equipment_type}-${item.size}-${item.gender}`} 
+                        className={`hover:bg-gray-50 ${(item.issued_count > 0 || item.gift_count > 0) ? 'cursor-pointer' : ''}`}
+                        onClick={() => handleRowClick(item)}
+                        title={(item.issued_count > 0 || item.gift_count > 0) ? t('equipmentInventory.membersWithEquipment.clickToView') : ''}
+                      >
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                           {item.size}
                         </td>
@@ -491,7 +524,7 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                           {item.issued_count}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="outline"
                               size="sm"
@@ -614,6 +647,17 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Members with Equipment Modal */}
+      {selectedEquipment && (
+        <MembersWithEquipmentModal
+          isOpen={showMembersModal}
+          onClose={handleCloseMembersModal}
+          equipmentType={selectedEquipment.type}
+          size={selectedEquipment.size}
+          gender={selectedEquipment.gender}
+        />
       )}
     </>
   );

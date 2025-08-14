@@ -1,6 +1,6 @@
 import api from './apiConfig';
 import { Member } from '../../../shared/types/member.js';
-import { ApiMemberActivity, ApiUploadProfileImageResult } from './apiTypes';
+import { ApiMemberActivity, ApiUploadProfileImageResult, ApiMemberWithEquipment } from './apiTypes';
 import { AxiosResponse } from 'axios';
 
 /**
@@ -74,5 +74,20 @@ export const getMemberActivities = async (memberId: number): Promise<ApiMemberAc
       throw error;
     }
     throw new Error('Failed to fetch member activities');
+  }
+};
+
+/**
+ * Dohvaća članove koji su primili određenu opremu
+ */
+export const getMembersWithEquipment = async (equipmentType: string, size: string, gender: string): Promise<ApiMemberWithEquipment[]> => {
+  try {
+    const response: AxiosResponse<ApiMemberWithEquipment[]> = await api.get(`/members/equipment/members/${equipmentType}/${size}/${gender}`);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to fetch members with ${equipmentType} equipment`);
   }
 };

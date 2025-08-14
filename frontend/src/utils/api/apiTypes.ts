@@ -122,6 +122,27 @@ export interface ApiArchiveResult {
 }
 
 /**
+ * Član s izdanom markocom
+ */
+export interface ApiMemberWithStamp {
+  id: number;
+  first_name: string;
+  last_name: string;
+  card_number: string | null;
+  stamp_issued?: boolean;
+}
+
+/**
+ * Član s opremom
+ */
+export interface ApiMemberWithEquipment {
+  id: number;
+  first_name: string;
+  last_name: string;
+  card_number: string | null;
+}
+
+/**
  * Tipovi za profilne slike
  * @see Member.profile_image_path iz shared/types/member.ts
  */

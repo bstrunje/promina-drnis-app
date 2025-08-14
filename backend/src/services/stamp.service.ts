@@ -5,6 +5,7 @@ import auditService from "./audit.service.js";
 import { DatabaseError } from "../utils/errors.js";
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { PerformerType } from '@prisma/client';
+import prisma from '../utils/prisma.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -241,6 +242,66 @@ const stampService = {
       console.error("Error during stamp inventory reset:", error);
       throw new DatabaseError(
         "Error resetting stamp inventory: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  },
+
+  async getMembersWithStamp(stampType: string, year: number) {
+    try {
+      // Mapiranje stamp tipova na life_status vrijednosti
+      const lifeStatusMap: { [key: string]: string } = {
+        'employed': 'employed/unemployed',
+        'student': 'child/pupil/student', 
+        'pensioner': 'pensioner'
+      };
+
+      const targetLifeStatus = lifeStatusMap[stampType];
+      if (!targetLifeStatus) {
+        throw new Error(`Invalid stamp type: ${stampType}`);
+      }
+
+      // Dohvati članove s izdanim markicama za određeni tip i godinu
+      const currentYear = getCurrentDate().getFullYear();
+      const isCurrentYear = year === currentYear;
+      
+      const members = await prisma.member.findMany({
+        where: {
+          life_status: targetLifeStatus,
+          membership_details: {
+            // Za trenutnu godinu provjeri card_stamp_issued, za sljedeću next_year_stamp_issued
+            [isCurrentYear ? 'card_stamp_issued' : 'next_year_stamp_issued']: true
+          }
+        },
+        include: {
+          membership_details: {
+            select: {
+              card_stamp_issued: true,
+              next_year_stamp_issued: true,
+              card_number: true
+            }
+          }
+        },
+        orderBy: [
+          { last_name: 'asc' },
+          { first_name: 'asc' }
+        ]
+      });
+
+      // Mapiranje rezultata u format koji frontend očekuje
+      return members.map((member) => ({
+        id: member.member_id,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        card_number: member.membership_details?.card_number || null,
+        stamp_issued: isCurrentYear 
+          ? member.membership_details?.card_stamp_issued 
+          : member.membership_details?.next_year_stamp_issued
+      }));
+
+    } catch (error) {
+      throw new DatabaseError(
+        "Error fetching members with stamps: " +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }

@@ -409,6 +409,36 @@ router.delete('/equipment/gift', authenticateToken, async (req: Request, res: Re
   }
 });
 
+// Get members with specific equipment (admin only)
+router.get('/equipment/members/:equipmentType/:size/:gender', authenticateToken, roles.requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { equipmentType, size, gender } = req.params;
+
+    // Validate equipment type
+    if (!['tshirt', 'shell_jacket', 'hat'].includes(equipmentType)) {
+      return res.status(400).json({ message: "Invalid equipment type" });
+    }
+
+    // Validate size
+    if (!['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(size)) {
+      return res.status(400).json({ message: "Invalid size" });
+    }
+
+    // Validate gender
+    if (!['male', 'female'].includes(gender)) {
+      return res.status(400).json({ message: "Invalid gender" });
+    }
+
+    const members = await equipmentService.getMembersWithEquipment(equipmentType, size, gender);
+    res.json(members);
+  } catch (error) {
+    console.error("Error fetching members with equipment:", error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : "Failed to fetch members with equipment" 
+    });
+  }
+});
+
 // Rute za profilnu sliku (Uvjetno: Vercel Blob ili lokalni uploads)
 router.post(
   '/:memberId/profile-image',
