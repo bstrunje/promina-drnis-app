@@ -21,7 +21,7 @@ import EditMemberForm from "@components/EditMemberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { Button } from "@components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
-import { formatDate, getCurrentDate } from "../../utils/dateUtils";
+
 
 // Import custom hook for fetching member data
 import { useMemberData } from "./hooks/useMemberData";
@@ -45,7 +45,7 @@ export default function MemberList(): JSX.Element {
     error,
     addMember,
     updateMember,
-    
+
     refreshMembers
   } = useMemberData();
 
@@ -97,7 +97,7 @@ export default function MemberList(): JSX.Element {
       }
     `;
     document.head.appendChild(printStyle);
-    
+
     return () => {
       if (printStyle.parentNode) {
         document.head.removeChild(printStyle);
@@ -108,7 +108,7 @@ export default function MemberList(): JSX.Element {
   // Modals - states
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  
+
   const [roleAssignmentMember, setRoleAssignmentMember] = useState<Member | null>(null);
 
   // Check if user has admin privileges (for editing, deleting, adding members)
@@ -202,7 +202,7 @@ export default function MemberList(): JSX.Element {
     }
   };
 
-  
+
 
 
   const [filteredMembers, setFilteredMembers] = useState<{
@@ -224,24 +224,24 @@ export default function MemberList(): JSX.Element {
     const checkIsMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-            // Always show tabs on larger screens
-        if (!mobile) {
-          setShowNavTabs(true);
-        }
-        // On mobile, we hide by default
-        else if (mobile && showNavTabs === true) {
-          setShowNavTabs(false);
-        }
-      };
-      
-      // Initial check
-      checkIsMobile();
-      
-      // Listen for window resize changes
-      window.addEventListener('resize', checkIsMobile);
-      
-      // Cleanup
-      return () => window.removeEventListener('resize', checkIsMobile);
+      // Always show tabs on larger screens
+      if (!mobile) {
+        setShowNavTabs(true);
+      }
+      // On mobile, we hide by default
+      else if (mobile && showNavTabs === true) {
+        setShowNavTabs(false);
+      }
+    };
+
+    // Initial check
+    checkIsMobile();
+
+    // Listen for window resize changes
+    window.addEventListener('resize', checkIsMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIsMobile);
   }, [showNavTabs]);
 
   useEffect(() => {
@@ -275,31 +275,31 @@ export default function MemberList(): JSX.Element {
   const handleTouchMove = (e: React.TouchEvent) => {
     const touchY = e.touches[0].clientY;
     const diff = touchY - touchStartY;
-    
+
     // If the user has pulled down enough and is not already in the process of refreshing
     if (diff > 100 && !refreshing && window.scrollY === 0) {
       setRefreshing(true);
-      
+
       // Refresh data
       refreshMembers();
-      
+
       // Set a timer to reset the state after refreshing
       setTimeout(() => {
         setRefreshing(false);
       }, 1000); // Short delay for better UX
     }
   };
-  
+
   // Function for swipe to show/hide navigation tabs
   const handleSwipeForNav = (e: React.TouchEvent) => {
     const touchY = e.touches[0].clientY;
     const touchEndY = touchY;
     const diff = touchEndY - touchStartY;
-    
+
     // If swipe down and tabs are not visible
     if (diff > 50 && !showNavTabs) {
       setShowNavTabs(true);
-    } 
+    }
     // If swipe up and tabs are visible
     else if (diff < -50 && showNavTabs) {
       setShowNavTabs(false);
@@ -308,28 +308,10 @@ export default function MemberList(): JSX.Element {
 
   return (
     <div className="container mx-auto px-4 py-8 border-b border-gray-200" onTouchStart={handleTouchStart} onTouchMove={(e) => {
-        handleTouchMove(e);
-        handleSwipeForNav(e);
-      }}>
-      {/* Print-only header */}
-      <div className="hidden print:block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{pageBreakInside: 'avoid'}} id="print-header">
-        <h1 className="text-2xl font-bold mb-2">{t('memberList.printHeader.title')}</h1>
-        <h2 className="text-xl font-semibold mb-3">{t('memberList.printHeader.subtitle')}</h2>
-        <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
-          {t('memberList.printHeader.totalMembers')}: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>
-        </div>
-        <div className="flex justify-center gap-4 mt-3 text-sm">
-          <div className="border rounded-md px-3 py-1 bg-gray-50">
-            {t('memberList.printHeader.active')}: <span className="font-semibold">{members.filter(m => m.isActive).length}</span>
-          </div>
-          <div className="border rounded-md px-3 py-1 bg-gray-50">
-            {t('memberList.printHeader.inactive')}: <span className="font-semibold">{members.filter(m => !m.isActive).length}</span>
-          </div>
-        </div>
-        <div className="text-sm text-gray-500 mt-3">
-          {t('memberList.printHeader.generated')}: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
-        </div>
-      </div>
+      handleTouchMove(e);
+      handleSwipeForNav(e);
+    }}>
+
 
       {/* Prikaz greške ako postoji */}
       {error && (
@@ -365,7 +347,7 @@ export default function MemberList(): JSX.Element {
                     </TabsTrigger>
                   </TabsList>
                 </div>
-                
+
                 {/* Desna strana - ostali gumbi */}
                 <div className="flex items-center gap-2 flex-wrap print:hidden">
                   {/* Member counter */}
@@ -375,7 +357,7 @@ export default function MemberList(): JSX.Element {
                       {filteredMembers.reduce((count, group) => count + group.members.length, 0)}
                     </span>
                   </div>
-                  
+
                   {/* Gumb Filteri */}
                   <Button
                     variant="outline"
@@ -385,21 +367,21 @@ export default function MemberList(): JSX.Element {
                   >
                     <Filter className="w-4 h-4 md:mr-1" />
                     <span className="hidden md:inline">{t('memberList.buttons.filters')}</span>
-                    {showFilters ? 
-                      <ChevronUp className="w-4 h-4 hidden md:inline md:ml-1" /> : 
+                    {showFilters ?
+                      <ChevronUp className="w-4 h-4 hidden md:inline md:ml-1" /> :
                       <ChevronDown className="w-4 h-4 hidden md:inline md:ml-1" />
                     }
                   </Button>
-                  
-                  <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-gray-500 hover:text-gray-700 hidden md:flex"
-            onClick={() => window.print()}
-          >
-            <Printer className="w-4 h-4 md:mr-1" />
-            <span className="hidden md:inline">{t('printList')}</span>
-          </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 hover:text-gray-700 hidden md:flex"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="w-4 h-4 md:mr-1" />
+                    <span className="hidden md:inline">{t('printList')}</span>
+                  </Button>
 
                   {isAdmin && (
                     <Button
@@ -414,7 +396,7 @@ export default function MemberList(): JSX.Element {
                   )}
                 </div>
               </div>
-              
+
               <div className="p-3 border-b border-gray-200 print:hidden">
                 {showFilters && (
                   <MemberListFilters
@@ -434,20 +416,20 @@ export default function MemberList(): JSX.Element {
                     onCloseFilters={() => setShowFilters(false)}
                   />
                 )}
-                
+
                 {/* Uklonjen brojač s ovog mjesta jer je premješten na vrh */}
               </div>
             </div>
-            
+
             {/* Ovdje je tablica s članovima */}
             <TabsContent value="list" className="flex-grow overflow-hidden flex flex-col">
               {/* Skrolabilna tablica članova */}
               <div ref={printRef} className="overflow-auto flex-grow">
-                <MemberTable 
-                  filteredMembers={filteredMembers} 
+                <MemberTable
+                  filteredMembers={filteredMembers}
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
-                  onViewDetails={(memberId) => navigate(`/members/${memberId}`)}                  
+                  onViewDetails={(memberId) => navigate(`/members/${memberId}`)}
                 />
               </div>
             </TabsContent>

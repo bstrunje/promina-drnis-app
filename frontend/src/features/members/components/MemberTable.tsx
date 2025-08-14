@@ -7,7 +7,7 @@ import { UserCog } from "lucide-react";
 
 import EditMemberPermissionsModal from "../permissions/EditMemberPermissionsModal";
 import { useState } from "react";
-import { formatMinutesToHoursAndMinutes } from '../../../utils/dateUtils';
+import { formatMinutesToHoursAndMinutes, formatDate, getCurrentDate } from '../../../utils/dateUtils';
 import { useTranslation } from 'react-i18next';
 import { getMembershipDisplayStatusExternal as getMembershipDisplayStatus } from "./memberTableUtils";
 
@@ -134,6 +134,50 @@ export const MemberTable: React.FC<MemberTableProps> = ({
           }}
         />
       )}
+      {/* Print-only header */}
+      <div className="hidden print:block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{ pageBreakInside: 'avoid' }} id="print-header">
+        <h1 className="text-2xl font-bold mb-2">{t('memberList.printHeader.title')}</h1>
+        <h2 className="text-xl font-semibold mb-3">{t('memberList.printHeader.subtitle')}</h2>
+        <div className="text-lg font-semibold bg-blue-100 border-2 border-blue-300 inline-block px-6 py-2 mb-2 mt-2 rounded-md">
+          {t('memberList.printHeader.totalMembers')}: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>
+        </div>
+        <div className="flex justify-center gap-4 mt-3 text-sm">
+          <div className="border rounded-md px-3 py-1 bg-gray-50">
+            {t('memberList.printHeader.active')}: <span className="font-semibold">{
+              filteredMembers
+                .flatMap(group => group.members)
+                .filter(m => {
+                  // Samo registrirani članovi mogu biti na listi
+                  if (m.detailedStatus?.status !== 'registered') return false;
+                  
+                  // Aktivni su oni s 20+ sati (koristimo activity_hours - tekuća i prošla godina)
+                  const activityMinutes = Number(m.activity_hours ?? 0);
+                  const activityHours = activityMinutes / 60;
+                  return activityHours >= 20;
+                }).length
+            }</span>
+          </div>
+          <div className="border rounded-md px-3 py-1 bg-gray-50">
+            {t('memberList.printHeader.inactive')}: <span className="font-semibold">{
+              filteredMembers
+                .flatMap(group => group.members)
+                .filter(m => {
+                  // Samo registrirani članovi mogu biti na listi
+                  if (m.detailedStatus?.status !== 'registered') return false;
+                  
+                  // Neaktivni su oni s manje od 20 sati (koristimo activity_hours - tekuća i prošla godina)
+                  const activityMinutes = Number(m.activity_hours ?? 0);
+                  const activityHours = activityMinutes / 60;
+                  return activityHours < 20;
+                }).length
+            }</span>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500 mt-3">
+          {t('memberList.printHeader.generated')}: {formatDate(getCurrentDate(), 'dd.MM.yyyy HH:mm')}
+        </div>
+      </div>
+
       <div
         className="overflow-x-auto overflow-y-auto"
         style={{
@@ -375,10 +419,17 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             {/* Aktivni članovi */}
             {filteredMembers
               .flatMap((group) => {
-                // Prvo izdvojimo sve aktivne članove iz svih grupa (koristimo activity_hours za status)
-                const activeMembers = group.members.filter(
-                  (m) => Number(m.activity_hours ?? 0) >= 20
-                );
+                // Prvo izdvojimo sve aktivne članove iz svih grupa
+                // Koristimo total_hours (prošla + tekuća godina) i provjeravamo status 'registered'
+                const activeMembers = group.members.filter((m) => {
+                  // Samo registrirani članovi mogu biti na listi
+                  if (m.detailedStatus?.status !== 'registered') return false;
+                  
+                  // Aktivni su oni s 20+ sati (koristimo activity_hours - tekuća i prošla godina)
+                  const activityMinutes = Number(m.activity_hours ?? 0);
+                  const activityHours = activityMinutes / 60; // activity_hours je u minutama
+                  return activityHours >= 20;
+                });
                 return activeMembers;
               })
               .map((member, index) => (
@@ -400,7 +451,21 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     {formatMinutesToHoursAndMinutes(member.activity_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300">
-                    {/* Polje za potpis */}
+                    {/* Polje za potpis - dodaj oznaku za maloljetne */}
+                    {(() => {
+                      if (!member.date_of_birth) return '';
+                      
+                      const today = new Date();
+                      const birthDate = new Date(member.date_of_birth);
+                      let age = today.getFullYear() - birthDate.getFullYear();
+                      const monthDiff = today.getMonth() - birthDate.getMonth();
+                      
+                      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                      }
+                      
+                      return age < 18 ? <div className="text-xs text-gray-500">maloljetan</div> : '';
+                    })()}
                   </td>
                 </tr>
               ))}
@@ -415,10 +480,17 @@ export const MemberTable: React.FC<MemberTableProps> = ({
             {/* Neaktivni članovi */}
             {filteredMembers
               .flatMap((group) => {
-                // Zatim izdvojimo sve neaktivne članove iz svih grupa (koristimo activity_hours za status)
-                const inactiveMembers = group.members.filter(
-                  (m) => Number(m.activity_hours ?? 0) < 20
-                );
+                // Zatim izdvojimo sve neaktivne članove iz svih grupa
+                // Koristimo total_hours (prošla + tekuća godina) i provjeravamo status 'registered'
+                const inactiveMembers = group.members.filter((m) => {
+                  // Samo registrirani članovi mogu biti na listi
+                  if (m.detailedStatus?.status !== 'registered') return false;
+                  
+                  // Neaktivni su oni s manje od 20 sati (koristimo activity_hours - tekuća i prošla godina)
+                  const activityMinutes = Number(m.activity_hours ?? 0);
+                  const activityHours = activityMinutes / 60; // activity_hours je u minutama
+                  return activityHours < 20;
+                });
                 return inactiveMembers;
               })
               .map((member, index) => (
@@ -440,7 +512,21 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                     {formatMinutesToHoursAndMinutes(member.activity_hours)}
                   </td>
                   <td className="px-3 py-4 border-r border-gray-300">
-                    {/* Polje za potpis */}
+                    {/* Polje za potpis - dodaj oznaku za maloljetne */}
+                    {(() => {
+                      if (!member.date_of_birth) return '';
+                      
+                      const today = new Date();
+                      const birthDate = new Date(member.date_of_birth);
+                      let age = today.getFullYear() - birthDate.getFullYear();
+                      const monthDiff = today.getMonth() - birthDate.getMonth();
+                      
+                      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                      }
+                      
+                      return age < 18 ? <div className="text-xs text-gray-500">maloljetan</div> : '';
+                    })()}
                   </td>
                 </tr>
               ))}

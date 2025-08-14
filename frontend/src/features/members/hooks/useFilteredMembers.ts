@@ -74,7 +74,7 @@ export const useFilteredMembers = ({
       }
       else if (activeFilter === "active" || activeFilter === "passive") {
         const isActive = activeFilter === "active";
-        // Aktivni su članovi koji imaju 20 ili više sati aktivnosti
+        // Aktivni su članovi koji imaju 20 ili više sati aktivnosti (koristimo total_hours - prošla + tekuća godina)
         const requiredHoursForActive = 20 * 60; // 20 sati u minutama
         result = result.filter(member => {
           // Logika za filtriranje mora biti identična logici za prikaz (getMembershipDisplayStatusExternal)
@@ -87,6 +87,7 @@ export const useFilteredMembers = ({
             return false; // Izbaci bivše članove i one na čekanju
           }
 
+          // Koristimo activity_hours (sati iz tekuće i prošle godine)
           const activityHours = member.activity_hours ?? 0;
           return isActive ? (activityHours >= requiredHoursForActive) : (activityHours < requiredHoursForActive);
         });
