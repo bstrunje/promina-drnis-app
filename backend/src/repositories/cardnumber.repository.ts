@@ -302,8 +302,12 @@ const cardNumberRepository = {
           ])
       );
 
+      // Filtriraj potrošene kartice iz glavne liste inventara
+      // Napomena: "consumed" kartice imaju zaseban endpoint i tab, te ne pripadaju listi "Sve".
+      const nonConsumed = allCardNumbers.filter(cn => cn.status !== 'consumed');
+
       // Kombiniraj podatke
-      const result = allCardNumbers.map(cn => {
+      const result = nonConsumed.map(cn => {
         const assignedInfo = assignedCardsMap.get(cn.card_number);
 
         return {
@@ -380,9 +384,16 @@ const cardNumberRepository = {
 
     // Koristi Prisma transakciju za atomarnu operaciju
     return await prisma.$transaction(async (tx) => {
-      // 1. Najprije postavi sve na "available" - ovo će omogućiti da ispravno ažuriramo statuse
-      // To je sigurno jer ćemo u sljedećem koraku ažurirati statuse dodijeljenih brojeva
+      // 1. Dohvati SVE potrošene (consumed) brojeve iz consumed_card_numbers
+      //    VAŽNO: Ove brojeve NIKAD ne smijemo vratiti u available status
+      const consumed = await tx.consumedCardNumber.findMany({
+        select: { card_number: true }
+      });
+      const consumedList = consumed.map(c => c.card_number);
+
+      // 1a. Resetiraj NA AVAILABLE samo one brojeve koji NISU potrošeni
       await tx.cardNumber.updateMany({
+        where: consumedList.length > 0 ? { card_number: { notIn: consumedList } } : undefined,
         data: {
           status: 'available',
           member_id: null,
@@ -390,7 +401,20 @@ const cardNumberRepository = {
         }
       });
 
-      console.log("Reset all card numbers to available status...");
+      // 1b. Eksplicitno (re)postavi status na 'consumed' za sve potrošene brojeve
+      //     Ovaj korak je idempotentan i osigurava konzistentnost ako postoje zapisi u card_numbers
+      if (consumedList.length > 0) {
+        await tx.cardNumber.updateMany({
+          where: { card_number: { in: consumedList } },
+          data: {
+            status: 'consumed',
+            member_id: null,
+            assigned_at: null
+          }
+        });
+      }
+
+      console.log("Reset non-consumed card numbers to available and enforced consumed statuses...");
 
       // 2. Dohvati sve kartice koje su dodijeljene u membership_details
       const assignedCards = await tx.membershipDetails.findMany({

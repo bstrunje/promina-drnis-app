@@ -59,6 +59,7 @@ export const findActivitiesByYearWithParticipants = async (year: number) => {
             },
           },
         },
+        orderBy: { participation_id: 'asc' },
       },
       _count: {
         select: { participants: true },
@@ -86,6 +87,7 @@ export const findAllActivitiesWithParticipants = async () => {
             },
           },
         },
+        orderBy: { participation_id: 'asc' },
       },
       _count: {
         select: { participants: true },
@@ -119,6 +121,7 @@ export const findActivityById = async (activity_id: number) => {
             },
           },
         },
+        orderBy: { participation_id: 'asc' },
       },
       _count: {
         select: { participants: true },
@@ -145,6 +148,7 @@ export const getActivitiesByTypeId = (type_id: number, year?: number) => {
         include: {
           member: true,
         },
+        orderBy: { participation_id: 'asc' },
       },
     },
     orderBy: {

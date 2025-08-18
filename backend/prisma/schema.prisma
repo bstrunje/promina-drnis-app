@@ -26,13 +26,8 @@ model Member {
   life_status              String?                  @db.VarChar(25)
   tshirt_size              String?                  @db.VarChar(4)
   shell_jacket_size        String?                  @db.VarChar(4)
-  hat_size                 String?                  @db.VarChar(4)
-  tshirt_delivered         Boolean                  @default(false)
-  shell_jacket_delivered   Boolean                  @default(false)
-  hat_delivered            Boolean                  @default(false)
   total_hours              Decimal?                 @default(0) @db.Decimal(10, 2)
-  activity_hours           Decimal?                 @default(0) @db.Decimal(10, 2) // Sati za prošlu i tekuću godinu (za status aktivnosti)
-  gender                   String?                  @db.VarChar(6) // "male", "female"
+  gender                   String?                  @db.VarChar(6)
   registration_completed   Boolean?                 @default(false)
   profile_image_path       String?                  @db.VarChar(255)
   profile_image_updated_at DateTime?                @db.Timestamp(6)
@@ -43,25 +38,30 @@ model Member {
   failed_login_attempts    Int                      @default(0)
   last_failed_login        DateTime?                @db.Timestamp(6)
   locked_until             DateTime?                @db.Timestamp(6)
+  other_skills             String?                  @db.VarChar(500)
+  functions_in_society     String?                  @db.VarChar(250)
+  shell_jacket_delivered   Boolean                  @default(false)
+  tshirt_delivered         Boolean                  @default(false)
+  hat_delivered            Boolean                  @default(false)
+  hat_size                 String?                  @db.VarChar(4)
+  activity_hours           Decimal?                 @default(0) @db.Decimal(10, 2)
+  organized_activities     Activity[]               @relation("OrganizedActivities")
+  participations           ActivityParticipation[]
   annual_statistics        AnnualStatistics[]
   affected_audits          AuditLog[]               @relation("AuditAffected")
   card_numbers             CardNumber[]
+  consumed_card_numbers    ConsumedCardNumber[]
   messages                 MemberMessage[]
   sent_messages            MemberMessage[]          @relation("MessageSender")
   grantedPermissions       MemberPermissions[]      @relation("grantedByMemberPermissions")
   permissions              MemberPermissions?       @relation("memberPermissionsRelation")
+  skills                   MemberSkill[]
   membership_details       MembershipDetails?
   periods                  MembershipPeriod[]
   message_statuses         MessageRecipientStatus[] @relation("RecipientMemberStatus")
   password_update_queue    password_update_queue[]
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
-  consumed_card_numbers    ConsumedCardNumber[]
-  organized_activities     Activity[]                @relation("OrganizedActivities")
-  participations           ActivityParticipation[]
-  skills                   MemberSkill[]
-  other_skills             String?                  @db.VarChar(500)
-  functions_in_society     String?                  @db.VarChar(250) // Funkcije u Društvu (Predsjednik, Tajnik, ...), višestruke vrijednosti odvojene zarezom
 
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -81,21 +81,22 @@ model ActivityType {
 }
 
 model Activity {
-  activity_id            Int      @id @default(autoincrement())
+  activity_id            Int                     @id @default(autoincrement())
   name                   String
   description            String?
   type_id                Int
-  activity_type          ActivityType            @relation(fields: [type_id], references: [type_id], onDelete: Restrict, onUpdate: Cascade)
   organizer_id           Int
-  organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id], onDelete: Restrict, onUpdate: Cascade)
   status                 ActivityStatus          @default(PLANNED)
-  start_date             DateTime 
-  actual_start_time      DateTime? 
-  actual_end_time        DateTime? // Stvarno vrijeme završetka (za live praćenje)
-  recognition_percentage Float                   @default(100) // Postotak priznavanja sati za cijelu aktivnost (npr. 50 za 50%)
-  cancellation_reason    String? // Razlog otkazivanja aktivnosti
+  start_date             DateTime
+  actual_start_time      DateTime?
+  actual_end_time        DateTime?
+  recognition_percentage Float                   @default(100)
+  cancellation_reason    String?
+  manual_hours          Float?
   created_at             DateTime                @default(now())
   updated_at             DateTime                @updatedAt
+  organizer              Member                  @relation("OrganizedActivities", fields: [organizer_id], references: [member_id])
+  activity_type          ActivityType            @relation(fields: [type_id], references: [type_id])
   participants           ActivityParticipation[]
 
   @@index([type_id])
@@ -104,18 +105,19 @@ model Activity {
 }
 
 model ActivityParticipation {
-  participation_id     Int       @id @default(autoincrement())
+  participation_id     Int              @id @default(autoincrement())
   activity_id          Int
-  activity             Activity  @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade, onUpdate: Cascade)
   member_id            Int
-  member               Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
-  start_time           DateTime? 
-  end_time             DateTime? 
-  manual_hours         Float? 
-  recognition_override Float? 
-  created_at           DateTime  @default(now())
+  start_time           DateTime?
+  end_time             DateTime?
+  manual_hours         Float?
+  recognition_override      Float? // Postotak priznavanja po sudioniku (npr. 50 za 50%)
+  created_at           DateTime         @default(now())
+  participant_role     ParticipantRole?
+  activity             Activity         @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade)
+  member               Member           @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
-  @@unique([activity_id, member_id]) 
+  @@unique([activity_id, member_id])
   @@map("activity_participations")
 }
 
@@ -133,11 +135,10 @@ model Skill {
 model MemberSkill {
   member_id     Int
   skill_id      Int
-  is_instructor Boolean   @default(false)
-  assigned_at   DateTime  @default(now())
-
-  member Member @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
-  skill  Skill  @relation(fields: [skill_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  is_instructor Boolean  @default(false)
+  assigned_at   DateTime @default(now())
+  member        Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  skill         Skill    @relation(fields: [skill_id], references: [id], onDelete: Cascade)
 
   @@id([member_id, skill_id])
   @@map("member_skills")
@@ -164,7 +165,7 @@ model MembershipDetails {
   next_year_stamp_issued Boolean?  @default(false)
   status                 String?   @default("active") @db.VarChar(20)
   active_until           DateTime? @db.Timestamp(6)
-  member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  member                 Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@index([fee_payment_year], map: "idx_membership_details_fee_payment_year")
   @@index([fee_payment_date], map: "idx_membership_details_fee_payment_date")
@@ -181,7 +182,7 @@ model MembershipPeriod {
   end_reason   String?   @db.VarChar(20)
   created_at   DateTime? @default(now()) @db.Timestamp(6)
   is_test_data Boolean?  @default(false)
-  membership   Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  membership   Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@index([is_test_data], map: "idx_membership_periods_test_data")
   @@map("membership_periods")
@@ -202,14 +203,14 @@ model StampInventory {
 
 model EquipmentInventory {
   id             Int      @id @default(autoincrement())
-  equipment_type String   @db.VarChar(20)  // "tshirt", "shell_jacket", "hat"
-  size           String   @db.VarChar(4)   // "XS", "S", "M", "L", "XL", "XXL", "XXXL"
-  gender         String   @db.VarChar(6)   // "male", "female"
+  equipment_type String   @db.VarChar(20)
+  size           String   @db.VarChar(4)
+  gender         String   @db.VarChar(6)
   initial_count  Int      @default(0)
   issued_count   Int      @default(0)
-  gift_count     Int      @default(0)      // Broj izdanih kao poklon
+  gift_count     Int      @default(0)
   last_updated   DateTime @default(now()) @db.Timestamp(6)
-  
+
   @@unique([equipment_type, size, gender], name: "equipment_unique")
   @@map("equipment_inventory")
 }
@@ -220,7 +221,7 @@ model ConsumedCardNumber {
   member_id   Int
   consumed_at DateTime @default(now())
   issued_at   DateTime
-  member      Member   @relation(fields: [member_id], references: [member_id], onDelete: Restrict, onUpdate: Cascade)
+  member      Member   @relation(fields: [member_id], references: [member_id])
 
   @@map("consumed_card_numbers")
 }
@@ -234,8 +235,8 @@ model MemberMessage {
   recipient_id       Int?
   recipient_type     String?                  @default("member_administrator") @db.VarChar(20)
   sender_type        SenderType               @default(member)
-  member             Member?                  @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
-  sender             Member?                  @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  member             Member?                  @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  sender             Member?                  @relation("MessageSender", fields: [sender_id], references: [member_id], onDelete: Cascade)
   recipient_statuses MessageRecipientStatus[]
 
   @@map("member_messages")
@@ -249,8 +250,8 @@ model MessageRecipientStatus {
   read_at                     DateTime?     @db.Timestamp(6)
   created_at                  DateTime      @default(now()) @db.Timestamp(6)
   updated_at                  DateTime      @updatedAt @db.Timestamp(6)
-  message                     MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade, onUpdate: Cascade)
-  member                      Member        @relation("RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  message                     MemberMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+  member                      Member        @relation("RecipientMemberStatus", fields: [recipient_member_id], references: [member_id], onDelete: Cascade)
 
   @@unique([message_id, recipient_member_id])
   @@index([message_id])
@@ -266,7 +267,7 @@ model AnnualStatistics {
   total_activities  Int
   membership_status String    @db.VarChar(20)
   calculated_at     DateTime? @default(now()) @db.Timestamp(6)
-  member            Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade, map: "annual_statistics_member_fkey")
+  member            Member?   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, map: "annual_statistics_member_fkey")
 
   @@unique([member_id, year], map: "unique_member_year")
   @@index([member_id, year], map: "idx_annual_statistics_member_year")
@@ -274,22 +275,22 @@ model AnnualStatistics {
 }
 
 model AuditLog {
-  log_id          Int       @id @default(autoincrement())
-  action_type     String    @db.VarChar(50)
+  log_id          Int            @id @default(autoincrement())
+  action_type     String         @db.VarChar(50)
   performed_by    Int?
   performer_type  PerformerType?
   action_details  String
-  ip_address      String?   @db.VarChar(45)
-  created_at      DateTime? @default(now()) @db.Timestamptz(6)
-  status          String?   @db.VarChar(20)
+  ip_address      String?        @db.VarChar(45)
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  status          String?        @db.VarChar(20)
   affected_member Int?
-  affected        Member?   @relation("AuditAffected", fields: [affected_member], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
+  affected        Member?        @relation("AuditAffected", fields: [affected_member], references: [member_id])
 
   @@map("audit_logs")
 }
 
 model MemberAdministrator {
-  id           Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   username      String    @unique @db.VarChar(100)
   email         String    @unique @db.VarChar(255)
   display_name  String    @db.VarChar(100)
@@ -323,8 +324,8 @@ model MemberPermissions {
   can_view_members        Boolean?  @default(false)
   can_view_statistics     Boolean?  @default(false)
   updated_at              DateTime? @default(now()) @db.Timestamp(6)
-  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
-  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  grantedByMember         Member?   @relation("grantedByMemberPermissions", fields: [granted_by], references: [member_id])
+  member                  Member?   @relation("memberPermissionsRelation", fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@index([granted_by], map: "idx_member_permissions_granted_by")
   @@index([member_id], map: "idx_member_permissions_member")
@@ -338,7 +339,7 @@ model CardNumber {
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   assigned_at DateTime? @db.Timestamptz(6)
   member_id   Int?
-  members     Member?   @relation(fields: [member_id], references: [member_id], onDelete: SetNull, onUpdate: Cascade, map: "member_fk")
+  members     Member?   @relation(fields: [member_id], references: [member_id], map: "member_fk")
 
   @@index([member_id], map: "idx_card_numbers_member_id")
   @@index([status], map: "idx_card_numbers_status")
@@ -351,7 +352,7 @@ model password_update_queue {
   card_number String    @db.VarChar(20)
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
   processed   Boolean?  @default(false)
-  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  members     Member    @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 }
 
 model stamp_history {
@@ -364,7 +365,7 @@ model stamp_history {
   reset_by      Int?
   notes         String?
   stamp_year    Int
-  members       Member?  @relation(fields: [reset_by], references: [member_id], onDelete: SetNull, onUpdate: Cascade)
+  members       Member?  @relation(fields: [reset_by], references: [member_id])
 }
 
 model refresh_tokens {
@@ -373,7 +374,7 @@ model refresh_tokens {
   member_id  Int
   expires_at DateTime @db.Timestamp(6)
   created_at DateTime @default(now()) @db.Timestamp(6)
-  members    Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade, onUpdate: Cascade)
+  members    Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@index([member_id], map: "idx_refresh_tokens_member_id")
 }
@@ -391,6 +392,15 @@ model SystemManager {
   @@map("system_manager")
 }
 
+enum ParticipantRole {
+  GUIDE
+  ASSISTANT_GUIDE
+  DRIVER
+  REGULAR
+
+  @@map("participant_roles")
+}
+
 enum SenderType {
   member
   member_administrator
@@ -403,8 +413,8 @@ enum PerformerType {
 }
 
 enum ActivityStatus {
-  PLANNED   // Aktivnost je planirana, članovi se mogu prijaviti
-  ACTIVE    // Aktivnost je u tijeku, vrijeme se bilježi
-  COMPLETED // Aktivnost je završena i arhivirana
-  CANCELLED // Aktivnost je otkazana
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }

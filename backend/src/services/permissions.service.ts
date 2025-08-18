@@ -1,5 +1,6 @@
 import { MemberPermissions } from '../shared/types/permissions.js';
 import prisma from '../utils/prisma.js';
+import { defaultAdminPermissions } from '../config/permissions.config.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -7,48 +8,40 @@ const permissionsService = {
   async getMemberPermissions(memberId: number): Promise<MemberPermissions> {
     if (isDev) console.log(`[PERMISSIONS] Dohvaćam ovlasti za člana ${memberId}...`);
     try {
-      const permissions = await prisma.memberPermissions.findUnique({
+      const member = await prisma.member.findUnique({
         where: { member_id: memberId },
-        select: {
-          can_view_members: true,
-          can_edit_members: true,
-          can_add_members: true,
-          can_manage_membership: true,
-          can_view_activities: true,
-          can_create_activities: true,
-          can_approve_activities: true,
-          can_view_financials: true,
-          can_manage_financials: true,
-          can_send_group_messages: true,
-          can_manage_all_messages: true,
-          can_view_statistics: true,
-          can_export_data: true,
-          can_manage_end_reasons: true,
-          can_manage_card_numbers: true,
-          can_assign_passwords: true
-        }
+        select: { role: true }
       });
 
-      if (isDev) console.log(`[PERMISSIONS] Ovlasti za člana ${memberId}:`, permissions ? 'PRONAĐENE' : 'PRAZNE');
-      // Type casting za kompatibilnost s MemberPermissions tipom
-      return permissions ? {
-        can_view_members: permissions.can_view_members || false,
-        can_edit_members: permissions.can_edit_members || false,
-        can_add_members: permissions.can_add_members || false,
-        can_manage_membership: permissions.can_manage_membership || false,
-        can_view_activities: permissions.can_view_activities || false,
-        can_create_activities: permissions.can_create_activities || false,
-        can_approve_activities: permissions.can_approve_activities || false,
-        can_view_financials: permissions.can_view_financials || false,
-        can_manage_financials: permissions.can_manage_financials || false,
-        can_send_group_messages: permissions.can_send_group_messages || false,
-        can_manage_all_messages: permissions.can_manage_all_messages || false,
-        can_view_statistics: permissions.can_view_statistics || false,
-        can_export_data: permissions.can_export_data || false,
-        can_manage_end_reasons: permissions.can_manage_end_reasons || false,
-        can_manage_card_numbers: permissions.can_manage_card_numbers || false,
-        can_assign_passwords: permissions.can_assign_passwords || false
-      } : {};
+      const specificPermissions = await prisma.memberPermissions.findUnique({
+        where: { member_id: memberId }
+      });
+
+      let finalPermissions: Partial<MemberPermissions> = {};
+
+      if (member?.role === 'member_administrator') {
+        finalPermissions = { ...defaultAdminPermissions };
+      }
+
+      if (specificPermissions) {
+        for (const key in specificPermissions) {
+            const permissionKey = key as keyof MemberPermissions;
+            const value = specificPermissions[permissionKey];
+            if (value !== null && value !== undefined) {
+                finalPermissions[permissionKey] = value;
+            }
+        }
+      }
+
+      const allPermissionKeys = Object.keys(defaultAdminPermissions) as (keyof MemberPermissions)[];
+      const result: MemberPermissions = {} as MemberPermissions;
+      for (const key of allPermissionKeys) {
+        result[key] = !!finalPermissions[key];
+      }
+
+      if (isDev) console.log(`[PERMISSIONS] Konačne ovlasti za člana ${memberId}:`, result);
+
+      return result;
     } catch (error) {
       console.error(`[PERMISSIONS] Greška pri dohvaćanju ovlasti za člana ${memberId}:`, error);
       throw error;

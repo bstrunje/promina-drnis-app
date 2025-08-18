@@ -21,6 +21,30 @@ export const permissionsController = {
 
             const permissions = await permissionsService.getAdminPermissions(memberId);
             if (isDev) console.log('Found permissions:', permissions); // Debug log
+
+            if (!permissions || Object.keys(permissions).length === 0) {
+                // Ako nema specifičnih ovlasti, vrati zadane (sve false)
+                const defaultPermissions = {
+                    can_view_members: false,
+                    can_edit_members: false,
+                    can_add_members: false,
+                    can_manage_membership: false,
+                    can_view_activities: false,
+                    can_create_activities: false,
+                    can_approve_activities: false,
+                    can_view_financials: false,
+                    can_manage_financials: false,
+                    can_send_group_messages: false,
+                    can_manage_all_messages: false,
+                    can_view_statistics: false,
+                    can_export_data: false,
+                    can_manage_end_reasons: false,
+                    can_manage_card_numbers: false,
+                    can_assign_passwords: false
+                };
+                return res.json(defaultPermissions);
+            }
+
             res.json(permissions);
         } catch (error) {
             console.error('Error fetching admin permissions:', error);

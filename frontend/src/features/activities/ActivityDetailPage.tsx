@@ -22,7 +22,7 @@ import {
 } from '@components/ui/dialog';
 import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
-import { ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
+import { ParticipantRole } from '@shared/activity.types';
 
 // Mapiraj oznake uloga; tipizirano bez 'any'
 // Napomena: eksplicitno navodimo namespace 'activities' i izbjegavamo prelazak na fallback jezik.
@@ -53,14 +53,12 @@ const getRoleLabels = (t: TFunction, i18n: I18n): Record<ParticipantRole, string
   [ParticipantRole.REGULAR]: getRoleLabel(t, i18n, 'regular'),
 });
 
-// Funkcija za dobivanje naziva uloge na temelju postotka priznavanja
-const getRoleNameByPercentage = (percentage: number, t: TFunction, i18n: I18n): string | null => {
-  const roleEntry = Object.entries(rolesToRecognitionPercentage).find(([, value]) => value === percentage);
-  if (roleEntry) {
-    const roleLabels = getRoleLabels(t, i18n);
-    return roleLabels[roleEntry[0] as ParticipantRole];
-  }
-  return null; // Vraća null ako nema definirane uloge
+// Funkcija za dobivanje naziva uloge na temelju participant_role enum-a
+const getRoleNameByEnum = (participantRole: ParticipantRole | null, t: TFunction, i18n: I18n): string | null => {
+  if (!participantRole) return null;
+  
+  const roleLabels = getRoleLabels(t, i18n);
+  return roleLabels[participantRole] || null;
 };
 
 
@@ -359,8 +357,8 @@ const ActivityDetailPage: React.FC = () => {
                         <li key={p.member.member_id}>
                           {p.member.full_name}
                           {/* Prikaz uloge samo za izlete */}
-                          {activity?.activity_type?.key === 'izleti' && p.recognition_override !== null && p.recognition_override !== undefined && (() => {
-                            const roleName = getRoleNameByPercentage(p.recognition_override, t, i18n);
+                                            {activity?.activity_type?.key === 'izleti' && p.participant_role && p.participant_role !== ParticipantRole.REGULAR && (() => {
+                            const roleName = getRoleNameByEnum(p.participant_role, t, i18n);
                             return roleName ? (
                               <Badge variant="outline" className="ml-2 border-amber-300 text-amber-700 bg-amber-50 text-xs">
                                 {roleName}

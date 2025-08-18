@@ -62,7 +62,7 @@ router.post('/:activityId/leave', authenticateToken, activityController.leaveAct
 router.post(
   '/:activityId/participants/:memberId',
   authenticateToken,
-  roles.requireAdmin,
+  checkPermission('can_approve_activities'),
   activityController.addParticipantToActivity
 );
 
@@ -70,7 +70,7 @@ router.post(
 router.delete(
   '/:activityId/participants/:memberId',
   authenticateToken,
-  roles.requireAdmin,
+  checkPermission('can_approve_activities'),
   activityController.removeParticipantFromActivity
 );
 
@@ -78,7 +78,7 @@ router.delete(
 router.put(
   '/participants/:participationId',
   authenticateToken,
-  roles.requireAdmin,
+  checkPermission('can_approve_activities'),
   activityController.updateParticipationDetails
 );
 

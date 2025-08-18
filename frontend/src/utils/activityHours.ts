@@ -89,19 +89,24 @@ export const calculateActivityHours = (activity: Activity): number => {
     return 0;
   }
 
-  // Prioritet 1: Ručni unos sati sudionika
+  // Prioritet 1: Ručni unos sati na razini aktivnosti
+  if (activity.manual_hours && activity.manual_hours > 0) {
+    return activity.manual_hours;
+  }
+
+  // Prioritet 2: Ručni unos sati sudionika (stari način, može se ukloniti kasnije)
   const hoursFromManual = getHoursFromManualInputs(activity);
   if (hoursFromManual !== null) {
     return hoursFromManual;
   }
 
-  // Prioritet 2: Ručni unos iz naziva aktivnosti
+  // Prioritet 3: Ručni unos iz naziva aktivnosti
   const hoursFromName = getHoursFromActivityName(activity);
   if (hoursFromName !== null) {
     return hoursFromName;
   }
 
-  // Prioritet 3: Stvarno vrijeme početka i završetka
+  // Prioritet 4: Stvarno vrijeme početka i završetka
   const hoursFromTimes = getHoursFromActivityTimes(activity);
   if (hoursFromTimes !== null) {
     return hoursFromTimes;
@@ -203,18 +208,15 @@ export const calculateTotalActivityHours = (activity: Activity): number => {
   // Ako aktivnost nema sudionike, računamo samo osnovne sate
   if (!activity.participants || activity.participants.length === 0) {
     const hours = calculateActivityHours(activity);
-    console.log(`Aktivnost ${activity.name} (ID: ${activity.activity_id}) nema sudionike, sati: ${hours}`);
     return hours;
   }
   
   // Zbrajamo sate svih sudionika
   const totalHours = activity.participants.reduce((total, participant) => {
     const partHours = calculateParticipantHours(activity, participant as ActivityParticipantLike);
-    console.log(`  - Sudionik ${String((participant as ActivityParticipantLike).member_id)}: ${partHours}h (manual: ${(participant as ActivityParticipantLike).manual_hours ?? 'n/a'}, recognition: ${(participant as ActivityParticipantLike).recognition_override ?? activity.recognition_percentage ?? 100}%)`);
     return total + partHours;
   }, 0);
   
-  console.log(`Aktivnost ${activity.name} (ID: ${activity.activity_id}) ukupno sati: ${totalHours}`);
   return totalHours;
 };
 
@@ -244,8 +246,6 @@ export const calculateGrandTotalHours = (activities: Activity[]): number => {
     return 0;
   }
   
-  console.log(`Računanje ukupnih sati za ${activities.length} aktivnosti...`);
-  console.log(`Aktivnosti imaju sudionike? ${activities.map(a => a.participants?.length ?? 0).join(', ')}`);
   
   // Zbrajamo ukupne sate svih aktivnosti, uključujući sve sudionike
   const grandTotal = activities.reduce((total, activity) => {
@@ -253,7 +253,6 @@ export const calculateGrandTotalHours = (activities: Activity[]): number => {
     return total + activityTotal;
   }, 0);
   
-  console.log(`GRAND TOTAL sati: ${grandTotal}`);
   return grandTotal;
 };
 

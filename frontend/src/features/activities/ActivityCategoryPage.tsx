@@ -334,7 +334,7 @@ const ActivityCategoryPage: React.FC = () => {
                         </div>
                         <div className="pt-2 text-right">
                           {(() => {
-                            const statusKey = `activitiesAdmin.statuses.${activity.status.toLowerCase()}`;
+                            const statusKey = `activitiesAdmin.statuses.${activity.status === ActivityStatus.ACTIVE ? 'in_progress' : activity.status.toLowerCase()}`;
                             const statusText = t(statusKey);
                             switch (activity.status) {
                               case ActivityStatus.PLANNED:

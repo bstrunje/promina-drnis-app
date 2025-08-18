@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
+import { defaultAdminPermissions } from '../config/permissions.config.js';
 
 // Types
 interface JWTPayload {
@@ -224,25 +225,24 @@ const checkPermission = (permission: string) => {
                 next();
                 return;
             }
+
             
-            // Za obične članove s admin ovlastima, provjeri konkretnu ovlast
+            // Za obične članove i administratore, provjeri konkretnu ovlast
             if (req.user.member_id) {
                 const memberPermissions = await prisma.memberPermissions.findUnique({
                     where: { member_id: req.user.member_id }
                 });
-                
-                // Ako član nema nikakve ovlasti
-                if (!memberPermissions) {
-                    res.status(403).json({ 
-                        message: `Access denied. Required permission: ${permission}`
-                    });
-                    return;
+
+                // 1. Provjeri specifične ovlasti korisnika iz baze
+                if (memberPermissions && memberPermissions[permission as keyof typeof memberPermissions] === true) {
+                    return next();
                 }
-                
-                // Provjera ima li član specificiranu ovlast
-                if (memberPermissions[permission as keyof typeof memberPermissions] === true) {
-                    next();
-                    return;
+
+                // 2. Ako nema specifične ovlasti, a korisnik je administrator, provjeri zadane ovlasti
+                if (req.user.role_name === 'member_administrator') {
+                    if (defaultAdminPermissions[permission as keyof typeof defaultAdminPermissions]) {
+                        return next();
+                    }
                 }
             }
             

@@ -61,6 +61,7 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
       include: {
         activity: {
           select: {
+            manual_hours: true,
             actual_start_time: true,
             actual_end_time: true,
             recognition_percentage: true
@@ -73,6 +74,7 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
       manual_hours: number | null;
       recognition_override?: number | null;
       activity: {
+        manual_hours: number | null;
         actual_start_time: Date | string | null;
         actual_end_time: Date | string | null;
         recognition_percentage?: number | null;
@@ -80,10 +82,11 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
     }) => {
       let minuteValue = 0;
 
-      if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+        minuteValue = p.activity.manual_hours * 60;
+      } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
         minuteValue = Math.round(p.manual_hours * 60);
-      } 
-      else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+      } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
         const minutes = differenceInMinutes(
           new Date(p.activity.actual_end_time),
           new Date(p.activity.actual_start_time)
@@ -149,6 +152,7 @@ export const updateMemberActivityHours = async (memberId: number, prismaClient: 
       include: {
         activity: {
           select: {
+            manual_hours: true,
             actual_start_time: true,
             actual_end_time: true,
             recognition_percentage: true // Dohvaćamo i postotak priznavanja s aktivnosti
@@ -161,6 +165,7 @@ export const updateMemberActivityHours = async (memberId: number, prismaClient: 
       manual_hours: number | null;
       recognition_override?: number | null;
       activity: {
+        manual_hours: number | null;
         actual_start_time: Date | string | null;
         actual_end_time: Date | string | null;
         recognition_percentage?: number | null;
@@ -169,7 +174,9 @@ export const updateMemberActivityHours = async (memberId: number, prismaClient: 
       let minuteValue = 0;
 
       // Prioritet imaju manual_hours ako su postavljeni
-      if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+        minuteValue = p.activity.manual_hours * 60;
+      } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
         minuteValue = Math.round(p.manual_hours * 60);
       } 
       // Ako manual_hours nije postavljen, računamo iz actual_start_time i actual_end_time
@@ -670,7 +677,9 @@ const memberService = {
                         let minuteValue = 0;
                         
                         // Ista logika kao u updateAnnualStatistics
-                        if (p.manual_hours !== null && p.manual_hours !== undefined) {
+                        if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+                            minuteValue = p.activity.manual_hours * 60;
+                        } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
                             minuteValue = Math.round(p.manual_hours * 60);
                         } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
                             const minutes = differenceInMinutes(

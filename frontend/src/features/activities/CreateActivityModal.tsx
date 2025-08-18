@@ -18,7 +18,7 @@ import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { MemberSelect } from './MemberSelect';
 import MemberRoleSelect from './MemberRoleSelect';
-import { MemberWithRole, rolesToRecognitionPercentage } from './memberRole';
+import { MemberWithRole, calculateRecognitionPercentage } from './memberRole';
 import { ActivityType } from '@shared/activity.types';
 import { SelectPortal } from '@radix-ui/react-select';
 
@@ -130,28 +130,24 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     
     try {
       if (isExcursionActivity && participantsWithRoles.length > 0) {
-        // Za izlete trebamo stvoriti aktivnost za svakog sudionika s njegovim postotkom priznavanja
-        const participationsWithRecognition = participantsWithRoles.map(participant => {
-          // Izračunaj postotak priznavanja na temelju uloge
-          const recognitionForRole = rolesToRecognitionPercentage[participant.role];
-          return {
-            member_id: Number(participant.memberId),
-            // Ako postoji ručni unos postotka priznavanja, koristi njega, inače koristi postotak za ulogu
-            recognition_override: participant.manualRecognition ?? recognitionForRole
-          };
-        });
-        
-        // Stvori aktivnost s posebnim postavkama za izlete
-        await createActivity({
+        // Prvo stvori aktivnost s osnovnim sudionicima
+        const payload = {
           name: activityName,
           description,
           start_date: new Date(combinedStartDate),
           actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
           actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
           activity_type_id: Number(selectedTypeId),
-          recognition_percentage: Number(recognitionPercentage),
-          participations: participationsWithRecognition,
-        });
+          recognition_percentage: Number(recognitionPercentage), // Dodano radi usklađivanja s tipom
+          manual_hours: manualHours ? Number(manualHours) : null,
+          participations: participantsWithRoles.map(p => ({
+            member_id: Number(p.memberId),
+            participant_role: p.role,
+            recognition_override: p.manualRecognition ?? calculateRecognitionPercentage(p.role, participantsWithRoles)
+          }))
+        };
+
+        await createActivity(payload);
       } else {
         // Za ostale tipove aktivnosti koristimo standardni način
         await createActivity({
@@ -163,6 +159,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           actual_end_time: manualHours ? null : (combinedActualEndTime ? new Date(combinedActualEndTime) : null),
           activity_type_id: Number(selectedTypeId),
           recognition_percentage: Number(recognitionPercentage),
+          manual_hours: manualHours ? Number(manualHours) : null,
           participant_ids: participantIds.map(id => Number(id)),
         });
       }

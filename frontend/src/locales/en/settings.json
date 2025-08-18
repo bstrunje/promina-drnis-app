@@ -55,7 +55,7 @@
                     "all": "All ({{count}})",
                     "available": "Available ({{count}})",
                     "assigned": "Assigned ({{count}})",
-                    "consumed": "Spent/Consumed"
+                    "consumed": "Spent"
                 },
                 "stats": {
                     "showing": "Showing {{current}} of {{total}}",

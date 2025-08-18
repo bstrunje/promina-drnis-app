@@ -32,9 +32,10 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
     include: {
       activity: {
         select: {
+          manual_hours: true, // Dohvaćamo i sate s razine aktivnosti
           actual_start_time: true,
           actual_end_time: true,
-          recognition_percentage: true, // Dohvaćamo i postotak priznavanja s aktivnosti
+          recognition_percentage: true,
         },
       },
     },
@@ -42,11 +43,16 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
 
   // 2. Izračunaj ukupne sate i broj aktivnosti
   const totalActivities = participations.length;
-  const totalHours = participations.reduce((acc, p) => {
+  const totalRecognizedMinutes = participations.reduce((acc, p) => {
     let minuteValue = 0;
 
-    if (p.manual_hours !== null && p.manual_hours !== undefined) {
-      minuteValue = p.manual_hours * 60; // Pretvaramo sate u minute
+    // Prioritet 1: Manualni sati na razini aktivnosti (vrijednost je u satima)
+    if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && Number(p.activity.manual_hours) > 0) {
+      minuteValue = Number(p.activity.manual_hours) * 60;
+    // Prioritet 2: Manualni sati na razini sudjelovanja (vrijednost je u satima)
+    } else if (p.manual_hours !== null && p.manual_hours !== undefined && Number(p.manual_hours) > 0) {
+      minuteValue = Number(p.manual_hours) * 60;
+    // Prioritet 3: Izračun iz vremena početka i kraja
     } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
       const minutes = differenceInMinutes(
         new Date(p.activity.actual_end_time),
@@ -55,37 +61,72 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
       minuteValue = minutes > 0 ? minutes : 0;
     }
 
-    // Odredi koji postotak primijeniti. Prioritet ima `recognition_override` s pojedinog sudjelovanja.
-    // Ako on ne postoji, koristi se `recognition_percentage` s cijele aktivnosti.
-    // Ako ni on ne postoji, default je 100%.
     const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
     const recognizedMinutes = minuteValue * (finalRecognitionPercentage / 100);
 
     return acc + recognizedMinutes;
-  }, 0) / 60; // Vraćamo natrag u sate
+  }, 0);
 
-  // 3. Spremi (ili ažuriraj) statistiku u bazu
-  await (tx || prisma).annualStatistics.upsert({
-    where: {
-      member_id_year: {
+  const totalHours = totalRecognizedMinutes / 60; // Pretvaramo ukupne minute u sate
+
+  // 3. Spremi (ili ažuriraj) statistiku u bazu - ili obriši ako nema aktivnosti
+  if (totalActivities === 0 && totalHours === 0) {
+    // Ako nema aktivnosti, obriši postojeći zapis godišnje statistike
+    await (tx || prisma).annualStatistics.deleteMany({
+      where: {
         member_id: memberId,
         year: year,
       },
-    },
-    update: {
-      total_hours: totalHours,
-      total_activities: totalActivities,
-      calculated_at: new Date(),
-    },
-    create: {
+    });
+    
+    if (isDev) console.log(`Obrisana prazna statistika za člana ${memberId} za godinu ${year}`);
+  } else {
+    // Ako ima aktivnosti, ažuriraj ili kreiraj statistiku
+    await (tx || prisma).annualStatistics.upsert({
+      where: {
+        member_id_year: {
+          member_id: memberId,
+          year: year,
+        },
+      },
+      update: {
+        total_hours: totalHours,
+        total_activities: totalActivities,
+        calculated_at: new Date(),
+      },
+      create: {
+        member_id: memberId,
+        year: year,
+        total_hours: totalHours,
+        total_activities: totalActivities,
+        membership_status: '', // TODO: Ovdje treba dohvatiti i postaviti stvarni status članstva
+        calculated_at: new Date(),
+      },
+    });
+
+    if (isDev) console.log(`Ažurirana statistika za člana ${memberId} za godinu ${year}. Sati: ${totalHours.toFixed(2)}, Aktivnosti: ${totalActivities}`);
+  }
+};
+
+/**
+ * Briše sve prazne godišnje statistike za određenog člana.
+ * Ova funkcija se poziva kada se briše aktivnost da očisti sve godine
+ * gdje član više nema aktivnosti.
+ * 
+ * @param memberId ID člana za kojeg se brišu prazne statistike.
+ * @param tx Opcionalni Prisma transakcijski klijent.
+ */
+export const cleanupEmptyAnnualStatistics = async (memberId: number, tx: TransactionClient = prisma) => {
+  // Obriši sve zapise gdje član nema aktivnosti ili sate
+  const deletedCount = await (tx || prisma).annualStatistics.deleteMany({
+    where: {
       member_id: memberId,
-      year: year,
-      total_hours: totalHours,
-      total_activities: totalActivities,
-      membership_status: '', // TODO: Ovdje treba dohvatiti i postaviti stvarni status članstva
-      calculated_at: new Date(),
+      total_activities: 0,
+      total_hours: 0,
     },
   });
 
-  if (isDev) console.log(`Ažurirana statistika za člana ${memberId} za godinu ${year}. Sati: ${totalHours.toFixed(2)}, Aktivnosti: ${totalActivities}`);
+  if (isDev) console.log(`Obrisano ${deletedCount.count} praznih statistika za člana ${memberId}`);
+  
+  return deletedCount;
 };

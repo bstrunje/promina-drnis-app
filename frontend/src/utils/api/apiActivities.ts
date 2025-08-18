@@ -87,9 +87,10 @@ export const getActivityById = async (activityId: string): Promise<Activity> => 
  * @param activityData Podaci za ažuriranje.
  * @returns Promise koji razrješava u ažurirani objekt aktivnosti.
  */
-// Definiramo tip koji isključuje manual_hours iz ActivityData
+// Dozvoljavamo slanje manual_hours i participant_ids
 type ActivityUpdateData = Partial<Omit<Activity, 'participants'>> & {
   participant_ids?: number[];
+  manual_hours?: number | null;
 };
 
 /**
@@ -160,7 +161,8 @@ export const removeParticipantAdmin = async (activityId: number, memberId: numbe
 };
 
 export const updateParticipationAdmin = async (participationId: number, data: Partial<ActivityParticipation>): Promise<ActivityParticipation> => {
-  const response = await apiInstance.put<ActivityParticipation>(`/activities-management/participants/${participationId}`, data);
+  // Backend ruta: PUT /activities/participants/:participationId (vidi backend/src/routes/activity.routes.ts)
+  const response = await apiInstance.put<ActivityParticipation>(`/activities/participants/${participationId}`, data);
   return response.data;
 };
 

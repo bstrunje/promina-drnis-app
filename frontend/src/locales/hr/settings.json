@@ -55,7 +55,7 @@
                     "all": "Sve ({{count}})",
                     "available": "Dostupno ({{count}})",
                     "assigned": "Dodijeljeno ({{count}})",
-                    "consumed": "Potrošeno/Iskorišteno"
+                    "consumed": "Potrošeno"
                 },
                 "stats": {
                     "showing": "Prikazano {{current}} od {{total}}",

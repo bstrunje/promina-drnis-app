@@ -262,7 +262,15 @@
     "manualHours": "Ručno uneseni sati",
     "manualHoursPlaceholder": "Unesi broj sati...",
     "recognitionPercentage": "Postotak priznavanja",
-    "participants": "Sudionici"
+    "participants": "Sudionici",
+    "perParticipantAdjustments": "Prilagodbe po sudioniku",
+    "perParticipantHint": "Podešavanja se primjenjuju na priznate sate. Baza je ručni unos ako postoji, inače izračun po stvarnom trajanju × postotak priznavanja.",
+    "baseHours": "Baza",
+    "currentRecognized": "Trenutno priznato",
+    "manualAdjust": "Manualno",
+    "newTotal": "Novi iznos",
+    "increase": "Povećaj",
+    "decrease": "Smanji"
   },
   "creation": {
     "errors": {

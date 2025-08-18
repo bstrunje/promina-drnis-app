@@ -56,6 +56,8 @@ export default function CardNumberManagement() {
   }[]>([]);
   const [isLoadingConsumed, setIsLoadingConsumed] = useState(false);
   const [consumedSearch, setConsumedSearch] = useState("");
+  // Označava je li potrošene kartice barem jednom dohvaćene
+  const [hasLoadedConsumed, setHasLoadedConsumed] = useState(false);
   
   // UI state for accordion-style sections
   const [activeSection, setActiveSection] = useState<"single" | "range" | "manage" | null>(null);
@@ -268,6 +270,7 @@ export default function CardNumberManagement() {
     try {
       const data = await getConsumedCardNumbers(search);
       setConsumedCardNumbers(data);
+      setHasLoadedConsumed(true);
     } catch (error) {
       console.error('Error fetching consumed card numbers:', error);
       toast({
@@ -287,6 +290,15 @@ export default function CardNumberManagement() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, consumedSearch]);
+
+  // Prefetch potrošenih kartica pri mountu komponente
+  // Kako bismo izbjegli početni prikaz "(...)" na gumbu i prikazali točan broj odmah
+  useEffect(() => {
+    if (!hasLoadedConsumed) {
+      void fetchConsumedCardNumbers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Card className="my-6">
@@ -529,7 +541,7 @@ export default function CardNumberManagement() {
                   onClick={() => setStatusFilter('consumed')}
                   className="text-gray-600"
                 >
-                  {t('cardNumberManagement.forms.manage.filters.consumed')}
+                  {t('cardNumberManagement.forms.manage.filters.consumed')} ({hasLoadedConsumed ? consumedCardNumbers.length : '...'})
                 </Button>
               </div>
               

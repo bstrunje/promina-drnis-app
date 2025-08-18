@@ -1,18 +1,17 @@
-import { ActivityStatus, Prisma, PrismaClient } from '@prisma/client';
+import { ActivityStatus, Prisma, PrismaClient, ParticipantRole } from '@prisma/client';
 import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
 import { updateMemberTotalHours, updateMemberActivityHours } from './member.service.js';
 import { differenceInMinutes } from 'date-fns';
-import { updateAnnualStatistics } from './statistics.service.js';
+import { updateAnnualStatistics, cleanupEmptyAnnualStatistics } from './statistics.service.js';
 
 // Tip za Prisma transakcijski klijent
-const isDev = process.env.NODE_ENV === 'development';
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 // DTO tipovi za ulazne podatke (precizno umjesto any)
 // Napomena: Isključivo tipizacijska poboljšanja, bez promjene ponašanja
-type ParticipationInput = { member_id: number; recognition_override: number };
+type ParticipationInput = { member_id: number; recognition_override: number; participant_role?: ParticipantRole; manual_hours?: number };
 
 type CreateActivityDTO = Partial<Prisma.ActivityUncheckedCreateInput> & {
   name: string; // obavezno polje prema Activity modelu
@@ -82,7 +81,6 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
 
   // Koristimo recognition_percentage iz zahtjeva ako je dostupan, inače default 100
   const recognitionValue = recognition_percentage !== undefined ? recognition_percentage : 100;
-  if (isDev) console.log('Recognition value being set:', recognitionValue); // Logging za debug
 
   let participantsData;
   let memberIdsForUpdate: number[] = [];
@@ -98,6 +96,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
         // Dodajemo manual_hours za sve sudionike ako je uneseno
         manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
         recognition_override: p.recognition_override, // Individualni postotak priznavanja na temelju uloge
+        participant_role: p.participant_role as ParticipantRole, // SPREMANJE ULOGE
       })),
     };
     memberIdsForUpdate = participations.map((p: ParticipationInput) => p.member_id);
@@ -125,6 +124,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
     type_id: activity_type_id,
     status,
     recognition_percentage: recognitionValue,
+    manual_hours: (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) ? Number(manual_hours) : null,
     participants: participantsData
   };
 
@@ -145,7 +145,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
 };
 
 export const getAllActivitiesService = async () => {
-  return activityRepository.findAllActivities();
+  return activityRepository.findAllActivitiesWithParticipants();
 };
 
 /**
@@ -174,13 +174,20 @@ export const getActivityByIdService = async (activity_id: number) => {
         },
       },
       participants: {
-        include: {
+        select: {
+          participation_id: true,
+          member_id: true,
+          start_time: true,
+          end_time: true,
+          manual_hours: true,
+          recognition_override: true,
+          participant_role: true, // EKSPLICITNO DOHVAĆANJE ULOGE
           member: {
             select: {
               member_id: true,
               first_name: true,
               last_name: true,
-              full_name: true, // Eksplicitno dohvaćanje
+              full_name: true,
             },
           },
         },
@@ -199,8 +206,12 @@ export const getActivityByIdService = async (activity_id: number) => {
   const participantsWithRecognizedHours = activity.participants.map(p => {
     let minuteValue = 0;
 
+    // ISPRAVAK: Prvo provjeri individualne sate, zatim globalne, pa tek onda izračun.
+    // Ovo osigurava da individualne prilagodbe imaju prednost.
     if (p.manual_hours !== null && p.manual_hours !== undefined) {
       minuteValue = Math.round(p.manual_hours * 60);
+    } else if (activity.manual_hours !== null && activity.manual_hours !== undefined && activity.manual_hours > 0) {
+      minuteValue = Math.round(activity.manual_hours * 60);
     } else if (activity.actual_start_time && activity.actual_end_time) {
       const minutes = differenceInMinutes(
         new Date(activity.actual_end_time),
@@ -274,7 +285,9 @@ export const getParticipationsByMemberIdAndYearService = async (member_id: numbe
   const participationsWithRecognizedHours = participations.map(p => {
     let minuteValue = 0;
 
-    if (p.manual_hours !== null && p.manual_hours !== undefined) {
+    if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+      minuteValue = Math.round(p.activity.manual_hours * 60);
+    } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
       minuteValue = Math.round(p.manual_hours * 60);
     } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
       const minutes = differenceInMinutes(
@@ -298,6 +311,7 @@ export const getParticipationsByMemberIdAndYearService = async (member_id: numbe
 };
 
 export const updateActivityService = async (activity_id: number, data: UpdateActivityDTO) => {
+  console.log(`[DEBUG] updateActivityService pozvan za aktivnost ${activity_id} s podacima:`, JSON.stringify(data, null, 2));
   return prisma.$transaction(async (tx: TransactionClient) => {
     const existingActivity = await tx.activity.findUnique({
       where: { activity_id },
@@ -309,6 +323,7 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
     }
 
     const { participant_ids, manual_hours, participations, recognition_percentage, ...activityData } = data;
+    console.log(`[DEBUG] Ekstraktirani manual_hours:`, manual_hours, typeof manual_hours);
 
     const finalStartTime = activityData.actual_start_time ?? existingActivity.actual_start_time;
     const finalEndTime = activityData.actual_end_time ?? existingActivity.actual_end_time;
@@ -316,6 +331,8 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
     const updatePayload: Prisma.ActivityUpdateInput = {
       ...activityData,
       recognition_percentage: recognition_percentage !== undefined ? recognition_percentage : existingActivity.recognition_percentage,
+      // Postavljamo manual_hours; bit će postavljeno na null na kraju transakcije
+      manual_hours: manual_hours !== undefined ? (Number(manual_hours) > 0 ? Number(manual_hours) : null) : existingActivity.manual_hours,
     };
 
     updatePayload.status = determineActivityStatus(finalStartTime, finalEndTime);
@@ -334,21 +351,28 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
       }
     }
 
-    if (participations || participant_ids) {
-      await tx.activityParticipation.deleteMany({ where: { activity_id: activity_id } });
+    // 1. Ažuriranje glavnog entiteta aktivnosti
+    await tx.activity.update({
+      where: { activity_id: activity_id },
+      data: updatePayload,
+    });
 
+    // 2. Logika za upravljanje sudionicima
+    if (participations || participant_ids) {
+      let proposedIds: number[] = [];
       let createData: Prisma.ActivityParticipationUncheckedCreateInput[] = [];
 
       if (isExcursion && participations) {
-        newParticipantIds = participations.map((p: ParticipationInput) => p.member_id);
+        proposedIds = participations.map((p: ParticipationInput) => p.member_id);
         createData = participations.map((p: ParticipationInput) => ({
           activity_id,
           member_id: p.member_id,
+          participant_role: p.participant_role as ParticipantRole,
           recognition_override: p.recognition_override,
           manual_hours: manual_hours ? Number(manual_hours) : null,
         }));
       } else if (!isExcursion && participant_ids) {
-        newParticipantIds = participant_ids;
+        proposedIds = participant_ids;
         createData = participant_ids.map((id: number) => ({
           activity_id,
           member_id: id,
@@ -356,23 +380,89 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
           manual_hours: manual_hours ? Number(manual_hours) : null,
         }));
       }
-      if (createData.length > 0) {
-         await tx.activityParticipation.createMany({ data: createData });
+
+      // Logika za individualne sate (iz forme za prilagodbu)
+      if (isExcursion && participations) {
+        for (const p of participations) {
+          await tx.activityParticipation.update({
+            where: {
+              activity_id_member_id: {
+                activity_id: activity_id,
+                member_id: p.member_id,
+              },
+            },
+            data: {
+              manual_hours: p.manual_hours !== undefined ? p.manual_hours : null,
+              participant_role: p.participant_role as ParticipantRole,
+              recognition_override: p.recognition_override,
+            },
+          });
+        }
+      } else {
+        // Logika za promjenu cijelog popisa sudionika
+        const oldIdsSorted = [...oldParticipantIds].sort();
+        const newIdsSorted = [...proposedIds].sort();
+        const areSame = JSON.stringify(oldIdsSorted) === JSON.stringify(newIdsSorted);
+
+        if (!areSame) {
+          await tx.activityParticipation.deleteMany({ where: { activity_id: activity_id } });
+          if (createData.length > 0) {
+            await tx.activityParticipation.createMany({ data: createData });
+          }
+          newParticipantIds = proposedIds;
+        } else if (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) {
+          // Ako je popis isti, ali su poslani globalni sati, ažuriraj sate za sve
+          await tx.activityParticipation.updateMany({
+            where: { activity_id: activity_id },
+            data: { manual_hours: Number(manual_hours) },
+          });
+        }
       }
-    } else if (data.type_id && data.type_id !== existingActivity.type_id && !isExcursion) {
+    } else if (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) {
+      // Ako nije poslan popis sudionika, ali jesu globalni sati, ažuriraj sate za sve postojeće
+      await tx.activityParticipation.updateMany({
+        where: { activity_id: activity_id },
+        data: { manual_hours: Number(manual_hours) },
+      });
+    }
+
+
+    // Resetiraj recognition_override ako se tip promijenio na ne-izlet
+    if (data.type_id && data.type_id !== existingActivity.type_id && !isExcursion) {
       await tx.activityParticipation.updateMany({
         where: { activity_id: activity_id },
         data: { recognition_override: null },
       });
     }
 
-    const updatedActivity = await tx.activity.update({
+    // 4. Dohvati konačno stanje aktivnosti za povrat klijentu
+    const updatedActivityWithRelations = await tx.activity.findUnique({
       where: { activity_id: activity_id },
-      data: updatePayload,
+      include: {
+        activity_type: true,
+        organizer: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
+        participants: {
+          select: {
+            participation_id: true,
+            member_id: true,
+            start_time: true,
+            end_time: true,
+            manual_hours: true,
+            recognition_override: true,
+            participant_role: true,
+            member: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
+          },
+        },
+        _count: { select: { participants: true } },
+      },
     });
 
+    if (!updatedActivityWithRelations) {
+      throw new NotFoundError('Aktivnost nije pronađena nakon ažuriranja.');
+    }
+
     const allAffectedIds = [...new Set([...oldParticipantIds, ...newParticipantIds])];
-    const year = new Date(updatedActivity.start_date).getFullYear();
+    const year = new Date(updatedActivityWithRelations.start_date).getFullYear();
 
     for (const memberId of allAffectedIds) {
       await updateMemberTotalHours(memberId, tx);
@@ -380,7 +470,37 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
       await updateAnnualStatistics(memberId, year, tx);
     }
 
-    return updatedActivity;
+    // Izračunaj priznate sate za svakog sudionika, kao u getActivityByIdService
+    const participantsWithRecognizedHours = updatedActivityWithRelations.participants.map(p => {
+      let minuteValue = 0;
+
+      // Logika je ista kao u getActivityByIdService, ali koristi `updatedActivityWithRelations`
+      if (p.manual_hours !== null && p.manual_hours !== undefined) {
+        minuteValue = Math.round(p.manual_hours * 60);
+      } else if (updatedActivityWithRelations.manual_hours !== null && updatedActivityWithRelations.manual_hours !== undefined && updatedActivityWithRelations.manual_hours > 0) {
+        minuteValue = Math.round(updatedActivityWithRelations.manual_hours * 60);
+      } else if (updatedActivityWithRelations.actual_start_time && updatedActivityWithRelations.actual_end_time) {
+        const minutes = differenceInMinutes(
+          new Date(updatedActivityWithRelations.actual_end_time),
+          new Date(updatedActivityWithRelations.actual_start_time)
+        );
+        minuteValue = minutes > 0 ? minutes : 0;
+      }
+
+      const finalRecognitionPercentage = p.recognition_override ?? updatedActivityWithRelations.recognition_percentage ?? 100;
+      const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+      const recognizedHours = recognizedMinutes / 60;
+
+      return {
+        ...p,
+        recognized_hours: recognizedHours,
+      };
+    });
+
+    return {
+      ...updatedActivityWithRelations,
+      participants: participantsWithRecognizedHours,
+    };
   });
 };
 
@@ -435,6 +555,8 @@ export const deleteActivityService = async (activity_id: number) => {
         const year = new Date(activity.start_date).getFullYear();
         await updateAnnualStatistics(memberId, year, tx);
       }
+      // Očisti sve prazne godišnje statistike za člana
+      await cleanupEmptyAnnualStatistics(memberId, tx);
     }
     
     return result;
@@ -532,10 +654,6 @@ export const addParticipantService = async (activity_id: number, member_id: numb
 };
 
 export const removeParticipantFromActivityService = async (activity_id: number, member_id: number) => {
-  const participation = await activityRepository.findParticipation(activity_id, member_id);
-  if (!participation) {
-    throw new NotFoundError('Član nije pronađen kao sudionik na ovoj aktivnosti.');
-  }
   
   // Koristi transakciju za uklanjanje sudionika i ažuriranje ukupnih sati
   return prisma.$transaction(async (tx: TransactionClient) => {
@@ -565,11 +683,8 @@ export const updateParticipationService = async (
   participation_id: number,
   data: Prisma.ActivityParticipationUncheckedUpdateInput
 ) => {
-  // DEBUG: Dodano logiranje za debugiranje start_time problema
-  if (isDev) console.log('DEBUG: Primljeni payload za update participacije:', JSON.stringify(data, null, 2));
-  if (isDev) console.log('DEBUG: Tip start_time:', typeof data.start_time, data.start_time);
   // Ovdje se može dodati provjera da li zapis o sudjelovanju postoji
-  const { member_id, start_time, end_time, ...restUpdateData } = data;
+  const { member_id, start_time, end_time, participant_role, ...restUpdateData } = data;
   
   // Prvo dohvatimo zapis o sudjelovanju da bismo dobili validan member_id
   const participation = await prisma.activityParticipation.findUnique({
@@ -585,18 +700,20 @@ export const updateParticipationService = async (
   
   // Pretvaranje start_time i end_time u Date objekte ako su prisutni
   
-  // DEBUG: Detaljno logiranje recognition_override
-  if (isDev) console.log('DEBUG: restUpdateData:', restUpdateData);
-  if (isDev) console.log('DEBUG: restUpdateData.recognition_override:', restUpdateData.recognition_override);
-  if (isDev) console.log('DEBUG: Tip restUpdateData.recognition_override:', typeof restUpdateData.recognition_override);
-  if (isDev) console.log('DEBUG: data.recognition_override:', data.recognition_override);
-  if (isDev) console.log('DEBUG: Tip data.recognition_override:', typeof data.recognition_override);
   
   const processedUpdateData: Prisma.ActivityParticipationUncheckedUpdateInput = {
     ...restUpdateData,
-    // Postavi recognition_override na 100 ako nije definiran
-    recognition_override: data.recognition_override === undefined ? 100 : Number(data.recognition_override)
   };
+  
+  // Ako je recognition_override eksplicitno proslijeđen, ažuriramo ga; inače ga ne diramo (čuvamo postojeće stanje)
+  if (data.recognition_override !== undefined) {
+    processedUpdateData.recognition_override = Number(data.recognition_override);
+  }
+  
+  // Ako je participant_role eksplicitno proslijeđen, ažuriramo ga
+  if (participant_role !== undefined) {
+    processedUpdateData.participant_role = participant_role;
+  }
   
   // Eksplicitno pretvaranje u Date objekt za start_time ako postoji
   if (start_time !== undefined) {

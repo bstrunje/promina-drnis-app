@@ -8,7 +8,7 @@ import { getActiveMembers } from '@/utils/api/apiMembers';
 import { Member } from '@shared/member';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Button } from '@components/ui/button';
-import { ParticipantRole, MemberWithRole } from './memberRole';
+import { ParticipantRole, MemberWithRole, isExclusiveRole } from './memberRole';
 
 // Uloge se sada lokaliziraju putem i18next
 
@@ -69,12 +69,37 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
       const newSelection = selectedMembers.filter(m => m.memberId !== memberId.toString());
       onSelectionChange(newSelection);
     } else {
-      // Ako nije dodan, dodaj ga s odabranom ulogom
-      const newMember: MemberWithRole = {
-        memberId: memberId.toString(),
-        role: selectedRole
-      };
-      onSelectionChange([...selectedMembers, newMember]);
+      // Provjeri da li je odabrana uloga ekskluzivna i već zauzeta
+      if (isExclusiveRole(selectedRole)) {
+        const existingMemberWithRole = selectedMembers.find(m => m.role === selectedRole);
+        if (existingMemberWithRole) {
+          // Zamijeni uloge - postojeći član s ekskluzivnom ulogom postaje REGULAR
+          const updatedMembers = selectedMembers.map(member => 
+            member.memberId === existingMemberWithRole.memberId 
+              ? { ...member, role: ParticipantRole.REGULAR }
+              : member
+          );
+          const newMember: MemberWithRole = {
+            memberId: memberId.toString(),
+            role: selectedRole
+          };
+          onSelectionChange([...updatedMembers, newMember]);
+        } else {
+          // Ekskluzivna uloga nije zauzeta, dodaj normalno
+          const newMember: MemberWithRole = {
+            memberId: memberId.toString(),
+            role: selectedRole
+          };
+          onSelectionChange([...selectedMembers, newMember]);
+        }
+      } else {
+        // Nije ekskluzivna uloga, dodaj normalno
+        const newMember: MemberWithRole = {
+          memberId: memberId.toString(),
+          role: selectedRole
+        };
+        onSelectionChange([...selectedMembers, newMember]);
+      }
     }
     setInputValue('');
     inputRef.current?.focus();
@@ -82,6 +107,35 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
 
   // Promjena uloge za postojećeg sudionika
   const handleRoleChange = (memberId: string, newRole: ParticipantRole) => {
+    // Validacija za IZLETE - mora postojati vodič
+    if (newRole !== ParticipantRole.GUIDE) {
+      const hasGuide = selectedMembers.some(m => m.role === ParticipantRole.GUIDE && m.memberId !== memberId);
+      if (!hasGuide) {
+        // Ako nema vodiča i pokušavamo postaviti nekoga na ne-vodič ulogu, odbaci promjenu
+        alert('Izlet mora imati vodiča. Molimo prvo dodijelite ulogu vodiča nekom članu.');
+        return;
+      }
+    }
+
+    // Provjeri da li je nova uloga ekskluzivna i da li je već zauzeta
+    if (isExclusiveRole(newRole)) {
+      const existingMemberWithRole = selectedMembers.find(m => m.role === newRole && m.memberId !== memberId);
+      if (existingMemberWithRole) {
+        // Zamijeni uloge - postojeći član s ekskluzivnom ulogom postaje REGULAR
+        const updatedMembers = selectedMembers.map(member => {
+          if (member.memberId === memberId) {
+            return { ...member, role: newRole };
+          } else if (member.memberId === existingMemberWithRole.memberId) {
+            return { ...member, role: ParticipantRole.REGULAR };
+          }
+          return member;
+        });
+        onSelectionChange(updatedMembers);
+        return;
+      }
+    }
+
+    // Standardna promjena uloge
     const updatedMembers = selectedMembers.map(member => 
       member.memberId === memberId 
         ? { ...member, role: newRole } 
@@ -93,6 +147,24 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
   // Uklanjanje sudionika
   const handleRemoveMember = (memberId: string) => {
     const updatedMembers = selectedMembers.filter(m => m.memberId !== memberId);
+    
+    // Ako uklanjamo vozača, trebamo ažurirati postotke ostalih vozača
+    const removedMember = selectedMembers.find(m => m.memberId === memberId);
+    if (removedMember?.role === ParticipantRole.DRIVER) {
+      const remainingDrivers = updatedMembers.filter(m => m.role === ParticipantRole.DRIVER);
+      if (remainingDrivers.length > 0) {
+        // Ažuriraj postotke za preostale vozače
+        const updatedMembersWithNewPercentages = updatedMembers.map(member => {
+          if (member.role === ParticipantRole.DRIVER && !member.manualRecognition) {
+            return { ...member }; // calculateRecognitionPercentage će se pozivati u parent komponenti
+          }
+          return member;
+        });
+        onSelectionChange(updatedMembersWithNewPercentages);
+        return;
+      }
+    }
+    
     onSelectionChange(updatedMembers);
   };
 

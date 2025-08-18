@@ -262,7 +262,15 @@
         "manualHours": "Manual Hours",
         "manualHoursPlaceholder": "Enter number of hours...",
         "recognitionPercentage": "Recognition Percentage",
-        "participants": "Participants"
+        "participants": "Participants",
+        "perParticipantAdjustments": "Adjustements per Participant",
+        "perParticipantHint": "The settings apply to recognized hours. The base is a manual entry if there is one, otherwise the calculation is based on the actual duration × recognition percentage.",
+        "baseHours": "Base",
+        "currentRecognized": "Current Recognized",
+        "manualAdjust": "Manual",
+        "newTotal": "New Total",
+        "increase": "Increase",
+        "decrease": "Decrease"
     },
     "creation": {
         "errors": {

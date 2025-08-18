@@ -20,12 +20,20 @@ export interface Member {
   total_minutes?: number;
 }
 
+export enum ParticipantRole {
+  GUIDE = 'GUIDE',
+  ASSISTANT_GUIDE = 'ASSISTANT_GUIDE',
+  DRIVER = 'DRIVER',
+  REGULAR = 'REGULAR'
+}
+
 export interface ActivityParticipation {
   participation_id: number;
   member_id: number;
   activity_id: number;
   recognition_override?: number | null;
   manual_hours?: number | null;
+  participant_role?: ParticipantRole | null;
   created_at: Date | string;
   updated_at: Date | string;
   member: Member;
@@ -46,6 +54,7 @@ export interface Activity {
   created_at: Date | string;
   updated_at: Date | string;
   cancellation_reason: string | null;
+  manual_hours?: number | null;
 
   // Relational fields for detailed views
   activity_type?: ActivityType;

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getActivityById, updateActivity } from '../../utils/api/apiActivities';
-import { ActivityStatus } from '@shared/activity.types';
+import { getActivityById, updateActivity, updateParticipationAdmin } from '../../utils/api/apiActivities';
+import { ActivityStatus, ActivityParticipation } from '@shared/activity.types';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Input } from '@components/ui/input';
@@ -12,8 +12,9 @@ import { useToast } from '@components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import { Clock, X } from 'lucide-react';
 import MemberRoleSelect from './MemberRoleSelect';
-import { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
+import { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage, calculateRecognitionPercentage } from './memberRole';
 import { MemberSelect } from './MemberSelect';
+import { formatHoursToHHMM } from '../../utils/activityHours';
 
 const EditActivityPage: React.FC = () => {
   const { t } = useTranslation('activities');
@@ -36,7 +37,17 @@ const EditActivityPage: React.FC = () => {
   const [participantsWithRoles, setParticipantsWithRoles] = useState<MemberWithRole[]>([]);
   const [recognitionPercentage, setRecognitionPercentage] = useState('100');
   const [isExcursion, setIsExcursion] = useState(false);
+  const [isAdjustableType, setIsAdjustableType] = useState(false);
   const [status, setStatus] = useState<ActivityStatus | null>(null);
+  // Dodatno: raw sudionici za izračun po sudioniku (Dežurstva/Akcije)
+  // Tipizirano kao ActivityParticipation[] kako bi se izbjegao any i osigurala validacija tipova
+  const [participantsRaw, setParticipantsRaw] = useState<ActivityParticipation[]>([]);
+  // Dozvola za prikaz per-sudionik prilagodbi (+/-) samo za određene tipove
+  // Lokalne prilagodbe (delta) po sudioniku: participation_id -> delta sati
+  const [participantDeltas, setParticipantDeltas] = useState<Record<number, number>>({});
+  // Početno stanje sudionika radi usporedbe pri spremanju (ne šaljemo ako nije mijenjano)
+  const initialParticipantIdsRef = useRef<string[] | null>(null);
+  const initialParticipantsWithRolesRef = useRef<MemberWithRole[] | null>(null);
 
   // Refovi za fokus
   const startTimeRef = useRef<HTMLInputElement>(null);
@@ -77,13 +88,15 @@ const EditActivityPage: React.FC = () => {
         setActualEndTime(actualEnd.time);
 
         // Dodajemo dohvaćanje manual_hours vrijednosti
-        const participantsWithManualHours = data.participants?.find(p => p.manual_hours !== null && p.manual_hours !== undefined);
-        if (participantsWithManualHours?.manual_hours) {
-          setManualHours(participantsWithManualHours.manual_hours.toString());
+        if (data.manual_hours) {
+          setManualHours(data.manual_hours.toString());
         }
 
         const isExcursionActivity = data.activity_type?.key === 'izleti';
         setIsExcursion(isExcursionActivity);
+        // Određivanje dopuštenih tipova za per-sudionik prilagodbe sati
+        const adjustableKeys = ['dezurstva', 'akcija-drustvo', 'akcija-trail'];
+        setIsAdjustableType(adjustableKeys.includes(data.activity_type?.key ?? ''));
 
         if (isExcursionActivity) {
           const getRoleByPercentage = (percentage: number | null | undefined): ParticipantRole => {
@@ -95,13 +108,19 @@ const EditActivityPage: React.FC = () => {
           const initialParticipants = data.participants?.map(p => ({
             memberId: p.member.member_id.toString(),
             fullName: p.member.full_name,
-            role: getRoleByPercentage(p.recognition_override),
+            role: p.participant_role ?? getRoleByPercentage(p.recognition_override),
             manualRecognition: !Object.values(rolesToRecognitionPercentage).includes(p.recognition_override ?? -1) ? p.recognition_override ?? undefined : undefined,
           })) ?? [];
           setParticipantsWithRoles(initialParticipants);
+          // Spremi inicijalno stanje za kasniju usporedbu
+          initialParticipantsWithRolesRef.current = initialParticipants;
         } else {
           setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) ?? []);
+          // Spremimo raw sudionike radi izračuna baze sati i prikaza (+/-)
+          setParticipantsRaw(data.participants ?? []);
           setRecognitionPercentage(data.recognition_percentage?.toString() ?? '100');
+          // Spremi inicijalno stanje za kasniju usporedbu
+          initialParticipantIdsRef.current = (data.participants ?? []).map(p => p.member.member_id.toString());
         }
 
       } catch {
@@ -133,26 +152,124 @@ const EditActivityPage: React.FC = () => {
         return date && time ? new Date(`${date}T${time}`).toISOString() : undefined;
     }
 
-    const dataToUpdate = {
-        name,
-        description,
-        start_date: combineDateTime(startDate, startTime),
-        actual_start_time: manualHours ? null : combineDateTime(actualStartDate, actualStartTime),
-        actual_end_time: manualHours ? null : combineDateTime(actualEndDate, actualEndTime),
-        recognition_percentage: !isExcursion ? Number(recognitionPercentage) : undefined,
-        participations: isExcursion
-          ? participantsWithRoles.map(p => ({
-              member_id: Number(p.memberId),
-              recognition_override: p.manualRecognition ?? rolesToRecognitionPercentage[p.role],
-            }))
-          : undefined,
-        participant_ids: !isExcursion ? participantIds.map(id => Number(id)) : undefined,
-        // Dodajemo manual_hours za ažuriranje - backend će ga primijeniti na sve sudionike
-        manual_hours: manualHours ? Number(manualHours) : null,
+    // Pomoćne funkcije za usporedbu skupova
+    const arraysEqual = (a: string[], b: string[]) => {
+      if (a.length !== b.length) return false;
+      const as = [...a].sort();
+      const bs = [...b].sort();
+      return as.every((v, i) => v === bs[i]);
+    };
+    const rolesEqual = (a: MemberWithRole[], b: MemberWithRole[]) => {
+      if (a.length !== b.length) return false;
+      const norm = (arr: MemberWithRole[]) => arr
+        .map(p => ({ id: p.memberId, val: (p.manualRecognition ?? rolesToRecognitionPercentage[p.role]) }))
+        .sort((x, y) => Number(x.id) - Number(y.id));
+      const na = norm(a);
+      const nb = norm(b);
+      return na.every((v, i) => v.id === nb[i].id && v.val === nb[i].val);
     };
 
+    // Odredi jesu li sudionici mijenjani
+    const participantsChanged = (() => {
+      if (isExcursion) {
+        if (!initialParticipantsWithRolesRef.current) return true;
+        return !rolesEqual(participantsWithRoles, initialParticipantsWithRolesRef.current);
+      } else {
+        if (!initialParticipantIdsRef.current) return true;
+        return !arraysEqual(participantIds, initialParticipantIdsRef.current);
+      }
+    })();
+
+    // Tip payload-a preuzimamo iz updateActivity() kako bismo ostali u skladu s API slojem
+    type ActivityUpdatePayload = Parameters<typeof updateActivity>[1];
+    const dataToUpdate: ActivityUpdatePayload = {};
+
+    // Obavezna tekstualna polja
+    dataToUpdate.name = name;
+    dataToUpdate.description = description;
+
+    // Datumi/vremena: samo postavi ako postoje vrijednosti (ili eksplicitni null kada imamo ručne sate)
+    const startISO = combineDateTime(startDate, startTime);
+    if (startISO) dataToUpdate.start_date = startISO; // string je kompatibilan s Date | string
+
+    if (manualHours) {
+      dataToUpdate.manual_hours = Number(manualHours);
+      dataToUpdate.actual_start_time = null;
+      dataToUpdate.actual_end_time = null;
+    } else {
+      const actualStartISO = combineDateTime(actualStartDate, actualStartTime);
+      const actualEndISO = combineDateTime(actualEndDate, actualEndTime);
+      if (actualStartISO) dataToUpdate.actual_start_time = actualStartISO;
+      if (actualEndISO) dataToUpdate.actual_end_time = actualEndISO;
+
+      // Ako su vremena postavljena, osiguraj da su ručni sati poništeni
+      if (actualStartISO || actualEndISO) {
+        dataToUpdate.manual_hours = null;
+      }
+    }
+
+    // Postotak priznavanja: samo ako NIJE izlet
+    if (!isExcursion) {
+      dataToUpdate.recognition_percentage = Number(recognitionPercentage);
+    }
+
+    // U payload uključujemo sudionike samo ako su stvarno mijenjani
+    if (participantsChanged) {
+      // API za update aktivnosti podržava participant_ids; per-sudionik override rješavamo zasebno ako bude potrebno
+      dataToUpdate.participant_ids = (isExcursion
+        ? participantsWithRoles.map(p => Number(p.memberId))
+        : participantIds.map(id => Number(id)));
+    }
+
     try {
+      // 1) Ako su uneseni ručni sati, spremi ih za sve sudionike
+      
+      // 2) Ako postoje delta promjene, primijeni ih kroz recognition_override
+      if (participantsRaw?.length && Object.keys(participantDeltas).some(key => participantDeltas[parseInt(key)] !== 0)) {
+
+        // Ažuriramo samo one s promijenjenim deltama - DELTA SE SPREMA ZASEBNO, NE MIJENJA MANUAL_HOURS
+        for (const p of participantsRaw) {
+          const delta = participantDeltas[p.participation_id] ?? 0;
+          if (delta === 0) continue;
+
+          // Prilagodba se vrši kroz recognition_override, manual_hours ostaju nepromjenjeni
+          const baseManualHours = p.manual_hours ?? 0;
+          const currentRecognizedHours = p.recognized_hours ?? 0;
+          const newRecognizedHours = Math.max(0, currentRecognizedHours + delta);
+          
+          if (baseManualHours > 0) {
+            const newRecognitionPercentage = (newRecognizedHours / baseManualHours) * 100;
+            
+            await updateParticipationAdmin(p.participation_id, { 
+              recognition_override: Math.round(newRecognitionPercentage * 100) / 100 
+            });
+          }
+        }
+      }
+
+      // 3) Uvijek ažuriraj osnovne podatke aktivnosti
       await updateActivity(Number(activityId), dataToUpdate);
+
+      // 4) Za izlete, dodatno spremi uloge kroz recognition_override nakon što su sudionici ažurirani
+      if (isExcursion && participantsChanged) {
+        // Dohvati ažuriranu aktivnost s novim/ažuriranim participation zapisima
+        const updatedActivity = await getActivityById(activityId);
+        const updatedParticipants = updatedActivity.participants ?? [];
+        
+        for (const memberWithRole of participantsWithRoles) {
+          const participation = updatedParticipants.find(p => p.member.member_id.toString() === memberWithRole.memberId);
+          
+          if (participation) {
+            const recognitionPercentage = memberWithRole.manualRecognition ?? calculateRecognitionPercentage(memberWithRole.role, participantsWithRoles);
+            
+            await updateParticipationAdmin(participation.participation_id, { 
+              recognition_override: recognitionPercentage,
+              participant_role: memberWithRole.role
+            });
+          }
+        }
+      }
+      
       toast({ title: t('editing.success'), description: t('editing.activityUpdated') });
       navigate(`/activities/${activityId}`);
     } catch {
@@ -171,10 +288,7 @@ const EditActivityPage: React.FC = () => {
         <CardContent>
           <form onSubmit={(e) => { void handleSubmit(e); }}>
             <div className="grid gap-6">
-              <div>
-                <Label htmlFor="name">{t('editing.activityName')}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-              </div>
+              {/* Naslov aktivnosti je sakriven */}
               <div>
                 <Label htmlFor="description">{t('editing.description')}</Label>
                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -377,6 +491,64 @@ const EditActivityPage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Prikaz baznih rezultata za sve sudionike (samo ako imaju spremljene manual_hours) */}
+                            {/* Prikaz prilagodbi po sudioniku - prikazuje se ako nije izlet, ima sudionika i tip aktivnosti to dopušta */}
+              {isAdjustableType && !isExcursion && participantsRaw.length > 0 &&
+                (participantsRaw.some(p => p.manual_hours != null)) && (
+                <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
+                  <Label className="md:text-right pt-2">{t('editing.perParticipantAdjustments')}</Label>
+                  <div className="md:col-span-3 space-y-2">
+                    <ul className="space-y-2">
+                      {participantsRaw.map((p: ActivityParticipation) => {
+                        // Bazni sati su trenutno priznati sati (recognized_hours)
+                        const baseHours = p.recognized_hours ?? 0;
+
+                        return (
+                          <li key={p.participation_id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-md p-2">
+                            <div className="text-sm">
+                              <div className="font-medium">{p.member.full_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {t('editing.baseHours')}: {formatHoursToHHMM(baseHours)} · {t('editing.currentRecognized')}: {formatHoursToHHMM(p.recognized_hours ?? 0)}
+                              </div>
+                            </div>
+                            {/* Per-sudionik +/- prilagodba sati (uvijek kada su sati spremljeni) */}
+                            {(
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 border rounded hover:bg-muted"
+                                  onClick={() => {
+                                    const delta = participantDeltas[p.participation_id] ?? 0;
+                                    setParticipantDeltas(prev => ({ ...prev, [p.participation_id]: Math.max(-baseHours, parseFloat((delta - 0.5).toFixed(2))) }));
+                                  }}
+                                  aria-label={t('editing.decrease')}
+                                >
+                                  − 30min
+                                </button>
+                                <div className="text-sm font-mono">{t('editing.manualAdjust')}: {formatHoursToHHMM(participantDeltas[p.participation_id] ?? 0)}</div>
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 border rounded hover:bg-muted"
+                                  onClick={() => {
+                                    const delta = participantDeltas[p.participation_id] ?? 0;
+                                    setParticipantDeltas(prev => ({ ...prev, [p.participation_id]: parseFloat((delta + 0.5).toFixed(2)) }));
+                                  }}
+                                  aria-label={t('editing.increase')}
+                                >
+                                  + 30min
+                                </button>
+                                <div className="text-sm">{t('editing.newTotal')}: <span className="font-mono">{formatHoursToHHMM(Math.max(0, baseHours + (participantDeltas[p.participation_id] ?? 0)))}</span></div>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="text-xs text-muted-foreground">{t('editing.perParticipantHint')}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-4">
                  <Button type="button" variant="outline" onClick={() => navigate(-1)}>{t('cancel', { ns: 'common' })}</Button>
