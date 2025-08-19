@@ -299,8 +299,8 @@ const ActivityDetailPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.dateTime')}</h3>
                   
-                  {/* Provjera ima li ručnog unosa sati */}
-                  {activity.participants?.some(p => p.manual_hours) ? (
+                  {/* Provjera ručnog unosa sati NA RAZINI AKTIVNOSTI */}
+                  {(activity.manual_hours && activity.manual_hours > 0) || (activity.name?.toLowerCase().includes('ručni unos')) ? (
                     <p className="text-gray-600 text-sm sm:text-base">
                       <span className="font-medium">{t('activityDetail.manualEntry')}</span>
                     </p>

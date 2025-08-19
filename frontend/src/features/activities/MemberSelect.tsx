@@ -59,6 +59,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
   const filteredMembers = inputValue
     ? members.filter(m => 
         `${m.first_name} ${m.last_name}`.toLowerCase().includes(inputValue.toLowerCase()) &&
+        m.status === 'registered' &&
         !selectedMemberIds.includes(m.member_id.toString())
       )
     : [];

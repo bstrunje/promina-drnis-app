@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getActivityById, updateActivity, updateParticipationAdmin } from '../../utils/api/apiActivities';
@@ -54,6 +54,33 @@ const EditActivityPage: React.FC = () => {
   const actualStartTimeRef = useRef<HTMLInputElement>(null);
   const actualEndTimeRef = useRef<HTMLInputElement>(null);
 
+  const baseActivityHours = useMemo(() => {
+    if (manualHours && Number(manualHours) > 0) {
+      return Number(manualHours);
+    }
+    if (actualStartDate && actualStartTime && actualEndDate && actualEndTime) {
+      const start = parseISO(`${actualStartDate}T${actualStartTime}`);
+      const end = parseISO(`${actualEndDate}T${actualEndTime}`);
+      if (end > start) {
+        const diffInSeconds = (end.getTime() - start.getTime()) / 1000;
+        return Math.max(0, parseFloat((diffInSeconds / 3600).toFixed(2)));
+      }
+    }
+    return 0;
+  }, [manualHours, actualStartDate, actualStartTime, actualEndDate, actualEndTime]);
+
+  useEffect(() => {
+    if (baseActivityHours > 0) {
+      setParticipantsRaw(prevParticipants =>
+        prevParticipants.map(p => ({
+          ...p,
+          // Priznati sati su ili već ručno uneseni, ili preuzimaju novu bazu
+          recognized_hours: p.manual_hours ?? baseActivityHours,
+        }))
+      );
+    }
+  }, [baseActivityHours]);
+
   useEffect(() => {
     const fetchActivity = async () => {
       if (!activityId) return;
@@ -105,22 +132,25 @@ const EditActivityPage: React.FC = () => {
             return (roleEntry ? roleEntry[0] : ParticipantRole.REGULAR) as ParticipantRole;
           };
 
-          const initialParticipants = data.participants?.map(p => ({
-            memberId: p.member.member_id.toString(),
-            fullName: p.member.full_name,
-            role: p.participant_role ?? getRoleByPercentage(p.recognition_override),
-            manualRecognition: !Object.values(rolesToRecognitionPercentage).includes(p.recognition_override ?? -1) ? p.recognition_override ?? undefined : undefined,
-          })) ?? [];
+          const initialParticipants = (data.participants ?? [])
+            .filter(p => p.member) // Osigurava da ne pokušavamo pristupiti podacima nepostojećeg člana
+            .map(p => ({
+              memberId: p.member.member_id.toString(),
+              fullName: p.member.full_name,
+              role: p.participant_role ?? getRoleByPercentage(p.recognition_override),
+              manualRecognition: !Object.values(rolesToRecognitionPercentage).includes(p.recognition_override ?? -1) ? p.recognition_override ?? undefined : undefined,
+            }));
           setParticipantsWithRoles(initialParticipants);
           // Spremi inicijalno stanje za kasniju usporedbu
           initialParticipantsWithRolesRef.current = initialParticipants;
         } else {
-          setParticipantIds(data.participants?.map(p => p.member.member_id.toString()) ?? []);
+          const validParticipants = (data.participants ?? []).filter(p => p.member);
+          setParticipantIds(validParticipants.map(p => p.member.member_id.toString()));
           // Spremimo raw sudionike radi izračuna baze sati i prikaza (+/-)
-          setParticipantsRaw(data.participants ?? []);
+          setParticipantsRaw(validParticipants);
           setRecognitionPercentage(data.recognition_percentage?.toString() ?? '100');
           // Spremi inicijalno stanje za kasniju usporedbu
-          initialParticipantIdsRef.current = (data.participants ?? []).map(p => p.member.member_id.toString());
+          initialParticipantIdsRef.current = validParticipants.map(p => p.member.member_id.toString());
         }
 
       } catch {
@@ -213,46 +243,42 @@ const EditActivityPage: React.FC = () => {
       dataToUpdate.recognition_percentage = Number(recognitionPercentage);
     }
 
-    // U payload uključujemo sudionike samo ako su stvarno mijenjani
-    if (participantsChanged) {
-      // API za update aktivnosti podržava participant_ids; per-sudionik override rješavamo zasebno ako bude potrebno
-      dataToUpdate.participant_ids = (isExcursion
+    // SLANJE PODATAKA O SATIMA - KLJUČNA LOGIKA
+    // Slanje individualnih sati SAMO za tipove aktivnosti koji to podržavaju
+    // i samo ako su napravljene promjene (postoje delte).
+    if (isAdjustableType && Object.keys(participantDeltas).length > 0) {
+      // Filtriramo samo one sudionike koji imaju stvarnu promjenu (delta != 0)
+      const participantsUpdateData = participantsRaw
+        .filter(p => (participantDeltas[p.participation_id] ?? 0) !== 0)
+        .map(p => {
+          const deltaIntervals = participantDeltas[p.participation_id] ?? 0;
+          const deltaHours = deltaIntervals * 0.25;
+          // Osnova za izračun je baza aktivnosti (ne recognized_hours, jer je već s priznavanjem)
+          const calculationBase = baseActivityHours;
+          const finalHours = Math.max(0, parseFloat((calculationBase + deltaHours).toFixed(2)));
+          return {
+            member_id: p.member.member_id,
+            manual_hours: finalHours,
+          };
+        });
+      if (participantsUpdateData.length > 0) {
+        dataToUpdate.participations = participantsUpdateData;
+      }
+    } else if (participantsChanged) {
+      // Ako su se sudionici promijenili (dodani/uklonjeni), ali bez individualnih sati,
+      // pošalji samo ID-jeve da backend može ažurirati popis.
+      dataToUpdate.participant_ids = isExcursion 
         ? participantsWithRoles.map(p => Number(p.memberId))
-        : participantIds.map(id => Number(id)));
+        : participantIds.map(Number);
     }
 
     try {
-      // 1) Ako su uneseni ručni sati, spremi ih za sve sudionike
-      
-      // 2) Ako postoje delta promjene, primijeni ih kroz recognition_override
-      if (participantsRaw?.length && Object.keys(participantDeltas).some(key => participantDeltas[parseInt(key)] !== 0)) {
-
-        // Ažuriramo samo one s promijenjenim deltama - DELTA SE SPREMA ZASEBNO, NE MIJENJA MANUAL_HOURS
-        for (const p of participantsRaw) {
-          const delta = participantDeltas[p.participation_id] ?? 0;
-          if (delta === 0) continue;
-
-          // Prilagodba se vrši kroz recognition_override, manual_hours ostaju nepromjenjeni
-          const baseManualHours = p.manual_hours ?? 0;
-          const currentRecognizedHours = p.recognized_hours ?? 0;
-          const newRecognizedHours = Math.max(0, currentRecognizedHours + delta);
-          
-          if (baseManualHours > 0) {
-            const newRecognitionPercentage = (newRecognizedHours / baseManualHours) * 100;
-            
-            await updateParticipationAdmin(p.participation_id, { 
-              recognition_override: Math.round(newRecognitionPercentage * 100) / 100 
-            });
-          }
-        }
-      }
-
-      // 3) Uvijek ažuriraj osnovne podatke aktivnosti
+      // 1. Slanje glavnih podataka o aktivnosti, uključujući konačne sate za svakog sudionika.
+      // Backend će na temelju ovoga izračunati i spremiti sve potrebne promjene.
       await updateActivity(Number(activityId), dataToUpdate);
 
-      // 4) Za izlete, dodatno spremi uloge kroz recognition_override nakon što su sudionici ažurirani
+      // 2. Za izlete, dodatno spremi uloge kroz recognition_override nakon što su sudionici ažurirani
       if (isExcursion && participantsChanged) {
-        // Dohvati ažuriranu aktivnost s novim/ažuriranim participation zapisima
         const updatedActivity = await getActivityById(activityId);
         const updatedParticipants = updatedActivity.participants ?? [];
         
@@ -260,10 +286,10 @@ const EditActivityPage: React.FC = () => {
           const participation = updatedParticipants.find(p => p.member.member_id.toString() === memberWithRole.memberId);
           
           if (participation) {
-            const recognitionPercentage = memberWithRole.manualRecognition ?? calculateRecognitionPercentage(memberWithRole.role, participantsWithRoles);
+            const recognitionPercentageValue = memberWithRole.manualRecognition ?? calculateRecognitionPercentage(memberWithRole.role, participantsWithRoles);
             
             await updateParticipationAdmin(participation.participation_id, { 
-              recognition_override: recognitionPercentage,
+              recognition_override: recognitionPercentageValue,
               participant_role: memberWithRole.role
             });
           }
@@ -494,56 +520,19 @@ const EditActivityPage: React.FC = () => {
 
               {/* Prikaz baznih rezultata za sve sudionike (samo ako imaju spremljene manual_hours) */}
                             {/* Prikaz prilagodbi po sudioniku - prikazuje se ako nije izlet, ima sudionika i tip aktivnosti to dopušta */}
-              {isAdjustableType && !isExcursion && participantsRaw.length > 0 &&
-                (participantsRaw.some(p => p.manual_hours != null)) && (
+              {isAdjustableType && !isExcursion && participantsRaw.length > 0 && baseActivityHours > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-2 md:gap-4">
                   <Label className="md:text-right pt-2">{t('editing.perParticipantAdjustments')}</Label>
                   <div className="md:col-span-3 space-y-2">
                     <ul className="space-y-2">
-                      {participantsRaw.map((p: ActivityParticipation) => {
-                        // Bazni sati su trenutno priznati sati (recognized_hours)
-                        const baseHours = p.recognized_hours ?? 0;
-
-                        return (
-                          <li key={p.participation_id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-md p-2">
-                            <div className="text-sm">
-                              <div className="font-medium">{p.member.full_name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {t('editing.baseHours')}: {formatHoursToHHMM(baseHours)} · {t('editing.currentRecognized')}: {formatHoursToHHMM(p.recognized_hours ?? 0)}
-                              </div>
-                            </div>
-                            {/* Per-sudionik +/- prilagodba sati (uvijek kada su sati spremljeni) */}
-                            {(
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 border rounded hover:bg-muted"
-                                  onClick={() => {
-                                    const delta = participantDeltas[p.participation_id] ?? 0;
-                                    setParticipantDeltas(prev => ({ ...prev, [p.participation_id]: Math.max(-baseHours, parseFloat((delta - 0.5).toFixed(2))) }));
-                                  }}
-                                  aria-label={t('editing.decrease')}
-                                >
-                                  − 30min
-                                </button>
-                                <div className="text-sm font-mono">{t('editing.manualAdjust')}: {formatHoursToHHMM(participantDeltas[p.participation_id] ?? 0)}</div>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 border rounded hover:bg-muted"
-                                  onClick={() => {
-                                    const delta = participantDeltas[p.participation_id] ?? 0;
-                                    setParticipantDeltas(prev => ({ ...prev, [p.participation_id]: parseFloat((delta + 0.5).toFixed(2)) }));
-                                  }}
-                                  aria-label={t('editing.increase')}
-                                >
-                                  + 30min
-                                </button>
-                                <div className="text-sm">{t('editing.newTotal')}: <span className="font-mono">{formatHoursToHHMM(Math.max(0, baseHours + (participantDeltas[p.participation_id] ?? 0)))}</span></div>
-                              </div>
-                            )}
-                          </li>
-                        );
-                      })}
+                      {participantsRaw.map((p: ActivityParticipation) => (
+                        <ParticipantAdjustmentRow 
+                          key={p.participation_id} 
+                          participant={p} 
+                          baseActivityHours={baseActivityHours}
+                          participantDeltas={participantDeltas} 
+                          setParticipantDeltas={setParticipantDeltas} />
+                      ))}
                     </ul>
                     <p className="text-xs text-muted-foreground">{t('editing.perParticipantHint')}</p>
                   </div>
@@ -559,6 +548,75 @@ const EditActivityPage: React.FC = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+// ======================================================================================
+// Sub-komponenta za redak prilagodbe sudionika
+// ======================================================================================
+
+interface ParticipantAdjustmentRowProps {
+  participant: ActivityParticipation;
+  baseActivityHours: number;
+  participantDeltas: Record<number, number>;
+  setParticipantDeltas: React.Dispatch<React.SetStateAction<Record<number, number>>>;
+}
+
+const ParticipantAdjustmentRow: React.FC<ParticipantAdjustmentRowProps> = ({ participant, baseActivityHours, participantDeltas, setParticipantDeltas }) => {
+  const { t } = useTranslation('activities');
+
+  // Baza za prikaz je globalna vrijednost aktivnosti.
+  const displayBaseHours = baseActivityHours;
+  // Baza za izračun su TRENUTNO PRIZNATI sati sudionika.
+  const calculationBaseHours = participant.recognized_hours ?? 0;
+
+  const deltaIntervals = participantDeltas[participant.participation_id] ?? 0;
+  const deltaHours = deltaIntervals * 0.25;
+  const newTotal = Math.max(0, parseFloat((calculationBaseHours + deltaHours).toFixed(2)));
+
+  const updateDelta = useCallback((changeIntervals: number) => {
+    setParticipantDeltas(prev => {
+      const currentDelta = prev[participant.participation_id] ?? 0;
+      let newDelta = currentDelta + changeIntervals;
+      
+      // Ne dopuštamo da novi ukupni sati padnu ispod nule
+      const newTotalHours = calculationBaseHours + (newDelta * 0.25);
+      if (newTotalHours < 0) {
+        newDelta = (-calculationBaseHours / 0.25);
+      }
+
+      return { ...prev, [participant.participation_id]: newDelta };
+    });
+  }, [calculationBaseHours, participant.participation_id, setParticipantDeltas]);
+
+  return (
+    <li className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-md p-2">
+      <div className="text-sm">
+        <div className="font-medium">{participant.member.full_name}</div>
+        <div className="text-xs text-muted-foreground">
+          {t('editing.baseHours')}: {formatHoursToHHMM(displayBaseHours)} · {t('editing.currentRecognized')}: {formatHoursToHHMM(participant.recognized_hours ?? 0)}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="px-2 py-1 border rounded hover:bg-muted"
+          onClick={() => updateDelta(-1)} // -1 interval = -15 min
+          aria-label={t('editing.decrease')}
+        >
+          − 15min
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded hover:bg-muted"
+          onClick={() => updateDelta(1)} // +1 interval = +15 min
+          aria-label={t('editing.increase')}
+        >
+          + 15min
+        </button>
+        <div className="text-sm w-28 text-right">{t('editing.newTotal')}: <span className="font-mono">{formatHoursToHHMM(newTotal)}</span></div>
+      </div>
+    </li>
   );
 };
 

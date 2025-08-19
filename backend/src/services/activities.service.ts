@@ -358,74 +358,51 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
     });
 
     // 2. Logika za upravljanje sudionicima
-    if (participations || participant_ids) {
-      let proposedIds: number[] = [];
-      let createData: Prisma.ActivityParticipationUncheckedCreateInput[] = [];
+    // Scenarij 1: Popis sudionika se mijenja (poslan je `participant_ids`)
+    if (participant_ids) {
+      const oldIdsSorted = [...oldParticipantIds].sort();
+      const newIdsSorted = [...participant_ids].sort();
+      const areSame = JSON.stringify(oldIdsSorted) === JSON.stringify(newIdsSorted);
 
-      if (isExcursion && participations) {
-        proposedIds = participations.map((p: ParticipationInput) => p.member_id);
-        createData = participations.map((p: ParticipationInput) => ({
-          activity_id,
-          member_id: p.member_id,
-          participant_role: p.participant_role as ParticipantRole,
-          recognition_override: p.recognition_override,
-          manual_hours: manual_hours ? Number(manual_hours) : null,
-        }));
-      } else if (!isExcursion && participant_ids) {
-        proposedIds = participant_ids;
-        createData = participant_ids.map((id: number) => ({
+      if (!areSame) {
+        await tx.activityParticipation.deleteMany({ where: { activity_id: activity_id } });
+        const createData = participant_ids.map((id: number) => ({
           activity_id,
           member_id: id,
           recognition_override: null,
-          manual_hours: manual_hours ? Number(manual_hours) : null,
+          // Novi sudionici nasljeđuju globalne sate ili će im se izračunati automatski.
+          // Njihovi individualni sati su null.
+          manual_hours: updatePayload.manual_hours ? Number(updatePayload.manual_hours) : null,
         }));
-      }
-
-      // Logika za individualne sate (iz forme za prilagodbu)
-      if (isExcursion && participations) {
-        for (const p of participations) {
-          await tx.activityParticipation.update({
-            where: {
-              activity_id_member_id: {
-                activity_id: activity_id,
-                member_id: p.member_id,
-              },
-            },
-            data: {
-              manual_hours: p.manual_hours !== undefined ? p.manual_hours : null,
-              participant_role: p.participant_role as ParticipantRole,
-              recognition_override: p.recognition_override,
-            },
-          });
+        if (createData.length > 0) {
+          await tx.activityParticipation.createMany({ data: createData });
         }
-      } else {
-        // Logika za promjenu cijelog popisa sudionika
-        const oldIdsSorted = [...oldParticipantIds].sort();
-        const newIdsSorted = [...proposedIds].sort();
-        const areSame = JSON.stringify(oldIdsSorted) === JSON.stringify(newIdsSorted);
-
-        if (!areSame) {
-          await tx.activityParticipation.deleteMany({ where: { activity_id: activity_id } });
-          if (createData.length > 0) {
-            await tx.activityParticipation.createMany({ data: createData });
-          }
-          newParticipantIds = proposedIds;
-        } else if (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) {
-          // Ako je popis isti, ali su poslani globalni sati, ažuriraj sate za sve
-          await tx.activityParticipation.updateMany({
-            where: { activity_id: activity_id },
-            data: { manual_hours: Number(manual_hours) },
-          });
-        }
+        newParticipantIds = participant_ids;
       }
-    } else if (manual_hours !== undefined && manual_hours !== null && Number(manual_hours) > 0) {
-      // Ako nije poslan popis sudionika, ali jesu globalni sati, ažuriraj sate za sve postojeće
-      await tx.activityParticipation.updateMany({
-        where: { activity_id: activity_id },
-        data: { manual_hours: Number(manual_hours) },
-      });
     }
 
+    // Scenarij 2: Poslani su individualni sati za sudionike (`participations`)
+    if (participations) {
+      for (const p of participations) {
+        await tx.activityParticipation.updateMany({
+          where: { activity_id: activity_id, member_id: p.member_id },
+          data: {
+            manual_hours: p.manual_hours,
+            recognition_override: null, // Ručni unos ima prednost
+          },
+        });
+      }
+    } else {
+      // Scenarij 3: Nisu poslani individualni sati. Svi sudionici se ažuriraju
+      // ili s globalnim ručnim satima, ili im se sati resetiraju na null
+      // kako bi se koristio automatski izračun.
+      await tx.activityParticipation.updateMany({
+        where: { activity_id: activity_id },
+        data: {
+          manual_hours: updatePayload.manual_hours ? Number(updatePayload.manual_hours) : null,
+        },
+      });
+    }
 
     // Resetiraj recognition_override ako se tip promijenio na ne-izlet
     if (data.type_id && data.type_id !== existingActivity.type_id && !isExcursion) {
@@ -681,10 +658,10 @@ export const removeParticipantFromActivityService = async (activity_id: number, 
 
 export const updateParticipationService = async (
   participation_id: number,
-  data: Prisma.ActivityParticipationUncheckedUpdateInput
+  data: Prisma.ActivityParticipationUncheckedUpdateInput & { manual_hours_delta?: number }
 ) => {
   // Ovdje se može dodati provjera da li zapis o sudjelovanju postoji
-  const { member_id, start_time, end_time, participant_role, ...restUpdateData } = data;
+  const { member_id, start_time, end_time, participant_role, manual_hours_delta, ...restUpdateData } = data;
   
   // Prvo dohvatimo zapis o sudjelovanju da bismo dobili validan member_id
   const participation = await prisma.activityParticipation.findUnique({
@@ -704,6 +681,17 @@ export const updateParticipationService = async (
   const processedUpdateData: Prisma.ActivityParticipationUncheckedUpdateInput = {
     ...restUpdateData,
   };
+
+  // RUKOVANJE S DELTA VRIJEDNOSTIMA
+  if (manual_hours_delta !== undefined && manual_hours_delta !== null) {
+    // Ako je poslan delta, koristimo Prisma `increment` operaciju
+    processedUpdateData.manual_hours = {
+      increment: manual_hours_delta,
+    };
+  } else if (data.manual_hours !== undefined) {
+    // Ako je poslana apsolutna vrijednost, postavi je
+    processedUpdateData.manual_hours = data.manual_hours;
+  }
   
   // Ako je recognition_override eksplicitno proslijeđen, ažuriramo ga; inače ga ne diramo (čuvamo postojeće stanje)
   if (data.recognition_override !== undefined) {
@@ -720,12 +708,11 @@ export const updateParticipationService = async (
     // Provjeri tip start_time
     if (start_time === null) {
       processedUpdateData.start_time = null;
-    } else if (typeof start_time === 'object' && 'set' in start_time) {
+    } else if (typeof start_time === 'object' && start_time !== null && 'set' in start_time) {
       // Ovo je NullableDateTimeFieldUpdateOperationsInput
       if (start_time.set === null) {
         processedUpdateData.start_time = null;
-      } else {
-        // @ts-expect-error – Prisma NullableDateTimeFieldUpdateOperationsInput.set može biti string | Date | null
+      } else if (start_time.set !== undefined) {
         processedUpdateData.start_time = new Date(start_time.set);
       }
     } else if (start_time instanceof Date || typeof start_time === 'string' || typeof start_time === 'number') {
@@ -741,12 +728,11 @@ export const updateParticipationService = async (
     // Provjeri tip end_time
     if (end_time === null) {
       processedUpdateData.end_time = null;
-    } else if (typeof end_time === 'object' && 'set' in end_time) {
+    } else if (typeof end_time === 'object' && end_time !== null && 'set' in end_time) {
       // Ovo je NullableDateTimeFieldUpdateOperationsInput
       if (end_time.set === null) {
         processedUpdateData.end_time = null;
-      } else {
-        // @ts-expect-error – Prisma NullableDateTimeFieldUpdateOperationsInput.set može biti string | Date | null
+      } else if (end_time.set !== undefined) {
         processedUpdateData.end_time = new Date(end_time.set);
       }
     } else if (end_time instanceof Date || typeof end_time === 'string' || typeof end_time === 'number') {

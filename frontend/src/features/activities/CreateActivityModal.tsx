@@ -259,6 +259,11 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                     onChange={(e) => {
                       setStartDate(e.target.value);
                       setFieldErrors(prev => ({ ...prev, startDate: '' }));
+                      // Kad je unesena godina (četveroznamenkasta), prebaci fokus na vrijeme početka
+                      // Napomena: ovo prati isti obrazac kao i za stvarne datume niže u formi
+                      if (parseInt(e.target.value.substring(0, 4), 10) > 1000) {
+                        startTimeRef.current?.focus();
+                      }
                     }}
                     className={fieldErrors.startDate ? 'border-red-500' : ''}
                   />

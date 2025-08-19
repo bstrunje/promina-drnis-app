@@ -91,6 +91,7 @@ export const getActivityById = async (activityId: string): Promise<Activity> => 
 type ActivityUpdateData = Partial<Omit<Activity, 'participants'>> & {
   participant_ids?: number[];
   manual_hours?: number | null;
+  participations?: { member_id: number; manual_hours: number }[];
 };
 
 /**
@@ -160,10 +161,21 @@ export const removeParticipantAdmin = async (activityId: number, memberId: numbe
   await apiInstance.delete(`/activities-management/${activityId}/participants/${memberId}`);
 };
 
-export const updateParticipationAdmin = async (participationId: number, data: Partial<ActivityParticipation>): Promise<ActivityParticipation> => {
+export const updateParticipationAdmin = async (participationId: number, data: Partial<ActivityParticipation> & { manual_hours_delta?: number }): Promise<ActivityParticipation> => {
   // Backend ruta: PUT /activities/participants/:participationId (vidi backend/src/routes/activity.routes.ts)
   const response = await apiInstance.put<ActivityParticipation>(`/activities/participants/${participationId}`, data);
   return response.data;
+};
+
+/**
+ * Grupno ažurira sate sudjelovanja.
+ * @param adjustments Niz objekata s participation_id i manual_hours_delta.
+ * @returns Promise koji se razrješava kada je operacija gotova.
+ */
+export const updateActivityParticipationBatch = async (
+  adjustments: { participation_id: number; manual_hours_delta: number }[]
+): Promise<void> => {
+  await apiInstance.put('/activities/participants/batch-update', { adjustments });
 };
 
 export const cancelActivity = async (activityId: number, cancellation_reason: string): Promise<unknown> => {

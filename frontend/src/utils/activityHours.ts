@@ -62,21 +62,7 @@ const getHoursFromActivityTimes = (activity: Activity): number | null => {
  * @param activity Aktivnost sa sudionicima
  * @returns Maksimalni broj sati ili null ako nema ručnih unosa
  */
-const getHoursFromManualInputs = (activity: Activity): number | null => {
-  if (!activity.participants || activity.participants.length === 0) {
-    return null;
-  }
-
-  const manualHours = activity.participants
-    .map(p => p.manual_hours)
-    .filter((h): h is number => h !== null && h !== undefined && h > 0);
-
-  if (manualHours.length === 0) {
-    return null;
-  }
-
-  return Math.max(...manualHours);
-};
+// Uklonjeno: getHoursFromManualInputs - više se ne koristi na razini aktivnosti
 
 /**
  * Izračunava sate za pojedinačnu aktivnost (bez množenja s brojem sudionika)
@@ -94,22 +80,18 @@ export const calculateActivityHours = (activity: Activity): number => {
     return activity.manual_hours;
   }
 
-  // Prioritet 2: Ručni unos sati sudionika (stari način, može se ukloniti kasnije)
-  const hoursFromManual = getHoursFromManualInputs(activity);
-  if (hoursFromManual !== null) {
-    return hoursFromManual;
-  }
-
-  // Prioritet 3: Ručni unos iz naziva aktivnosti
-  const hoursFromName = getHoursFromActivityName(activity);
-  if (hoursFromName !== null) {
-    return hoursFromName;
-  }
-
-  // Prioritet 4: Stvarno vrijeme početka i završetka
+  // Prioritet 2: Stvarno vrijeme početka i završetka
   const hoursFromTimes = getHoursFromActivityTimes(activity);
   if (hoursFromTimes !== null) {
     return hoursFromTimes;
+  }
+
+  // Prioritet 3: Ručni unos iz naziva aktivnosti
+  // Napomena: Per-sudionik manual_hours se više ne koristi na razini aktivnosti kako
+  // pojedinačna prilagodba ne bi utjecala na globalni prikaz trajanja aktivnosti.
+  const hoursFromName = getHoursFromActivityName(activity);
+  if (hoursFromName !== null) {
+    return hoursFromName;
   }
 
   return 0; // Vraća 0 ako se sati ne mogu izračunati

@@ -297,10 +297,7 @@ const MemberMessageList: React.FC = () => {
                                 <CheckCircle className="h-4 w-4 mr-1" />
                               </span>
                             )}
-                            <div className="text-sm font-medium">
-                              {message.sender_type === 'member_administrator' ? 'Administrator' :
-                                message.sender_type === 'member_superuser' ? 'Super Administrator' : 'Sistem'}
-                            </div>
+                            <div className="text-sm font-medium">{message.sender_name}</div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-xs text-gray-500">
