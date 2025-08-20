@@ -9,7 +9,6 @@ import { Button } from '@components/ui/button';
 import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format } from 'date-fns';
-import { hr, enUS } from 'date-fns/locale';
 import { useAuth } from '@/context/useAuth';
 import CreateActivityModal from './CreateActivityModal';
 import { Badge } from '@components/ui/badge';
@@ -26,7 +25,27 @@ import { toast } from 'sonner';
 
 const ActivityCategoryPage: React.FC = () => {
   const { t, i18n } = useTranslation(['activities', 'common']);
-  const currentLocale = i18n.language === 'hr' ? hr : enUS;
+  // Dinamičko učitavanje locale-a kako bismo izbjegli ulazak cijelog date-fns/locale u početni bundle
+  const [currentLocale, setCurrentLocale] = useState<any | undefined>(undefined);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        if (i18n.language === 'hr') {
+          const mod = await import('date-fns/locale/hr');
+          if (mounted) setCurrentLocale(mod.hr);
+        } else {
+          const mod = await import('date-fns/locale/en-US');
+          if (mounted) setCurrentLocale(mod.enUS);
+        }
+      } catch {
+        if (mounted) setCurrentLocale(undefined);
+      }
+    };
+    void load();
+    return () => { mounted = false; };
+  }, [i18n.language]);
+
   // Dohvaćamo parametre iz URL-a i trenutnu lokaciju
   const { type_id: activityTypeId, year: yearUrlParam } = useParams<{ type_id?: string; year?: string }>();
   const location = useLocation();
