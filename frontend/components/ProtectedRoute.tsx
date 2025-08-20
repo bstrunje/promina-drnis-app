@@ -2,8 +2,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../src/context/useAuth';
-import { API_BASE_URL } from '../src/utils/config';
-import axios from 'axios';
+import { AuthTokenService } from '../src/utils/auth/AuthTokenService';
 
 interface ProtectedRouteProps {
   allowedRoles?: string[];
@@ -28,23 +27,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   // Funkcija za provjeru valjanosti tokena
   const checkTokenValidity = useCallback(async () => {
     try {
-      // Pozivamo refresh endpoint umjesto health checka - koristimo centraliziranu konfiguraciju
-      await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
-        withCredentials: true
-      });
+      // Umjesto direktnog axios poziva koristimo centralizirani servis s single-flight zaštitom
+      await AuthTokenService.refreshToken();
     } catch (error: unknown) {
-      // Ako token nije valjan, automatski odjavi korisnika
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'response' in error &&
-        (error as { response?: { status?: number } }).response?.status === 401
-      ) {
-        console.log('Token nije valjan, odjavljujem korisnika...');
-        await logout();
-      }
+      // Namjerno bez odjave ovdje; odjavu koordiniraju AuthTokenService/axios interceptori po potrebi
     }
-  }, [logout]);
+  }, []);
 
   // Postavi periodičku provjeru tokena
   useEffect(() => {
@@ -63,7 +51,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [user, isLoading, logout, checkTokenValidity]);
+  }, [user, isLoading, checkTokenValidity]);
 
   // Ovaj effect rješava problem "No routes matched" warning-a
   // Kada se korisnik odjavi, odmah ga preusmjeravamo na login stranicu

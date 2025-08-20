@@ -22,6 +22,9 @@ let refreshTimerId: number | null = null;
 // Vrijeme u milisekundama prije isteka tokena kada ćemo ga osvježiti (2 minute)
 const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
 
+// Globalni lock za sprječavanje paralelnih refresh zahtjeva (single-flight)
+let inFlightRefresh: Promise<string | null> | null = null;
+
 export class AuthTokenService {
   /**
    * Dohvaća API URL ovisno o okruženju
@@ -36,50 +39,66 @@ export class AuthTokenService {
    * Osvježava token i vraća novi access token
    */
   static async refreshToken(): Promise<string | null> {
-    return withRetry(async () => {
+    // Ako je refresh već u tijeku, pričekaj isti rezultat umjesto slanja novog zahtjeva
+    if (inFlightRefresh) {
+      return inFlightRefresh;
+    }
 
-      // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
-      const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        // body: JSON.stringify(requestBody) // makni body ili pošalji '{}'
-        body: JSON.stringify({})
-      });
+    // Napomena (HR): Koalesciramo paralelne refresh pozive kako bismo izbjegli race condition
+    // (npr. jedan refresh rotira token u bazi, drugi u međuvremenu koristi stari token -> 401/403).
+    inFlightRefresh = (async () => {
+      return withRetry(async () => {
 
-      // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
-      if (response.status === 401 || response.status === 403) {
-        console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+        // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
+        const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          // body: JSON.stringify(requestBody) // makni body ili pošalji '{}'
+          body: JSON.stringify({})
+        });
+
+        // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
+        if (response.status === 401 || response.status === 403) {
+          console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+          return null;
+        }
+
+        // Za ostale greške koje mogu biti privremene (npr. mrežne greške)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Obrada uspješnog odgovora
+        const data = await response.json() as RefreshTokenResponse;
+
+        // Spremanje novog refresh tokena ako je dobiven (u localStorage kao backup)
+        if (data.refreshToken) {
+          // console.log('Primljen novi refresh token, ažuriram lokalno spremište');
+          tokenStorage.storeRefreshToken(data.refreshToken);
+        }
+
+        // Spremanje novog access tokena
+        if (data.accessToken) {
+          tokenStorage.storeAccessToken(data.accessToken);
+          // Dodano logiranje za debugiranje
+          // console.log("Novi access token spremljen u localStorage:", data.accessToken);
+          // console.log("Token uspješno obnovljen");
+          return data.accessToken;
+        }
+
         return null;
-      }
+      });
+    })();
 
-      // Za ostale greške koje mogu biti privremene (npr. mrežne greške)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Obrada uspješnog odgovora
-      const data = await response.json() as RefreshTokenResponse;
-
-      // Spremanje novog refresh tokena ako je dobiven (u localStorage kao backup)
-      if (data.refreshToken) {
-        // console.log('Primljen novi refresh token, ažuriram lokalno spremište');
-        tokenStorage.storeRefreshToken(data.refreshToken);
-      }
-
-      // Spremanje novog access tokena
-      if (data.accessToken) {
-        tokenStorage.storeAccessToken(data.accessToken);
-        // Dodano logiranje za debugiranje
-        // console.log("Novi access token spremljen u localStorage:", data.accessToken);
-        // console.log("Token uspješno obnovljen");
-        return data.accessToken;
-      }
-
-      return null;
-    });
+    try {
+      return await inFlightRefresh;
+    } finally {
+      // Oslobodi lock nakon što je refresh završen (uspješno ili neuspješno)
+      inFlightRefresh = null;
+    }
   }
 
   /**
@@ -142,6 +161,7 @@ export class AuthTokenService {
         try {
           if (this.shouldRefreshToken()) {
             // console.log('Automatsko osvježavanje tokena...');
+            // Zaštita: ako je refresh već u tijeku, ne pokreći drugi
             const newToken = await this.refreshToken();
 
             if (newToken) {

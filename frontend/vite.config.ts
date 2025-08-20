@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  // Uklonjen splitVendorChunkPlugin jer koristimo ručni manualChunks (inače prikazuje warning)
   plugins: [react()],
   resolve: {
     alias: {
@@ -64,8 +65,27 @@ export default defineConfig({
       },
       output: {
         sourcemapExcludeSources: true,
-        // PRIVREMENO: Uklanjam code splitting da riješim useMergeRef problem
-        // manualChunks: undefined, // Jedan bundle za sve
+        // Funkcijski manualChunks: konzervativno izdvajanje većih biblioteka (Vercel-friendly)
+        manualChunks(id: string) {
+          // Napomena (HR): Redoslijed je bitan — locale prije općeg date-fns
+          if (id.includes('node_modules/date-fns/locale')) return 'date-fns-locales';
+          if (id.includes('node_modules/date-fns')) return 'date-fns';
+
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router-dom/')
+          ) {
+            return 'react-core';
+          }
+
+          if (id.includes('node_modules/@radix-ui/')) return 'ui-radix';
+          if (id.includes('node_modules/lucide-react/')) return 'icons';
+          if (id.includes('node_modules/i18next/') || id.includes('node_modules/react-i18next/')) return 'i18n';
+
+          // Ostavi ostalo Vite/Rollup heuristici
+          return undefined;
+        },
         assetFileNames: (assetInfo) => {
           if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
           

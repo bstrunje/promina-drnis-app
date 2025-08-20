@@ -9,14 +9,16 @@ import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
 import { calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';
-import { useAuth } from '@/context/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import CreateActivityModal from './CreateActivityModal';
 
+// Napomena: uklonjen useAuth jer user nije korišten u ovoj komponenti
+// import { useAuth } from '@/context/useAuth';
+
 const ActivitiesList: React.FC = () => {
   const { t } = useTranslation('activities');
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
@@ -28,10 +30,9 @@ const ActivitiesList: React.FC = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   // Provjeri ima li korisnik dozvole za upravljanje aktivnostima
-  const canViewActivities = hasPermission('can_view_activities');
   const canCreateActivities = hasPermission('can_create_activities');
-  const canApproveActivities = hasPermission('can_approve_activities');
-  const hasActivityPermissions = canViewActivities || canCreateActivities || canApproveActivities;
+  // Napomena: uklonjena varijabla hasActivityPermissions jer se ne koristi
+  // const hasActivityPermissions = canViewActivities || canCreateActivities || canApproveActivities;
 
   const fetchData = useCallback(async () => {
     try {
@@ -115,19 +116,6 @@ const ActivitiesList: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-lg">Učitavanje...</div>
-      </div>
-    );
-  }
-
-  // Ako je običan član bez dozvola za aktivnosti, prikaži poruku o nedostatku ovlasti
-  if (user?.role === 'member' && !hasActivityPermissions) {
-    return (
-      <div className="p-6">
-        <Alert>
-          <AlertDescription>
-            {t('permissions.noActivityAccess', 'Nemate ovlasti za pristup aktivnostima.')}
-          </AlertDescription>
-        </Alert>
       </div>
     );
   }

@@ -1,26 +1,20 @@
 // frontend/src/App.tsx
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import AdminDashboard from './features/dashboard/AdminDashboard';
 import SuperUserDashboard from './features/dashboard/SuperUserDashboard';
 import MemberDashboard from './features/dashboard/MemberDashboard';
-import MemberList from './features/members/MemberList';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Navigation from '../components/Navigation';
 import AuthProvider from './context/AuthContext';
 import { useAuth } from './context/useAuth';
-import ActivitiesList from './features/activities/ActivitiesList';
-import ActivityCategoryPage from './features/activities/ActivityCategoryPage';
-import ActivityDetailPage from './features/activities/ActivityDetailPage';
 import ActivityOverviewPage from './features/activities/ActivityOverviewPage';
-import ActivityYearPage from './features/activities/ActivityYearPage';
 import EditActivityPage from './features/activities/EditActivityPage';
-import ActivitiesAdminPage from './features/activities/ActivitiesAdminPage';
 import EventsList from './features/events/EventsList';
 import HoursLog from './features/hours/HoursLog';
 import AssignPassword from './features/members/AssignPassword';
 import AuditLogsPage from './features/audit/AuditLogsPage';
-import MemberDetailsPage from './features/members/MemberDetailsPage';
 import MessageList from './features/messages/MessageList';
 import Settings from "./features/settings/Settings";
 import { Toaster } from "@components/ui/toaster";
@@ -30,6 +24,14 @@ import SystemManagerRoutes from './features/systemManager/SystemManagerRoutes';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
 import SpeedInsightsWrapper from './components/SpeedInsights';
 
+// Lazy učitavanje većih stranica radi smanjenja početnog bundle-a
+const ActivitiesList = lazy(() => import('./features/activities/ActivitiesList'));
+const MemberList = lazy(() => import('./features/members/MemberList'));
+const MemberDetailsPageLazy = lazy(() => import('./features/members/MemberDetailsPage'));
+const ActivityCategoryPageLazy = lazy(() => import('./features/activities/ActivityCategoryPage'));
+const ActivityDetailPageLazy = lazy(() => import('./features/activities/ActivityDetailPage'));
+const ActivityYearPageLazy = lazy(() => import('./features/activities/ActivityYearPage'));
+const ActivitiesAdminPageLazy = lazy(() => import('./features/activities/ActivitiesAdminPage'));
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -82,21 +84,22 @@ function AppContent() {
         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDashboardRoute()} replace />} />
         
         <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<MemberDetailsPage />} />
-          <Route path="/activities" element={<ActivitiesList />} />
-          <Route path="/activities/category/:type_id" element={<ActivityCategoryPage />} />
-          <Route path="/activities/year/:year" element={<ActivityCategoryPage />} />
-          <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+          <Route path="/profile" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
+          {/* Lazy učitavanje ActivitiesList i većih activity stranica */}
+          <Route path="/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesList /></Suspense>} />
+          <Route path="/activities/category/:type_id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
+          <Route path="/activities/year/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
+          <Route path="/activities/:activityId" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityDetailPageLazy /></Suspense>} />
           <Route path="/activities/:activityId/edit" element={<EditActivityPage />} />
           <Route path="/members/:memberId/activities-overview" element={<ActivityOverviewPage />} />
-          <Route path="/members/:memberId/activities/:year" element={<ActivityYearPage />} />
+          <Route path="/members/:memberId/activities/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityYearPageLazy /></Suspense>} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/hours" element={<HoursLog />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/messages" element={<MessageList />} />
           {/* Omogućavanje pristupa listi članova svim korisnicima, ne samo adminu i superuser-u */}
-          <Route path="/members" element={<MemberList />} />
-          <Route path="/members/:id" element={<MemberDetailsPage />} />
+          <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />
+          <Route path="/members/:id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
           
           {/* Dashboard rute za različite uloge korisnika */}
           {user && <Route path="/member/dashboard" element={<MemberDashboard member={user} />} />}
@@ -106,10 +109,10 @@ function AppContent() {
               <Route path="/administrator" element={<AdminDashboard member={user} />} />
               <Route path="/administrator/dashboard" element={<AdminDashboard member={user} />} />
               {/* Putanja /members je sad već definirana iznad za sve korisnike */}
-              <Route path="/members/:id/edit" element={<MemberDetailsPage />} />
+              <Route path="/members/:id/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
               <Route path="/assign-password" element={<AssignPassword />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/admin/activities" element={<ActivitiesAdminPage />} /> {/* Nova ruta za administraciju aktivnosti */}
+              <Route path="/admin/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesAdminPageLazy /></Suspense>} /> {/* Nova ruta za administraciju aktivnosti */}
             </>
           )}
           {user?.role === 'member_superuser' && (
