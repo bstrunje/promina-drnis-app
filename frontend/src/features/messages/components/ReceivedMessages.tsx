@@ -256,7 +256,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
                 >
                   <Trash2 className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('messages.deleteAll')}</span>
-                  <span className="sm:hidden">{t('memberProfilemessages.deleteAllShort')}</span>
+                  <span className="sm:hidden">{t('messages.deleteAllShort')}</span>
                 </Button>
               </div>
             )}

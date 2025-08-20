@@ -8,6 +8,7 @@ import ManagerTabNav from '../../components/common/ManagerTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
 import PendingMembersList from '../../components/members/PendingMembersList';
 import SystemManagerSettings from '../settings/SystemManagerSettings';
+import SystemManagerMembersView from '../../components/members/SystemManagerMembersView';
 import useDashboardStats from '../../hooks/useDashboardStats';
 import TimeTravel from '../../../../../components/admin/TimeTravel';
 
@@ -86,8 +87,13 @@ const SystemManagerDashboard: React.FC = () => {
           />
         )}
         
-        {/* Tab sadržaj - Upravljanje ovlastima članova */}
-        {/* Upravljanje ovlastima članova uklonjeno iz system manager dashboarda prema novoj organizaciji prava */}
+        {/* Tab sadržaj - Članovi (System Manager) */}
+        {activeTab === 'members' && (
+          <>
+            <h2 className="text-xl font-semibold mb-6">Members</h2>
+            <SystemManagerMembersView />
+          </>
+        )}
         
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (

@@ -221,7 +221,7 @@ model ConsumedCardNumber {
   member_id   Int
   consumed_at DateTime @default(now())
   issued_at   DateTime
-  member      Member   @relation(fields: [member_id], references: [member_id])
+  member      Member   @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@map("consumed_card_numbers")
 }

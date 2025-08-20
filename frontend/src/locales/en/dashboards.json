@@ -65,7 +65,20 @@
     "navigation": {
         "memberManagement": {
             "title": "Member Management",
-            "description": "Manage member accounts and permissions"
+            "description": "Manage member accounts and permissions",
+            "quick": {
+                "pending": "Pending members",
+                "withoutCard": "Without membership card",
+                "withoutStamp": "Without stamp",
+                "openList": "Open list",
+                "dialogDescription": "Showing {{count}} members. Quick preview without opening the full list.",
+                "table": {
+                    "name": "Full name",
+                    "email": "Email"
+                },
+                "noResults": "No results for the selected criteria.",
+                "close": "Close"
+            }
         },
         "activityManagement": {
             "title": "Activity Management",

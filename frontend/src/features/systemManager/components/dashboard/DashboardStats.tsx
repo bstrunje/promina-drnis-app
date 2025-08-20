@@ -31,7 +31,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
             ''}`
         }
         loading={statsLoading}
-        // Uklonjen onClick handler da kartica bude samo informativna
+        onClick={() => { void setActiveTab('members'); }}
       />
 
       {/* Kartica aktivnosti */}

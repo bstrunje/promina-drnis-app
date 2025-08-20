@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, RefreshCw, Save } from 'lucide-react';
 import axios from 'axios';
-import { API_BASE_URL } from '../../../../utils/config';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useTimeZone } from '../../../../context/useTimeZone'; // Premješten u dedicated hook datoteku radi Fast Refresh pravila
 import { SystemSettings } from '@shared/settings';
 import { getCurrentDate } from '../../../../utils/dateUtils';
-import systemManagerApi, { updateSystemSettings } from '../../utils/systemManagerApi';
+import systemManagerApi, { updateSystemSettings, getSystemSettings } from '../../utils/systemManagerApi';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;
@@ -339,25 +338,15 @@ const SystemManagerSettings: React.FC = () => {
     const loadSettings = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('systemManagerToken');
-        const response = await axios.get(`${API_BASE_URL}/system-manager/settings`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (typeof response.data === 'object' && response.data !== null) {
-          setSettings(response.data as SystemSettings);
-        } else {
-          setError('Neispravan odgovor servera.');
-        }
+        const data = await getSystemSettings();
+        setSettings(data);
       } catch (err: unknown) {
         let errorMessage: string;
         if (axios.isAxiosError(err)) {
           // Provjera da err.response.data postoji i da ima message tipa string
-          const data = err.response?.data as unknown;
-          errorMessage = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
-            ? (data as { message: string }).message
+          const resp = err.response?.data as unknown;
+          errorMessage = (typeof resp === 'object' && resp !== null && 'message' in resp && typeof (resp as { message?: unknown }).message === 'string')
+            ? (resp as { message: string }).message
             : err.message;
         } else if (err instanceof Error) {
           errorMessage = typeof err.message === 'string' ? err.message : 'An unknown error occurred';

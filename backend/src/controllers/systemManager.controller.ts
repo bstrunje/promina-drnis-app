@@ -10,6 +10,7 @@ import auditService from '../services/audit.service.js';
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
 import { PerformerType, SystemManager } from '@prisma/client';
+import cardNumberRepository from '../repositories/cardnumber.repository.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -986,7 +987,92 @@ const systemManagerController = {
             console.error('Error assigning role to member:', error);
             res.status(500).json({ message: 'Došlo je do greške prilikom dodjeljivanja uloge članu' });
         }
-    }
+    },
+
+    // Dohvat svih članova (samo za System Manager)
+    async getAllMembersForSystemManager(
+        req: Request,
+        res: Response
+    ): Promise<void> {
+        try {
+            const members = await prisma.member.findMany({
+                orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }]
+            });
+            res.json(members);
+        } catch (error) {
+            console.error('Error fetching all members (system manager):', error);
+            res.status(500).json({ message: 'Došlo je do greške prilikom dohvata članova' });
+        }
+    },
+
+    // Brisanje člana (samo za System Manager)
+    async deleteMemberForSystemManager(
+        req: Request<{ memberId: string }>,
+        res: Response
+    ): Promise<void> {
+        try {
+            const memberId = parseInt(req.params.memberId);
+            if (isNaN(memberId)) {
+                res.status(400).json({ message: 'Neispravan ID člana' });
+                return;
+            }
+
+            // Provjera postoji li član
+            const member = await prisma.member.findUnique({ where: { member_id: memberId } });
+            if (!member) {
+                res.status(404).json({ message: 'Član nije pronađen' });
+                return;
+            }
+
+            // Ako član ima dodijeljenu člansku iskaznicu, označi je kao potrošenu prije brisanja člana
+            // Napomena: koristimo postojeći repozitorij kako bismo zadržali konzistentan pristup i izbjegli dupliciranje logike
+            const membershipDetails = await prisma.membershipDetails.findUnique({
+                where: { member_id: memberId },
+                select: { card_number: true }
+            });
+
+            if (membershipDetails?.card_number) {
+                // Pokušaj dohvatiti datum izdavanja iz card_numbers.assigned_at radi točnijeg audit trail-a
+                const cardMeta = await prisma.cardNumber.findFirst({
+                    where: { card_number: membershipDetails.card_number },
+                    select: { assigned_at: true }
+                });
+
+                try {
+                    await cardNumberRepository.markCardNumberConsumed(
+                        membershipDetails.card_number,
+                        memberId,
+                        cardMeta?.assigned_at || undefined,
+                        new Date()
+                    );
+                } catch (e) {
+                    // Dodaj log ali nemoj spriječiti brisanje člana
+                    console.error('[CARD-NUMBERS] Neuspjelo označavanje kartice kao potrošene prije brisanja člana:', e);
+                }
+            }
+
+            // Brisanje člana; oslanjamo se na postojeća pravila FK i onDelete ponašanje (cascade gdje je definirano)
+            await prisma.member.delete({ where: { member_id: memberId } });
+
+            // Audit log
+            if (req.user) {
+                await auditService.logAction(
+                    'delete',
+                    req.user.id,
+                    `Obrisan član (ID: ${memberId}, ${member.first_name} ${member.last_name})`,
+                    req,
+                    'success',
+                    memberId,
+                    PerformerType.SYSTEM_MANAGER
+                );
+            }
+
+            res.json({ message: 'Član uspješno obrisan', memberId });
+        } catch (error) {
+            console.error('Error deleting member (system manager):', error);
+            res.status(500).json({ message: 'Došlo je do greške prilikom brisanja člana' });
+        }
+    },
 };
 
 // Pomoćna funkcija za validaciju vremenske zone

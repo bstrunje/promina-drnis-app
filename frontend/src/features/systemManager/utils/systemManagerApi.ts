@@ -451,7 +451,7 @@ export const updateMemberPermissions = async (updateData: UpdateMemberPermission
  */
 export const removeMemberPermissions = async (memberId: number): Promise<void> => {
   try {
-    await systemManagerApi.delete(`/system-manager/remove-permissions/${memberId}`);
+    await systemManagerApi.delete(`/system-manager/member-permissions/${memberId}`);
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.message);
@@ -511,6 +511,21 @@ export const getSystemManagerDashboardStats = async (): Promise<SystemManagerDas
 };
 
 /**
+ * Dohvat postavki sustava
+ */
+export const getSystemSettings = async (): Promise<SystemSettings> => {
+  try {
+    const response = await systemManagerApi.get<SystemSettings>('/system-manager/settings');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška.');
+  }
+};
+
+/**
  * Ažuriranje postavki sustava
  * @param settings Novi podaci za postavke sustava
  * @returns Ažurirane postavke sustava
@@ -537,6 +552,36 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
     }
     console.error('Nepoznata greška:', error);
     throw new Error('Dogodila se greška.');
+  }
+};
+
+/**
+ * Dohvat svih članova (System Manager)
+ */
+export const getAllMembersForSystemManager = async (): Promise<Member[]> => {
+  try {
+    const response = await systemManagerApi.get<Member[]>('/system-manager/members');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška prilikom dohvata članova.');
+  }
+};
+
+/**
+ * Brisanje člana (System Manager)
+ */
+export const deleteMemberForSystemManager = async (memberId: number): Promise<{ message: string; memberId: number }> => {
+  try {
+    const response = await systemManagerApi.delete<{ message: string; memberId: number }>(`/system-manager/members/${memberId}`);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw new Error('Dogodila se greška prilikom brisanja člana.');
   }
 };
 

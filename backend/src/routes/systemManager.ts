@@ -48,6 +48,10 @@ router.get('/member-permissions/:memberId', systemManagerController.getMemberPer
 router.post('/update-permissions', systemManagerController.updateMemberPermissions);
 router.delete('/member-permissions/:memberId', systemManagerController.removeMemberPermissions);
 
+// Rute za upravljanje članovima (System Manager)
+router.get('/members', systemManagerController.getAllMembersForSystemManager);
+router.delete('/members/:memberId', systemManagerController.deleteMemberForSystemManager);
+
 // Rute za upravljanje članovima sa statusom 'pending'
 router.get('/pending-members', systemManagerController.getPendingMembers);
 router.post('/assign-password', systemManagerController.assignPasswordToMember);

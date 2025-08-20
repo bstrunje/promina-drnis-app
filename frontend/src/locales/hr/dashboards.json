@@ -66,7 +66,20 @@
     "navigation": {
         "memberManagement": {
             "title": "Upravljanje članovima",
-            "description": "Upravljanje korisničkim računima i dozvolama"
+            "description": "Upravljanje korisničkim računima i dozvolama",
+            "quick": {
+                "pending": "Članovi na čekanju",
+                "withoutCard": "Bez članske iskaznice",
+                "withoutStamp": "Bez markice",
+                "openList": "Otvori popis",
+                "dialogDescription": "Prikazano {{count}} članova. Brzi pregled bez otvaranja cijele liste.",
+                "table": {
+                    "name": "Ime i prezime",
+                    "email": "Email"
+                },
+                "noResults": "Nema rezultata za odabrani kriterij.",
+                "close": "Zatvori"
+            }
         },
         "activityManagement": {
             "title": "Upravljanje aktivnostima",

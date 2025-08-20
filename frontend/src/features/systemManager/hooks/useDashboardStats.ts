@@ -14,8 +14,8 @@ export const useDashboardStats = (activeTab: string) => {
     activeMembers: 0,
     pendingApprovals: 0,
     recentActivities: 0,
-    systemHealth: 'Nepoznato',
-    lastBackup: 'Nikad',
+    systemHealth: 'Unknown',
+    lastBackup: 'Never',
   });
   
   // Stanje učitavanja i grešaka
