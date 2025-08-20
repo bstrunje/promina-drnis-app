@@ -9,6 +9,7 @@ import { Button } from '@components/ui/button';
 import { getActivityTypes, getActivitiesByTypeId, deleteActivity, getActivitiesByYearWithParticipants } from '@/utils/api/apiActivities';
 import { Activity, ActivityType, ActivityStatus } from '@shared/activity.types';
 import { format } from 'date-fns';
+import type { Locale } from 'date-fns';
 import { useAuth } from '@/context/useAuth';
 import CreateActivityModal from './CreateActivityModal';
 import { Badge } from '@components/ui/badge';
@@ -26,7 +27,8 @@ import { toast } from 'sonner';
 const ActivityCategoryPage: React.FC = () => {
   const { t, i18n } = useTranslation(['activities', 'common']);
   // Dinamičko učitavanje locale-a kako bismo izbjegli ulazak cijelog date-fns/locale u početni bundle
-  const [currentLocale, setCurrentLocale] = useState<any | undefined>(undefined);
+  // Napomena: tipiziramo kao Locale radi ESLint/TS pravila (bez any)
+  const [currentLocale, setCurrentLocale] = useState<Locale | undefined>(undefined);
   useEffect(() => {
     let mounted = true;
     const load = async () => {
