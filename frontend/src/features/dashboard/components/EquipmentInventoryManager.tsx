@@ -359,16 +359,29 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
     setSelectedEquipment(null);
   };
 
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpanded = () => setExpanded((s) => !s);
+  
   return (
     <>
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-          <div className="flex items-center">
+        <div
+          className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4"
+        >
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={toggleExpanded}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggleExpanded(); }}
+            className="flex items-center cursor-pointer"
+            aria-expanded={expanded}
+          >
             <Package className="h-5 w-5 mr-2 text-purple-600" />
             <h2 className="text-lg font-semibold">{t("equipmentInventory.title")}</h2>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
             <Button
               variant="outline"
               size="sm"
@@ -392,179 +405,198 @@ export const EquipmentInventoryManager: React.FC<EquipmentInventoryManagerProps>
                 {t("equipmentInventory.editInventory")}
               </Button>
             )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); toggleExpanded(); }}
+              className="w-full sm:w-auto text-sm"
+              aria-label={expanded ? "Sakrij tablicu" : "Prikaži tablicu"}
+            >
+              {expanded ? "Sakrij" : "Prikaži"}
+            </Button>
           </div>
         </div>
 
-        {/* Equipment Type Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8">
-            {EQUIPMENT_TYPES.map((equipmentType) => (
-              <button
-                key={equipmentType}
-                onClick={() => setActiveTab(equipmentType)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === equipmentType
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {equipmentTypeLabels[equipmentType]}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Current Tab Content */}
-        <div>
-          {sortedCurrentTabData.length > 0 ? (
-            <>
-              {/* Mobile Card View */}
-              <div className="block sm:hidden space-y-3">
-                {sortedCurrentTabData.map((item) => (
-                  <div key={`${item.equipment_type}-${item.size}-${item.gender}`} className="bg-gray-50 rounded-lg p-4 border">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="font-medium text-lg">{item.size}</span>
-                        <span className="ml-2 text-sm text-gray-500">
-                        ({t(`equipmentInventory.gender.${item.gender}`)})
-                        </span>
-                      </div>
-                      <span className={`text-lg font-bold ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {item.remaining}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.initial")}</span>
-                        <div className="font-medium">{item.initial_count}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.issued")}</span>
-                        <div className="font-medium">{item.issued_count}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.gifts")}</span>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void decrementGift(item)}
-                            disabled={isLoading}
-                            className="w-6 h-6 p-0"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="font-semibold text-base px-2">{item.gift_count}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void incrementGift(item)}
-                            disabled={isLoading}
-                            className="w-6 h-6 p-0"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">{t("equipmentInventory.cardLabels.remaining")}</span>
-                        <div className={`font-medium ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {item.remaining}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        {/* Equipment Type Tabs + Content: prikazuj samo ako je expanded */}
+        {expanded ? (
+          <>
+            {/* Equipment Type Tabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                {EQUIPMENT_TYPES.map((equipmentType) => (
+                  <button
+                    key={equipmentType}
+                    onClick={() => setActiveTab(equipmentType)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === equipmentType
+                        ? 'border-purple-500 text-purple-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {equipmentTypeLabels[equipmentType]}
+                  </button>
                 ))}
-              </div>
-              
-              {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.size")}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.gender")}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.initial")}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.issued")}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.gifts")}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t("equipmentInventory.tableHeaders.remaining")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+              </nav>
+            </div>
+
+            {/* Current Tab Content */}
+            <div>
+              {sortedCurrentTabData.length > 0 ? (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="block sm:hidden space-y-3">
                     {sortedCurrentTabData.map((item) => (
-                      <tr 
-                        key={`${item.equipment_type}-${item.size}-${item.gender}`} 
-                        className={`hover:bg-gray-50 ${(item.issued_count > 0 || item.gift_count > 0) ? 'cursor-pointer' : ''}`}
-                        onClick={() => handleRowClick(item)}
-                        title={(item.issued_count > 0 || item.gift_count > 0) ? t('equipmentInventory.membersWithEquipment.clickToView') : ''}
-                      >
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                          {item.size}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-700">
-                        {t(`equipmentInventory.gender.${item.gender}`)}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                          {item.initial_count}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-700">
-                          {item.issued_count}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => void decrementGift(item)}
-                              disabled={isLoading}
-                              className="w-6 h-6 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="font-semibold text-base px-2">{item.gift_count}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => void incrementGift(item)}
-                              disabled={isLoading}
-                              className="w-6 h-6 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
+                      <div key={`${item.equipment_type}-${item.size}-${item.gender}`} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <span className="font-medium text-lg">{item.size}</span>
+                            <span className="ml-2 text-sm text-gray-500">
+                            ({t(`equipmentInventory.gender.${item.gender}`)})
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold">
-                          <span className={`${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          <span className={`text-lg font-bold ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
                             {item.remaining}
                           </span>
-                        </td>
-                      </tr>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">{t("equipmentInventory.cardLabels.initial")}</span>
+                            <div className="font-medium">{item.initial_count}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">{t("equipmentInventory.cardLabels.issued")}</span>
+                            <div className="font-medium">{item.issued_count}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">{t("equipmentInventory.cardLabels.gifts")}</span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void decrementGift(item)}
+                                disabled={isLoading}
+                                className="w-6 h-6 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="font-semibold text-base px-2">{item.gift_count}</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void incrementGift(item)}
+                                disabled={isLoading}
+                                className="w-6 h-6 p-0"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">{t("equipmentInventory.cardLabels.remaining")}</span>
+                            <div className={`font-medium ${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {item.remaining}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              {t("equipmentInventory.noData", { equipmentType: equipmentTypeLabels[activeTab] })}
+                  </div>
+                  
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.size")}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.gender")}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.initial")}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.issued")}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.gifts")}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t("equipmentInventory.tableHeaders.remaining")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {sortedCurrentTabData.map((item) => (
+                          <tr 
+                            key={`${item.equipment_type}-${item.size}-${item.gender}`} 
+                            className={`hover:bg-gray-50 ${(item.issued_count > 0 || item.gift_count > 0) ? 'cursor-pointer' : ''}`}
+                            onClick={() => handleRowClick(item)}
+                            title={(item.issued_count > 0 || item.gift_count > 0) ? t('equipmentInventory.membersWithEquipment.clickToView') : ''}
+                          >
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                              {item.size}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-700">
+                            {t(`equipmentInventory.gender.${item.gender}`)}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                              {item.initial_count}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-700">
+                              {item.issued_count}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => void decrementGift(item)}
+                                  disabled={isLoading}
+                                  className="w-6 h-6 p-0"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="font-semibold text-base px-2">{item.gift_count}</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => void incrementGift(item)}
+                                  disabled={isLoading}
+                                  className="w-6 h-6 p-0"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-semibold">
+                              <span className={`${item.remaining <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                {item.remaining}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  {t("equipmentInventory.noData", { equipmentType: equipmentTypeLabels[activeTab] })}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <div className="text-sm text-gray-500 p-4">
+            Kliknite naslov da prikažete tablicu inventara opreme.
+          </div>
+        )}
       </div>
-
+      
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
