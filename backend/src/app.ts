@@ -1,5 +1,3 @@
-
-
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -35,6 +33,7 @@ import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
 
 import skillRoutes from './routes/skillRoutes.js';
+import devRoutes from './routes/dev.routes.js'; // Dodano za podršku razvojnim rutama
 
 // (prepareDirectories, migrateExistingFiles) se više ne koriste
 
@@ -73,7 +72,7 @@ if (process.env.NODE_ENV !== 'production') {
   })();
 }
 
-// Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel, Render)
+// Postavka za ispravno prepoznavanje IP adresa iza proxyja (npr. Vercel)
 app.set('trust proxy', 1); // Vjeruj samo prvom (najbližem) proxy poslužitelju
 
 // ES modules compatibility
@@ -92,7 +91,7 @@ app.use(localeMiddleware); // Detekcija jezika (X-Lang / Accept-Language), fallb
 
 // Set up static file serving with better error handling
 // Set up static file serving with better error handling
-// Prioritize UPLOADS_DIR for persistent storage (e.g., Render Disks)
+// Prioritize UPLOADS_DIR for persistent storage
 const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
   ? '/app/uploads' // Fallback for legacy or non-disk setups
   : path.resolve(__dirname, '..', 'uploads'));
@@ -144,7 +143,7 @@ const corsOptions = {
       'https://promina-drnis-app.vercel.app',  // Production frontend
       'http://localhost:5173',                 // Development frontend
       'http://localhost:3000',                 // Development backend
-      'https://promina-drnis-api.onrender.com' // Production backend
+      'http://localhost:3001',                 // Development API
     ];
     
     // Allow all Vercel preview deployments
@@ -290,6 +289,12 @@ app.use('/api/card-numbers', cardNumberRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/generic-messages', authMiddleware, genericMessagesRouter);
 app.use('/api/skills', skillRoutes);
+
+// Mount dev routes only in development or when explicitly enabled
+if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEV_ROUTES === 'true') {
+  if (isDev) console.log('Mounting /api/dev (development dev routes enabled)');
+  app.use('/api/dev', devRoutes);
+}
 
 // API root endpoint
 app.get('/api', (req: Request, res: Response) => {

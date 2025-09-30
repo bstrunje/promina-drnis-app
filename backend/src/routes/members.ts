@@ -590,5 +590,34 @@ router.get('/test', (req, res) => {
     if (isDev) console.log('Test route hit');
     res.json({ message: 'Member routes are working' });
   });
+
+// Ruta za ručno pokretanje provjere isteklih članstava (za debug/testiranje)
+router.post('/check-auto-terminations', roles.requireAdmin, async (req, res) => {
+  try {
+    // Provjeri je li poslan mock datum
+    const { mockDate } = req.body;
+    if (mockDate) {
+      // Import dateUtils da postavimo mock datum
+      const { setMockDate } = await import('../utils/dateUtils.js');
+      setMockDate(new Date(mockDate));
+    }
+    
+    // Import membershipService
+    const { default: membershipService } = await import('../services/membership.service.js');
+    await membershipService.checkAutoTerminations();
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Provjera isteklih članstava uspješno pokrenuta' 
+    });
+  } catch (error) {
+    console.error('Greška prilikom provjere isteklih članstava:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Greška prilikom provjere isteklih članstava',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
   
 export default router;

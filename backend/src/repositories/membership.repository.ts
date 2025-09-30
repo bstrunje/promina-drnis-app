@@ -322,7 +322,9 @@ const membershipRepository = {
             SELECT m.member_id 
             FROM members m
             LEFT JOIN membership_details md ON m.member_id = md.member_id
-            WHERE m.status = 'registered' AND (md.fee_payment_year < ${year} OR md.fee_payment_year IS NULL)
+            WHERE m.status = 'registered' 
+              AND (md.fee_payment_year < ${year} OR md.fee_payment_year IS NULL)
+              AND m.role NOT IN ('member_superuser', 'member_administrator')
         `;
 
       const memberIdsToExpire = expiredMembers.map(row => row.member_id);
@@ -334,17 +336,17 @@ const membershipRepository = {
 
       console.log(`[MEMBERSHIP] Pronađeno ${memberIdsToExpire.length} članova kojima ističe članarina:`, memberIdsToExpire);
 
-      // 2. Ažuriraj status i sate za te članove u tablici `members` - Prisma updateMany
+      // 2. Ažuriraj status za te članove u tablici `members` - Prisma updateMany
+      // Napomena: total_hours se NE poništavaju jer moraju biti vidljivi kroz povijest
       await tx.member.updateMany({
         where: {
           member_id: { in: memberIdsToExpire }
         },
         data: {
-          status: 'inactive',
-          total_hours: 0
+          status: 'inactive'
         }
       });
-      console.log(`[MEMBERSHIP] Ažuriran status na 'inactive' i resetirani sati za ${memberIdsToExpire.length} članova`);
+      console.log(`[MEMBERSHIP] Ažuriran status na 'inactive' za ${memberIdsToExpire.length} članova`);
 
       // 3. Završi njihova aktivna razdoblja članstva u `membership_periods` - Prisma updateMany
       await tx.membershipPeriod.updateMany({
@@ -359,7 +361,19 @@ const membershipRepository = {
       });
       console.log(`[MEMBERSHIP] Završena aktivna razdoblja članstva za ${memberIdsToExpire.length} članova`);
 
-      console.log(`[MEMBERSHIP] Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive' i sati resetirani.`);
+      console.log(`[MEMBERSHIP] Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive'.`);
+
+      // 4. Osiguraj da su svi administratori i superuseri aktivni
+      await tx.member.updateMany({
+        where: {
+          role: { in: ['member_superuser', 'member_administrator'] },
+          status: 'inactive'
+        },
+        data: {
+          status: 'registered'
+        }
+      });
+      console.log(`[MEMBERSHIP] Osigurani aktivni statusi za sve administratore i superusere.`);
     });
   }
 };

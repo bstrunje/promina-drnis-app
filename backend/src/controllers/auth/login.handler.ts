@@ -102,7 +102,10 @@ export async function loginHandler(
       });
     }
 
-    if (member.status !== 'registered' && member.status !== 'active') {
+    // Provjeri status računa - samo superuseri mogu se prijaviti bez obzira na status
+    const isSuperuser = member.role === 'member_superuser';
+    
+    if (!isSuperuser && member.status !== 'registered' && member.status !== 'active') {
       if (isDev) console.log(`Login attempt for inactive member: ${member.member_id}, status: ${member.status}`);
       await auditService.logAction(
         'LOGIN_LOCKOUT',

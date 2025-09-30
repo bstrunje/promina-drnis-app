@@ -1,18 +1,17 @@
 import express, { Request, Response, Router } from 'express';
-import fakeTimers from '@sinonjs/fake-timers';
+import { setMockDate, resetMockDate } from '../utils/dateUtils.js';
 
 import prisma from '../utils/prisma.js';
 
 const router: Router = express.Router();
 
-// Globalna varijabla za pohranu instance sata
-// Ovo je potrebno kako bismo mogli resetirati vrijeme
-let clock: fakeTimers.InstalledClock | null = null;
-
 // Middleware za provjeru je li okruženje razvojno
 const isDevelopment = (req: Request, res: Response, next: () => void) => {
-  if (process.env.NODE_ENV !== 'development') {
-    return res.status(403).json({ message: 'Ova funkcionalnost je dostupna samo u razvojnom okruženju.' });
+  const devMode = process.env.NODE_ENV === 'development';
+  const devRoutesEnabled = process.env.ENABLE_DEV_ROUTES === 'true';
+
+  if (!devMode && !devRoutesEnabled) {
+    return res.status(403).json({ message: 'Ova funkcionalnost nije omogućena u ovom okruženju.' });
   }
   next();
 };
@@ -21,20 +20,13 @@ const isDevelopment = (req: Request, res: Response, next: () => void) => {
 // POST /api/dev/set-date
 router.post('/set-date', isDevelopment, (req: Request, res: Response) => {
   const { date } = req.body;
-
   if (!date || isNaN(new Date(date).getTime())) {
     return res.status(400).json({ message: 'Potrebno je poslati ispravan datum u ISO formatu.' });
   }
 
-  // Ako već postoji lažni sat, prvo ga resetiramo
-  if (clock) {
-    clock.uninstall();
-  }
-
   const targetDate = new Date(date);
-
-  // Instaliramo lažni sat koji će presresti sve pozive za dohvaćanje vremena
-  clock = fakeTimers.install({ now: targetDate });
+  // Postavi mock datum iz dateUtils (ne dira globalne timere / schedulere)
+  setMockDate(targetDate);
 
   console.log(`🕒 Vrijeme je promijenjeno na: ${targetDate.toLocaleString('hr-HR')}`);
   res.status(200).json({ message: `Vrijeme uspješno postavljeno na ${targetDate.toISOString()}` });
@@ -43,14 +35,9 @@ router.post('/set-date', isDevelopment, (req: Request, res: Response) => {
 // Endpoint za resetiranje vremena na stvarno vrijeme
 // POST /api/dev/reset-date
 router.post('/reset-date', isDevelopment, (req: Request, res: Response) => {
-  if (clock) {
-    clock.uninstall();
-    clock = null;
-    console.log('🕒 Vrijeme je vraćeno na stvarno vrijeme.');
-    res.status(200).json({ message: 'Vrijeme uspješno resetirano.' });
-  } else {
-    res.status(200).json({ message: 'Vrijeme nije bilo promijenjeno.' });
-  }
+  resetMockDate();
+  console.log('🕒 Mock datum resetiran; vraćeno stvarno vrijeme.');
+  res.status(200).json({ message: 'Vrijeme uspješno resetirano.' });
 });
 
 // Ruta za resetiranje sekvence za member_id

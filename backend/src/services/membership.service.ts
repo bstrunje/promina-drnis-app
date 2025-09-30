@@ -48,7 +48,8 @@ const membershipService = {
         throw new Error("Member not found");
       }
 
-      const paymentYear = paymentDate.getFullYear();
+      // Ako je renewal payment, koristimo sljedeću godinu, inače godinu iz datuma
+      const paymentYear = isRenewalPayment ? paymentDate.getFullYear() + 1 : paymentDate.getFullYear();
 
 
       // Create cutoff date (October 31st of current year)
@@ -524,6 +525,8 @@ const membershipService = {
     try {
       const currentYear = getCurrentDate().getFullYear();
       const currentDate = getCurrentDate();
+      
+      console.log(`🔧 [AUTO-TERMINATION] Pokretanje provjere - currentDate: ${formatDate(currentDate)}, currentYear: ${currentYear}`);
 
       // Dohvati postavke sustava
       const _settings = await prisma.systemSettings.findFirst({
@@ -536,12 +539,18 @@ const membershipService = {
       // Definiramo rok za obnovu članstva (1. ožujak tekuće godine)
       const renewalDeadline = new Date(currentYear, 2, 1); // Mjesec 2 je ožujak
 
+      console.log(`🔧 [AUTO-TERMINATION] Usporedba datuma:`);
+      console.log(`🔧 [AUTO-TERMINATION] - currentDate: ${formatDate(currentDate)} (${currentDate.getTime()})`);
+      console.log(`🔧 [AUTO-TERMINATION] - currentYear: ${currentYear}`);
+      console.log(`🔧 [AUTO-TERMINATION] - renewalDeadline: ${formatDate(renewalDeadline)} (${renewalDeadline.getTime()})`);
+      console.log(`🔧 [AUTO-TERMINATION] - currentDate > renewalDeadline: ${currentDate > renewalDeadline}`);
+
       // Ako je trenutni datum nakon roka za obnovu, provjeri i završi sva članstva koja nisu obnovljena
       if (currentDate > renewalDeadline) {
-        console.log(`INFO: Trenutni datum (${formatDate(currentDate)}) je nakon roka za obnovu članstva (${formatDate(renewalDeadline)}). Pokrećem provjeru isteklih članstava za ${currentYear}.`);
+        console.log(`🔧 [AUTO-TERMINATION] POZIVAM endExpiredMemberships za godinu ${currentYear}`);
         await membershipRepository.endExpiredMemberships(currentYear);
       } else {
-        console.log(`INFO: Trenutni datum (${formatDate(currentDate)}) je prije roka za obnovu članstva (${formatDate(renewalDeadline)}). Preskačem provjeru.`);
+        console.log(`🔧 [AUTO-TERMINATION] PRESKAČEM provjeru - datum je prije roka`);
       }
 
       return;

@@ -31,14 +31,12 @@ router.put(
   '/membership-periods/:periodId/end-reason',
   authMiddleware,
   roles.requireAdmin,
-  membershipController.updateMembershipEndReason
+  membershipController.updateEndReason
 );
 
-router.post(
-  '/stamp',
-  authMiddleware,
-  roles.requireAdmin,
-  membershipController.issueStamp
-);
+// Ruta za dohvaćanje povijesti članstva
+router.get('/:memberId/history', membershipController.getMembershipHistory);
+
+// Uklanjam iz ovdje jer nasljeđuje :memberId prefiks
 
 export default router;

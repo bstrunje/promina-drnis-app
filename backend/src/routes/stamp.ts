@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import stampService from '../services/stamp.service.js';
+import { tOrDefault } from '../utils/i18n.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ router.get('/inventory', authenticateToken, roles.requireAdmin, async (req, res)
         const inventory = await stampService.getInventoryStatus();
         res.json(inventory);
     } catch (_error) {
-        res.status(500).json({ message: 'Failed to fetch inventory' });
+        res.status(500).json({ message: tOrDefault('stamp.errors.FETCH_INVENTORY', 'hr', 'Failed to fetch inventory') });
     }
 });
 
@@ -18,14 +19,14 @@ router.get('/inventory/:year', authenticateToken, roles.requireAdmin, async (req
     try {
         const year = parseInt(req.params.year);
         if (isNaN(year)) {
-            return res.status(400).json({ message: 'Invalid year parameter' });
+            return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
         }
         
         const inventory = await stampService.getInventoryStatusByYear(year);
         res.json(inventory);
     } catch (_error) {
         res.status(500).json({ 
-            message: _error instanceof Error ? _error.message : 'Failed to fetch inventory for year' 
+            message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.FETCH_INVENTORY_YEAR', 'hr', 'Failed to fetch inventory for year')
         });
     }
 });
@@ -39,14 +40,14 @@ router.put('/inventory',
             
             // Validacija da imamo godinu
             if (!year || isNaN(parseInt(year))) {
-                return res.status(400).json({ message: 'Valid year parameter is required' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.YEAR_REQUIRED', 'hr', 'Valid year parameter is required') });
             }
             
             const yearValue = parseInt(year);
             
             // Dodana provjera je li podatak broj
             if (isNaN(employed) || isNaN(student) || isNaN(pensioner)) {
-                return res.status(400).json({ message: 'All inventory values must be numbers' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.ALL_VALUES_NUMBERS', 'hr', 'All inventory values must be numbers') });
             }
             
             const employedValue = parseInt(employed) || 0;
@@ -55,7 +56,7 @@ router.put('/inventory',
             
             // Dodatna sigurnosna provjera protiv negativnih vrijednosti
             if (employedValue < 0 || studentValue < 0 || pensionerValue < 0) {
-                return res.status(400).json({ message: 'Inventory values cannot be negative' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.VALUES_NEGATIVE', 'hr', 'Inventory values cannot be negative') });
             }
             
             console.log(`Updating inventory for year ${yearValue}:`, {
@@ -74,13 +75,13 @@ router.put('/inventory',
             const updatedInventory = await stampService.getInventoryStatusByYear(yearValue);
             
             res.json({ 
-                message: `Inventory for year ${yearValue} updated successfully`,
+                message: tOrDefault('stamp.success.INVENTORY_UPDATED', 'hr', 'Inventory for year {{year}} updated successfully', { year: yearValue.toString() }),
                 inventory: updatedInventory
             });
         } catch (_error) {
             console.error('Error updating inventory:', _error);
             res.status(500).json({ 
-                message: _error instanceof Error ? _error.message : 'Failed to update inventory' 
+                message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.UPDATE_INVENTORY', 'hr', 'Failed to update inventory')
             });
         }
     }
@@ -96,7 +97,7 @@ router.get('/history',
             res.json(history);
         } catch (_error) {
             res.status(500).json({ 
-                message: _error instanceof Error ? _error.message : 'Failed to fetch stamp history' 
+                message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.FETCH_HISTORY', 'hr', 'Failed to fetch stamp history')
             });
         }
     }
@@ -110,14 +111,14 @@ router.get('/history/:year',
         try {
             const year = parseInt(req.params.year);
             if (isNaN(year)) {
-                return res.status(400).json({ message: 'Invalid year parameter' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
             }
             
             const history = await stampService.getStampHistoryByYear(year);
             res.json(history);
         } catch (_error) {
             res.status(500).json({ 
-                message: _error instanceof Error ? _error.message : 'Failed to fetch stamp history' 
+                message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.FETCH_HISTORY', 'hr', 'Failed to fetch stamp history')
             });
         }
     }
@@ -132,7 +133,7 @@ router.post('/archive-year',
             const { year, notes, force = false } = req.body;
             
             if (!year || isNaN(parseInt(year))) {
-                return res.status(400).json({ message: 'Valid year parameter is required' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.YEAR_REQUIRED', 'hr', 'Valid year parameter is required') });
             }
             
             // Dohvati ID člana iz tokena
@@ -148,7 +149,7 @@ router.post('/archive-year',
             res.json(result);
         } catch (_error) {
             res.status(500).json({ 
-                message: _error instanceof Error ? _error.message : 'Failed to archive inventory' 
+                message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.ARCHIVE_INVENTORY', 'hr', 'Failed to archive inventory')
             });
         }
     }
@@ -164,7 +165,7 @@ router.post('/reset-year',
             const { year, notes } = req.body;
             
             if (!year || isNaN(parseInt(year))) {
-                return res.status(400).json({ message: 'Valid year parameter is required' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.YEAR_REQUIRED', 'hr', 'Valid year parameter is required') });
             }
             
             // Dohvati ID člana iz tokena
@@ -179,11 +180,11 @@ router.post('/reset-year',
             
             res.json({
                 ...result,
-                message: 'Inventory successfully archived. Reset functionality is deprecated, please use /archive-year endpoint instead.'
+                message: tOrDefault('stamp.warnings.RESET_DEPRECATED', 'hr', 'Inventory successfully archived. Reset functionality is deprecated, please use /archive-year endpoint instead.')
             });
         } catch (_error) {
             res.status(500).json({ 
-                message: _error instanceof Error ? _error.message : 'Failed to archive inventory' 
+                message: _error instanceof Error ? _error.message : tOrDefault('stamp.errors.ARCHIVE_INVENTORY', 'hr', 'Failed to archive inventory')
             });
         }
     }
@@ -199,7 +200,7 @@ router.get('/members/:stampType/:year',
             const yearNumber = parseInt(year);
             
             if (isNaN(yearNumber)) {
-                return res.status(400).json({ message: 'Invalid year parameter' });
+                return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
             }
 
             const members = await stampService.getMembersWithStamp(stampType, yearNumber);
@@ -207,7 +208,7 @@ router.get('/members/:stampType/:year',
         } catch (error) {
             console.error('Error fetching members with stamps:', error);
             res.status(500).json({ 
-                message: error instanceof Error ? error.message : 'Failed to fetch members with stamps' 
+                message: error instanceof Error ? error.message : tOrDefault('stamp.errors.FETCH_MEMBERS_WITH_STAMPS', 'hr', 'Failed to fetch members with stamps')
             });
         }
     }

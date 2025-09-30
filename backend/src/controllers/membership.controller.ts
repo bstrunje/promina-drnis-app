@@ -116,6 +116,7 @@ const membershipController = {
   ): Promise<void> {
     try {
       const { memberId } = req.params;
+      const { forNextYear = false } = req.body; // Čitaj forNextYear parametar iz request body
       const performerId = req.user?.id;
       const performerType = req.user?.performer_type;
 
@@ -124,10 +125,59 @@ const membershipController = {
         return;
       }
 
-      await stampService.issueStampToMember(Number(memberId), performerId, false, performerType);
+      await stampService.issueStampToMember(Number(memberId), performerId, forNextYear, performerType);
       res.status(204).send();
     } catch (error) {
       handleControllerError(error, res);
+    }
+  },
+
+  async updateEndReason(req: Request, res: Response): Promise<void> {
+    try {
+      const { periodId } = req.params;
+      const { endReason } = req.body;
+      const { memberId } = req.params;
+      const performerId = req.user?.id;
+      const performerType = req.user?.performer_type;
+      
+      await membershipService.updateMembershipEndReason(
+        Number(memberId), 
+        Number(periodId), 
+        endReason,
+        performerId,
+        performerType
+      );
+      res.status(204).send();
+    } catch (error) {
+      handleControllerError(error, res);
+    }
+  },
+
+  async getMembershipHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { memberId } = req.params;
+      const history = await membershipService.getMembershipHistory(Number(memberId));
+      res.status(200).json(history);
+    } catch (error) {
+      handleControllerError(error, res);
+    }
+  },
+
+  async checkAutoTerminations(req: Request, res: Response): Promise<void> {
+    try {
+      console.log('🔧 [CONTROLLER] Ručno pokretanje provjere isteklih članstava...');
+      await membershipService.checkAutoTerminations();
+      res.status(200).json({ 
+        success: true, 
+        message: 'Provjera isteklih članstava uspješno pokrenuta' 
+      });
+    } catch (error) {
+      console.error('Greška prilikom provjere isteklih članstava:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Greška prilikom provjere isteklih članstava',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   },
 };

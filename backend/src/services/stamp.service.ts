@@ -6,6 +6,7 @@ import { DatabaseError } from "../utils/errors.js";
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { PerformerType } from '@prisma/client';
 import prisma from '../utils/prisma.js';
+import { tOrDefault } from '../utils/i18n.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -19,7 +20,7 @@ const stampService = {
         remaining: item.initial_count - item.issued_count,
       }));
     } catch (_error) {
-      throw new DatabaseError("Error fetching stamp inventory");
+      throw new DatabaseError(tOrDefault('stamp.errors.FETCH_INVENTORY', 'hr', 'Error fetching stamp inventory'));
     }
   },
 
@@ -31,14 +32,14 @@ const stampService = {
         remaining: item.initial_count - item.issued_count,
       }));
     } catch (_error) {
-      throw new DatabaseError(`Error fetching stamp inventory for year ${year}`);
+      throw new DatabaseError(tOrDefault('stamp.errors.FETCH_INVENTORY_YEAR', 'hr', 'Error fetching stamp inventory for year {{year}}', { year: year.toString() }));
     }
   },
 
   async updateInitialCount(type: string, count: number, year: number) {
     try {
       if (count < 0) {
-        throw new Error("Initial count cannot be negative");
+        throw new Error(tOrDefault('stamp.errors.NEGATIVE_COUNT', 'hr', 'Initial count cannot be negative'));
       }
 
       const inventory = await stampRepository.getInventoryByYear(year);
@@ -47,13 +48,13 @@ const stampService = {
       );
 
       if (currentInventory && count < currentInventory.issued_count) {
-        throw new Error("New count cannot be less than already issued stamps");
+        throw new Error(tOrDefault('stamp.errors.COUNT_BELOW_ISSUED', 'hr', 'New count cannot be less than already issued stamps'));
       }
 
       await stampRepository.updateInventory(type, count, year);
     } catch (error) {
       throw new DatabaseError(
-        "Error updating stamp inventory: " +
+        tOrDefault('stamp.errors.UPDATE_INVENTORY', 'hr', 'Error updating stamp inventory') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -81,7 +82,7 @@ const stampService = {
     try {
       // Validate stamp type
       if (!type) {
-        throw new Error("Stamp type is required");
+        throw new Error(tOrDefault('stamp.errors.STAMP_TYPE_REQUIRED', 'hr', 'Stamp type is required'));
       }
 
       // Determine which year stamp to use
@@ -95,24 +96,24 @@ const stampService = {
       );
 
       if (!stampInventory) {
-        throw new Error(`No inventory found for ${type} stamps for year ${stampYear}`);
+        throw new Error(tOrDefault('stamp.errors.NO_INVENTORY', 'hr', 'No inventory found for {{type}} stamps for year {{year}}', { type, year: stampYear.toString() }));
       }
 
       // Check if there are enough stamps
       if (stampInventory.initial_count <= stampInventory.issued_count) {
-        throw new Error(`No ${type} stamps available in inventory for year ${stampYear}`);
+        throw new Error(tOrDefault('stamp.errors.NO_STAMPS_AVAILABLE', 'hr', 'No {{type}} stamps available in inventory for year {{year}}', { type, year: stampYear.toString() }));
       }
 
       // Issue stamp and update inventory - za odgovarajuću godinu
       await stampRepository.incrementIssuedCount(type, stampYear);
       
       // We'll handle the membership details update in the controller
-      if (isDev) console.log(`Stamp issued successfully for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
+      if (isDev) console.log(tOrDefault('stamp.success.STAMP_ISSUED', 'hr', 'Stamp issued successfully for member {{memberId}}, type: {{type}}, for year: {{year}}', { memberId: memberId.toString(), type, year: stampYear.toString() }));
 
       return { success: true };
     } catch (error) {
       throw new DatabaseError(
-        "Error issuing stamp: " +
+        tOrDefault('stamp.errors.ISSUE_STAMP', 'hr', 'Error issuing stamp') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -129,13 +130,13 @@ const stampService = {
       
       // We'll handle the membership details update in the controller
       if (memberId) {
-        if (isDev) console.log(`Stamp returned for member: ${memberId}, type: ${type}, for year: ${stampYear}`);
+        if (isDev) console.log(tOrDefault('stamp.success.STAMP_RETURNED', 'hr', 'Stamp returned for member {{memberId}}, type: {{type}}, for year: {{year}}', { memberId: memberId.toString(), type, year: stampYear.toString() }));
       }
 
       return { success: true };
     } catch (error) {
       throw new DatabaseError(
-        "Error returning stamp: " +
+        tOrDefault('stamp.errors.RETURN_STAMP', 'hr', 'Error returning stamp') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -145,7 +146,7 @@ const stampService = {
     try {
       const member = await memberRepository.findById(memberId);
       if (!member) {
-        throw new Error("Member not found");
+        throw new Error(tOrDefault('stamp.errors.MEMBER_NOT_FOUND', 'hr', 'Member not found'));
       }
 
       const stampType = this.getStampTypeFromLifeStatus(member.life_status);
@@ -175,7 +176,7 @@ const stampService = {
       );
     } catch (error) {
       throw new DatabaseError(
-        "Error issuing stamp to member: " +
+        tOrDefault('stamp.errors.ISSUE_STAMP_TO_MEMBER', 'hr', 'Error issuing stamp to member') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -185,9 +186,9 @@ const stampService = {
     try {
       return await stampRepository.getStampHistory();
     } catch (error) {
-      console.error("Error fetching stamp history:", error);
+      console.error(tOrDefault('stamp.errors.FETCH_HISTORY', 'hr', 'Error fetching stamp history'), error);
       throw new DatabaseError(
-        "Error fetching stamp history: " +
+        tOrDefault('stamp.errors.FETCH_HISTORY', 'hr', 'Error fetching stamp history') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -197,9 +198,9 @@ const stampService = {
     try {
       return await stampRepository.getStampHistoryByYear(year);
     } catch (error) {
-      console.error(`Error fetching stamp history for year ${year}:`, error);
+      console.error(tOrDefault('stamp.errors.FETCH_HISTORY_YEAR', 'hr', 'Error fetching stamp history for year {{year}}', { year: year.toString() }), error);
       throw new DatabaseError(
-        `Error fetching stamp history for year ${year}: ` +
+        tOrDefault('stamp.errors.FETCH_HISTORY_YEAR', 'hr', 'Error fetching stamp history for year {{year}}', { year: year.toString() }) + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -215,19 +216,19 @@ const stampService = {
       if (!force) {
         const existingHistory = await stampRepository.getStampHistoryByYear(year);
         if (existingHistory.length > 0) {
-          throw new Error(`Stamp inventory for year ${year} has already been archived`);
+          throw new Error(tOrDefault('stamp.errors.ALREADY_ARCHIVED', 'hr', 'Stamp inventory for year {{year}} has already been archived', { year: year.toString() }));
         }
       }
 
       await stampRepository.archiveStampInventory(year, memberId, notes);
       return { 
         success: true, 
-        message: `Successfully archived stamp inventory for year ${year}` 
+        message: tOrDefault('stamp.success.INVENTORY_ARCHIVED', 'hr', 'Successfully archived stamp inventory for year {{year}}', { year: year.toString() })
       };
     } catch (error) {
-      console.error("Error during stamp inventory archiving:", error);
+      console.error(tOrDefault('stamp.errors.ARCHIVE_INVENTORY', 'hr', 'Error archiving stamp inventory'), error);
       throw new DatabaseError(
-        "Error archiving stamp inventory: " +
+        tOrDefault('stamp.errors.ARCHIVE_INVENTORY', 'hr', 'Error archiving stamp inventory') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -239,9 +240,9 @@ const stampService = {
       if (isDev) console.warn("archiveAndResetInventory is deprecated, use archiveStampInventory instead");
       return await this.archiveStampInventory(year, memberId, notes);
     } catch (error) {
-      console.error("Error during stamp inventory reset:", error);
+      console.error(tOrDefault('stamp.errors.RESET_INVENTORY', 'hr', 'Error resetting stamp inventory'), error);
       throw new DatabaseError(
-        "Error resetting stamp inventory: " +
+        tOrDefault('stamp.errors.RESET_INVENTORY', 'hr', 'Error resetting stamp inventory') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }
@@ -258,7 +259,7 @@ const stampService = {
 
       const targetLifeStatus = lifeStatusMap[stampType];
       if (!targetLifeStatus) {
-        throw new Error(`Invalid stamp type: ${stampType}`);
+        throw new Error(tOrDefault('stamp.errors.INVALID_STAMP_TYPE', 'hr', 'Invalid stamp type: {{type}}', { type: stampType }));
       }
 
       // Dohvati članove s izdanim markicama za određeni tip i godinu
@@ -301,7 +302,7 @@ const stampService = {
 
     } catch (error) {
       throw new DatabaseError(
-        "Error fetching members with stamps: " +
+        tOrDefault('stamp.errors.FETCH_MEMBERS_WITH_STAMPS', 'hr', 'Error fetching members with stamps') + ': ' +
           (error instanceof Error ? error.message : "Unknown error")
       );
     }

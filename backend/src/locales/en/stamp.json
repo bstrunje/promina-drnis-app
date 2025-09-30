@@ -1,0 +1,41 @@
+{
+  "errors": {
+    "FETCH_INVENTORY": "Error fetching stamp inventory",
+    "FETCH_INVENTORY_YEAR": "Error fetching stamp inventory for year {{year}}",
+    "INVALID_YEAR": "Invalid year parameter",
+    "YEAR_REQUIRED": "Valid year parameter is required",
+    "NEGATIVE_COUNT": "Initial count cannot be negative",
+    "COUNT_BELOW_ISSUED": "New count cannot be less than already issued stamps",
+    "UPDATE_INVENTORY": "Error updating stamp inventory",
+    "ALL_VALUES_NUMBERS": "All inventory values must be numbers",
+    "VALUES_NEGATIVE": "Inventory values cannot be negative",
+    "STAMP_TYPE_REQUIRED": "Stamp type is required",
+    "NO_INVENTORY": "No inventory found for {{type}} stamps for year {{year}}",
+    "NO_STAMPS_AVAILABLE": "No {{type}} stamps available in inventory for year {{year}}",
+    "ISSUE_STAMP": "Error issuing stamp",
+    "RETURN_STAMP": "Error returning stamp",
+    "MEMBER_NOT_FOUND": "Member not found",
+    "ISSUE_STAMP_TO_MEMBER": "Error issuing stamp to member",
+    "FETCH_HISTORY": "Error fetching stamp history",
+    "FETCH_HISTORY_YEAR": "Error fetching stamp history for year {{year}}",
+    "ALREADY_ARCHIVED": "Stamp inventory for year {{year}} has already been archived",
+    "ARCHIVE_INVENTORY": "Error archiving stamp inventory",
+    "RESET_INVENTORY": "Error resetting stamp inventory",
+    "INVALID_STAMP_TYPE": "Invalid stamp type: {{type}}",
+    "FETCH_MEMBERS_WITH_STAMPS": "Error fetching members with stamps"
+  },
+  "success": {
+    "INVENTORY_UPDATED": "Inventory for year {{year}} updated successfully",
+    "INVENTORY_ARCHIVED": "Successfully archived stamp inventory for year {{year}}",
+    "STAMP_ISSUED": "Stamp issued successfully for member {{memberId}}, type: {{type}}, for year: {{year}}",
+    "STAMP_RETURNED": "Stamp returned for member {{memberId}}, type: {{type}}, for year: {{year}}"
+  },
+  "warnings": {
+    "RESET_DEPRECATED": "Inventory successfully archived. Reset functionality is deprecated, please use /archive-year endpoint instead."
+  },
+  "stampTypes": {
+    "employed": "employed/unemployed",
+    "student": "child/pupil/student",
+    "pensioner": "pensioner"
+  }
+}
