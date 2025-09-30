@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { setMockDate, resetMockDate } from '../../src/utils/dateUtils';
 
 const TimeTravel: React.FC = () => {
   const [date, setDate] = useState<string>('');
@@ -11,8 +12,13 @@ const TimeTravel: React.FC = () => {
       return;
     }
     try {
-      const response = await axios.post<{ fakeTime: string }>('/api/dev/set-date', { date });
-      setMessage(`Vrijeme uspješno postavljeno na: ${response.data.fakeTime}`);
+      const response = await axios.post<{ message: string }>('/api/dev/set-date', { date });
+      
+      // Postavi mock datum i na frontendu
+      const mockDateObj = new Date(date);
+      setMockDate(mockDateObj);
+      
+      setMessage(response.data.message);
     } catch (error) {
       console.error('Greška prilikom postavljanja datuma:', error);
       setMessage('Greška prilikom postavljanja datuma.');
@@ -22,6 +28,10 @@ const TimeTravel: React.FC = () => {
   const handleResetDate = async () => {
     try {
       await axios.post('/api/dev/reset-date');
+      
+      // Resetiraj mock datum i na frontendu
+      resetMockDate();
+      
       setMessage('Vrijeme uspješno resetirano na stvarno vrijeme.');
       setDate('');
     } catch (error) {

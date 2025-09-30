@@ -95,6 +95,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   // Ako je plaćena za sljedeću godinu, također se smatra aktivnom
   const [isFeeCurrent, setIsFeeCurrent] = useState(initialIsFeeCurrent);
 
+  // Ažuriraj lokalni state kada se prop promijeni
+  useEffect(() => {
+    setIsFeeCurrent(initialIsFeeCurrent);
+  }, [initialIsFeeCurrent]);
+
   // States for membership history editing
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [editedPeriods, setEditedPeriods] = useState<MembershipPeriod[]>([]);
@@ -104,17 +109,16 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const hasAdminPrivileges = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canEdit = hasAdminPrivileges;
 
+  // Debug log za admin privilegije (uklonjen jer se previše ponavlja)
+  // console.log('🔧 [DEBUG] User role:', user?.role, 'hasAdminPrivileges:', hasAdminPrivileges);
+
+
   useEffect(() => {
     if (membershipHistory?.periods) {
       setEditedPeriods(membershipHistory.periods);
     }
   }, [membershipHistory]);
 
-  useEffect(() => {
-    // Koristi novu funkciju determineFeeStatus za određivanje statusa plaćanja
-    const feeStatus = determineFeeStatus(member);
-    setIsFeeCurrent(feeStatus === 'current');
-  }, [member]);
 
   const validatePaymentDate = useCallback((dateString: string): boolean => {
     if (!dateString) {
@@ -239,7 +243,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       const parsedDate = parseISO(paymentDate);
       parsedDate.setHours(12, 0, 0, 0); // Standardize to noon UTC
 
-      const currentYear = new Date().getFullYear();
+      const currentYear = getCurrentDate().getFullYear();
       const paymentMonth = getMonth(parsedDate);
       
       // Determine if this is a renewal payment in November/December
@@ -521,8 +525,49 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               <div className="border-t pt-4">
                 <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
                 <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
-                  <p>{t('feeSection.membershipCardManagementInfo')}</p>
+                  {t('feeSection.membershipCardManagementInfo')}
                 </div>
+              </div>
+            )}
+
+            {/* Debug button za testiranje auto-terminations - samo u development modu */}
+            {hasAdminPrivileges && import.meta.env.DEV && (
+              <div className="border-t pt-4">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const mockDateString = localStorage.getItem('app_mock_date');
+                      const requestBody = mockDateString ? { mockDate: mockDateString } : {};
+                      
+                      const response = await fetch('/api/members/check-auto-terminations', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify(requestBody)
+                      });
+                      
+                      const result = await response.json();
+                      toast({
+                        title: response.ok ? 'Uspjeh' : 'Greška',
+                        description: result.message || 'Provjera završena',
+                        variant: response.ok ? 'default' : 'destructive'
+                      });
+                      
+                      if (response.ok) {
+                        window.location.reload();
+                      }
+                    } catch (error) {
+                      console.error('Greška:', error);
+                    }
+                  }}
+                  variant="outline"
+                  className="bg-blue-50 border-blue-200 text-blue-700"
+                >
+                  Provjeri istekla članstva (Mock: {localStorage.getItem('app_mock_date')?.substring(0, 10)})
+                </Button>
               </div>
             )}
 

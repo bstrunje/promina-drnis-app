@@ -8,6 +8,42 @@ import { TIME_ZONE_CACHE_KEY } from '@/context/timeZone-core';
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
 let currentTimeZone = 'Europe/Zagreb'; // Zadana vrijednost
 
+// Mock datum za testiranje (frontend state)
+let mockDate: Date | null = null;
+
+// Ključ za localStorage
+const MOCK_DATE_KEY = 'app_mock_date';
+
+// Učitaj mock datum iz localStorage pri inicijalizaciji
+if (typeof window !== 'undefined') {
+  try {
+    const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
+    if (storedMockDate) {
+      mockDate = new Date(storedMockDate);
+      console.log('🔄 Mock datum učitan iz localStorage:', mockDate.toISOString());
+    }
+  } catch (error) {
+    console.warn('Greška pri učitavanju mock datuma iz localStorage:', error);
+  }
+  
+  // Slušaj promjene u localStorage između tabova
+  window.addEventListener('storage', (event) => {
+    if (event.key === MOCK_DATE_KEY) {
+      try {
+        if (event.newValue) {
+          mockDate = new Date(event.newValue);
+          console.log('🔄 Mock datum ažuriran iz drugog taba:', mockDate.toISOString());
+        } else {
+          mockDate = null;
+          console.log('🔄 Mock datum resetiran iz drugog taba');
+        }
+      } catch (error) {
+        console.warn('Greška pri ažuriranju mock datuma iz drugog taba:', error);
+      }
+    }
+  });
+}
+
 // Migracija starog ključa vremenske zone na neutralni naziv
 // Ako postoji stari ključ 'promina_app_timezone' i nema novog 'app_timezone', preseli vrijednost
 if (typeof window !== 'undefined') {
@@ -48,17 +84,58 @@ export function getCurrentTimeZone(): string {
 }
 
 /**
- * Vraća trenutni datum
+ * Postavlja mock datum za testiranje
+ * @param date Mock datum ili null za resetiranje
  */
-export function getCurrentDate(): Date {
-  return new Date();
+export function setMockDate(date: Date | null): void {
+  mockDate = date;
+  
+  // Spremi u localStorage da se dijeli između tabova
+  if (typeof window !== 'undefined') {
+    try {
+      if (date) {
+        localStorage.setItem(MOCK_DATE_KEY, date.toISOString());
+      } else {
+        localStorage.removeItem(MOCK_DATE_KEY);
+      }
+    } catch (error) {
+      console.warn('Greška pri spremanju mock datuma u localStorage:', error);
+    }
+  }
+  
+  console.log('🔧 Frontend mock datum postavljen na:', date ? date.toISOString() : 'null');
 }
 
 /**
- * Vraća trenutnu godinu (npr. 2025)
+ * Resetira mock datum na stvarni datum
+ */
+export function resetMockDate(): void {
+  mockDate = null;
+  
+  // Ukloni iz localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(MOCK_DATE_KEY);
+    } catch (error) {
+      console.warn('Greška pri uklanjanju mock datuma iz localStorage:', error);
+    }
+  }
+  
+  console.log('🔧 Frontend mock datum resetiran');
+}
+
+/**
+ * Vraća trenutni datum (ili mock datum ako je postavljen)
+ */
+export function getCurrentDate(): Date {
+  return mockDate ?? new Date();
+}
+
+/**
+ * Vraća trenutnu godinu (npr. 2025) (ili godinu iz mock datuma ako je postavljen)
  */
 export function getCurrentYear(): number {
-  return new Date().getFullYear();
+  return getCurrentDate().getFullYear();
 }
 
 /**

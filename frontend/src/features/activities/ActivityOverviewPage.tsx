@@ -56,7 +56,15 @@ const ActivityOverviewPage: React.FC = () => {
     void fetchData();
   }, [memberId, t]);
 
+  // Prikaži SVE godine (bez filtriranja) - filter zadnjih 2 godina se odnosi samo na activity_hours u profilu
   const sortedStats = annualStats.sort((a, b) => b.year - a.year);
+  
+  // Izračunaj ukupne sate kroz CIJELU povijest (sve godine)
+  // Osiguraj da se total_hours konvertira u broj (može biti Decimal iz Prisma)
+  const totalHoursThroughHistory = annualStats.reduce((sum, stat) => {
+    const hours = typeof stat.total_hours === 'number' ? stat.total_hours : Number(stat.total_hours);
+    return sum + hours;
+  }, 0);
 
   if (loading) {
     return <div className="p-6"><div className="h-16 bg-gray-200 animate-pulse rounded-md w-1/2 mx-auto"></div></div>;
@@ -81,7 +89,7 @@ const ActivityOverviewPage: React.FC = () => {
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">{t('activityOverview.totalHours')}</p>
-              <p className="text-xl font-bold text-gray-800">{formatHoursToHHMM((member?.total_hours ?? 0) / 60)}</p>
+              <p className="text-xl font-bold text-gray-800">{formatHoursToHHMM(totalHoursThroughHistory)}</p>
             </div>
           </div>
         </div>

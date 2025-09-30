@@ -11,7 +11,8 @@ interface MemberActivityStatusProps {
 const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) => {
   const { t } = useTranslation('profile');
   // Koristimo activity_hours za status aktivnosti (prošla + tekuća godina)
-  const activityMinutes = member.activity_hours ?? 0;
+  // Ako je članstvo završeno (inactive), prikaži 0 sati
+  const activityMinutes = member.status === 'inactive' ? 0 : (member.activity_hours ?? 0);
   const activityHours = activityMinutes / 60;
 
   const getActivityStatus = (hours: number) => {

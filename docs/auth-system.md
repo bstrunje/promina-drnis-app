@@ -655,10 +655,11 @@ export function AdminPanel() {
 
 ## Buduća poboljšanja
 
-Za poboljšanje sustava autentifikacije i autorizacije razmotrite:
+Za dodatno poboljšanje sustava autentifikacije i autorizacije razmotrite:
 
-1. **Implementacija refresh tokena** - Za duže sesije bez ponovnih prijava
+1. ~~**Implementacija refresh tokena**~~ - ✅ **IMPLEMENTIRANO** (vidi sekciju "JWT Refresh Token sustav")
 2. **Dvofaktorska autentifikacija** - Za povećanu sigurnost
-3. **Detaljniji sustav dozvola** - Za finije upravljanje pristupom
-4. **Zapisivanje sigurnosnih događaja** - Za bolju reviziju
+3. **Detaljniji sustav dozvola** - Za finije upravljanje pristupom (fine-grained permissions)
+4. **Zapisivanje sigurnosnih događaja** - Za bolju reviziju (audit log za sve autentikacijske događaje)
 5. **Naprednije strategije za lozinke** - Provjera curenja lozinki, pravila kompleksnosti
+6. **Dinamička detekcija jezika** - Iz HTTP headera (`Accept-Language`) za lokalizirane poruke
