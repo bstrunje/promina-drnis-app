@@ -98,7 +98,7 @@ export async function loginHandler(
       );
       return res.status(403).json({
         code: 'AUTH_MEMBERSHIP_INVALID',
-        message: tOrDefault('auth.errorsByCode.AUTH_MEMBERSHIP_INVALID', locale, 'Login not possible. Membership for the {year} year is not valid', { year: currentYear.toString() })
+        message: tOrDefault('auth.errorsByCode.AUTH_MEMBERSHIP_INVALID', locale, 'Login not possible. Membership for {{year}} year is not valid', { year: currentYear.toString() })
       });
     }
 
