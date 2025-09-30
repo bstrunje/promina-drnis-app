@@ -216,6 +216,70 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           </div>
         </div>
 
+        <div className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Auto-Termination Date (for unpaid memberships)
+          </label>
+          <div className="flex space-x-4">
+            <div>
+              <label
+                htmlFor="membershipTerminationDay"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Day
+              </label>
+              <input
+                type="number"
+                name="membershipTerminationDay"
+                className="mt-1 block w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="Day"
+                min="1"
+                max="31"
+                value={(settings.membershipTerminationDay ?? 1).toString()}
+                onChange={onChange}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="membershipTerminationMonth"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Month
+              </label>
+              <select
+                name="membershipTerminationMonth"
+                className="mt-1 block w-36 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                value={(settings.membershipTerminationMonth ?? 3).toString()}
+                onChange={onChange}
+              >
+                <option value={1}>January</option>
+                <option value={2}>February</option>
+                <option value={3}>March</option>
+                <option value={4}>April</option>
+                <option value={5}>May</option>
+                <option value={6}>June</option>
+                <option value={7}>July</option>
+                <option value={8}>August</option>
+                <option value={9}>September</option>
+                <option value={10}>October</option>
+                <option value={11}>November</option>
+                <option value={12}>December</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-2 space-y-2">
+            <p className="text-sm text-gray-500">
+              Sets the date when memberships are automatically terminated if not renewed.
+            </p>
+            <p className="text-sm text-red-600">
+              After this date, all memberships without payment for the current year will be automatically set to 'inactive' status.
+            </p>
+            <p className="text-sm text-blue-600">
+              Default: March 1st (recommended to allow members time to renew after the new year).
+            </p>
+          </div>
+        </div>
+
         {/* Dodana kontrola za vremensku zonu */}
         <div className="mt-5">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -325,6 +389,8 @@ const SystemManagerSettings: React.FC = () => {
     renewalStartMonth: 11, // Prosinac kao zadana vrijednost
     renewalStartDay: 31,
     timeZone: 'Europe/Zagreb', // Dodana zadana vremenska zona
+    membershipTerminationDay: 1, // Default 1. ožujak
+    membershipTerminationMonth: 3,
     updatedAt: getCurrentDate(),
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -366,10 +432,10 @@ const SystemManagerSettings: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'renewalStartDay') {
+    if (name === 'renewalStartDay' || name === 'membershipTerminationDay') {
       const numValue = parseInt(value);
       if (numValue < 1 || numValue > 31) {
-        setError('Renewal day must be between 1 and 31');
+        setError('Day must be between 1 and 31');
         return;
       }
       
@@ -390,7 +456,7 @@ const SystemManagerSettings: React.FC = () => {
         [name]: numValue
       }));
     }
-    else if (name === 'renewalStartMonth') {
+    else if (name === 'renewalStartMonth' || name === 'membershipTerminationMonth') {
       setSettings(prev => ({
         ...prev,
         [name]: parseInt(value)

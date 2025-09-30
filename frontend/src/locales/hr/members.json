@@ -93,6 +93,10 @@
         },
         "groups": {
             "allMembers": "Svi članovi"
+        },
+        "filters": {
+            "pendingNotice": "Prikazani su samo članovi na čekanju (pending status)",
+            "pendingDescription": "Ovi članovi čekaju dodjelu lozinke od strane administratora."
         }
     },
     "printList": "Ispiši listu",

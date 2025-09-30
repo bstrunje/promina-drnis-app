@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Filter,
   Printer,
+  Shield,
   UserPlus,
   Users
 } from "lucide-react";
@@ -117,7 +118,7 @@ export default function MemberList(): JSX.Element {
 
   // States for filtering and sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "paid" | "unpaid">("regular");
+  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "paid" | "unpaid" | "pending">("regular");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -133,9 +134,8 @@ export default function MemberList(): JSX.Element {
   // Sync filters with URL
   useEffect(() => {
     const filterFromUrl = searchParams.get('filter');
-    if (filterFromUrl === 'pending') {
-      setActiveFilter('regular'); // zadana vrijednost je 'regular'
-    } else if (
+    if (
+      filterFromUrl === 'pending' ||
       filterFromUrl === 'regular' ||
       filterFromUrl === 'all' ||
       filterFromUrl === 'active' ||
@@ -401,18 +401,17 @@ export default function MemberList(): JSX.Element {
                 {showFilters && (
                   <MemberListFilters
                     searchTerm={searchTerm}
-                    onSearchChange={(value: string) => setSearchTerm(value)}
+                    onSearchChange={setSearchTerm}
                     activeFilter={activeFilter}
-                    onActiveFilterChange={(value: string) => setActiveFilter(value as "regular" | "all" | "active" | "passive" | "paid" | "unpaid")}
+                    onActiveFilterChange={setActiveFilter}
                     ageFilter={ageFilter}
-                    onAgeFilterChange={(value: string) => setAgeFilter(value as "all" | "adults")}
+                    onAgeFilterChange={setAgeFilter}
                     sortCriteria={sortCriteria}
-                    onSortCriteriaChange={(value: string) => setSortCriteria(value as "name" | "hours")}
+                    onSortCriteriaChange={setSortCriteria}
                     sortOrder={sortOrder}
-                    onSortOrderChange={(value: string) => setSortOrder(value as "asc" | "desc")}
+                    onSortOrderChange={setSortOrder}
                     groupType={groupByType ? "true" : ""}
                     onGroupTypeChange={(value) => setGroupByType(!!value)}
-
                     onCloseFilters={() => setShowFilters(false)}
                   />
                 )}
@@ -423,6 +422,22 @@ export default function MemberList(): JSX.Element {
 
             {/* Ovdje je tablica s članovima */}
             <TabsContent value="list" className="flex-grow overflow-hidden flex flex-col">
+              {/* Obavijest o pending filteru */}
+              {activeFilter === 'pending' && (
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mx-4 mt-2">
+                  <div className="flex items-center">
+                    <Shield className="h-5 w-5 text-orange-400 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-orange-800">
+                        {t('memberList.filters.pendingNotice') || 'Prikazani su samo članovi na čekanju (pending status)'}
+                      </p>
+                      <p className="text-xs text-orange-700 mt-1">
+                        {t('memberList.filters.pendingDescription') || 'Ovi članovi čekaju dodjelu lozinke od strane administratora.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Skrolabilna tablica članova */}
               <div ref={printRef} className="overflow-auto flex-grow">
                 <MemberTable

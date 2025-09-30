@@ -17,6 +17,8 @@ interface SystemSettings {
     renewalStartMonth?: number | null;
     renewalStartDay?: number | null;
     timeZone?: string | null;
+    membershipTerminationDay?: number | null;
+    membershipTerminationMonth?: number | null;
     updatedAt: Date;
     updatedBy?: string | null;
 }
@@ -495,7 +497,9 @@ const systemManagerService = {
                     renewal_start_day, 
                     updated_at, 
                     updated_by,
-                    time_zone
+                    time_zone,
+                    membership_termination_day,
+                    membership_termination_month
                 FROM system_settings 
                 WHERE id = 'default'
             `;
@@ -511,6 +515,8 @@ const systemManagerService = {
                     renewalStartMonth: 11, // Prosinac
                     renewalStartDay: 1,
                     timeZone: 'Europe/Zagreb', // Zadana vremenska zona
+                    membershipTerminationDay: 1,
+                    membershipTerminationMonth: 3, // Ožujak
                     updatedAt: getCurrentDate()
                 };
             }
@@ -521,6 +527,8 @@ const systemManagerService = {
                 renewalStartMonth: settings.renewal_start_month,
                 renewalStartDay: settings.renewal_start_day,
                 timeZone: settings.time_zone || 'Europe/Zagreb', // Dodana vremenska zona
+                membershipTerminationDay: settings.membership_termination_day || 1,
+                membershipTerminationMonth: settings.membership_termination_month || 3,
                 updatedAt: settings.updated_at,
                 updatedBy: settings.updated_by
             };
@@ -536,6 +544,8 @@ const systemManagerService = {
         renewalStartMonth?: number | null;
         renewalStartDay?: number | null;
         timeZone?: string | null;
+        membershipTerminationDay?: number | null;
+        membershipTerminationMonth?: number | null;
     }, updatedBy: number): Promise<SystemSettings> { 
         try {
             // Provjeri postoje li postavke direktnim SQL upitom
@@ -547,7 +557,9 @@ const systemManagerService = {
                     renewal_start_day, 
                     updated_at, 
                     updated_by,
-                    time_zone
+                    time_zone,
+                    membership_termination_day,
+                    membership_termination_month
                 FROM system_settings 
                 WHERE id = ${data.id}
             `;
@@ -568,6 +580,8 @@ const systemManagerService = {
                         renewal_start_month, 
                         renewal_start_day, 
                         time_zone,
+                        membership_termination_day,
+                        membership_termination_month,
                         updated_at,
                         updated_by
                     ) VALUES (
@@ -576,6 +590,8 @@ const systemManagerService = {
                         ${data.renewalStartMonth || 11}, 
                         ${data.renewalStartDay || 1}, 
                         ${data.timeZone || 'Europe/Zagreb'},
+                        ${data.membershipTerminationDay || 1},
+                        ${data.membershipTerminationMonth || 3},
                         ${now},
                         ${updatedBy}
                     )
@@ -590,7 +606,9 @@ const systemManagerService = {
                         renewal_start_day, 
                         updated_at, 
                         updated_by,
-                        time_zone
+                        time_zone,
+                        membership_termination_day,
+                        membership_termination_month
                     FROM system_settings 
                     WHERE id = ${data.id}
                 `;
@@ -609,6 +627,8 @@ const systemManagerService = {
                     renewalStartMonth: newSettings.renewal_start_month,
                     renewalStartDay: newSettings.renewal_start_day,
                     timeZone: newSettings.time_zone,
+                    membershipTerminationDay: newSettings.membership_termination_day,
+                    membershipTerminationMonth: newSettings.membership_termination_month,
                     updatedAt: newSettings.updated_at
                 };
             } else {
@@ -627,11 +647,21 @@ const systemManagerService = {
                     
                 const timeZone = data.timeZone || existingSettings.time_zone || 'Europe/Zagreb';
                 
+                const membershipTerminationDay = data.membershipTerminationDay !== undefined
+                    ? data.membershipTerminationDay
+                    : existingSettings.membership_termination_day;
+                    
+                const membershipTerminationMonth = data.membershipTerminationMonth !== undefined
+                    ? data.membershipTerminationMonth
+                    : existingSettings.membership_termination_month;
+                
                 if (isDev) console.log('Ažuriranje postavki s parametrima:', {
                     cardNumberLength,
                     renewalStartMonth,
                     renewalStartDay,
                     timeZone,
+                    membershipTerminationDay,
+                    membershipTerminationMonth,
                     id: data.id
                 });
                 
@@ -647,6 +677,8 @@ const systemManagerService = {
                         renewalStartMonth: renewalStartMonth,
                         renewalStartDay: renewalStartDay,
                         timeZone: timeZone,
+                        membershipTerminationDay: membershipTerminationDay,
+                        membershipTerminationMonth: membershipTerminationMonth,
                         updatedAt: now,
                         updatedBy: updatedBy
                     }
@@ -660,6 +692,8 @@ const systemManagerService = {
                     renewalStartMonth: updatedSettings.renewalStartMonth,
                     renewalStartDay: updatedSettings.renewalStartDay,
                     timeZone: updatedSettings.timeZone,
+                    membershipTerminationDay: updatedSettings.membershipTerminationDay,
+                    membershipTerminationMonth: updatedSettings.membershipTerminationMonth,
                     updatedAt: updatedSettings.updatedAt,
                     updatedBy: updatedSettings.updatedBy?.toString() || null // Type conversion za TypeScript
                 };

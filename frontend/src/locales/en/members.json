@@ -90,6 +90,10 @@
         },
         "groups": {
             "allMembers": "All Members"
+        },
+        "filters": {
+            "pendingNotice": "Showing only members with pending status",
+            "pendingDescription": "These members are awaiting password assignment by an administrator."
         }
     },
     "printList": "Print List",

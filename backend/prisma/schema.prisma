@@ -145,13 +145,15 @@ model MemberSkill {
 }
 
 model SystemSettings {
-  id                String   @id @default("default")
-  cardNumberLength  Int?     @default(5) @map("card_number_length")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  renewalStartDay   Int?     @default(1) @map("renewal_start_day")
-  updatedBy         Int?     @map("updated_by")
-  renewalStartMonth Int?     @default(11) @map("renewal_start_month")
-  timeZone          String?  @default("Europe/Zagreb") @map("time_zone")
+  id                        String   @id @default("default")
+  cardNumberLength          Int?     @default(5) @map("card_number_length")
+  updatedAt                 DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  renewalStartDay           Int?     @default(1) @map("renewal_start_day")
+  updatedBy                 Int?     @map("updated_by")
+  renewalStartMonth         Int?     @default(11) @map("renewal_start_month")
+  timeZone                  String?  @default("Europe/Zagreb") @map("time_zone")
+  membershipTerminationDay  Int?     @default(1) @map("membership_termination_day")
+  membershipTerminationMonth Int?    @default(3) @map("membership_termination_month")
 
   @@map("system_settings")
 }

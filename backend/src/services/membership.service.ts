@@ -529,16 +529,21 @@ const membershipService = {
       console.log(`🔧 [AUTO-TERMINATION] Pokretanje provjere - currentDate: ${formatDate(currentDate)}, currentYear: ${currentYear}`);
 
       // Dohvati postavke sustava
-      const _settings = await prisma.systemSettings.findFirst({
+      const settings = await prisma.systemSettings.findFirst({
         where: { id: "default" },
       });
 
-      // Koristi postavke ili zadane vrijednosti
+      // Koristi postavke ili zadane vrijednosti (1. ožujak kao default)
+      const terminationDay = settings?.membershipTerminationDay ?? 1;
+      const terminationMonth = settings?.membershipTerminationMonth ?? 3;
 
+      // Definiramo rok za završetak članstva (konfigurabilan datum, default 1. ožujak)
+      // JavaScript Date: month je 0-based (0 = siječanj, 2 = ožujak)
+      const renewalDeadline = new Date(currentYear, terminationMonth - 1, terminationDay);
 
-      // Definiramo rok za obnovu članstva (1. ožujak tekuće godine)
-      const renewalDeadline = new Date(currentYear, 2, 1); // Mjesec 2 je ožujak
-
+      console.log(`🔧 [AUTO-TERMINATION] Postavke termination datuma:`);
+      console.log(`🔧 [AUTO-TERMINATION] - terminationDay: ${terminationDay}`);
+      console.log(`🔧 [AUTO-TERMINATION] - terminationMonth: ${terminationMonth}`);
       console.log(`🔧 [AUTO-TERMINATION] Usporedba datuma:`);
       console.log(`🔧 [AUTO-TERMINATION] - currentDate: ${formatDate(currentDate)} (${currentDate.getTime()})`);
       console.log(`🔧 [AUTO-TERMINATION] - currentYear: ${currentYear}`);

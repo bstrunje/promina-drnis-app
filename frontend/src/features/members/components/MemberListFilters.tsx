@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 // Definirani tipovi za bolju type safety
 type SortOrder = 'asc' | 'desc';
 type SortCriteria = 'name' | 'hours';
-type ActiveFilter = 'regular' | 'active' | 'passive' | 'paid' | 'unpaid' | 'all';
+type ActiveFilter = 'regular' | 'active' | 'passive' | 'paid' | 'unpaid' | 'all' | 'pending';
 type AgeFilter = 'all' | 'adults';
 
 export interface MemberListFiltersProps {
