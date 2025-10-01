@@ -1,17 +1,16 @@
-// controllers/systemManager.controller.ts
 import { Request, Response } from 'express';
-import systemManagerService from '../services/systemManager.service.js';
-import { JWT_SECRET } from '../config/jwt.config.js';
-import jwt from 'jsonwebtoken';
-// Privremeno bez preciznih tipova dok se ne uvedu završne definicije
-// import { SystemManager, SystemManagerLoginData, CreateSystemManagerDto, UpdateMemberPermissionsDto } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import systemManagerService from '../services/systemManager.service.js';
 import auditService from '../services/audit.service.js';
-import systemManagerRepository from '../repositories/systemManager.repository.js';
-import prisma from '../utils/prisma.js';
-import { PerformerType, SystemManager } from '@prisma/client';
 import cardNumberRepository from '../repositories/cardnumber.repository.js';
+import * as dutyService from '../services/duty.service.js';
+import prisma from '../utils/prisma.js';
+import systemManagerRepository from '../repositories/systemManager.repository.js';
+import { PerformerType } from '@prisma/client';
+import { SystemManager } from '@prisma/client';
 
+const JWT_SECRET = process.env.JWT_SECRET || '';
 const isDev = process.env.NODE_ENV === 'development';
 
 // Temporary type definition until a full solution is implemented
@@ -1147,6 +1146,79 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
     }
 }
 
-export { logoutHandler };
+// --- DUTY CALENDAR SETTINGS ---
+
+/**
+ * Dohvaća duty calendar settings (System Manager)
+ */
+async function getDutySettings(req: Request, res: Response): Promise<void> {
+    try {
+        const settings = await dutyService.getDutySettingsPublic();
+        res.json(settings);
+    } catch (error) {
+        console.error('Error fetching duty settings:', error);
+        res.status(500).json({ message: 'Error occurred while fetching duty settings' });
+    }
+}
+
+/**
+ * Ažurira duty calendar settings (System Manager)
+ */
+async function updateDutySettings(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const { dutyCalendarEnabled, dutyMaxParticipants, dutyAutoCreateEnabled } = req.body;
+        
+        const updateData: {
+            dutyCalendarEnabled?: boolean;
+            dutyMaxParticipants?: number;
+            dutyAutoCreateEnabled?: boolean;
+        } = {};
+        
+        if (dutyCalendarEnabled !== undefined) {
+            updateData.dutyCalendarEnabled = Boolean(dutyCalendarEnabled);
+        }
+        
+        if (dutyMaxParticipants !== undefined) {
+            const max = parseInt(dutyMaxParticipants, 10);
+            if (isNaN(max) || max < 1 || max > 10) {
+                res.status(400).json({ 
+                    message: 'Max participants must be between 1 and 10' 
+                });
+                return;
+            }
+            updateData.dutyMaxParticipants = max;
+        }
+        
+        if (dutyAutoCreateEnabled !== undefined) {
+            updateData.dutyAutoCreateEnabled = Boolean(dutyAutoCreateEnabled);
+        }
+        
+        const settings = await dutyService.updateDutySettings(updateData);
+        
+        // Audit log
+        await auditService.logAction(
+            'update',
+            req.user.id,
+            `Updated duty calendar settings: ${JSON.stringify(updateData)}`,
+            req,
+            'success'
+        );
+        
+        res.json({
+            message: 'Duty calendar settings updated successfully',
+            settings
+        });
+    } catch (error) {
+        console.error('Error updating duty settings:', error);
+        res.status(500).json({ message: 'Error occurred while updating duty settings' });
+    }
+}
+
+export { logoutHandler, getDutySettings, updateDutySettings };
 
 export default systemManagerController;

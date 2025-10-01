@@ -12,6 +12,7 @@ import profileEN from './locales/en/profile.json';
 import dashboardsEN from './locales/en/dashboards.json';
 import membersEN from './locales/en/members.json';
 import settingsEN from './locales/en/settings.json';
+import dutyEN from './locales/en/duty.json';
 
 // Import all namespace files for Croatian
 import commonHR from './locales/hr/common.json';
@@ -22,6 +23,7 @@ import profileHR from './locales/hr/profile.json';
 import dashboardsHR from './locales/hr/dashboards.json';
 import membersHR from './locales/hr/members.json';
 import settingsHR from './locales/hr/settings.json';
+import dutyHR from './locales/hr/duty.json';
 
 // Definicija resursa za prijevode sa višestrukim namespace-ima
 const resources = {
@@ -33,7 +35,8 @@ const resources = {
     profile: profileEN,
     dashboards: dashboardsEN,
     members: membersEN,
-    settings: settingsEN
+    settings: settingsEN,
+    duty: dutyEN
   },
   hr: {
     common: commonHR,
@@ -43,7 +46,8 @@ const resources = {
     profile: profileHR,
     dashboards: dashboardsHR,
     members: membersHR,
-    settings: settingsHR
+    settings: settingsHR,
+    duty: dutyHR
   }
 };
 
@@ -64,7 +68,7 @@ void i18n
     // Default namespace
     defaultNS: 'common',
     // Available namespaces
-    ns: ['common', 'auth', 'messages', 'activities', 'profile', 'dashboards', 'members', 'settings']
+    ns: ['common', 'auth', 'messages', 'activities', 'profile', 'dashboards', 'members', 'settings', 'duty']
   });
 
 export default i18n;

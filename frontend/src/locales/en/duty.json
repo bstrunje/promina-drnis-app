@@ -1,0 +1,51 @@
+{
+  "title": "Duty Calendar",
+  "subtitle": "Sign up for duty shifts based on availability",
+  "loading": "Loading...",
+  "errorLoadingCalendar": "Error loading duty calendar",
+  "calendarDisabled": "Duty calendar is currently unavailable. Contact System Manager.",
+  "successJoined": "Successfully joined duty shift!",
+  "errorJoining": "Error joining duty shift",
+  "retry": "Retry",
+  
+  "previousMonth": "Previous Month",
+  "nextMonth": "Next Month",
+  "today": "Today",
+  
+  "weekend": "Weekend",
+  "holiday": "Holiday",
+  "allDays": "All Days",
+  "partial": "Partially Full",
+  "full": "Full",
+  
+  "join": "Join",
+  "workday": "Workday",
+  "fullLabel": "Full",
+  
+  "confirmJoin": "Do you want to join the duty shift on {{date}}?",
+  "confirmJoinHoliday": "Do you want to join the duty shift - {{holiday}} ({{date}})?",
+  
+  "scheduleTitle": "Duty Schedule",
+  "scheduleDescription": "Duties follow seasonal schedules",
+  
+  "winter": "Winter Season",
+  "summer": "Summer Season",
+  "summerPeak": "Summer Peak",
+  
+  "months": "Months",
+  "daysLabel": "Days",
+  "hours": "Working Hours",
+  "duration": "Duration",
+  
+  "scheduleNote": "Duties are only available on weekends and holidays. In July and August, only Sundays.",
+  
+  "days": {
+    "pon": "Mon",
+    "uto": "Tue",
+    "sri": "Wed",
+    "čet": "Thu",
+    "pet": "Fri",
+    "sub": "Sat",
+    "ned": "Sun"
+  }
+}

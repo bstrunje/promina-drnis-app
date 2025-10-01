@@ -585,4 +585,185 @@ export const deleteMemberForSystemManager = async (memberId: number): Promise<{ 
   }
 };
 
+/**
+ * Dohvaća duty calendar settings (System Manager)
+ */
+export const getDutySettings = async (): Promise<{
+  dutyCalendarEnabled: boolean | null;
+  dutyMaxParticipants: number | null;
+  dutyAutoCreateEnabled: boolean | null;
+}> => {
+  try {
+    const response = await systemManagerApi.get<{
+      dutyCalendarEnabled: boolean | null;
+      dutyMaxParticipants: number | null;
+      dutyAutoCreateEnabled: boolean | null;
+    }>('/system-manager/duty-settings');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Ažurira duty calendar settings (System Manager)
+ */
+export const updateDutySettings = async (settings: {
+  dutyCalendarEnabled?: boolean;
+  dutyMaxParticipants?: number;
+  dutyAutoCreateEnabled?: boolean;
+}): Promise<{
+  id: string;
+  dutyCalendarEnabled: boolean | null;
+  dutyMaxParticipants: number | null;
+  dutyAutoCreateEnabled: boolean | null;
+}> => {
+  try {
+    const response = await systemManagerApi.put<{
+      id: string;
+      dutyCalendarEnabled: boolean | null;
+      dutyMaxParticipants: number | null;
+      dutyAutoCreateEnabled: boolean | null;
+    }>('/system-manager/duty-settings', settings);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+// --- HOLIDAYS MANAGEMENT ---
+
+export interface Holiday {
+  id: number;
+  date: string;
+  name: string;
+  is_recurring: boolean;
+  created_by?: number;
+  created_at: string;
+}
+
+/**
+ * Dohvaća sve praznike
+ */
+export const getAllHolidays = async (): Promise<Holiday[]> => {
+  try {
+    const response = await systemManagerApi.get<Holiday[]>('/system-manager/holidays');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Dohvaća praznike za određenu godinu
+ */
+export const getHolidaysForYear = async (year: number): Promise<Holiday[]> => {
+  try {
+    const response = await systemManagerApi.get<Holiday[]>(`/system-manager/holidays/${year}`);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Kreira novi praznik
+ */
+export const createHoliday = async (data: Omit<Holiday, 'id' | 'created_at'>): Promise<Holiday> => {
+  try {
+    const response = await systemManagerApi.post<Holiday>('/system-manager/holidays', data);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Ažurira postojeći praznik
+ */
+export const updateHoliday = async (id: number, data: Partial<Omit<Holiday, 'id' | 'created_at'>>): Promise<Holiday> => {
+  try {
+    const response = await systemManagerApi.put<Holiday>(`/system-manager/holidays/${id}`, data);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Briše praznik
+ */
+export const deleteHoliday = async (id: number): Promise<void> => {
+  try {
+    await systemManagerApi.delete(`/system-manager/holidays/${id}`);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Seeduje default hrvatske praznike za godinu
+ */
+export const seedDefaultHolidays = async (year: number): Promise<{
+  created: number;
+  skipped: number;
+  details: {
+    createdHolidays: string[];
+    skippedHolidays: string[];
+  };
+}> => {
+  try {
+    const response = await systemManagerApi.post<{
+      created: number;
+      skipped: number;
+      details: {
+        createdHolidays: string[];
+        skippedHolidays: string[];
+      };
+    }>('/system-manager/holidays/seed', { year });
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Briše sve praznike za godinu
+ */
+export const deleteHolidaysForYear = async (year: number): Promise<{ count: number; message?: string }> => {
+  try {
+    const response = await systemManagerApi.delete<{ count: number; message?: string }>(`/system-manager/holidays/year/${year}`);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
 export default systemManagerApi;

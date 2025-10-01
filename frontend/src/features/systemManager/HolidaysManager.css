@@ -1,0 +1,279 @@
+.holidays-manager {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.holidays-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.holidays-header h2 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.holidays-header p {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+/* Toolbar */
+.holidays-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.year-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.year-selector label {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.year-selector select {
+  padding: 8px 12px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-seed,
+.btn-add,
+.btn-delete-all {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.btn-seed {
+  background-color: #27ae60;
+  color: white;
+}
+
+.btn-seed:hover {
+  background-color: #229954;
+}
+
+.btn-add {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-add:hover {
+  background-color: #2980b9;
+}
+
+.btn-delete-all {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-delete-all:hover {
+  background-color: #c0392b;
+}
+
+/* Table */
+.holidays-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.holidays-table thead {
+  background-color: #34495e;
+  color: white;
+}
+
+.holidays-table th,
+.holidays-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.holidays-table th {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.holidays-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.holidays-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.btn-edit,
+.btn-delete {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-right: 8px;
+  transition: all 0.2s;
+}
+
+.btn-edit {
+  background-color: #f39c12;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #e67e22;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.form-group input[type="date"],
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.btn-cancel {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #7f8c8d;
+}
+
+.btn-save {
+  background-color: #27ae60;
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: #229954;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .holidays-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .toolbar-actions {
+    flex-direction: column;
+  }
+  
+  .holidays-table {
+    font-size: 0.85rem;
+  }
+  
+  .holidays-table th,
+  .holidays-table td {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    padding: 20px;
+  }
+}

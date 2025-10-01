@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
-import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle, Calendar } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/useUnreadMessages';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../src/components/LanguageToggle';
@@ -63,6 +63,11 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                   {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                 </span>
               )}
+            </Link>
+            {/* Duty Calendar - dostupan svim članovima */}
+            <Link to="/duty-calendar" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+              <Calendar size={20} className="inline sm:hidden" />
+              <span>{t('navigation.dutyCalendar')}</span>
             </Link>
             {/* Omogući svim članovima pristup listi članova */}
             <Link to="/members" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>

@@ -1,12 +1,13 @@
 // features/systemManager/pages/settings/SystemManagerSettings.tsx
 import React, { useState, useEffect } from 'react';
-import { Shield, RefreshCw, Save } from 'lucide-react';
+import { Shield, RefreshCw, Save, Calendar, Settings as SettingsIcon } from 'lucide-react';
 import axios from 'axios';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useTimeZone } from '../../../../context/useTimeZone'; // Premješten u dedicated hook datoteku radi Fast Refresh pravila
 import { SystemSettings } from '@shared/settings';
 import { getCurrentDate } from '../../../../utils/dateUtils';
 import systemManagerApi, { updateSystemSettings, getSystemSettings } from '../../utils/systemManagerApi';
+import { useNavigate } from 'react-router-dom';
 
 interface SystemSettingsFormProps {
   settings: SystemSettings;
@@ -379,7 +380,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 };
 
 const SystemManagerSettings: React.FC = () => {
-  
+  const navigate = useNavigate();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   const [settings, setSettings] = useState<SystemSettings>({
     id: "default",
@@ -546,6 +547,43 @@ const SystemManagerSettings: React.FC = () => {
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg text-white p-6 mb-6">
           <h1 className="text-2xl font-bold mb-2">System Settings</h1>
           <p className="opacity-90">System parameter configuration</p>
+        </div>
+
+        {/* Quick Links to Advanced Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => navigate('/system-manager/holidays')}
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+          >
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Holidays Management</h3>
+                <p className="text-sm text-gray-600">
+                  Manage public holidays that affect duty scheduling
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/system-manager/duty-settings')}
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+          >
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                <SettingsIcon className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Duty Calendar Settings</h3>
+                <p className="text-sm text-gray-600">
+                  Configure duty schedule parameters and availability
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
 
         {error && (

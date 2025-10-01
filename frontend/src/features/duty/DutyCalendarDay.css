@@ -1,0 +1,155 @@
+.duty-calendar-day {
+  min-height: 120px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  padding: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s;
+  background-color: #ecf0f1;
+}
+
+/* Stanja dana */
+.duty-calendar-day.not-available {
+  background-color: #f5f5f5;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.duty-calendar-day.weekend {
+  background-color: #d5f4e6;
+}
+
+.duty-calendar-day.holiday {
+  background-color: #fadbd8;
+  border-color: #e74c3c;
+}
+
+.duty-calendar-day.available {
+  background-color: #d5f4e6;
+  border: 2px solid #27ae60;
+}
+
+.duty-calendar-day.partial {
+  background-color: #fef5e7;
+  border: 2px solid #f39c12;
+}
+
+.duty-calendar-day.full {
+  background-color: #d1f2eb;
+  border: 2px solid #1abc9c;
+}
+
+.duty-calendar-day.clickable {
+  cursor: pointer;
+}
+
+.duty-calendar-day.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Broj dana */
+.day-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+/* Badge-ovi */
+.holiday-badge,
+.weekend-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 1.2rem;
+}
+
+/* Sudionici */
+.participants-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.participants-count {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #34495e;
+  text-align: center;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.participant-name {
+  font-size: 0.75rem;
+  color: #2c3e50;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Button */
+.join-button {
+  width: 100%;
+  padding: 8px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: auto;
+  transition: all 0.2s;
+}
+
+.join-button:hover {
+  background-color: #229954;
+  transform: scale(1.05);
+}
+
+/* Labele */
+.not-available-label,
+.full-label {
+  font-size: 0.7rem;
+  color: #7f8c8d;
+  text-align: center;
+  margin-top: auto;
+  font-style: italic;
+}
+
+.full-label {
+  color: #1abc9c;
+  font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .duty-calendar-day {
+    min-height: 80px;
+    padding: 5px;
+  }
+  
+  .day-number {
+    font-size: 1rem;
+  }
+  
+  .participant-name {
+    font-size: 0.65rem;
+  }
+  
+  .join-button {
+    padding: 5px;
+    font-size: 0.8rem;
+  }
+}

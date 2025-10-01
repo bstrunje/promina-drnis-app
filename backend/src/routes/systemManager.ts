@@ -4,8 +4,11 @@ import systemManagerController, {
   changePassword,
   changeUsername,
   refreshToken,
-  logoutHandler
+  logoutHandler,
+  getDutySettings,
+  updateDutySettings
 } from '../controllers/systemManager.controller.js';
+import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -64,5 +67,22 @@ router.get('/me', systemManagerController.getCurrentSystemManager);
 router.get('/system-health', systemManagerController.getSystemHealth);
 router.post('/system-backup', systemManagerController.createSystemBackup);
 router.post('/system-restore', systemManagerController.restoreSystemBackup);
+
+// --- RUTE ZA UPRAVLJANJE PRAZNICIMA (Holidays Management) ---
+router.get('/holidays', holidayController.getAllHolidays);
+router.get('/holidays/:year', holidayController.getHolidaysForYear);
+router.post('/holidays', holidayController.createHoliday);
+router.put('/holidays/:id', holidayController.updateHoliday);
+router.delete('/holidays/:id', holidayController.deleteHoliday);
+
+// Seed default hrvatski praznici za godinu
+router.post('/holidays/seed', holidayController.seedDefaultHolidays);
+
+// Brisanje svih praznika za godinu
+router.delete('/holidays/year/:year', holidayController.deleteHolidaysForYear);
+
+// --- DUTY CALENDAR SETTINGS ---
+router.get('/duty-settings', getDutySettings);
+router.put('/duty-settings', updateDutySettings);
 
 export default router;

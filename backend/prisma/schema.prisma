@@ -154,6 +154,9 @@ model SystemSettings {
   timeZone                  String?  @default("Europe/Zagreb") @map("time_zone")
   membershipTerminationDay  Int?     @default(1) @map("membership_termination_day")
   membershipTerminationMonth Int?    @default(3) @map("membership_termination_month")
+  dutyCalendarEnabled       Boolean? @default(false) @map("duty_calendar_enabled")
+  dutyMaxParticipants       Int?     @default(2) @map("duty_max_participants")
+  dutyAutoCreateEnabled     Boolean? @default(true) @map("duty_auto_create_enabled")
 
   @@map("system_settings")
 }
@@ -419,4 +422,16 @@ enum ActivityStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+model Holiday {
+  id           Int      @id @default(autoincrement())
+  date         DateTime @db.Date
+  name         String   @db.VarChar(100)
+  is_recurring Boolean  @default(false)
+  created_by   Int?
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([date])
+  @@map("holidays")
 }

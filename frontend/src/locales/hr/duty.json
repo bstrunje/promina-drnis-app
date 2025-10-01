@@ -1,0 +1,51 @@
+{
+  "title": "Kalendar Dežurstava",
+  "subtitle": "Prijavi se na dežurstva po dostupnosti",
+  "loading": "Učitavanje...",
+  "errorLoadingCalendar": "Greška pri učitavanju kalendara dežurstava",
+  "calendarDisabled": "Kalendar dežurstava trenutno nije dostupan. Kontaktirajte System Managera.",
+  "successJoined": "Uspješno ste prijavljeni na dežurstvo!",
+  "errorJoining": "Greška pri prijavi na dežurstvo",
+  "retry": "Pokušaj ponovno",
+  
+  "previousMonth": "Prethodni mjesec",
+  "nextMonth": "Sljedeći mjesec",
+  "today": "Danas",
+  
+  "weekend": "Vikend",
+  "holiday": "Praznik",
+  "allDays": "Svi dani",
+  "partial": "Djelomično popunjeno",
+  "full": "Popunjeno",
+  
+  "join": "Prijavi se",
+  "workday": "Radni dan",
+  "fullLabel": "Popunjeno",
+  
+  "confirmJoin": "Želite li se prijaviti na dežurstvo {{date}}?",
+  "confirmJoinHoliday": "Želite li se prijaviti na dežurstvo - {{holiday}} ({{date}})?",
+  
+  "scheduleTitle": "Raspored Dežurstava",
+  "scheduleDescription": "Dežurstva se odvijaju prema sezonskom rasporedu",
+  
+  "winter": "Zimska Sezona",
+  "summer": "Ljetna Sezona",
+  "summerPeak": "Vrhunac Ljeta",
+  
+  "months": "Mjeseci",
+  "daysLabel": "Dani",
+  "hours": "Radno vrijeme",
+  "duration": "Trajanje",
+  
+  "scheduleNote": "Dežurstva su moguća samo vikendom i praznicima. U srpnju i kolovozu samo nedjeljom.",
+  
+  "days": {
+    "pon": "Pon",
+    "uto": "Uto",
+    "sri": "Sri",
+    "čet": "Čet",
+    "pet": "Pet",
+    "sub": "Sub",
+    "ned": "Ned"
+  }
+}

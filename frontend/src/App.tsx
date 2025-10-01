@@ -34,6 +34,7 @@ const AuditLogsPage = lazy(() => import('./features/audit/AuditLogsPage'));
 const MessageList = lazy(() => import('./features/messages/MessageList'));
 const Settings = lazy(() => import('./features/settings/Settings'));
 const SystemManagerRoutes = lazy(() => import('./features/systemManager/SystemManagerRoutes'));
+const DutyCalendar = lazy(() => import('./features/duty/DutyCalendar'));
 
 function AppContent() {
   const { user, logout } = useAuth();
@@ -102,6 +103,9 @@ function AppContent() {
           {/* Omogućavanje pristupa listi članova svim korisnicima, ne samo adminu i superuser-u */}
           <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />
           <Route path="/members/:id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
+          
+          {/* Duty Calendar - dostupno svim prijavljenim članovima */}
+          <Route path="/duty-calendar" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><DutyCalendar /></Suspense>} />
           
           {/* Dashboard rute za različite uloge korisnika */}
           {user && <Route path="/member/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDashboard member={user} /></Suspense>} />}

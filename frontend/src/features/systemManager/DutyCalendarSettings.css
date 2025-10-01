@@ -1,0 +1,264 @@
+.duty-calendar-settings {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.settings-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.settings-header h2 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.settings-header p {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+/* Settings Panel */
+.settings-panel {
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  flex: 1;
+  padding-right: 30px;
+}
+
+.setting-info h3 {
+  font-size: 1.3rem;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-enabled {
+  color: #27ae60;
+}
+
+.status-disabled {
+  color: #e74c3c;
+}
+
+.setting-info p {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 30px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #27ae60;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(30px);
+}
+
+.toggle-label {
+  font-weight: bold;
+  color: #2c3e50;
+  min-width: 70px;
+}
+
+/* Number Input */
+.number-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-decrement,
+.btn-increment {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #3498db;
+  background-color: white;
+  color: #3498db;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-decrement:hover:not(:disabled),
+.btn-increment:hover:not(:disabled) {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-decrement:disabled,
+.btn-increment:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.number-input {
+  width: 80px;
+  height: 40px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border: 2px solid #bdc3c7;
+  border-radius: 5px;
+  color: #2c3e50;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+/* Actions */
+.settings-actions {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.btn-save-settings {
+  padding: 15px 40px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-save-settings:hover:not(:disabled) {
+  background-color: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-save-settings:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Info Box */
+.info-box {
+  background-color: #e8f4f8;
+  border-left: 4px solid #3498db;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+.info-box h4 {
+  color: #2c3e50;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.info-box ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.info-box li {
+  color: #34495e;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* Loading */
+.duty-settings-loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  
+  .setting-info {
+    padding-right: 0;
+  }
+  
+  .setting-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .settings-panel {
+    padding: 20px;
+  }
+}
