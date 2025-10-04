@@ -9,10 +9,12 @@ import { Label } from '@components/ui/label';
 import { Textarea } from '@components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { useTranslation } from 'react-i18next';
+import { useBranding } from '../../hooks/useBranding';
 
 const ActivitiesAdminPage: React.FC = () => {
   const { user } = useAuth();
   const { t } = useTranslation(['activities', 'common']);
+  const { getPrimaryColor } = useBranding();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,7 +160,7 @@ const ActivitiesAdminPage: React.FC = () => {
                 <td className="py-2 px-4 border-b">{new Date(activity.start_date).toLocaleString()}</td>
                 <td className="py-2 px-4 border-b">{activity.status}</td>
                 <td className="py-2 px-4 border-b">
-                  <button className="text-blue-500 hover:underline mr-2">{t('table.edit')}</button>
+                  <button className="hover:underline mr-2" style={{ color: getPrimaryColor() }}>{t('table.edit')}</button>
                   <button className="text-red-500 hover:underline">{t('table.delete')}</button>
                 </td>
               </tr>

@@ -9,11 +9,11 @@ import { login, register } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
-import { appSettings } from '../../config/appSettings';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../../components/LanguageToggle';
+import { useBranding } from '../../hooks/useBranding';
 
 interface SizeOptions {
   value: string;
@@ -37,6 +37,14 @@ const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { 
+    getLogoUrl, 
+    getFullName, 
+    getEthicsCodeUrl, 
+    getPrivacyPolicyUrl, 
+    getMembershipRulesUrl,
+    getPrimaryColor 
+  } = useBranding();
   // location nije potreban, uklonjen zbog lint upozorenja
   const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
@@ -314,11 +322,15 @@ const LoginPage = () => {
             <LanguageToggle />
           </div>
           <div className="mb-4">
-            {/* Logo */}
+            {/* Logo - dinamički iz branding-a */}
             <img 
-              src={logoImage} 
-              alt={t('login.logoAlt')}
+              src={getLogoUrl()} 
+              alt={getFullName()}
               className="w-28 h-28 mx-auto rounded-full object-cover"
+              onError={(e) => {
+                // Fallback na default logo ako branding logo ne učita
+                e.currentTarget.src = logoImage;
+              }}
             />
           </div>
           <h2 className="text-2xl font-bold">{t('login.clubTitle')}</h2>
@@ -344,27 +356,42 @@ const LoginPage = () => {
 
           {showDocuments && (
             <div className="mt-3 space-y-2">
-              <a
-                href={appSettings.documents.ethicsCodeUrl}
-                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-              >
-                <ChevronRight className="w-4 h-4 mr-1" />
-                {t('docs.ethicsCode')}
-              </a>
-              <a
-                href={appSettings.documents.privacyPolicyUrl}
-                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-              >
-                <ChevronRight className="w-4 h-4 mr-1" />
-                {t('docs.privacyPolicy')}
-              </a>
-              <a
-                href={appSettings.documents.membershipRulesUrl}
-                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-              >
-                <ChevronRight className="w-4 h-4 mr-1" />
-                {t('docs.membershipRules')}
-              </a>
+              {getEthicsCodeUrl() && (
+                <a
+                  href={getEthicsCodeUrl() ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm hover:underline"
+                  style={{ color: getPrimaryColor() }}
+                >
+                  <ChevronRight className="w-4 h-4 mr-1" />
+                  {t('docs.ethicsCode')}
+                </a>
+              )}
+              {getPrivacyPolicyUrl() && (
+                <a
+                  href={getPrivacyPolicyUrl() ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm hover:underline"
+                  style={{ color: getPrimaryColor() }}
+                >
+                  <ChevronRight className="w-4 h-4 mr-1" />
+                  {t('docs.privacyPolicy')}
+                </a>
+              )}
+              {getMembershipRulesUrl() && (
+                <a
+                  href={getMembershipRulesUrl() ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm hover:underline"
+                  style={{ color: getPrimaryColor() }}
+                >
+                  <ChevronRight className="w-4 h-4 mr-1" />
+                  {t('docs.membershipRules')}
+                </a>
+              )}
             </div>
           )}
         </div>

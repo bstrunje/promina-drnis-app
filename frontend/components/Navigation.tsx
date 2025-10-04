@@ -6,6 +6,7 @@ import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogO
 import { useUnreadMessages } from '../src/contexts/useUnreadMessages';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../src/components/LanguageToggle';
+import { useBranding } from '../src/hooks/useBranding';
 
 interface NavigationProps {
   user: Member | null;
@@ -16,6 +17,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { unreadCount: unreadMessageCount } = useUnreadMessages();
   const { t } = useTranslation('common');
+  const { getLogoUrl, getFullName, getPrimaryColor } = useBranding();
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -34,9 +36,28 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
       <div className="container mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex w-full sm:w-auto items-center justify-between mb-4 sm:mb-0">
-            <Link to="/profile" className="text-xl font-bold text-blue-600" onClick={closeMenu}>
-              <span className="hidden md:inline">{t('navigation.title')}</span>
-              <span className="md:hidden">{t('navigation.titleShort')}</span>
+            <Link to="/profile" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
+              <img 
+                src={getLogoUrl()} 
+                alt={getFullName()} 
+                className="h-10 w-10 flex-shrink-0 object-contain"
+                onError={(e) => {
+                  // Fallback ako logo ne učita
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <span 
+                className="hidden md:inline text-xl font-bold whitespace-nowrap" 
+                style={{ color: getPrimaryColor() }}
+              >
+                {t('navigation.title')}
+              </span>
+              <span 
+                className="md:hidden text-xl font-bold whitespace-nowrap" 
+                style={{ color: getPrimaryColor() }}
+              >
+                {t('navigation.titleShort')}
+              </span>
             </Link>
             <button 
               onClick={toggleMenu} 

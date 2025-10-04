@@ -1,5 +1,4 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from '../config';
 import { getApiBaseUrl } from '../tenantUtils';
 
 // Stvaranje Axios instance s tenant-aware konfiguracijom

@@ -8,6 +8,7 @@ import { removeMemberPermissions } from './api/memberPermissionsApi';
 import type { MemberRole } from '@shared/member';
 import type { MemberWithPermissions } from '@shared/systemManager';
 import { parseDate } from '../../../utils/dateUtils';
+import { useBranding } from '../../../hooks/useBranding';
 
 // Komponenta za prikaz i upravljanje članovima s administratorskim ovlastima
 interface MembersWithPermissionsProps {
@@ -23,6 +24,7 @@ interface EditableMember {
 
 const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeTab }) => {
   const { t } = useTranslation(['members', 'common']);
+  const { getPrimaryColor } = useBranding();
   const { membersWithPermissions, loading, error, refreshMembersWithPermissions } = useMembersWithPermissions(activeTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
@@ -103,7 +105,8 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
         <button 
           onClick={() => { void refreshMembersWithPermissions(); }} 
           disabled={loading}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+          className="flex items-center text-sm hover:opacity-80"
+          style={{ color: getPrimaryColor() }}
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
           {loading ? t('common:refreshing') : t('common:refreshData')}
@@ -230,7 +233,8 @@ const MembersWithPermissions: React.FC<MembersWithPermissionsProps> = ({ activeT
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button 
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="hover:opacity-80 mr-4"
+                      style={{ color: getPrimaryColor() }}
                       onClick={() => handleEditClick(memberWithPermissions)}
                     >
                       {t('common:edit')}

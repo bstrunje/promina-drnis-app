@@ -23,6 +23,7 @@ import {
 import { Textarea } from '@components/ui/textarea';
 import { toast } from 'sonner';
 import { ParticipantRole } from '@shared/activity.types';
+import { useBranding } from '../../hooks/useBranding';
 
 // Mapiraj oznake uloga; tipizirano bez 'any'
 // Napomena: eksplicitno navodimo namespace 'activities' i izbjegavamo prelazak na fallback jezik.
@@ -65,6 +66,7 @@ const getRoleNameByEnum = (participantRole: ParticipantRole | null, t: TFunction
 
 const ActivityDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation(['activities', 'common']);
+  const { getPrimaryColor } = useBranding();
   const { activityId } = useParams<{ activityId: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +175,7 @@ const ActivityDetailPage: React.FC = () => {
         );
       case 'ACTIVE':
         return (
-          <Badge variant="default" className="flex items-center gap-1 bg-blue-600">
+          <Badge variant="default" className="flex items-center gap-1" style={{ backgroundColor: getPrimaryColor() }}>
             <PlayCircle className="h-3.5 w-3.5" />
             {t('activityDetail.statuses.in_progress')}
           </Badge>
@@ -232,7 +234,7 @@ const ActivityDetailPage: React.FC = () => {
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 {getStatusBadge(activity.status)}
                 {isCompleted && calculateActivityHours(activity) > 0 && (
-                  <Badge variant="default" className="bg-blue-500 text-white font-mono text-sm">
+                  <Badge variant="default" className="text-white font-mono text-sm" style={{ backgroundColor: getPrimaryColor() }}>
                     {formatHoursToHHMM(calculateActivityHours(activity))}
                   </Badge>
                 )}

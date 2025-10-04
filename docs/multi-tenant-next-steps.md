@@ -1,23 +1,34 @@
 # Multi-Tenant Implementacija - Sljedeći Koraci
 
-**Datum:** 2025-10-03  
-**Status:** 🟢 Faza 3A Završena - Frontend Branding Implementiran  
-**Prethodne faze:** ✅ Database Schema ✅ Backend Code Migration ✅ Frontend Branding
+**Datum:** 2025-10-04  
+**Status:** 🟢 Faza 1 & 2 Potpuno Završene - Backend Multi-Tenant Ready  
+**Prethodne faze:** ✅ Database Schema ✅ Backend Code Migration ✅ Tenant Middleware
 
 ---
 
 ## 🎯 PREGLED TRENUTNOG STANJA
 
-### ✅ ŠTO JE ZAVRŠENO (Faza 1, 2 & 3A):
-- **Database Schema**: Potpuno multi-tenant ready
-- **Backend Code**: 100% TypeScript/ESLint clean
-- **Tenant Middleware**: Implementiran s cache sistemom
-- **API Endpoints**: Public organization config dostupan
-- **Data Migration**: Svi postojeći zapisi migrirani
-- **Frontend Branding**: BrandingContext, cache sistem, API integration
-- **Development Tools**: BrandingDemo, debug logging, tenant detection
+### ✅ ŠTO JE ZAVRŠENO (Faza 1 & 2 - Backend):
+- **Database Schema**: Organization model + 18 tablica s organization_id
+- **Prisma Migration**: `20251003084742_add_multi_tenant_support` primijenjena
+- **Data Migration**: 497 zapisa migrirano na organization_id = 1 (PD Promina)
+- **Tenant Middleware**: Subdomen parsing, cache sistem, fallback logika
+- **Repository Layer**: Svi repository-ji refaktorirani za organization_id filtriranje
+- **Service Layer**: Sve funkcije primaju `req: Request` i ekstraktuju organizationId
+- **Controller Layer**: Svi pozivi prosljeđuju req objekt
+- **Public API**: `/api/org-config` endpoints za branding podatke
+- **TypeScript Build**: 0 grešaka, potpuno type-safe
+- **Git Commit**: `2231bde` - "Backend refaktoriran za multi-tenancy, prelazimo na frontend"
 
-### 🔧 ŠTO SLIJEDI (Faza 3B):
+### 🔧 ŠTO SLIJEDI (Faza 3 - Frontend):
+
+#### **VAŽNO: Subdomen Routing Strategija**
+Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
+- `promina.platforma.hr` → PD Promina Drniš (organization_id = 1)
+- `velebit.platforma.hr` → PD Velebit (organization_id = 2)
+- `dinara.platforma.hr` → PD Dinara (organization_id = 3)
+
+**NEMA UI za odabir organizacije** - tenant se automatski detektira po subdomeni!
 
 ---
 
@@ -56,26 +67,51 @@
 
 ---
 
-## 📋 FAZA 3B: IMPLEMENTACIJA U POSTOJEĆE KOMPONENTE
+## 📋 FAZA 3B: FRONTEND TENANT DETECTION & ROUTING
 
-### 1. **Navigation/Header Komponente**
+### 1. **Subdomen Detection** 🔴 KRITIČNO
+**Prioritet:** 🔴 Najviši  
+**Procjena:** 1 dan
+
+#### Zadaci:
+- [ ] **Tenant Detection Utility**
+  - Parsing subdomene iz `window.location.hostname`
+  - Development fallback (localhost → 'promina')
+  - Production subdomen extraction
+  - Query parameter override za testiranje (`?tenant=velebit`)
+
+- [ ] **App Bootstrap**
+  - Učitavanje organization config-a pri boot-u
+  - Redirect na error page za nepoznate subdomene
+  - Loading state dok se učitava config
+  - Error handling s fallback branding-om
+
+- [ ] **Environment Configuration**
+  - Development: localhost → default tenant
+  - Staging: subdomen.staging.platforma.hr
+  - Production: subdomen.platforma.hr
+
+### 2. **Navigation/Header Komponente**
 **Prioritet:** 🔴 Visok  
-**Procjena:** 1-2 dana
+**Procjena:** 1 dan
 
 #### Zadaci:
 - [ ] **Dinamički Logo**
   - Implementirati useBranding hook u Navigation komponenti
-  - Logo URL iz `getLogoUrl()` funkcije
+  - Logo URL iz organization config-a
   - Fallback na default SVG logo
+  - Alt text s organization name
 
 - [ ] **Organization Branding**
-  - Organization name u page title
+  - Organization name u page title i header
   - Primary/secondary boje u navigation bar-u
   - Responsive logo sizing
+  - Favicon dinamizacija
 
 - [ ] **Header Styling**
   - CSS varijable za branding boje
   - Hover efekti s primary/secondary bojama
+  - Tenant-specific styling (`[data-tenant="promina"]`)
 
 #### Datoteke za ažuriranje:
 ```
@@ -102,9 +138,9 @@ frontend/src/
 #### Datoteke za ažuriranje:
 ```
 frontend/src/features/dashboard/
-├── AdminDashboard.tsx              # AŽURIRATI
-├── MemberDashboard.tsx             # AŽURIRATI
-└── DashboardHeader.tsx             # AŽURIRATI
+├── MemberAdministratorDashboard.tsx  # AŽURIRATI
+├── MemberDashboard.tsx               # AŽURIRATI
+└── DashboardHeader.tsx               # AŽURIRATI
 ```
 
 ### 3. **Footer Komponente**
@@ -138,30 +174,69 @@ frontend/src/
 
 ---
 
-## 📋 FAZA 3B: ADMIN INTERFACE
+## 📋 FAZA 3C: SYSTEM MANAGER INTERFACE
 
-### 1. **Organization Management**
-**Prioritet:** 🟡 Srednji  
+### **VAŽNO: Dva Odvojena Entiteta**
+
+#### **1. SYSTEM MANAGER** (Tehnički Administrator)
+- **Tablica:** `system_manager`
+- **Autentikacija:** username/password
+- **Scope:** 
+  - `organization_id = null` → **Globalni SM** (upravlja svim organizacijama)
+  - `organization_id != null` → **Org-specific SM** (upravlja samo svojom org)
+- **Pristup:** Organization Management UI
+
+#### **2. MEMBER** (Članski Entitet)
+- **Tablica:** `members`
+- **Uloge:** `member`, `member_administrator`, `member_superuser`
+- **Autentikacija:** email/password ili card_number/password
+- **Scope:** Samo svoja organizacija
+- **Pristup:** **NEMA** pristup Organization Management-u
+
+---
+
+### 1. **Organization Management** (SAMO GLOBALNI SYSTEM MANAGER)
+**Prioritet:** 🔴 Visok  
 **Procjena:** 3-4 dana
 
 #### Zadaci:
-- [ ] **Admin Dashboard**
+- [ ] **System Manager Dashboard** (Globalni System Manager)
   - Lista svih organizacija
   - Organization CRUD operacije
   - Branding upload interface
+  - **Autorizacija:** `organization_id = null` required
+
+- [ ] **Organization Creation Flow**
+  - **Korak 1:** Osnovne informacije organizacije
+  - **Korak 2:** Branding (logo, boje)
+  - **Korak 3:** Kreiranje System Manager-a za novu organizaciju
+  - **Korak 4:** Seed inicijalni podaci (activity types, skills)
+  - **Rezultat:** Nova organizacija + org-specific System Manager
 
 - [ ] **Organization Form**
-  - Osnovne informacije (naziv, email, telefon)
-  - Branding (logo, boje)
-  - Dokumenti (pravila, etički kodeks)
+  - Osnovne informacije (naziv, subdomen, email, telefon)
+  - Branding (logo upload, primary/secondary boje)
+  - Dokumenti (pravila, etički kodeks, privacy policy)
+  - System Manager podaci (username, email, password)
+
+#### Backend Endpoints:
+```typescript
+POST   /api/system-manager/organizations          // Kreiranje nove org
+GET    /api/system-manager/organizations          // Lista svih org
+GET    /api/system-manager/organizations/:id      // Detalji org
+PUT    /api/system-manager/organizations/:id      // Ažuriranje org
+DELETE /api/system-manager/organizations/:id      // Brisanje org
+POST   /api/system-manager/organizations/:id/logo // Upload logo
+```
 
 #### Nove komponente:
 ```
-frontend/src/features/admin/
-├── OrganizationList.tsx            # NOVO
-├── OrganizationForm.tsx            # NOVO
-├── BrandingUpload.tsx              # NOVO
-└── AdminDashboard.tsx              # NOVO
+frontend/src/features/systemManager/
+├── OrganizationList.tsx            # NOVO - Lista svih org (globalni SM)
+├── OrganizationForm.tsx            # NOVO - Multi-step forma
+├── OrganizationCreationWizard.tsx  # NOVO - Wizard za kreiranje
+├── BrandingUpload.tsx              # NOVO - Logo upload
+└── SystemManagerDashboard.tsx      # NOVO - Dashboard za SM
 ```
 
 ### 2. **Tenant Onboarding**
@@ -239,13 +314,13 @@ frontend/src/features/admin/
 6. Test Organization Setup
 
 ### **Tjedan 3 (Dani 15-21):**
-7. Admin Interface - Organization Management
+7. System Manager Interface - Organization Management
 8. Production Deployment
 9. Performance Monitoring
 
 ### **Tjedan 4+ (Opcijski):**
 10. Tenant Onboarding Flow
-11. Advanced Admin Features
+11. Advanced System Manager Features
 12. Multi-Tenant Dashboard
 
 ---

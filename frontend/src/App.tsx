@@ -12,6 +12,7 @@ import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import SpeedInsightsWrapper from './components/SpeedInsights';
 import BrandingDemo from './components/BrandingDemo';
+import Footer from './components/Footer';
 
 // Lazy učitavanje većih stranica radi smanjenja početnog bundle-a
 const ActivitiesList = lazy(() => import('./features/activities/ActivitiesList'));
@@ -79,9 +80,10 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
-      <Routes>
+      <main className="flex-1">
+        <Routes>
         {/* System Manager rute - potpuno odvojene od postojećeg sustava autentikacije */}
         <Route path="/system-manager/*" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><SystemManagerRoutes /></Suspense>} />
         
@@ -133,6 +135,8 @@ function AppContent() {
           )}
         </Route>
       </Routes>
+      </main>
+      {user && <Footer />}
     </div>
   );
 }

@@ -50,7 +50,7 @@ export const isProduction = (): boolean => {
 /**
  * Generiraj URL za određeni tenant
  */
-export const getTenantUrl = (tenant: string, path: string = ''): string => {
+export const getTenantUrl = (tenant: string, path = ''): string => {
   if (isDevelopment()) {
     // Development - koristi query parameter
     const baseUrl = `${window.location.protocol}//${window.location.host}`;
@@ -137,7 +137,7 @@ export const clearCachedTenant = (): void => {
 /**
  * Redirect na određeni tenant
  */
-export const redirectToTenant = (tenant: string, path: string = ''): void => {
+export const redirectToTenant = (tenant: string, path = ''): void => {
   const url = getTenantUrl(tenant, path);
   window.location.href = url;
 };

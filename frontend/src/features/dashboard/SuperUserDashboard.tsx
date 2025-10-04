@@ -6,6 +6,7 @@ import { Users, Activity, Shield, ChevronRight, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/config";
+import { useBranding } from "../../hooks/useBranding";
 
 interface Props {
   member: Member;
@@ -38,6 +39,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   // console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
   const { t } = useTranslation('dashboards');
+  const { getPrimaryColor } = useBranding();
 
   // Dinamički odabir welcome poruke na temelju spola
   const getWelcomeKey = () => {
@@ -113,7 +115,8 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         <button 
           onClick={() => void fetchDashboardStats()} 
           disabled={loading}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+          className="flex items-center text-sm hover:opacity-80"
+          style={{ color: getPrimaryColor() }}
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
           {loading ? t("refreshing") : t("refreshData")}
@@ -127,7 +130,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">{t("members.members")}</h3>
-            <Users className="h-6 w-6 text-blue-600" />
+            <Users className="h-6 w-6" style={{ color: getPrimaryColor() }} />
           </div>
           <div className="space-y-2">
             {loading ? (
@@ -196,21 +199,21 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.memberManagement")}</span>
-              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+              <ChevronRight className="h-5 w-5 text-gray-400" />
             </button>
             <button
               onClick={() => navigate("/activities")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.activityApprovals")}</span>
-              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+              <ChevronRight className="h-5 w-5 text-gray-400" />
             </button>
             <button
               onClick={() => navigate("/settings")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.systemSettings")}</span>
-              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+              <ChevronRight className="h-5 w-5 text-gray-400" />
             </button>
           </div>
         </div>

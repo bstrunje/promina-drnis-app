@@ -12,12 +12,14 @@ import { calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHou
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import CreateActivityModal from './CreateActivityModal';
+import { useBranding } from '../../hooks/useBranding';
 
 // Napomena: uklonjen useAuth jer user nije korišten u ovoj komponenti
 // import { useAuth } from '@/context/useAuth';
 
 const ActivitiesList: React.FC = () => {
   const { t } = useTranslation('activities');
+  const { getPrimaryColor } = useBranding();
   // const { user } = useAuth();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
@@ -214,7 +216,7 @@ const ActivitiesList: React.FC = () => {
                         <span className="text-lg sm:text-xl">{year}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title={t('list.tooltips.activeActivities')}></div>}
+                        {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title={t('list.tooltips.activeActivities')}></div>}
                         {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title={t('list.tooltips.plannedActivities')}></div>}
                       </div>
                     </CardTitle>

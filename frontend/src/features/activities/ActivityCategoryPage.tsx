@@ -23,9 +23,11 @@ import {
   DialogTitle,
 } from '@components/ui/dialog';
 import { toast } from 'sonner';
+import { useBranding } from '../../hooks/useBranding';
 
 const ActivityCategoryPage: React.FC = () => {
   const { t, i18n } = useTranslation(['activities', 'common']);
+  const { getPrimaryColor } = useBranding();
   // Dinamičko učitavanje locale-a kako bismo izbjegli ulazak cijelog date-fns/locale u početni bundle
   // Napomena: tipiziramo kao Locale radi ESLint/TS pravila (bez any)
   const [currentLocale, setCurrentLocale] = useState<Locale | undefined>(undefined);
@@ -282,7 +284,7 @@ const ActivityCategoryPage: React.FC = () => {
                           <CardTitle className="text-base sm:text-lg">{t(`activitiesAdmin.types.${type.key}`).toUpperCase()}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
-                          {hasActive && <div className="w-3 h-3 bg-blue-500 rounded-full" title="Postoje aktivne aktivnosti"></div>}
+                          {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title="Postoje aktivne aktivnosti"></div>}
                           {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title="Postoje najavljene aktivnosti"></div>}
                         </div>
                       </div>
@@ -361,7 +363,7 @@ const ActivityCategoryPage: React.FC = () => {
                               case ActivityStatus.PLANNED:
                                 return <span className="font-semibold text-green-600">{statusText}</span>;
                               case ActivityStatus.ACTIVE:
-                                return <span className="font-semibold text-blue-500">{statusText}</span>;
+                                return <span className="font-semibold" style={{ color: getPrimaryColor() }}>{statusText}</span>;
                               case ActivityStatus.COMPLETED:
                                 return <span className="font-semibold text-black">{statusText}</span>;
                               case ActivityStatus.CANCELLED:

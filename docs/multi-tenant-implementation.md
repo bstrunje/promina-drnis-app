@@ -191,7 +191,7 @@ Fallback: platforma.hr/promina → organization_id = 1
 
 #### 4.3 Documentation ⏳
 - [ ] Onboarding dokumentacija za nove organizacije
-- [ ] Admin upute za System Manager
+- [ ] Upute za System Manager
 - [ ] API dokumentacija
 
 ---
@@ -574,7 +574,19 @@ organizations.forEach(org => {
 - **0 TypeScript/ESLint grešaka** - kod potpuno čist
 - **Svi repository-ji** ažurirani za compound unique constraints
 
-### ✅ FAZA 3A: FRONTEND BRANDING - POTPUNO ZAVRŠENO
+### ✅ FAZA 1 & 2: BACKEND MULTI-TENANT - POTPUNO ZAVRŠENO (2025-10-04)
+- **Database Schema**: Organization model + 18 tablica s organization_id
+- **Prisma Migration**: `20251003084742_add_multi_tenant_support` primijenjena
+- **Data Migration**: 497 zapisa migrirano na organization_id = 1 (PD Promina)
+- **Tenant Middleware**: Subdomen parsing, cache sistem, fallback logika
+- **Repository Layer**: Svi repository-ji refaktorirani za organization_id filtriranje
+- **Service Layer**: Sve funkcije primaju `req: Request` i ekstraktuju organizationId
+- **Controller Layer**: Svi pozivi prosljeđuju req objekt
+- **Public API**: `/api/org-config` endpoints za branding podatke
+- **TypeScript Build**: 0 grešaka, potpuno type-safe
+- **Commit**: `2231bde` - "Backend refaktoriran za multi-tenancy, prelazimo na frontend"
+
+### ⏳ FAZA 3A: FRONTEND BRANDING - DJELOMIČNO ZAVRŠENO
 - **BrandingContext Provider**: Automatska detekcija tenant-a, cache sistem (5min TTL)
 - **Tenant-Aware API Client**: Dinamički API base URL, poziva `http://localhost:3000/api`
 - **CSS Branding System**: CSS varijable, tenant-specifični stilovi, utility klase
@@ -597,20 +609,37 @@ organizations.forEach(org => {
 - ✅ **Fallback Branding**: Automatski fallback kad nema backend podataka
 - ✅ **Debug Logging**: Detaljni log-ovi za troubleshooting
 
-### 🚀 SLJEDEĆI KORACI (FAZA 3B):
-1. **Implementacija u Postojeće Komponente**
-   - Navigation/Header s dinamičkim logo-om
-   - Dashboard komponente s branding bojama
-   - Footer s organization kontakt informacijama
+### 🚀 SLJEDEĆI KORACI (FAZA 3B - FRONTEND):
 
-2. **Admin Interface**
-   - Organization management
-   - Logo upload funkcionalnost
-   - Branding konfiguracija
+#### **VAŽNO: Subdomen Routing Strategija**
+Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
+- `promina.platforma.hr` → PD Promina Drniš (organization_id = 1)
+- `velebit.platforma.hr` → PD Velebit (organization_id = 2)
+- `dinara.platforma.hr` → PD Dinara (organization_id = 3)
 
-3. **Testing & Deployment**
-   - Multi-tenant testiranje različitih organizacija
-   - Production deployment s subdomen routing
-   - Performance monitoring
+**NEMA UI za odabir organizacije** - tenant se automatski detektira po subdomeni!
 
-**Frontend branding sistem je potpuno funkcionalan i spreman za implementaciju!** 🎯
+#### 1. **Frontend Tenant Detection** (Prioritet: 🔴 KRITIČNO)
+   - [ ] Implementirati subdomen parsing u frontend-u
+   - [ ] Automatska detekcija organizacije pri boot-u
+   - [ ] Redirect na error page za nepoznate subdomene
+   - [ ] Development fallback (localhost → default tenant)
+
+#### 2. **Implementacija u Postojeće Komponente**
+   - [ ] Navigation/Header s dinamičkim logo-om
+   - [ ] Dashboard komponente s branding bojama
+   - [ ] Footer s organization kontakt informacijama
+   - [ ] Login page s organization-specific branding
+
+#### 3. **System Manager Interface**
+   - [ ] Organization management (samo za system managers)
+   - [ ] Logo upload funkcionalnost
+   - [ ] Branding konfiguracija
+
+#### 4. **Testing & Deployment**
+   - [ ] Multi-tenant testiranje različitih organizacija
+   - [ ] Wildcard DNS setup (*.platforma.hr)
+   - [ ] SSL certifikati za subdomene
+   - [ ] Production deployment s subdomen routing
+
+**Status:** Backend potpuno spreman, frontend čeka implementaciju subdomen detection-a! 🎯

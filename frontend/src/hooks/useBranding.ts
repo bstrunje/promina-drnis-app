@@ -5,7 +5,7 @@
  * i dodatne utility funkcije za rad s branding podacima
  */
 
-import { useBranding as useBaseBranding, type OrganizationBranding } from '../contexts/BrandingContext';
+import { useBranding as useBaseBranding } from '../contexts/BrandingContext';
 
 /**
  * Extended branding hook s dodatnim utility funkcijama
@@ -38,49 +38,49 @@ export const useBranding = () => {
    * Dohvaća primary boju ili fallback
    */
   const getPrimaryColor = (): string => {
-    return brandingContext.branding?.primary_color || '#2563eb';
+    return brandingContext.branding?.primary_color ?? '#2563eb';
   };
 
   /**
    * Dohvaća secondary boju ili fallback
    */
   const getSecondaryColor = (): string => {
-    return brandingContext.branding?.secondary_color || '#64748b';
+    return brandingContext.branding?.secondary_color ?? '#64748b';
   };
 
   /**
    * Dohvaća kratki naziv organizacije
    */
   const getShortName = (): string => {
-    return brandingContext.branding?.short_name || 'PO';
+    return brandingContext.branding?.short_name ?? 'PO';
   };
 
   /**
    * Dohvaća puni naziv organizacije
    */
   const getFullName = (): string => {
-    return brandingContext.branding?.name || 'Planinarska Organizacija';
+    return brandingContext.branding?.name ?? 'Planinarska Organizacija';
   };
 
   /**
    * Dohvaća kontakt email
    */
   const getContactEmail = (): string => {
-    return brandingContext.branding?.email || 'info@example.com';
+    return brandingContext.branding?.email ?? 'info@example.com';
   };
 
   /**
    * Dohvaća kontakt telefon
    */
   const getContactPhone = (): string | null => {
-    return brandingContext.branding?.phone || null;
+    return brandingContext.branding?.phone ?? null;
   };
 
   /**
    * Dohvaća website URL
    */
   const getWebsiteUrl = (): string | null => {
-    return brandingContext.branding?.website_url || null;
+    return brandingContext.branding?.website_url ?? null;
   };
 
   /**
@@ -103,21 +103,21 @@ export const useBranding = () => {
    * Dohvaća URL za etički kodeks
    */
   const getEthicsCodeUrl = (): string | null => {
-    return brandingContext.branding?.ethics_code_url || null;
+    return brandingContext.branding?.ethics_code_url ?? null;
   };
 
   /**
    * Dohvaća URL za pravila privatnosti
    */
   const getPrivacyPolicyUrl = (): string | null => {
-    return brandingContext.branding?.privacy_policy_url || null;
+    return brandingContext.branding?.privacy_policy_url ?? null;
   };
 
   /**
    * Dohvaća URL za pravila članstva
    */
   const getMembershipRulesUrl = (): string | null => {
-    return brandingContext.branding?.membership_rules_url || null;
+    return brandingContext.branding?.membership_rules_url ?? null;
   };
 
   /**

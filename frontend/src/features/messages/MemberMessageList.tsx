@@ -18,6 +18,7 @@ import { convertApiMessagesToMessages, convertMemberApiMessageToMessage } from '
 import SentMessageCard from './components/SentMessageCard';
 import { ApiGenericMessage } from '../../utils/api/apiTypes';
 import BackToDashboard from "../../../components/BackToDashboard";
+import { useBranding } from '../../hooks/useBranding';
 import { MESSAGE_EVENTS } from "../../utils/events"; // Dodaj import
 import { formatDate } from "../../utils/dateUtils";
 // import { parseDate } from '../../utils/dateUtils';
@@ -26,6 +27,7 @@ import { formatDate } from "../../utils/dateUtils";
 
 const MemberMessageList: React.FC = () => {
   const { t } = useTranslation('messages');
+  const { getPrimaryColor } = useBranding();
   const { toast } = useToast();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -176,7 +178,7 @@ const MemberMessageList: React.FC = () => {
               {activeTab === 'received' ? t('memberMessageList.titles.adminMessages') : t('memberMessageList.titles.sentMessages')}
             </div>
             {activeTab === 'received' && unreadCount > 0 && (
-              <div className="flex items-center bg-white text-blue-800 px-2 py-1 rounded-full text-sm">
+              <div className="flex items-center bg-white px-2 py-1 rounded-full text-sm" style={{ color: getPrimaryColor() }}>
                 <Bell className="h-4 w-4 mr-1" />
                 {unreadCount} {unreadCount === 1 ? t('memberMessageList.unreadCount.single') : t('memberMessageList.unreadCount.multiple')}
               </div>
@@ -276,10 +278,11 @@ const MemberMessageList: React.FC = () => {
                     return (
                       <div
                         key={message.message_id}
-                        className={`p-4 rounded-md border cursor-pointer transition-all hover:shadow-md ${message.status === 'unread'
-                            ? 'border-blue-300 bg-blue-50'
-                            : 'border-gray-200'
-                          }`}
+                        className="p-4 rounded-md border cursor-pointer transition-all hover:shadow-md"
+                        style={message.status === 'unread' ? {
+                          borderColor: `${getPrimaryColor()}80`,
+                          backgroundColor: `${getPrimaryColor()}10`
+                        } : { borderColor: '#e5e7eb' }}
                         onClick={() => {
                           const messageElement = document.getElementById(`message-content-${message.message_id}`);
                           messageElement?.classList.toggle('hidden');
@@ -303,7 +306,10 @@ const MemberMessageList: React.FC = () => {
                             <div className="text-xs text-gray-500">
                               {formatDate(message.created_at, 'dd.MM.yyyy HH:mm')}
                             </div>
-                            <div className={`text-xs px-2 py-0.5 rounded-full ${message.status === 'unread' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                            <div className="text-xs px-2 py-0.5 rounded-full" style={message.status === 'unread' ? {
+                              backgroundColor: `${getPrimaryColor()}20`,
+                              color: getPrimaryColor()
+                            } : { backgroundColor: '#dcfce7', color: '#166534' }}>
                               {message.status === 'unread' ? 'Nepročitano' : 'Pročitano'}
                             </div>
                           </div>
@@ -316,7 +322,7 @@ const MemberMessageList: React.FC = () => {
                         <div id={`message-content-${message.message_id}`} className="mt-3 pt-3 border-t border-gray-200 whitespace-pre-wrap hidden">
                           <div className="mb-3">{message.message_text}</div>
                           {message.recipient_type === 'all' && (
-                            <div className="mt-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded inline-block">
+                            <div className="mt-2 text-xs px-2 py-0.5 rounded inline-block" style={{ backgroundColor: `${getPrimaryColor()}20`, color: getPrimaryColor() }}>
                               {t('memberMessageList.badges.sentToAll')}
                             </div>
                           )}

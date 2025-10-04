@@ -131,7 +131,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     const accessToken = jwt.sign(
       { id: member.member_id, role: member.role },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '24h' }
     );
     
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -237,13 +237,15 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
     
     if (isDev) console.log('Postavljen novi refresh token kolačić s opcijama:', cookieOptions);
     
-    if (isProduction) {
+    // U development okruženju vraćamo i refresh token u JSON-u za lakše testiranje
+    if (!isProduction) {
       if (isDev) console.log('Razvojno okruženje: vraćam novi refresh token u odgovoru');
       res.json({ 
         accessToken,
         refreshToken: newRefreshToken
       });
     } else {
+      // U produkciji samo access token, refresh token je u kolačiću
       res.json({ accessToken });
     }
   } catch (error) {

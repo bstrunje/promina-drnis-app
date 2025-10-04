@@ -22,6 +22,7 @@ import EditMemberForm from "@components/EditMemberForm";
 import RoleAssignmentModal from "./RoleAssignmentModal";
 import { Button } from "@components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
+import { useBranding } from "../../hooks/useBranding";
 
 
 // Import custom hook for fetching member data
@@ -37,6 +38,7 @@ import MemberTable from "./components/MemberTable";
 
 export default function MemberList(): JSX.Element {
   const { t } = useTranslation('members');
+  const { getPrimaryColor } = useBranding();
   const [searchParams] = useSearchParams();
 
   // Dobavi članove pomoću custom hooka
@@ -323,7 +325,7 @@ export default function MemberList(): JSX.Element {
       {/* Loader */}
       {loading && (
         <div className="flex justify-center items-center py-8 print:hidden">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderTopColor: getPrimaryColor(), borderBottomColor: getPrimaryColor() }}></div>
         </div>
       )}
 

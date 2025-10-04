@@ -92,7 +92,7 @@ const getCachedBranding = (tenant: string): OrganizationBranding | null => {
     const cached = localStorage.getItem(BRANDING_CACHE_KEY);
     if (!cached) return null;
     
-    const parsedCache: CachedBranding = JSON.parse(cached);
+    const parsedCache = JSON.parse(cached) as CachedBranding;
     const now = Date.now();
     
     // Provjeri je li cache valjan (isti tenant i nije expired)
@@ -136,7 +136,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [branding, setBranding] = useState<OrganizationBranding | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tenant] = useState(() => getTenantFromUrl());
+  const [tenant] = useState(getTenantFromUrl);
 
   /**
    * Učitava branding podatke s API-ja
@@ -161,7 +161,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.log('[BRANDING] 🌐 Pozivam API:', '/org-config/branding');
       const response = await apiClient.get('/org-config/branding');
       console.log('[BRANDING] 📥 API response:', response.data);
-      const brandingData: OrganizationBranding = response.data;
+      const brandingData = response.data as OrganizationBranding;
       
       // Spremi u state i cache
       setBranding(brandingData);
@@ -209,7 +209,8 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Učitaj branding pri mount-u
   useEffect(() => {
-    loadBranding();
+    void loadBranding();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenant]);
 
   // Postavi CSS varijable kad se branding učita
@@ -251,6 +252,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
 /**
  * Hook za korištenje branding context-a
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBranding = (): BrandingContextType => {
   const context = useContext(BrandingContext);
   if (context === undefined) {
@@ -258,5 +260,3 @@ export const useBranding = (): BrandingContextType => {
   }
   return context;
 };
-
-export default BrandingContext;

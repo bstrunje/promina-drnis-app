@@ -235,7 +235,7 @@ export async function loginHandler(
     const accessToken = jwt.sign(
       { id: member.member_id, role: member.role },
       JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "24h" }
     );
 
     const userAgent = req.headers['user-agent'] || 'unknown';

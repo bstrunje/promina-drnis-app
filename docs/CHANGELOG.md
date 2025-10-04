@@ -4,6 +4,71 @@ Ovaj fajl prati važne promjene u dokumentaciji.
 
 ---
 
+## [4. listopad 2025.]
+
+### Dodano 📝
+
+#### Novi dokumenti:
+1. **`multi-tenant-bug-fixes.md`**
+   - Dokumentacija svih bug fix-ova tijekom multi-tenant implementacije
+   - Logo wrapping problem i rješenje
+   - Access token duration fix (15m → 24h)
+   - Refresh token logika ispravka
+   - ESLint greške i rješenja
+   - Testiranje i naučene lekcije
+
+### Promijenjeno 🔄
+
+1. **`frontend-multi-tenant-implementation.md`**
+   - Status ažuriran na ✅ POTPUNO ZAVRŠENO
+   - Dodana sekcija "Dodatno Implementirano" s 6 kategorija
+   - Ažurirane statistike: 22+ komponente, ~2500 linija koda
+   - Ažurirani sljedeći koraci
+
+2. **`IMPLEMENTATION_SUMMARY.md`**
+   - Status ažuriran na ✅ Backend i Frontend POTPUNO ZAVRŠENI
+   - Frontend progress 60% → 100%
+   - Dodane sve ažurirane komponente
+   - Faza 2 označena kao završena
+
+### Implementirano u kodu 💻
+
+**Frontend promjene - Branding:**
+1. **Navigation.tsx** - Logo wrapping fix, dinamički logo
+2. **Footer.tsx** - Nova komponenta s kontakt informacijama
+3. **LoginPage.tsx** - Dinamički dokumenti i logo
+4. **Dashboard komponente** (3):
+   - SuperUserDashboard.tsx
+   - MemberDashboard.tsx
+   - AdminDashboard.tsx
+5. **Activities komponente** (6):
+   - ActivitiesList.tsx
+   - ActivityCategoryPage.tsx
+   - ActivityDetailPage.tsx
+   - ActivitiesAdminPage.tsx
+   - ActivityOverviewPage.tsx
+   - ActivityYearPage.tsx
+6. **Members komponente** (4):
+   - MemberList.tsx
+   - AddMemberForm.tsx
+   - MemberTable.tsx
+   - MembersWithPermissions.tsx
+7. **Settings komponente**:
+   - CardNumberManagement.tsx
+8. **Messages komponente**:
+   - MemberMessageList.tsx
+
+**Backend promjene - Auth:**
+1. `login.handler.ts` - Access token 15m → 24h
+2. `refreshToken.handler.ts` - Access token 15m → 24h, logika ispravka
+
+**ESLint Fixes:**
+- 11 datoteka ažurirano
+- 15+ grešaka ispravljeno
+- 0 grešaka preostalo
+
+---
+
 ## [30. rujan 2025.]
 
 ### Dodano 📝

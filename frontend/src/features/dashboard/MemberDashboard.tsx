@@ -12,6 +12,7 @@ import { getAllActivitiesWithParticipants } from '../../utils/api/apiActivities'
 import { API_BASE_URL } from '@/utils/config';
 import axios from 'axios';
 import { formatInputDate } from '../../utils/dateUtils';
+import { useBranding } from '../../hooks/useBranding';
 
 interface Props {
   member: Member;
@@ -41,6 +42,7 @@ interface DashboardStatsResponse {
 const MemberDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboards');
+  const { getPrimaryColor } = useBranding();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<MemberStats>({
@@ -179,7 +181,8 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         <button 
           onClick={() => void fetchDashboardStats()} 
           disabled={loading}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+          className="flex items-center text-sm hover:opacity-80"
+          style={{ color: getPrimaryColor() }}
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Osvježavanje...' : 'Osvježi podatke'}
@@ -194,7 +197,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">{t('messages.title')}</h3>
-            <Mail className="h-6 w-6 text-blue-600" />
+            <Mail className="h-6 w-6" style={{ color: getPrimaryColor() }} />
           </div>
           <div className="space-y-2">
             {loading ? (
@@ -204,7 +207,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                 <p className="text-2xl font-bold">{unreadCount}</p>
                 <p className="text-sm text-gray-500">
                   {stats.unreadMessages > 0 ? (
-                    <span className="flex items-center text-blue-600">
+                    <span className="flex items-center" style={{ color: getPrimaryColor() }}>
                       <Bell className="h-4 w-4 mr-1" />
                       {t("messages.unreadMessages")}
                     </span>
@@ -348,7 +351,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                           case ActivityStatus.PLANNED:
                             return <span className="font-semibold text-green-600 text-sm">{t("upcomingEvents.planned")}</span>;
                           case ActivityStatus.ACTIVE:
-                            return <span className="font-semibold text-blue-500 text-sm">{t("upcomingEvents.active")}</span>;
+                            return <span className="font-semibold text-sm" style={{ color: getPrimaryColor() }}>{t("upcomingEvents.active")}</span>;
                           default:
                             return null;
                         }

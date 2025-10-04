@@ -4,6 +4,7 @@ import { formatInputDate } from '../../utils/dateUtils';
 import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useBranding } from '../../hooks/useBranding';
 
 interface AddMemberFormProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ const sizeOptions: SizeOptions[] = [
 
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   const { t } = useTranslation('members');
+  const { getPrimaryColor } = useBranding();
   
   // Opcije za dropdown-ove - koriste postojeće ključeve
   const lifeStatusOptions = [
@@ -254,7 +256,8 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
           <div className="mt-4">
             <button 
               type="submit" 
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-2 text-white rounded hover:opacity-90"
+              style={{ backgroundColor: getPrimaryColor() }}
             >
               {t('addMemberForm.addButton')}
             </button>

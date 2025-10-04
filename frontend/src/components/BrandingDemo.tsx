@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useBranding } from '../hooks/useBranding';
-import { getCurrentTenant, getTenantDebugInfo } from '../utils/tenantUtils';
+import { getTenantDebugInfo } from '../utils/tenantUtils';
 
 const BrandingDemo: React.FC = () => {
   const {
@@ -43,7 +43,7 @@ const BrandingDemo: React.FC = () => {
         <h3 className="text-red-800 font-semibold mb-2">Branding Error</h3>
         <p className="text-red-600 mb-4">{error}</p>
         <button
-          onClick={refreshBranding}
+          onClick={() => { void refreshBranding(); }}
           className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
           Retry Loading
@@ -168,7 +168,7 @@ const BrandingDemo: React.FC = () => {
       {/* Actions */}
       <div className="flex space-x-2 pt-4 border-t">
         <button
-          onClick={refreshBranding}
+          onClick={() => { void refreshBranding(); }}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           🔄 Refresh Branding

@@ -8,9 +8,11 @@ import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers, getConsumedCardNumbers } from '../../utils/api/apiCards';
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
+import { useBranding } from '../../hooks/useBranding';
 
 export default function CardNumberManagement() {
   const { t } = useTranslation('settings');
+  const { getPrimaryColor } = useBranding();
   const { toast } = useToast(); 
   
   // Dohvati duljinu broja kartice iz postavki
@@ -327,7 +329,7 @@ export default function CardNumberManagement() {
             </div>
             <div className="flex space-x-4">
               <span className="text-green-600">{t('cardNumberManagement.stats.available', { count: cardStats.available })}</span>
-              <span className="text-blue-600">{t('cardNumberManagement.stats.assigned', { count: cardStats.assigned })}</span>
+              <span style={{ color: getPrimaryColor() }}>{t('cardNumberManagement.stats.assigned', { count: cardStats.assigned })}</span>
             </div>
           </div>
         )}
@@ -531,7 +533,7 @@ export default function CardNumberManagement() {
                   variant={statusFilter === 'assigned' ? 'default' : 'outline'}
                   size="sm" 
                   onClick={() => setStatusFilter('assigned')}
-                  className="text-blue-600"
+                  style={{ color: getPrimaryColor() }}
                 >
                   {t('cardNumberManagement.forms.manage.filters.assigned', { count: cardStats.assigned })}
                 </Button>
@@ -625,22 +627,20 @@ export default function CardNumberManagement() {
                     {paginatedAvailable.map(card => (
                       <div 
                         key={card.card_number} 
-                        className={`flex items-center justify-between p-3 hover:bg-gray-50 ${
-                          card.status === 'assigned' ? 'bg-blue-50' : ''
-                        }`}
+                        className="flex items-center justify-between p-3 hover:bg-gray-50"
+                        style={card.status === 'assigned' ? { backgroundColor: `${getPrimaryColor()}10` } : {}}
                       >
                         <div className="flex items-center space-x-2">
                           <span 
-                            className={`font-medium select-all cursor-pointer ${
-                              card.status === 'assigned' ? 'text-blue-600' : ''
-                            }`}
+                            className="font-medium select-all cursor-pointer"
+                            style={card.status === 'assigned' ? { color: getPrimaryColor() } : {}}
                             onClick={() => { void navigator.clipboard.writeText(card.card_number); }}
                             title={t('cardNumberManagement.forms.manage.assigned.copyTooltip')}
                           >
                             {card.card_number}
                           </span>
                           {card.status === 'assigned' && card.member_name && (
-                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                            <span className="text-xs px-2 py-0.5 rounded" style={{ color: getPrimaryColor(), backgroundColor: `${getPrimaryColor()}20` }}>
                               {t('cardNumberManagement.forms.manage.assigned.assignedTo', { name: card.member_name })}
                             </span>
                           )}

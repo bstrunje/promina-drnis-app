@@ -5,6 +5,7 @@ import { API_BASE_URL } from '@/utils/config';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { formatHoursToHHMM } from '@/utils/activityHours';
 import { useTranslation } from 'react-i18next';
+import { useBranding } from '../../hooks/useBranding';
 
 // Sučelja za podatke
 interface Activity {
@@ -24,6 +25,7 @@ interface Member {
 
 const ActivityYearPage: React.FC = () => {
   const { t } = useTranslation('activities');
+  const { getPrimaryColor } = useBranding();
   const { memberId, year } = useParams<{ memberId: string; year: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ const ActivityYearPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <button onClick={() => navigate(`/members/${memberId}/activities-overview`)} className="flex items-center text-blue-600 hover:underline mb-4">
+        <button onClick={() => navigate(`/members/${memberId}/activities-overview`)} className="flex items-center hover:underline mb-4" style={{ color: getPrimaryColor() }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Povratak na pregled po godinama
         </button>

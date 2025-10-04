@@ -6,6 +6,7 @@ import { Calendar, ChevronRight } from 'lucide-react';
 import BackToDashboard from '@components/BackToDashboard';
 import { formatHoursToHHMM } from '@/utils/activityHours';
 import { useTranslation } from 'react-i18next';
+import { useBranding } from '../../hooks/useBranding';
 
 // Sučelje za člana s ukupnim satima kroz povijest
 interface Member {
@@ -23,6 +24,7 @@ interface AnnualStat {
 const ActivityOverviewPage: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
   const { t } = useTranslation('activities');
+  const { getPrimaryColor } = useBranding();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
@@ -109,7 +111,7 @@ const ActivityOverviewPage: React.FC = () => {
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <Calendar className="h-6 w-6 mr-4 text-blue-600" />
+                    <Calendar className="h-6 w-6 mr-4" style={{ color: getPrimaryColor() }} />
                     <div>
                       <p className="font-bold text-xl text-gray-800">{stat.year}.</p>
                       <div className="flex space-x-4 text-sm text-gray-500">
