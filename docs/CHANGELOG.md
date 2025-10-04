@@ -17,6 +17,13 @@ Ovaj fajl prati važne promjene u dokumentaciji.
    - ESLint greške i rješenja
    - Testiranje i naučene lekcije
 
+#### Ažurirani dokumenti:
+1. **`organization-creation-flow.md`**
+   - Status promijenjen u ✅ IMPLEMENTIRANO
+   - Dodana sekcija "Implementirano" s detaljima
+   - Backend i Frontend komponente dokumentirane
+   - API endpoints popis
+
 ### Promijenjeno 🔄
 
 1. **`frontend-multi-tenant-implementation.md`**
@@ -61,6 +68,19 @@ Ovaj fajl prati važne promjene u dokumentaciji.
 **Backend promjene - Auth:**
 1. `login.handler.ts` - Access token 15m → 24h
 2. `refreshToken.handler.ts` - Access token 15m → 24h, logika ispravka
+
+**Backend promjene - Organization Management:**
+1. `systemManager.middleware.ts` - Novi middleware za autorizaciju
+2. `organization.controller.ts` - CRUD operacije za organizacije
+3. `organization.routes.ts` - API endpoints
+4. Seed funkcije za nove organizacije
+
+**Frontend promjene - Organization Management:**
+1. `apiOrganizations.ts` - API utility funkcije
+2. `OrganizationList.tsx` - Lista organizacija
+3. `OrganizationWizard.tsx` - 4-step wizard
+4. Wizard steps (4 komponente)
+5. Routing integracija
 
 **ESLint Fixes:**
 - 11 datoteka ažurirano

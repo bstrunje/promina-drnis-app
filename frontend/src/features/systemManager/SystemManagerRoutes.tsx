@@ -7,6 +7,8 @@ import SystemManagerDashboard from './pages/dashboard/SystemManagerDashboard';
 import SystemManagerAuditLogs from './pages/auditLogs/SystemManagerAuditLogs';
 import HolidaysManager from './HolidaysManager';
 import DutyCalendarSettings from './DutyCalendarSettings';
+import OrganizationList from './organizations/OrganizationList';
+import OrganizationWizard from './organizations/OrganizationWizard';
 
 // Zaštićena ruta za system admin
 const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -99,6 +101,22 @@ const SystemManagerRoutesContent: React.FC = () => {
         element={
           <SystemManagerProtectedRoute>
             <DutyCalendarSettings />
+          </SystemManagerProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations" 
+        element={
+          <SystemManagerProtectedRoute>
+            <OrganizationList />
+          </SystemManagerProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations/create" 
+        element={
+          <SystemManagerProtectedRoute>
+            <OrganizationWizard />
           </SystemManagerProtectedRoute>
         } 
       />

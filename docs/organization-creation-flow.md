@@ -2,7 +2,7 @@
 
 **Datum:** 2025-10-04  
 **Autor:** Cascade AI  
-**Status:** 📋 Planirano
+**Status:** ✅ IMPLEMENTIRANO
 
 ---
 
@@ -455,15 +455,68 @@ Password: [unesena lozinka]
 
 ---
 
-## 🚀 SLJEDEĆI KORACI
+## ✅ IMPLEMENTIRANO (2025-10-04)
 
-1. **Backend Endpoints** - Implementirati sve CRUD operacije
-2. **Frontend Wizard** - Multi-step forma s validacijom
-3. **Logo Upload** - Multer middleware + storage
-4. **Seed Funkcije** - Default data za novu org
-5. **Testing** - E2E testiranje cijelog flow-a
+### Backend
+1. ✅ **Middleware** - `backend/src/middleware/systemManager.middleware.ts`
+   - `requireGlobalSystemManager` - Autorizacija za globalne SM
+   - `requireOrganizationAccess` - Provjera pristupa organizaciji
+   
+2. ✅ **Controller** - `backend/src/controllers/organization.controller.ts`
+   - `checkSubdomainAvailability` - Provjera subdomene
+   - `createOrganization` - Kreiranje org + SM + seed
+   - `getAllOrganizations` - Lista organizacija
+   - `getOrganizationById` - Detalji organizacije
+   - `updateOrganization` - Ažuriranje
+   - `deleteOrganization` - Brisanje
+   - Seed funkcije: `seedActivityTypes`, `seedSkills`, `seedSystemSettings`
+
+3. ✅ **Routes** - `backend/src/routes/organization.routes.ts`
+   - Integrirano u `/api/system-manager/organizations`
+
+### Frontend
+1. ✅ **API Utility** - `frontend/src/utils/api/apiOrganizations.ts`
+   - Sve CRUD funkcije s TypeScript tipovima
+
+2. ✅ **Organization List** - `frontend/src/features/systemManager/organizations/OrganizationList.tsx`
+   - Grid prikaz organizacija
+   - Stats (members, activities)
+   - Edit/Delete akcije
+
+3. ✅ **Creation Wizard** - `frontend/src/features/systemManager/organizations/OrganizationWizard.tsx`
+   - 4-step wizard s progress indicator
+   - Validacija po koracima
+   - Async subdomain provjera
+
+4. ✅ **Wizard Steps:**
+   - `BasicInfoStep.tsx` - Osnovne informacije
+   - `BrandingStep.tsx` - Boje i dokumenti
+   - `SystemManagerStep.tsx` - SM account kreiranje
+   - `ReviewStep.tsx` - Pregled prije kreiranja
+
+5. ✅ **Routing** - Integrirano u `SystemManagerRoutes.tsx`
+
+### API Endpoints
+```
+GET    /api/system-manager/organizations/check-subdomain?subdomain=velebit
+POST   /api/system-manager/organizations
+GET    /api/system-manager/organizations
+GET    /api/system-manager/organizations/:id
+PUT    /api/system-manager/organizations/:id
+DELETE /api/system-manager/organizations/:id
+```
 
 ---
 
-**Zadnje ažurirano:** 2025-10-04  
-**Status:** Planirano za implementaciju
+## 🚀 SLJEDEĆI KORACI
+
+1. **Logo Upload** - Dodati POST /organizations/:id/logo endpoint
+2. **Organization Edit Page** - Forma za ažuriranje postojeće org
+3. **Testing** - E2E testiranje cijelog flow-a
+4. **Wildcard DNS** - Setup za *.platforma.hr
+5. **SSL Certifikati** - Wildcard SSL za sve subdomene
+
+---
+
+**Zadnje ažurirano:** 2025-10-04 17:40  
+**Status:** ✅ Implementirano - Spremno za testiranje

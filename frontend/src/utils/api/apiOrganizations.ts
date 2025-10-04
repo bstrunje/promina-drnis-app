@@ -1,0 +1,124 @@
+// frontend/src/utils/api/apiOrganizations.ts
+import apiInstance from './apiConfig';
+
+export interface Organization {
+  id: number;
+  name: string;
+  short_name: string | null;
+  subdomain: string;
+  email: string;
+  phone: string | null;
+  website_url: string | null;
+  street_address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  country: string | null;
+  logo_path: string | null;
+  primary_color: string;
+  secondary_color: string;
+  ethics_code_url: string | null;
+  privacy_policy_url: string | null;
+  membership_rules_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  _count?: {
+    members: number;
+    activities: number;
+    activity_types?: number;
+    skills?: number;
+  };
+}
+
+export interface CreateOrganizationData {
+  // Organization data
+  name: string;
+  short_name?: string;
+  subdomain: string;
+  email: string;
+  phone?: string;
+  website_url?: string;
+  street_address?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  ethics_code_url?: string;
+  privacy_policy_url?: string;
+  membership_rules_url?: string;
+  
+  // System Manager data
+  sm_username: string;
+  sm_email: string;
+  sm_display_name: string;
+  sm_password: string;
+}
+
+export interface UpdateOrganizationData {
+  name?: string;
+  short_name?: string;
+  email?: string;
+  phone?: string;
+  website_url?: string;
+  street_address?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  ethics_code_url?: string;
+  privacy_policy_url?: string;
+  membership_rules_url?: string;
+  is_active?: boolean;
+}
+
+/**
+ * Provjera dostupnosti subdomene
+ */
+export const checkSubdomainAvailability = async (subdomain: string): Promise<{ available: boolean; subdomain: string }> => {
+  const response = await apiInstance.get<{ available: boolean; subdomain: string }>('/system-manager/organizations/check-subdomain', {
+    params: { subdomain }
+  });
+  return response.data;
+};
+
+/**
+ * Kreiranje nove organizacije (samo globalni System Manager)
+ */
+export const createOrganization = async (data: CreateOrganizationData): Promise<{ success: boolean; organization: Organization; message: string }> => {
+  const response = await apiInstance.post<{ success: boolean; organization: Organization; message: string }>('/system-manager/organizations', data);
+  return response.data;
+};
+
+/**
+ * Dohvat svih organizacija (samo globalni System Manager)
+ */
+export const getAllOrganizations = async (): Promise<{ organizations: Organization[] }> => {
+  const response = await apiInstance.get<{ organizations: Organization[] }>('/system-manager/organizations');
+  return response.data;
+};
+
+/**
+ * Dohvat pojedinačne organizacije
+ */
+export const getOrganizationById = async (id: number): Promise<{ organization: Organization }> => {
+  const response = await apiInstance.get<{ organization: Organization }>(`/system-manager/organizations/${id}`);
+  return response.data;
+};
+
+/**
+ * Ažuriranje organizacije
+ */
+export const updateOrganization = async (id: number, data: UpdateOrganizationData): Promise<{ success: boolean; organization: Organization; message: string }> => {
+  const response = await apiInstance.put<{ success: boolean; organization: Organization; message: string }>(`/system-manager/organizations/${id}`, data);
+  return response.data;
+};
+
+/**
+ * Brisanje organizacije (samo globalni System Manager)
+ */
+export const deleteOrganization = async (id: number): Promise<{ success: boolean; message: string }> => {
+  const response = await apiInstance.delete<{ success: boolean; message: string }>(`/system-manager/organizations/${id}`);
+  return response.data;
+};

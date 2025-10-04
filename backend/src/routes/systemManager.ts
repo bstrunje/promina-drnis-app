@@ -10,6 +10,7 @@ import systemManagerController, {
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
+import organizationRoutes from './organization.routes.js';
 
 const router = express.Router();
 
@@ -84,5 +85,9 @@ router.delete('/holidays/year/:year', holidayController.deleteHolidaysForYear);
 // --- DUTY CALENDAR SETTINGS ---
 router.get('/duty-settings', getDutySettings);
 router.put('/duty-settings', updateDutySettings);
+
+// --- ORGANIZATION MANAGEMENT ---
+// Sve organization rute su već zaštićene s authMiddleware i requireSystemManager
+router.use('/organizations', organizationRoutes);
 
 export default router;
