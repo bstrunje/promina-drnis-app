@@ -13,6 +13,7 @@ import memberService from "../services/member.service.js";
 import memberRepository from "../repositories/member.repository.js";
 import { parseDate, formatDate } from '../utils/dateUtils.js';
 import prisma from "../utils/prisma.js";
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { tBackend } from '../utils/i18n.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
@@ -111,7 +112,8 @@ export const memberController = {
     const locale = req.locale || 'en';
     
     try {
-      const members = await memberRepository.findAll();
+      const organizationId = getOrganizationId(req);
+      const members = await memberRepository.findAll(organizationId);
       res.json(members);
     } catch (error) {
       console.error('Error in getAllMembers:', error);
@@ -139,7 +141,8 @@ export const memberController = {
         return;
       }
 
-      const member = await memberRepository.findById(memberId);
+      const organizationId = getOrganizationId(req);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member) {
         res.status(404).json({ 
           code: 'MEMBER_NOT_FOUND',
@@ -153,7 +156,7 @@ export const memberController = {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
 
-      const memberDetails = await memberService.getMemberById(memberId);
+      const memberDetails = await memberService.getMemberById(req, memberId);
       if (memberDetails === null) {
         res.status(404).json({ 
           code: 'MEMBER_NOT_FOUND',

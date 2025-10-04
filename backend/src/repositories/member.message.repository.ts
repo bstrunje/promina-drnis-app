@@ -39,7 +39,7 @@ const memberMessageRepository = {
         });
     },
 
-    async create(memberId: number, messageText: string): Promise<TransformedMessage> {
+    async create(organizationId: number, memberId: number, messageText: string): Promise<TransformedMessage> {
         // 1. Kreiraj osnovnu poruku
         const newMessage = await prisma.memberMessage.create({
             data: {
@@ -53,7 +53,7 @@ const memberMessageRepository = {
 
         // 2. Dohvati sve administratore i superusere
         const adminAndSuperUserRoles = ['member_administrator', 'member_superuser'];
-        const recipientMemberIds = await memberRepository.findMemberIdsByRoles(adminAndSuperUserRoles);
+        const recipientMemberIds = await memberRepository.findMemberIdsByRoles(organizationId, adminAndSuperUserRoles);
         
         // 3. Kreiraj MessageRecipientStatus za svakog primatelja
         if (recipientMemberIds.length > 0) {

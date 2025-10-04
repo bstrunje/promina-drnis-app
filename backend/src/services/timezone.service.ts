@@ -31,7 +31,7 @@ class TimezoneService {
   public async initializeTimezone(): Promise<void> {
     try {
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: 'default' }
+        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
       });
 
       if (settings?.timeZone) {
@@ -58,7 +58,7 @@ class TimezoneService {
   public async updateTimezone(timeZone: string): Promise<void> {
     try {
       await prisma.systemSettings.update({
-        where: { id: 'default' },
+        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
         data: { timeZone }
       });
 

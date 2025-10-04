@@ -8,6 +8,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { SystemManager, MemberPermissions } from '@prisma/client';
 import { JWT_SECRET } from '../config/jwt.config.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -67,9 +69,11 @@ type DefaultSuperuserPermissionsResponse = {
 
 const systemManagerService = {
     // Check credentials and log in manager
-    async authenticate(username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
+    async authenticate(req: Request, username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
+        const organizationId = getOrganizationId(req);
+        
         // Get manager by username
-        const manager = await systemManagerRepository.findByUsername(username);
+        const manager = await systemManagerRepository.findByUsername(organizationId, username);
         
         // If manager does not exist or has no password
         if (!manager || !manager.password_hash) {
@@ -119,8 +123,9 @@ const systemManagerService = {
     },
     
     // Create new manager
-    async createSystemManager(managerData: { username: string; email?: string | null; password: string; display_name?: string | null }): Promise<SystemManager> {
-        return systemManagerRepository.create(managerData);
+    async createSystemManager(req: Request, managerData: { username: string; email?: string | null; password: string; display_name?: string | null }): Promise<SystemManager> {
+        const organizationId = getOrganizationId(req);
+        return systemManagerRepository.create(organizationId, managerData);
     },
     
     // Check if a manager already exists in the system
@@ -486,8 +491,10 @@ const systemManagerService = {
 
 
     // Dohvat sistemskih postavki
-    async getSystemSettings(): Promise<SystemSettings> {
+    async getSystemSettings(req: Request): Promise<SystemSettings> {
         try {
+            const organizationId = getOrganizationId(req);
+            
             // Dohvati postavke direktnim SQL upitom umjesto kroz Prisma klijent
             const result = await prisma.$queryRaw`
                 SELECT 
@@ -501,7 +508,7 @@ const systemManagerService = {
                     membership_termination_day,
                     membership_termination_month
                 FROM system_settings 
-                WHERE id = 'default'
+                WHERE organization_id = ${organizationId}
             `;
             
             // Pretvorba rezultata SQL upita u jedan objekt ili null
@@ -670,7 +677,7 @@ const systemManagerService = {
                 
                 const updatedSettings = await prisma.systemSettings.update({
                     where: {
-                        id: data.id
+                        organization_id: 1 // PD Promina - TODO: Dodati tenant context
                     },
                     data: {
                         cardNumberLength: cardNumberLength,
@@ -684,10 +691,10 @@ const systemManagerService = {
                     }
                 });
                 
-                if (isDev) console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za ID: ${updatedSettings.id}`);
+                if (isDev) console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za organization_id: ${updatedSettings.organization_id}`);
                 
                 return {
-                    id: updatedSettings.id,
+                    id: (updatedSettings.organization_id ?? 1).toString(),
                     cardNumberLength: updatedSettings.cardNumberLength,
                     renewalStartMonth: updatedSettings.renewalStartMonth,
                     renewalStartDay: updatedSettings.renewalStartDay,

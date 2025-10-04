@@ -8,7 +8,8 @@ import {
 import { Member } from "../shared/types/member.js";
 import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
-import { Request } from "express";
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 import prisma from "../utils/prisma.js";
 import { Prisma } from "@prisma/client";
 import { parseDate, getCurrentDate, formatDate } from '../utils/dateUtils.js';
@@ -25,6 +26,7 @@ interface MembershipUpdatePayload {
 
 const membershipService = {
   async processFeePayment(
+    req: Request,
     memberId: number,
     paymentDate: Date,
     performerId?: number,
@@ -34,7 +36,7 @@ const membershipService = {
     try {
       // Get system settings
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: "default" },
+        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
       });
 
       const renewalStartDay = settings?.renewalStartDay || 31;
@@ -43,7 +45,8 @@ const membershipService = {
       const validPaymentDate = new Date(paymentDate);
       validPaymentDate.setHours(12, 0, 0, 0); // Standardize time // Standardize time
 
-      const member = await memberRepository.findById(memberId);
+      const organizationId = getOrganizationId(req);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member) {
         throw new Error("Member not found");
       }
@@ -157,7 +160,7 @@ const membershipService = {
 
       await updateAnnualStatistics(memberId, paymentYear);
 
-      return await memberRepository.findById(memberId);
+      return await memberRepository.findById(organizationId, memberId);
     } catch (error) {
       throw new Error(
         `Error processing fee payment: ${
@@ -167,9 +170,10 @@ const membershipService = {
     }
   },
 
-  async isMembershipActive(memberId: number): Promise<boolean> {
+  async isMembershipActive(req: Request, memberId: number): Promise<boolean> {
+    const organizationId = getOrganizationId(req);
     try {
-      const member = await memberRepository.findById(memberId);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member || !member.membership_details) {
         return false;
       }
@@ -188,10 +192,12 @@ const membershipService = {
   },
 
   async getMembershipDetails(
+    req: Request,
     memberId: number
   ): Promise<MembershipDetails | undefined> {
+    const organizationId = getOrganizationId(req);
     try {
-      const member = await memberRepository.findById(memberId);
+      const member = await memberRepository.findById(organizationId, memberId);
       return member?.membership_details;
     } catch (error) {
       console.error("Error getting membership details:", error);
@@ -199,8 +205,10 @@ const membershipService = {
     }
   },
 
-  async updateCardDetails(memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, _performerId?: number): Promise<void> {
+  async updateCardDetails(req: Request, memberId: number, cardNumber: string | undefined, stampIssued: boolean | null | undefined, _performerId?: number): Promise<void> {
     try {
+      const organizationId = getOrganizationId(req);
+      
       // Prvo dohvatimo trenutni broj kartice
       const details = await membershipRepository.getMembershipDetails(memberId);
       const previousCardNumber = details?.card_number;
@@ -208,7 +216,7 @@ const membershipService = {
       // Ako je član imao staru karticu i mijenja broj, označi staru kao potrošenu
       if (previousCardNumber && cardNumber !== undefined && previousCardNumber !== cardNumber && cardNumber.trim() !== "") {
         const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
-        await cardNumberRepository.markCardNumberConsumed(previousCardNumber, memberId);
+        await cardNumberRepository.markCardNumberConsumed(organizationId, previousCardNumber, memberId);
       }
       console.log('==== MEMBERSHIP CARD UPDATE DETAILS ====');
       console.log(`Member ID: ${memberId}`);
@@ -340,14 +348,16 @@ const membershipService = {
   },
 
   async updateMembershipHistory(
+    req: Request,
     memberId: number,
     periods: MembershipPeriod[],
     performerId?: number,
     updateMemberStatus: boolean = false,
     performerType?: PerformerType
   ): Promise<void> {
+    const organizationId = getOrganizationId(req);
     try {
-      const member = await memberRepository.findById(memberId);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member) throw new Error("Member not found");
 
       await membershipRepository.updateMembershipPeriods(memberId, periods);
@@ -384,6 +394,7 @@ const membershipService = {
   },
 
   async updateMembership(
+    req: Request,
     memberId: number,
     payload: MembershipUpdatePayload,
     performerId?: number,
@@ -393,6 +404,7 @@ const membershipService = {
 
     if (paymentDate) {
       await this.processFeePayment(
+        req,
         memberId,
         parseDate(paymentDate),
         performerId,
@@ -402,17 +414,19 @@ const membershipService = {
     }
 
     if (typeof cardNumber !== 'undefined' || typeof stampIssued !== 'undefined') {
-        await this.updateCardDetails(memberId, cardNumber, stampIssued, performerId);
+        await this.updateCardDetails(req, memberId, cardNumber, stampIssued, performerId);
     }
 
-    return memberRepository.findById(memberId);
+    const organizationId = getOrganizationId(req);
+    return memberRepository.findById(organizationId, memberId);
   },
 
   async terminateMembership(
+    req: Request,
     memberId: number,
     reason: MembershipEndReason,
-    performerId?: number,
     endDateStr?: string,
+    performerId?: number,
     performerType?: PerformerType
   ): Promise<void> {
     try {
@@ -431,10 +445,11 @@ const membershipService = {
           data: { status: 'former_member' },
         });
 
+        const organizationId = getOrganizationId(req);
         const details = await membershipRepository.getMembershipDetails(memberId);
         if (details?.card_number) {
             const cardNumberRepository = (await import('../repositories/cardnumber.repository.js')).default;
-            await cardNumberRepository.markCardNumberConsumed(details.card_number, memberId);
+            await cardNumberRepository.markCardNumberConsumed(organizationId, details.card_number, memberId);
         }
 
         if (performerId) {
@@ -455,14 +470,16 @@ const membershipService = {
   },
 
   async updateMembershipEndReason(
+    req: Request,
     memberId: number,
     periodId: number,
     endReason: MembershipEndReason,
     performerId?: number,
     performerType?: PerformerType
   ): Promise<void> {
+    const organizationId = getOrganizationId(req);
     try {
-      const member = await memberRepository.findById(memberId);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member) throw new Error("Member not found");
   
       const periods = await membershipRepository.getMembershipPeriods(memberId);
@@ -530,7 +547,7 @@ const membershipService = {
 
       // Dohvati postavke sustava
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: "default" },
+        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
       });
 
       // Koristi postavke ili zadane vrijednosti (1. ožujak kao default)

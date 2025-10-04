@@ -5,6 +5,7 @@ import memberService from '../services/member.service.js';
 import auditService from '../services/audit.service.js';
 import memberRepository, { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
@@ -77,7 +78,7 @@ const memberProfileController = {
       const memberId = parseInt(req.params.memberId, 10);
       const { role } = req.body;
 
-      const updatedMember = await memberService.updateMemberRole(memberId, role);
+      const updatedMember = await memberService.updateMemberRole(req, memberId, role);
 
       if (req.user?.id) {
         await auditService.logAction(
@@ -113,7 +114,8 @@ const memberProfileController = {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      await memberRepository.updatePassword(memberId, hashedPassword);
+      const organizationId = getOrganizationId(req);
+      await memberRepository.updatePassword(organizationId, memberId, hashedPassword);
 
       if (req.user?.id) {
         await auditService.logAction(

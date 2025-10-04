@@ -47,7 +47,7 @@ export async function assignCardNumberHandler(
     const { member_id, card_number } = req.body;
 
     const settings = await prisma.systemSettings.findFirst({
-      where: { id: 'default' },
+      where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
     });
     const cardNumberLength = settings?.cardNumberLength || 5;
 

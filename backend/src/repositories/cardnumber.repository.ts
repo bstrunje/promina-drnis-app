@@ -2,20 +2,22 @@ import prisma from '../utils/prisma.js';
 
 const cardNumberRepository = {
   // OPTIMIZIRANA funkcija za dohvat dostupnih brojeva kartica - serverless friendly
-  async getAvailable(): Promise<string[]> {
+  async getAvailable(organizationId: number): Promise<string[]> {
     try {
-      console.log('[CARD-NUMBERS] Početak dohvata dostupnih brojeva kartica...');
+      console.log(`[CARD-NUMBERS] Početak dohvata dostupnih brojeva kartica za org ${organizationId}...`);
       const startTime = Date.now();
 
       const [allNumbers, consumedNumbers, assignedNumbers] = await Promise.allSettled([
         // 1. Dohvati SVE brojeve kartica iz glavne tablice
         prisma.cardNumber.findMany({
+          where: { organization_id: organizationId },
           select: { card_number: true },
           orderBy: { card_number: 'asc' }
         }),
 
         // 2. Dohvati sve POTROŠENE brojeve (npr. oštećene, izgubljene)
         prisma.consumedCardNumber.findMany({
+          where: { organization_id: organizationId },
           select: { card_number: true }
         }),
 
@@ -57,13 +59,16 @@ const cardNumberRepository = {
    * @param issuedAt datum kada je kartica izdana (opcionalno, koristi trenutni ako nije proslijeđen)
    * @param consumedAt datum kada je potrošena (opcionalno, koristi trenutni ako nije proslijeđen)
    */
-  async markCardNumberConsumed(cardNumber: string, memberId: number, issuedAt?: Date, consumedAt?: Date): Promise<void> {
-    console.log(`[CARD-NUMBERS] Označavam karticu ${cardNumber} kao potrošenu...`);
+  async markCardNumberConsumed(organizationId: number, cardNumber: string, memberId: number, issuedAt?: Date, consumedAt?: Date): Promise<void> {
+    console.log(`[CARD-NUMBERS] Označavam karticu ${cardNumber} kao potrošenu za org ${organizationId}...`);
 
     try {
       // OPTIMIZACIJA: Provjeri postoji li već zapis pomoću Prisma
       const existing = await prisma.consumedCardNumber.findFirst({
-        where: { card_number: cardNumber },
+        where: { 
+          organization_id: organizationId,
+          card_number: cardNumber 
+        },
         select: { id: true }
       });
 
@@ -81,6 +86,7 @@ const cardNumberRepository = {
         // Unesi u consumed_card_numbers
         prisma.consumedCardNumber.create({
           data: {
+            organization_id: organizationId,
             card_number: cardNumber,
             member_id: memberId,
             issued_at: issued,
@@ -90,7 +96,10 @@ const cardNumberRepository = {
 
         // Ažuriraj status u card_numbers (ako postoji)
         prisma.cardNumber.updateMany({
-          where: { card_number: cardNumber },
+          where: { 
+            organization_id: organizationId,
+            card_number: cardNumber 
+          },
           data: {
             status: 'consumed',
             member_id: null,
@@ -107,14 +116,20 @@ const cardNumberRepository = {
   },
 
   // OPTIMIZIRANA funkcija za dodavanje jednog broja kartice
-  async addSingle(cardNumber: string): Promise<void> {
+  async addSingle(organizationId: number, cardNumber: string): Promise<void> {
     console.log(`[CARD-NUMBERS] Dodajem broj kartice ${cardNumber}...`);
 
     try {
       await prisma.cardNumber.upsert({
-        where: { card_number: cardNumber },
+        where: { 
+          organization_id_card_number: {
+            organization_id: organizationId,
+            card_number: cardNumber
+          }
+        },
         update: {}, // Ne mijenjaj ako već postoji
         create: {
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'available'
         }
@@ -127,7 +142,7 @@ const cardNumberRepository = {
     }
   },
 
-  async addRange(start: number, end: number, padLength: number): Promise<number> {
+  async addRange(organizationId: number, start: number, end: number, padLength: number): Promise<number> {
     console.log(`[CARD-NUMBERS] Dodajem raspon ${start}-${end} (padding: ${padLength})...`);
     const startTime = Date.now();
 
@@ -137,6 +152,7 @@ const cardNumberRepository = {
       for (let i = start; i <= end; i++) {
         const cardNumber = i.toString().padStart(padLength, '0');
         cardNumbers.push({
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'available' as const
         });
@@ -160,11 +176,12 @@ const cardNumberRepository = {
     }
   },
 
-  async assignToMember(cardNumber: string, memberId: number): Promise<boolean> {
+  async assignToMember(organizationId: number, cardNumber: string, memberId: number): Promise<boolean> {
     console.log(`[CARD-NUMBERS] Dodjeljujem karticu ${cardNumber} članu ${memberId}...`);
     try {
       const result = await prisma.cardNumber.updateMany({
         where: {
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'available'
         },
@@ -184,11 +201,12 @@ const cardNumberRepository = {
     }
   },
 
-  async releaseCardNumber(cardNumber: string): Promise<boolean> {
+  async releaseCardNumber(organizationId: number, cardNumber: string): Promise<boolean> {
     console.log(`[CARD-NUMBERS] Oslobođavam karticu ${cardNumber}...`);
     try {
       const result = await prisma.cardNumber.updateMany({
         where: {
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'assigned'
         },
@@ -208,11 +226,12 @@ const cardNumberRepository = {
     }
   },
 
-  async isAvailable(cardNumber: string): Promise<boolean> {
+  async isAvailable(organizationId: number, cardNumber: string): Promise<boolean> {
     console.log(`[CARD-NUMBERS] Provjeravam dostupnost kartice ${cardNumber}...`);
     try {
       const card = await prisma.cardNumber.findFirst({
         where: {
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'available'
         },
@@ -228,11 +247,12 @@ const cardNumberRepository = {
     }
   },
 
-  async deleteCardNumber(cardNumber: string): Promise<boolean> {
+  async deleteCardNumber(organizationId: number, cardNumber: string): Promise<boolean> {
     console.log(`[CARD-NUMBERS] Brišem karticu ${cardNumber}...`);
     try {
       const result = await prisma.cardNumber.deleteMany({
         where: {
+          organization_id: organizationId,
           card_number: cardNumber,
           status: 'available'
         }
@@ -247,19 +267,20 @@ const cardNumberRepository = {
     }
   },
 
-  async getAllCardNumbers(): Promise<{
+  async getAllCardNumbers(organizationId: number): Promise<{
     card_number: string;
     status: 'available' | 'assigned';
     member_id?: number;
     member_name?: string;
   }[]> {
-    console.log('[CARD-NUMBERS] Početak dohvata svih brojeva kartica...');
+    console.log(`[CARD-NUMBERS] Početak dohvata svih brojeva kartica za org ${organizationId}...`);
     const startTime = Date.now();
 
     try {
       const [cardNumbers, assignedCards] = await Promise.allSettled([
         // 1. Dohvati sve brojeve kartica
         prisma.cardNumber.findMany({
+          where: { organization_id: organizationId },
           select: {
             card_number: true,
             status: true,

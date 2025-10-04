@@ -13,16 +13,26 @@ const hashPassword = async (password: string): Promise<string> => {
 
 const systemManagerRepository = {
     // Find manager by username
-    async findByUsername(username: string): Promise<SystemManager | null> {
+    async findByUsername(organizationId: number, username: string): Promise<SystemManager | null> {
         return prisma.systemManager.findUnique({
-            where: { username }
+            where: { 
+                organization_id_username: {
+                    organization_id: organizationId,
+                    username: username
+                }
+            }
         });
     },
     
     // Find manager by email
-    async findByEmail(email: string): Promise<SystemManager | null> {
+    async findByEmail(organizationId: number, email: string): Promise<SystemManager | null> {
         return prisma.systemManager.findUnique({
-            where: { email }
+            where: { 
+                organization_id_email: {
+                    organization_id: organizationId,
+                    email: email
+                }
+            }
         });
     },
     
@@ -34,11 +44,12 @@ const systemManagerRepository = {
     },
     
     // Create a new manager
-    async create(managerData: { username: string; email?: string | null | undefined; password: string; display_name?: string | null | undefined }): Promise<SystemManager> {
+    async create(organizationId: number, managerData: { username: string; email?: string | null | undefined; password: string; display_name?: string | null | undefined }): Promise<SystemManager> {
         const passwordHash = await hashPassword(managerData.password);
         
         return prisma.systemManager.create({
             data: {
+                organization_id: organizationId,
                 username: managerData.username,
                 email: managerData.email ?? '',
                 password_hash: passwordHash,

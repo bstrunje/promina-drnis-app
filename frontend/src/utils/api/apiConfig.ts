@@ -1,9 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config';
+import { getApiBaseUrl } from '../tenantUtils';
 
-// Stvaranje Axios instance s osnovnom konfiguracijom
+// Stvaranje Axios instance s tenant-aware konfiguracijom
 const apiInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(), // Tenant-aware API base URL
   headers: {
     'Content-Type': 'application/json',
   },

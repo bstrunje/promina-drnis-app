@@ -1,0 +1,223 @@
+/**
+ * BRANDING CSS VARIJABLE
+ * 
+ * Dinamičke CSS varijable za multi-tenant branding
+ * Postavljaju se automatski iz BrandingContext-a
+ */
+
+:root {
+  /* Default branding boje */
+  --primary-color: #2563eb;
+  --secondary-color: #64748b;
+  --primary-hover: #1d4ed8;
+  --primary-light: #3b82f6;
+  --primary-dark: #1e40af;
+  
+  /* Default logo */
+  --logo-url: url('/assets/default-logo.svg');
+  --logo-height: 40px;
+  --logo-width: auto;
+}
+
+/* Tenant-specifični branding */
+[data-tenant="promina"] {
+  --primary-color: #dc2626;
+  --secondary-color: #991b1b;
+  --primary-hover: #b91c1c;
+  --primary-light: #ef4444;
+  --primary-dark: #7f1d1d;
+}
+
+[data-tenant="test"] {
+  --primary-color: #059669;
+  --secondary-color: #047857;
+  --primary-hover: #047857;
+  --primary-light: #10b981;
+  --primary-dark: #065f46;
+}
+
+[data-tenant="demo"] {
+  --primary-color: #7c3aed;
+  --secondary-color: #6d28d9;
+  --primary-hover: #6d28d9;
+  --primary-light: #8b5cf6;
+  --primary-dark: #5b21b6;
+}
+
+/* Utility klase za branding boje */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-secondary {
+  color: var(--secondary-color) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.border-secondary {
+  border-color: var(--secondary-color) !important;
+}
+
+/* Button styling s branding bojama */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Logo styling */
+.brand-logo {
+  height: var(--logo-height);
+  width: var(--logo-width);
+  object-fit: contain;
+}
+
+/* Navigation bar branding */
+.navbar-brand {
+  color: var(--primary-color) !important;
+}
+
+.navbar-brand:hover {
+  color: var(--primary-hover) !important;
+}
+
+/* Link styling s branding bojama */
+.link-primary {
+  color: var(--primary-color);
+}
+
+.link-primary:hover {
+  color: var(--primary-hover);
+}
+
+/* Card styling s branding akcentima */
+.card-primary {
+  border-left: 4px solid var(--primary-color);
+}
+
+.card-secondary {
+  border-left: 4px solid var(--secondary-color);
+}
+
+/* Loading spinner s branding bojama */
+.spinner-primary {
+  border-color: var(--primary-color);
+  border-right-color: transparent;
+}
+
+/* Progress bar s branding bojama */
+.progress-primary {
+  background-color: var(--primary-color);
+}
+
+/* Badge styling s branding bojama */
+.badge-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.badge-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+/* Form input focus s branding bojama */
+.form-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.25);
+}
+
+/* Checkbox i radio button s branding bojama */
+.form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Tab navigation s branding bojama */
+.nav-tabs .nav-link.active {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--primary-hover);
+}
+
+/* Alert styling s branding bojama */
+.alert-primary {
+  background-color: rgba(var(--primary-color), 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-dark);
+}
+
+/* Table styling s branding akcentima */
+.table-primary thead th {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(var(--primary-color), 0.05);
+}
+
+/* Sidebar navigation s branding bojama */
+.sidebar-nav .nav-link.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.sidebar-nav .nav-link:hover {
+  background-color: var(--primary-light);
+  color: white;
+}
+
+/* Footer s branding bojama */
+.footer-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.footer-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+/* Responsive logo sizing */
+@media (max-width: 768px) {
+  :root {
+    --logo-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --logo-height: 28px;
+  }
+}

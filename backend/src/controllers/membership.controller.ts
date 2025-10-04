@@ -20,6 +20,7 @@ const membershipController = {
       }
 
       const updatedMember = await membershipService.updateMembership(
+        req,
         Number(memberId),
         req.body,
         performerId,
@@ -46,7 +47,7 @@ const membershipController = {
         return;
       }
 
-      await membershipService.updateMembershipHistory(Number(memberId), periods, performerId, false, performerType);
+      await membershipService.updateMembershipHistory(req, Number(memberId), periods, performerId, false, performerType);
       res.status(204).send();
     } catch (error) {
       handleControllerError(error, res);
@@ -69,10 +70,11 @@ const membershipController = {
       }
 
       await membershipService.terminateMembership(
+        req,
         Number(memberId),
         reason,
-        performerId,
         endDate,
+        performerId,
         performerType
       );
       res.status(204).send();
@@ -97,6 +99,7 @@ const membershipController = {
       }
 
       const updatedPeriod = await membershipService.updateMembershipEndReason(
+        req,
         Number(memberId),
         Number(periodId),
         endReason,
@@ -125,7 +128,7 @@ const membershipController = {
         return;
       }
 
-      await stampService.issueStampToMember(Number(memberId), performerId, forNextYear, performerType);
+      await stampService.issueStampToMember(req, Number(memberId), performerId, forNextYear, performerType);
       res.status(204).send();
     } catch (error) {
       handleControllerError(error, res);
@@ -141,6 +144,7 @@ const membershipController = {
       const performerType = req.user?.performer_type;
       
       await membershipService.updateMembershipEndReason(
+        req,
         Number(memberId), 
         Number(periodId), 
         endReason,

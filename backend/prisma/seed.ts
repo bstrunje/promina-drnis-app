@@ -28,9 +28,19 @@ async function seedSkills(tx: Prisma.TransactionClient) {
 
   for (const skillData of skillsToSeed) {
     await tx.skill.upsert({
-      where: { key: skillData.key },
+      where: { 
+        organization_id_key: {
+          organization_id: 1,
+          key: skillData.key
+        }
+      },
       update: { name: skillData.key, is_instructor_possible: skillData.is_instructor_possible },
-      create: { key: skillData.key, name: skillData.key, is_instructor_possible: skillData.is_instructor_possible },
+      create: { 
+        organization_id: 1,
+        key: skillData.key, 
+        name: skillData.key, 
+        is_instructor_possible: skillData.is_instructor_possible 
+      },
     });
   }
   console.log('✅ Skills seeded successfully.');
@@ -50,9 +60,19 @@ async function seedActivityTypes(tx: Prisma.TransactionClient) {
 
   for (const type of activityTypes) {
     await tx.activityType.upsert({
-      where: { key: type.key },
+      where: { 
+        organization_id_key: {
+          organization_id: 1,
+          key: type.key
+        }
+      },
       update: { name: type.name, description: type.description },
-      create: { key: type.key, name: type.name, description: type.description },
+      create: { 
+        organization_id: 1,
+        key: type.key, 
+        name: type.name, 
+        description: type.description 
+      },
     });
   }
   console.log('✅ Activity types seeded successfully.');

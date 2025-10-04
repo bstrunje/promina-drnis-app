@@ -5,6 +5,8 @@ import prisma from '../utils/prisma.js';
 import { updateMemberTotalHours, updateMemberActivityHours } from './member.service.js';
 import { differenceInMinutes } from 'date-fns';
 import { updateAnnualStatistics, cleanupEmptyAnnualStatistics } from './statistics.service.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -50,17 +52,20 @@ const determineActivityStatus = (
 
 // --- Tipovi Aktivnosti --- //
 
-export const getActivityTypesService = async () => {
-  return activityRepository.findAllActivityTypes();
+export const getActivityTypesService = async (req: Request) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findAllActivityTypes(organizationId);
 };
 
-export const getActivityTypesServiceNew = async () => {
-  return activityRepository.findAllActivityTypes();
+export const getActivityTypesServiceNew = async (req: Request) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findAllActivityTypes(organizationId);
 };
 
 // --- Aktivnosti --- //
 
-export const createActivityService = async (data: CreateActivityDTO, organizer_id: number) => {
+export const createActivityService = async (req: Request, data: CreateActivityDTO, organizer_id: number) => {
+  const organizationId = getOrganizationId(req);
   const { 
     activity_type_id, 
     participant_ids, 
@@ -89,6 +94,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
   if (participations && participations.length > 0) {
     participantsData = {
       create: participations.map((p: ParticipationInput) => ({
+        organization_id: organizationId,
         member_id: p.member_id,
         // Automatsko popunjavanje vremena sudionika ili manual_hours ako je uneseno
         start_time: rest.actual_start_time ? new Date(rest.actual_start_time) : null,
@@ -105,6 +111,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
   else if (participant_ids && participant_ids.length > 0) {
     participantsData = {
       create: participant_ids.map((id: number) => ({
+        organization_id: organizationId,
         member_id: id,
         start_time: rest.actual_start_time ? new Date(rest.actual_start_time) : null,
         end_time: rest.actual_end_time ? new Date(rest.actual_end_time) : null,
@@ -120,6 +127,7 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
     ...rest,
     name,
     start_date,
+    organization_id: organizationId,
     organizer_id,
     type_id: activity_type_id,
     status,
@@ -144,25 +152,32 @@ export const createActivityService = async (data: CreateActivityDTO, organizer_i
   });
 };
 
-export const getAllActivitiesService = async () => {
-  return activityRepository.findAllActivitiesWithParticipants();
+export const getAllActivitiesService = async (req: Request) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findAllActivitiesWithParticipants(organizationId);
 };
 
 /**
  * Dohvaća sve aktivnosti s detaljima o sudionicima (koristi se za izračun sati)
  * @returns Promise<Activity[]> Lista aktivnosti s uključenim sudionicima
  */
-export const getActivitiesByYearWithParticipantsService = async (year: number) => {
-  return activityRepository.findActivitiesByYearWithParticipants(year);
+export const getActivitiesByYearWithParticipantsService = async (req: Request, year: number) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findActivitiesByYearWithParticipants(organizationId, year);
 };
 
-export const getAllActivitiesWithParticipantsService = async () => {
-  return activityRepository.findAllActivitiesWithParticipants();
+export const getAllActivitiesWithParticipantsService = async (req: Request) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findAllActivitiesWithParticipants(organizationId);
 };
 
-export const getActivityByIdService = async (activity_id: number) => {
+export const getActivityByIdService = async (req: Request, activity_id: number) => {
+  const organizationId = getOrganizationId(req);
   const activity = await prisma.activity.findUnique({
-    where: { activity_id },
+    where: { 
+      activity_id,
+      organization_id: organizationId
+    },
     include: {
       activity_type: true,
       organizer: {
@@ -236,8 +251,9 @@ export const getActivityByIdService = async (activity_id: number) => {
   };
 };
 
-export const getActivitiesByTypeIdService = async (type_id: number, year?: number) => {
-  const activities = await activityRepository.getActivitiesByTypeId(type_id, year);
+export const getActivitiesByTypeIdService = async (req: Request, type_id: number, year?: number) => {
+  const organizationId = getOrganizationId(req);
+  const activities = await activityRepository.getActivitiesByTypeId(organizationId, type_id, year);
 
   // Kreiramo novi tip koji proširuje postojeći tip aktivnosti s opcionalnim manual_hours
   type ActivityWithManualHours = (typeof activities)[0] & { manual_hours?: number | null };
@@ -262,24 +278,27 @@ export const getActivitiesByTypeIdService = async (type_id: number, year?: numbe
   return activitiesWithManualHours;
 };
 
-export const getActivitiesByStatusService = async (status: string) => {
+export const getActivitiesByStatusService = async (req: Request, status: string) => {
+  const organizationId = getOrganizationId(req);
   // Validacija da li je prosljeđeni status validan član ActivityStatus enuma
   const activityStatus = status.toUpperCase() as ActivityStatus;
   if (!Object.values(ActivityStatus).includes(activityStatus)) {
     throw new Error(`Invalid activity status: ${status}`);
   }
 
-  return activityRepository.findActivitiesByStatus(activityStatus);
+  return activityRepository.findActivitiesByStatus(organizationId, activityStatus);
 };
 
-export const getActivitiesByMemberIdService = async (member_id: number) => {
-  return activityRepository.findActivitiesByParticipantId(member_id);
+export const getActivitiesByMemberIdService = async (req: Request, member_id: number) => {
+  const organizationId = getOrganizationId(req);
+  return activityRepository.findActivitiesByParticipantId(organizationId, member_id);
 };
 
 
 
-export const getParticipationsByMemberIdAndYearService = async (member_id: number, year: number) => {
-  const participations = await activityRepository.findParticipationsByMemberIdAndYear(member_id, year);
+export const getParticipationsByMemberIdAndYearService = async (req: Request, member_id: number, year: number) => {
+  const organizationId = getOrganizationId(req);
+  const participations = await activityRepository.findParticipationsByMemberIdAndYear(organizationId, member_id, year);
 
   // Izračunaj priznate sate za svako sudjelovanje
   const participationsWithRecognizedHours = participations.map(p => {
@@ -310,11 +329,15 @@ export const getParticipationsByMemberIdAndYearService = async (member_id: numbe
   return participationsWithRecognizedHours;
 };
 
-export const updateActivityService = async (activity_id: number, data: UpdateActivityDTO) => {
+export const updateActivityService = async (req: Request, activity_id: number, data: UpdateActivityDTO) => {
+  const organizationId = getOrganizationId(req);
   console.log(`[DEBUG] updateActivityService pozvan za aktivnost ${activity_id} s podacima:`, JSON.stringify(data, null, 2));
   return prisma.$transaction(async (tx: TransactionClient) => {
     const existingActivity = await tx.activity.findUnique({
-      where: { activity_id },
+      where: { 
+        activity_id,
+        organization_id: organizationId
+      },
       include: { participants: true, activity_type: true },
     });
 
@@ -345,7 +368,9 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
 
     let isExcursion = existingActivity.activity_type.name === 'IZLETI';
     if (data.type_id && data.type_id !== existingActivity.type_id) {
-      const newActivityType = await tx.activityType.findUnique({ where: { type_id: data.type_id } });
+      const newActivityType = await tx.activityType.findUnique({ 
+        where: { type_id: data.type_id }
+      });
       if (newActivityType) {
         isExcursion = newActivityType.name === 'IZLETI';
       }
@@ -481,10 +506,14 @@ export const updateActivityService = async (activity_id: number, data: UpdateAct
   });
 };
 
-export const cancelActivityService = async (activity_id: number, cancellation_reason: string) => {
+export const cancelActivityService = async (req: Request, activity_id: number, cancellation_reason: string) => {
+  const organizationId = getOrganizationId(req);
   return prisma.$transaction(async (tx: TransactionClient) => {
     const activity = await tx.activity.findUnique({
-      where: { activity_id },
+      where: { 
+        activity_id,
+        organization_id: organizationId
+      },
       include: { participants: true },
     });
 
@@ -513,8 +542,9 @@ export const cancelActivityService = async (activity_id: number, cancellation_re
   });
 };
 
-export const deleteActivityService = async (activity_id: number) => {
-  const activity = await getActivityByIdService(activity_id); // Prvo provjeravamo postoji li aktivnost
+export const deleteActivityService = async (req: Request, activity_id: number) => {
+  const organizationId = getOrganizationId(req);
+  const activity = await getActivityByIdService(req, activity_id); // Prvo provjeravamo postoji li aktivnost
   
   // Zapamti sudionike prije brisanja
   const participantIds = activity.participants.map(p => p.member.member_id);
@@ -522,7 +552,7 @@ export const deleteActivityService = async (activity_id: number) => {
   // Koristi transakciju za brisanje aktivnosti i ažuriranje ukupnih sati sudionika
   return prisma.$transaction(async (tx: TransactionClient) => {
     // Izbriši aktivnost unutar transakcije
-    const result = await activityRepository.deleteActivity(activity_id, tx);
+    const result = await activityRepository.deleteActivity(organizationId, activity_id, tx);
     
     // Ažuriraj sate i godišnju statistiku za sve sudionike koji su bili dio izbrisane aktivnosti unutar transakcije
     for (const memberId of participantIds) {
@@ -540,9 +570,15 @@ export const deleteActivityService = async (activity_id: number) => {
   });
 };
 
-export const leaveActivityService = async (activity_id: number, member_id: number) => {
+export const leaveActivityService = async (req: Request, activity_id: number, member_id: number) => {
+  const organizationId = getOrganizationId(req);
   return prisma.$transaction(async (tx) => {
-    const activity = await tx.activity.findUnique({ where: { activity_id } });
+    const activity = await tx.activity.findUnique({ 
+      where: { 
+        activity_id,
+        organization_id: organizationId
+      } 
+    });
     if (!activity) {
       throw new NotFoundError('Aktivnost nije pronađena.');
     }
@@ -562,11 +598,7 @@ export const leaveActivityService = async (activity_id: number, member_id: numbe
         throw new ConflictError('Ne možete napustiti aktivnost koja je završena ili otkazana.');
     }
 
-    await tx.activityParticipation.delete({
-      where: {
-        activity_id_member_id: { activity_id, member_id },
-      },
-    });
+    await activityRepository.removeParticipant(organizationId, activity_id, member_id, tx);
 
     await updateMemberTotalHours(member_id, tx);
     await updateMemberActivityHours(member_id, tx);
@@ -582,15 +614,16 @@ export const leaveActivityService = async (activity_id: number, member_id: numbe
 
 // --- Sudionici (Participants) --- //
 
-export const addParticipantService = async (activity_id: number, member_id: number) => {
+export const addParticipantService = async (req: Request, activity_id: number, member_id: number) => {
+  const organizationId = getOrganizationId(req);
   // 1. Dohvati aktivnost s detaljima o tipu
-  const activity = await activityRepository.findActivityById(activity_id);
+  const activity = await activityRepository.findActivityById(organizationId, activity_id);
   if (!activity) {
     throw new NotFoundError('Aktivnost nije pronađena.');
   }
 
   // 2. Provjeri da li je član već prijavljen
-  const existingParticipation = await activityRepository.findParticipation(activity_id, member_id);
+  const existingParticipation = await activityRepository.findParticipation(organizationId, activity_id, member_id);
   if (existingParticipation) {
     throw new ConflictError('Član je već prijavljen na ovu aktivnost.');
   }
@@ -603,6 +636,7 @@ export const addParticipantService = async (activity_id: number, member_id: numb
   return prisma.$transaction(async (tx: TransactionClient) => {
     // Dodaj sudionika s odgovarajućim postotkom priznavanja
     const newParticipation = await activityRepository.addParticipant(
+      organizationId,
       activity_id,
       member_id,
       recognitionValue,
@@ -630,21 +664,18 @@ export const addParticipantService = async (activity_id: number, member_id: numb
   });
 };
 
-export const removeParticipantFromActivityService = async (activity_id: number, member_id: number) => {
+export const removeParticipantFromActivityService = async (req: Request, activity_id: number, member_id: number) => {
+  const organizationId = getOrganizationId(req);
   
   // Koristi transakciju za uklanjanje sudionika i ažuriranje ukupnih sati
   return prisma.$transaction(async (tx: TransactionClient) => {
     // Dohvati aktivnost prije uklanjanja sudionika kako bismo znali godinu
-    const participation = await activityRepository.findParticipation(activity_id, member_id);
-    if (!participation) {
-      throw new NotFoundError('Član nije pronađen kao sudionik na ovoj aktivnosti.');
-    }
-    const activity = await activityRepository.findActivityByIdSimple(activity_id);
+    const activity = await activityRepository.findActivityByIdSimple(organizationId, activity_id);
     if (!activity) {
       throw new NotFoundError('Aktivnost nije pronađena.');
     }
 
-    await activityRepository.removeParticipant(activity_id, member_id, tx);
+    await activityRepository.removeParticipant(organizationId, activity_id, member_id, tx);
     await updateMemberTotalHours(member_id, tx);
     await updateMemberActivityHours(member_id, tx);
     if (activity.start_date) {
@@ -657,9 +688,11 @@ export const removeParticipantFromActivityService = async (activity_id: number, 
 };
 
 export const updateParticipationService = async (
+  req: Request,
   participation_id: number,
   data: Prisma.ActivityParticipationUncheckedUpdateInput & { manual_hours_delta?: number }
 ) => {
+  const organizationId = getOrganizationId(req);
   // Ovdje se može dodati provjera da li zapis o sudjelovanju postoji
   const { member_id, start_time, end_time, participant_role, manual_hours_delta, ...restUpdateData } = data;
   
@@ -745,7 +778,7 @@ export const updateParticipationService = async (
   
   // Koristi transakciju za ažuriranje sudjelovanja i ukupnih sati člana
   return prisma.$transaction(async (tx: TransactionClient) => {
-    await activityRepository.updateParticipation(participation_id, processedUpdateData, tx);
+    await activityRepository.updateParticipation(organizationId, participation_id, processedUpdateData, tx);
     await updateMemberTotalHours(memberId, tx);
     await updateMemberActivityHours(memberId, tx);
     

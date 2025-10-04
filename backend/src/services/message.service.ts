@@ -1,8 +1,11 @@
 import memberMessageRepository, { TransformedMessage } from '../repositories/member.message.repository.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 
 const messageService = {
-    async createMessage(memberId: number, messageText: string): Promise<TransformedMessage> {
-        return await memberMessageRepository.create(memberId, messageText);
+    async createMessage(req: Request, memberId: number, messageText: string): Promise<TransformedMessage> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.create(organizationId, memberId, messageText);
     },
 
     async createAdminMessage({

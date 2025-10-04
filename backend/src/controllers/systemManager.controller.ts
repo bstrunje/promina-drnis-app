@@ -7,6 +7,7 @@ import cardNumberRepository from '../repositories/cardnumber.repository.js';
 import * as dutyService from '../services/duty.service.js';
 import prisma from '../utils/prisma.js';
 import systemManagerRepository from '../repositories/systemManager.repository.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
 import { SystemManager } from '@prisma/client';
 
@@ -66,8 +67,15 @@ export const changeUsername = async (req: Request, res: Response) => {
     const managerId = req.user.id; // obtained from JWT after authentication
     const { username } = req.body;
 
-    // Check if username is already taken
-    const existingAdmin = await prisma.systemManager.findUnique({ where: { username } });
+    // Check if username is already taken within organization
+    const existingAdmin = await prisma.systemManager.findUnique({ 
+      where: { 
+        organization_id_username: {
+          organization_id: 1, // PD Promina - TODO: Dodati tenant context
+          username: username
+        }
+      }
+    });
     if (existingAdmin && existingAdmin.id !== managerId) {
         return res.status(400).json({ message: 'Username already exists' });
     }
@@ -226,7 +234,7 @@ const systemManagerController = {
             }
 
             // User authentication
-            const manager = await systemManagerService.authenticate(username, password);
+            const manager = await systemManagerService.authenticate(req, username, password);
             
             if (!manager) {
                 res.status(401).json({ message: 'Invalid username or password' });
@@ -328,14 +336,15 @@ const systemManagerController = {
             }
 
             // Provjera postoji li već korisnik s tim korisničkim imenom
-            const existingAdmin = await systemManagerRepository.findByUsername(username);
+            const organizationId = getOrganizationId(req);
+            const existingAdmin = await systemManagerRepository.findByUsername(organizationId, username);
             if (existingAdmin) {
                 res.status(400).json({ message: 'Username already exists' });
                 return;
             }
 
             // Kreiranje novog system managera
-            const newAdmin = await systemManagerService.createSystemManager({
+            const newAdmin = await systemManagerService.createSystemManager(req, {
                 username,
                 password,
                 ...(email !== undefined ? { email } : {}),
@@ -613,7 +622,7 @@ const systemManagerController = {
         res: Response
     ): Promise<void> {
         try {
-            const settings = await systemManagerService.getSystemSettings();
+            const settings = await systemManagerService.getSystemSettings(req);
             res.json(settings);
         } catch (error) {
             console.error('Error fetching system settings:', error);
@@ -815,7 +824,12 @@ const systemManagerController = {
                 
                 // Provjeri postoji li već CardNumber zapis s ovim brojem kartice
                 const existingCardNumber = await prisma.cardNumber.findUnique({
-                    where: { card_number: cardNumber }
+                    where: { 
+                        organization_id_card_number: {
+                            organization_id: 1, // PD Promina - TODO: Dodati tenant context
+                            card_number: cardNumber
+                        }
+                    }
                 });
                 
                 if (existingCardNumber) {
@@ -832,6 +846,7 @@ const systemManagerController = {
                     // Kreiraj novi zapis
                     await prisma.cardNumber.create({
                         data: {
+                            organization_id: 1, // PD Promina - TODO: Dodati tenant context
                             card_number: cardNumber,
                             status: 'assigned',
                             member_id: memberId,
@@ -1038,7 +1053,9 @@ const systemManagerController = {
                 });
 
                 try {
+                    const organizationId = getOrganizationId(req);
                     await cardNumberRepository.markCardNumberConsumed(
+                        organizationId,
                         membershipDetails.card_number,
                         memberId,
                         cardMeta?.assigned_at || undefined,

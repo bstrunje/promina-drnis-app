@@ -76,7 +76,7 @@ const memberStatsController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const stats = await memberService.getMemberStats(memberId);
+      const stats = await memberService.getMemberStats(req, memberId);
       res.json(stats);
     } catch (error) {
       handleControllerError(error, res);
@@ -102,7 +102,7 @@ const memberStatsController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const member = await memberService.getMemberWithActivities(memberId);
+      const member = await memberService.getMemberWithActivities(req, memberId);
       res.json(member);
     } catch (error) {
       handleControllerError(error, res);

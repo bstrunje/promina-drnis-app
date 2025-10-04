@@ -15,7 +15,7 @@ const messageController = {
             const { messageText } = req.body;
             const memberId = parseInt(req.params.memberId);
 
-            const message = await messageService.createMessage(memberId, messageText);
+            const message = await messageService.createMessage(req, memberId, messageText);
             
             if (req.user?.id) {
                 await auditService.logAction(

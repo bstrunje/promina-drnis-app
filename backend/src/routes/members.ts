@@ -88,7 +88,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
     const { forNextYear = false } = req.body; // Get parameter from request body
     
     // Get member details to determine stamp type
-    const member = await memberService.getMemberById(memberId);
+    const member = await memberService.getMemberById(req, memberId);
     if (!member) {
       return res.status(404).json({ message: "Member not found" });
     }
@@ -119,7 +119,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
     }
     
     // Get updated member to return in response
-    const updatedMember = await memberService.getMemberById(memberId);
+    const updatedMember = await memberService.getMemberById(req, memberId);
     
     res.json({ 
       message: forNextYear ? "Stamp for next year returned successfully" : "Stamp returned successfully",
@@ -138,7 +138,7 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
 router.get('/:memberId/equipment/status', authenticateToken, roles.requireAdmin, async (req, res) => {
   try {
     const memberId = parseInt(req.params.memberId);
-    const equipmentStatus = await equipmentService.getMemberEquipmentStatus(memberId);
+    const equipmentStatus = await equipmentService.getMemberEquipmentStatus(req, memberId);
     res.json(equipmentStatus);
   } catch (error) {
     console.error("Error fetching member equipment status:", error);
@@ -166,6 +166,7 @@ router.post('/:memberId/equipment/:type/deliver', authenticateToken, roles.requi
     }
 
     await equipmentService.markEquipmentAsDelivered(
+      req,
       memberId, 
       equipmentType, 
       performerId, 
@@ -173,7 +174,7 @@ router.post('/:memberId/equipment/:type/deliver', authenticateToken, roles.requi
     );
 
     // Get updated member to return in response
-    const updatedMember = await memberService.getMemberById(memberId);
+    const updatedMember = await memberService.getMemberById(req, memberId);
     
     res.json({ 
       message: `${equipmentType} marked as delivered successfully`,
@@ -205,6 +206,7 @@ router.post('/:memberId/equipment/:type/undeliver', authenticateToken, roles.req
     }
 
     await equipmentService.unmarkEquipmentAsDelivered(
+      req,
       memberId, 
       equipmentType, 
       performerId, 
@@ -212,7 +214,7 @@ router.post('/:memberId/equipment/:type/undeliver', authenticateToken, roles.req
     );
 
     // Get updated member to return in response
-    const updatedMember = await memberService.getMemberById(memberId);
+    const updatedMember = await memberService.getMemberById(req, memberId);
     
     res.json({ 
       message: `${equipmentType} delivery unmarked successfully`,
@@ -233,9 +235,9 @@ router.get('/equipment/inventory', authenticateToken, roles.requireAdmin, async 
     
     let inventoryStatus;
     if (type && typeof type === 'string') {
-      inventoryStatus = await equipmentService.getInventoryStatusByType(type);
+      inventoryStatus = await equipmentService.getInventoryStatusByType(req, type);
     } else {
-      inventoryStatus = await equipmentService.getInventoryStatus();
+      inventoryStatus = await equipmentService.getInventoryStatus(req);
     }
     
     res.json(inventoryStatus);
@@ -279,10 +281,10 @@ router.put('/equipment/inventory', authenticateToken, roles.requireSuperUser, as
       return res.status(400).json({ message: "Initial count must be a non-negative number" });
     }
 
-    await equipmentService.updateInitialCount(equipment_type, size, gender, initial_count);
+    await equipmentService.updateInitialCount(req, equipment_type, size, gender, initial_count);
     
     // Get updated inventory to return in response
-    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    const updatedInventory = await equipmentService.getInventoryStatusByType(req, equipment_type);
     
     res.json({ 
       message: "Equipment inventory updated successfully",
@@ -330,6 +332,7 @@ router.post('/equipment/gift', authenticateToken, roles.requireAdmin, async (req
     }
 
     await equipmentService.issueEquipmentAsGift(
+      req,
       equipment_type, 
       size, 
       gender, 
@@ -339,7 +342,7 @@ router.post('/equipment/gift', authenticateToken, roles.requireAdmin, async (req
     );
     
     // Get updated inventory to return in response
-    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    const updatedInventory = await equipmentService.getInventoryStatusByType(req, equipment_type);
     
     res.json({ 
       message: `${equipment_type} (${size}, ${gender}) issued as gift successfully`,
@@ -386,6 +389,7 @@ router.delete('/equipment/gift', authenticateToken, async (req: Request, res: Re
     }
 
     await equipmentService.ungiftEquipment(
+      req,
       equipment_type, 
       size, 
       gender, 
@@ -395,7 +399,7 @@ router.delete('/equipment/gift', authenticateToken, async (req: Request, res: Re
     );
     
     // Get updated inventory to return in response
-    const updatedInventory = await equipmentService.getInventoryStatusByType(equipment_type);
+    const updatedInventory = await equipmentService.getInventoryStatusByType(req, equipment_type);
     
     res.json({ 
       message: `${equipment_type} (${size}, ${gender}) gift returned to inventory successfully`,

@@ -9,7 +9,9 @@ import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
+import { BrandingProvider } from './contexts/BrandingContext';
 import SpeedInsightsWrapper from './components/SpeedInsights';
+import BrandingDemo from './components/BrandingDemo';
 
 // Lazy učitavanje većih stranica radi smanjenja početnog bundle-a
 const ActivitiesList = lazy(() => import('./features/activities/ActivitiesList'));
@@ -137,23 +139,43 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <TimeZoneProvider>
-        <UnreadMessagesProvider>
-          <ToastProvider>
+    <BrandingProvider>
+      <AuthProvider>
+        <TimeZoneProvider>
+          <UnreadMessagesProvider>
+            <ToastProvider>
 
-            <AppContent />
-            {import.meta.env.DEV && (
-              <div className="fixed bottom-4 right-4 z-50">
-
-              </div>
-            )}
-            <SpeedInsightsWrapper />
-            <Toaster />
-          </ToastProvider>
-        </UnreadMessagesProvider>
-      </TimeZoneProvider>
-    </AuthProvider>
+              <AppContent />
+              {import.meta.env.DEV && (
+                <div className="fixed bottom-4 right-4 z-50">
+                  {/* Development branding demo - dodaj ?branding=demo u URL za prikaz */}
+                  {new URLSearchParams(window.location.search).get('branding') === 'demo' && (
+                    <div className="fixed inset-4 bg-white shadow-2xl rounded-lg overflow-auto z-50">
+                      <div className="sticky top-0 bg-white border-b p-2 flex justify-between items-center">
+                        <h2 className="font-bold">Branding Demo</h2>
+                        <button
+                          onClick={() => {
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete('branding');
+                            window.location.href = url.toString();
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <BrandingDemo />
+                    </div>
+                  )}
+                </div>
+              )}
+              <SpeedInsightsWrapper />
+              <Toaster />
+            </ToastProvider>
+          </UnreadMessagesProvider>
+        </TimeZoneProvider>
+      </AuthProvider>
+    </BrandingProvider>
   );
 }
 

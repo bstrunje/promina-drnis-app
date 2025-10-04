@@ -16,7 +16,7 @@ declare global {
 
 export const getActivityTypes = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const activityTypes = await activityService.getActivityTypesService();
+    const activityTypes = await activityService.getActivityTypesService(req);
     res.status(200).json(activityTypes);
   } catch (error) {
     next(error);
@@ -37,7 +37,7 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
       });
     }
 
-    const activity = await activityService.createActivityService(req.body, organizer_id);
+    const activity = await activityService.createActivityService(req, req.body, organizer_id);
     res.status(201).json(activity);
   } catch (error) {
     next(error);
@@ -46,7 +46,7 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
 
 export const getAllActivities = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const activities = await activityService.getAllActivitiesService();
+    const activities = await activityService.getAllActivitiesService(req);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -67,7 +67,7 @@ export const getActivitiesByYearWithParticipants = async (req: Request, res: Res
         message: tBackend('validations.invalid_year', locale)
       });
     }
-    const activities = await activityService.getActivitiesByYearWithParticipantsService(year);
+    const activities = await activityService.getActivitiesByYearWithParticipantsService(req, year);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -76,7 +76,7 @@ export const getActivitiesByYearWithParticipants = async (req: Request, res: Res
 
 export const getAllActivitiesWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const activities = await activityService.getAllActivitiesWithParticipantsService();
+    const activities = await activityService.getAllActivitiesWithParticipantsService(req);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -86,7 +86,7 @@ export const getAllActivitiesWithParticipants = async (req: Request, res: Respon
 export const getActivityById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);
-    const activity = await activityService.getActivityByIdService(id);
+    const activity = await activityService.getActivityByIdService(req, id);
     res.status(200).json(activity);
   } catch (error) {
     next(error);
@@ -97,7 +97,7 @@ export const getActivitiesByTypeId = async (req: Request, res: Response, next: N
   try {
     const typeId = parseInt(req.params.typeId, 10);
     const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
-    const activities = await activityService.getActivitiesByTypeIdService(typeId, year);
+    const activities = await activityService.getActivitiesByTypeIdService(req, typeId, year);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -107,7 +107,7 @@ export const getActivitiesByTypeId = async (req: Request, res: Response, next: N
 export const getActivitiesByMemberId = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const memberId = parseInt(req.params.memberId, 10);
-    const activities = await activityService.getActivitiesByMemberIdService(memberId);
+    const activities = await activityService.getActivitiesByMemberIdService(req, memberId);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -117,7 +117,7 @@ export const getActivitiesByMemberId = async (req: Request, res: Response, next:
 export const getActivitiesByStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status } = req.params;
-    const activities = await activityService.getActivitiesByStatusService(status);
+    const activities = await activityService.getActivitiesByStatusService(req, status);
     res.status(200).json(activities);
   } catch (error) {
     next(error);
@@ -128,7 +128,7 @@ export const getParticipationsByMemberIdAndYear = async (req: Request, res: Resp
   try {
     const memberId = parseInt(req.params.memberId, 10);
     const year = parseInt(req.params.year, 10);
-    const participations = await activityService.getParticipationsByMemberIdAndYearService(memberId, year);
+    const participations = await activityService.getParticipationsByMemberIdAndYearService(req, memberId, year);
     res.status(200).json(participations);
   } catch (error) {
     next(error);
@@ -138,7 +138,7 @@ export const getParticipationsByMemberIdAndYear = async (req: Request, res: Resp
 export const updateActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);
-    const activity = await activityService.updateActivityService(id, req.body);
+    const activity = await activityService.updateActivityService(req, id, req.body);
     res.status(200).json(activity);
   } catch (error) {
     next(error);
@@ -158,7 +158,7 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
       });
     }
 
-    const updatedActivity = await activityService.cancelActivityService(activity_id, cancellation_reason);
+    const updatedActivity = await activityService.cancelActivityService(req, activity_id, cancellation_reason);
     res.status(200).json(updatedActivity);
   } catch (error) {
     next(error);
@@ -168,7 +168,7 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
 export const deleteActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.activityId, 10);
-    await activityService.deleteActivityService(id);
+    await activityService.deleteActivityService(req, id);
     res.status(204).send(); // No Content
   } catch (error) {
     next(error);
@@ -190,7 +190,7 @@ export const joinActivity = async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    const participation = await activityService.addParticipantService(activity_id, member_id);
+    const participation = await activityService.addParticipantService(req, activity_id, member_id);
     res.status(201).json(participation);
   } catch (error) {
     next(error);
@@ -210,7 +210,7 @@ export const leaveActivity = async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    await activityService.leaveActivityService(activity_id, member_id);
+    await activityService.leaveActivityService(req, activity_id, member_id);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -232,7 +232,7 @@ export const addParticipantToActivity = async (req: Request, res: Response, next
       });
     }
     
-    const participation = await activityService.addParticipantService(activity_id, member_id);
+    const participation = await activityService.addParticipantService(req, activity_id, member_id);
     res.status(201).json(participation);
   } catch (error) {
     next(error);
@@ -254,7 +254,7 @@ export const removeParticipantFromActivity = async (req: Request, res: Response,
       });
     }
     
-    await activityService.removeParticipantFromActivityService(activity_id, member_id);
+    await activityService.removeParticipantFromActivityService(req, activity_id, member_id);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -280,7 +280,7 @@ export const updateParticipationDetails = async (req: Request, res: Response, ne
       });
     }
     
-    const updatedParticipation = await activityService.updateParticipationService(id, req.body);
+    const updatedParticipation = await activityService.updateParticipationService(req, id, req.body);
     
     if (!updatedParticipation) {
       return res.status(404).json({

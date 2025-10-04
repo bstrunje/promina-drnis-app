@@ -2,19 +2,21 @@ import stampRepository from "../repositories/stamp.repository.js";
 import membershipRepository from "../repositories/membership.repository.js";
 import memberRepository from "../repositories/member.repository.js";
 import auditService from "./audit.service.js";
-import { DatabaseError } from "../utils/errors.js";
+import { DatabaseError } from '../utils/errors.js';
+import { tOrDefault } from '../utils/i18n.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { PerformerType } from '@prisma/client';
 import prisma from '../utils/prisma.js';
-import { tOrDefault } from '../utils/i18n.js';
-
 const isDev = process.env.NODE_ENV === 'development';
 
 const stampService = {
-  async getInventoryStatus() {
+  async getInventoryStatus(req: Request) {
     try {
+      const organizationId = getOrganizationId(req);
       // Dohvati inventar za sve godine
-      const inventory = await stampRepository.getInventory();
+      const inventory = await stampRepository.getInventory(organizationId);
       return inventory.map((item) => ({
         ...item,
         remaining: item.initial_count - item.issued_count,
@@ -24,9 +26,10 @@ const stampService = {
     }
   },
 
-  async getInventoryStatusByYear(year: number) {
+  async getInventoryStatusByYear(req: Request, year: number) {
     try {
-      const inventory = await stampRepository.getInventoryByYear(year);
+      const organizationId = getOrganizationId(req);
+      const inventory = await stampRepository.getInventoryByYear(organizationId, year);
       return inventory.map((item) => ({
         ...item,
         remaining: item.initial_count - item.issued_count,
@@ -36,13 +39,14 @@ const stampService = {
     }
   },
 
-  async updateInitialCount(type: string, count: number, year: number) {
+  async updateInitialCount(req: Request, type: string, count: number, year: number) {
     try {
-      if (count < 0) {
-        throw new Error(tOrDefault('stamp.errors.NEGATIVE_COUNT', 'hr', 'Initial count cannot be negative'));
-      }
-
-      const inventory = await stampRepository.getInventoryByYear(year);
+      if (isDev) console.log(`[STAMP-SERVICE] Ažuriram početni broj markica: ${type}, godina ${year}, broj ${count}`);
+      
+      const organizationId = getOrganizationId(req);
+      // Pozovi repository metodu
+      await stampRepository.updateInventory(organizationId, type, count, year);
+      const inventory = await stampRepository.getInventoryByYear(organizationId, year);
       const currentInventory = inventory.find(
         (item) => item.stamp_type === type && item.stamp_year === year
       );
@@ -51,7 +55,7 @@ const stampService = {
         throw new Error(tOrDefault('stamp.errors.COUNT_BELOW_ISSUED', 'hr', 'New count cannot be less than already issued stamps'));
       }
 
-      await stampRepository.updateInventory(type, count, year);
+      // Već pozvan iznad
     } catch (error) {
       throw new DatabaseError(
         tOrDefault('stamp.errors.UPDATE_INVENTORY', 'hr', 'Error updating stamp inventory') + ': ' +
@@ -78,19 +82,21 @@ const stampService = {
     }
   },
 
-  async issueStamp(memberId: number, type: string, forNextYear: boolean = false) {
+  async issueStamp(req: Request, memberId: number, type: string, forNextYear: boolean = false) {
     try {
       // Validate stamp type
       if (!type) {
         throw new Error(tOrDefault('stamp.errors.STAMP_TYPE_REQUIRED', 'hr', 'Stamp type is required'));
       }
 
+      const organizationId = getOrganizationId(req);
+      
       // Determine which year stamp to use
       const currentYear = getCurrentDate().getFullYear();
       const stampYear = forNextYear ? currentYear + 1 : currentYear;
 
       // Check if stamp is available in inventory
-      const inventory = await stampRepository.getInventoryByYear(stampYear);
+      const inventory = await stampRepository.getInventoryByYear(organizationId, stampYear);
       const stampInventory = inventory.find(
         (item) => item.stamp_type === type && item.stamp_year === stampYear
       );
@@ -105,7 +111,7 @@ const stampService = {
       }
 
       // Issue stamp and update inventory - za odgovarajuću godinu
-      await stampRepository.incrementIssuedCount(type, stampYear);
+      await stampRepository.incrementIssuedCount(organizationId, type, stampYear);
       
       // We'll handle the membership details update in the controller
       if (isDev) console.log(tOrDefault('stamp.success.STAMP_ISSUED', 'hr', 'Stamp issued successfully for member {{memberId}}, type: {{type}}, for year: {{year}}', { memberId: memberId.toString(), type, year: stampYear.toString() }));
@@ -142,17 +148,18 @@ const stampService = {
     }
   },
 
-  async issueStampToMember(memberId: number, performerId: number, forNextYear: boolean = false, performerType?: PerformerType): Promise<void> {
+  async issueStampToMember(req: Request, memberId: number, performerId: number, forNextYear: boolean = false, performerType?: PerformerType): Promise<void> {
+    const organizationId = getOrganizationId(req);
     try {
-      const member = await memberRepository.findById(memberId);
+      const member = await memberRepository.findById(organizationId, memberId);
       if (!member) {
         throw new Error(tOrDefault('stamp.errors.MEMBER_NOT_FOUND', 'hr', 'Member not found'));
       }
 
-      const stampType = this.getStampTypeFromLifeStatus(member.life_status);
+      const stampType = stampService.getStampTypeFromLifeStatus(member.life_status);
 
       // Poziv postojeće metode za ažuriranje inventara
-      await this.issueStamp(memberId, stampType, forNextYear);
+      await stampService.issueStamp(req, memberId, stampType, forNextYear);
 
       // Ažuriranje detalja članstva
       const fieldToUpdate = forNextYear

@@ -1,3 +1,6 @@
+/* Multi-tenant branding CSS - mora biti na vrhu */
+@import './styles/branding.css';
+
 /* @tailwind directive */
 @tailwind base;
 /* @tailwind directive */

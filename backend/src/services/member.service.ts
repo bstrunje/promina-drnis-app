@@ -1,9 +1,9 @@
 // src/services/member.service.ts
 import membershipService from './membership.service.js';
+import { Request } from 'express';
 import memberRepository, { MemberStats, MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { Member } from '../shared/types/member.js';
 import bcrypt from 'bcrypt';
-import { Request } from 'express';
 import membershipRepository from '../repositories/membership.repository.js';
 import authRepository from '../repositories/auth.repository.js';
 import auditService from './audit.service.js';
@@ -13,6 +13,7 @@ import { differenceInMinutes } from 'date-fns';
 import prisma from '../utils/prisma.js';
 import type { PrismaClient } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -254,19 +255,21 @@ export const updateAllMembersTotalHours = async (): Promise<void> => {
 };
 
 const memberService = {
-    async getAllMembers(): Promise<Member[]> {
+    async getAllMembers(req: Request): Promise<Member[]> {
+        const organizationId = getOrganizationId(req);
         try {
-            return await memberRepository.findAll();
+            return await memberRepository.findAll(organizationId);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error fetching members: ' + errorMessage);
         }
     },
 
-    async getMemberById(memberId: number): Promise<Member | null> {
+    async getMemberById(req: Request, memberId: number): Promise<Member | null> {
+        const organizationId = getOrganizationId(req);
         try {
             // Sada samo dohvaćamo člana, jer su sati već izračunati i spremljeni u bazi.
-            const member = await memberRepository.findById(memberId);
+            const member = await memberRepository.findById(organizationId, memberId);
             return member;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -274,10 +277,10 @@ const memberService = {
         }
     },
 
-    async getMemberDashboardStats(memberId: number) {
+    async getMemberDashboardStats(req: Request, memberId: number) {
         try {
             // I ovdje samo dohvaćamo člana, jer su sati već spremljeni u bazi.
-            const member = await this.getMemberById(memberId);
+            const member = await this.getMemberById(req, memberId);
             return member;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -383,18 +386,20 @@ const memberService = {
         }
     },
 
-    async updateMemberRole(memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
+    async updateMemberRole(req: Request, memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
+        const organizationId = getOrganizationId(req);
         try {
-            return await memberRepository.updateRole(memberId, role);
+            return await memberRepository.updateRole(organizationId, memberId, role);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error updating member role: ' + errorMessage);
         }
     },
 
-    async getMemberStats(memberId: number): Promise<MemberStats> {
+    async getMemberStats(req: Request, memberId: number): Promise<MemberStats> {
+        const organizationId = getOrganizationId(req);
         try {
-            const stats = await memberRepository.getStats(memberId);
+            const stats = await memberRepository.getStats(organizationId, memberId);
             if (!stats) {
                 throw new Error('Member stats not found');
             }
@@ -505,9 +510,9 @@ const memberService = {
         }
     },
 
-    async getMemberWithActivities(memberId: number): Promise<MemberWithActivities | null> {
+    async getMemberWithActivities(req: Request, memberId: number): Promise<MemberWithActivities | null> {
         try {
-            const member = await this.getMemberById(memberId);
+            const member = await this.getMemberById(req, memberId);
             if (!member) return null;
 
             console.log(`[MEMBER] Dohvaćam aktivnosti za člana ID: ${memberId}`);
@@ -615,9 +620,10 @@ const memberService = {
         }
     },
 	
-	async getMemberWithDetails(memberId: number): Promise<Member | null> {
+	async getMemberWithDetails(req: Request, memberId: number): Promise<Member | null> {
+        const organizationId = getOrganizationId(req);
         try {
-            const member = await memberRepository.findById(memberId);
+            const member = await memberRepository.findById(organizationId, memberId);
             if (!member) return null;
 
             const periods = await membershipRepository.getMembershipPeriods(memberId);
@@ -665,7 +671,16 @@ const memberService = {
             });
             
             // 4. Kreiraj statistike za godine koje nedostaju
-            const allStats = [...existingStats];
+            const allStats: Array<{
+                stat_id: number;
+                organization_id: number | null;
+                member_id: number | null;
+                year: number;
+                total_hours: Prisma.Decimal;
+                total_activities: number;
+                membership_status: string;
+                calculated_at: Date | null;
+            }> = [...existingStats];
             const existingYears = new Set(existingStats.map(s => s.year));
             
             for (const [year, yearParticipations] of yearlyParticipations) {
@@ -698,11 +713,12 @@ const memberService = {
                     // Dodaj izračunatu statistiku
                     allStats.push({
                         stat_id: 0, // Privremeni ID za izračunate statistike
+                        organization_id: 1, // PD Promina - TODO: Dodati tenant context
                         member_id: memberId,
                         year: year,
                         total_hours: new Prisma.Decimal(totalHours),
                         total_activities: totalActivities,
-                        membership_status: '', // Prazan status za izračunate statistike
+                        membership_status: 'calculated', // Status za izračunate statistike
                         calculated_at: new Date()
                     });
                 }
@@ -724,7 +740,7 @@ const memberService = {
         isRenewalPayment?: boolean
     ): Promise<void> {
         try {
-            const member = await this.getMemberById(memberId);
+            const member = await this.getMemberById(req, memberId);
             if (!member) {
                 throw new Error("Member not found");
             }
@@ -814,12 +830,13 @@ const memberService = {
     },
 
     async updateMembershipCard(
+        req: Request,
         memberId: number, 
         cardNumber: string, 
         stampIssued: boolean
     ): Promise<void> {
         try {
-            await membershipService.updateCardDetails(memberId, cardNumber, stampIssued);
+            await membershipService.updateCardDetails(req, memberId, cardNumber, stampIssued);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error('Error updating card details: ' + errorMessage);

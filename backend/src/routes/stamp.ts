@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/inventory', authenticateToken, roles.requireAdmin, async (req, res) => {
     try {
-        const inventory = await stampService.getInventoryStatus();
+        const inventory = await stampService.getInventoryStatus(req);
         res.json(inventory);
     } catch (_error) {
         res.status(500).json({ message: tOrDefault('stamp.errors.FETCH_INVENTORY', 'hr', 'Failed to fetch inventory') });
@@ -22,7 +22,7 @@ router.get('/inventory/:year', authenticateToken, roles.requireAdmin, async (req
             return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
         }
         
-        const inventory = await stampService.getInventoryStatusByYear(year);
+        const inventory = await stampService.getInventoryStatusByYear(req, year);
         res.json(inventory);
     } catch (_error) {
         res.status(500).json({ 
@@ -66,13 +66,13 @@ router.put('/inventory',
             });
             
             await Promise.all([
-                stampService.updateInitialCount('employed', employedValue, yearValue),
-                stampService.updateInitialCount('student', studentValue, yearValue),
-                stampService.updateInitialCount('pensioner', pensionerValue, yearValue)
+                stampService.updateInitialCount(req, 'employed', employedValue, yearValue),
+                stampService.updateInitialCount(req, 'student', studentValue, yearValue),
+                stampService.updateInitialCount(req, 'pensioner', pensionerValue, yearValue)
             ]);
             
             // Vraćamo ažurirani inventar za tu godinu
-            const updatedInventory = await stampService.getInventoryStatusByYear(yearValue);
+            const updatedInventory = await stampService.getInventoryStatusByYear(req, yearValue);
             
             res.json({ 
                 message: tOrDefault('stamp.success.INVENTORY_UPDATED', 'hr', 'Inventory for year {{year}} updated successfully', { year: yearValue.toString() }),

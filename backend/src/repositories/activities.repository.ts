@@ -6,16 +6,18 @@ type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' |
 
 // --- Tipovi Aktivnosti ---
 
-export const findAllActivityTypes = async () => {
+export const findAllActivityTypes = async (organizationId: number) => {
   return prisma.activityType.findMany({
+    where: { organization_id: organizationId },
     orderBy: { name: 'asc' },
   });
 };
 
 // --- Aktivnosti ---
 
-export const findAllActivities = async () => {
+export const findAllActivities = async (organizationId: number) => {
   return prisma.activity.findMany({
+    where: { organization_id: organizationId },
     include: {
       activity_type: true,
       organizer: {
@@ -33,8 +35,9 @@ export const findAllActivities = async () => {
  * Dohvaća sve aktivnosti s detaljima sudionika (za izračun sati)
  * Ova funkcija je specijalizirana verzija findAllActivities koja uključuje i podatke o sudionicima
  */
-export const findActivitiesByYearWithParticipants = async (year: number) => {
+export const findActivitiesByYearWithParticipants = async (organizationId: number, year: number) => {
   const whereClause: Prisma.ActivityWhereInput = {
+    organization_id: organizationId,
     start_date: {
       gte: new Date(`${year}-01-01T00:00:00.000Z`),
       lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
@@ -69,8 +72,9 @@ export const findActivitiesByYearWithParticipants = async (year: number) => {
   });
 };
 
-export const findAllActivitiesWithParticipants = async () => {
+export const findAllActivitiesWithParticipants = async (organizationId: number) => {
   return prisma.activity.findMany({
+    where: { organization_id: organizationId },
     include: {
       activity_type: true,
       organizer: {
@@ -97,9 +101,12 @@ export const findAllActivitiesWithParticipants = async () => {
   });
 };
 
-export const findActivityById = async (activity_id: number) => {
+export const findActivityById = async (organizationId: number, activity_id: number) => {
   return prisma.activity.findUnique({
-    where: { activity_id },
+    where: { 
+      activity_id,
+      organization_id: organizationId
+    },
     include: {
       activity_type: true,
       organizer: {
@@ -130,8 +137,11 @@ export const findActivityById = async (activity_id: number) => {
   });
 };
 
-export const getActivitiesByTypeId = (type_id: number, year?: number) => {
-  const whereClause: Prisma.ActivityWhereInput = { type_id } as Prisma.ActivityWhereInput;
+export const getActivitiesByTypeId = (organizationId: number, type_id: number, year?: number) => {
+  const whereClause: Prisma.ActivityWhereInput = { 
+    organization_id: organizationId,
+    type_id 
+  } as Prisma.ActivityWhereInput;
 
   if (year) {
     whereClause.start_date = {
@@ -157,9 +167,12 @@ export const getActivitiesByTypeId = (type_id: number, year?: number) => {
   });
 };
 
-export const findActivitiesByStatus = async (status: ActivityStatus) => {
+export const findActivitiesByStatus = async (organizationId: number, status: ActivityStatus) => {
   return prisma.activity.findMany({
-    where: { status },
+    where: { 
+      organization_id: organizationId,
+      status 
+    },
     include: {
       activity_type: true,
       organizer: {
@@ -175,9 +188,10 @@ export const findActivitiesByStatus = async (status: ActivityStatus) => {
 
 
 
-export const findActivitiesByParticipantId = async (member_id: number) => {
+export const findActivitiesByParticipantId = async (organizationId: number, member_id: number) => {
   return prisma.activityParticipation.findMany({
     where: {
+      organization_id: organizationId,
       member_id: member_id,
     },
     include: {
@@ -195,12 +209,13 @@ export const findActivitiesByParticipantId = async (member_id: number) => {
   });
 };
 
-export const findParticipationsByMemberIdAndYear = async (member_id: number, year: number) => {
+export const findParticipationsByMemberIdAndYear = async (organizationId: number, member_id: number, year: number) => {
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year + 1, 0, 1);
 
   return prisma.activityParticipation.findMany({
     where: {
+      organization_id: organizationId,
       member_id: member_id,
       activity: {
         start_date: {
@@ -220,13 +235,19 @@ export const findParticipationsByMemberIdAndYear = async (member_id: number, yea
   });
 };
 
-export const findActivityByIdSimple = async (activity_id: number) => {
-  return prisma.activity.findUnique({ where: { activity_id } });
+export const findActivityByIdSimple = async (organizationId: number, activity_id: number) => {
+  return prisma.activity.findUnique({ 
+    where: { 
+      activity_id,
+      organization_id: organizationId
+    } 
+  });
 };
 
-export const findActivitiesByMemberId = async (member_id: number) => {
+export const findActivitiesByMemberId = async (organizationId: number, member_id: number) => {
   return prisma.activity.findMany({
     where: {
+      organization_id: organizationId,
       organizer: {
         member_id: member_id,
       },
@@ -248,20 +269,28 @@ export const createActivity = async (data: Prisma.ActivityUncheckedCreateInput, 
   return prismaClient.activity.create({ data });
 };
 
-export const updateActivity = async (activity_id: number, data: Prisma.ActivityUpdateInput, prismaClient: TransactionClient = prisma) => {
+export const updateActivity = async (organizationId: number, activity_id: number, data: Prisma.ActivityUpdateInput, prismaClient: TransactionClient = prisma) => {
   return prismaClient.activity.update({
-    where: { activity_id },
+    where: { 
+      activity_id,
+      organization_id: organizationId
+    },
     data,
   });
 };
 
-export const deleteActivity = async (activity_id: number, prismaClient: TransactionClient = prisma) => {
-  return prismaClient.activity.delete({ where: { activity_id } });
+export const deleteActivity = async (organizationId: number, activity_id: number, prismaClient: TransactionClient = prisma) => {
+  return prismaClient.activity.delete({ 
+    where: { 
+      activity_id,
+      organization_id: organizationId
+    } 
+  });
 };
 
 // --- Sudionici (Participants) --- //
 
-export const findParticipation = async (activity_id: number, member_id: number) => {
+export const findParticipation = async (organizationId: number, activity_id: number, member_id: number) => {
   return prisma.activityParticipation.findUnique({
     where: {
       activity_id_member_id: {
@@ -273,6 +302,7 @@ export const findParticipation = async (activity_id: number, member_id: number) 
 };
 
 export const addParticipant = async (
+  organizationId: number,
   activity_id: number,
   member_id: number,
   recognition_override?: number,
@@ -280,6 +310,7 @@ export const addParticipant = async (
 ) => {
   return prismaClient.activityParticipation.create({
     data: {
+      organization_id: organizationId,
       activity_id,
       member_id,
       recognition_override,
@@ -287,7 +318,7 @@ export const addParticipant = async (
   });
 };
 
-export const removeParticipant = async (activity_id: number, member_id: number, prismaClient: TransactionClient = prisma) => {
+export const removeParticipant = async (organizationId: number, activity_id: number, member_id: number, prismaClient: TransactionClient = prisma) => {
   return prismaClient.activityParticipation.delete({
     where: {
       activity_id_member_id: {
@@ -299,6 +330,7 @@ export const removeParticipant = async (activity_id: number, member_id: number, 
 };
 
 export const updateParticipation = async (
+  organizationId: number,
   participation_id: number,
   data: Prisma.ActivityParticipationUpdateInput,
   prismaClient: TransactionClient = prisma

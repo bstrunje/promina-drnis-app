@@ -7,13 +7,19 @@ import {
   getAllScheduleInfo
 } from '../config/dutySchedule.js';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
+import { Request } from 'express';
 
 /**
  * Dohvaća ID tipa aktivnosti "DEŽURSTVA"
  */
 const getDutyActivityTypeId = async (): Promise<number> => {
   const dutyType = await prisma.activityType.findUnique({
-    where: { key: 'dezurstva' }
+    where: { 
+      organization_id_key: {
+        organization_id: 1, // PD Promina - TODO: Dodati tenant context
+        key: 'dezurstva'
+      }
+    }
   });
   
   if (!dutyType) {
@@ -28,7 +34,7 @@ const getDutyActivityTypeId = async (): Promise<number> => {
  */
 const getDutySettings = async () => {
   const settings = await prisma.systemSettings.findUnique({
-    where: { id: 'default' },
+    where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
     select: {
       dutyCalendarEnabled: true,
       dutyMaxParticipants: true,
@@ -103,7 +109,7 @@ const validateDutySlot = async (date: Date, memberId: number) => {
 /**
  * Kreira novo dežurstvo ili dodaje člana na postojeće
  */
-export const createDutyShift = async (memberId: number, date: Date) => {
+export const createDutyShift = async (req: Request, memberId: number, date: Date) => {
   const validation = await validateDutySlot(date, memberId);
   
   // Ako već postoji dežurstvo, pridruži člana
@@ -158,7 +164,7 @@ export const createDutyShift = async (memberId: number, date: Date) => {
   // start_date je postavljeno na planirano vrijeme početka dežurstva
   // actual_start_time i actual_end_time ostaju null dok admin ne završi aktivnost
   // Status će automatski biti 'PLANNED' jer actual_start_time i actual_end_time nisu postavljeni
-  const activity = await createActivityService({
+  const activity = await createActivityService(req, {
     name: activityName,
     activity_type_id: dutyTypeId,
     start_date: startTime, // Postavljamo na planirano vrijeme početka (npr. 07:00)
@@ -278,7 +284,7 @@ export const updateDutySettings = async (data: {
   }
   
   return prisma.systemSettings.update({
-    where: { id: 'default' },
+    where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
     data: updateData
   });
 };

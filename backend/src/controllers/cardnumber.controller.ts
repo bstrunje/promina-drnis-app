@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import cardNumberRepository from '../repositories/cardnumber.repository.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import auditService from '../services/audit.service.js';
 import prisma from "../utils/prisma.js";
 import memberRepository from '../repositories/member.repository.js';
@@ -15,7 +16,8 @@ const cardNumberController = {
     const locale = req.locale || 'hr';
     if (isDev) console.log("Fetching available card numbers - user role:", req.user?.role);
     try {
-      const availableNumbers = await cardNumberRepository.getAvailable();
+      const organizationId = getOrganizationId(req);
+      const availableNumbers = await cardNumberRepository.getAvailable(organizationId);
       if (isDev) console.log(`Found ${availableNumbers.length} available card numbers:`, availableNumbers);
       
       // Always return an array
@@ -45,7 +47,7 @@ const cardNumberController = {
       
       // Get current card number length setting
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: "default" }
+        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
       });
       
       const cardNumberLength = settings?.cardNumberLength || 5;
@@ -58,7 +60,8 @@ const cardNumberController = {
         });
       }
       
-      await cardNumberRepository.addSingle(cardNumber);
+      const organizationId = getOrganizationId(req);
+      await cardNumberRepository.addSingle(organizationId, cardNumber);
       
       await auditService.logAction(
         'CARD_NUMBER_ADDED',
@@ -111,12 +114,13 @@ const cardNumberController = {
       
       // Get current card number length setting
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: "default" }
+        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
       });
       
       const cardNumberLength = settings?.cardNumberLength || 5;
       
-      const added = await cardNumberRepository.addRange(start, end, cardNumberLength);
+      const organizationId = getOrganizationId(req);
+      const added = await cardNumberRepository.addRange(organizationId, start, end, cardNumberLength);
       
       await auditService.logAction(
         'CARD_NUMBER_RANGE_ADDED',
@@ -153,7 +157,8 @@ const cardNumberController = {
         });
       }
       
-      const deleted = await cardNumberRepository.deleteCardNumber(cardNumber);
+      const organizationId = getOrganizationId(req);
+      const deleted = await cardNumberRepository.deleteCardNumber(organizationId, cardNumber);
       
       if (!deleted) {
         return res.status(404).json({ 
@@ -192,7 +197,8 @@ const cardNumberController = {
     const locale = req.locale || 'hr';
     if (isDev) console.log("Fetching all card numbers - user role:", req.user?.role);
     try {
-      const allCardNumbers = await cardNumberRepository.getAllCardNumbers();
+      const organizationId = getOrganizationId(req);
+      const allCardNumbers = await cardNumberRepository.getAllCardNumbers(organizationId);
       
       // Count statistics
       const available = allCardNumbers.filter(card => card.status === 'available').length;
@@ -300,21 +306,22 @@ const cardNumberController = {
 
       // Dohvati postavke sustava za validaciju duljine broja kartice
       const settings = await prisma.systemSettings.findFirst({
-        where: { id: 'default' }
+        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
       });
       const cardNumberLength = settings?.cardNumberLength || 5;
 
-      // Dinamička validacija broja iskaznice prema postavkama
+      // Dinamička validacija broja iskaznice prema stavkama
       const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
       if (!cardNumberRegex.test(cardNumber)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           code: 'CARDNUM_FORMAT_INVALID', 
           message: tBackend('cardnumbers.card_format_invalid', locale, { length: cardNumberLength }) 
         });
       }
 
       // Dohvati podatke o članu
-      const member = await memberRepository.findById(parseInt(memberId));
+      const organizationId = getOrganizationId(req);
+      const member = await memberRepository.findById(organizationId, parseInt(memberId));
       if (!member) {
         return res.status(404).json({ 
           code: 'CARDNUM_MEMBER_NOT_FOUND', 
@@ -362,7 +369,7 @@ const cardNumberController = {
 
       // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
       const settingsForPassword = settings || await prisma.systemSettings.findFirst({
-        where: { id: 'default' }
+        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
       });
       const passwordCardNumberLength = settingsForPassword?.cardNumberLength || 5;
 
@@ -374,6 +381,7 @@ const cardNumberController = {
       await prisma.$transaction(async (tx) => {
         // Ažuriraj podatke o članu - dodaj broj iskaznice
         await membershipService.updateCardDetails(
+          req,
           parseInt(memberId),
           cardNumber,
           false, // Markica se NE izdaje automatski
@@ -395,7 +403,10 @@ const cardNumberController = {
         // Označi broj iskaznice kao potrošen
         await tx.cardNumber.update({
           where: {
-            card_number: cardNumber
+            organization_id_card_number: {
+              organization_id: 1, // PD Promina - TODO: Dodati tenant context
+              card_number: cardNumber
+            }
           },
           data: {
             status: 'consumed'

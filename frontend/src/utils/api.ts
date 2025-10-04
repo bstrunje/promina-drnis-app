@@ -26,6 +26,9 @@ export * from './api/apiActivities';
 // Izvoz handleApiError funkcije
 export { handleApiError };
 
+// Alias za apiInstance kao apiClient (za kompatibilnost s BrandingContext)
+export { default as apiClient } from './api/apiConfig';
+
 // Svi tipovi su sada izvezeni iz modula
 
 // Svi tipovi su sada definirani u types.ts modulu

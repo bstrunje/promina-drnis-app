@@ -1,10 +1,11 @@
-import equipmentRepository from "../repositories/equipment.repository.js";
-import memberRepository from "../repositories/member.repository.js";
+import equipmentRepository from '../repositories/equipment.repository.js';
+import memberRepository from '../repositories/member.repository.js';
+import { DatabaseError } from '../utils/errors.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 import auditService from "./audit.service.js";
-import { DatabaseError } from "../utils/errors.js";
 import { PerformerType } from '@prisma/client';
 import prisma from "../utils/prisma.js";
-
 const isDev = process.env.NODE_ENV === 'development';
 
 // Helper funkcije izdvojene izvan objekta kako bi se izbjegla self-referential tipizacija
@@ -52,9 +53,10 @@ const equipmentService = {
     /**
      * Dohvaća status inventara opreme s kalkulacijom remaining
      */
-    async getInventoryStatus() {
+    async getInventoryStatus(req: Request) {
         try {
-            const inventory = await equipmentRepository.getInventory();
+            const organizationId = getOrganizationId(req);
+            const inventory = await equipmentRepository.getInventory(organizationId);
             return inventory.map((item) => ({
                 ...item,
                 remaining: item.initial_count - item.issued_count - item.gift_count,
@@ -68,9 +70,10 @@ const equipmentService = {
     /**
      * Dohvaća status inventara za određeni tip opreme
      */
-    async getInventoryStatusByType(equipmentType: string) {
+    async getInventoryStatusByType(req: Request, equipmentType: string) {
         try {
-            const inventory = await equipmentRepository.getInventoryByType(equipmentType);
+            const organizationId = getOrganizationId(req);
+            const inventory = await equipmentRepository.getInventoryByEquipmentType(organizationId, equipmentType);
             return inventory.map((item) => ({
                 ...item,
                 remaining: item.initial_count - item.issued_count - item.gift_count,
@@ -85,6 +88,7 @@ const equipmentService = {
      * Ažurira početno stanje inventara za određenu kombinaciju
      */
     async updateInitialCount(
+        req: Request,
         equipmentType: string,
         size: string,
         gender: string,
@@ -95,9 +99,11 @@ const equipmentService = {
                 throw new Error("Initial count cannot be negative");
             }
 
+            const organizationId = getOrganizationId(req);
+            
             // Provjeri trenutno stanje
-            const currentInventory = await equipmentRepository.getInventoryByTypeAndDetails(
-                equipmentType, size, gender
+            const currentInventory = await equipmentRepository.getInventoryByType(
+                organizationId, equipmentType, size, gender
             );
 
             if (currentInventory) {
@@ -109,7 +115,7 @@ const equipmentService = {
                 }
             }
 
-            await equipmentRepository.updateInventory(equipmentType, size, gender, count);
+            await equipmentRepository.updateInventory(organizationId, equipmentType, size, gender, count);
         } catch (error) {
             throw new DatabaseError(
                 "Error updating equipment inventory: " +
@@ -124,14 +130,16 @@ const equipmentService = {
      * Označava opremu kao isporučenu članu (glavna funkcija)
      */
     async markEquipmentAsDelivered(
+        req: Request,
         memberId: number,
         equipmentType: string,
         performerId: number,
         performerType?: PerformerType
     ): Promise<void> {
+        const organizationId = getOrganizationId(req);
         try {
             // Dohvati member podatke
-            const member = await memberRepository.findById(memberId);
+            const member = await memberRepository.findById(organizationId, memberId);
             if (!member) {
                 throw new Error("Member not found");
             }
@@ -154,10 +162,10 @@ const equipmentService = {
 
             // Određi spol za inventory
             const memberGender = getGenderFromMember(member.gender);
-
+            
             // Provjeri dostupnost u inventaru
-            const inventory = await equipmentRepository.getInventoryByTypeAndDetails(
-                equipmentType, memberSize, memberGender
+            const inventory = await equipmentRepository.getInventoryByType(
+                organizationId, equipmentType, memberSize, memberGender
             );
 
             if (!inventory) {
@@ -174,13 +182,13 @@ const equipmentService = {
             }
 
             // Ažuriraj inventory (povećaj issued_count)
-            await equipmentRepository.incrementIssuedCount(equipmentType, memberSize, memberGender);
+            await equipmentRepository.incrementIssuedCount(organizationId, equipmentType, memberSize, memberGender);
 
             // Ažuriraj member podatke (označi kao isporučeno)
             const memberUpdateData = {
                 [deliveryField]: true
             };
-            await memberRepository.update(memberId, memberUpdateData);
+            await memberRepository.update(organizationId, memberId, memberUpdateData);
 
             // Logiraj akciju
             await auditService.logAction(
@@ -206,14 +214,16 @@ const equipmentService = {
      * Poništava isporuku opreme (vraća u inventory)
      */
     async unmarkEquipmentAsDelivered(
+        req: Request,
         memberId: number,
         equipmentType: string,
         performerId: number,
         performerType?: PerformerType
     ): Promise<void> {
+        const organizationId = getOrganizationId(req);
         try {
             // Dohvati member podatke
-            const member = await memberRepository.findById(memberId);
+            const member = await memberRepository.findById(organizationId, memberId);
             if (!member) {
                 throw new Error("Member not found");
             }
@@ -238,13 +248,13 @@ const equipmentService = {
             const memberGender = getGenderFromMember(member.gender);
 
             // Ažuriraj inventory (smanji issued_count)
-            await equipmentRepository.decrementIssuedCount(equipmentType, memberSize, memberGender);
+            await equipmentRepository.decrementIssuedCount(organizationId, equipmentType, memberSize, memberGender);
 
             // Ažuriraj member podatke (ukloni oznaku isporuke)
             const memberUpdateData = {
                 [deliveryField]: false
             };
-            await memberRepository.update(memberId, memberUpdateData);
+            await memberRepository.update(organizationId, memberId, memberUpdateData);
 
             // Logiraj akciju
             await auditService.logAction(
@@ -270,6 +280,7 @@ const equipmentService = {
      * Izdaje opremu kao poklon (povećava gift_count)
      */
     async issueEquipmentAsGift(
+        req: Request,
         equipmentType: string,
         size: string,
         gender: string,
@@ -278,9 +289,11 @@ const equipmentService = {
         performerType?: PerformerType
     ): Promise<void> {
         try {
+            const organizationId = getOrganizationId(req);
+            
             // Provjeri dostupnost u inventaru
-            const inventory = await equipmentRepository.getInventoryByTypeAndDetails(
-                equipmentType, size, gender
+            const inventory = await equipmentRepository.getInventoryByType(
+                organizationId, equipmentType, size, gender
             );
 
             if (!inventory) {
@@ -297,7 +310,7 @@ const equipmentService = {
             }
 
             // Ažuriraj inventory (povećaj gift_count)
-            await equipmentRepository.incrementGiftCount(equipmentType, size, gender);
+            await equipmentRepository.incrementGiftCount(organizationId, equipmentType, size, gender);
 
             // Logiraj akciju
             const logMessage = notes
@@ -327,6 +340,7 @@ const equipmentService = {
      * Poništava poklon opreme (vraća u inventory)
      */
     async ungiftEquipment(
+        req: Request,
         equipmentType: string,
         size: string,
         gender: string,
@@ -335,9 +349,11 @@ const equipmentService = {
         performerType?: PerformerType
     ): Promise<void> {
         try {
+            const organizationId = getOrganizationId(req);
+            
             // Provjeri postoji li inventory zapis
-            const inventory = await equipmentRepository.getInventoryByTypeAndDetails(
-                equipmentType, size, gender
+            const inventory = await equipmentRepository.getInventoryByType(
+                organizationId, equipmentType, size, gender
             );
 
             if (!inventory) {
@@ -353,7 +369,7 @@ const equipmentService = {
             }
 
             // Ažuriraj inventory (smanji gift_count)
-            await equipmentRepository.decrementGiftCount(equipmentType, size, gender);
+            await equipmentRepository.decrementGiftCount(organizationId, equipmentType, size, gender);
 
             // Logiraj akciju
             const logMessage = notes
@@ -384,9 +400,10 @@ const equipmentService = {
     /**
      * Dohvaća statistike opreme za određenog člana
      */
-    async getMemberEquipmentStatus(memberId: number) {
+    async getMemberEquipmentStatus(req: Request, memberId: number) {
+        const organizationId = getOrganizationId(req);
         try {
-            const member = await memberRepository.findById(memberId);
+            const member = await memberRepository.findById(organizationId, memberId);
             if (!member) {
                 throw new Error("Member not found");
             }

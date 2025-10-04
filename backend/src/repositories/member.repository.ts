@@ -69,8 +69,10 @@ export interface MemberStats {
 }
 
 const memberRepository = {
-    async findAll(activeOnly = false): Promise<Member[]> {
-        const whereClause: Prisma.MemberWhereInput = {};
+    async findAll(organizationId: number, activeOnly = false): Promise<Member[]> {
+        const whereClause: Prisma.MemberWhereInput = {
+            organization_id: organizationId
+        };
         if (activeOnly) {
             whereClause.periods = {
                 some: {
@@ -100,9 +102,12 @@ const memberRepository = {
         });
     },
 
-    async findById(id: number): Promise<Member | null> {
+    async findById(organizationId: number, id: number): Promise<Member | null> {
         const raw = await prisma.member.findFirst({
-            where: { member_id: id },
+            where: { 
+                member_id: id,
+                organization_id: organizationId
+            },
             include: {
                 membership_details: true,
                 periods: { select: { period_id: true, start_date: true, end_date: true, end_reason: true } },
@@ -123,10 +128,15 @@ const memberRepository = {
         return mapToMember(raw, totalMinutes, activityMinutes);
     },
 
-    async update(memberId: number, memberData: MemberUpdateData): Promise<Member> {
+    async update(organizationId: number, memberId: number, memberData: MemberUpdateData): Promise<Member> {
         console.log('UPDATE MEMBER - memberData.functions_in_society:', memberData.functions_in_society);
         console.log('UPDATE MEMBER - memberId:', memberId, 'memberData:', memberData);
-        const raw = await prisma.member.update({ where: { member_id: memberId }, data: {
+        const raw = await prisma.member.update({ 
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            }, 
+            data: {
             first_name: memberData.first_name,
             last_name: memberData.last_name,
             full_name: memberData.full_name,
@@ -153,8 +163,9 @@ const memberRepository = {
         return mapToMember(raw);
     },
 
-    async create(memberData: MemberCreateData): Promise<Member> {
+    async create(organizationId: number, memberData: MemberCreateData): Promise<Member> {
         const raw = await prisma.member.create({ data: {
+            organization_id: organizationId,
             first_name: memberData.first_name,
             last_name: memberData.last_name,
             full_name: `${memberData.first_name} ${memberData.last_name}`, // Puno ime je obavezno polje
@@ -177,23 +188,28 @@ const memberRepository = {
         return mapToMember(raw);
     },
 
-    async getStats(memberId: number): Promise<MemberStats> {
+    async getStats(organizationId: number, memberId: number): Promise<MemberStats> {
         // count total activities and sum hours for member
         const totalActivities = await prisma.activityParticipation.count({
             where: { 
+                organization_id: organizationId,
                 member_id: memberId,
                 activity: { status: 'COMPLETED' } 
             }
         });
         const agg = await prisma.activityParticipation.aggregate({
             where: { 
+                organization_id: organizationId,
                 member_id: memberId,
                 activity: { status: 'COMPLETED' } 
             },
             _sum: { manual_hours: true }
         });
-        const member = await prisma.member.findUnique({
-            where: { member_id: memberId },
+        const member = await prisma.member.findFirst({
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            },
             select: { membership_type: true }
         });
         if (!member) throw new Error('Member not found');
@@ -206,9 +222,12 @@ const memberRepository = {
         };
     },
 
-    async updateProfileImage(memberId: number, imagePath: string): Promise<void> {
+    async updateProfileImage(organizationId: number, memberId: number, imagePath: string): Promise<void> {
         await prisma.member.update({
-            where: { member_id: memberId },
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            },
             data: {
                 profile_image_path: imagePath,
                 profile_image_updated_at: getCurrentDate()
@@ -216,35 +235,48 @@ const memberRepository = {
         });
     },
     
-    async getProfileImage(memberId: number): Promise<string | null> {
+    async getProfileImage(organizationId: number, memberId: number): Promise<string | null> {
         const result = await prisma.member.findFirst({
-            where: { member_id: memberId },
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            },
             select: { profile_image_path: true }
         });
         return result?.profile_image_path || null;
     },
 
-    async updateRole(memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
-        const raw = await prisma.member.update({ where: { member_id: memberId }, data: { role } });
+    async updateRole(organizationId: number, memberId: number, role: 'member' | 'member_administrator' | 'member_superuser'): Promise<Member> {
+        const raw = await prisma.member.update({ 
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            }, 
+            data: { role } 
+        });
         return mapToMember(raw);
     },
 
-    async updatePassword(memberId: number, password: string): Promise<void> {
+    async updatePassword(organizationId: number, memberId: number, password: string): Promise<void> {
         await prisma.member.update({
-            where: { member_id: memberId },
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId
+            },
             data: { password_hash: password }
         });
     },
 
-    async findByRole(role: string): Promise<Member[]> {
+    async findByRole(organizationId: number, role: string): Promise<Member[]> {
         // reuse findAll and filter by role for Prisma consistency
-        const all = await this.findAll();
+        const all = await this.findAll(organizationId);
         return all.filter(member => member.role === role);
     },
 
-    async findMemberIdsByRoles(roles: string[]): Promise<number[]> {
+    async findMemberIdsByRoles(organizationId: number, roles: string[]): Promise<number[]> {
         const members = await prisma.member.findMany({
             where: {
+                organization_id: organizationId,
                 role: { in: roles },
                 status: 'registered', // Dodajemo provjeru da su članovi aktivni
             },
@@ -253,9 +285,10 @@ const memberRepository = {
         return members.map(m => m.member_id);
     },
 
-    async findAllReceivableMemberIds(excludeSenderId?: number): Promise<number[]> {
+    async findAllReceivableMemberIds(organizationId: number, excludeSenderId?: number): Promise<number[]> {
         const members = await prisma.member.findMany({
             where: {
+                organization_id: organizationId,
                 status: {
                     not: 'pending',
                 },

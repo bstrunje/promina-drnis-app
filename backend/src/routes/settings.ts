@@ -9,13 +9,13 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const settings = await prisma.systemSettings.findFirst({
-      where: { id: 'default' }
+      where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
     });
 
     if (!settings) {
       const defaultSettings = await prisma.systemSettings.create({
         data: {
-          id: 'default',
+          organization_id: 1, // PD Promina - TODO: Dodati tenant context
           cardNumberLength: 5,
           renewalStartDay: 1,
           renewalStartMonth: 11
@@ -37,7 +37,9 @@ router.put('/', authMiddleware, roles.requireSystemManager, updateSettings);
 // Postojeće rute
 router.get('/card-length', async (req, res) => {
   try {
-    const settings = await prisma.systemSettings.findFirst();
+    const settings = await prisma.systemSettings.findFirst({
+      where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+    });
     return res.json({ cardNumberLength: settings?.cardNumberLength ?? 5 });
   } catch (_error) {
     return res.status(500).json({ error: 'Failed to fetch settings' });
@@ -48,10 +50,10 @@ router.put('/card-length', authMiddleware, roles.requireSystemManager, async (re
   const { length } = req.body;
   try {
     const settings = await prisma.systemSettings.upsert({
-      where: { id: 'default' },
+      where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
       update: { cardNumberLength: length },
       create: { 
-        id: 'default',
+        organization_id: 1, // PD Promina - TODO: Dodati tenant context
         cardNumberLength: length,
         renewalStartDay: 1,
         renewalStartMonth: 11

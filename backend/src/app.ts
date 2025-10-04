@@ -35,6 +35,8 @@ import dutyRoutes from './routes/duty.routes.js';
 
 import skillRoutes from './routes/skillRoutes.js';
 import devRoutes from './routes/dev.routes.js'; // Dodano za podršku razvojnim rutama
+import orgConfigRoutes from './routes/org-config.routes.js'; // Multi-tenant org config
+import { tenantMiddleware } from './middleware/tenant.middleware.js'; // Multi-tenant support
 
 // (prepareDirectories, migrateExistingFiles) se više ne koriste
 
@@ -271,11 +273,15 @@ app.use('/api/messages', (req, res, next) => {
 });
 
 // API Routes - KLJUČNO: /api/messages MORA biti PRIJE /api/members
+// TENANT MIDDLEWARE - Mora biti PRIJE svih API ruta za multi-tenant support
+app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
+
+// Public routes (bez authMiddleware)
+app.use('/api', orgConfigRoutes); // Public org config endpoints
+
 app.use('/api/auth', authRoutes);
 app.use('/api/system-manager', systemManagerRoutes);
 app.use('/api/skills', skillRoutes);
-
-if (isDev) console.log('🔥 REGISTERING /api/messages with adminMessagesRouter');
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
 app.use('/api/duty', dutyRoutes); // Duty Calendar routes

@@ -24,7 +24,7 @@ export const createDutyShift = async (req: Request, res: Response, next: NextFun
       return res.status(400).json({ message: 'Invalid date format' });
     }
     
-    const duty = await dutyService.createDutyShift(memberId, dutyDate);
+    const duty = await dutyService.createDutyShift(req, memberId, dutyDate);
     
     res.status(201).json(duty);
   } catch (error) {

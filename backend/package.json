@@ -17,8 +17,8 @@
     "migrate:deploy": "prisma migrate deploy && npm run prisma:seed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "backup": "node dist/scripts/backupDatabase.js",
-    "restore": "node dist/scripts/restoreDatabase.js"
+    "backup": "node dist/src/scripts/backupDatabase.js",
+    "restore": "node dist/src/scripts/restoreDatabase.js"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",

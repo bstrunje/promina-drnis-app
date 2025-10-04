@@ -24,11 +24,14 @@ type StampHistoryRow = {
 };
 
 const stampRepository = {
-    async getInventory(): Promise<StampInventory[]> {
+    async getInventory(organizationId: number): Promise<StampInventory[]> {
         try {
-            if (isDev) console.log('[STAMP-INVENTORY] Dohvaćam inventar markica s Prisma...');
+            if (isDev) console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za org ${organizationId} s Prisma...`);
             
             const stampInventory = await prisma.stampInventory.findMany({
+                where: {
+                    organization_id: organizationId
+                },
                 select: {
                     stamp_type: true,
                     stamp_year: true,
@@ -58,12 +61,13 @@ const stampRepository = {
         }
     },
 
-    async getInventoryByYear(year: number): Promise<StampInventory[]> {
+    async getInventoryByYear(organizationId: number, year: number): Promise<StampInventory[]> {
         try {
-            if (isDev) console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za godinu ${year} s Prisma...`);
+            if (isDev) console.log(`[STAMP-INVENTORY] Dohvaćam inventar markica za org ${organizationId}, godinu ${year} s Prisma...`);
             
             const stampInventory = await prisma.stampInventory.findMany({
                 where: {
+                    organization_id: organizationId,
                     stamp_year: year
                 },
                 select: {
@@ -95,16 +99,18 @@ const stampRepository = {
     },
 
     async updateInventory(
+        organizationId: number,
         stamp_type: string, 
         initial_count: number,
         stamp_year: number
     ): Promise<void> {
         try {
-            if (isDev) console.log(`[STAMP-UPDATE] Ažuriram inventar markica: ${stamp_type}, godina ${stamp_year}, početni broj ${initial_count}`);
+            if (isDev) console.log(`[STAMP-UPDATE] Ažuriram inventar markica za org ${organizationId}: ${stamp_type}, godina ${stamp_year}, početni broj ${initial_count}`);
             
             const updatedInventory = await prisma.stampInventory.upsert({
                 where: {
                     stamp_type_year_unique: {
+                        organization_id: organizationId,
                         stamp_type: stamp_type,
                         stamp_year: stamp_year
                     }
@@ -114,6 +120,7 @@ const stampRepository = {
                     last_updated: new Date()
                 },
                 create: {
+                    organization_id: organizationId,
                     stamp_type: stamp_type,
                     stamp_year: stamp_year,
                     initial_count: initial_count,
@@ -129,13 +136,14 @@ const stampRepository = {
         }
     },
 
-    async incrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
+    async incrementIssuedCount(organizationId: number, stamp_type: string, stamp_year: number): Promise<void> {
         try {
-            if (isDev) console.log(`[STAMP-INCREMENT] Povećavam broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
+            if (isDev) console.log(`[STAMP-INCREMENT] Povećavam broj izdanih markica za org ${organizationId}: ${stamp_type}, godina ${stamp_year}`);
             
             const updatedInventory = await prisma.stampInventory.upsert({
                 where: {
                     stamp_type_year_unique: {
+                        organization_id: organizationId,
                         stamp_type: stamp_type,
                         stamp_year: stamp_year
                     }
@@ -147,6 +155,7 @@ const stampRepository = {
                     last_updated: new Date()
                 },
                 create: {
+                    organization_id: organizationId,
                     stamp_type: stamp_type,
                     stamp_year: stamp_year,
                     initial_count: 0,

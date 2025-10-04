@@ -94,7 +94,7 @@ export function formatMinuteText(minutes: number, locale: 'en' | 'hr' = 'hr'): s
 // Pomoćna funkcija za dohvat duljine broja kartice
 export async function getCardNumberLength(): Promise<number> {
   const settings = await prisma.systemSettings.findFirst({
-    where: { id: 'default' }
+    where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
   });
   return settings?.cardNumberLength ?? 5; // Koristi 5 kao fallback ako je null ili undefined
 }

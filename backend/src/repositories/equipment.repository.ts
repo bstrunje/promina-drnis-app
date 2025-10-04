@@ -11,15 +11,27 @@ interface EquipmentInventory {
     last_updated: Date;
 }
 
-const equipmentRepository = {
+const equipmentRepository: {
+    getInventory(organizationId: number): Promise<EquipmentInventory[]>;
+    getInventoryByEquipmentType(organizationId: number, equipmentType: string): Promise<EquipmentInventory[]>;
+    getInventoryByType(organizationId: number, equipmentType: string, size: string, gender: string): Promise<EquipmentInventory | null>;
+    updateInventory(organizationId: number, equipmentType: string, size: string, gender: string, initialCount: number): Promise<void>;
+    incrementIssuedCount(organizationId: number, equipmentType: string, size: string, gender: string): Promise<void>;
+    decrementIssuedCount(organizationId: number, equipmentType: string, size: string, gender: string): Promise<void>;
+    incrementGiftCount(organizationId: number, equipmentType: string, size: string, gender: string): Promise<void>;
+    decrementGiftCount(organizationId: number, equipmentType: string, size: string, gender: string): Promise<void>;
+} = {
     /**
      * Dohvaća sav equipment inventory
      */
-    async getInventory(): Promise<EquipmentInventory[]> {
+    async getInventory(organizationId: number): Promise<EquipmentInventory[]> {
         try {
-            console.log('[EQUIPMENT-INVENTORY] Dohvaćam inventar opreme s Prisma...');
+            console.log(`[EQUIPMENT-INVENTORY] Dohvaćam inventar opreme za org ${organizationId} s Prisma...`);
             
             const equipmentInventory = await prisma.equipmentInventory.findMany({
+                where: {
+                    organization_id: organizationId
+                },
                 select: {
                     equipment_type: true,
                     size: true,
@@ -59,12 +71,13 @@ const equipmentRepository = {
     /**
      * Dohvaća inventory za određeni tip opreme
      */
-    async getInventoryByType(equipmentType: string): Promise<EquipmentInventory[]> {
+    async getInventoryByEquipmentType(organizationId: number, equipmentType: string): Promise<EquipmentInventory[]> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Dohvaćam inventar za ${equipmentType} s Prisma...`);
+            console.log(`[EQUIPMENT-INVENTORY] Dohvaćam inventar za org ${organizationId}, tip ${equipmentType} s Prisma...`);
             
             const equipmentInventory = await prisma.equipmentInventory.findMany({
                 where: {
+                    organization_id: organizationId,
                     equipment_type: equipmentType
                 },
                 select: {
@@ -104,17 +117,19 @@ const equipmentRepository = {
     /**
      * Dohvaća inventory za određeni tip, veličinu i spol
      */
-    async getInventoryByTypeAndDetails(
-        equipmentType: string, 
-        size: string, 
+    async getInventoryByType(
+        organizationId: number,
+        equipmentType: string,
+        size: string,
         gender: string
     ): Promise<EquipmentInventory | null> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Dohvaćam inventar za ${equipmentType}-${size}-${gender} s Prisma...`);
+            console.log(`[EQUIPMENT-INVENTORY] Dohvaćam inventar za org ${organizationId}: ${equipmentType}-${size}-${gender} s Prisma...`);
             
             const equipmentInventory = await prisma.equipmentInventory.findUnique({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
@@ -157,6 +172,7 @@ const equipmentRepository = {
      * Ažurira ili kreira inventory za određenu kombinaciju
      */
     async updateInventory(
+        organizationId: number,
         equipmentType: string,
         size: string,
         gender: string,
@@ -168,6 +184,7 @@ const equipmentRepository = {
             await prisma.equipmentInventory.upsert({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
@@ -178,6 +195,7 @@ const equipmentRepository = {
                     last_updated: getCurrentDate()
                 },
                 create: {
+                    organization_id: organizationId,
                     equipment_type: equipmentType,
                     size: size,
                     gender: gender,
@@ -199,16 +217,18 @@ const equipmentRepository = {
      * Povećava issued_count za određenu kombinaciju
      */
     async incrementIssuedCount(
+        organizationId: number,
         equipmentType: string,
         size: string,
         gender: string
     ): Promise<void> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Povećavam issued_count za ${equipmentType}-${size}-${gender}`);
+            console.log(`[EQUIPMENT-INVENTORY] Povećavam issued_count za org ${organizationId}: ${equipmentType}-${size}-${gender}`);
             
             await prisma.equipmentInventory.update({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
@@ -233,16 +253,18 @@ const equipmentRepository = {
      * Smanjuje issued_count za određenu kombinaciju
      */
     async decrementIssuedCount(
+        organizationId: number,
         equipmentType: string,
         size: string,
         gender: string
     ): Promise<void> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Smanjujem issued_count za ${equipmentType}-${size}-${gender}`);
+            console.log(`[EQUIPMENT-INVENTORY] Smanjujem issued_count za org ${organizationId}: ${equipmentType}-${size}-${gender}`);
             
             await prisma.equipmentInventory.update({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
@@ -267,16 +289,18 @@ const equipmentRepository = {
      * Povećava gift_count za određenu kombinaciju
      */
     async incrementGiftCount(
+        organizationId: number,
         equipmentType: string,
         size: string,
         gender: string
     ): Promise<void> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Povećavam gift_count za ${equipmentType}-${size}-${gender}`);
+            console.log(`[EQUIPMENT-INVENTORY] Povećavam gift_count za org ${organizationId}: ${equipmentType}-${size}-${gender}`);
             
             await prisma.equipmentInventory.update({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
@@ -301,16 +325,18 @@ const equipmentRepository = {
      * Smanjuje gift_count za određenu kombinaciju
      */
     async decrementGiftCount(
+        organizationId: number,
         equipmentType: string,
         size: string,
         gender: string
     ): Promise<void> {
         try {
-            console.log(`[EQUIPMENT-INVENTORY] Smanjujem gift_count za ${equipmentType}-${size}-${gender}`);
+            console.log(`[EQUIPMENT-INVENTORY] Smanjujem gift_count za org ${organizationId}: ${equipmentType}-${size}-${gender}`);
             
             await prisma.equipmentInventory.update({
                 where: {
                     equipment_unique: {
+                        organization_id: organizationId,
                         equipment_type: equipmentType,
                         size: size,
                         gender: gender
