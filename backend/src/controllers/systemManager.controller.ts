@@ -308,6 +308,7 @@ const systemManagerController = {
                 token,
                 manager: {
                     id: manager.id,
+                    organization_id: manager.organization_id,
                     username: manager.username,
                     email: manager.email,
                     display_name: manager.display_name,
@@ -894,6 +895,7 @@ const systemManagerController = {
                 where: { id: req.user.id },
                 select: {
                     id: true,
+                    organization_id: true,
                     username: true,
                     email: true,
                     display_name: true,

@@ -5,7 +5,8 @@
  * i dodatne utility funkcije za rad s branding podacima
  */
 
-import { useBranding as useBaseBranding } from '../contexts/BrandingContext';
+import { useBranding as useBaseBranding } from '../context/BrandingContext';
+import { IMAGE_BASE_URL } from '../utils/config';
 
 /**
  * Extended branding hook s dodatnim utility funkcijama
@@ -14,59 +15,63 @@ export const useBranding = () => {
   const brandingContext = useBaseBranding();
   
   /**
-   * Dohvaća logo URL ili fallback
+   * Dohvaća logo URL ili null ako nema loga
    */
-  const getLogoUrl = (): string => {
+  const getLogoUrl = (): string | null => {
     if (brandingContext.branding?.logo_path) {
-      // Ako je logo_path relativan, dodaj base URL
-      if (brandingContext.branding.logo_path.startsWith('/')) {
-        return brandingContext.branding.logo_path;
+      const logoPath = brandingContext.branding.logo_path;
+      
+      // Ako je puni URL (Vercel Blob), koristi direktno
+      if (logoPath.startsWith('http')) {
+        return logoPath;
       }
-      // Ako je puni URL, koristi direktno
-      if (brandingContext.branding.logo_path.startsWith('http')) {
-        return brandingContext.branding.logo_path;
+      
+      // Ako je relativan path, dodaj IMAGE_BASE_URL
+      if (logoPath.startsWith('/uploads')) {
+        return `${IMAGE_BASE_URL}${logoPath.replace('/uploads', '')}`;
       }
-      // Inače, tretirati kao relativan path
-      return `/uploads/logos/${brandingContext.branding.logo_path}`;
+      
+      // Fallback za stare formate
+      return logoPath;
     }
     
-    // Fallback logo
-    return '/assets/default-logo.svg';
+    // Nema loga - vrati null
+    return null;
   };
 
   /**
-   * Dohvaća primary boju ili fallback
+   * Dohvaća primary boju ili neutralnu crnu
    */
   const getPrimaryColor = (): string => {
-    return brandingContext.branding?.primary_color ?? '#2563eb';
+    return brandingContext.branding?.primary_color ?? '#000000';
   };
 
   /**
-   * Dohvaća secondary boju ili fallback
+   * Dohvaća secondary boju ili neutralnu sivu
    */
   const getSecondaryColor = (): string => {
-    return brandingContext.branding?.secondary_color ?? '#64748b';
+    return brandingContext.branding?.secondary_color ?? '#e2e4e9';
   };
 
   /**
-   * Dohvaća kratki naziv organizacije
+   * Dohvaća kratki naziv organizacije ili null
    */
-  const getShortName = (): string => {
-    return brandingContext.branding?.short_name ?? 'PO';
+  const getShortName = (): string | null => {
+    return brandingContext.branding?.short_name ?? null;
   };
 
   /**
-   * Dohvaća puni naziv organizacije
+   * Dohvaća puni naziv organizacije ili null
    */
-  const getFullName = (): string => {
-    return brandingContext.branding?.name ?? 'Planinarska Organizacija';
+  const getFullName = (): string | null => {
+    return brandingContext.branding?.name ?? null;
   };
 
   /**
-   * Dohvaća kontakt email
+   * Dohvaća kontakt email ili null
    */
-  const getContactEmail = (): string => {
-    return brandingContext.branding?.email ?? 'info@example.com';
+  const getContactEmail = (): string | null => {
+    return brandingContext.branding?.email ?? null;
   };
 
   /**

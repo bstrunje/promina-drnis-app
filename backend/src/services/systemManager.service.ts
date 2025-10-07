@@ -72,8 +72,13 @@ const systemManagerService = {
     async authenticate(req: Request, username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
         const organizationId = getOrganizationId(req);
         
-        // Get manager by username
-        const manager = await systemManagerRepository.findByUsername(organizationId, username);
+        // Prvo pokušaj pronaći Global System Manager (organization_id = NULL)
+        let manager = await systemManagerRepository.findByUsername(null, username);
+        
+        // Ako nije pronađen globalni, pokušaj pronaći org-specific
+        if (!manager) {
+            manager = await systemManagerRepository.findByUsername(organizationId, username);
+        }
         
         // If manager does not exist or has no password
         if (!manager || !manager.password_hash) {

@@ -4,6 +4,68 @@ Ovaj fajl prati važne promjene u dokumentaciji.
 
 ---
 
+## [7. listopad 2025.]
+
+### Dodano 📝
+
+#### Novi dokumenti:
+1. **`branding-system-implementation.md`**
+   - Potpuna dokumentacija multi-tenant branding sistema
+   - BrandingContext i useBranding hook
+   - CSS varijable i fallback vrijednosti
+   - Dashboard standardizacija
+   - Organization management s System Manager edit
+   - Automatsko brisanje resursa (logo cleanup)
+   - Best practices i deployment checklist
+
+### Promijenjeno 🔄
+
+#### Backend:
+1. **`organization.controller.ts`**
+   - ✅ Dodani System Manager podaci u `getOrganizationById` response
+   - ✅ Dodana mogućnost ažuriranja SM podataka u `updateOrganization`
+   - ✅ Automatsko brisanje loga pri brisanju organizacije
+   - ✅ Uklonjena provjera članova prije brisanja (CASCADE briše sve)
+   - ✅ TypeScript tip umjesto `any` za updateData
+
+#### Frontend:
+1. **`useBranding.ts`**
+   - ✅ Svi fallback-ovi postavljeni na `null` ili neutralne boje
+   - ✅ Primary color: `#000000` (crna)
+   - ✅ Secondary color: `#e2e4e9` (svijetlo siva)
+   - ✅ Logo, naziv, email vraćaju `null` ako nema podataka
+
+2. **`branding.css`**
+   - ❌ Uklonjeni hardkodirani tenant-specifični stilovi
+   - ✅ Postavljene neutralne default boje
+   - ✅ Dodana napomena da se boje postavljaju dinamički
+
+3. **Dashboard komponente:**
+   - ✅ `MemberDashboard.tsx` - standardizirani layout, maknuti logo iz welcome kartice
+   - ✅ `AdminDashboard.tsx` - standardizirani layout
+   - ✅ `SuperUserDashboard.tsx` - standardizirani layout, responsive font
+   - ✅ Svi koriste: `min-h-screen bg-gray-50` + `max-w-7xl mx-auto p-4 sm:p-6`
+
+4. **`OrganizationEdit.tsx`**
+   - ✅ Dodana System Manager sekcija (username, email, display_name, password)
+   - ✅ Password se mijenja samo ako se unese nova vrijednost
+
+### Implementirano u kodu 💻
+
+**Branding System:**
+- ✅ Dinamičke boje iz baze (nema hardkodiranja)
+- ✅ Logo optional (ne prikazuje se ako nema)
+- ✅ Responsive dizajn na svim dashboard-ima
+- ✅ Type-safe (nema `any` tipova)
+- ✅ Automatski cleanup resursa
+
+**Organization Management:**
+- ✅ Edit System Manager podataka
+- ✅ Automatsko brisanje loga
+- ✅ CASCADE brisanje svih povezanih podataka
+
+---
+
 ## [4. listopad 2025.]
 
 ### Dodano 📝

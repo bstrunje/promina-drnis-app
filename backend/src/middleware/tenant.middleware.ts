@@ -183,9 +183,12 @@ export async function tenantMiddleware(
 ): Promise<void> {
   try {
     const host = req.get('host') || req.headers.host as string;
-    const subdomain = extractSubdomain(host);
+    
+    // Provjeri query parametre za tenant (za development)
+    const tenantQuery = (req.query.tenant as string | undefined) ?? (req.query.branding as string | undefined);
+    const subdomain = tenantQuery ?? extractSubdomain(host);
 
-    console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Subdomain: ${subdomain}`);
+    console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Subdomain: ${subdomain}, Query: ${tenantQuery}`);
 
     let tenantContext: TenantContext | null = null;
 

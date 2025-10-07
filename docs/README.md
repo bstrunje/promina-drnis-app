@@ -1,10 +1,25 @@
-# Dokumentacija - Promina Drniš Aplikacija
+# Dokumentacija - Multi-Tenant Planinarska Aplikacija
 
-Dobrodošli u dokumentaciju Promina Drniš aplikacije - sustava za upravljanje planinarskim društvom.
+Dobrodošli u dokumentaciju multi-tenant sustava za upravljanje planinarskim društvima.
+
+**Zadnje ažuriranje:** 7. listopad 2025.  
+**Status:** ✅ Multi-tenant branding potpuno implementiran
 
 ---
 
 ## 📚 Sadržaj dokumentacije
+
+### 🌐 Multi-Tenant Implementacija (⭐ NOVO)
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Brzi pregled multi-tenant implementacije
+- **[branding-system-implementation.md](branding-system-implementation.md)** ⭐ - Potpuni vodič za branding sistem
+- **[multi-tenant-implementation.md](multi-tenant-implementation.md)** - Detaljna implementacija multi-tenancy
+- **[multi-tenant-next-steps.md](multi-tenant-next-steps.md)** - Sljedeći koraci i roadmap
+- **[multi-tenant-bug-fixes.md](multi-tenant-bug-fixes.md)** - Bug fix-ovi i rješenja
+- **[organization-management-implementation.md](organization-management-implementation.md)** - Organization Management sustav
+- **[organization-creation-flow.md](organization-creation-flow.md)** - Flow za kreiranje organizacija
+- **[tenant-middleware-usage.md](tenant-middleware-usage.md)** - Korištenje tenant middleware
+- **[frontend-multi-tenant-implementation.md](frontend-multi-tenant-implementation.md)** - Frontend multi-tenant
+- **[backend-multi-tenant-complete.md](backend-multi-tenant-complete.md)** - Backend multi-tenant
 
 ### 🔐 Autentifikacija i autorizacija
 - **[auth-system.md](auth-system.md)** - Sustav autentifikacije, JWT tokeni, refresh tokeni, uloge korisnika
@@ -39,33 +54,43 @@ Dobrodošli u dokumentaciju Promina Drniš aplikacije - sustava za upravljanje p
 
 ---
 
-## 🆕 Nedavne promjene (30. rujan 2025.)
+## 🆕 Nedavne promjene
 
-### Dodano:
-- ✅ **Pravila za praćenje sati aktivnosti** - novi dokument koji objašnjava:
-  - Prikaz sati samo za zadnje 2 godine u profilu
-  - Prikazivanje svih godina u povijesnom pregledu
-  - Automatsko završavanje članstava nakon 1. ožujka
-  - Očuvanje `total_hours` kroz povijest
+### 7. listopad 2025. - Multi-Tenant Branding ✅
+- ✅ **branding-system-implementation.md** - Novi dokument s potpunom dokumentacijom:
+  - BrandingContext i useBranding hook
+  - Null-safe fallback-ovi
+  - Dashboard standardizacija
+  - Organization Management s System Manager edit
+  - Automatsko brisanje resursa
+  - Best practices i deployment checklist
 
-- ✅ **Lokalizacija stamp modula** - potpuna dokumentacija:
-  - 35+ lokaliziranih poruka (HR/EN)
-  - Struktura i konvencije
-  - Primjeri korištenja
-  - Proces dodavanja novih prijevoda
+- ✅ **Ažurirani dokumenti:**
+  - `multi-tenant-next-steps.md` - Faza 3A označena kao završena
+  - `multi-tenant-implementation.md` - Uklonjen "hardkodirano" status
+  - `frontend-multi-tenant-implementation.md` - Uklonjeni zastarjeli CSS primjeri
+  - `IMPLEMENTATION_SUMMARY.md` - Ažurirane sve komponente i statusi
+  - `CHANGELOG.md` - Dodana sekcija za 7. listopad
 
-### Ažurirano:
-- ✅ **auth-system.md** - Označen refresh token sustav kao implementiran
-- ✅ **Preimenovano** `temp_markdown.md` → `prisma-enum-best-practices.md`
+### 4. listopad 2025. - Multi-Tenant Backend
+- ✅ **Organization Management** - Potpuno implementiran
+- ✅ **Tenant Middleware** - Subdomen detection i cache
+- ✅ **Backend Refactoring** - Repository/Service/Controller layer
+
+### 30. rujan 2025. - Business Logic
+- ✅ **Pravila za praćenje sati aktivnosti**
+- ✅ **Lokalizacija stamp modula**
 
 ---
 
 ## 🎯 Kako koristiti dokumentaciju
 
-1. **Za nove članove tima**: Počnite s `auth-system.md` i `frontend-architecture.md`
-2. **Za backend razvoj**: Pogledajte `api-docs.md`, `prisma-coding-practices.md`
-3. **Za frontend razvoj**: Čitajte `frontend-architecture.md`, `type-sync-process.md`
-4. **Za business logiku**: Pročitajte `membership-and-activity-hours-rules.md`, `annual-statistics.md`
+1. **Za nove članove tima**: Počnite s `IMPLEMENTATION_SUMMARY.md` i `branding-system-implementation.md`
+2. **Za multi-tenant razvoj**: Čitajte `multi-tenant-implementation.md`, `tenant-middleware-usage.md`
+3. **Za backend razvoj**: Pogledajte `api-docs.md`, `prisma-coding-practices.md`
+4. **Za frontend razvoj**: Čitajte `frontend-architecture.md`, `frontend-multi-tenant-implementation.md`
+5. **Za business logiku**: Pročitajte `membership-and-activity-hours-rules.md`, `annual-statistics.md`
+6. **Za branding**: Detaljni vodič u `branding-system-implementation.md`
 
 ---
 
@@ -73,8 +98,10 @@ Dobrodošli u dokumentaciju Promina Drniš aplikacije - sustava za upravljanje p
 
 - Svi MD fajlovi trebaju imati datum zadnje izmjene
 - Novi dokumenti se označavaju s ⭐ *NOVO*
-- Zastarjeli dijelovi se označavaju ~~ovako~~
+- Zastarjeli dijelovi se označavaju ~~ovako~~ ili se uklanjaju
 - Implementirane značajke se označavaju ✅
+- Hardkodirane vrijednosti se označavaju ❌ i uklanjaju
+- Sve promjene se dokumentiraju u `CHANGELOG.md`
 
 ---
 

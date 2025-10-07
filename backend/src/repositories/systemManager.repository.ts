@@ -13,19 +13,39 @@ const hashPassword = async (password: string): Promise<string> => {
 
 const systemManagerRepository = {
     // Find manager by username
-    async findByUsername(organizationId: number, username: string): Promise<SystemManager | null> {
+    async findByUsername(organizationId: number | null, username: string): Promise<SystemManager | null> {
+        // Ako je organizationId null, koristimo findFirst jer findUnique ne podržava null u composite key
+        if (organizationId === null) {
+            return prisma.systemManager.findFirst({
+                where: { 
+                    organization_id: null,
+                    username
+                }
+            });
+        }
+        
         return prisma.systemManager.findUnique({
             where: { 
                 organization_id_username: {
                     organization_id: organizationId,
-                    username: username
+                    username
                 }
             }
         });
     },
     
     // Find manager by email
-    async findByEmail(organizationId: number, email: string): Promise<SystemManager | null> {
+    async findByEmail(organizationId: number | null, email: string): Promise<SystemManager | null> {
+        // Ako je organizationId null, koristimo findFirst jer findUnique ne podržava null u composite key
+        if (organizationId === null) {
+            return prisma.systemManager.findFirst({
+                where: { 
+                    organization_id: null,
+                    email
+                }
+            });
+        }
+        
         return prisma.systemManager.findUnique({
             where: { 
                 organization_id_email: {

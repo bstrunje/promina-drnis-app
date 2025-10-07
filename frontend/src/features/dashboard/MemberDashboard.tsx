@@ -168,9 +168,10 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   }, [member?.member_id, refreshUnreadCount]);
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-xl md:text-2xl font-bold">
           {t('welcome', { name: fullMember.full_name, context: fullMember.gender === 'male' ? 'male' : 'female' })}
         </h1>
       </div>
@@ -367,6 +368,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

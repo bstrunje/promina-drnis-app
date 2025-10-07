@@ -1,9 +1,23 @@
 // frontend/src/features/systemManager/organizations/steps/ReviewStep.tsx
-import React from 'react';
-import { Building2, Mail, Phone, Globe, User, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, Mail, Phone, Globe, User, Shield, Image as ImageIcon } from 'lucide-react';
 import type { StepProps } from '../OrganizationWizard';
 
 const ReviewStep: React.FC<StepProps> = ({ formData }) => {
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Create preview if logo file exists
+    const logoFile = (formData as { logoFile?: File }).logoFile;
+    if (logoFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(logoFile);
+    }
+  }, [formData]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -53,6 +67,23 @@ const ReviewStep: React.FC<StepProps> = ({ formData }) => {
       {/* Branding */}
       <div className="bg-gray-50 rounded-lg p-4 space-y-3">
         <h4 className="font-semibold">Branding</h4>
+        
+        {/* Logo Preview */}
+        {logoPreview && (
+          <div className="mb-4">
+            <div className="text-sm font-medium mb-2 flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Organization Logo
+            </div>
+            <img 
+              src={logoPreview} 
+              alt="Logo preview" 
+              className="h-24 w-24 rounded-lg object-cover border-2 border-gray-200"
+            />
+          </div>
+        )}
+        
+        {/* Colors */}
         <div className="flex items-center gap-4">
           <div>
             <div className="text-sm font-medium mb-1">Primary Color</div>

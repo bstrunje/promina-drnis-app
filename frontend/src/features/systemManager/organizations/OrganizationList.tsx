@@ -5,11 +5,18 @@ import { Plus, Building2, Users, Activity, Edit, Trash2, ExternalLink } from 'lu
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@components/ui/tooltip';
 import { 
   getAllOrganizations, 
   deleteOrganization,
   type Organization 
 } from '../../../utils/api/apiOrganizations';
+import { IMAGE_BASE_URL } from '../../../utils/config';
 import {
   Dialog,
   DialogContent,
@@ -79,17 +86,21 @@ const OrganizationList: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organizations</h1>
-          <p className="text-gray-600 mt-1">Manage all organizations in the system</p>
+    <TooltipProvider>
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Organizations</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all organizations in the system</p>
+          </div>
+          <Button 
+            onClick={() => navigate('/system-manager/organizations/create')}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Organization
+          </Button>
         </div>
-        <Button onClick={() => navigate('/system-manager/organizations/create')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Organization
-        </Button>
-      </div>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -118,7 +129,7 @@ const OrganizationList: React.FC = () => {
                   <div className="flex items-center gap-3">
                     {org.logo_path ? (
                       <img 
-                        src={org.logo_path} 
+                        src={org.logo_path.startsWith('http') ? org.logo_path : `${IMAGE_BASE_URL}${org.logo_path.replace('/uploads', '')}`}
                         alt={org.name}
                         className="h-12 w-12 rounded-lg object-cover"
                       />
@@ -148,11 +159,11 @@ const OrganizationList: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Users className="h-4 w-4 text-gray-400" />
-                      <span>{org._count?.members ?? 0} members</span>
+                      <span>{(org._count?.members ?? 0)} members</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Activity className="h-4 w-4 text-gray-400" />
-                      <span>{org._count?.activities ?? 0} activities</span>
+                      <span>{(org._count?.activities ?? 0)} activities</span>
                     </div>
                   </div>
 
@@ -164,32 +175,53 @@ const OrganizationList: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => navigate(`/system-manager/organizations/${org.id}`)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => navigate(`/system-manager/organizations/${org.id}`)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit organization details</p>
+                      </TooltipContent>
+                    </Tooltip>
                     {org.website_url && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(org.website_url!, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(org.website_url!, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Visit organization website</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDeleteDialog(org)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDeleteDialog(org)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete organization</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </CardContent>
@@ -226,7 +258,8 @@ const OrganizationList: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

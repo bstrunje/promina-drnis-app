@@ -9,8 +9,9 @@ import HolidaysManager from './HolidaysManager';
 import DutyCalendarSettings from './DutyCalendarSettings';
 import OrganizationList from './organizations/OrganizationList';
 import OrganizationWizard from './organizations/OrganizationWizard';
+import OrganizationEdit from './organizations/OrganizationEdit';
 
-// Zaštićena ruta za system admin
+// Zaštićena ruta za system manager
 const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useSystemManager();
 
@@ -30,15 +31,13 @@ const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ 
   return <>{children}</>;
 };
 
-// Komponenta za System Admin rute
+// Komponenta za System Manager rute
 const SystemManagerRoutesContent: React.FC = () => {
-  const { isAuthenticated } = useSystemManager();
-
   return (
     <Routes>
       <Route 
         path="/login" 
-        element={!isAuthenticated ? <SystemManagerLoginPage /> : <Navigate to="/system-manager/dashboard" replace />} 
+        element={<SystemManagerLoginPage />} 
       />
       <Route 
         path="/dashboard" 
@@ -117,6 +116,14 @@ const SystemManagerRoutesContent: React.FC = () => {
         element={
           <SystemManagerProtectedRoute>
             <OrganizationWizard />
+          </SystemManagerProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations/:id" 
+        element={
+          <SystemManagerProtectedRoute>
+            <OrganizationEdit />
           </SystemManagerProtectedRoute>
         } 
       />

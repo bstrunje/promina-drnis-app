@@ -9,7 +9,7 @@ import { Toaster } from "@components/ui/toaster";
 import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
-import { BrandingProvider } from './contexts/BrandingContext';
+import { BrandingProvider } from './context/BrandingContext';
 import SpeedInsightsWrapper from './components/SpeedInsights';
 import BrandingDemo from './components/BrandingDemo';
 import Footer from './components/Footer';

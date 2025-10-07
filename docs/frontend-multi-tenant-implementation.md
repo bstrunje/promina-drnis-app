@@ -67,14 +67,16 @@ velebit.platforma.hr → 'velebit'
 **CSS Varijable:**
 ```css
 :root {
-  --primary-color: #2563eb;
-  --secondary-color: #64748b;
+  /* Default neutralne boje - koriste se ako nema podataka iz baze */
+  --primary-color: #000000;    /* Crna */
+  --secondary-color: #e2e4e9;  /* Svijetlo siva */
+  --primary-hover: #333333;
+  --primary-light: #666666;
+  --primary-dark: #000000;
 }
 
-[data-tenant="promina"] {
-  --primary-color: #dc2626;
-  --secondary-color: #991b1b;
-}
+/* ❌ VAŽNO: Ne hardkodiraj tenant-specifične stilove! */
+/* Boje se postavljaju dinamički iz BrandingContext-a */
 ```
 
 **Utility klase:**

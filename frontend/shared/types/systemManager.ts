@@ -2,6 +2,7 @@
 
 export interface SystemManager {
   id: number;
+  organization_id: number | null; // null = Global System Manager
   username: string;
   email: string;
   display_name: string;
@@ -19,6 +20,7 @@ export interface SystemManagerLoginResponse {
   token: string;
   manager: {
     id: number;
+    organization_id: number | null;
     username: string;
     display_name: string;
     email: string;

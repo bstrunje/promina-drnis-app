@@ -10,15 +10,15 @@ import {
 
 const router = express.Router();
 
-// Multer konfiguracija za logo upload (priprema za buduću implementaciju)
-const _upload = multer({ 
+// Multer konfiguracija za logo upload
+const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg') {
+    if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only PNG and JPEG images are allowed'));
+      cb(new Error('Only image files are allowed'));
     }
   }
 });
@@ -87,5 +87,23 @@ router.get('/:id', requireOrganizationAccess, organizationController.getOrganiza
  * - Org-specific SM: može ažurirati samo svoju organizaciju
  */
 router.put('/:id', requireOrganizationAccess, organizationController.updateOrganization);
+
+/**
+ * Upload logo organizacije
+ * POST /api/system-manager/organizations/:id/logo
+ * 
+ * - Globalni SM: može upload-ati logo za sve organizacije
+ * - Org-specific SM: može upload-ati logo samo za svoju organizaciju
+ */
+router.post('/:id/logo', requireOrganizationAccess, upload.single('logo'), organizationController.uploadOrganizationLogo);
+
+/**
+ * Brisanje logo organizacije
+ * DELETE /api/system-manager/organizations/:id/logo
+ * 
+ * - Globalni SM: može obrisati logo za sve organizacije
+ * - Org-specific SM: može obrisati logo samo za svoju organizaciju
+ */
+router.delete('/:id/logo', requireOrganizationAccess, organizationController.deleteOrganizationLogo);
 
 export default router;

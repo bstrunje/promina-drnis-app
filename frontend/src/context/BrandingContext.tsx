@@ -55,21 +55,30 @@ interface CachedBranding {
  */
 const getTenantFromUrl = (): string => {
   const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+  
   console.log('[BRANDING] 🔍 Detecting tenant from hostname:', hostname);
+  console.log('[BRANDING] 🔍 Current pathname:', pathname);
+  
+  // System Manager rute ne trebaju tenant
+  if (pathname.startsWith('/system-manager')) {
+    console.log('[BRANDING] ⚠️  System Manager route - skipping tenant detection');
+    return 'system-manager'; // Poseban tenant za SM
+  }
   
   // Development - localhost
   if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-    // Možemo koristiti query parameter za testiranje: ?tenant=test
+    // Možemo koristiti query parameter za testiranje: ?tenant=test ili ?branding=test
     const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant');
+    const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
     console.log('[BRANDING] 🔍 Query param tenant:', tenantParam);
     if (tenantParam) {
       console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
       return tenantParam;
     }
     
-    console.log('[BRANDING] ✅ Using default tenant: promina');
-    return 'promina'; // Default za development
+    console.log('[BRANDING] ⚠️  No tenant specified - using first organization from database');
+    return 'default'; // Signal to load first organization
   }
   
   // Production - subdomena
@@ -80,8 +89,8 @@ const getTenantFromUrl = (): string => {
     return subdomain; // Prvi dio je subdomena
   }
   
-  console.log('[BRANDING] ✅ Using fallback tenant: promina');
-  return 'promina'; // Fallback
+  console.log('[BRANDING] ⚠️  No tenant detected - using default');
+  return 'default'; // Fallback to first organization
 };
 
 /**
@@ -158,10 +167,17 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
       
       // Učitaj s API-ja
-      console.log('[BRANDING] 🌐 Pozivam API:', '/org-config/branding');
-      const response = await apiClient.get('/org-config/branding');
+      console.log('[BRANDING] 🌐 Pozivam API:', '/org-config/branding', 'tenant:', tenant);
+      const response = await apiClient.get<{ success?: boolean; data?: OrganizationBranding } | OrganizationBranding>(
+        '/org-config/branding',
+        { params: { tenant } }
+      );
       console.log('[BRANDING] 📥 API response:', response.data);
-      const brandingData = response.data as OrganizationBranding;
+      
+      // Backend vraća { success: true, data: {...} } ili direktno branding objekt
+      const brandingData = ('data' in response.data && response.data.data) 
+        ? response.data.data 
+        : response.data as OrganizationBranding;
       
       // Spremi u state i cache
       setBranding(brandingData);

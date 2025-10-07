@@ -81,7 +81,8 @@ const OrganizationWizard: React.FC = () => {
               if (!result.available) {
                 newErrors.subdomain = 'This subdomain is already taken';
               }
-            } catch {
+            } catch (error) {
+              console.error('Subdomain check failed:', error);
               newErrors.subdomain = 'Failed to check subdomain availability';
             }
           }
@@ -143,8 +144,29 @@ const OrganizationWizard: React.FC = () => {
         return;
       }
 
-      // Submit
-      await createOrganization(formData as CreateOrganizationData);
+      // Create organization
+      const response = await createOrganization(formData as CreateOrganizationData);
+      const newOrgId = response.organization.id;
+      
+      // Upload logo if provided
+      const logoFile = (formData as { logoFile?: File }).logoFile;
+      if (logoFile && newOrgId) {
+        try {
+          const logoFormData = new FormData();
+          logoFormData.append('logo', logoFile);
+          
+          await fetch(`http://localhost:3000/api/system-manager/organizations/${newOrgId}/logo`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('systemManagerToken')}`,
+            },
+            body: logoFormData,
+          });
+        } catch (logoErr) {
+          console.error('Error uploading logo:', logoErr);
+          // Don't fail the whole operation if logo upload fails
+        }
+      }
       
       // Success - redirect to list
       navigate('/system-manager/organizations');

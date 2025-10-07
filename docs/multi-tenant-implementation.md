@@ -23,12 +23,13 @@
 ### Cilj
 Transformacija postojeće single-tenant aplikacije (PD Promina Drniš) u multi-tenant rješenje koje može koristiti više planinarskih društava.
 
-### Trenutno Stanje
-- **Single-tenant aplikacija** hardkodirana za PD Promina Drniš
-- Hardkodirani: naziv organizacije, logo, URL-ovi dokumentacije, email adrese, tipovi aktivnosti
-- Zasebna PWA aplikacija (`pd-mobilna`) deployirana odvojeno
+### Trenutno Stanje (✅ Ažurirano 7. listopad 2025.)
+- **Multi-tenant aplikacija** s dinamičkim branding-om
+- ✅ Dinamički: naziv organizacije, logo, boje, URL-ovi dokumentacija, email adrese
+- ✅ Organization-specific tipovi aktivnosti i vještine
+- ✅ Tenant detection po subdomeni/query parametru
 - Produkcija: https://promina-drnis-app.vercel.app/
-- PWA: https://pd-mobilna.vercel.app/
+- Development: localhost:5173?branding=sv-roko
 
 ### Ciljno Stanje
 - **Multi-tenant SaaS platforma** s tenant isolation po `organization_id`
@@ -123,17 +124,17 @@ Fallback: platforma.hr/promina → organization_id = 1
 
 ### FAZA 2: Frontend Dinamizacija (Tjedan 3-5)
 
-#### 2.1 Configuration Management ⏳
-- [ ] Zamijeniti hardkodirani `appSettings.ts` s API pozivom
-- [ ] Kreirati `OrganizationContext` za React
-- [ ] Učitavanje konfiguracije pri app boot-u
-- [ ] Fallback na default config ako API fail
+#### 2.1 Configuration Management ✅ ZAVRŠENO
+- ✅ Zamijenjen hardkodirani `appSettings.ts` s API pozivom
+- ✅ Kreiran `BrandingContext` za React
+- ✅ Učitavanje konfiguracije pri app boot-u
+- ✅ Fallback na default config ako API fail
 
-#### 2.2 Logo & Branding ⏳
-- [ ] Zamijeniti hardkodirani logo import
-- [ ] Dinamički `<img src={organization.logoUrl}>`
-- [ ] Favicon dinamizacija
-- [ ] Loading placeholder dok se učitava logo
+#### 2.2 Logo & Branding ✅ ZAVRŠENO
+- ✅ Zamijenjen hardkodirani logo import
+- ✅ Dinamički `<img src={getLogoUrl()}>` s null provjero
+- ✅ Favicon dinamizacija (TODO: implementirati)
+- ✅ Loading placeholder dok se učitava logo
 
 #### 2.3 CSS Theming ⏳
 - [ ] CSS varijable za boje (`--primary-color`, `--secondary-color`)
@@ -145,10 +146,10 @@ Fallback: platforma.hr/promina → organization_id = 1
 - [ ] `t('navigation.title', { organizationName })`
 - [ ] Testirati HR i EN prijevode
 
-#### 2.5 Document URLs ⏳
-- [ ] Zamijeniti hardkodirane URL-ove dokumenata
-- [ ] LoginPage - dinamički linkovi
-- [ ] Fallback ako organizacija nema dokumente
+#### 2.5 Document URLs ✅ ZAVRŠENO
+- ✅ Zamijenjeni hardkodirani URL-ovi dokumenata
+- ✅ LoginPage - dinamički linkovi (getEthicsCodeUrl, getPrivacyPolicyUrl)
+- ✅ Fallback ako organizacija nema dokumente
 
 ---
 

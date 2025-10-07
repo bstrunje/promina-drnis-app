@@ -6,43 +6,20 @@
  */
 
 :root {
-  /* Default branding boje */
-  --primary-color: #2563eb;
-  --secondary-color: #64748b;
-  --primary-hover: #1d4ed8;
-  --primary-light: #3b82f6;
-  --primary-dark: #1e40af;
+  /* Default branding boje - koriste se ako nema podataka iz baze */
+  --primary-color: #000000;
+  --secondary-color: #e2e4e9;
+  --primary-hover: #333333;
+  --primary-light: #666666;
+  --primary-dark: #000000;
   
   /* Default logo */
-  --logo-url: url('/assets/default-logo.svg');
   --logo-height: 40px;
   --logo-width: auto;
 }
 
-/* Tenant-specifični branding */
-[data-tenant="promina"] {
-  --primary-color: #dc2626;
-  --secondary-color: #991b1b;
-  --primary-hover: #b91c1c;
-  --primary-light: #ef4444;
-  --primary-dark: #7f1d1d;
-}
-
-[data-tenant="test"] {
-  --primary-color: #059669;
-  --secondary-color: #047857;
-  --primary-hover: #047857;
-  --primary-light: #10b981;
-  --primary-dark: #065f46;
-}
-
-[data-tenant="demo"] {
-  --primary-color: #7c3aed;
-  --secondary-color: #6d28d9;
-  --primary-hover: #6d28d9;
-  --primary-light: #8b5cf6;
-  --primary-dark: #5b21b6;
-}
+/* NAPOMENA: Tenant-specifične boje se postavljaju dinamički iz BrandingContext-a */
+/* Ne hardkodiraj tenant-specifične stilove ovdje! */
 
 /* Utility klase za branding boje */
 .text-primary {

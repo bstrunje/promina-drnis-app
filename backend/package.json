@@ -18,7 +18,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "backup": "node dist/src/scripts/backupDatabase.js",
-    "restore": "node dist/src/scripts/restoreDatabase.js"
+    "restore": "node dist/src/scripts/restoreDatabase.js",
+    "create-global-sm": "node scripts/createGlobalSystemManager.mjs",
+    "reset-global-sm": "node scripts/resetGlobalSystemManager.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",

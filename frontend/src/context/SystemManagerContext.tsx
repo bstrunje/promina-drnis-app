@@ -148,7 +148,20 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
 
       setManager(managerData);
       setIsAuthenticated(true);
-      navigate('/system-manager/dashboard');
+      
+      console.log('[SM-LOGIN] Manager data:', managerData);
+      console.log('[SM-LOGIN] organization_id:', managerData.organization_id);
+      console.log('[SM-LOGIN] Is null?', managerData.organization_id === null);
+      
+      // Global System Manager (organization_id = null) ide na Organizations
+      // Org-specific System Manager ide na Dashboard
+      if (managerData.organization_id === null) {
+        console.log('[SM-LOGIN] Redirecting to Organizations');
+        navigate('/system-manager/organizations');
+      } else {
+        console.log('[SM-LOGIN] Redirecting to Dashboard');
+        navigate('/system-manager/dashboard');
+      }
     } catch (error) {
       console.error('Greška prilikom prijave:', error);
       // Osiguravamo čišćenje u slučaju neuspjele prijave

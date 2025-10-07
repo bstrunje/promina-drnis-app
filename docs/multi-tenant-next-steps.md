@@ -1,8 +1,8 @@
 # Multi-Tenant Implementacija - Sljedeći Koraci
 
-**Datum:** 2025-10-04  
-**Status:** 🟢 Faza 1 & 2 Potpuno Završene - Backend Multi-Tenant Ready  
-**Prethodne faze:** ✅ Database Schema ✅ Backend Code Migration ✅ Tenant Middleware
+**Datum:** 2025-10-07 (Ažurirano)  
+**Status:** 🟢 Faza 1, 2 & 3A Potpuno Završene - Multi-Tenant Branding Implementiran  
+**Prethodne faze:** ✅ Database Schema ✅ Backend Code Migration ✅ Tenant Middleware ✅ Frontend Branding
 
 ---
 
@@ -20,15 +20,17 @@
 - **TypeScript Build**: 0 grešaka, potpuno type-safe
 - **Git Commit**: `2231bde` - "Backend refaktoriran za multi-tenancy, prelazimo na frontend"
 
-### 🔧 ŠTO SLIJEDI (Faza 3 - Frontend):
+### 🔧 ŠTO SLIJEDI (Faza 3B - Frontend Routing):
 
 #### **VAŽNO: Subdomen Routing Strategija**
 Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
 - `promina.platforma.hr` → PD Promina Drniš (organization_id = 1)
-- `velebit.platforma.hr` → PD Velebit (organization_id = 2)
-- `dinara.platforma.hr` → PD Dinara (organization_id = 3)
+- `sv-roko.platforma.hr` → PK Sveti Roko (organization_id = 2)
+- `test.platforma.hr` → Test Organizacija (organization_id = 3)
 
 **NEMA UI za odabir organizacije** - tenant se automatski detektira po subdomeni!
+
+**Development:** Query parametar `?branding=sv-roko` za testiranje različitih tenant-a
 
 ---
 
@@ -36,7 +38,7 @@ Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
 
 ### 1. **Dinamičko Učitavanje Branding-a** ✅
 **Status:** 🟢 Potpuno Implementirano  
-**Datum završetka:** 2025-10-03
+**Datum završetka:** 2025-10-07
 
 #### Završeni zadaci:
 - ✅ **BrandingContext Provider**
@@ -51,8 +53,9 @@ Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
   - Error handling s fallback podacima
 
 - ✅ **CSS Branding System**
-  - CSS varijable za dinamičke boje i logo
-  - Tenant-specifični stilovi (`[data-tenant="promina"]`)
+  - CSS varijable za dinamičke boje (#000000 crna, #e2e4e9 siva)
+  - ❌ Uklonjeni hardkodirani tenant-specifični stilovi
+  - Sve boje dolaze dinamički iz baze preko BrandingContext
   - Utility klase (.text-primary, .btn-primary, itd.)
 
 - ✅ **Development Tools**
@@ -61,9 +64,19 @@ Svaka organizacija ima **svoju subdomenu** i **samostalan pristup**:
   - Query parameter support (`?tenant=test`)
 
 - ✅ **Utility Functions**
-  - useBranding hook s helper funkcijama
-  - tenantUtils za environment detection
+  - useBranding hook s helper funkcijama (getLogoUrl, getPrimaryColor, itd.)
+  - Null-safe fallback-ovi (logo, naziv, email vraćaju null ako nema podataka)
   - Type-safe pristup branding podacima
+
+- ✅ **Dashboard Standardizacija**
+  - Svi dashboardi koriste konzistentan layout (max-w-7xl, responsive padding)
+  - Logo maknuti iz welcome kartica (samo u navigation bar-u)
+  - Responsive font veličine (text-xl md:text-2xl)
+
+- ✅ **Organization Management**
+  - System Manager edit funkcionalnost
+  - Automatsko brisanje loga pri brisanju organizacije
+  - CASCADE brisanje svih povezanih podataka
 
 ---
 
@@ -363,24 +376,31 @@ const getTenantFromUrl = (): string => {
 ### **CSS Varijable za Branding:**
 ```css
 :root {
-  --primary-color: #2563eb;    /* Default plava */
-  --secondary-color: #64748b;  /* Default siva */
-  --logo-url: url('/default-logo.png');
+  /* Default neutralne boje - koriste se ako nema podataka iz baze */
+  --primary-color: #000000;    /* Crna */
+  --secondary-color: #e2e4e9;  /* Svijetlo siva */
+  --primary-hover: #333333;
+  --primary-light: #666666;
+  --primary-dark: #000000;
 }
 
-[data-tenant="promina"] {
-  --primary-color: #dc2626;    /* Promina crvena */
-  --secondary-color: #991b1b;
-}
+/* ❌ VAŽNO: Ne hardkodiraj tenant-specifične stilove! */
+/* Boje se postavljaju dinamički iz BrandingContext-a */
 ```
 
 ---
 
 ## 📞 SLJEDEĆI KORAK
 
-**Preporučujem početak s Fazom 3A - Dinamičko Učitavanje Branding-a** jer je:
-- Najviše vidljivo korisniku
-- Relativno jednostavno za implementaciju
-- Temelj za ostale multi-tenant funkcionalnosti
+**Faza 3A je potpuno završena!** ✅
 
-Želite li početi s implementacijom branding context-a i API integracije?
+Sljedeći koraci:
+1. **Testiranje branding-a** na različitim tenant-ima
+2. **Vercel deployment** s Blob storage konfiguracijom
+3. **Production testiranje** s pravim subdomenama
+4. **Performance monitoring** i optimizacije
+
+**Dokumentacija:**
+- Detaljni vodič: `branding-system-implementation.md`
+- Changelog: `CHANGELOG.md` (7. listopad 2025.)
+- Implementation summary: `IMPLEMENTATION_SUMMARY.md`

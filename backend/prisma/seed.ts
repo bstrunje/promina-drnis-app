@@ -4,8 +4,8 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 // --- 1. SEED SKILLS --- //
-async function seedSkills(tx: Prisma.TransactionClient) {
-  console.log('🌱 Seeding skills...');
+export async function seedSkills(tx: Prisma.TransactionClient, organizationId: number = 1) {
+  console.log(`🌱 Seeding skills for organization ${organizationId}...`);
   const skillsToSeed = [
     { key: 'basic_mountaineering_school', is_instructor_possible: false },
     { key: 'general_mountaineering_school', is_instructor_possible: false },
@@ -30,13 +30,13 @@ async function seedSkills(tx: Prisma.TransactionClient) {
     await tx.skill.upsert({
       where: { 
         organization_id_key: {
-          organization_id: 1,
+          organization_id: organizationId,
           key: skillData.key
         }
       },
       update: { name: skillData.key, is_instructor_possible: skillData.is_instructor_possible },
       create: { 
-        organization_id: 1,
+        organization_id: organizationId,
         key: skillData.key, 
         name: skillData.key, 
         is_instructor_possible: skillData.is_instructor_possible 
@@ -47,8 +47,8 @@ async function seedSkills(tx: Prisma.TransactionClient) {
 }
 
 // --- 2. SEED ACTIVITY TYPES --- //
-async function seedActivityTypes(tx: Prisma.TransactionClient) {
-  console.log('🌱 Seeding activity types...');
+export async function seedActivityTypes(tx: Prisma.TransactionClient, organizationId: number = 1) {
+  console.log(`🌱 Seeding activity types for organization ${organizationId}...`);
   const activityTypes = [
     { key: 'akcija-drustvo', name: 'AKCIJA DRUŠTVO', description: 'Radne akcije u organizaciji Društva' },
     { key: 'akcija-trail', name: 'AKCIJA TRAIL', description: 'Radne akcije za Trail' },
@@ -62,13 +62,13 @@ async function seedActivityTypes(tx: Prisma.TransactionClient) {
     await tx.activityType.upsert({
       where: { 
         organization_id_key: {
-          organization_id: 1,
+          organization_id: organizationId,
           key: type.key
         }
       },
       update: { name: type.name, description: type.description },
       create: { 
-        organization_id: 1,
+        organization_id: organizationId,
         key: type.key, 
         name: type.name, 
         description: type.description 
@@ -79,6 +79,10 @@ async function seedActivityTypes(tx: Prisma.TransactionClient) {
 }
 
 // --- 3. SEED INITIAL SYSTEM MANAGER --- //
+// NAPOMENA: Org-specific System Manager se NE kreira ovdje!
+// Kreira se automatski kada Global SM kreira novu organizaciju kroz wizard.
+// Ova funkcija je zakomentirana ali ostavljena za referencu.
+/*
 async function seedInitialSystemManager(tx: Prisma.TransactionClient) {
   console.log('🌱 Seeding initial system manager...');
   const managerExists = await tx.systemManager.count();
@@ -100,6 +104,7 @@ async function seedInitialSystemManager(tx: Prisma.TransactionClient) {
   await tx.systemManager.create({
     data: {
       id: 0,
+      organization_id: 1, // PD Promina - org-specific System Manager
       username,
       display_name: 'System Manager',
       password_hash,
@@ -109,14 +114,54 @@ async function seedInitialSystemManager(tx: Prisma.TransactionClient) {
   console.log(`✅ Initial system manager created with username: ${username}`);
   console.warn('IMPORTANT: Please change the default password after first login!');
 }
+*/
+
+// --- 4. SEED GLOBAL SYSTEM MANAGER --- //
+async function seedGlobalSystemManager(tx: Prisma.TransactionClient) {
+  console.log('🌱 Seeding global system manager...');
+  
+  // Provjeri postoji li već globalni SM (organization_id = NULL)
+  const globalManagerExists = await tx.systemManager.findFirst({
+    where: { organization_id: null }
+  });
+  
+  if (globalManagerExists) {
+    console.log('Skipping: Global System Manager already exists.');
+    return;
+  }
+
+  const username = process.env.GLOBAL_SYSTEM_MANAGER_USERNAME || 'global_manager';
+  const password = process.env.GLOBAL_SYSTEM_MANAGER_PASSWORD || 'GlobalManager123';
+  const email = process.env.GLOBAL_SYSTEM_MANAGER_EMAIL || 'global@platforma.hr';
+
+  const salt = await bcrypt.genSalt(10);
+  const password_hash = await bcrypt.hash(password, salt);
+
+  await tx.systemManager.create({
+    data: {
+      organization_id: null, // NULL = Global System Manager
+      username,
+      display_name: 'Global System Manager',
+      password_hash,
+      email,
+    },
+  });
+  
+  console.log(`✅ Global system manager created with username: ${username}`);
+  console.warn('IMPORTANT: Change the default password after first login!');
+}
 
 // --- MAIN SEEDING FUNCTION --- //
 async function main() {
   console.log('🚀 Starting database seeding process...');
   await prisma.$transaction(async (tx) => {
-    await seedSkills(tx);
-    await seedActivityTypes(tx);
-    await seedInitialSystemManager(tx);
+    // NAPOMENA: Skills i ActivityTypes se NE seed-aju ovdje!
+    // Kreirati će se automatski za svaku novu organizaciju kroz wizard.
+    // await seedSkills(tx);
+    // await seedActivityTypes(tx);
+    
+    // Samo Global System Manager se seed-a
+    await seedGlobalSystemManager(tx);
   }, {
     timeout: 12000, // 12 sekundi - ispod Prisma Accelerate limita od 15s
   });

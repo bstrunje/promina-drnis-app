@@ -3,6 +3,28 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma.js';
 import bcrypt from 'bcrypt';
 import { tOrDefault } from '../utils/i18n.js';
+import { put, del } from '@vercel/blob';
+import path from 'path';
+import fs from 'fs/promises';
+import { seedSkills, seedActivityTypes } from '../../prisma/seed.js';
+
+// Upload konfiguracija (ista logika kao za profile images)
+const isDev = process.env.NODE_ENV !== 'production';
+const isProduction = process.env.NODE_ENV === 'production';
+const hasVercelBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
+const useVercelBlob = isProduction && hasVercelBlobToken;
+const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production' 
+  ? '/tmp/uploads' 
+  : path.join(process.cwd(), 'uploads'));
+
+// Helper za kreiranje direktorija
+async function ensureDirectoryExists(dirPath: string): Promise<void> {
+  try {
+    await fs.access(dirPath);
+  } catch {
+    await fs.mkdir(dirPath, { recursive: true });
+  }
+}
 
 /**
  * Provjera dostupnosti subdomene
@@ -147,7 +169,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
         }
       });
 
-      // 3. Seed inicijalne podatke
+      // 3. Seed inicijalne podatke (koristi funkcije iz prisma/seed.ts)
       await seedActivityTypes(tx, organization.id);
       await seedSkills(tx, organization.id);
       await seedSystemSettings(tx, organization.id);
@@ -218,6 +240,18 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
             activity_types: true,
             skills: true
           }
+        },
+        system_managers: {
+          where: {
+            organization_id: organizationId // Dohvati samo org-specific SM
+          },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            display_name: true
+            // password_hash se ne vraća iz sigurnosnih razloga
+          }
         }
       }
     });
@@ -227,7 +261,15 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
       return;
     }
 
-    res.json({ organization });
+    // Dodaj system_manager podatke u root response (prvi SM za tu org)
+    const systemManager = organization.system_managers[0] || null;
+
+    res.json({ 
+      organization: {
+        ...organization,
+        system_manager: systemManager
+      }
+    });
   } catch (error) {
     console.error('[GET-ORG] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -264,7 +306,12 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
       ethics_code_url,
       privacy_policy_url,
       membership_rules_url,
-      is_active
+      is_active,
+      // System Manager data (optional)
+      sm_username,
+      sm_email,
+      sm_display_name,
+      sm_password
     } = req.body;
 
     // Provjeri da organizacija postoji
@@ -300,6 +347,35 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
       }
     });
 
+    // Ažuriraj System Manager podatke ako su proslijeđeni
+    if (sm_username || sm_email || sm_display_name || sm_password) {
+      const systemManager = await prisma.systemManager.findFirst({
+        where: { organization_id: organizationId }
+      });
+
+      if (systemManager) {
+        const updateData: {
+          username?: string;
+          email?: string;
+          display_name?: string;
+          password_hash?: string;
+        } = {};
+        if (sm_username) updateData.username = sm_username;
+        if (sm_email) updateData.email = sm_email;
+        if (sm_display_name) updateData.display_name = sm_display_name;
+        if (sm_password) {
+          updateData.password_hash = await bcrypt.hash(sm_password, 10);
+        }
+
+        await prisma.systemManager.update({
+          where: { id: systemManager.id },
+          data: updateData
+        });
+
+        console.log(`[UPDATE-ORG] System Manager updated for organization ${organizationId}`);
+      }
+    }
+
     console.log(`[UPDATE-ORG] Organization updated: ${updated.name} (ID: ${updated.id})`);
 
     res.json({
@@ -332,12 +408,7 @@ export const deleteOrganization = async (req: Request, res: Response): Promise<v
 
     // Provjeri da organizacija postoji
     const existing = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      include: {
-        _count: {
-          select: { members: true }
-        }
-      }
+      where: { id: organizationId }
     });
 
     if (!existing) {
@@ -345,15 +416,32 @@ export const deleteOrganization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Provjeri da organizacija nema članove (sigurnosna mjera)
-    if (existing._count.members > 0) {
-      res.status(400).json({ 
-        error: tOrDefault('organization.errors.hasMembers', locale, 'Cannot delete organization with members') 
-      });
-      return;
+    // Obriši logo ako postoji
+    if (existing.logo_path) {
+      try {
+        if (existing.logo_path.startsWith('https://')) {
+          // Vercel Blob - obriši s Blob storage-a
+          await del(existing.logo_path);
+          console.log(`[DELETE-ORG] Logo deleted from Vercel Blob: ${existing.logo_path}`);
+        } else if (existing.logo_path.startsWith('/uploads')) {
+          // Lokalni disk - obriši file
+          const filePath = path.join(uploadsDir, existing.logo_path.replace('/uploads', ''));
+          await fs.unlink(filePath);
+          console.log(`[DELETE-ORG] Logo deleted from local disk: ${filePath}`);
+        }
+      } catch (logoErr) {
+        console.warn(`[DELETE-ORG] Warning: Could not delete logo:`, logoErr);
+        // Nastavi s brisanjem organizacije čak i ako logo nije obrisan
+      }
     }
 
-    // Obriši organizaciju (CASCADE će obrisati sve povezane podatke)
+    // Obriši organizaciju
+    // CASCADE će obrisati SVE povezane podatke:
+    // - članove (members)
+    // - aktivnosti (activities)
+    // - system manager-e
+    // - skills, activity_types, system_settings
+    // - kartice, poruke, audit logs, itd.
     await prisma.organization.delete({
       where: { id: organizationId }
     });
@@ -375,62 +463,8 @@ export const deleteOrganization = async (req: Request, res: Response): Promise<v
 // ============================================================================
 // SEED FUNKCIJE ZA NOVU ORGANIZACIJU
 // ============================================================================
-
-/**
- * Seed default activity types za novu organizaciju
- */
-async function seedActivityTypes(tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>, organizationId: number): Promise<void> {
-  const defaultTypes = [
-    { key: 'izleti', name: 'Izleti', description: 'Planinarski izleti' },
-    { key: 'akcije', name: 'Akcije', description: 'Radne akcije' },
-    { key: 'tecajevi', name: 'Tečajevi', description: 'Edukacijski tečajevi' },
-    { key: 'dezurstva', name: 'Dežurstva', description: 'Dežurstva u domu' },
-    { key: 'ostalo', name: 'Ostalo', description: 'Ostale aktivnosti' }
-  ];
-
-  for (const type of defaultTypes) {
-    await tx.activityType.create({
-      data: {
-        organization_id: organizationId,
-        key: type.key,
-        name: type.name,
-        description: type.description
-      }
-    });
-  }
-
-  console.log(`[SEED] Created ${defaultTypes.length} activity types for organization ${organizationId}`);
-}
-
-/**
- * Seed default skills za novu organizaciju
- */
-async function seedSkills(tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>, organizationId: number): Promise<void> {
-  const defaultSkills = [
-    { key: 'first_aid', name: 'Prva pomoć' },
-    { key: 'navigation', name: 'Orijentacija' },
-    { key: 'climbing', name: 'Penjanje' },
-    { key: 'skiing', name: 'Skijanje' },
-    { key: 'mountaineering', name: 'Alpinizam' },
-    { key: 'rescue', name: 'Spašavanje' },
-    { key: 'weather', name: 'Meteorologija' },
-    { key: 'flora_fauna', name: 'Flora i fauna' },
-    { key: 'photography', name: 'Fotografija' },
-    { key: 'cooking', name: 'Kuhanje' }
-  ];
-
-  for (const skill of defaultSkills) {
-    await tx.skill.create({
-      data: {
-        organization_id: organizationId,
-        key: skill.key,
-        name: skill.name
-      }
-    });
-  }
-
-  console.log(`[SEED] Created ${defaultSkills.length} skills for organization ${organizationId}`);
-}
+// NAPOMENA: seedActivityTypes i seedSkills su importane iz prisma/seed.ts
+// kako bi se izbjegla duplikacija koda i održavala konzistentnost
 
 /**
  * Seed default system settings za novu organizaciju
@@ -453,3 +487,166 @@ async function seedSystemSettings(tx: Omit<typeof prisma, '$connect' | '$disconn
 
   console.log(`[SEED] Created system settings for organization ${organizationId}`);
 }
+
+/**
+ * Upload logo organizacije
+ * POST /api/system-manager/organizations/:id/logo
+ */
+export const uploadOrganizationLogo = async (req: Request, res: Response): Promise<void> => {
+  if (!req.file) {
+    res.status(400).json({ message: 'Logo file is required' });
+    return;
+  }
+
+  const { id } = req.params;
+  const organizationId = parseInt(id, 10);
+
+  try {
+    if (isDev) console.log(`[LOGO-UPLOAD] Starting logo upload for organization ${id}`);
+    if (isDev) console.log(`[LOGO-UPLOAD] File: ${req.file.originalname}, size: ${req.file.size} bytes`);
+
+    // Dohvati organizaciju
+    const organization = await prisma.organization.findUnique({ 
+      where: { id: organizationId } 
+    });
+
+    if (!organization) {
+      res.status(404).json({ message: 'Organization not found' });
+      return;
+    }
+
+    let logoPath: string;
+
+    if (useVercelBlob) {
+      if (isDev) console.log(`[LOGO-UPLOAD] Using Vercel Blob...`);
+
+      // Obriši stari logo s Vercel Blob-a
+      if (organization.logo_path && organization.logo_path.includes('vercel-storage.com')) {
+        try {
+          await del(organization.logo_path);
+          if (isDev) console.log(`[LOGO-UPLOAD] Old logo deleted from Vercel Blob`);
+        } catch (delError) {
+          if (isDev) console.warn(`[LOGO-UPLOAD] Warning: Could not delete old logo from Vercel Blob:`, delError);
+        }
+      }
+
+      const fileName = `organization-logos/${organizationId}-${Date.now()}-${req.file.originalname}`;
+      const blob = await put(fileName, req.file.buffer, {
+        access: 'public',
+        contentType: req.file.mimetype,
+      });
+
+      logoPath = blob.url;
+      if (isDev) console.log(`[LOGO-UPLOAD] Logo uploaded to Vercel Blob: ${logoPath}`);
+    } else {
+      if (isDev) console.log(`[LOGO-UPLOAD] Using local uploads folder...`);
+
+      // Kreiraj organization_logos direktorij
+      const logosDir = path.join(uploadsDir, 'organization_logos');
+      await ensureDirectoryExists(logosDir);
+
+      // Obriši stari logo s lokalnog diska
+      if (organization.logo_path && organization.logo_path.startsWith('/uploads')) {
+        try {
+          const oldFilePath = path.join(uploadsDir, organization.logo_path.replace('/uploads', ''));
+          await fs.unlink(oldFilePath);
+          if (isDev) console.log(`[LOGO-UPLOAD] Old logo deleted from local disk: ${oldFilePath}`);
+        } catch (delError) {
+          if (isDev) console.warn(`[LOGO-UPLOAD] Warning: Could not delete old logo from local disk:`, delError);
+        }
+      }
+
+      // Generiraj ime datoteke
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `org-${organizationId}-${Date.now()}${fileExtension}`;
+      const filePath = path.join(logosDir, fileName);
+
+      // Spremi datoteku
+      await fs.writeFile(filePath, req.file.buffer);
+
+      logoPath = `/uploads/organization_logos/${fileName}`;
+      if (isDev) console.log(`[LOGO-UPLOAD] Logo saved locally: ${filePath}`);
+      if (isDev) console.log(`[LOGO-UPLOAD] Relative path: ${logoPath}`);
+    }
+
+    // Ažuriraj bazu
+    const updatedOrganization = await prisma.organization.update({
+      where: { id: organizationId },
+      data: { logo_path: logoPath },
+    });
+
+    if (isDev) console.log(`[LOGO-UPLOAD] Database updated for organization ${id}`);
+
+    res.json({ 
+      success: true, 
+      logo_path: updatedOrganization.logo_path,
+      message: 'Logo uploaded successfully' 
+    });
+  } catch (error) {
+    console.error(`[LOGO-UPLOAD] Error uploading logo for organization ${id}:`, error);
+    const message = error instanceof Error ? error.message : 'Failed to upload logo';
+    res.status(500).json({ message });
+  }
+};
+
+/**
+ * Brisanje logo organizacije
+ * DELETE /api/system-manager/organizations/:id/logo
+ */
+export const deleteOrganizationLogo = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const organizationId = parseInt(id, 10);
+
+  try {
+    if (isDev) console.log(`[LOGO-DELETE] Starting logo deletion for organization ${id}`);
+
+    const organization = await prisma.organization.findUnique({ 
+      where: { id: organizationId } 
+    });
+
+    if (!organization) {
+      res.status(404).json({ message: 'Organization not found' });
+      return;
+    }
+
+    if (!organization.logo_path) {
+      res.status(404).json({ message: 'Organization has no logo' });
+      return;
+    }
+
+    // Obriši logo s storage-a
+    if (organization.logo_path.includes('vercel-storage.com')) {
+      try {
+        await del(organization.logo_path);
+        if (isDev) console.log(`[LOGO-DELETE] Logo deleted from Vercel Blob`);
+      } catch (delError) {
+        if (isDev) console.warn(`[LOGO-DELETE] Warning: Could not delete logo from Vercel Blob:`, delError);
+      }
+    } else if (organization.logo_path.startsWith('/uploads')) {
+      try {
+        const filePath = path.join(uploadsDir, organization.logo_path.replace('/uploads', ''));
+        await fs.unlink(filePath);
+        if (isDev) console.log(`[LOGO-DELETE] Logo deleted from local disk: ${filePath}`);
+      } catch (delError) {
+        if (isDev) console.warn(`[LOGO-DELETE] Warning: Could not delete logo from local disk:`, delError);
+      }
+    }
+
+    // Ažuriraj bazu
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { logo_path: null },
+    });
+
+    if (isDev) console.log(`[LOGO-DELETE] Database updated for organization ${id}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Logo deleted successfully' 
+    });
+  } catch (error) {
+    console.error(`[LOGO-DELETE] Error deleting logo for organization ${id}:`, error);
+    const message = error instanceof Error ? error.message : 'Failed to delete logo';
+    res.status(500).json({ message });
+  }
+};
