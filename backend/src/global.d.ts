@@ -13,6 +13,7 @@ declare global {
         is_SystemManager?: boolean;
         user_type: 'member' | 'SystemManager';
         performer_type: import('@prisma/client').PerformerType;
+        organization_id?: number;
       };
       isTestMode?: boolean;
     }

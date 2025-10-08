@@ -6,7 +6,9 @@ import systemManagerController, {
   refreshToken,
   logoutHandler,
   getDutySettings,
-  updateDutySettings
+  updateDutySettings,
+  getSystemSettings,
+  updateSystemSettings,
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
@@ -41,9 +43,9 @@ router.get('/all', systemManagerController.getAllSystemManagers);
 // Ruta za dohvat statistika dashboarda
 router.get('/dashboard/stats', systemManagerController.getDashboardStats);
 
-// Rute za sistemske postavke
-router.get('/settings', systemManagerController.getSystemSettings);
-router.put('/settings', systemManagerController.updateSystemSettings);
+// Rute za sistemske postavke (koristimo izdvojene handlere)
+router.get('/settings', getSystemSettings);
+router.put('/settings', updateSystemSettings);
 
 // Rute za upravljanje ovlastima članova
 router.get('/members-with-permissions', systemManagerController.getMembersWithPermissions);

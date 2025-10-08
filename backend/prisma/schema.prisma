@@ -106,6 +106,12 @@ model Member {
   hat_delivered            Boolean                  @default(false)
   hat_size                 String?                  @db.VarChar(4)
   activity_hours           Decimal?                 @default(0) @db.Decimal(10, 2)
+  // 2FA polja za članove
+  two_factor_enabled        Boolean?                @default(false)
+  two_factor_confirmed_at   DateTime?               @db.Timestamp(6)
+  two_factor_secret         String?                 @db.VarChar(255)
+  two_factor_recovery_codes_hash Json?
+  two_factor_preferred_channel String?              @db.VarChar(10)
   organization             Organization?            @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   organized_activities     Activity[]               @relation("OrganizedActivities")
   participations           ActivityParticipation[]
@@ -237,6 +243,26 @@ model SystemSettings {
   dutyCalendarEnabled       Boolean?     @default(false) @map("duty_calendar_enabled")
   dutyMaxParticipants       Int?         @default(2) @map("duty_max_participants")
   dutyAutoCreateEnabled     Boolean?     @default(true) @map("duty_auto_create_enabled")
+  // Registration rate limit (per-tenant)
+  registrationRateLimitEnabled Boolean?  @default(true)  @map("registration_rate_limit_enabled")
+  registrationWindowMs         Int?      @default(900000) @map("registration_window_ms")
+  registrationMaxAttempts      Int?      @default(5)      @map("registration_max_attempts")
+  // 2FA postavke (globalno i granularno)
+  twoFactorGlobalEnabled           Boolean? @default(false) @map("two_factor_global_enabled")
+  twoFactorRequireForSystemManager Boolean? @default(true)  @map("two_factor_require_for_system_manager")
+  twoFactorMembersEnabled          Boolean? @default(false) @map("two_factor_members_enabled")
+  twoFactorRequiredMemberRoles     Json?                    @map("two_factor_required_member_roles")
+  twoFactorRequiredMemberPermissions Json?                  @map("two_factor_required_member_permissions")
+  // kanali
+  twoFactorChannelTotpEnabled      Boolean? @default(true)  @map("two_factor_channel_totp_enabled")
+  twoFactorChannelEmailEnabled     Boolean? @default(false) @map("two_factor_channel_email_enabled")
+  twoFactorChannelSmsEnabled       Boolean? @default(false) @map("two_factor_channel_sms_enabled")
+  // trajanja i sigurnosne politike
+  twoFactorTotpStepSeconds         Int?     @default(30)    @map("two_factor_totp_step_seconds")
+  twoFactorTotpWindow              Int?     @default(1)     @map("two_factor_totp_window")
+  twoFactorOtpExpirySeconds        Int?     @default(300)   @map("two_factor_otp_expiry_seconds")
+  twoFactorMaxAttemptsPerHour      Int?     @default(10)    @map("two_factor_max_attempts_per_hour")
+  twoFactorRememberDeviceDays      Int?     @default(30)    @map("two_factor_remember_device_days")
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("system_settings")
@@ -511,6 +537,12 @@ model SystemManager {
   created_at      DateTime?    @default(now()) @db.Timestamp(6)
   updated_at      DateTime?    @default(now()) @db.Timestamp(6)
   last_login      DateTime?    @db.Timestamp(6)
+  // 2FA polja za System Manager
+  two_factor_enabled        Boolean?     @default(false)
+  two_factor_confirmed_at   DateTime?    @db.Timestamp(6)
+  two_factor_secret         String?      @db.VarChar(255)
+  two_factor_recovery_codes_hash Json?
+  two_factor_preferred_channel String?   @db.VarChar(10)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, username])

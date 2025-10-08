@@ -57,6 +57,24 @@ const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
 router.get('/dashboard/stats', authenticateToken, getMemberDashboardStats);
 
+// Dohvat trenutno prijavljenog člana (u sklopu tenanta)
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const currentId = req.user?.id;
+    if (!currentId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const me = await memberService.getMemberById(req, currentId);
+    if (!me) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
+    res.json(me);
+  } catch (error) {
+    console.error('Error fetching current member (me):', error);
+    res.status(500).json({ message: error instanceof Error ? error.message : 'Failed to fetch current member' });
+  }
+});
+
 // Rute za poruke koje moraju biti prije dinamičke /:memberId rute
 router.get('/unread-count', authenticateToken, memberMessageController.getUnreadMessageCount);
 router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
@@ -129,6 +147,52 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
     console.error("Error returning stamp:", error);
     res.status(500).json({ 
       message: error instanceof Error ? error.message : "Failed to return stamp" 
+    });
+  }
+});
+
+// Issue stamp to a member (current year by default, or next year when forNextYear=true)
+router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (req, res) => {
+  try {
+    const memberId = parseInt(req.params.memberId);
+    const { forNextYear = false } = req.body; // optional flag from client
+
+    // Fetch member to determine stamp type
+    const member = await memberService.getMemberById(req, memberId);
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+
+    // Determine stamp type from life_status (shared helper in service)
+    const stampType = stampService.getStampTypeFromLifeStatus(member.life_status);
+
+    // Issue the stamp
+    await stampService.issueStamp(req, memberId, stampType, Boolean(forNextYear));
+
+    // Update membership details flags
+    if (!forNextYear) {
+      await prisma.membershipDetails.update({
+        where: { member_id: memberId },
+        data: { card_stamp_issued: true }
+      });
+    } else {
+      await prisma.membershipDetails.update({
+        where: { member_id: memberId },
+        data: { next_year_stamp_issued: true }
+      });
+    }
+
+    // Return updated member to client
+    const updatedMember = await memberService.getMemberById(req, memberId);
+
+    res.json({
+      message: forNextYear ? "Stamp for next year issued successfully" : "Stamp issued successfully",
+      member: updatedMember
+    });
+  } catch (error) {
+    console.error("Error issuing stamp:", error);
+    res.status(500).json({
+      message: error instanceof Error ? error.message : "Failed to issue stamp"
     });
   }
 });

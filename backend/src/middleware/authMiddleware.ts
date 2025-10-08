@@ -60,7 +60,9 @@ const authenticateToken = async (
                     role_name: 'SystemManager',
                     is_SystemManager: true,
                     user_type: 'SystemManager',
-                    performer_type: 'SYSTEM_MANAGER' as PerformerType
+                    performer_type: 'SYSTEM_MANAGER' as PerformerType,
+                    // Dodano: organization_id za fallback u System Manager rutama
+                    organization_id: systemManager.organization_id ?? undefined
                 };
                 next(); // KLJUČNI ISPRAVAK: Prosljeđivanje zahtjeva dalje
             } else {

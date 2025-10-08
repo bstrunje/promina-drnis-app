@@ -9,8 +9,7 @@ import { Users, Activity as ActivityIcon, Mail, User, RefreshCw, Bell, Calendar 
 import { Member } from '@shared/member';
 import { Activity, ActivityStatus } from '@shared/activity.types';
 import { getAllActivitiesWithParticipants } from '../../utils/api/apiActivities';
-import { API_BASE_URL } from '@/utils/config';
-import axios from 'axios';
+import api from '@/utils/api/apiConfig';
 import { formatInputDate } from '../../utils/dateUtils';
 import { useBranding } from '../../hooks/useBranding';
 
@@ -63,13 +62,9 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      
       // Pokušaj dohvatiti statistike sa servera
       try {
-        const statsResponse = await axios.get<DashboardStatsResponse>(`${API_BASE_URL}/members/dashboard/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const statsResponse = await api.get<DashboardStatsResponse>(`/members/dashboard/stats`);
         
         // Ažuriraj podacima sa servera
         setStats({
@@ -119,13 +114,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
     const fetchAnnualStats = async () => {
-      if (member?.member_id) {
+      const targetId = fullMember?.member_id ?? member?.member_id;
+      if (targetId) {
         try {
-          console.log('Fetching annual stats for member ID:', member.member_id);
-          const token = localStorage.getItem('token');
-          const response = await axios.get<AnnualStat[]>(`${API_BASE_URL}/members/${member.member_id}/annual-stats`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          console.log('Fetching annual stats for member ID:', targetId);
+          const response = await api.get<AnnualStat[]>(`/members/${targetId}/annual-stats`);
           
           console.log('Received annual stats data:', response.data);
 
@@ -147,10 +140,8 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     const fetchMemberDetails = () => {
       const fetchMemberData = async () => {
         try {
-          const token = localStorage.getItem('token');
-          const response = await axios.get<Member>(`${API_BASE_URL}/members/${member.member_id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          // Dohvati trenutno prijavljenog člana neovisno o ID-u iz propsa
+          const response = await api.get<Member>(`/members/me`);
           setFullMember(response.data);
         } catch (error) {
           console.error('Failed to fetch full member data:', error);
@@ -165,7 +156,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
     void fetchMemberDetails();
     void fetchAnnualStats();
-  }, [member?.member_id, refreshUnreadCount]);
+  }, [member?.member_id, fullMember?.member_id, refreshUnreadCount]);
 
   return (
     <div className="min-h-screen bg-gray-50">

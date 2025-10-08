@@ -183,7 +183,7 @@ const SystemManagerAuditLogs: React.FC = () => {
     <div className="p-6">
       <div className="mb-4">
         <Button onClick={() => navigate(-1)} variant="outline">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Povratak
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
       </div>
 

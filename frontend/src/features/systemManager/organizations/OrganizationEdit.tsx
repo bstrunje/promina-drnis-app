@@ -1,7 +1,7 @@
 // frontend/src/features/systemManager/organizations/OrganizationEdit.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
@@ -14,6 +14,7 @@ import {
   type UpdateOrganizationData 
 } from '../../../utils/api/apiOrganizations';
 import { IMAGE_BASE_URL } from '../../../utils/config';
+import { getApiBaseUrl } from '../../../utils/tenantUtils';
 
 const OrganizationEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const OrganizationEdit: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSmPassword, setShowSmPassword] = useState(false); // Prikaz lozinke za System Managera
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -30,8 +32,19 @@ const OrganizationEdit: React.FC = () => {
     email: '',
     phone: '',
     website_url: '',
+    // Adresa i lokacija
+    street_address: '',
+    city: '',
+    postal_code: '',
+    country: '',
     primary_color: '#2563eb',
-    secondary_color: '#64748b',
+    secondary_color: '#e7ecf3',
+    // Linkovi na dokumente (uređivi)
+    ethics_code_url: '',
+    privacy_policy_url: '',
+    membership_rules_url: '',
+    // Aktivnost organizacije
+    is_active: undefined,
     sm_username: '',
     sm_email: '',
     sm_display_name: '',
@@ -56,8 +69,16 @@ const OrganizationEdit: React.FC = () => {
         email: data.organization.email,
         phone: data.organization.phone ?? '',
         website_url: data.organization.website_url ?? '',
+        street_address: data.organization.street_address ?? '',
+        city: data.organization.city ?? '',
+        postal_code: data.organization.postal_code ?? '',
+        country: data.organization.country ?? '',
         primary_color: data.organization.primary_color ?? '#2563eb',
         secondary_color: data.organization.secondary_color ?? '#64748b',
+        ethics_code_url: data.organization.ethics_code_url ?? '',
+        privacy_policy_url: data.organization.privacy_policy_url ?? '',
+        membership_rules_url: data.organization.membership_rules_url ?? '',
+        is_active: data.organization.is_active,
         sm_username: data.organization.system_manager?.username ?? '',
         sm_email: data.organization.system_manager?.email ?? '',
         sm_display_name: data.organization.system_manager?.display_name ?? '',
@@ -88,7 +109,7 @@ const OrganizationEdit: React.FC = () => {
         const logoFormData = new FormData();
         logoFormData.append('logo', logoFile);
         
-        const response = await fetch(`http://localhost:3000/api/system-manager/organizations/${id}/logo`, {
+        const response = await fetch(`${getApiBaseUrl()}/system-manager/organizations/${id}/logo`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('systemManagerToken')}`,
@@ -223,6 +244,42 @@ const OrganizationEdit: React.FC = () => {
               </div>
             </div>
 
+            {/* Address Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="street_address">Street Address</Label>
+                <Input
+                  id="street_address"
+                  value={formData.street_address ?? ''}
+                  onChange={(e) => handleChange('street_address', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={formData.city ?? ''}
+                  onChange={(e) => handleChange('city', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="postal_code">Postal Code</Label>
+                <Input
+                  id="postal_code"
+                  value={formData.postal_code ?? ''}
+                  onChange={(e) => handleChange('postal_code', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={formData.country ?? ''}
+                  onChange={(e) => handleChange('country', e.target.value)}
+                />
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="name">Organization Name *</Label>
               <Input
@@ -310,6 +367,42 @@ const OrganizationEdit: React.FC = () => {
               </div>
             </div>
 
+            {/* Document Links */}
+            {/* Uredi poveznice na dokumente politike i pravila */}
+            <div className="pt-6 border-t space-y-4">
+              <h3 className="text-lg font-semibold">Document Links</h3>
+              <div>
+                <Label htmlFor="ethics_code_url">Ethics Code URL</Label>
+                <Input
+                  id="ethics_code_url"
+                  type="url"
+                  value={formData.ethics_code_url ?? ''}
+                  onChange={(e) => handleChange('ethics_code_url', e.target.value)}
+                  placeholder="https://example.com/ethics"
+                />
+              </div>
+              <div>
+                <Label htmlFor="privacy_policy_url">Privacy Policy URL</Label>
+                <Input
+                  id="privacy_policy_url"
+                  type="url"
+                  value={formData.privacy_policy_url ?? ''}
+                  onChange={(e) => handleChange('privacy_policy_url', e.target.value)}
+                  placeholder="https://example.com/privacy"
+                />
+              </div>
+              <div>
+                <Label htmlFor="membership_rules_url">Membership Rules URL</Label>
+                <Input
+                  id="membership_rules_url"
+                  type="url"
+                  value={formData.membership_rules_url ?? ''}
+                  onChange={(e) => handleChange('membership_rules_url', e.target.value)}
+                  placeholder="https://example.com/membership-rules"
+                />
+              </div>
+            </div>
+
             {/* System Manager Section */}
             <div className="pt-6 border-t">
               <h3 className="text-lg font-semibold mb-4">System Manager</h3>
@@ -348,13 +441,24 @@ const OrganizationEdit: React.FC = () => {
 
                 <div>
                   <Label htmlFor="sm_password">New Password (leave empty to keep current)</Label>
-                  <Input
-                    id="sm_password"
-                    type="password"
-                    value={formData.sm_password}
-                    onChange={(e) => handleChange('sm_password', e.target.value)}
-                    placeholder="Enter new password to change"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="sm_password"
+                      type={showSmPassword ? 'text' : 'password'}
+                      value={formData.sm_password}
+                      onChange={(e) => handleChange('sm_password', e.target.value)}
+                      placeholder="Enter new password to change"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSmPassword(!showSmPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={showSmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showSmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   <p className="text-sm text-gray-500 mt-1">
                     Only fill this if you want to change the password
                   </p>

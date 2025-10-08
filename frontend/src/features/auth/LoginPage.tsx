@@ -43,7 +43,10 @@ const LoginPage = () => {
     getEthicsCodeUrl, 
     getPrivacyPolicyUrl, 
     getMembershipRulesUrl,
-    getPrimaryColor 
+    getPrimaryColor,
+    // Dodano: koristimo branding i grešku iz konteksta kako bismo prikazali neutralnu poruku
+    branding,
+    error: brandingError
   } = useBranding();
   // location nije potreban, uklonjen zbog lint upozorenja
   const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
@@ -116,6 +119,24 @@ const LoginPage = () => {
     
     setLoginData(prevData => ({ ...prevData, [name]: value }));
   };
+
+  // Ako tenant nije specificiran, prikaži samo neutralnu poruku bez ostalog sadržaja
+  if (!branding && brandingError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+          <div className="p-6 bg-blue-600 text-white text-center relative">
+            <div className="absolute top-4 right-4">
+              <LanguageToggle />
+            </div>
+            <div className="text-sm text-white bg-blue-700/60 border border-blue-500 rounded px-3 py-2">
+              {t('login.addressInvalid', 'Adresa nije ispravno upisana')}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -322,10 +343,16 @@ const LoginPage = () => {
             <LanguageToggle />
           </div>
           <div className="mb-4">
+            {/* Neutral notice when tenant is missing and branding is blocked */}
+            {(!branding && brandingError) && (
+              <div className="mb-2 text-sm text-gray-700 bg-gray-100 border border-gray-200 rounded px-3 py-2">
+                {t('login.addressInvalid', 'Adresa nije ispravno upisana')}
+              </div>
+            )}
             {/* Logo - dinamički iz branding-a */}
             <img 
-              src={getLogoUrl()} 
-              alt={getFullName()}
+              src={getLogoUrl() ?? undefined} 
+              alt={getFullName() ?? undefined}
               className="w-28 h-28 mx-auto rounded-full object-cover"
               onError={(e) => {
                 // Fallback na default logo ako branding logo ne učita

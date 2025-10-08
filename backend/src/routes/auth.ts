@@ -4,7 +4,7 @@ import { validateRegistration, validateLogin } from '../middleware/validators.js
 import authController from '../controllers/auth.controller.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js'; // OPTIMIZACIJA: Dodano za Prisma ORM
-import { createRateLimit } from '../middleware/rateLimit.js';
+import { createRateLimit, createTenantAwareRegistrationRateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -21,11 +21,7 @@ const searchRateLimit = createRateLimit({
   message: { error: "Too many search attempts, please try again later" }
 });
 
-const registerRateLimit = createRateLimit({
-  windowMs: 60 * 60 * 1000,  // 1 hour
-  max: 5,  // 5 registration attempts per IP in 1 hour
-  message: { error: "Too many registration attempts, please try again later" }
-});
+const registerRateLimit = createTenantAwareRegistrationRateLimit();
 
 // Public routes with rate limiting
 router.post('/register', registerRateLimit, validateRegistration, authController.registerMember);

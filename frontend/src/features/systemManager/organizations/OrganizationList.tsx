@@ -25,9 +25,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog';
+import ManagerHeader from '../components/common/ManagerHeader';
+import { useSystemManager } from '../../../context/SystemManagerContext';
 
 const OrganizationList: React.FC = () => {
   const navigate = useNavigate();
+  const { manager } = useSystemManager();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,26 +90,28 @@ const OrganizationList: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Organizations</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all organizations in the system</p>
+      <div className="min-h-screen bg-gray-100">
+        <ManagerHeader manager={manager} />
+        <div className="p-4 sm:p-6">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Organizations</h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all organizations in the system</p>
+            </div>
+            <Button 
+              onClick={() => navigate('/system-manager/organizations/create')}
+              className="w-full sm:w-auto"
+            >
+              {/* Gumb za kreiranje organizacije */}
+              <Plus className="h-4 w-4 mr-2" />
+              Create Organization
+            </Button>
           </div>
-          <Button 
-            onClick={() => navigate('/system-manager/organizations/create')}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Organization
-          </Button>
-        </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {organizations.length === 0 ? (
         <Card>
@@ -197,7 +202,7 @@ const OrganizationList: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(org.website_url!, '_blank')}
+                            onClick={() => { if (org.website_url) window.open(org.website_url, '_blank'); }}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -258,6 +263,7 @@ const OrganizationList: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </div>
       </div>
     </TooltipProvider>
   );

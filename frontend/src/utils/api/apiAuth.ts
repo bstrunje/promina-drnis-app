@@ -2,6 +2,7 @@ import api from './apiConfig';
 import { ApiLoginResponse, ApiRegisterResponse } from './apiTypes';
 import { MemberLoginData, Member } from '../../../shared/types/member.js';
 import { AxiosResponse } from 'axios';
+import { getCurrentTenant } from '../tenantUtils';
 
 /**
  * Prijava korisnika
@@ -14,7 +15,10 @@ export const login = async ({ email, password }: MemberLoginData): Promise<ApiLo
     const response: AxiosResponse<ApiLoginResponse> = await api.post<ApiLoginResponse>(
       '/auth/login', 
       { email, password },
-      { withCredentials: true } // Eksplicitno omogućujemo slanje i primanje kolačića
+      {
+        withCredentials: true, // Eksplicitno omogućujemo slanje i primanje kolačića
+        params: { tenant: getCurrentTenant() }, // Dodan tenant za multi-tenant context
+      }
     );
     // Spremanje role ostaje isto
     if (response.data.member.role) {
@@ -37,7 +41,11 @@ export const login = async ({ email, password }: MemberLoginData): Promise<ApiLo
  */
 export const register = async (registerData: Omit<Member, 'member_id' | 'total_hours'>): Promise<ApiRegisterResponse> => {
   try {
-    const response: AxiosResponse<ApiRegisterResponse> = await api.post<ApiRegisterResponse>('/auth/register', registerData);
+    const response: AxiosResponse<ApiRegisterResponse> = await api.post<ApiRegisterResponse>(
+      '/auth/register',
+      registerData,
+      { params: { tenant: getCurrentTenant() } } // Dodan tenant za multi-tenant context
+    );
     return response.data;
   } catch (error) {
     if (error instanceof Error) {

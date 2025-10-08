@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../src/utils/api';
+import { getCurrentTenant } from '../src/utils/tenantUtils';
 
 // Definicija tipova
 interface Skill {
@@ -41,7 +42,9 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
     const fetchSkills = async () => {
       try {
         setLoading(true);
-        const response = await api.get<Skill[]>('/skills');
+        // Dodaj tenant parametar kako bi tenant middleware prošao u razvoju
+        const tenant = getCurrentTenant();
+        const response = await api.get<Skill[]>('/skills', { params: { tenant } });
         setAllSkills(response.data);
         setError(null);
       } catch (err) {

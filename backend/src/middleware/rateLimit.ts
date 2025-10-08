@@ -1,4 +1,7 @@
 import rateLimit, { Options as RateLimitOptions } from 'express-rate-limit';
+import type { Request, Response, NextFunction } from 'express';
+import prisma from '../utils/prisma.js';
+import { getOrganizationId } from './tenant.middleware.js';
 
 /**
  * Kreira middleware za ograničavanje broja zahtjeva
@@ -13,6 +16,73 @@ export const createRateLimit = (options?: Partial<RateLimitOptions>) => {
     legacyHeaders: false, // Onemogući X-RateLimit-* zaglavlja
     ...options
   });
+};
+
+/**
+ * Tenant-aware limiter za registracijske zahtjeve.
+ * Čita postavke iz SystemSettings i omogućuje isključivanje/konfiguraciju po tenant-u.
+ */
+export const createTenantAwareRegistrationRateLimit = () => {
+  // Vraćamo middleware koji će dinamički odlučiti što napraviti za svaki zahtjev
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Pokušaj dohvatiti organization_id iz req (tenant param/proxy)
+      let organizationId: number | null = null;
+      try {
+        organizationId = getOrganizationId(req);
+      } catch {
+        organizationId = null;
+      }
+
+      if (!organizationId) {
+        // Ako nema tenanta, primijeni konzervativni limiter (isti kao stari default)
+        return rateLimit({
+          windowMs: 60 * 60 * 1000,
+          max: 5,
+          standardHeaders: true,
+          legacyHeaders: false,
+          message: { error: 'Too many registration attempts, please try again later' }
+        })(req, res, next);
+      }
+
+      // Dohvati postavke za tenant
+      const settings = await prisma.systemSettings.findUnique({
+        where: { organization_id: organizationId }
+      });
+
+      // Ako nema postavki, koristi default konzervativni limiter
+      if (!settings) {
+        return rateLimit({
+          windowMs: 60 * 60 * 1000,
+          max: 5,
+          standardHeaders: true,
+          legacyHeaders: false,
+          message: { error: 'Too many registration attempts, please try again later' }
+        })(req, res, next);
+      }
+
+      // Ako je limiter isključen u postavkama → preskoči limitiranje
+      if (settings.registrationRateLimitEnabled === false) {
+        return next();
+      }
+
+      // Primijeni vrijednosti iz postavki (uz fallback na razumne defaulte)
+      const windowMs = settings.registrationWindowMs ?? 60 * 60 * 1000;
+      const max = settings.registrationMaxAttempts ?? 5;
+
+      return rateLimit({
+        windowMs,
+        max,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many registration attempts, please try again later' }
+      })(req, res, next);
+    } catch (_error) {
+      // Ako dođe do greške, nemoj blokirati registraciju – proslijedi dalje
+      // (alternativno bi se moglo primijeniti stroži default)
+      return next();
+    }
+  };
 };
 
 /**

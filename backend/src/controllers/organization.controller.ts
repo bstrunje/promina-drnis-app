@@ -6,6 +6,7 @@ import { tOrDefault } from '../utils/i18n.js';
 import { put, del } from '@vercel/blob';
 import path from 'path';
 import fs from 'fs/promises';
+import { getUploadsDir, isBlobConfigured } from '../utils/uploads.js';
 import { seedSkills, seedActivityTypes } from '../../prisma/seed.js';
 
 // Upload konfiguracija (ista logika kao za profile images)
@@ -13,9 +14,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 const isProduction = process.env.NODE_ENV === 'production';
 const hasVercelBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
 const useVercelBlob = isProduction && hasVercelBlobToken;
-const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production' 
-  ? '/tmp/uploads' 
-  : path.join(process.cwd(), 'uploads'));
+// Centralizirani uploads direktorij (dosljedan s app.ts)
+const uploadsDir = getUploadsDir();
 
 // Helper za kreiranje direktorija
 async function ensureDirectoryExists(dirPath: string): Promise<void> {
@@ -481,7 +481,11 @@ async function seedSystemSettings(tx: Omit<typeof prisma, '$connect' | '$disconn
       dutyAutoCreateEnabled: true,
       membershipTerminationDay: 1,
       membershipTerminationMonth: 3,
-      timeZone: 'Europe/Zagreb'
+      timeZone: 'Europe/Zagreb',
+      // Registracijski rate limit defaulti
+      registrationRateLimitEnabled: true,
+      registrationWindowMs: 60 * 60 * 1000, // 1h
+      registrationMaxAttempts: 5
     }
   });
 
@@ -502,6 +506,11 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
   const organizationId = parseInt(id, 10);
 
   try {
+    // Produkcija bez Bloba: fail-fast (trajnost nije osigurana)
+    if (isProduction && !isBlobConfigured()) {
+      res.status(503).json({ message: 'Blob storage not configured. Logo upload is disabled in production.' });
+      return;
+    }
     if (isDev) console.log(`[LOGO-UPLOAD] Starting logo upload for organization ${id}`);
     if (isDev) console.log(`[LOGO-UPLOAD] File: ${req.file.originalname}, size: ${req.file.size} bytes`);
 

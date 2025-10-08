@@ -1,5 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getApiBaseUrl } from '../tenantUtils';
+import { getApiBaseUrl, getCurrentTenant } from '../tenantUtils';
+
+type ParamsRecord = Record<string, unknown>;
 
 // Stvaranje Axios instance s tenant-aware konfiguracijom
 const apiInstance = axios.create({
@@ -18,6 +20,21 @@ apiInstance.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Globalno dodaj tenant parametar za sve member/admin API pozive
+    try {
+      const url = config.url ?? '';
+      const hasTenantParam = Boolean((config.params as ParamsRecord | undefined)?.tenant);
+      const isSystemManagerRoute = url.startsWith('/system-manager');
+      if (!hasTenantParam && !isSystemManagerRoute) {
+        const tenant = getCurrentTenant();
+        const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
+        config.params = { ...currentParams, tenant } as unknown;
+      }
+    } catch {
+      // Ne prekidaj zahtjev ako dođe do greške pri dodavanju parametra
+    }
+
     return config;
   },
   (error: unknown) => {

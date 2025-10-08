@@ -1238,6 +1238,107 @@ async function updateDutySettings(req: Request, res: Response): Promise<void> {
     }
 }
 
-export { logoutHandler, getDutySettings, updateDutySettings };
+/**
+ * GET /api/system-manager/settings
+ * Returns SystemSettings for current tenant; creates defaults if missing.
+ */
+async function getSystemSettings(req: Request, res: Response): Promise<void> {
+  try {
+    // Fallback: ako tenant middleware preskoči za System Manager rute,
+    // koristimo organization_id iz autentificiranog korisnika
+    let organizationId: number | undefined;
+    try {
+      organizationId = getOrganizationId(req);
+    } catch {
+      organizationId = (req.user as unknown as { organization_id?: number } | undefined)?.organization_id;
+    }
+    if (!organizationId || typeof organizationId !== 'number') {
+      res.status(400).json({ message: 'Organization context is missing' });
+      return;
+    }
+    let settings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } });
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          organization_id: organizationId,
+        }
+      });
+    }
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching system settings:', error);
+    res.status(500).json({ message: 'Error occurred while fetching system settings' });
+  }
+}
+
+/**
+ * PUT /api/system-manager/settings
+ * Updates subset of SystemSettings for current tenant (registration rate limit fields).
+ */
+async function updateSystemSettings(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    // Fallback tenant resolution: prefer middleware, else user.organization_id
+    let organizationId: number | undefined;
+    try {
+      organizationId = getOrganizationId(req);
+    } catch {
+      organizationId = (req.user as unknown as { organization_id?: number } | undefined)?.organization_id;
+    }
+    if (!organizationId || typeof organizationId !== 'number') {
+      res.status(400).json({ message: 'Organization context is missing' });
+      return;
+    }
+    const {
+      registrationRateLimitEnabled,
+      registrationWindowMs,
+      registrationMaxAttempts,
+    } = req.body as {
+      registrationRateLimitEnabled?: unknown;
+      registrationWindowMs?: unknown;
+      registrationMaxAttempts?: unknown;
+    };
+
+    const updateData: Record<string, unknown> = {};
+
+    if (registrationRateLimitEnabled !== undefined) {
+      updateData.registrationRateLimitEnabled = Boolean(registrationRateLimitEnabled);
+    }
+
+    if (registrationWindowMs !== undefined) {
+      const ms = Number(registrationWindowMs);
+      if (!Number.isFinite(ms) || ms <= 0) {
+        res.status(400).json({ message: 'registrationWindowMs must be a positive number' });
+        return;
+      }
+      updateData.registrationWindowMs = Math.floor(ms);
+    }
+
+    if (registrationMaxAttempts !== undefined) {
+      const max = Number(registrationMaxAttempts);
+      if (!Number.isFinite(max) || max <= 0) {
+        res.status(400).json({ message: 'registrationMaxAttempts must be a positive number' });
+        return;
+      }
+      updateData.registrationMaxAttempts = Math.floor(max);
+    }
+
+    const settings = await prisma.systemSettings.upsert({
+      where: { organization_id: organizationId },
+      update: updateData,
+      create: { organization_id: organizationId, ...updateData },
+    });
+
+    res.json({ message: 'System settings updated successfully', settings });
+  } catch (error) {
+    console.error('Error updating system settings:', error);
+    res.status(500).json({ message: 'Error occurred while updating system settings' });
+  }
+}
+
+export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings };
 
 export default systemManagerController;

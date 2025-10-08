@@ -69,10 +69,14 @@ export const getTenantUrl = (tenant: string, path = ''): string => {
  */
 export const getApiBaseUrl = (): string => {
   if (isDevelopment()) {
-    // Development - backend na localhost:3000/api (lokalni server)
-    return 'http://localhost:3000/api';
+    // Development - koristi dinamičku konfiguraciju kao i config.ts
+    // Podržava VITE_BACKEND_PORT environment varijablu
+    const envPort = (import.meta as { env: Record<string, unknown> }).env.VITE_BACKEND_PORT;
+    const backendPort = typeof envPort === 'string' && envPort.length > 0 ? envPort : '3000';
+
+    return `http://localhost:${backendPort}/api`;
   }
-  
+
   // Production - isti domain kao frontend s /api prefiksom
   return `${window.location.origin}/api`;
 };

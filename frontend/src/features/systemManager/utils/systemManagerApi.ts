@@ -75,6 +75,26 @@ systemManagerApi.interceptors.request.use(
       console.warn('System Manager API pozvan bez System Manager tokena!');
     }
     
+    try {
+      // Propagiraj tenant/branding za sve System Manager rute bez duplikata
+      const url = config.url ?? '';
+      if (url.startsWith('/system-manager')) {
+        const current = new URL(window.location.href);
+        const t = current.searchParams.get('tenant');
+        const b = current.searchParams.get('branding');
+        if (t || b) {
+          const [path, queryStr] = url.split('?');
+          const params = new URLSearchParams(queryStr || '');
+          // Postavi samo ako već ne postoji na URL-u
+          if (t && !params.has('tenant')) params.set('tenant', t);
+          if (b && !params.has('branding')) params.set('branding', b);
+          const merged = params.toString();
+          config.url = merged ? `${path}?${merged}` : path;
+        }
+      }
+    } catch {
+      // Ne ruši zahtjev ako window.location nije dostupan
+    }
     return config;
   },
   (error: unknown) => {
@@ -194,7 +214,26 @@ systemManagerApi.interceptors.response.use(
  */
 export const systemManagerLogin = async ({ username, password }: SystemManagerLoginData): Promise<SystemManagerLoginResponse> => {
   try {
-    const response = await systemManagerApi.post<SystemManagerLoginResponse>('/system-manager/login', { 
+    // Propagiraj tenant/branding iz trenutačnog URL-a prema backendu
+    let loginPath = '/system-manager/login';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const rawTenant = params.get('tenant') ?? params.get('branding');
+      if (rawTenant) {
+        // Ako već postoje drugi parametri, zadržavamo ih i šaljemo samo tenant/branding
+        const qs = new URLSearchParams();
+        const t = params.get('tenant');
+        const b = params.get('branding');
+        if (t) qs.set('tenant', t);
+        if (b) qs.set('branding', b);
+        const suffix = qs.toString();
+        if (suffix) loginPath = `${loginPath}?${suffix}`;
+      }
+    } catch {
+      // Bez prekida ako URLSearchParams nije dostupan u nekom kontekstu
+    }
+
+    const response = await systemManagerApi.post<SystemManagerLoginResponse>(loginPath, { 
       username, 
       password 
     });
@@ -534,9 +573,14 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
   try {
     // console.log('Šaljem PUT zahtjev na:', `${API_BASE_URL}/system-manager/settings`);
     // console.log('Podaci:', settings);
-    const response = await systemManagerApi.put<SystemSettings>('/system-manager/settings', settings);
-    // console.log('Odgovor:', response.data);
-    return response.data;
+    const response = await systemManagerApi.put('/system-manager/settings', settings);
+    const data = response.data as unknown;
+    // Backend vraća { message, settings } – vraćamo samo settings
+    if (data && typeof data === 'object' && 'settings' in (data as Record<string, unknown>)) {
+      return (data as { settings: SystemSettings }).settings;
+    }
+    // Ako backend vrati direktno objekt postavki
+    return data as SystemSettings;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.error('AxiosError:', error.response?.data);

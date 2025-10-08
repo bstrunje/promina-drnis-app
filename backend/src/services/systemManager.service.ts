@@ -21,6 +21,10 @@ interface SystemSettings {
     timeZone?: string | null;
     membershipTerminationDay?: number | null;
     membershipTerminationMonth?: number | null;
+    // Rate-limit postavke za registraciju
+    registrationRateLimitEnabled?: boolean | null;
+    registrationWindowMs?: number | null;
+    registrationMaxAttempts?: number | null;
     updatedAt: Date;
     updatedBy?: string | null;
 }
@@ -70,34 +74,99 @@ type DefaultSuperuserPermissionsResponse = {
 const systemManagerService = {
     // Check credentials and log in manager
     async authenticate(req: Request, username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
-        const organizationId = getOrganizationId(req);
-        
-        // Prvo pokušaj pronaći Global System Manager (organization_id = NULL)
-        let manager = await systemManagerRepository.findByUsername(null, username);
-        
-        // Ako nije pronađen globalni, pokušaj pronaći org-specific
-        if (!manager) {
-            manager = await systemManagerRepository.findByUsername(organizationId, username);
+        // 1) Pokušaj TENANT-SPECIFIC login ako postoji tenant/branding ili tenant kontekst
+        const tenantParamRaw = (req.query?.tenant ?? req.query?.branding) as unknown;
+        // Prihvati i niz i string; uzmi prvu vrijednost ako je niz
+        let tenantParam: string | undefined;
+        if (Array.isArray(tenantParamRaw)) {
+            tenantParam = (tenantParamRaw[0] ?? '').toString().trim() || undefined;
+        } else if (typeof tenantParamRaw === 'string') {
+            tenantParam = tenantParamRaw.trim() || undefined;
+        } else if (tenantParamRaw != null) {
+            tenantParam = String(tenantParamRaw).trim() || undefined;
         }
-        
-        // If manager does not exist or has no password
-        if (!manager || !manager.password_hash) {
+
+        const tryTenantFirst = Boolean(tenantParam);
+        let _lastError: unknown = null;
+
+        const resolveTenantOrgId = async (): Promise<number | null> => {
+            if (isDev) console.log('[AUTH][SM] Incoming login:', {
+                path: req.path,
+                method: req.method,
+                tenantParam: tenantParam ?? null,
+                headersBranding: (req.query?.branding as string | undefined) ?? null
+            });
+            // a) iz query parametra
+            if (tenantParam) {
+                try {
+                    if (isDev) console.log(`[AUTH] Resolving organization by tenant/branding param: ${tenantParam}`);
+                    const org = await prisma.organization.findFirst({ where: { subdomain: tenantParam } });
+                    if (org) return org.id;
+                    if (isDev) console.warn(`[AUTH] No organization found for subdomain: ${tenantParam}`);
+                } catch (e) {
+                    _lastError = e;
+                    console.error('[AUTH] Error resolving organization from tenant param:', e);
+                }
+            }
+            // b) iz tenant middleware konteksta
+            try {
+                const organizationId = getOrganizationId(req);
+                if (isDev) console.log(`[AUTH] Tenant middleware resolved organization_id: ${organizationId}`);
+                return organizationId;
+            } catch (_e) {
+                if (isDev) console.log('[AUTH] No tenant context available from middleware');
+            }
             return null;
+        };
+
+        const checkCandidate = async (candidate: SystemManager | null): Promise<Omit<SystemManager, 'password_hash'> | null> => {
+            if (!candidate) return null;
+            if (isDev) console.log('[AUTH] Candidate found:', {
+                id: candidate.id,
+                username: candidate.username,
+                organization_id: candidate.organization_id
+            });
+            if (!candidate.password_hash) {
+                if (isDev) console.warn(`[AUTH] Found manager id=${candidate.id} but no password_hash; trying fallback`);
+                return null;
+            }
+            const ok = await bcrypt.compare(password, candidate.password_hash);
+            if (isDev) console.log(`[AUTH] Password compare result for id=${candidate.id}: ${ok}`);
+            if (!ok) return null;
+            await systemManagerRepository.updateLastLogin(candidate.id);
+            if (isDev) console.log(`[AUTH] Login success for manager id=${candidate.id}, org_id=${candidate.organization_id ?? 'GLOBAL'}`);
+            const { password_hash: _password_hash, ...without } = candidate;
+            return without;
+        };
+
+        // Pokušaj 1: Tenant-specific (ako ima smisla)
+        if (tryTenantFirst) {
+            const orgId = await resolveTenantOrgId();
+            if (orgId) {
+                const tenantCandidate = await systemManagerRepository.findByUsername(orgId, username);
+                const tenantResult = await checkCandidate(tenantCandidate);
+                if (tenantResult) return tenantResult;
+            }
         }
-        
-        // Compare password with hash
-        const passwordMatch = await bcrypt.compare(password, manager.password_hash);
-        
-        if (!passwordMatch) {
-            return null;
+
+        // Pokušaj 2: Global System Manager
+        const globalCandidate = await systemManagerRepository.findByUsername(null as unknown as number | null, username);
+        if (isDev && globalCandidate) console.log('[AUTH] Global candidate found:', { id: globalCandidate.id, username: globalCandidate.username });
+        const globalResult = await checkCandidate(globalCandidate);
+        if (globalResult) return globalResult;
+
+        // Pokušaj 3: Ako nismo imali tenantParam, ipak probaj tenant kontekst (npr. subdomain ili prethodno stanje)
+        if (!tryTenantFirst) {
+            const orgId = await resolveTenantOrgId();
+            if (orgId) {
+                const tenantCandidate = await systemManagerRepository.findByUsername(orgId, username);
+                const tenantResult = await checkCandidate(tenantCandidate);
+                if (tenantResult) return tenantResult;
+            }
         }
-        
-        // Update last login time
-        await systemManagerRepository.updateLastLogin(manager.id);
-        
-        // Return manager without password
-        const { password_hash: _password_hash, ...managerWithoutPassword } = manager; // _password_hash: ignoriramo vrijednost radi lint pravila
-        return managerWithoutPassword;
+
+        if (isDev) console.warn('[AUTH] Authentication failed for System Manager (no valid candidate matched)');
+        return null;
     },
     
     // Create JWT access token for manager
@@ -498,7 +567,28 @@ const systemManagerService = {
     // Dohvat sistemskih postavki
     async getSystemSettings(req: Request): Promise<SystemSettings> {
         try {
-            const organizationId = getOrganizationId(req);
+            // Pokušaj dobiti organizationId iz tenant middleware-a
+            let organizationId: number;
+            try {
+                organizationId = getOrganizationId(req);
+            } catch (_e) {
+                // Fallback: deriviraj organizaciju iz trenutno prijavljenog System Managera
+                // Ovo omogućuje rad System Manager ruta i kada tenant middleware nije montiran na /api/system-manager
+                if (!req.user) {
+                    throw new Error('Organization context nije dostupan i korisnik nije autentificiran');
+                }
+
+                const mgr = await prisma.systemManager.findUnique({
+                    where: { id: req.user.id },
+                    select: { organization_id: true }
+                });
+
+                if (!mgr?.organization_id) {
+                    throw new Error('Organization context nije moguće odrediti za System Managera');
+                }
+
+                organizationId = mgr.organization_id;
+            }
             
             // Dohvati postavke direktnim SQL upitom umjesto kroz Prisma klijent
             const result = await prisma.$queryRaw`
@@ -529,7 +619,11 @@ const systemManagerService = {
                     timeZone: 'Europe/Zagreb', // Zadana vremenska zona
                     membershipTerminationDay: 1,
                     membershipTerminationMonth: 3, // Ožujak
-                    updatedAt: getCurrentDate()
+                    updatedAt: getCurrentDate(),
+                    // Zadane vrijednosti rate-limit postavki
+                    registrationRateLimitEnabled: false,
+                    registrationWindowMs: 3600000,
+                    registrationMaxAttempts: 5
                 };
             }
             
@@ -542,7 +636,11 @@ const systemManagerService = {
                 membershipTerminationDay: settings.membership_termination_day || 1,
                 membershipTerminationMonth: settings.membership_termination_month || 3,
                 updatedAt: settings.updated_at,
-                updatedBy: settings.updated_by
+                updatedBy: settings.updated_by,
+                // Mapiraj rate-limit postavke
+                registrationRateLimitEnabled: Boolean(settings.registration_rate_limit_enabled ?? false),
+                registrationWindowMs: settings.registration_window_ms ?? 3600000,
+                registrationMaxAttempts: settings.registration_max_attempts ?? 5
             };
         } catch (error) {
             console.error('Error fetching system settings:', error);
@@ -560,6 +658,16 @@ const systemManagerService = {
         membershipTerminationMonth?: number | null;
     }, updatedBy: number): Promise<SystemSettings> { 
         try {
+            // Odredi organization_id za ažuriranje postavki na temelju System Managera koji ažurira
+            const manager = await prisma.systemManager.findUnique({
+                where: { id: updatedBy },
+                select: { organization_id: true }
+            });
+
+            if (!manager?.organization_id) {
+                throw new Error('Organization context nije moguće odrediti za System Managera');
+            }
+            const organizationId = manager.organization_id;
             // Provjeri postoje li postavke direktnim SQL upitom
             const existingSettingsResult = await prisma.$queryRaw`
                 SELECT 
@@ -678,11 +786,11 @@ const systemManagerService = {
                 });
                 
                 // OPTIMIZACIJA: Zamjena legacy $executeRaw i $queryRaw s Prisma update operacijom
-                if (isDev) console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za ID: ${data.id}`);
-                
+                if (isDev) console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za organization_id: ${organizationId}`);
+
                 const updatedSettings = await prisma.systemSettings.update({
                     where: {
-                        organization_id: 1 // PD Promina - TODO: Dodati tenant context
+                        organization_id: organizationId
                     },
                     data: {
                         cardNumberLength: cardNumberLength,

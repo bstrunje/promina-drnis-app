@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { localeMiddleware } from './middleware/locale.js';
 import path from 'path';
 import fs from 'fs/promises';
+import { getUploadsDir, ensureBaseUploadDirs } from './utils/uploads.js';
 import _config from './config/config.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -92,13 +93,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
 app.use(localeMiddleware); // Detekcija jezika (X-Lang / Accept-Language), fallback: en
 
-// Set up static file serving with better error handling
-// Set up static file serving with better error handling
-// Prioritize UPLOADS_DIR for persistent storage
-const uploadsDir = process.env.UPLOADS_DIR || (process.env.NODE_ENV === 'production'
-  ? '/app/uploads' // Fallback for legacy or non-disk setups
-  : path.resolve(__dirname, '..', 'uploads'));
-  
+// Set up static file serving (centralizirano)
+const uploadsDir = getUploadsDir();
+void ensureBaseUploadDirs(); // kreiraj potrebne direktorije ako ne postoje
 if (isDev) console.log(`Serving static files from: ${uploadsDir}`);
 
 // Replace the static file middleware with a more comprehensive version
@@ -274,13 +271,18 @@ app.use('/api/messages', (req, res, next) => {
 
 // API Routes - KLJUČNO: /api/messages MORA biti PRIJE /api/members
 // TENANT MIDDLEWARE - Mora biti PRIJE svih API ruta za multi-tenant support
+
+// 🔧 SYSTEM MANAGER rute definiramo PRIJE tenant middleware-a
+// jer Global System Manager ne treba tenant context (može kreirati organizacije)
+app.use('/api/system-manager', systemManagerRoutes);
+
+// TENANT MIDDLEWARE - Globalni tenant context za sve API pozive
 app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
 
 // Public routes (bez authMiddleware)
 app.use('/api', orgConfigRoutes); // Public org config endpoints
 
 app.use('/api/auth', authRoutes);
-app.use('/api/system-manager', systemManagerRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK

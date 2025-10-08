@@ -163,15 +163,7 @@ async function getOrganizationBySubdomain(subdomain: string): Promise<TenantCont
   }
 }
 
-/**
- * Fallback organizacija za development
- * Ako nema subdomene, koristi PD Promina kao default
- */
-async function getDefaultOrganization(): Promise<TenantContext | null> {
-  const DEFAULT_SUBDOMAIN = 'promina';
-  
-  return await getOrganizationBySubdomain(DEFAULT_SUBDOMAIN);
-}
+// Uklonjen development fallback: eksplicitni tenant je obavezan
 
 /**
  * Tenant Identification Middleware
@@ -183,8 +175,16 @@ export async function tenantMiddleware(
 ): Promise<void> {
   try {
     const host = req.get('host') || req.headers.host as string;
-    
-    // Provjeri query parametre za tenant (za development)
+    const path = req.path;
+
+    // 🔧 IZUZEĆE: System Manager rute ne trebaju tenant context
+    // jer Global System Manager može kreirati organizacije
+    if (path.startsWith('/system-manager') || path === '/api/system-manager/login') {
+      console.log(`[TENANT-MIDDLEWARE] System Manager ruta - preskačem tenant detekciju: ${path}`);
+      return next();
+    }
+
+    // Provjeri query parametre za tenant (podržano za development)
     const tenantQuery = (req.query.tenant as string | undefined) ?? (req.query.branding as string | undefined);
     const subdomain = tenantQuery ?? extractSubdomain(host);
 
@@ -192,21 +192,23 @@ export async function tenantMiddleware(
 
     let tenantContext: TenantContext | null = null;
 
-    if (subdomain) {
-      // Pokušaj dohvatiti organizaciju po subdomeni
-      tenantContext = await getOrganizationBySubdomain(subdomain);
+    // Obavezno: mora postojati eksplicitni tenant (subdomena ili query)
+    if (!subdomain) {
+      res.status(400).json({
+        error: 'Bad Request',
+        message: 'Tenant is required'
+      });
+      return;
     }
 
-    if (!tenantContext) {
-      // Fallback na default organizaciju (PD Promina)
-      tenantContext = await getDefaultOrganization();
-    }
+    // Pokušaj dohvatiti organizaciju po subdomeni
+    tenantContext = await getOrganizationBySubdomain(subdomain);
 
     if (!tenantContext) {
-      console.error('[TENANT-MIDDLEWARE] Nema dostupnih organizacija!');
-      res.status(503).json({
-        error: 'Service Unavailable',
-        message: 'Organizacija nije dostupna'
+      console.error('[TENANT-MIDDLEWARE] Organizacija nije pronađena ili nije aktivna');
+      res.status(404).json({
+        error: 'Not Found',
+        message: 'Organization not found'
       });
       return;
     }

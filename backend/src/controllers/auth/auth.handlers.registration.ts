@@ -3,6 +3,7 @@ import { Member } from '../../shared/types/member.js';
 import prisma from '../../utils/prisma.js';
 import { parseDate, cleanISODateString } from '../../utils/dateUtils.js';
 import { tOrDefault } from '../../utils/i18n.js';
+import { getOrganizationId } from '../../middleware/tenant.middleware.js';
 
 export async function registerInitialHandler(
   req: Request<
@@ -23,6 +24,14 @@ export async function registerInitialHandler(
 ): Promise<void> {
   const locale: 'en' | 'hr' = req.locale ?? 'en';
   try {
+    // Dohvati organization_id iz tenant middleware-a
+    let organizationId: number;
+    try {
+      organizationId = getOrganizationId(req);
+    } catch (_e) {
+      res.status(400).json({ code: 'TENANT_REQUIRED', message: 'Organization context is required' });
+      return;
+    }
     const { first_name, last_name, email } = req.body;
 
     // Check if member with email already exists
@@ -45,6 +54,7 @@ export async function registerInitialHandler(
         last_name,
         full_name: `${first_name} ${last_name}`,
         email,
+        organization_id: organizationId, // multi-tenant: veži člana uz organizaciju
         oib: '', // Temporary empty value - will be filled during registration
         cell_phone: '', // Temporary empty value
         city: '', // Temporary empty value
@@ -91,6 +101,14 @@ export async function registerMemberHandler(
 ): Promise<void> {
   const locale: 'en' | 'hr' = req.locale ?? 'en';
   try {
+    // Dohvati organization_id iz tenant middleware-a
+    let organizationId: number;
+    try {
+      organizationId = getOrganizationId(req);
+    } catch (_e) {
+      res.status(400).json({ code: 'TENANT_REQUIRED', message: 'Organization context is required' });
+      return;
+    }
     const {
       first_name,
       last_name,
@@ -147,6 +165,7 @@ export async function registerMemberHandler(
           tshirt_size,
           shell_jacket_size,
           other_skills,
+          organization_id: organizationId, // multi-tenant: veži člana uz organizaciju
           status: 'pending',
           role: 'member',
           registration_completed: false,

@@ -7,6 +7,7 @@ import { Member } from "@shared/member";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/config";
 import { useBranding } from "../../hooks/useBranding";
+import { getCurrentTenant } from "@/utils/tenantUtils";
 
 interface Props {
   member: Member;
@@ -66,7 +67,8 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
       
       // Fetch membership stats
       const memberResponse = await axios.get<DashboardStatsResponse>(`${API_BASE_URL}/admin/dashboard/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tenant: getCurrentTenant() },
       });
       
       // If you have separate endpoints for different stats, you could use Promise.all

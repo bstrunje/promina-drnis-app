@@ -18,7 +18,7 @@ export interface OrganizationBranding {
   logo_path: string | null;
   primary_color: string | null;
   secondary_color: string | null;
-  email: string;
+  email: string | null; // može biti null iz API-ja
   phone: string | null;
   website_url: string | null;
   street_address: string | null;
@@ -56,6 +56,12 @@ interface CachedBranding {
 const getTenantFromUrl = (): string => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
+
+  // System Manager rute ne koriste branding – preskačemo u potpunosti
+  if (pathname.startsWith('/system-manager')) {
+    console.log('[BRANDING] System Manager route - skipping tenant detection');
+    return 'skip';
+  }
   
   console.log('[BRANDING] 🔍 Detecting tenant from hostname:', hostname);
   console.log('[BRANDING] 🔍 Current pathname:', pathname);
@@ -76,9 +82,9 @@ const getTenantFromUrl = (): string => {
       console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
       return tenantParam;
     }
-    
-    console.log('[BRANDING] ⚠️  No tenant specified - using first organization from database');
-    return 'default'; // Signal to load first organization
+    // Sigurnosno: ne koristi default tenant u developmentu
+    console.log('[BRANDING] ⚠️  Tenant not specified');
+    return 'missing';
   }
   
   // Production - subdomena
@@ -89,8 +95,8 @@ const getTenantFromUrl = (): string => {
     return subdomain; // Prvi dio je subdomena
   }
   
-  console.log('[BRANDING] ⚠️  No tenant detected - using default');
-  return 'default'; // Fallback to first organization
+  console.log('[BRANDING] ⚠️  No tenant detected');
+  return 'missing';
 };
 
 /**
@@ -138,6 +144,33 @@ const setCachedBranding = (branding: OrganizationBranding, tenant: string): void
   }
 };
 
+// Tipovi za API odgovor
+interface RawBranding {
+  id: number;
+  name: string;
+  subdomain: string;
+  short_name?: string | null;
+  is_active?: boolean | null;
+  logo_path?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  website_url?: string | null;
+  street_address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  ethics_code_url?: string | null;
+  privacy_policy_url?: string | null;
+  membership_rules_url?: string | null;
+}
+
+interface ApiSuccessWrapper {
+  success?: boolean;
+  data?: RawBranding;
+}
+
 /**
  * Branding Provider komponenta
  */
@@ -156,6 +189,21 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       setIsLoading(true);
       setError(null);
       
+      // Preskoči u potpunosti na System Manager rutama
+      if (tenant === 'skip') {
+        setBranding(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Sigurnosno: ako tenant nedostaje, ne učitavaj branding
+      if (tenant === 'missing') {
+        setBranding(null);
+        setError('Tenant is required');
+        setIsLoading(false);
+        return;
+      }
+      
       // Provjeri cache prvo
       const cached = getCachedBranding(tenant);
       console.log('[BRANDING] 💾 Cache provjera:', cached ? 'HIT' : 'MISS');
@@ -166,18 +214,42 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         return;
       }
       
-      // Učitaj s API-ja
-      console.log('[BRANDING] 🌐 Pozivam API:', '/org-config/branding', 'tenant:', tenant);
-      const response = await apiClient.get<{ success?: boolean; data?: OrganizationBranding } | OrganizationBranding>(
-        '/org-config/branding',
+      // Učitaj s API-ja (koristi puni org-config kako bismo dobili i dokumente)
+      console.log('[BRANDING] 🌐 Pozivam API:', '/org-config', 'tenant:', tenant);
+      const response = await apiClient.get<ApiSuccessWrapper | RawBranding>(
+        '/org-config',
         { params: { tenant } }
       );
-      console.log('[BRANDING] 📥 API response:', response.data);
-      
-      // Backend vraća { success: true, data: {...} } ili direktno branding objekt
-      const brandingData = ('data' in response.data && response.data.data) 
-        ? response.data.data 
-        : response.data as OrganizationBranding;
+      const payload = response.data;
+      console.log('[BRANDING] 📥 API response:', payload);
+
+      // Podržavamo oba formata: { success, data } ili direktni objekt
+      const maybeWrapped = payload as ApiSuccessWrapper;
+      const raw: RawBranding = (typeof maybeWrapped.data !== 'undefined' && maybeWrapped.data !== null)
+        ? maybeWrapped.data
+        : (payload as RawBranding);
+
+      // Normaliziraj u OrganizationBranding
+      const brandingData: OrganizationBranding = {
+        id: raw.id,
+        name: raw.name,
+        subdomain: raw.subdomain,
+        short_name: raw.short_name ?? '',
+        is_active: (raw.is_active ?? true),
+        logo_path: raw.logo_path ?? null,
+        primary_color: raw.primary_color ?? null,
+        secondary_color: raw.secondary_color ?? null,
+        email: raw.email ?? null,
+        phone: raw.phone ?? null,
+        website_url: raw.website_url ?? null,
+        street_address: raw.street_address ?? null,
+        city: raw.city ?? null,
+        postal_code: raw.postal_code ?? null,
+        country: raw.country ?? null,
+        ethics_code_url: raw.ethics_code_url ?? null,
+        privacy_policy_url: raw.privacy_policy_url ?? null,
+        membership_rules_url: raw.membership_rules_url ?? null,
+      };
       
       // Spremi u state i cache
       setBranding(brandingData);

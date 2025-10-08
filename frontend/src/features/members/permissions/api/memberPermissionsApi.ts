@@ -2,6 +2,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto } from '@shared/systemManager';
 import { Member, MemberRole } from '@shared/member';
+import { getCurrentTenant } from '@/utils/tenantUtils';
+
+// Tip za params kako bismo izbjegli any u interceptoru
+type ParamsRecord = Record<string, unknown>;
 
 const memberPermissionsApi = axios.create({
   baseURL: API_BASE_URL,
@@ -10,8 +14,15 @@ const memberPermissionsApi = axios.create({
 
 memberPermissionsApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Globalno dodaj tenant za ove rute (nije System Manager)
+  const hasTenant = Boolean((config.params as ParamsRecord | undefined)?.tenant);
+  if (!hasTenant) {
+    const tenant = getCurrentTenant();
+    const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
+    config.params = { ...currentParams, tenant } as unknown; // zadržavamo kompatibilnost s Axios tipovima
   }
   return config;
 });

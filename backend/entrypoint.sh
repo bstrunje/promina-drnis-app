@@ -1,4 +1,4 @@
-#!/bin/sh
+ #!/bin/sh
 # entrypoint.sh
 
 # Izlazimo odmah ako neka naredba ne uspije

@@ -7,6 +7,7 @@ import { tokenStorage } from './tokenStorage';
 import { API_BASE_URL } from '../config';
 import { jwtDecode } from 'jwt-decode';
 import { navigateToLogin } from './navigationHelper';
+import { getCurrentTenant } from '../tenantUtils';
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -50,7 +51,9 @@ export class AuthTokenService {
       return withRetry(async () => {
 
         // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
-        const response = await fetch(this.getApiUrl('/api/auth/refresh'), {
+        const tenant = getCurrentTenant();
+        const refreshUrl = this.getApiUrl('/api/auth/refresh') + `?tenant=${encodeURIComponent(tenant)}`;
+        const response = await fetch(refreshUrl, {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -203,7 +206,9 @@ export class AuthTokenService {
       // console.log("Započinjem proces odjave korisnika...");
 
       // Poziv backend API-ja za odjavu i poništavanje refresh tokena
-      const response = await fetch(this.getApiUrl('/api/auth/logout'), {
+      const tenant = getCurrentTenant();
+      const logoutUrl = this.getApiUrl('/api/auth/logout') + `?tenant=${encodeURIComponent(tenant)}`;
+      const response = await fetch(logoutUrl, {
         method: 'POST',
         credentials: 'include',
         headers: {

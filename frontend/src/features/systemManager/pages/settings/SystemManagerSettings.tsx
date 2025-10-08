@@ -9,8 +9,15 @@ import { getCurrentDate } from '../../../../utils/dateUtils';
 import systemManagerApi, { updateSystemSettings, getSystemSettings } from '../../utils/systemManagerApi';
 import { useNavigate } from 'react-router-dom';
 
+// Lokalno proširenje postavki – bez mijenjanja shared tipova
+type LocalSystemSettings = SystemSettings & {
+  registrationRateLimitEnabled?: boolean | null;
+  registrationWindowMs?: number | null;
+  registrationMaxAttempts?: number | null;
+};
+
 interface SystemSettingsFormProps {
-  settings: SystemSettings;
+  settings: LocalSystemSettings;
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -162,6 +169,69 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             Defines the length of member card numbers.
           </p>
         </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h2 className="text-lg font-semibold mb-4">Registration rate limit</h2>
+
+        <div className="mb-4 flex items-center justify-between">
+          <label className="block text-gray-700 text-sm font-bold">
+            Enable rate limiting for registrations
+          </label>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              name="registrationRateLimitEnabled"
+              checked={Boolean(settings.registrationRateLimitEnabled ?? true)}
+              onChange={(e) => {
+                const mockEvent = {
+                  target: {
+                    name: 'registrationRateLimitEnabled',
+                    value: e.target.checked ? 'true' : 'false'
+                  }
+                } as unknown as React.ChangeEvent<HTMLInputElement>;
+                onChange(mockEvent);
+              }}
+              className="sr-only peer"
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Window (ms)
+              {` (~ ${Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} min)`}
+            </label>
+            <input
+              type="number"
+              name="registrationWindowMs"
+              min="60000"
+              step="1000"
+              value={Number(settings.registrationWindowMs ?? 3600000)}
+              onChange={onChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Time window for counting attempts (default 1h = 3,600,000 ms). Current value: ~ {Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} minutes.
+            </p>
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Max attempts
+            </label>
+            <input
+              type="number"
+              name="registrationMaxAttempts"
+              min="1"
+              value={Number(settings.registrationMaxAttempts ?? 5)}
+              onChange={onChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">Maximum registration attempts per IP within the window.</p>
+          </div>
+        </div>
+      </div>
 
         <div className="mb-6">
           <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -382,7 +452,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 const SystemManagerSettings: React.FC = () => {
   const navigate = useNavigate();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
-  const [settings, setSettings] = useState<SystemSettings>({
+  const [settings, setSettings] = useState<LocalSystemSettings>({
     id: "default",
     cardNumberLength: 5,
     membershipFee: 0, // Dodano zbog tipa SystemSettings
@@ -393,6 +463,10 @@ const SystemManagerSettings: React.FC = () => {
     membershipTerminationDay: 1, // Default 1. ožujak
     membershipTerminationMonth: 3,
     updatedAt: getCurrentDate(),
+    // Registracijski rate limit – default vrijednosti
+    registrationRateLimitEnabled: true,
+    registrationWindowMs: 60 * 60 * 1000,
+    registrationMaxAttempts: 5,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -406,7 +480,18 @@ const SystemManagerSettings: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await getSystemSettings();
-        setSettings(data);
+        // Omogući dodatna polja ako ih backend vraća
+        const extended = data as unknown as LocalSystemSettings;
+        if (extended.registrationRateLimitEnabled === undefined) {
+          extended.registrationRateLimitEnabled = true;
+        }
+        if (extended.registrationWindowMs === undefined) {
+          extended.registrationWindowMs = 60 * 60 * 1000;
+        }
+        if (extended.registrationMaxAttempts === undefined) {
+          extended.registrationMaxAttempts = 5;
+        }
+        setSettings(extended);
       } catch (err: unknown) {
         let errorMessage: string;
         if (axios.isAxiosError(err)) {
@@ -433,6 +518,26 @@ const SystemManagerSettings: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
+    // Registracijski rate limit – obrada prekidača i numeričkih polja
+    if (name === 'registrationRateLimitEnabled') {
+      const boolVal = value === 'true' || value === 'on' || value === '1';
+      setSettings(prev => ({ ...prev, registrationRateLimitEnabled: boolVal }));
+      setError(null);
+      return;
+    }
+    if (name === 'registrationWindowMs' || name === 'registrationMaxAttempts') {
+      const numValue = parseInt(value, 10);
+      if (!Number.isFinite(numValue) || numValue <= 0) {
+        setError(name === 'registrationWindowMs'
+          ? 'Window (ms) mora biti pozitivan broj'
+          : 'Max attempts mora biti pozitivan broj');
+        return;
+      }
+      setSettings(prev => ({ ...prev, [name]: numValue }));
+      setError(null);
+      return;
+    }
+
     if (name === 'renewalStartDay' || name === 'membershipTerminationDay') {
       const numValue = parseInt(value);
       if (numValue < 1 || numValue > 31) {
@@ -485,8 +590,8 @@ const SystemManagerSettings: React.FC = () => {
       console.log('Podaci koji se šalju na backend:', settings);
       
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
-      const updatedSettings = await updateSystemSettings(settings);
-      setSettings(updatedSettings);
+      const updatedSettings = await updateSystemSettings(settings as unknown as SystemSettings);
+      setSettings(updatedSettings as unknown as LocalSystemSettings);
       setSuccessMessage("Settings successfully updated!");
       
       // Postavi fiksnu poruku o uspjehu
