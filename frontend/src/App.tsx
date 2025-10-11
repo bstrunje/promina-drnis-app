@@ -33,7 +33,7 @@ const EditActivityPage = lazy(() => import('./features/activities/EditActivityPa
 const EventsList = lazy(() => import('./features/events/EventsList'));
 const HoursLog = lazy(() => import('./features/hours/HoursLog'));
 const AssignPassword = lazy(() => import('./features/members/AssignPassword'));
-const AuditLogsPage = lazy(() => import('./features/audit/AuditLogsPage'));
+
 const MessageList = lazy(() => import('./features/messages/MessageList'));
 const Settings = lazy(() => import('./features/settings/Settings'));
 const SystemManagerRoutes = lazy(() => import('./features/systemManager/SystemManagerRoutes'));
@@ -102,7 +102,7 @@ function AppContent() {
           <Route path="/members/:memberId/activities/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityYearPageLazy /></Suspense>} />
           <Route path="/events" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><EventsList /></Suspense>} />
           <Route path="/hours" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><HoursLog /></Suspense>} />
-          <Route path="/audit-logs" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AuditLogsPage /></Suspense>} />
+
           <Route path="/messages" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MessageList /></Suspense>} />
           {/* Omogućavanje pristupa listi članova svim korisnicima, ne samo adminu i superuser-u */}
           <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />

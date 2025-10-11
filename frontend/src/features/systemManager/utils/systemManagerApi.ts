@@ -42,10 +42,13 @@ export interface SystemManagerDashboardStats {
   activeMembers: number;
   pendingApprovals: number;
   recentActivities: number;
+  recentActivitiesList: unknown[]; // TODO: Define a proper type for recent activities
   systemHealth: string;
   lastBackup: string;
-  healthDetails?: SystemHealthInfo;
-  backupDetails?: BackupInfo;
+  healthDetails: SystemHealthInfo;
+  backupDetails: BackupInfo;
+  pendingRegistrations?: number;
+  systemSettings?: SystemSettings;
 }
 
 // Kreiranje instance axios-a s osnovnim postavkama
@@ -84,7 +87,7 @@ systemManagerApi.interceptors.request.use(
         const b = current.searchParams.get('branding');
         if (t || b) {
           const [path, queryStr] = url.split('?');
-          const params = new URLSearchParams(queryStr || '');
+          const params = new URLSearchParams(queryStr ?? '');
           // Postavi samo ako već ne postoji na URL-u
           if (t && !params.has('tenant')) params.set('tenant', t);
           if (b && !params.has('branding')) params.set('branding', b);

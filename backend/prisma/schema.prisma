@@ -131,6 +131,7 @@ model Member {
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
 
+
   @@index([organization_id])
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
@@ -263,6 +264,15 @@ model SystemSettings {
   twoFactorOtpExpirySeconds        Int?     @default(300)   @map("two_factor_otp_expiry_seconds")
   twoFactorMaxAttemptsPerHour      Int?     @default(10)    @map("two_factor_max_attempts_per_hour")
   twoFactorRememberDeviceDays      Int?     @default(30)    @map("two_factor_remember_device_days")
+  twoFactorTrustedDevicesEnabled   Boolean? @default(false) @map("two_factor_trusted_devices_enabled")
+
+  // Backup settings
+  backupFrequency            String?      @default("daily") @map("backup_frequency") // e.g., 'daily', 'weekly', 'monthly'
+  backupRetentionDays        Int?         @default(7)      @map("backup_retention_days")
+  backupStorageLocation      String?      @default("local")   @map("backup_storage_location") // e.g., 'local', 's3', 'gcs'
+  lastBackupAt               DateTime?    @map("last_backup_at") @db.Timestamp(6)
+  nextBackupAt               DateTime?    @map("next_backup_at") @db.Timestamp(6)
+
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("system_settings")
@@ -419,6 +429,7 @@ model AuditLog {
   organization    Organization?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   affected        Member?        @relation("AuditAffected", fields: [affected_member], references: [member_id])
 
+
   @@index([organization_id])
   @@map("audit_logs")
 }
@@ -544,6 +555,7 @@ model SystemManager {
   two_factor_recovery_codes_hash Json?
   two_factor_preferred_channel String?   @db.VarChar(10)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
 
   @@unique([organization_id, username])
   @@unique([organization_id, email])

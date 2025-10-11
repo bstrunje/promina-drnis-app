@@ -1,33 +1,23 @@
-import { PerformerType } from '@prisma/client';
+import { PerformerType, Prisma } from '@prisma/client';
 import prisma from '../utils/prisma.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { Request } from 'express';
 
 export interface AuditLog {
     log_id: number;
     action_type: string;
     performed_by: number | null;
     action_details: string;
-    ip_address: string;
-    created_at: Date;
-    status: string;
-    affected_member?: number;
-    performer_name?: string;
-    affected_name?: string;
+    ip_address: string | null;
+    created_at: Date | null;
+    status: string | null;
+    affected_member?: number | null;
+    performer_name?: string | null;
+    affected_name?: string | null;
     performer_type?: PerformerType | null;
 }
 
-interface RawAuditLogResult {
-    log_id: number;
-    action_type: string;
-    performed_by: number | null;
-    action_details: string;
-    ip_address: string;
-    created_at: Date;
-    status: string;
-    affected_member: number | null;
-    performer_name?: string;
-    affected_name?: string;
-    performer_type?: PerformerType | null;
-}
+
 
 const auditRepository = {
     async create(
@@ -37,16 +27,46 @@ const auditRepository = {
         ip_address: string,
         status: string = 'success',
         affected_member?: number,
-        performer_type?: PerformerType | null
+        performer_type?: PerformerType | null,
+        req?: Request,
+        explicit_organization_id?: number | null
     ): Promise<void> {
         try {
             const finalPerformerType = performer_type;
             
-            console.log('DEBUG auditRepository.create - received performer_type:', performer_type);
-            console.log('DEBUG auditRepository.create - finalPerformerType:', finalPerformerType);
+            // Dohvati organization_id - prioritet ima explicit_organization_id
+            let organizationId: number | null = null;
+            
+            if (explicit_organization_id !== undefined) {
+                organizationId = explicit_organization_id;
+                    } else if (req) {
+                // Za System Manager-e, koristi organization_id iz user objekta
+                if (req.user?.is_SystemManager && req.user.organization_id !== undefined) {
+                    organizationId = req.user.organization_id;
+                } else {
+                    // Za članove, pokušaj dohvatiti iz tenant middleware-a
+                    try {
+                        organizationId = getOrganizationId(req);
+                    } catch (_error) {
+                    // Ako nema organizacije (Global Manager ili greška), ostavi null
+                    }
+                }
+            }
 
-            await prisma.auditLog.create({
+            console.log('[AUDIT CREATE] Pokušaj kreiranja loga s podacima:', {
+                organization_id: organizationId,
+                action_type,
+                performed_by,
+                action_details,
+                ip_address,
+                status,
+                affected_member: affected_member || null,
+                performer_type: finalPerformerType || null,
+            });
+
+            const createdLog = await prisma.auditLog.create({
                 data: {
+                    organization_id: organizationId,
                     action_type,
                     performed_by,
                     action_details,
@@ -56,8 +76,10 @@ const auditRepository = {
                     performer_type: finalPerformerType || null,
                 },
             });
+
+            console.log('[AUDIT CREATE] Log uspješno kreiran, ID:', createdLog.log_id);
             
-            console.log('DEBUG auditRepository.create - audit log created successfully');
+
         } catch (error) {
             console.error('GREŠKA PRILIKOM KREIRANJA AUDIT LOGA:', error);
             // U produkciji možda ne želite baciti grešku koja će srušiti zahtjev
@@ -65,61 +87,86 @@ const auditRepository = {
         }
     },
 
-    async getAll(): Promise<AuditLog[]> {
-        const results = await prisma.$queryRaw<RawAuditLogResult[]>`
-            SELECT al.*,
-                   CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN 'System Manager'
-                     WHEN al.performer_type = 'MEMBER' THEN m1.full_name
-                     ELSE 'Nepoznati izvršitelj'
-                   END as performer_name,
-                   m2.full_name as affected_name
-            FROM audit_logs al
-            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND al.performer_type = 'MEMBER'
-            LEFT JOIN system_manager sm ON al.performed_by = sm.id AND al.performer_type = 'SYSTEM_MANAGER'
-            LEFT JOIN members m2 ON al.affected_member = m2.member_id
-            ORDER BY al.created_at DESC
-        `;
+    async getAll(where: Prisma.AuditLogWhereInput = {}, skip: number = 0, take: number = 50): Promise<AuditLog[]> {
+        const logs = await prisma.auditLog.findMany({
+            where,
+            orderBy: { created_at: 'desc' },
+            skip,
+            take,
+            include: { affected: { select: { full_name: true } } },
+        });
 
-        return results.map(mapPrismaToAuditLog);
+        const memberIds = logs
+            .filter(log => log.performer_type === 'MEMBER' && log.performed_by)
+            .map(log => log.performed_by as number);
+
+        const systemManagerIds = logs
+            .filter(log => log.performer_type === 'SYSTEM_MANAGER' && log.performed_by)
+            .map(log => log.performed_by as number);
+
+        const members = await prisma.member.findMany({
+            where: { member_id: { in: [...new Set(memberIds)] } },
+            select: { member_id: true, full_name: true },
+        });
+
+        const systemManagers = await prisma.systemManager.findMany({
+            where: { id: { in: [...new Set(systemManagerIds)] } },
+            select: { id: true, display_name: true, username: true },
+        });
+
+        const memberMap = new Map(members.map(m => [m.member_id, m.full_name]));
+        const systemManagerMap = new Map(systemManagers.map(sm => [sm.id, sm.display_name || sm.username]));
+
+        return logs.map(log => ({
+            ...log,
+            performer_name: log.performer_type === 'MEMBER'
+                ? memberMap.get(log.performed_by as number)
+                : systemManagerMap.get(log.performed_by as number),
+            affected_name: log.affected?.full_name,
+        }));
     },
 
     async getByMemberId(memberId: number): Promise<AuditLog[]> {
-        const results = await prisma.$queryRaw<RawAuditLogResult[]>`
-            SELECT al.*,
-                   CASE 
-                     WHEN al.performer_type = 'SYSTEM_MANAGER' THEN 'System Manager'
-                     WHEN al.performer_type = 'MEMBER' THEN m1.full_name
-                     ELSE 'Nepoznati izvršitelj'
-                   END as performer_name,
-                   m2.full_name as affected_name
-            FROM audit_logs al
-            LEFT JOIN members m1 ON al.performed_by = m1.member_id AND al.performer_type = 'MEMBER'
-            LEFT JOIN system_manager sm ON al.performed_by = sm.id AND al.performer_type = 'SYSTEM_MANAGER'
-            LEFT JOIN members m2 ON al.affected_member = m2.member_id
-            WHERE (al.performed_by = ${memberId} AND al.performer_type = 'MEMBER')
-               OR al.affected_member = ${memberId}
-            ORDER BY al.created_at DESC
-        `;
+        const logs = await prisma.auditLog.findMany({
+            where: {
+                OR: [
+                    { performed_by: memberId, performer_type: 'MEMBER' },
+                    { affected_member: memberId },
+                ],
+            },
+            orderBy: { created_at: 'desc' },
+            include: { affected: { select: { full_name: true } } },
+        });
 
-        return results.map(mapPrismaToAuditLog);
+        const memberIds = logs
+            .filter(log => log.performer_type === 'MEMBER' && log.performed_by)
+            .map(log => log.performed_by as number);
+
+        const systemManagerIds = logs
+            .filter(log => log.performer_type === 'SYSTEM_MANAGER' && log.performed_by)
+            .map(log => log.performed_by as number);
+
+        const members = await prisma.member.findMany({
+            where: { member_id: { in: [...new Set(memberIds)] } },
+            select: { member_id: true, full_name: true },
+        });
+
+        const systemManagers = await prisma.systemManager.findMany({
+            where: { id: { in: [...new Set(systemManagerIds)] } },
+            select: { id: true, display_name: true, username: true },
+        });
+
+        const memberMap = new Map(members.map(m => [m.member_id, m.full_name]));
+        const systemManagerMap = new Map(systemManagers.map(sm => [sm.id, sm.display_name || sm.username]));
+
+        return logs.map(log => ({
+            ...log,
+            performer_name: log.performer_type === 'MEMBER'
+                ? memberMap.get(log.performed_by as number)
+                : systemManagerMap.get(log.performed_by as number),
+            affected_name: log.affected?.full_name,
+        }));
     },
 };
-
-function mapPrismaToAuditLog(raw: RawAuditLogResult): AuditLog {
-    return {
-        log_id: raw.log_id,
-        action_type: raw.action_type,
-        performed_by: raw.performed_by,
-        action_details: raw.action_details,
-        ip_address: raw.ip_address,
-        created_at: raw.created_at,
-        status: raw.status,
-        affected_member: raw.affected_member || undefined,
-        performer_name: raw.performer_name || undefined,
-        affected_name: raw.affected_name || undefined,
-        performer_type: raw.performer_type || undefined
-    };
-}
 
 export default auditRepository;

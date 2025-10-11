@@ -1,33 +1,49 @@
-// services/systemManager.service.ts
+// ========== KONAČNA ISPRAVLJENA VERZIJA: backend/src/services/systemManager.service.ts ==========
+
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
-// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js'; // Can be used for typing if necessary
-// import { SystemManager, CreateSystemManagerDto, AdminPermissionsModel } from '../shared/types/systemManager.js';
 import bcrypt from 'bcrypt';
+
 import jwt from 'jsonwebtoken';
-import { SystemManager, MemberPermissions } from '@prisma/client';
+import { SystemManager, MemberPermissions, Prisma } from '@prisma/client';
 import { JWT_SECRET } from '../config/jwt.config.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
 
-const isDev = process.env.NODE_ENV === 'development';
-
-interface SystemSettings {
+type SystemSettingsExtended = {
     id: string;
-    cardNumberLength?: number | null;
-    renewalStartMonth?: number | null;
-    renewalStartDay?: number | null;
-    timeZone?: string | null;
-    membershipTerminationDay?: number | null;
-    membershipTerminationMonth?: number | null;
-    // Rate-limit postavke za registraciju
-    registrationRateLimitEnabled?: boolean | null;
-    registrationWindowMs?: number | null;
-    registrationMaxAttempts?: number | null;
+    cardNumberLength: number;
+    renewalStartMonth: number;
+    renewalStartDay: number;
+    timeZone: string | null;
+    membershipTerminationDay: number | null;
+    membershipTerminationMonth: number | null;
+    registrationRateLimitEnabled: boolean | null;
+    registrationWindowMs: number | null;
+    registrationMaxAttempts: number | null;
     updatedAt: Date;
-    updatedBy?: string | null;
-}
+    updatedBy: number | null;
+    twoFactorGlobalEnabled: boolean;
+    twoFactorMembersEnabled: boolean;
+    twoFactorChannelEmailEnabled: boolean;
+    twoFactorChannelSmsEnabled: boolean;
+    twoFactorChannelTotpEnabled: boolean;
+    twoFactorTrustedDevicesEnabled: boolean;
+    twoFactorOtpExpirySeconds: number | null;
+    twoFactorRememberDeviceDays: number | null;
+    twoFactorTotpStepSeconds: number | null;
+    twoFactorTotpWindow: number | null;
+    twoFactorMaxAttemptsPerHour: number | null;
+    twoFactorRequiredMemberRoles: string[];
+    twoFactorRequiredMemberPermissions: string[];
+    // Backup settings
+    backupFrequency?: string | null;
+    backupRetentionDays?: number | null;
+    backupStorageLocation?: string | null;
+    lastBackupAt?: Date | null;
+    nextBackupAt?: Date | null;
+};
 
 type MemberSummary = {
     member_id: number;
@@ -35,15 +51,14 @@ type MemberSummary = {
     last_name: string;
     full_name: string;
     email: string;
-    role?: string;
+    role: string | null;
 };
 
 type ExistingPermissionsResponse = {
     member_id: number;
     can_manage_end_reasons: boolean;
-    grantedByMember?: unknown;
     granted_at: Date | null;
-    updated_at?: Date | null;
+    updated_at: Date | null;
     member: MemberSummary;
 };
 
@@ -65,18 +80,15 @@ type DefaultSuperuserPermissionsResponse = {
     can_manage_end_reasons: boolean;
     can_manage_card_numbers: boolean;
     can_assign_passwords: boolean;
-    granted_by: null;
+    granted_by: number | null;
     granted_at: Date;
     updated_at: Date;
     member: MemberSummary;
 };
 
 const systemManagerService = {
-    // Check credentials and log in manager
     async authenticate(req: Request, username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
-        // 1) Pokušaj TENANT-SPECIFIC login ako postoji tenant/branding ili tenant kontekst
         const tenantParamRaw = (req.query?.tenant ?? req.query?.branding) as unknown;
-        // Prihvati i niz i string; uzmi prvu vrijednost ako je niz
         let tenantParam: string | undefined;
         if (Array.isArray(tenantParamRaw)) {
             tenantParam = (tenantParamRaw[0] ?? '').toString().trim() || undefined;
@@ -87,59 +99,32 @@ const systemManagerService = {
         }
 
         const tryTenantFirst = Boolean(tenantParam);
-        let _lastError: unknown = null;
 
         const resolveTenantOrgId = async (): Promise<number | null> => {
-            if (isDev) console.log('[AUTH][SM] Incoming login:', {
-                path: req.path,
-                method: req.method,
-                tenantParam: tenantParam ?? null,
-                headersBranding: (req.query?.branding as string | undefined) ?? null
-            });
-            // a) iz query parametra
             if (tenantParam) {
                 try {
-                    if (isDev) console.log(`[AUTH] Resolving organization by tenant/branding param: ${tenantParam}`);
                     const org = await prisma.organization.findFirst({ where: { subdomain: tenantParam } });
                     if (org) return org.id;
-                    if (isDev) console.warn(`[AUTH] No organization found for subdomain: ${tenantParam}`);
                 } catch (e) {
-                    _lastError = e;
                     console.error('[AUTH] Error resolving organization from tenant param:', e);
                 }
             }
-            // b) iz tenant middleware konteksta
             try {
-                const organizationId = getOrganizationId(req);
-                if (isDev) console.log(`[AUTH] Tenant middleware resolved organization_id: ${organizationId}`);
-                return organizationId;
+                return getOrganizationId(req);
             } catch (_e) {
-                if (isDev) console.log('[AUTH] No tenant context available from middleware');
+                return null;
             }
-            return null;
         };
 
         const checkCandidate = async (candidate: SystemManager | null): Promise<Omit<SystemManager, 'password_hash'> | null> => {
-            if (!candidate) return null;
-            if (isDev) console.log('[AUTH] Candidate found:', {
-                id: candidate.id,
-                username: candidate.username,
-                organization_id: candidate.organization_id
-            });
-            if (!candidate.password_hash) {
-                if (isDev) console.warn(`[AUTH] Found manager id=${candidate.id} but no password_hash; trying fallback`);
-                return null;
-            }
+            if (!candidate || !candidate.password_hash) return null;
             const ok = await bcrypt.compare(password, candidate.password_hash);
-            if (isDev) console.log(`[AUTH] Password compare result for id=${candidate.id}: ${ok}`);
             if (!ok) return null;
             await systemManagerRepository.updateLastLogin(candidate.id);
-            if (isDev) console.log(`[AUTH] Login success for manager id=${candidate.id}, org_id=${candidate.organization_id ?? 'GLOBAL'}`);
             const { password_hash: _password_hash, ...without } = candidate;
             return without;
         };
 
-        // Pokušaj 1: Tenant-specific (ako ima smisla)
         if (tryTenantFirst) {
             const orgId = await resolveTenantOrgId();
             if (orgId) {
@@ -149,13 +134,10 @@ const systemManagerService = {
             }
         }
 
-        // Pokušaj 2: Global System Manager
         const globalCandidate = await systemManagerRepository.findByUsername(null as unknown as number | null, username);
-        if (isDev && globalCandidate) console.log('[AUTH] Global candidate found:', { id: globalCandidate.id, username: globalCandidate.username });
         const globalResult = await checkCandidate(globalCandidate);
         if (globalResult) return globalResult;
 
-        // Pokušaj 3: Ako nismo imali tenantParam, ipak probaj tenant kontekst (npr. subdomain ili prethodno stanje)
         if (!tryTenantFirst) {
             const orgId = await resolveTenantOrgId();
             if (orgId) {
@@ -165,482 +147,215 @@ const systemManagerService = {
             }
         }
 
-        if (isDev) console.warn('[AUTH] Authentication failed for System Manager (no valid candidate matched)');
         return null;
     },
     
-    // Create JWT access token for manager
     generateToken(manager: Pick<SystemManager, 'id'>): string {
-        return jwt.sign(
-            { 
-                id: manager.id, 
-                type: 'SystemManager',  // Indicates the user type is SystemManager
-                role: 'SystemManager'
-            },
-            JWT_SECRET,
-            { expiresIn: '1h' } // Shorter duration for access token
-        );
+        return jwt.sign({ id: manager.id, type: 'SystemManager', role: 'SystemManager' }, JWT_SECRET, { expiresIn: '1h' });
     },
     
-    // Create JWT refresh token for manager
     generateRefreshToken(manager: Pick<SystemManager, 'id'>): string {
-        return jwt.sign(
-            { 
-                id: manager.id, 
-                type: 'SystemManager',
-                role: 'SystemManager',
-                tokenType: 'refresh'
-            },
-            JWT_SECRET,
-            { expiresIn: '7d' } // Longer duration for refresh token
-        );
+        return jwt.sign({ id: manager.id, type: 'SystemManager', role: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
     },
     
-    // Create new manager
     async createSystemManager(req: Request, managerData: { username: string; email?: string | null; password: string; display_name?: string | null }): Promise<SystemManager> {
         const organizationId = getOrganizationId(req);
         return systemManagerRepository.create(organizationId, managerData);
     },
     
-    // Check if a manager already exists in the system
     async systemManagerExists(): Promise<boolean> {
         return await systemManagerRepository.exists();
     },
     
-    // Get all managers
     async getAllSystemManagers(): Promise<Pick<SystemManager, 'id' | 'username' | 'email' | 'display_name' | 'last_login' | 'created_at' | 'updated_at'>[]> {
         return systemManagerRepository.findAll();
     },
     
-    // Get member permissions
     async getMemberPermissions(memberId: number): Promise<ExistingPermissionsResponse | DefaultSuperuserPermissionsResponse | null> {
         try {
-            // Check if member exists
-            const member = await prisma.member.findUnique({
-                where: {
-                    member_id: memberId
-                }
+            const member = await prisma.member.findUnique({ where: { member_id: memberId } });
+            if (!member) return null;
+
+            const permissions = await prisma.memberPermissions.findUnique({
+                where: { member_id: memberId },
+                include: { member: { select: { member_id: true, first_name: true, last_name: true, email: true, role: true } } }
             });
 
-            if (!member) {
-                return null;
-            }
-
-            if (isDev) console.log(`[SYSTEM-MANAGER] Dohvaćam ovlasti za člana ID: ${memberId}`);
-            
-            let permissions: MemberPermissions | null = null;
-            try {
-                // Koristimo ispravno ime Prisma modela prema shemi
-                permissions = await prisma.memberPermissions.findUnique({
-                    where: {
-                        member_id: memberId
+            if (permissions && permissions.member) {
+                return {
+                    ...permissions,
+                    member_id: permissions.member_id ?? memberId,
+                    can_manage_end_reasons: permissions.can_manage_end_reasons ?? false,
+                    member: {
+                        ...permissions.member,
+                        first_name: permissions.member.first_name || '',
+                        last_name: permissions.member.last_name || '',
+                        email: permissions.member.email || '',
+                        role: permissions.member.role || null,
+                        full_name: `${permissions.member.first_name || ''} ${permissions.member.last_name || ''}`.trim()
                     }
-                });
-                
-                if (isDev) console.log(`[SYSTEM-MANAGER] Prisma upit uspješan za člana ${memberId}, ovlasti pronađene: ${!!permissions}`);
-            } catch (prismaError) {
-                console.error(`[SYSTEM-MANAGER] Prisma greška za člana ${memberId}:`, prismaError);
-                
-               if (isDev) console.log(`[SYSTEM-MANAGER] Nema eksplicitnih ovlasti za člana ${memberId}, koristim default ovlasti`);
-                permissions = null;
+                };
             }
 
-            if (!permissions) {
-                // If member has role member_superuser or member_administrator, return default permissions
-                if (member.role === 'member_superuser' || member.role === 'member_administrator') {
-                    return {
-                        member_id: member.member_id,
-                        can_view_members: true,
-                        can_edit_members: true,
-                        can_add_members: member.role === 'member_superuser',
-                        can_manage_membership: member.role === 'member_superuser',
-                        can_view_activities: true,
-                        can_create_activities: true,
-                        can_approve_activities: member.role === 'member_superuser',
-                        can_view_financials: member.role === 'member_superuser',
-                        can_manage_financials: member.role === 'member_superuser',
-                        can_send_group_messages: true,
-                        can_manage_all_messages: member.role === 'member_superuser',
-                        can_view_statistics: true,
-                        can_export_data: member.role === 'member_superuser',
-                        can_manage_end_reasons: member.role === 'member_superuser',
-                        can_manage_card_numbers: member.role === 'member_superuser',
-                        can_assign_passwords: member.role === 'member_superuser',
-                        granted_by: null,
-                        granted_at: getCurrentDate(),
-                        updated_at: getCurrentDate(),
-                        member: {
-                            member_id: member.member_id,
-                            first_name: member.first_name,
-                            last_name: member.last_name,
-                            full_name: `${member.first_name} ${member.last_name}`,
-                            email: member.email || '',
-                            role: member.role
-                        }
-                    };
-                }
-                return null;
-            }
-
-            // Return permissions with additional member data
-            return {
-                member_id: member.member_id,
-                can_manage_end_reasons: !!permissions.can_manage_end_reasons,
-                // Nismo dohvaćali relaciju, pa ovo ostaje nepopunjeno
-                grantedByMember: undefined,
-                granted_at: permissions.granted_at ?? null,
-                updated_at: permissions.updated_at ?? null,
-                member: {
+            if (member.role === 'superuser') {
+                return {
                     member_id: member.member_id,
-                    first_name: member.first_name,
-                    last_name: member.last_name,
-                    full_name: `${member.first_name} ${member.last_name}`,
-                    email: member.email || '',
-                    role: member.role
-                }
-            };
+                    can_view_members: true,
+                    can_edit_members: true,
+                    can_add_members: true,
+                    can_manage_membership: true,
+                    can_view_activities: true,
+                    can_create_activities: true,
+                    can_approve_activities: true,
+                    can_view_financials: true,
+                    can_manage_financials: true,
+                    can_send_group_messages: true,
+                    can_manage_all_messages: true,
+                    can_view_statistics: true,
+                    can_export_data: true,
+                    can_manage_end_reasons: true,
+                    can_manage_card_numbers: true,
+                    can_assign_passwords: true,
+                    granted_by: null,
+                    granted_at: new Date(),
+                    updated_at: new Date(),
+                    member: { 
+                        member_id: member.member_id,
+                        first_name: member.first_name || '',
+                        last_name: member.last_name || '',
+                        email: member.email || '',
+                        role: member.role || null,
+                        full_name: `${member.first_name || ''} ${member.last_name || ''}`.trim() 
+                    }
+                };
+            }
+            return null;
         } catch (error) {
             console.error('Error in getMemberPermissions:', error);
             throw error;
         }
     },
-    
-    // Update member permissions
-    async updateMemberPermissions(
-        memberId: number, 
-        permissions: { can_manage_end_reasons?: unknown },
-        grantedById: number
-    ): Promise<void> {
-        try {
-            // Log received data for diagnostics
-            if (isDev) console.log('updateMemberPermissions called with:', { memberId, permissions, grantedById });
-            
-            // Filter and extract only the fields that exist in the database
-            // According to the Prisma schema, the only permission field is 'can_manage_end_reasons'
-            const can_manage_end_reasons = permissions.can_manage_end_reasons === true;
-            
-            if (isDev) console.log('Using permission:', { can_manage_end_reasons });
-            
-            // First, try to find existing permissions
-            const existingPermissions = await prisma.memberPermissions.findUnique({
-                where: {
-                    member_id: memberId
-                }
-            });
 
+    async updatePermissions(memberId: number, permissions: Partial<MemberPermissions>, grantedBy: number): Promise<MemberPermissions> {
+        try {
             const now = getCurrentDate();
-            
+            const existingPermissions = await prisma.memberPermissions.findUnique({ where: { member_id: memberId } });
+
             if (existingPermissions) {
-                if (isDev) console.log('Existing permissions found, updating...');
-                // Ako ovlasti već postoje, ažuriramo ih
-                await prisma.memberPermissions.update({
-                    where: {
-                        member_id: memberId
-                    },
-                    data: {
-                        can_manage_end_reasons: can_manage_end_reasons,
-                        grantedByMember: {
-                            connect: { member_id: grantedById }
-                        }
-                    }
+                return await prisma.memberPermissions.update({
+                    where: { member_id: memberId },
+                    data: { ...permissions, updated_at: now }
                 });
-                if (isDev) console.log('[SYSTEM-MANAGER] Permissions updated successfully via Prisma');
             } else {
-                if (isDev) console.log('No existing permissions found, creating new entry...');
-                // Ako ovlasti ne postoje, kreiramo ih
-                await prisma.memberPermissions.create({
+                return await prisma.memberPermissions.create({
                     data: {
-                        can_manage_end_reasons: can_manage_end_reasons,
-                        member: {
-                            connect: { member_id: memberId }
-                        },
-                        grantedByMember: {
-                            connect: { member_id: grantedById }
-                        },
-                        granted_at: now
+                        member_id: memberId,
+                        ...permissions,
+                        granted_by: grantedBy,
+                        granted_at: now,
+                        updated_at: now
                     }
                 });
-                if (isDev) console.log('[SYSTEM-MANAGER] Permissions created successfully via Prisma');
             }
         } catch (error) {
-            console.error('Error in updateMemberPermissions:', error);
-            if (error instanceof Error) {
-                console.error('Error details:', error.message);
-                console.error('Error stack:', error.stack);
-            }
+            console.error('Error in updatePermissions:', error);
             throw error;
         }
     },
-    
-    // Dohvat svih članova s admin ovlastima
-    async getMembersWithPermissions(): Promise<Array<Record<string, unknown>>> {
+
+    async getMembersWithoutPermissions(): Promise<Omit<MemberSummary, 'full_name'>[]> {
         try {
-            // Prvo dohvaćamo članove sa member_superuser ili member_administrator ulogom
-            const specialRoleMembers = await prisma.member.findMany({
-                where: {
-                    OR: [
-                        { role: 'member_superuser' },
-                        { role: 'member_administrator' }
-                    ]
-                },
-                select: {
-                    member_id: true,
-                    first_name: true,
-                    last_name: true,
-                    email: true,
-                    role: true
-                },
-                orderBy: {
-                    last_name: 'asc'
-                }
-            });
-            
-            // Zatim dohvaćamo članove koji imaju admin ovlasti
-            try {
-                const result = await prisma.memberPermissions.findMany({
-                    include: {
-                        member: {
-                            select: {
-                                member_id: true,
-                                first_name: true,
-                                last_name: true,
-                                email: true,
-                                role: true
-                            }
-                        }
-                    },
-                    orderBy: {
-                        member: {
-                            last_name: 'asc'
-                        }
-                    }
-                });
-                
-                // Kreiraj mapu ID članova s ovlastima da izbjegnemo duplikate
-                const memberMap = new Map();
-                
-                // Dodaj članove iz member_permissions
-                for (const permission of result) {
-                    if (permission.member) {
-                        memberMap.set(permission.member_id, {
-                            ...permission,
-                            member: {
-                                ...permission.member,
-                                full_name: `${permission.member.first_name} ${permission.member.last_name}`
-                            }
-                        });
-                    }
-                }
-                
-                // Dodaj članove s posebnim ulogama (superuser/administrator) ako već nisu dodani
-                for (const member of specialRoleMembers) {
-                    if (!memberMap.has(member.member_id)) {
-                        // Kreiraj objekt koji odgovara formatu za članove s ovlastima
-                        memberMap.set(member.member_id, {
-                            member_id: member.member_id,
-                            // Podrazumijevane ovlasti za superuser/administrator članove ako ih nemaju eksplicitno dodane
-                            can_view_members: member.role === 'member_superuser' || member.role === 'member_administrator',
-                            can_edit_members: member.role === 'member_superuser' || member.role === 'member_administrator',
-                            can_delete_members: member.role === 'member_superuser',
-                            can_view_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
-                            can_edit_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
-                            can_delete_activities: member.role === 'member_superuser',
-                            can_view_reports: member.role === 'member_superuser' || member.role === 'member_administrator',
-                            can_manage_settings: member.role === 'member_superuser',
-                            member: {
-                                ...member,
-                                full_name: `${member.first_name} ${member.last_name}`
-                            },
-                            // Ovi podaci mogu biti null za članove bez eksplicitnih ovlasti
-                            granted_by: null,
-                            granted_at: null,
-                            updated_at: null
-                        });
-                    }
-                }
-                
-                // Vrati vrijednosti kao array
-                return Array.from(memberMap.values());
-            } catch (prismaError) {
-                // Ako Prisma upit za ovlasti ne uspije, vrati samo članove s posebnim ulogama
-                if (isDev) console.warn('Error fetching admin permissions, falling back to special role members only:', prismaError);
-                
-                // Kreiraj mapu članova iz posebnih uloga
-                const memberMap = new Map();
-                
-                for (const member of specialRoleMembers) {
-                    memberMap.set(member.member_id, {
-                        member_id: member.member_id,
-                        can_view_members: member.role === 'member_superuser' || member.role === 'member_administrator',
-                        can_edit_members: member.role === 'member_superuser' || member.role === 'member_administrator',
-                        can_delete_members: member.role === 'member_superuser',
-                        can_view_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
-                        can_edit_activities: member.role === 'member_superuser' || member.role === 'member_administrator',
-                        can_delete_activities: member.role === 'member_superuser',
-                        can_view_reports: member.role === 'member_superuser' || member.role === 'member_administrator',
-                        can_manage_settings: member.role === 'member_superuser',
-                        member: {
-                            ...member,
-                            full_name: `${member.first_name} ${member.last_name}`
-                        },
-                        granted_by: null,
-                        granted_at: null,
-                        updated_at: null
-                    });
-                }
-                
-                return Array.from(memberMap.values());
-            }
-        } catch (error) {
-            console.error('Error in getMembersWithPermissions:', error);
-            throw error;
-        }
-    },
-    
-    // Dohvat članova koji nemaju admin ovlasti
-    async getMembersWithoutPermissions(): Promise<Array<{ member_id: number; first_name: string; last_name: string; email: string; role: string }>> {
-        try {
-            if (isDev) console.log('[SYSTEM-MANAGER] Dohvaćam članove koji nemaju admin ovlasti...');
-            
-            // Dohvaćamo članove koji nemaju zapis u tablici member_permissions
-            // Kako bi suzili listu, tražimo samo aktivne članove s ulogom 'member_administrator', 'member_superuser' ili 'member'
             const membersWithoutPermissions = await prisma.member.findMany({
-                where: {
-                    AND: [
-                        {
-                            // Članovi koji NEMAJU zapis u member_permissions tablici
-                            permissions: null
-                        },
-                        {
-                            status: 'registered'
-                        },
-                        {
-                            role: {
-                                in: ['member_administrator', 'member_superuser', 'member']
-                            }
-                        }
-                    ]
-                },
-                select: {
-                    member_id: true,
-                    first_name: true,
-                    last_name: true,
-                    email: true,
-                    role: true
-                },
-                orderBy: [
-                    { last_name: 'asc' },
-                    { first_name: 'asc' }
-                ]
+                where: { permissions: null },
+                select: { member_id: true, first_name: true, last_name: true, email: true, role: true },
+                orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }]
             });
-            
-            if (isDev) console.log(`[SYSTEM-MANAGER] Pronađeno ${membersWithoutPermissions.length} članova bez admin ovlasti`);
-            return membersWithoutPermissions.map(m => ({
-                member_id: m.member_id,
-                first_name: m.first_name || '',
-                last_name: m.last_name || '',
-                email: m.email || '',
-                role: m.role || 'member'
-            }));
+            return membersWithoutPermissions.map(m => ({ ...m, first_name: m.first_name || '', last_name: m.last_name || '', email: m.email || '', role: m.role || null }));
         } catch (error) {
             console.error('Error in getMembersWithoutPermissions:', error);
             throw error;
         }
     },
-    
-    // Uklanjanje svih ovlasti za člana
+
     async removeMemberPermissions(memberId: number): Promise<void> {
         try {
-            await prisma.memberPermissions.delete({
-                where: {
-                    member_id: memberId
-                }
-            });
+            await prisma.memberPermissions.delete({ where: { member_id: memberId } });
         } catch (error) {
             console.error('Error removing member permissions:', error);
             throw error;
         }
     },
 
-
-
-    // Dohvat sistemskih postavki
-    async getSystemSettings(req: Request): Promise<SystemSettings> {
+    async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
         try {
-            // Pokušaj dobiti organizationId iz tenant middleware-a
             let organizationId: number;
             try {
                 organizationId = getOrganizationId(req);
             } catch (_e) {
-                // Fallback: deriviraj organizaciju iz trenutno prijavljenog System Managera
-                // Ovo omogućuje rad System Manager ruta i kada tenant middleware nije montiran na /api/system-manager
-                if (!req.user) {
-                    throw new Error('Organization context nije dostupan i korisnik nije autentificiran');
-                }
-
-                const mgr = await prisma.systemManager.findUnique({
-                    where: { id: req.user.id },
-                    select: { organization_id: true }
-                });
-
-                if (!mgr?.organization_id) {
-                    throw new Error('Organization context nije moguće odrediti za System Managera');
-                }
-
+                if (!req.user) throw new Error('Organization context nije dostupan i korisnik nije autentificiran');
+                const mgr = await prisma.systemManager.findUnique({ where: { id: req.user.id }, select: { organization_id: true } });
+                if (!mgr?.organization_id) throw new Error('Organization context nije moguće odrediti za System Managera');
                 organizationId = mgr.organization_id;
             }
             
-            // Dohvati postavke direktnim SQL upitom umjesto kroz Prisma klijent
-            const result = await prisma.$queryRaw`
-                SELECT 
-                    id, 
-                    card_number_length, 
-                    renewal_start_month, 
-                    renewal_start_day, 
-                    updated_at, 
-                    updated_by,
-                    time_zone,
-                    membership_termination_day,
-                    membership_termination_month
-                FROM system_settings 
-                WHERE organization_id = ${organizationId}
-            `;
+            const settings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } });
             
-            // Pretvorba rezultata SQL upita u jedan objekt ili null
-            const settings = Array.isArray(result) && result.length > 0 ? result[0] : null;
-            
-            if (!settings) {
-                // Ako nema postavki, vrati zadane vrijednosti
-                return {
-                    id: 'default',
-                    cardNumberLength: 5,
-                    renewalStartMonth: 11, // Prosinac
-                    renewalStartDay: 1,
-                    timeZone: 'Europe/Zagreb', // Zadana vremenska zona
-                    membershipTerminationDay: 1,
-                    membershipTerminationMonth: 3, // Ožujak
-                    updatedAt: getCurrentDate(),
-                    // Zadane vrijednosti rate-limit postavki
-                    registrationRateLimitEnabled: false,
-                    registrationWindowMs: 3600000,
-                    registrationMaxAttempts: 5
-                };
-            }
+            const defaultSettings: SystemSettingsExtended = {
+                id: 'default',
+                cardNumberLength: 5,
+                renewalStartMonth: 11,
+                renewalStartDay: 1,
+                timeZone: 'Europe/Zagreb',
+                membershipTerminationDay: 1,
+                membershipTerminationMonth: 3,
+                updatedAt: getCurrentDate(),
+                updatedBy: null,
+                registrationRateLimitEnabled: false,
+                registrationWindowMs: 3600000,
+                registrationMaxAttempts: 5,
+                twoFactorGlobalEnabled: false,
+                twoFactorMembersEnabled: false,
+                twoFactorChannelEmailEnabled: false,
+                twoFactorChannelSmsEnabled: false,
+                twoFactorChannelTotpEnabled: false,
+                twoFactorTrustedDevicesEnabled: false,
+                twoFactorOtpExpirySeconds: 300,
+                twoFactorRememberDeviceDays: 30,
+                twoFactorTotpStepSeconds: 30,
+                twoFactorTotpWindow: 1,
+                twoFactorMaxAttemptsPerHour: 10,
+                twoFactorRequiredMemberRoles: [],
+                twoFactorRequiredMemberPermissions: []
+            };
+
+            if (!settings) return defaultSettings;
             
             return {
-                id: settings.id,
-                cardNumberLength: settings.card_number_length,
-                renewalStartMonth: settings.renewal_start_month,
-                renewalStartDay: settings.renewal_start_day,
-                timeZone: settings.time_zone || 'Europe/Zagreb', // Dodana vremenska zona
-                membershipTerminationDay: settings.membership_termination_day || 1,
-                membershipTerminationMonth: settings.membership_termination_month || 3,
-                updatedAt: settings.updated_at,
-                updatedBy: settings.updated_by,
-                // Mapiraj rate-limit postavke
-                registrationRateLimitEnabled: Boolean(settings.registration_rate_limit_enabled ?? false),
-                registrationWindowMs: settings.registration_window_ms ?? 3600000,
-                registrationMaxAttempts: settings.registration_max_attempts ?? 5
+                ...defaultSettings,
+                ...settings,
+                id: String(settings.id),
+                cardNumberLength: settings.cardNumberLength ?? defaultSettings.cardNumberLength,
+                renewalStartMonth: settings.renewalStartMonth ?? defaultSettings.renewalStartMonth,
+                renewalStartDay: settings.renewalStartDay ?? defaultSettings.renewalStartDay,
+                membershipTerminationDay: settings.membershipTerminationDay ?? defaultSettings.membershipTerminationDay,
+                membershipTerminationMonth: settings.membershipTerminationMonth ?? defaultSettings.membershipTerminationMonth,
+                twoFactorRequiredMemberRoles: (settings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
+                twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
+                // Dodaj zadane vrijednosti za sve boolean polja koja mogu biti null
+                registrationRateLimitEnabled: settings.registrationRateLimitEnabled ?? false,
+                twoFactorGlobalEnabled: settings.twoFactorGlobalEnabled ?? false,
+                twoFactorMembersEnabled: settings.twoFactorMembersEnabled ?? false,
+                twoFactorChannelEmailEnabled: settings.twoFactorChannelEmailEnabled ?? false,
+                twoFactorChannelSmsEnabled: settings.twoFactorChannelSmsEnabled ?? false,
+                twoFactorChannelTotpEnabled: settings.twoFactorChannelTotpEnabled ?? false,
+                twoFactorTrustedDevicesEnabled: defaultSettings.twoFactorTrustedDevicesEnabled,
+                registrationWindowMs: settings.registrationWindowMs ?? 3600000,
+                registrationMaxAttempts: settings.registrationMaxAttempts ?? 5,
+                twoFactorOtpExpirySeconds: settings.twoFactorOtpExpirySeconds ?? 300,
+                twoFactorRememberDeviceDays: settings.twoFactorRememberDeviceDays ?? 30,
+                twoFactorTotpStepSeconds: settings.twoFactorTotpStepSeconds ?? 30,
+                twoFactorTotpWindow: settings.twoFactorTotpWindow ?? 1,
+                twoFactorMaxAttemptsPerHour: settings.twoFactorMaxAttemptsPerHour ?? 10,
             };
         } catch (error) {
             console.error('Error fetching system settings:', error);
@@ -648,183 +363,246 @@ const systemManagerService = {
         }
     },
     
-    async updateSystemSettings(data: {
-        id: string;
-        cardNumberLength?: number | null;
-        renewalStartMonth?: number | null;
-        renewalStartDay?: number | null;
-        timeZone?: string | null;
-        membershipTerminationDay?: number | null;
-        membershipTerminationMonth?: number | null;
-    }, updatedBy: number): Promise<SystemSettings> { 
+    async updateSystemSettings(data: Partial<SystemSettingsExtended>, updatedBy: string): Promise<SystemSettingsExtended> {
         try {
-            // Odredi organization_id za ažuriranje postavki na temelju System Managera koji ažurira
-            const manager = await prisma.systemManager.findUnique({
-                where: { id: updatedBy },
+            const manager = await prisma.systemManager.findUnique({ 
+                where: { id: parseInt(updatedBy, 10) },
                 select: { organization_id: true }
             });
-
+    
             if (!manager?.organization_id) {
                 throw new Error('Organization context nije moguće odrediti za System Managera');
             }
             const organizationId = manager.organization_id;
-            // Provjeri postoje li postavke direktnim SQL upitom
-            const existingSettingsResult = await prisma.$queryRaw`
-                SELECT 
-                    id, 
-                    card_number_length, 
-                    renewal_start_month, 
-                    renewal_start_day, 
-                    updated_at, 
-                    updated_by,
-                    time_zone,
-                    membership_termination_day,
-                    membership_termination_month
-                FROM system_settings 
-                WHERE id = ${data.id}
-            `;
-            
-            // Pretvorba rezultata SQL upita u jedan objekt ili null
-            const existingSettings = Array.isArray(existingSettingsResult) && existingSettingsResult.length > 0 
-                ? existingSettingsResult[0] 
-                : null;
-            
-            const now = getCurrentDate();
-            
-            if (!existingSettings) {
-                // Ako ne postoje, kreiraj nove direktnim SQL upitom
-                await prisma.$executeRaw`
-                    INSERT INTO system_settings (
-                        id, 
-                        card_number_length, 
-                        renewal_start_month, 
-                        renewal_start_day, 
-                        time_zone,
-                        membership_termination_day,
-                        membership_termination_month,
-                        updated_at,
-                        updated_by
-                    ) VALUES (
-                        ${data.id}, 
-                        ${data.cardNumberLength || 5}, 
-                        ${data.renewalStartMonth || 11}, 
-                        ${data.renewalStartDay || 1}, 
-                        ${data.timeZone || 'Europe/Zagreb'},
-                        ${data.membershipTerminationDay || 1},
-                        ${data.membershipTerminationMonth || 3},
-                        ${now},
-                        ${updatedBy}
-                    )
-                `;
-                
-                // Dohvati upravo kreirane postavke
-                const newSettingsResult = await prisma.$queryRaw`
-                    SELECT 
-                        id, 
-                        card_number_length, 
-                        renewal_start_month, 
-                        renewal_start_day, 
-                        updated_at, 
-                        updated_by,
-                        time_zone,
-                        membership_termination_day,
-                        membership_termination_month
-                    FROM system_settings 
-                    WHERE id = ${data.id}
-                `;
-                
-                const newSettings = Array.isArray(newSettingsResult) && newSettingsResult.length > 0 
-                    ? newSettingsResult[0] 
-                    : null;
-                    
-                if (!newSettings) {
-                    throw new Error('Failed to create settings');
-                }
-                
-                return {
-                    id: newSettings.id,
-                    cardNumberLength: newSettings.card_number_length,
-                    renewalStartMonth: newSettings.renewal_start_month,
-                    renewalStartDay: newSettings.renewal_start_day,
-                    timeZone: newSettings.time_zone,
-                    membershipTerminationDay: newSettings.membership_termination_day,
-                    membershipTerminationMonth: newSettings.membership_termination_month,
-                    updatedAt: newSettings.updated_at
-                };
-            } else {
-                // Ažuriraj postojeće postavke direktnim SQL upitom
-                const cardNumberLength = data.cardNumberLength !== undefined 
-                    ? data.cardNumberLength 
-                    : existingSettings.card_number_length;
-                    
-                const renewalStartMonth = data.renewalStartMonth !== undefined 
-                    ? data.renewalStartMonth 
-                    : existingSettings.renewal_start_month;
-                    
-                const renewalStartDay = data.renewalStartDay !== undefined 
-                    ? data.renewalStartDay 
-                    : existingSettings.renewal_start_day;
-                    
-                const timeZone = data.timeZone || existingSettings.time_zone || 'Europe/Zagreb';
-                
-                const membershipTerminationDay = data.membershipTerminationDay !== undefined
-                    ? data.membershipTerminationDay
-                    : existingSettings.membership_termination_day;
-                    
-                const membershipTerminationMonth = data.membershipTerminationMonth !== undefined
-                    ? data.membershipTerminationMonth
-                    : existingSettings.membership_termination_month;
-                
-                if (isDev) console.log('Ažuriranje postavki s parametrima:', {
-                    cardNumberLength,
-                    renewalStartMonth,
-                    renewalStartDay,
-                    timeZone,
-                    membershipTerminationDay,
-                    membershipTerminationMonth,
-                    id: data.id
-                });
-                
-                // OPTIMIZACIJA: Zamjena legacy $executeRaw i $queryRaw s Prisma update operacijom
-                if (isDev) console.log(`[SYSTEM-SETTINGS] Ažuriram postavke za organization_id: ${organizationId}`);
+    
+            // Izbaci 'id' polje jer se ne koristi u update operaciji
+            const { id: _id, ...validData } = data as SystemSettingsExtended & { id: string };
 
-                const updatedSettings = await prisma.systemSettings.update({
-                    where: {
-                        organization_id: organizationId
-                    },
-                    data: {
-                        cardNumberLength: cardNumberLength,
-                        renewalStartMonth: renewalStartMonth,
-                        renewalStartDay: renewalStartDay,
-                        timeZone: timeZone,
-                        membershipTerminationDay: membershipTerminationDay,
-                        membershipTerminationMonth: membershipTerminationMonth,
-                        updatedAt: now,
-                        updatedBy: updatedBy
-                    }
-                });
-                
-                if (isDev) console.log(`[SYSTEM-SETTINGS] Postavke uspješno ažurirane za organization_id: ${updatedSettings.organization_id}`);
-                
-                return {
-                    id: (updatedSettings.organization_id ?? 1).toString(),
-                    cardNumberLength: updatedSettings.cardNumberLength,
-                    renewalStartMonth: updatedSettings.renewalStartMonth,
-                    renewalStartDay: updatedSettings.renewalStartDay,
-                    timeZone: updatedSettings.timeZone,
-                    membershipTerminationDay: updatedSettings.membershipTerminationDay,
-                    membershipTerminationMonth: updatedSettings.membershipTerminationMonth,
-                    updatedAt: updatedSettings.updatedAt,
-                    updatedBy: updatedSettings.updatedBy?.toString() || null // Type conversion za TypeScript
-                };
-            }
+            const updatedSettings = await prisma.systemSettings.update({
+                where: { organization_id: organizationId },
+                data: {
+                    ...validData,
+                    updatedAt: getCurrentDate(),
+                    updatedBy: parseInt(updatedBy, 10),
+                    twoFactorRequiredMemberRoles: validData.twoFactorRequiredMemberRoles ?? Prisma.JsonNull,
+                    twoFactorRequiredMemberPermissions: validData.twoFactorRequiredMemberPermissions ?? Prisma.JsonNull,
+                },
+            });
+    
+            return {
+                id: String(updatedSettings.id),
+                cardNumberLength: updatedSettings.cardNumberLength ?? 5,
+                renewalStartMonth: updatedSettings.renewalStartMonth ?? 11,
+                renewalStartDay: updatedSettings.renewalStartDay ?? 1,
+                timeZone: updatedSettings.timeZone ?? 'Europe/Zagreb',
+                membershipTerminationDay: updatedSettings.membershipTerminationDay ?? 1,
+                membershipTerminationMonth: updatedSettings.membershipTerminationMonth ?? 3,
+                updatedAt: updatedSettings.updatedAt,
+                updatedBy: updatedSettings.updatedBy,
+                registrationRateLimitEnabled: updatedSettings.registrationRateLimitEnabled ?? false,
+                registrationWindowMs: updatedSettings.registrationWindowMs ?? 3600000,
+                registrationMaxAttempts: updatedSettings.registrationMaxAttempts ?? 5,
+                twoFactorGlobalEnabled: updatedSettings.twoFactorGlobalEnabled ?? false,
+                twoFactorMembersEnabled: updatedSettings.twoFactorMembersEnabled ?? false,
+                twoFactorChannelEmailEnabled: updatedSettings.twoFactorChannelEmailEnabled ?? false,
+                twoFactorChannelSmsEnabled: updatedSettings.twoFactorChannelSmsEnabled ?? false,
+                twoFactorChannelTotpEnabled: updatedSettings.twoFactorChannelTotpEnabled ?? false,
+                twoFactorTrustedDevicesEnabled: validData.twoFactorTrustedDevicesEnabled ?? false as boolean,
+                twoFactorOtpExpirySeconds: updatedSettings.twoFactorOtpExpirySeconds ?? 300,
+                twoFactorRememberDeviceDays: updatedSettings.twoFactorRememberDeviceDays ?? 30,
+                twoFactorTotpStepSeconds: updatedSettings.twoFactorTotpStepSeconds ?? 30,
+                twoFactorTotpWindow: updatedSettings.twoFactorTotpWindow ?? 1,
+                twoFactorMaxAttemptsPerHour: updatedSettings.twoFactorMaxAttemptsPerHour ?? 10,
+                twoFactorRequiredMemberRoles: (updatedSettings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
+                twoFactorRequiredMemberPermissions: (updatedSettings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
+                backupFrequency: updatedSettings.backupFrequency,
+                backupRetentionDays: updatedSettings.backupRetentionDays,
+                backupStorageLocation: updatedSettings.backupStorageLocation,
+                lastBackupAt: updatedSettings.lastBackupAt,
+                nextBackupAt: updatedSettings.nextBackupAt,
+            };
+    
         } catch (error) {
             console.error('Error updating system settings:', error);
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new Error('Postavke sustava za ovu organizaciju ne postoje i ne mogu se ažurirati.');
+            }
             throw new Error('Failed to update system settings');
         }
     },
-    
-    // ... ostatak koda
+
+    async getDashboardStats(req: Request) {
+        try {
+            const organizationId = req.user?.organization_id;
+            const whereClause = organizationId ? { organization_id: organizationId } : {};
+
+            const totalMembers = await prisma.member.count({ where: whereClause });
+            const activeMembers = await prisma.member.count({
+                where: { ...whereClause, status: 'active' }
+            });
+            const totalActivities = await prisma.activity.count({ where: whereClause });
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const recentActivitiesList = await prisma.activity.findMany({
+                where: {
+                    ...whereClause,
+                    start_date: { gte: thirtyDaysAgo },
+                },
+                include: {
+                    activity_type: true,
+                    participants: true,
+                },
+                orderBy: { start_date: 'desc' },
+            });
+
+            const recentActivitiesCount = recentActivitiesList.length;
+
+            const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
+            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, password_hash: null } });
+
+            // Mock data for system health and backup
+            const healthDetails = {
+                status: 'Healthy',
+                dbConnection: true,
+                diskSpace: { available: 100 * 1024 * 1024 * 1024, total: 256 * 1024 * 1024 * 1024, percentUsed: 60 },
+                memory: { available: 4 * 1024 * 1024 * 1024, total: 16 * 1024 * 1024 * 1024, percentUsed: 75 },
+                uptime: 1234567,
+                lastCheck: new Date(),
+            };
+
+            const systemSettings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId ?? undefined } });
+
+            return {
+                totalMembers,
+                activeMembers,
+                totalActivities,
+                recentActivities: recentActivitiesCount,
+                recentActivitiesList,
+                totalAuditLogs,
+                pendingRegistrations,
+                systemHealth: healthDetails.status,
+                lastBackup: systemSettings?.lastBackupAt?.toISOString() ?? 'Never',
+                healthDetails,
+                systemSettings,
+            };
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            throw new Error('Failed to fetch dashboard statistics');
+        }
+    },
+
+    async getAuditLogs(req: Request, page: number = 1, limit: number = 50) {
+        try {
+            const offset = (page - 1) * limit;
+            
+            // Dohvati organization_id
+            let organizationId: number | null = null;
+            
+            // Za System Manager-e, koristi organization_id iz user objekta
+            if (req.user?.is_SystemManager && req.user.organization_id !== undefined) {
+                organizationId = req.user.organization_id;
+                console.log('SystemManager accessing audit logs for organization:', organizationId);
+            } else {
+                // Za članove ili Global Manager-e
+                try {
+                    organizationId = getOrganizationId(req);
+                } catch (_error) {
+                    // Global Manager - vidi sve audit logove (organization_id = null)
+                    console.log('Global Manager accessing all audit logs');
+                }
+            }
+            
+            // Filtriraj po organizaciji ili prikaži sve za Global Manager
+            const whereClause = organizationId ? { organization_id: organizationId } : {};
+            
+            const [logs, total] = await Promise.all([
+                prisma.auditLog.findMany({
+                    where: whereClause,
+                    skip: offset,
+                    take: limit,
+                    orderBy: { created_at: 'desc' },
+                    include: {
+                        affected: {
+                            select: {
+                                member_id: true,
+                                first_name: true,
+                                last_name: true
+                            }
+                        }
+                    }
+                }),
+                prisma.auditLog.count({ where: whereClause })
+            ]);
+
+            return {
+                logs,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching audit logs:', error);
+            throw new Error('Failed to fetch audit logs');
+        }
+    },
+
+    async getPendingMembers(organizationId: number | null | undefined) {
+        const whereClause = organizationId ? { organization_id: organizationId, password_hash: null } : { password_hash: null };
+        return prisma.member.findMany({
+            where: whereClause,
+            select: {
+                member_id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                created_at: true,
+            },
+            orderBy: { created_at: 'asc' },
+        });
+    },
+
+    async getAllMembers(organizationId: number | null | undefined) {
+        const whereClause = organizationId ? { organization_id: organizationId } : {};
+        return prisma.member.findMany({ where: whereClause });
+    },
+
+    async assignPasswordToMember(memberId: number, password: string, cardNumber: string | null, organizationId: number | null | undefined) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const updateData: Prisma.MemberUpdateInput = {
+            password_hash: hashedPassword,
+            status: 'active',
+        };
+
+        if (cardNumber) {
+            updateData.card_numbers = {
+                create: {
+                    card_number: cardNumber,
+                    status: 'assigned',
+                    assigned_at: new Date(),
+                    organization_id: organizationId,
+                },
+            };
+        }
+
+        const whereClause: Prisma.MemberWhereUniqueInput = { member_id: memberId };
+
+        return prisma.member.update({
+            where: whereClause,
+            data: updateData,
+        });
+    },
+
+    async assignRoleToMember(memberId: number, role: string, _organizationId: number | null | undefined) {
+        const whereClause: Prisma.MemberWhereUniqueInput = { member_id: memberId };
+
+        return prisma.member.update({
+            where: whereClause,
+            data: { role },
+        });
+    },
 };
 
 export default systemManagerService;

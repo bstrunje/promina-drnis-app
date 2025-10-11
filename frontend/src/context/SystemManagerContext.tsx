@@ -151,7 +151,10 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       
       console.log('[SM-LOGIN] Manager data:', managerData);
       console.log('[SM-LOGIN] organization_id:', managerData.organization_id);
+      console.log('[SM-LOGIN] organization_id type:', typeof managerData.organization_id);
       console.log('[SM-LOGIN] Is null?', managerData.organization_id === null);
+      console.log('[SM-LOGIN] Is undefined?', managerData.organization_id === undefined);
+      console.log('[SM-LOGIN] Raw response:', response);
       
       // Global System Manager (organization_id = null) ide na Organizations
       // Org-specific System Manager ide na Dashboard

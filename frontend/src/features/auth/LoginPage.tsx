@@ -5,7 +5,7 @@ import { Eye, EyeOff, LogIn, FileText, ChevronRight, ChevronUp, ChevronDown } fr
 import axios from "axios";
 import { useAuth } from "../../context/useAuth";
 // Zamijenjeno prema novoj modularnoj API strukturi
-import { login, register } from '../../utils/api/apiAuth';
+import { login, register, initOtp, verify2FA, getAuthHealth } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
 import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
@@ -59,6 +59,12 @@ const LoginPage = () => {
   const [loginPageMessage, setLoginPageMessage] = useState<{ type: "error" | "success"; content: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  // 2FA state
+  const [twoFaRequired, setTwoFaRequired] = useState(false);
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [twoFaChannel, setTwoFaChannel] = useState<'totp' | 'email'>('totp');
+  const [rememberDevice, setRememberDevice] = useState(false);
+  const [sendEmailLoading, setSendEmailLoading] = useState(false);
   
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
@@ -120,6 +126,118 @@ const LoginPage = () => {
     setLoginData(prevData => ({ ...prevData, [name]: value }));
   };
 
+  // Pošalji OTP na e-mail
+  const handleSendEmailOtp = async () => {
+    try {
+      setSendEmailLoading(true);
+      await initOtp('email');
+      setMessage({ type: 'success', content: t('twofa.emailSent', 'Kod je poslan na e-mail adresu') });
+    } catch {
+      setMessage({ type: 'error', content: t('twofa.emailSendFailed', 'Neuspješno slanje koda na e-mail') });
+    } finally {
+      setSendEmailLoading(false);
+    }
+  };
+
+  // Verificiraj 2FA kod i dovrši prijavu
+  const handleVerify2FA = async () => {
+    setError('');
+    setMessage(null);
+    if (!twoFaCode) {
+      setError(t('twofa.codeRequired', 'Molimo unesite kod'));
+      return;
+    }
+    try {
+      const verifyResp = await verify2FA({ code: twoFaCode, channel: twoFaChannel, rememberDevice });
+
+      // Dohvati minimalne podatke o korisniku iz health endpointa
+      const health = await getAuthHealth();
+      if (!health.authenticated || !health.user) {
+        setError(t('twofa.healthFailed', 'Provjera prijave nije uspjela'));
+        return;
+      }
+
+      // Složi minimalni Member objekt iz health podataka
+      const member: Member = {
+        member_id: health.user.member_id,
+        first_name: loginData.email.split('@')[0] || '',
+        last_name: '',
+        full_name: loginData.email,
+        role: health.user.role as MemberRole,
+        date_of_birth: '',
+        gender: 'male',
+        street_address: '',
+        city: '',
+        oib: '',
+        cell_phone: '',
+        email: loginData.email,
+        registration_completed: true,
+        membership_type: MembershipTypeEnum.Regular,
+        life_status: 'employed/unemployed',
+        tshirt_size: 'M',
+        shell_jacket_size: 'M',
+        membership_details: { card_stamp_issued: false, card_number: '' },
+        profile_image_path: undefined,
+        profile_image_updated_at: undefined,
+        last_login: undefined,
+        status: 'registered',
+        total_hours: 0,
+        activity_status: 'passive',
+        membership_history: undefined,
+      };
+
+      authLogin(member, verifyResp.token, undefined);
+
+      // Navigacija kao nakon uspješnog login-a
+      if (redirectPath) {
+        navigate(redirectPath);
+      } else {
+        const savedPath = sessionStorage.getItem('lastPath');
+        if (savedPath) {
+          sessionStorage.removeItem('lastPath');
+          navigate(savedPath);
+        } else {
+          switch(member.role) {
+            case 'member_administrator':
+              navigate('/admin/dashboard');
+              break;
+            case 'member_superuser':
+              navigate('/superuser/dashboard');
+              break;
+            case 'member':
+              navigate('/member/dashboard');
+              break;
+            default:
+              navigate('/profile');
+          }
+        }
+      }
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e)) {
+        const data: unknown = e.response?.data;
+        let code: string | undefined;
+        let msg: string | undefined;
+        if (data && typeof data === 'object') {
+          const obj = data as Record<string, unknown>;
+          code = typeof obj.code === 'string' ? obj.code : undefined;
+          msg = typeof obj.message === 'string' ? obj.message : undefined;
+        }
+        if (code) {
+          const key = `errors.${code}` as const;
+          const translated = t(key);
+          const content = translated && translated !== key ? translated : (msg ?? t('errors.GENERIC'));
+          setError(content);
+        } else {
+          setError(msg ?? e.message ?? t('errors.GENERIC'));
+        }
+      } else if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError(t('errors.GENERIC'));
+      }
+    }
+  };
+
   // Ako tenant nije specificiran, prikaži samo neutralnu poruku bez ostalog sadržaja
   if (!branding && brandingError) {
     return (
@@ -147,6 +265,14 @@ const LoginPage = () => {
       // Uklonjen loginPayload, šaljemo loginData direktno
       // login funkcija u api.ts je ažurirana da šalje { email, password }
       const data = await login(loginData);
+
+      // 2FA drugi korak: backend može vratiti { status: 'REQUIRES_2FA' }
+      if (data && (data as unknown as { status?: string }).status === 'REQUIRES_2FA') {
+        setTwoFaRequired(true);
+        setMessage(null);
+        setError('');
+        return;
+      }
 
       // Ispravljeno kreiranje member objekta:
       // Koristimo samo garantirana polja iz data.member (id, full_name, role)
@@ -424,6 +550,54 @@ const LoginPage = () => {
         </div>
 
         <div className="p-6">
+          {/* 2FA drugi korak - prikazuje se ako je potreban nakon uspješne lozinke */}
+          {twoFaRequired && (
+            <div className="mb-4 p-4 border rounded bg-yellow-50">
+              <h3 className="text-lg font-semibold mb-2">{t('twofa.title', 'Dvofaktorska autentikacija')}</h3>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('twofa.channel', 'Metoda verifikacije')}</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={`px-3 py-1 rounded border ${twoFaChannel === 'totp' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+                    onClick={() => setTwoFaChannel('totp')}
+                  >{t('twofa.totp', 'Authenticator aplikacija')}</button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 rounded border ${twoFaChannel === 'email' ? 'bg-blue-600 text-white' : 'bg-white'}`}
+                    onClick={() => setTwoFaChannel('email')}
+                  >Email</button>
+                </div>
+              </div>
+              {twoFaChannel === 'email' && (
+                <div className="mb-2">
+                  <button
+                    type="button"
+                    disabled={sendEmailLoading}
+                    onClick={() => { void handleSendEmailOtp(); }}
+                    className={`px-3 py-2 rounded bg-blue-600 text-white ${sendEmailLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >{sendEmailLoading ? t('twofa.sending', 'Slanje...') : t('twofa.sendEmailCode', 'Pošalji kod na e-mail')}</button>
+                </div>
+              )}
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('twofa.code', 'Kod')}</label>
+                <input
+                  value={twoFaCode}
+                  onChange={(e) => setTwoFaCode(e.target.value)}
+                  className="w-full border rounded p-2"
+                  placeholder={twoFaChannel === 'totp' ? t('twofa.codeTotpPlaceholder', 'Unesite kod iz aplikacije') : t('twofa.codeEmailPlaceholder', 'Unesite kod iz e-maila')}
+                />
+              </div>
+              <label className="flex items-center gap-2 mb-3 text-sm text-gray-700">
+                <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
+                {t('twofa.remember', 'Zapamti ovaj uređaj')}
+              </label>
+              <div className="flex gap-2">
+                <button type="button" className="px-4 py-2 rounded bg-blue-600 text-white" onClick={() => { void handleVerify2FA(); }}>{t('twofa.verify', 'Potvrdi kod')}</button>
+                <button type="button" className="px-4 py-2 rounded border" onClick={() => { setTwoFaRequired(false); setTwoFaCode(''); }}>{t('twofa.cancel', 'Odustani')}</button>
+              </div>
+            </div>
+          )}
           {isRegistering ? (
             <form onSubmit={(e) => { void handleRegister(e); }} className="space-y-4">
               <h2 className="text-2xl font-bold mb-4">{t('login.registerTitle', 'Postani novi član')}</h2>

@@ -62,7 +62,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
           {/* Osnovni prikaz zdravlja sustava */}
           <div className="flex items-center justify-between pb-2 border-b">
             <div className="flex items-center space-x-2">
-              <span className="text-gray-600">Zdravlje sustava</span>
+              <span className="text-gray-600">System Health</span>
               <StatusIcon />
             </div>
             <div className="flex items-center">
@@ -96,11 +96,11 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Informacije o povezanosti s bazom */}
                 <div className="space-y-1">
-                  <div className="font-medium text-gray-700">Baza podataka:</div>
+                  <div className="font-medium text-gray-700">Database:</div>
                   <div className="flex items-center">
                     {stats.healthDetails.dbConnection ? (
                       <span className="text-green-600 flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" /> Povezano
+                        <CheckCircle className="w-4 h-4 mr-1" /> Connected
                       </span>
                     ) : (
                       <span className="text-red-600 flex items-center">
@@ -128,7 +128,7 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                       ></div>
                     </div>
                     <div className="text-xs text-gray-600 mt-1">
-                      Slobodno: {formatBytes(stats.healthDetails.diskSpace.available)} od {formatBytes(stats.healthDetails.diskSpace.total)}
+                      Free: {formatBytes(stats.healthDetails.diskSpace.available)} of {formatBytes(stats.healthDetails.diskSpace.total)}
                     </div>
                   </div>
                 </div>
@@ -151,17 +151,17 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                       ></div>
                     </div>
                     <div className="text-xs text-gray-600 mt-1">
-                      Slobodno: {formatBytes(stats.healthDetails.memory.available)} od {formatBytes(stats.healthDetails.memory.total)}
+                      Free: {formatBytes(stats.healthDetails.memory.available)} of {formatBytes(stats.healthDetails.memory.total)}
                     </div>
                   </div>
                 </div>
                 
                 {/* Uptime */}
                 <div className="space-y-1">
-                  <div className="font-medium text-gray-700">Vrijeme rada:</div>
+                  <div className="font-medium text-gray-700">Uptime:</div>
                   <div>{formatUptime(stats.healthDetails.uptime)}</div>
                   <div className="text-xs text-gray-600">
-                    Zadnja provjera: {formatDate(stats.healthDetails.lastCheck, 'dd.MM.yyyy HH:mm')}
+                    Last check: {formatDate(stats.healthDetails.lastCheck, 'dd.MM.yyyy HH:mm')}
                   </div>
                 </div>
               </div>
@@ -169,67 +169,47 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
           )}
           
           {/* Informacije o sigurnosnoj kopiji */}
-          <div className="flex items-center justify-between pb-2 border-b">
-            <span className="text-gray-600">Zadnja sigurnosna kopija</span>
-            <div className="flex items-center">
-              <span className="text-gray-900 mr-2">
-                {stats.lastBackup === 'Nikad' ? 'Nikad' : stats.lastBackup}
-              </span>
-              {stats.backupDetails && (
-                <button 
-                  onClick={() => setShowBackupDetails(!showBackupDetails)}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-                >
-                  {showBackupDetails ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Detalji sigurnosne kopije */}
-          {showBackupDetails && stats.backupDetails && (
-            <div className="bg-gray-50 p-3 rounded-md text-sm">
-              <div className="space-y-2">
-                {stats.backupDetails.lastBackup && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Vrijeme:</span>
-                    <span>{formatDate(stats.backupDetails.lastBackup, 'dd.MM.yyyy HH:mm:ss')}</span>
-                  </div>
-                )}
-                
-                {stats.backupDetails.backupSize && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Size:</span>
-                    <span>{formatBytes(stats.backupDetails.backupSize)}</span>
-                  </div>
-                )}
-                
-                {stats.backupDetails.backupLocation && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Location:</span>
-                    <span className="text-gray-900">{stats.backupDetails.backupLocation}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className={`${
-                    stats.backupDetails.status === 'Success' ? 'text-green-600' :
-                    stats.backupDetails.status === 'Failed' ? 'text-red-600' :
-                    'text-gray-600'
-                  }`}>
-                    {stats.backupDetails.status === 'Success' ? 'Success' :
-                     stats.backupDetails.status === 'Failed' ? 'Failed' :
-                     stats.backupDetails.status === 'Never' ? 'Never executed' :
-                     'Unknown'}
+          {stats.systemSettings && (
+            <>
+              <div className="flex items-center justify-between pb-2 border-b">
+                <span className="text-gray-600">Last Backup</span>
+                <div className="flex items-center">
+                  <span className="text-gray-900 mr-2">
+                    {stats.systemSettings.lastBackupAt ? formatDate(stats.systemSettings.lastBackupAt, 'dd.MM.yyyy HH:mm') : 'Never'}
                   </span>
+                  <button 
+                    onClick={() => setShowBackupDetails(!showBackupDetails)}
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    {showBackupDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
-            </div>
+
+              {/* Detalji sigurnosne kopije */}
+              {showBackupDetails && (
+                <div className="bg-gray-50 p-3 rounded-md text-sm">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Frequency:</span>
+                      <span className="font-medium">{stats.systemSettings.backupFrequency}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Retention:</span>
+                      <span>{stats.systemSettings.backupRetentionDays} days</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Location:</span>
+                      <span>{stats.systemSettings.backupStorageLocation}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Next Backup:</span>
+                      <span>{stats.systemSettings.nextBackupAt ? formatDate(stats.systemSettings.nextBackupAt, 'dd.MM.yyyy HH:mm') : 'Not scheduled'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

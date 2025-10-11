@@ -98,7 +98,6 @@ const SystemManagerDashboard: React.FC = () => {
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (
           <>
-            <h2 className="text-xl font-semibold mb-6">System Settings</h2>
             <SystemManagerSettings />
           </>
         )}

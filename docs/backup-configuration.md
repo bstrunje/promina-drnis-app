@@ -134,6 +134,18 @@ async function uploadBackupToExternalService(backupFilePath, backupFileName) {
 }
 ```
 
+## Konfiguracija putem System Manager sučelja
+
+Od sada je moguće konfigurirati osnovne postavke sigurnosnih kopija direktno kroz System Manager sučelje na stranici s postavkama (`/system-manager/settings`).
+
+Dostupne su sljedeće opcije:
+
+- **Backup Frequency**: Učestalost automatskog stvaranja sigurnosnih kopija (Daily, Weekly, Monthly).
+- **Retention (days)**: Broj dana koliko se sigurnosne kopije čuvaju prije automatskog brisanja.
+- **Storage Location**: Mjesto pohrane sigurnosnih kopija. Trenutno je podržana samo lokalna pohrana (`local`), s planiranom podrškom za Amazon S3 i Google Cloud Storage.
+
+Status zadnje i sljedeće sigurnosne kopije vidljiv je na System Manager dashboardu.
+
 ## Preporuke za sigurnosne kopije
 
 1. **Redovite sigurnosne kopije**: Konfigurirajte cron job da se izvršava barem jednom dnevno

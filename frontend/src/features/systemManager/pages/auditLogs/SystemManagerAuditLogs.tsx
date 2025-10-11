@@ -107,16 +107,16 @@ const SystemManagerAuditLogs: React.FC = () => {
         setLoading(false);
         return;
       }
-      const response = await axios.get(`${API_BASE_URL}/system-manager/audit-logs`, {
+      const response = await axios.get<{ logs: AuditLog[] }>(`${API_BASE_URL}/system-manager/audit-logs`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
-      // Provjeri da je response.data niz tipa AuditLog[]
-      if (Array.isArray(response.data)) {
-        setAuditLogs(response.data as AuditLog[]);
-        setFilteredLogs(response.data as AuditLog[]);
+      // Provjeri da response.data ima logs polje
+      if (response.data && Array.isArray(response.data.logs)) {
+        setAuditLogs(response.data.logs);
+        setFilteredLogs(response.data.logs);
       } else {
         setAuditLogs([]);
         setFilteredLogs([]);
@@ -148,17 +148,36 @@ const SystemManagerAuditLogs: React.FC = () => {
     const sorted = [...filteredLogs].sort((a, b) => {
       const valueA = a[field];
       const valueB = b[field];
-      
+
       if (valueA === undefined || valueB === undefined) {
         return 0;
       }
-      
+
+      // Handle numbers, dates, and strings explicitly
+      const getComparable = (val: unknown) => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') return val.toLowerCase();
+        if (val instanceof Date) return val.getTime();
+        if (typeof val === 'object' && val !== null) {
+          if (val instanceof Date) return val.getTime();
+          return JSON.stringify(val);
+        }
+        return '';
+      };
+
+      const compA = getComparable(valueA);
+      const compB = getComparable(valueB);
+
       if (sortDirection === 'asc') {
-        return String(valueA) > String(valueB) ? 1 : -1;
+        if (compA > compB) return 1;
+        if (compA < compB) return -1;
+        return 0;
       }
-      return String(valueA) < String(valueB) ? 1 : -1;
+      if (compA < compB) return 1;
+      if (compA > compB) return -1;
+      return 0;
     });
-    
+
     setFilteredLogs(sorted);
   };
 
@@ -187,10 +206,7 @@ const SystemManagerAuditLogs: React.FC = () => {
         </Button>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">System Audit Logs</h1>
-        <p className="opacity-90">Overview of all system activities</p>
-      </div>
+
 
       <Card>
         <CardHeader>
@@ -351,6 +367,14 @@ const SystemManagerAuditLogs: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {log.performer_name ? (
                         <span className="font-medium text-gray-900">{log.performer_name}</span>
+                      ) : log.performer_type ? (
+                        <span className="font-medium text-blue-600">
+                          {log.performer_type === 'SYSTEM_MANAGER' ? 'System Manager' : 
+                           log.performer_type === 'MEMBER' ? 'Member' : log.performer_type}
+                          {log.performed_by && (
+                            <span className="text-gray-500 font-normal"> #{log.performed_by}</span>
+                          )}
+                        </span>
                       ) : log.performed_by ? (
                         <span>
                           User <span className="text-blue-600 font-medium">#{log.performed_by}</span>

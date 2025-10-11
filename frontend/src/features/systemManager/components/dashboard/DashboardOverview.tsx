@@ -25,10 +25,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">System Overview</h2>
-        
-        <button 
-          onClick={() => { void refreshDashboardStats(); }} 
+        <button
+          onClick={() => { void refreshDashboardStats(); }}
           disabled={statsLoading}
           className="flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
@@ -45,7 +43,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
       {/* Statistike članova, aktivnosti i registracija */}
       <DashboardStats stats={stats} statsLoading={statsLoading} setActiveTab={setActiveTab} />
-      
+
       {/* System Status */}
       <SystemStatus stats={stats} statsLoading={statsLoading} />
     </div>

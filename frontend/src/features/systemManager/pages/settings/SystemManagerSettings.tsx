@@ -1,6 +1,6 @@
 // features/systemManager/pages/settings/SystemManagerSettings.tsx
 import React, { useState, useEffect } from 'react';
-import { Shield, RefreshCw, Save, Calendar, Settings as SettingsIcon } from 'lucide-react';
+import { RefreshCw, Save, Calendar, Settings as SettingsIcon } from 'lucide-react';
 import axios from 'axios';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useTimeZone } from '../../../../context/useTimeZone'; // Premješten u dedicated hook datoteku radi Fast Refresh pravila
@@ -14,6 +14,18 @@ type LocalSystemSettings = SystemSettings & {
   registrationRateLimitEnabled?: boolean | null;
   registrationWindowMs?: number | null;
   registrationMaxAttempts?: number | null;
+  // 2FA settings (optional – backend may or may not return them)
+  twoFactorGlobalEnabled?: boolean | null;
+  twoFactorMembersEnabled?: boolean | null;
+  twoFactorRequiredMemberRoles?: string[] | null;
+  twoFactorRequiredMemberPermissions?: string[] | null;
+  twoFactorOtpExpirySeconds?: number | null;
+  twoFactorRememberDeviceDays?: number | null;
+  // 2FA channels and trusted devices
+  twoFactorChannelEmailEnabled?: boolean | null;
+  twoFactorChannelSmsEnabled?: boolean | null;
+  twoFactorChannelTotpEnabled?: boolean | null;
+  twoFactorTrustedDevicesEnabled?: boolean | null;
 };
 
 interface SystemSettingsFormProps {
@@ -42,17 +54,30 @@ export function ChangePasswordForm() {
         usernameChanged = true;
         await refreshManager(); // automatski osvježi username u UI
       }
-      if (oldPassword && newPassword) {
+      let passwordChanged = false;
+      if (newPassword || oldPassword) {
         if (newPassword !== confirm) {
           setMessage('New password and confirmation do not match.');
           return;
         }
+        if (!oldPassword) {
+          setMessage('Old password is required to change password.');
+          return;
+        }
         await systemManagerApi.patch('/system-manager/change-password', { oldPassword, newPassword });
+        passwordChanged = true;
       }
-      setMessage(
-        (usernameChanged ? 'Username successfully changed. ' : '') +
-        (oldPassword && newPassword ? 'Password successfully changed.' : '')
-      );
+
+      const successMessage = [
+        usernameChanged ? 'Username successfully changed.' : '',
+        passwordChanged ? 'Password successfully changed.' : ''
+      ].filter(Boolean).join(' ');
+
+      if (successMessage) {
+        setMessage(successMessage);
+      } else if (!newUsername && !newPassword && !oldPassword) {
+        setMessage('No changes were made.');
+      }
       setOldPassword('');
       setNewPassword('');
       setConfirm('');
@@ -61,10 +86,10 @@ export function ChangePasswordForm() {
       // Sigurna provjera tipa errora
       if (axios.isAxiosError(err)) {
         // Provjera da err.response.data postoji i da ima message tipa string
-const data = err.response?.data as unknown;
-const serverMsg = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
-  ? (data as { message: string }).message
-  : undefined;
+        const data = err.response?.data as unknown;
+        const serverMsg = (typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message?: unknown }).message === 'string')
+          ? (data as { message: string }).message
+          : undefined;
         setMessage(serverMsg ?? 'Error saving changes.');
       } else if (err instanceof Error) {
         setMessage(typeof err.message === 'string' ? err.message : 'Error saving changes.');
@@ -75,7 +100,7 @@ const serverMsg = (typeof data === 'object' && data !== null && 'message' in dat
   };
 
   return (
-    <form onSubmit={e => void handleSubmit(e)} className="max-w-md mx-auto flex flex-col gap-4 bg-white p-6 rounded shadow">
+    <form onSubmit={e => void handleSubmit(e)} className="flex flex-col gap-4">
       <label htmlFor="newUsername" className="font-medium">New username (optional)</label>
       <input
         id="newUsername"
@@ -146,12 +171,19 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   onSubmit,
   showFixedSuccess
 }) => {
-  
+  // UI rules: Global vs Roles/Permissions are mutually exclusive in UI
+  const isGlobalOn = Boolean(settings.twoFactorGlobalEnabled);
+  const isMembersOn = Boolean(settings.twoFactorMembersEnabled);
+  // Disable roles/permissions controls when Global 2FA is ON or Members toggle is OFF
+  const disableMembersControls = isGlobalOn || !isMembersOn;
+  const disableGlobalToggle = isMembersOn;
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <h2 className="text-lg font-semibold mb-4">Basic System Settings</h2>
-        
+
         <div className="mb-6">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             Member Card Number Length
@@ -170,73 +202,74 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           </p>
         </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold mb-4">Registration rate limit</h2>
+        <hr className="my-6" />
+        <h3 className="text-md font-semibold mb-4">Registration Rate Limit</h3>
 
-        <div className="mb-4 flex items-center justify-between">
-          <label className="block text-gray-700 text-sm font-bold">
-            Enable rate limiting for registrations
-          </label>
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              name="registrationRateLimitEnabled"
-              checked={Boolean(settings.registrationRateLimitEnabled ?? true)}
-              onChange={(e) => {
-                const mockEvent = {
-                  target: {
-                    name: 'registrationRateLimitEnabled',
-                    value: e.target.checked ? 'true' : 'false'
-                  }
-                } as unknown as React.ChangeEvent<HTMLInputElement>;
-                onChange(mockEvent);
-              }}
-              className="sr-only peer"
-            />
-            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
-          </label>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="mb-4 flex items-center justify-between">
+            <label className="block text-gray-700 text-sm font-bold">
+              Enable rate limiting for registrations
+            </label>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="registrationRateLimitEnabled"
+                checked={Boolean(settings.registrationRateLimitEnabled ?? true)}
+                onChange={(e) => {
+                  const mockEvent = {
+                    target: {
+                      name: 'registrationRateLimitEnabled',
+                      value: e.target.checked ? 'true' : 'false'
+                    }
+                  } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  onChange(mockEvent);
+                }}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Window (ms)
+                {` (~ ${Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} min)`}
+              </label>
+              <input
+                type="number"
+                name="registrationWindowMs"
+                min="60000"
+                step="1000"
+                value={Number(settings.registrationWindowMs ?? 3600000)}
+                onChange={onChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Time window for counting attempts (default 1h = 3,600,000 ms). Current value: ~ {Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} minutes.
+              </p>
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Max attempts
+              </label>
+              <input
+                type="number"
+                name="registrationMaxAttempts"
+                min="1"
+                value={Number(settings.registrationMaxAttempts ?? 5)}
+                onChange={onChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              />
+              <p className="text-sm text-gray-500 mt-1">Maximum registration attempts per IP within the window.</p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Window (ms)
-              {` (~ ${Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} min)`}
-            </label>
-            <input
-              type="number"
-              name="registrationWindowMs"
-              min="60000"
-              step="1000"
-              value={Number(settings.registrationWindowMs ?? 3600000)}
-              onChange={onChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Time window for counting attempts (default 1h = 3,600,000 ms). Current value: ~ {Math.round(Number(settings.registrationWindowMs ?? 3600000) / 60000)} minutes.
-            </p>
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Max attempts
-            </label>
-            <input
-              type="number"
-              name="registrationMaxAttempts"
-              min="1"
-              value={Number(settings.registrationMaxAttempts ?? 5)}
-              onChange={onChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-            <p className="text-sm text-gray-500 mt-1">Maximum registration attempts per IP within the window.</p>
-          </div>
-        </div>
-      </div>
+        <hr className="my-6" />
+        <h3 className="text-md font-semibold mb-4">Membership Renewal Date</h3>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Membership Renewal Date
-          </label>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="flex space-x-4">
             <div>
               <label
@@ -287,10 +320,10 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Auto-Termination Date (for unpaid memberships)
-          </label>
+        <hr className="my-6" />
+        <h3 className="text-md font-semibold mb-4">Auto-Termination Date</h3>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="flex space-x-4">
             <div>
               <label
@@ -351,17 +384,16 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
           </div>
         </div>
 
-        {/* Dodana kontrola za vremensku zonu */}
-        <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            System Time Zone
-          </label>
+        <hr className="my-6" />
+        <h3 className="text-md font-semibold mb-4">System Time Zone</h3>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex space-x-4">
             <div className="w-full">
               <select
                 name="timeZone"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                value={settings.timeZone ?? 'Europe/Zagreb'} // Koristi nullish coalescing operator
+                value={settings.timeZone ?? 'Europe/Zagreb'}
                 onChange={onChange}
               >
                 <option value="Europe/Zagreb">Zagreb (UTC+1/UTC+2)</option>
@@ -392,28 +424,227 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <h2 className="text-lg font-semibold mb-4">Security Settings</h2>
-        
-        <div className="text-sm text-gray-500 py-2">
-          <p>Additional security settings will be available in future versions:</p>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Two-factor authentication settings</li>
-            <li>Password complexity rules</li>
-            <li>Session settings</li>
-            <li>Authorization rules</li>
-          </ul>
+
+        <div className="mb-4 flex items-center justify-between">
+          <label className="block text-gray-700 text-sm font-bold">Enable 2FA globally</label>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              name="twoFactorGlobalEnabled"
+              checked={Boolean(settings.twoFactorGlobalEnabled)}
+              onChange={(e) => {
+                const mockEvent = { target: { name: 'twoFactorGlobalEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                onChange(mockEvent);
+              }}
+              disabled={disableGlobalToggle}
+              className="sr-only peer"
+            />
+            <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+          </label>
+        </div>
+        {disableGlobalToggle && (
+          <p className="text-xs text-gray-500 mb-4">Global 2FA is disabled because Roles/Permissions 2FA is active.</p>
+        )}
+
+        <div className="mb-4 flex items-center justify-between">
+          <label className="block text-gray-700 text-sm font-bold">Enable 2FA for members by roles/permissions</label>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              name="twoFactorMembersEnabled"
+              checked={Boolean(settings.twoFactorMembersEnabled)}
+              onChange={(e) => {
+                const mockEvent = { target: { name: 'twoFactorMembersEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                onChange(mockEvent);
+              }}
+              disabled={isGlobalOn}
+              className="sr-only peer"
+            />
+            <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+          </label>
+        </div>
+
+        {/* 2FA Channels and Trusted Devices */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded border">
+            <span className="text-sm font-medium text-gray-700">Enable Email 2FA</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="twoFactorChannelEmailEnabled"
+                checked={Boolean(settings.twoFactorChannelEmailEnabled)}
+                onChange={(e) => {
+                  const mockEvent = { target: { name: 'twoFactorChannelEmailEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  onChange(mockEvent);
+                }}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
+          </div>
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded border">
+            <span className="text-sm font-medium text-gray-700">Enable SMS 2FA</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="twoFactorChannelSmsEnabled"
+                checked={Boolean(settings.twoFactorChannelSmsEnabled)}
+                onChange={(e) => {
+                  const mockEvent = { target: { name: 'twoFactorChannelSmsEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  onChange(mockEvent);
+                }}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
+          </div>
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded border">
+            <span className="text-sm font-medium text-gray-700">Enable TOTP (Authenticator)</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="twoFactorChannelTotpEnabled"
+                checked={Boolean(settings.twoFactorChannelTotpEnabled)}
+                onChange={(e) => {
+                  const mockEvent = { target: { name: 'twoFactorChannelTotpEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  onChange(mockEvent);
+                }}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
+          </div>
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded border">
+            <span className="text-sm font-medium text-gray-700">Enable Trusted Devices</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="twoFactorTrustedDevicesEnabled"
+                checked={Boolean(settings.twoFactorTrustedDevicesEnabled)}
+                onChange={(e) => {
+                  const mockEvent = { target: { name: 'twoFactorTrustedDevicesEnabled', value: e.target.checked ? 'true' : 'false' } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  onChange(mockEvent);
+                }}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Required Roles (CSV)</label>
+            <input
+              type="text"
+              name="twoFactorRequiredMemberRolesCsv"
+              value={(settings.twoFactorRequiredMemberRoles ?? []).join(', ')}
+              onChange={onChange}
+              placeholder="member_administrator, member_superuser"
+              disabled={disableMembersControls}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <p className="text-sm text-gray-500 mt-1">Apply 2FA if member role matches any listed values.</p>
+            {disableMembersControls && (
+              <p className="text-xs text-gray-500 mt-1">
+                {isGlobalOn
+                  ? 'Disabled while Global 2FA is enabled.'
+                  : 'Disabled until "Enable 2FA for members by roles/permissions" is turned on.'}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Required Permissions (CSV)</label>
+            <input
+              type="text"
+              name="twoFactorRequiredMemberPermissionsCsv"
+              value={(settings.twoFactorRequiredMemberPermissions ?? []).join(', ')}
+              onChange={onChange}
+              placeholder="canManageMembers, canEditFinances"
+              disabled={disableMembersControls}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <p className="text-sm text-gray-500 mt-1">Apply 2FA if member has any of these permissions set to true.</p>
+            {disableMembersControls && (
+              <p className="text-xs text-gray-500 mt-1">Disabled while Global 2FA is enabled.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">OTP expiry (seconds)</label>
+            <input
+              type="number"
+              name="twoFactorOtpExpirySeconds"
+              min="60"
+              step="10"
+              value={Number(settings.twoFactorOtpExpirySeconds ?? 300)}
+              onChange={onChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">Default 300s.</p>
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Remember device (days)</label>
+            <input
+              type="number"
+              name="twoFactorRememberDeviceDays"
+              min="1"
+              step="1"
+              value={Number(settings.twoFactorRememberDeviceDays ?? 30)}
+              onChange={onChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">Duration for trusted devices.</p>
+          </div>
         </div>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <h2 className="text-lg font-semibold mb-4">Backup Settings</h2>
-        
-        <div className="text-sm text-gray-500 py-2">
-          <p>Backup settings will be available in future versions:</p>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Frequency of automatic backup creation</li>
-            <li>Storage location</li>
-            <li>Retention settings</li>
-          </ul>
+
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="backupFrequency" className="block text-sm font-medium text-gray-700">Backup Frequency</label>
+            <select
+              id="backupFrequency"
+              name="backupFrequency"
+              value={settings.backupFrequency ?? 'daily'}
+              onChange={onChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="backupRetentionDays" className="block text-sm font-medium text-gray-700">Retention (days)</label>
+            <input
+              type="number"
+              id="backupRetentionDays"
+              name="backupRetentionDays"
+              min="1"
+              value={settings.backupRetentionDays ?? 7}
+              onChange={onChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label htmlFor="backupStorageLocation" className="block text-sm font-medium text-gray-700">Storage Location</label>
+            <select
+              id="backupStorageLocation"
+              name="backupStorageLocation"
+              value={settings.backupStorageLocation ?? 'local'}
+              onChange={onChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+              <option value="local">Local</option>
+              <option value="s3" disabled>Amazon S3 (soon)</option>
+              <option value="gcs" disabled>Google Cloud (soon)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -455,8 +686,6 @@ const SystemManagerSettings: React.FC = () => {
   const [settings, setSettings] = useState<LocalSystemSettings>({
     id: "default",
     cardNumberLength: 5,
-    membershipFee: 0, // Dodano zbog tipa SystemSettings
-    paymentDueMonths: 12, // Dodano zbog tipa SystemSettings
     renewalStartMonth: 11, // Prosinac kao zadana vrijednost
     renewalStartDay: 31,
     timeZone: 'Europe/Zagreb', // Dodana zadana vremenska zona
@@ -467,6 +696,17 @@ const SystemManagerSettings: React.FC = () => {
     registrationRateLimitEnabled: true,
     registrationWindowMs: 60 * 60 * 1000,
     registrationMaxAttempts: 5,
+    // 2FA defaults
+    twoFactorGlobalEnabled: false,
+    twoFactorMembersEnabled: false,
+    twoFactorRequiredMemberRoles: [],
+    twoFactorRequiredMemberPermissions: [],
+    twoFactorOtpExpirySeconds: 300,
+    twoFactorRememberDeviceDays: 30,
+    twoFactorChannelEmailEnabled: false,
+    twoFactorChannelSmsEnabled: false,
+    twoFactorChannelTotpEnabled: true,
+    twoFactorTrustedDevicesEnabled: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -481,7 +721,7 @@ const SystemManagerSettings: React.FC = () => {
         setIsLoading(true);
         const data = await getSystemSettings();
         // Omogući dodatna polja ako ih backend vraća
-        const extended = data as unknown as LocalSystemSettings;
+        const extended = data as LocalSystemSettings;
         if (extended.registrationRateLimitEnabled === undefined) {
           extended.registrationRateLimitEnabled = true;
         }
@@ -491,6 +731,21 @@ const SystemManagerSettings: React.FC = () => {
         if (extended.registrationMaxAttempts === undefined) {
           extended.registrationMaxAttempts = 5;
         }
+        // 2FA defaults ako nedostaju na backendu
+        if (extended.twoFactorGlobalEnabled === undefined) {
+          extended.twoFactorGlobalEnabled = false;
+        }
+        if (extended.twoFactorMembersEnabled === undefined) {
+          extended.twoFactorMembersEnabled = false;
+        }
+        if (!Array.isArray(extended.twoFactorRequiredMemberRoles)) {
+          extended.twoFactorRequiredMemberRoles = [];
+        }
+        if (!Array.isArray(extended.twoFactorRequiredMemberPermissions)) {
+          extended.twoFactorRequiredMemberPermissions = [];
+        }
+        extended.twoFactorOtpExpirySeconds ??= 300;
+        extended.twoFactorRememberDeviceDays ??= 30;
         setSettings(extended);
       } catch (err: unknown) {
         let errorMessage: string;
@@ -517,11 +772,25 @@ const SystemManagerSettings: React.FC = () => {
   // Obrada promjene vrijednosti u poljima
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     // Registracijski rate limit – obrada prekidača i numeričkih polja
     if (name === 'registrationRateLimitEnabled') {
       const boolVal = value === 'true' || value === 'on' || value === '1';
       setSettings(prev => ({ ...prev, registrationRateLimitEnabled: boolVal }));
+      setError(null);
+      return;
+    }
+    // 2FA boolean toggles
+    if (
+      name === 'twoFactorGlobalEnabled' ||
+      name === 'twoFactorMembersEnabled' ||
+      name === 'twoFactorChannelEmailEnabled' ||
+      name === 'twoFactorChannelSmsEnabled' ||
+      name === 'twoFactorChannelTotpEnabled' ||
+      name === 'twoFactorTrustedDevicesEnabled'
+    ) {
+      const boolVal = value === 'true' || value === 'on' || value === '1';
+      setSettings(prev => ({ ...prev, [name]: boolVal }));
       setError(null);
       return;
     }
@@ -537,6 +806,32 @@ const SystemManagerSettings: React.FC = () => {
       setError(null);
       return;
     }
+    // 2FA numeric inputs
+    if (name === 'twoFactorOtpExpirySeconds' || name === 'twoFactorRememberDeviceDays') {
+      const numValue = parseInt(value, 10);
+      if (!Number.isFinite(numValue) || numValue <= 0) {
+        setError(name === 'twoFactorOtpExpirySeconds'
+          ? 'OTP expiry (s) must be a positive number'
+          : 'Remember device (days) must be a positive number');
+        return;
+      }
+      setSettings(prev => ({ ...prev, [name]: numValue }));
+      setError(null);
+      return;
+    }
+    // 2FA CSV arrays
+    if (name === 'twoFactorRequiredMemberRolesCsv') {
+      const csvArray: string[] = value.split(',').map(s => s.trim()).filter(Boolean);
+      setSettings(prev => ({ ...prev, twoFactorRequiredMemberRoles: csvArray }));
+      setError(null);
+      return;
+    }
+    if (name === 'twoFactorRequiredMemberPermissionsCsv') {
+      const csvArray: string[] = value.split(',').map(s => s.trim()).filter(Boolean);
+      setSettings(prev => ({ ...prev, twoFactorRequiredMemberPermissions: csvArray }));
+      setError(null);
+      return;
+    }
 
     if (name === 'renewalStartDay' || name === 'membershipTerminationDay') {
       const numValue = parseInt(value);
@@ -544,19 +839,19 @@ const SystemManagerSettings: React.FC = () => {
         setError('Day must be between 1 and 31');
         return;
       }
-      
+
       setSettings(prev => ({
         ...prev,
         [name]: numValue
       }));
-    } 
+    }
     else if (name === 'cardNumberLength') {
       const numValue = parseInt(value);
       if (numValue < 1 || numValue > 10) {
         setError('Card number length must be between 1 and 10');
         return;
       }
-      
+
       setSettings(prev => ({
         ...prev,
         [name]: numValue
@@ -574,7 +869,7 @@ const SystemManagerSettings: React.FC = () => {
         [name]: value
       }));
     }
-    
+
     setError(null);
   };
 
@@ -588,18 +883,18 @@ const SystemManagerSettings: React.FC = () => {
     try {
       // Dodajemo console.log za debugging
       console.log('Podaci koji se šalju na backend:', settings);
-      
+
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
-      const updatedSettings = await updateSystemSettings(settings as unknown as SystemSettings);
-      setSettings(updatedSettings as unknown as LocalSystemSettings);
+      const updatedSettings = await updateSystemSettings(settings as SystemSettings);
+      setSettings(updatedSettings as LocalSystemSettings);
       setSuccessMessage("Settings successfully updated!");
-      
+
       // Postavi fiksnu poruku o uspjehu
       setShowFixedSuccess(true);
-      
+
       // Osvježi vremensku zonu u kontekstu
       void refreshTimeZone(); // void zbog lint pravila
-      
+
       // Automatski sakrij poruke uspjeha nakon 8 sekundi
       void setTimeout(() => {
         setSuccessMessage(null);
@@ -617,7 +912,7 @@ const SystemManagerSettings: React.FC = () => {
     <div className="min-h-screen bg-gray-50 relative">
       {/* Fiksna poruka o uspjehu na dnu ekrana */}
       {showFixedSuccess && (
-        <div 
+        <div
           className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-600 text-white p-4 rounded-md shadow-lg z-50 flex items-center transition-all duration-500 ease-in-out"
           style={{
             maxWidth: '90%',
@@ -632,27 +927,11 @@ const SystemManagerSettings: React.FC = () => {
           <span className="font-medium text-lg">Settings successfully updated!</span>
         </div>
       )}
-      
 
-      
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Shield className="h-5 w-5 mr-2 text-indigo-600" />
-              System Manager - Settings
-            </h1>
-          </div>
-        </div>
-      </header>
+
 
       {/* Main Content */}
       <main className="container mx-auto p-4">
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg text-white p-6 mb-6">
-          <h1 className="text-2xl font-bold mb-2">System Settings</h1>
-          <p className="opacity-90">System parameter configuration</p>
-        </div>
 
         {/* Quick Links to Advanced Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -703,17 +982,18 @@ const SystemManagerSettings: React.FC = () => {
           </div>
         )}
 
-        <SystemSettingsForm 
+        <SystemSettingsForm
           settings={settings}
           isLoading={isLoading}
           onChange={handleChange}
           onSubmit={e => void handleSubmit(e)} // void zbog lint pravila
           showFixedSuccess={showFixedSuccess}
         />
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold mb-2">Change Password</h2>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-6">
+          <h2 className="text-lg font-semibold mb-4">Change Username & Password</h2>
           <ChangePasswordForm />
-        </section>
+        </div>
       </main>
     </div>
   );

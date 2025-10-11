@@ -1,9 +1,9 @@
 // features/systemManager/components/dashboard/DashboardStats.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, Activity, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { SystemManagerDashboardStats } from '../../utils/systemManagerApi';
 import StatisticCard from './StatisticCard';
+import RecentActivities from './RecentActivities';
 
 // Komponenta za prikaz svih statističkih kartica na dashboardu
 interface DashboardStatsProps {
@@ -13,7 +13,7 @@ interface DashboardStatsProps {
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, setActiveTab }) => {
-  const navigate = useNavigate();
+  const [showRecentActivities, setShowRecentActivities] = useState(false);
 
   // Napomena: Ovaj tip navigacije uzrokuje preusmjeravanje na Login Page
   // TODO: Prilagoditi navigaciju specifično za System Manager područje
@@ -39,16 +39,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
         title="Recent Activities"
         icon={<Activity className="h-6 w-6 text-green-600" />}
         value={stats?.recentActivities ?? 0}
-        subtitle="In the last 24 hours"
+        subtitle="In the last 30 days"
         loading={statsLoading}
-        onClick={() => navigate("/activities")}
+        onClick={() => setShowRecentActivities(!showRecentActivities)}
+        showChevron={true}
+        isExpanded={showRecentActivities}
       />
+      {showRecentActivities && <div className="md:col-span-2 lg:col-span-3"><RecentActivities activities={stats.recentActivitiesList} /></div>}
 
       {/* Kartica registracija koje čekaju */}
       <StatisticCard
         title="Pending Registrations"
         icon={<Shield className="h-6 w-6 text-orange-600" />}
-        value={stats?.pendingApprovals ?? 0}
+        value={stats?.pendingRegistrations ?? 0}
         subtitle="Awaiting Password Assignment"
         loading={statsLoading}
         onClick={() => { void setActiveTab('register-members'); }}

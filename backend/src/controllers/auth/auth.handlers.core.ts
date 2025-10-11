@@ -10,3 +10,10 @@ export {
   assignPasswordHandler,
   debugMemberHandler,
 } from './auth.handlers.member.js';
+export {
+  twoFaInitSetup,
+  twoFaConfirmSetup,
+  twoFaVerify,
+  twoFaDisable,
+  twoFaInitOtp,
+} from './twofa.handlers.js';

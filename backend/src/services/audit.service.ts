@@ -2,6 +2,8 @@
 import { Request } from 'express';
 import auditRepository, { AuditLog } from '../repositories/audit.repository.js';
 import { PerformerType } from '@prisma/client';
+import prisma from '../utils/prisma.js';
+
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -60,8 +62,10 @@ const auditService = {
         req: Request | undefined,
         status: string = 'success',
         affected_member?: number,
-        performer_type?: PerformerType
+        performer_type?: PerformerType,
+        explicit_organization_id?: number | null
     ): Promise<void> {
+        console.log(`[AUDIT SERVICE] logAction pozvan za akciju: ${action_type}`);
         try {
             const ip_address = req ? (req.ip || req.socket.remoteAddress || 'unknown') : 'not available';
             
@@ -75,7 +79,9 @@ const auditService = {
                 ip_address,
                 status,
                 affected_member,
-                finalPerformerType
+                finalPerformerType,
+                req,
+                explicit_organization_id
             );
         } catch (error) {
             console.error('Error logging audit action:', error);
@@ -105,6 +111,15 @@ const auditService = {
             console.error('Error logging audit event:', error);
             // Ne bacaj grešku - samo je logiraj i nastavi
         }
+    },
+
+    async getPaginatedAuditLogs(organizationId: number | null | undefined, page: number, limit: number) {
+        const whereClause = organizationId ? { organization_id: organizationId } : {};
+
+        const total = await prisma.auditLog.count({ where: whereClause });
+        const logs = await auditRepository.getAll(whereClause, (page - 1) * limit, limit);
+
+        return { logs, total };
     },
 
     async getAllLogs(): Promise<AuditLog[]> {

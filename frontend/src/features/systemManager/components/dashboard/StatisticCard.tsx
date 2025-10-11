@@ -1,5 +1,6 @@
 // features/systemManager/components/dashboard/StatisticCard.tsx
 import React from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // Komponenta za prikaz pojedinačne kartice statistike na dashboardu
 interface StatisticCardProps {
@@ -9,6 +10,8 @@ interface StatisticCardProps {
   subtitle?: string;
   loading: boolean;
   onClick?: () => void;
+  showChevron?: boolean;
+  isExpanded?: boolean;
 }
 
 const StatisticCard: React.FC<StatisticCardProps> = ({
@@ -17,7 +20,9 @@ const StatisticCard: React.FC<StatisticCardProps> = ({
   value,
   subtitle,
   loading,
-  onClick
+  onClick,
+  showChevron,
+  isExpanded
 }) => {
   return (
     <div
@@ -26,7 +31,13 @@ const StatisticCard: React.FC<StatisticCardProps> = ({
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-gray-600 font-medium">{title}</h3>
-        {icon}
+        {showChevron ? (
+          <button className="-mr-2 p-1 rounded-full hover:bg-gray-100">
+            {isExpanded ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+          </button>
+        ) : (
+          icon
+        )}
       </div>
       <div className="space-y-2">
         {loading ? (

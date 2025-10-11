@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import prisma from "../../utils/prisma.js";
 import { MemberLoginData } from '@/shared/types/member.js';
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../../config/jwt.config.js';
@@ -231,6 +231,53 @@ export async function loginHandler(
       where: { member_id: member.member_id },
       data: { last_login: new Date() }
     });
+    
+    // 2FA ENFORCEMENT LOGIC (minimalno, bez lomljenja postojećeg ponašanja)
+    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: 1 } });
+    const twoFaGlobal = settings?.twoFactorGlobalEnabled === true;
+    const twoFaMembersEnabled = settings?.twoFactorMembersEnabled === true;
+    const requiredRoles: string[] = Array.isArray(settings?.twoFactorRequiredMemberRoles) ? (settings!.twoFactorRequiredMemberRoles as unknown as string[]) : [];
+    const requiredPerms: string[] = Array.isArray(settings?.twoFactorRequiredMemberPermissions) ? (settings!.twoFactorRequiredMemberPermissions as unknown as string[]) : [];
+
+    const roleRequires = requiredRoles.includes(member.role);
+    const permsObj = (member.permissions ?? {}) as Record<string, boolean>;
+    const permRequires = requiredPerms.some((p) => Boolean(permsObj[p]));
+    const enforceForThisMember = twoFaGlobal || (twoFaMembersEnabled && (roleRequires || permRequires));
+
+    if (enforceForThisMember && member.two_factor_enabled) {
+      // Remember-device bypass: provjeri postoji li valjan cookie za ovaj uređaj
+      const rememberCookie = req.cookies?.twoFaRemember as string | undefined;
+      if (rememberCookie) {
+        try {
+          const userAgentForFp = req.headers['user-agent'] || 'unknown';
+          const clientIpForFp = (req.ip || (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown').toString();
+          const currentFp = Buffer.from(`${userAgentForFp}:${clientIpForFp}`).toString('base64').substring(0, 32);
+          const payload = jwt.verify(rememberCookie, REFRESH_TOKEN_SECRET) as JwtPayload | string;
+          if (typeof payload !== 'string' && payload && Number(payload.id) === member.member_id && (payload as JwtPayload).fp === currentFp) {
+            // Važeći remember-device — preskačemo 2FA drugi korak i nastavljamo niže s izdavanjem tokena
+          } else {
+            const expirySec = (settings?.twoFactorOtpExpirySeconds ?? 300);
+            const challenge = jwt.sign({ id: member.member_id }, REFRESH_TOKEN_SECRET, { expiresIn: `${expirySec}s` });
+            const cookieOptions = generateCookieOptions(req);
+            res.cookie('twoFaChallenge', challenge, { ...cookieOptions, maxAge: expirySec * 1000, path: '/' });
+            return res.status(200).json({ status: 'REQUIRES_2FA' });
+          }
+        } catch {
+          const expirySec = (settings?.twoFactorOtpExpirySeconds ?? 300);
+          const challenge = jwt.sign({ id: member.member_id }, REFRESH_TOKEN_SECRET, { expiresIn: `${expirySec}s` });
+          const cookieOptions = generateCookieOptions(req);
+          res.cookie('twoFaChallenge', challenge, { ...cookieOptions, maxAge: expirySec * 1000, path: '/' });
+          return res.status(200).json({ status: 'REQUIRES_2FA' });
+        }
+      } else {
+        // Nema remember-device — zahtijevaj 2FA
+        const expirySec = (settings?.twoFactorOtpExpirySeconds ?? 300);
+        const challenge = jwt.sign({ id: member.member_id }, REFRESH_TOKEN_SECRET, { expiresIn: `${expirySec}s` });
+        const cookieOptions = generateCookieOptions(req);
+        res.cookie('twoFaChallenge', challenge, { ...cookieOptions, maxAge: expirySec * 1000, path: '/' });
+        return res.status(200).json({ status: 'REQUIRES_2FA' });
+      }
+    }
 
     const accessToken = jwt.sign(
       { id: member.member_id, role: member.role },

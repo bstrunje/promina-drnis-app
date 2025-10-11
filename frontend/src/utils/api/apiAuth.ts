@@ -92,3 +92,47 @@ export const assignPassword = async (memberId: number, password: string, cardNum
     throw new Error('Failed to assign password');
   }
 };
+
+/**
+ * Inicijaliziraj OTP slanje (email ili sms)
+ */
+export const initOtp = async (channel: 'email' | 'sms'): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>(
+    '/auth/2fa/init-otp',
+    { channel },
+    {
+      withCredentials: true,
+      params: { tenant: getCurrentTenant() },
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Verificiraj 2FA kod (TOTP/Email/SMS)
+ */
+export const verify2FA = async (payload: { code: string; channel?: 'totp' | 'email' | 'sms'; rememberDevice?: boolean }): Promise<{ message: string; token: string }> => {
+  const response = await api.post<{ message: string; token: string }>(
+    '/auth/2fa/verify',
+    payload,
+    {
+      withCredentials: true,
+      params: { tenant: getCurrentTenant() },
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Health check koji vraća authenticated i minimalne user info iz tokena
+ */
+export const getAuthHealth = async (): Promise<{ status: 'ok'; authenticated: boolean; user: { member_id: number; role: string } | null }> => {
+  const response = await api.get<{ status: 'ok'; authenticated: boolean; user: { member_id: number; role: string } | null }>(
+    '/auth/health',
+    {
+      withCredentials: true,
+      params: { tenant: getCurrentTenant() },
+    }
+  );
+  return response.data;
+};

@@ -8,6 +8,11 @@ import {
   registerInitialHandler,
   registerMemberHandler,
   searchMembersHandler,
+  twoFaInitSetup,
+  twoFaConfirmSetup,
+  twoFaVerify,
+  twoFaDisable,
+  twoFaInitOtp,
 } from './auth/auth.handlers.core.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
@@ -27,6 +32,13 @@ const authController = {
   assignCardNumber: assignCardNumberHandler,
   assignPassword: assignPasswordHandler,
   debugMember: debugMemberHandler,
+
+  // 2FA Handlers
+  twoFaInitSetup,
+  twoFaConfirmSetup,
+  twoFaVerify,
+  twoFaDisable,
+  twoFaInitOtp,
 };
 
 export default authController;

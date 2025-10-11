@@ -33,6 +33,35 @@ router.get('/search-members', searchRateLimit, authController.searchMembers);
 router.post('/refresh', authController.refreshToken);
 router.post('/logout', authController.logout);
 
+// 2FA rate limiters
+const twoFaSetupRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many 2FA setup attempts, please try again later' }
+});
+const twoFaVerifyRateLimit = createRateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many 2FA verification attempts, please try again later' }
+});
+const twoFaInitOtpRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many OTP requests, please try again later' }
+});
+const twoFaDisableRateLimit = createRateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many disable attempts, please try again later' }
+});
+
+// 2FA endpoints
+router.post('/2fa/setup/init', authMiddleware, twoFaSetupRateLimit, authController.twoFaInitSetup);
+router.post('/2fa/setup/confirm', authMiddleware, twoFaSetupRateLimit, authController.twoFaConfirmSetup);
+router.post('/2fa/verify', twoFaVerifyRateLimit, authController.twoFaVerify);
+router.post('/2fa/disable', authMiddleware, twoFaDisableRateLimit, authController.twoFaDisable);
+router.post('/2fa/init-otp', twoFaInitOtpRateLimit, authController.twoFaInitOtp);
+
 // Health check endpoint za provjeru valjanosti tokena
 router.get('/health', authMiddleware, (req, res) => {
   // Ako smo došli do ovdje, token je valjan

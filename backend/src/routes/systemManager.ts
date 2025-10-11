@@ -22,7 +22,7 @@ router.post('/refresh-token', refreshToken);
 router.post('/logout', logoutHandler);
 
 // Provjera postoji li system manager u sustavu (potrebno za inicijalno postavljanje)
-router.get('/exists', systemManagerController.checkSystemManagerExists);
+router.get('/exists', systemManagerController.systemManagerExists);
 
 // Zaštićene rute - zahtijevaju SystemManager autentikaciju
 router.use(authMiddleware, roles.requireSystemManager);
@@ -55,8 +55,8 @@ router.post('/update-permissions', systemManagerController.updateMemberPermissio
 router.delete('/member-permissions/:memberId', systemManagerController.removeMemberPermissions);
 
 // Rute za upravljanje članovima (System Manager)
-router.get('/members', systemManagerController.getAllMembersForSystemManager);
-router.delete('/members/:memberId', systemManagerController.deleteMemberForSystemManager);
+router.get('/members', systemManagerController.getAllMembers);
+router.delete('/members/:memberId', systemManagerController.deleteMember);
 
 // Rute za upravljanje članovima sa statusom 'pending'
 router.get('/pending-members', systemManagerController.getPendingMembers);
@@ -64,12 +64,12 @@ router.post('/assign-password', systemManagerController.assignPasswordToMember);
 router.post('/assign-role', systemManagerController.assignRoleToMember);
 
 // Ruta za dohvat profila trenutnog managera
-router.get('/me', systemManagerController.getCurrentSystemManager);
+// router.get('/me', systemManagerController.getCurrentSystemManager);
 
 // Rute za upravljanje sistemskim zdravljem
-router.get('/system-health', systemManagerController.getSystemHealth);
-router.post('/system-backup', systemManagerController.createSystemBackup);
-router.post('/system-restore', systemManagerController.restoreSystemBackup);
+// router.get('/system-health', systemManagerController.getSystemHealth);
+// router.post('/system-backup', systemManagerController.createSystemBackup);
+// router.post('/system-restore', systemManagerController.restoreSystemBackup);
 
 // --- RUTE ZA UPRAVLJANJE PRAZNICIMA (Holidays Management) ---
 router.get('/holidays', holidayController.getAllHolidays);
