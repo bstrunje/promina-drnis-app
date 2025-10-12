@@ -95,6 +95,14 @@ export const checkSubdomainAvailability = async (subdomain: string): Promise<{ a
 };
 
 /**
+ * Reset credentials for an organization's System Manager
+ */
+export const resetOrganizationManagerCredentials = async (organizationId: number): Promise<{ message: string }> => {
+  const response = await systemManagerApi.post<{ message: string }>(`/system-manager/organizations/${organizationId}/reset-credentials`);
+  return response.data;
+};
+
+/**
  * Kreiranje nove organizacije (samo globalni System Manager)
  */
 export const createOrganization = async (data: CreateOrganizationData): Promise<{ success: boolean; organization: Organization; message: string }> => {

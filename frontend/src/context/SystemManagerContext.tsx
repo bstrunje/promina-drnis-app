@@ -5,10 +5,20 @@ import { systemManagerLogin, systemManagerLogout, systemManagerRefreshToken } fr
 import { SystemManagerLoginData, SystemManager } from '@shared/systemManager';
 
 // Definicija tipa za kontekst
+// Definicija tipa za odgovor login funkcije
+interface LoginResponse {
+  token?: string;
+  manager?: SystemManager;
+  twoFactorRequired?: boolean;
+  resetRequired?: boolean;
+  tempToken?: string;
+}
+
+// Definicija tipa za kontekst
 interface SystemManagerContextType {
   isAuthenticated: boolean;
   manager: SystemManager | null;
-  login: (credentials: SystemManagerLoginData) => Promise<void>;
+  login: (credentials: SystemManagerLoginData) => Promise<LoginResponse>;
   logout: () => void;
   loading: boolean;
   refreshManager: () => Promise<void>;
@@ -19,7 +29,7 @@ interface SystemManagerContextType {
 const defaultContext: SystemManagerContextType = {
   isAuthenticated: false,
   manager: null,
-  login: () => Promise.resolve(), // Implementacija će biti dostavljena kroz Provider
+  login: () => Promise.resolve({}), // Implementacija će biti dostavljena kroz Provider
   logout: () => { /* Implementacija će biti dostavljena kroz Provider */ },
   loading: true,
   refreshManager: () => Promise.resolve(), // Implementacija će biti dostavljena kroz Provider
@@ -136,38 +146,31 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   }, [setManager, setIsAuthenticated]);
 
   // Funkcija za prijavu
-  const login = React.useCallback(async (credentials: SystemManagerLoginData) => {
+  const login = React.useCallback(async (credentials: SystemManagerLoginData): Promise<LoginResponse> => {
     setLoading(true);
     try {
       const response = await systemManagerLogin(credentials);
-      const managerData: SystemManager = response.manager;
 
-      // KLJUČAN ISPRAVAK: Spremanje tokena i podataka u localStorage
-      localStorage.setItem('systemManagerToken', response.token);
-      localStorage.setItem('systemManager', JSON.stringify(managerData));
+      // Ako je login uspješan i ne zahtijeva dodatne korake
+      if (response.token && response.manager) {
+        const managerData: SystemManager = response.manager;
+        localStorage.setItem('systemManagerToken', response.token);
+        localStorage.setItem('systemManager', JSON.stringify(managerData));
 
-      setManager(managerData);
-      setIsAuthenticated(true);
-      
-      console.log('[SM-LOGIN] Manager data:', managerData);
-      console.log('[SM-LOGIN] organization_id:', managerData.organization_id);
-      console.log('[SM-LOGIN] organization_id type:', typeof managerData.organization_id);
-      console.log('[SM-LOGIN] Is null?', managerData.organization_id === null);
-      console.log('[SM-LOGIN] Is undefined?', managerData.organization_id === undefined);
-      console.log('[SM-LOGIN] Raw response:', response);
-      
-      // Global System Manager (organization_id = null) ide na Organizations
-      // Org-specific System Manager ide na Dashboard
-      if (managerData.organization_id === null) {
-        console.log('[SM-LOGIN] Redirecting to Organizations');
-        navigate('/system-manager/organizations');
-      } else {
-        console.log('[SM-LOGIN] Redirecting to Dashboard');
-        navigate('/system-manager/dashboard');
+        setManager(managerData);
+        setIsAuthenticated(true);
+
+        if (managerData.organization_id === null) {
+          navigate('/system-manager/organizations');
+        } else {
+          navigate('/system-manager/dashboard');
+        }
       }
+
+      // Vrati cijeli odgovor da ga pozivatelj može obraditi
+      return response;
     } catch (error) {
       console.error('Greška prilikom prijave:', error);
-      // Osiguravamo čišćenje u slučaju neuspjele prijave
       localStorage.removeItem('systemManagerToken');
       localStorage.removeItem('systemManager');
       throw error;

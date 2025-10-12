@@ -426,6 +426,30 @@ VITE_API_BASE_URL=http://localhost:3001/api
 
 ---
 
+--- 
+
+## 🛠️ DODATNE FUNKCIONALNOSTI I ISPRAVCI (2025-10-13)
+
+### 1. Resetiranje Lozinke za System Managera
+
+Globalni System Manager sada ima mogućnost resetirati lozinku za bilo kojeg org-specific System Managera.
+
+**Proces:**
+1.  **Inicijacija**: Global Manager u sučelju za upravljanje organizacijom odabire opciju "Reset Credentials".
+2.  **Backend Akcija**: Poziva se `resetOrganizationManagerCredentials` funkcija koja:
+    *   Postavlja lozinku na privremenu vrijednost (`manager123`).
+    *   Postavlja zastavicu `password_reset_required` na `true`.
+    *   **Korisničko ime ostaje nepromijenjeno**.
+3.  **Prijava System Managera**: Pogođeni System Manager se prijavljuje sa svojim starim korisničkim imenom i novom, privremenom lozinkom.
+4.  **Prisilna Promjena Lozinke**: Sustav ga automatski preusmjerava na stranicu gdje mora postaviti novu, trajnu lozinku.
+
+### 2. Ispravak Prikaza Postavki za Global Managera
+
+- **Problem**: Aplikacija se rušila (`500 Internal Server Error`) kada bi Global Manager pokušao pristupiti stranici s postavkama, jer nije vezan za specifičnu organizaciju.
+- **Rješenje**: Funkcija `getSystemSettings` je ispravljena. Sada prepoznaje Global Managera (`organization_id === null`) i vraća `null` umjesto da pokušava dohvatiti nepostojeće postavke. Frontend ispravno prikazuje prazno stanje bez grešaka.
+
+--- 
+
 ## 🔮 BUDUĆA POBOLJŠANJA
 
 1. **Logo Upload** - Multer endpoint za upload logo-a

@@ -2,6 +2,7 @@
 import express from 'express';
 import multer from 'multer';
 import * as organizationController from '../controllers/organization.controller.js';
+import { resetOrganizationManagerCredentials } from '../controllers/systemManager.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 import { 
   requireGlobalSystemManager, 
@@ -64,6 +65,14 @@ router.get('/', requireGlobalSystemManager, organizationController.getAllOrganiz
  * SAMO globalni System Manager
  */
 router.delete('/:id', requireGlobalSystemManager, organizationController.deleteOrganization);
+
+/**
+ * Resetiranje kredencijala za System Managera organizacije
+ * POST /api/system-manager/organizations/:id/reset-credentials
+ * 
+ * SAMO globalni System Manager
+ */
+router.post('/:id/reset-credentials', requireGlobalSystemManager, resetOrganizationManagerCredentials);
 
 // ============================================================================
 // RUTE S PROVJEROM PRISTUPA

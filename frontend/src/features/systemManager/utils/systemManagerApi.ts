@@ -3,6 +3,19 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../../../utils/config';
 import { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto, SystemManagerLoginResponse } from '@shared/systemManager';
 import { SystemSettings } from '@shared/settings';
+
+// Tipovi za 2FA i force password change flow
+export interface Verify2faResponse {
+  resetRequired?: boolean;
+  tempToken?: string;
+  token?: string;
+  manager?: SystemManager;
+}
+
+export interface ChangePasswordResponse {
+  token: string;
+  manager: SystemManager;
+}
 import { Member } from '@shared/member';
 import { navigateToSystemManagerPath } from '../hooks/useSystemManagerNavigation';
 
@@ -811,6 +824,16 @@ export const deleteHolidaysForYear = async (year: number): Promise<{ count: numb
     }
     throw error;
   }
+};
+
+export const verify2faAndProceed = async (tempToken: string, code: string): Promise<Verify2faResponse> => {
+  const response = await systemManagerApi.post<Verify2faResponse>('/system-manager/verify-2fa', { tempToken, code });
+  return response.data;
+};
+
+export const forceChangePassword = async (tempToken: string, newPassword: string): Promise<ChangePasswordResponse> => {
+  const response = await systemManagerApi.post<ChangePasswordResponse>('/system-manager/force-change-password', { tempToken, newPassword });
+  return response.data;
 };
 
 export default systemManagerApi;

@@ -1,11 +1,13 @@
 // features/systemManager/pages/login/SystemManagerLoginPage.tsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import logoImage from '../../../../assets/images/grbPD_bez_natpisa_pozadina.png';
 
 const SystemManagerLoginPage: React.FC = () => {
-  const { login } = useSystemManager(); // 'loading' nije korišten
+  const { login } = useSystemManager();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +26,15 @@ const SystemManagerLoginPage: React.FC = () => {
     setIsLoggingIn(true);
     
     try {
-      await login({ username, password });
+      const response = await login({ username, password });
+
+      if (response.twoFactorRequired) {
+        navigate('/system-manager/verify-2fa', { state: { tempToken: response.tempToken } });
+      } else if (response.resetRequired) {
+        navigate('/system-manager/force-change-password', { state: { tempToken: response.tempToken } });
+      }
+      // Uspješan login bez dodatnih koraka se rješava unutar useSystemManager hooka
+
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);

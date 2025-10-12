@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -30,7 +30,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
       // Umjesto direktnog axios poziva koristimo centralizirani servis s single-flight zaštitom
       await AuthTokenService.refreshToken();
     } catch (error: unknown) {
-      // Namjerno bez odjave ovdje; odjavu koordiniraju AuthTokenService/axios interceptori po potrebi
+      // Greška se logira unutar AuthTokenService, nema potrebe za dodatnim logiranjem
     }
   }, []);
 

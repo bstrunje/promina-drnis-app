@@ -554,6 +554,7 @@ model SystemManager {
   two_factor_secret         String?      @db.VarChar(255)
   two_factor_recovery_codes_hash Json?
   two_factor_preferred_channel String?   @db.VarChar(10)
+  password_reset_required      Boolean      @default(false)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
 

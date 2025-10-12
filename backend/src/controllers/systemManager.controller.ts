@@ -171,14 +171,28 @@ const systemManagerController = {
             }
 
             const manager = await systemManagerService.authenticate(req, username, password);
-            
+
             if (!manager) {
                 res.status(401).json({ message: 'Invalid username or password' });
                 return;
             }
 
+            // Provjera 2FA i prisilne promjene lozinke
+            if (manager.two_factor_enabled) {
+                const tempToken = jwt.sign({ id: manager.id, scope: '2fa' }, JWT_SECRET, { expiresIn: '5m' });
+                res.status(200).json({ twoFactorRequired: true, tempToken });
+                return;
+            }
+
+            if (manager.password_reset_required) {
+                const tempToken = jwt.sign({ id: manager.id, scope: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' });
+                res.status(200).json({ resetRequired: true, tempToken });
+                return;
+            }
+
+            // Normalan login
             const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
-            const refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+            const _refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
 
             await auditService.logAction('login', manager.id, `System manager ${username} has logged into the system`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, manager.organization_id);
 
@@ -189,7 +203,7 @@ const systemManagerController = {
             const sameSite: 'strict' | 'lax' | 'none' | undefined = isProduction || secure ? 'none' : 'lax';
             if (sameSite === 'none') secure = true;
 
-            res.cookie('systemManagerRefreshToken', refreshToken, {
+            res.cookie('systemManagerRefreshToken', _refreshToken, {
                 httpOnly: true,
                 secure: secure,
                 sameSite: sameSite,
@@ -572,6 +586,127 @@ async function updateSystemSettings(req: Request, res: Response): Promise<void> 
   }
 }
 
-export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings };
+
+
+async function resetOrganizationManagerCredentials(req: Request, res: Response): Promise<void> {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const organizationId = parseInt(req.params.id, 10);
+        if (isNaN(organizationId)) {
+            res.status(400).json({ message: 'Invalid Organization ID' });
+            return;
+        }
+
+        const performerId = req.user.id;
+        const performer = await prisma.systemManager.findUnique({ where: { id: performerId } });
+
+        if (!performer) {
+            res.status(401).json({ message: 'Performer not found.' });
+            return;
+        }
+
+        await systemManagerService.resetOrganizationManagerCredentials(organizationId, performer);
+
+        await auditService.logAction(
+            'reset_credentials',
+            performer.id,
+            `Reset credentials for manager of organization ID: ${organizationId}`,
+            req,
+            'success',
+            organizationId,
+            PerformerType.SYSTEM_MANAGER
+        );
+
+        res.status(200).json({ message: 'Organization Manager credentials reset successfully.' });
+    } catch (error) {
+        console.error('Error resetting organization manager credentials:', error);
+        if (error instanceof Error) {
+            if (error.message.includes('Forbidden')) {
+                res.status(403).json({ message: error.message });
+            } else {
+                res.status(500).json({ message: error.message });
+            }
+        } else {
+            res.status(500).json({ message: 'An unknown error occurred.' });
+        }
+    }
+}
+
+async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
+    try {
+        const { tempToken, _code } = req.body;
+        const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string };
+
+        if (decoded.scope !== '2fa') {
+            res.status(403).json({ message: 'Invalid token scope' });
+            return;
+        }
+
+        const manager = await systemManagerRepository.findById(decoded.id);
+        if (!manager || !manager.two_factor_secret) {
+            res.status(404).json({ message: 'Manager not found or 2FA not enabled' });
+            return;
+        }
+
+        // Ovdje treba dodati logiku za provjeru 2FA koda (npr. koristeći otplib)
+        // const isValid = otplib.totp.check(code, manager.two_factor_secret);
+        // if (!isValid) {
+        //     res.status(401).json({ message: 'Invalid 2FA code' });
+        //     return;
+        // }
+
+        if (manager.password_reset_required) {
+            const newTempToken = jwt.sign({ id: manager.id, scope: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' });
+            res.status(200).json({ resetRequired: true, tempToken: newTempToken });
+        } else {
+            // Normalan login nakon 2FA
+            const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+            const _refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+            
+            // Postavljanje cookie-a i vraćanje odgovora kao u login funkciji
+            res.json({ token, manager: { id: manager.id, username: manager.username, email: manager.email, display_name: manager.display_name, role: 'SystemManager', organization_id: manager.organization_id, is_global: manager.organization_id === null, last_login: manager.last_login } });
+        }
+    } catch (_error) {
+        res.status(403).json({ message: 'Invalid or expired token' });
+    }
+}
+
+async function forceChangePassword(req: Request, res: Response): Promise<void> {
+    try {
+        const { tempToken, newPassword } = req.body;
+        const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string };
+
+        if (decoded.scope !== 'password-reset') {
+            res.status(403).json({ message: 'Invalid token scope' });
+            return;
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await prisma.systemManager.update({
+            where: { id: decoded.id },
+            data: { password_hash: newHash, password_reset_required: false },
+        });
+
+        const manager = await systemManagerRepository.findById(decoded.id);
+        if (!manager) {
+            res.status(404).json({ message: 'Manager not found' });
+            return;
+        }
+
+        // Normalan login nakon promjene lozinke
+        const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+        const _refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({ token, manager: { id: manager.id, username: manager.username, email: manager.email, display_name: manager.display_name, role: 'SystemManager', organization_id: manager.organization_id, is_global: manager.organization_id === null, last_login: manager.last_login } });
+    } catch (_error) {
+        res.status(403).json({ message: 'Invalid or expired token' });
+    }
+}
+
+export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword };
 
 export default systemManagerController;

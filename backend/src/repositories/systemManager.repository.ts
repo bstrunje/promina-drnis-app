@@ -73,7 +73,8 @@ const systemManagerRepository = {
                 username: managerData.username,
                 email: managerData.email ?? '',
                 password_hash: passwordHash,
-                display_name: managerData.display_name ?? ''
+                display_name: managerData.display_name ?? '',
+                password_reset_required: true
             }
         });
     },

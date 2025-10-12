@@ -3,6 +3,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SystemManagerProvider, useSystemManager } from '../../context/SystemManagerContext';
 import SystemManagerLoginPage from './pages/login/SystemManagerLoginPage';
+import TwoFactorEntryPage from './pages/login/TwoFactorEntryPage';
+import ForcePasswordChangePage from './pages/login/ForcePasswordChangePage';
 import SystemManagerDashboard from './pages/dashboard/SystemManagerDashboard';
 import SystemManagerAuditLogs from './pages/auditLogs/SystemManagerAuditLogs';
 import HolidaysManager from './HolidaysManager';
@@ -38,6 +40,14 @@ const SystemManagerRoutesContent: React.FC = () => {
       <Route 
         path="/login" 
         element={<SystemManagerLoginPage />} 
+      />
+      <Route 
+        path="/verify-2fa" 
+        element={<TwoFactorEntryPage />} 
+      />
+      <Route 
+        path="/force-change-password" 
+        element={<ForcePasswordChangePage />} 
       />
       <Route 
         path="/dashboard" 

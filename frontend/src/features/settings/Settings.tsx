@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useTranslation } from 'react-i18next';
-import { SystemSettings } from "@shared/settings.types";
+
+import { SystemSettings } from "@shared/settings";
 import { Alert, AlertDescription } from "@components/ui/alert";
  
 import { getCurrentDate } from "../../utils/dateUtils";
@@ -13,7 +13,6 @@ import CardNumberManagement from './CardNumberManagement';
 // const MONTHS = ['Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj', 'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'];
 
 const Settings: React.FC = () => {
-  const { t } = useTranslation('settings');
   const { user } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [settings, setSettings] = useState<SystemSettings>({
@@ -55,7 +54,7 @@ const Settings: React.FC = () => {
   return (
     <div className="p-6">
       <div className="bg-gradient-to-r from-purple-600 to-blue-800 rounded-lg text-white p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">{t('settings.title')}</h1>
+        <h1 className="text-2xl font-bold mb-2">Settings</h1>
       </div>
 
 

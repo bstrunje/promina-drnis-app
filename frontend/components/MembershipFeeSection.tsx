@@ -693,7 +693,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       <Button
                         size="sm"
                         variant="default"
-                        onClick={() => { void handleHistorySave(); } }
+                        onClick={() => void handleHistorySave()}
                         disabled={isSubmittingHistory}
                       >
                         <Save className="h-4 w-4 mr-1" />

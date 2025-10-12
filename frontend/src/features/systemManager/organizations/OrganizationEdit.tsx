@@ -10,15 +10,18 @@ import { Label } from '@components/ui/label';
 import { 
   getOrganizationById,
   updateOrganization,
+  resetOrganizationManagerCredentials,
   type Organization,
   type UpdateOrganizationData 
 } from '../../../utils/api/apiOrganizations';
 import { IMAGE_BASE_URL } from '../../../utils/config';
+import { useSystemManager } from '../../../context/SystemManagerContext';
 import { getApiBaseUrl } from '../../../utils/tenantUtils';
 
 const OrganizationEdit: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { manager: currentManager } = useSystemManager();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +155,20 @@ const OrganizationEdit: React.FC = () => {
   const handleRemoveLogo = (): void => {
     setLogoFile(null);
     setLogoPreview(null);
+  };
+
+  const handleResetCredentials = async (): Promise<void> => {
+    if (!id || !window.confirm('Are you sure you want to reset credentials for this organization\'s manager? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      setError(null);
+      const response = await resetOrganizationManagerCredentials(parseInt(id));
+      alert(response.message); // Prikazujemo poruku u alertu
+    } catch (err) {
+      console.error('Error resetting credentials:', err);
+      setError('Failed to reset credentials.');
+    }
   };
 
   if (loading) {
@@ -465,6 +482,27 @@ const OrganizationEdit: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {currentManager?.organization_id === null && (
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-semibold mb-2">Danger Zone</h3>
+                <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Reset Credentials</h4>
+                      <p className="text-sm text-gray-600">This will reset password to "manager123".</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => void handleResetCredentials()}
+                    >
+                      Reset Credentials
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2 pt-4">
               <Button

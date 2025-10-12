@@ -87,7 +87,7 @@ type DefaultSuperuserPermissionsResponse = {
 };
 
 const systemManagerService = {
-    async authenticate(req: Request, username: string, password: string): Promise<Omit<SystemManager, 'password_hash'> | null> {
+    async authenticate(req: Request, username: string, password: string): Promise<(Omit<SystemManager, 'password_hash'> & { password_reset_required: boolean }) | null> {
         const tenantParamRaw = (req.query?.tenant ?? req.query?.branding) as unknown;
         let tenantParam: string | undefined;
         if (Array.isArray(tenantParamRaw)) {
@@ -116,7 +116,7 @@ const systemManagerService = {
             }
         };
 
-        const checkCandidate = async (candidate: SystemManager | null): Promise<Omit<SystemManager, 'password_hash'> | null> => {
+        const checkCandidate = async (candidate: SystemManager | null): Promise<(Omit<SystemManager, 'password_hash'> & { password_reset_required: boolean }) | null> => {
             if (!candidate || !candidate.password_hash) return null;
             const ok = await bcrypt.compare(password, candidate.password_hash);
             if (!ok) return null;
@@ -286,18 +286,23 @@ const systemManagerService = {
         }
     },
 
-    async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
+    async getSystemSettings(req: Request): Promise<SystemSettingsExtended | null> {
         try {
-            let organizationId: number;
-            try {
-                organizationId = getOrganizationId(req);
-            } catch (_e) {
-                if (!req.user) throw new Error('Organization context nije dostupan i korisnik nije autentificiran');
-                const mgr = await prisma.systemManager.findUnique({ where: { id: req.user.id }, select: { organization_id: true } });
-                if (!mgr?.organization_id) throw new Error('Organization context nije moguće odrediti za System Managera');
-                organizationId = mgr.organization_id;
+            if (!req.user) {
+                throw new Error('User not authenticated');
+            }
+
+            const organizationId = req.user.organization_id;
+
+            // Ako je Global Manager, nema postavki, vraćamo null
+            if (organizationId === null) {
+                return null;
             }
             
+            if (organizationId === null) {
+                // Ovo se ne bi trebalo dogoditi zbog provjere na početku, ali za svaki slučaj
+                return null;
+            }
             const settings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } });
             
             const defaultSettings: SystemSettingsExtended = {
@@ -328,7 +333,7 @@ const systemManagerService = {
                 twoFactorRequiredMemberPermissions: []
             };
 
-            if (!settings) return defaultSettings;
+            if (!settings) return { ...defaultSettings, id: 'new' }; // Vraćamo 'new' da frontend zna da postavke ne postoje
             
             return {
                 ...defaultSettings,
@@ -601,6 +606,33 @@ const systemManagerService = {
         return prisma.member.update({
             where: whereClause,
             data: { role },
+        });
+    },
+
+
+
+    async resetOrganizationManagerCredentials(organizationId: number, performer: SystemManager): Promise<void> {
+        if (performer.organization_id !== null) {
+            throw new Error('Forbidden: Only Global Managers can perform this action.');
+        }
+
+        const managerToReset = await prisma.systemManager.findFirst({
+            where: { organization_id: organizationId },
+        });
+
+        if (!managerToReset) {
+            throw new Error('Manager for this organization not found.');
+        }
+
+        const newPassword = 'manager123';
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.systemManager.update({
+            where: { id: managerToReset.id },
+            data: {
+                password_hash: hashedPassword,
+                password_reset_required: true,
+            },
         });
     },
 };

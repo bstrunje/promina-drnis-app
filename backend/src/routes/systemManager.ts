@@ -9,6 +9,8 @@ import systemManagerController, {
   updateDutySettings,
   getSystemSettings,
   updateSystemSettings,
+  verify2faAndProceed,
+  forceChangePassword,
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
@@ -18,6 +20,8 @@ const router = express.Router();
 
 // Javne rute (bez autentikacije)
 router.post('/login', systemManagerController.login);
+router.post('/verify-2fa', verify2faAndProceed);
+router.post('/force-change-password', forceChangePassword);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', logoutHandler);
 
