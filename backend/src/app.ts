@@ -22,6 +22,7 @@ import membershipRoutes from './routes/membership.routes.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
+import { sanitizationMiddleware } from './middleware/sanitization.middleware.js';
 import auditRoutes from './routes/audit.js';
 import adminMessagesRouter from './routes/admin.messages.js';
 
@@ -280,6 +281,10 @@ app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
 
 // LOCALE MIDDLEWARE - Mora biti NAKON tenantMiddleware jer koristi req.organization.default_language
 app.use('/api', localeMiddleware); // Multi-tenant language detection
+
+// SANITIZATION MIDDLEWARE - Automatski sanitizira member podatke u svim response-ovima
+// Mora biti NAKON locale/tenant middleware, ali PRIJE routes
+app.use(sanitizationMiddleware);
 
 // Public routes (bez authMiddleware)
 app.use('/api', orgConfigRoutes); // Public org config endpoints

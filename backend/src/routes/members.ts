@@ -79,7 +79,10 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.get('/unread-count', authenticateToken, memberMessageController.getUnreadMessageCount);
 router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
 
+// Lista svih članova - sanitizacija automatski skriva osjetljive podatke u Network tab-u
 router.get('/', authenticateToken, memberController.getAllMembers);
+
+// Pojedinačni profil - sanitizacija automatski skriva osjetljive podatke osim za vlastiti profil
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
 router.get('/:memberId/stats', authenticateToken, memberStatsController.getMemberStats);
 router.get('/:memberId/annual-stats', authenticateToken, memberStatsController.getMemberAnnualStats);
