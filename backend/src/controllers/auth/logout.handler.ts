@@ -5,7 +5,7 @@ import { tOrDefault } from '../../utils/i18n.js';
 
 // Funkcija za odjavu korisnika i poništavanje refresh tokena
 export async function logoutHandler(req: Request, res: Response): Promise<void | Response> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   const { refreshToken, systemManagerRefreshToken } = req.cookies;
   const tokenToClear = refreshToken || systemManagerRefreshToken;
   const cookieNameToClear = refreshToken ? 'refreshToken' : 'systemManagerRefreshToken';

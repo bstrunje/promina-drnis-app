@@ -22,7 +22,7 @@ export async function registerInitialHandler(
   >,
   res: Response
 ): Promise<void> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     // Dohvati organization_id iz tenant middleware-a
     let organizationId: number;
@@ -99,7 +99,7 @@ export async function registerMemberHandler(
   >,
   res: Response
 ): Promise<void> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     // Dohvati organization_id iz tenant middleware-a
     let organizationId: number;

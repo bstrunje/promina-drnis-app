@@ -26,6 +26,7 @@ type LocalSystemSettings = SystemSettings & {
   twoFactorChannelSmsEnabled?: boolean | null;
   twoFactorChannelTotpEnabled?: boolean | null;
   twoFactorTrustedDevicesEnabled?: boolean | null;
+  passwordGenerationStrategy?: 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREFIX_CARD_SUFFIX' | null;
 };
 
 interface SystemSettingsFormProps {
@@ -201,6 +202,90 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             Defines the length of member card numbers.
           </p>
         </div>
+
+        <div className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Password Generation Strategy
+          </label>
+          <select
+            name="passwordGenerationStrategy"
+            value={settings.passwordGenerationStrategy ?? 'FULLNAME_ISK_CARD'}
+            onChange={onChange}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          >
+            <option value="FULLNAME_ISK_CARD">Full Name + Separator + Card Number</option>
+            <option value="RANDOM_8">Random 8 Characters</option>
+            <option value="EMAIL_PREFIX_CARD_SUFFIX">Email Prefix + Card Digits</option>
+          </select>
+          <p className="text-sm text-gray-500 mt-1">
+            Choose the method for automatically generating member passwords.
+          </p>
+          
+          {/* Prikaz primjera za odabranu strategiju */}
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm font-semibold text-blue-800 mb-1">Password Example:</p>
+            <p className="text-sm text-blue-700">
+              {settings.passwordGenerationStrategy === 'RANDOM_8' && (
+                <>
+                  <strong>a3f7b2c9</strong> - Random 8 hexadecimal characters
+                </>
+              )}
+              {(settings.passwordGenerationStrategy === 'FULLNAME_ISK_CARD' || !settings.passwordGenerationStrategy) && (
+                <>
+                  <strong>Božo Božić{settings.passwordSeparator ?? '-isk-'}{String(settings.cardNumberLength ?? 5).padStart(settings.cardNumberLength ?? 5, '0').replace(/./g, '3')}</strong>
+                  {' '}- Full name + separator + card number
+                </>
+              )}
+              {settings.passwordGenerationStrategy === 'EMAIL_PREFIX_CARD_SUFFIX' && (
+                <>
+                  <strong>bozo.bozic{String(settings.cardNumberLength ?? 5).padStart(settings.passwordCardDigits ?? 4, '3').slice(-(settings.passwordCardDigits ?? 4))}</strong>
+                  {' '}- Email prefix + last {settings.passwordCardDigits ?? 4} digits of card number
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Separator field - prikazuje se samo za FULLNAME_ISK_CARD strategiju */}
+        {(settings.passwordGenerationStrategy === 'FULLNAME_ISK_CARD' || !settings.passwordGenerationStrategy) && (
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Password Separator
+            </label>
+            <input
+              type="text"
+              name="passwordSeparator"
+              value={settings.passwordSeparator ?? '-isk-'}
+              onChange={onChange}
+              placeholder="-isk-"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Custom separator between full name and card number (e.g., "-isk-", "-pd-", "_").
+            </p>
+          </div>
+        )}
+
+        {/* Card digits field - prikazuje se samo za EMAIL_PREFIX_CARD_SUFFIX strategiju */}
+        {settings.passwordGenerationStrategy === 'EMAIL_PREFIX_CARD_SUFFIX' && (
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Card Number Digits to Use
+            </label>
+            <input
+              type="number"
+              name="passwordCardDigits"
+              min="1"
+              max={settings.cardNumberLength ?? 5}
+              value={settings.passwordCardDigits ?? 4}
+              onChange={onChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Number of last digits from card number to use in password (max: {settings.cardNumberLength ?? 5} based on card length setting).
+            </p>
+          </div>
+        )}
 
         <hr className="my-6" />
         <h3 className="text-md font-semibold mb-4">Registration Rate Limit</h3>
@@ -682,7 +767,9 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 
 const SystemManagerSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { manager } = useSystemManager();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
+  
   const [settings, setSettings] = useState<LocalSystemSettings>({
     id: "default",
     cardNumberLength: 5,
@@ -707,6 +794,10 @@ const SystemManagerSettings: React.FC = () => {
     twoFactorChannelSmsEnabled: false,
     twoFactorChannelTotpEnabled: true,
     twoFactorTrustedDevicesEnabled: false,
+    // Password generation defaults
+    passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
+    passwordSeparator: '-isk-',
+    passwordCardDigits: 4,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -746,6 +837,9 @@ const SystemManagerSettings: React.FC = () => {
         }
         extended.twoFactorOtpExpirySeconds ??= 300;
         extended.twoFactorRememberDeviceDays ??= 30;
+        extended.passwordGenerationStrategy ??= 'FULLNAME_ISK_CARD';
+        extended.passwordSeparator ??= '-isk-';
+        extended.passwordCardDigits ??= 4;
         setSettings(extended);
       } catch (err: unknown) {
         let errorMessage: string;
@@ -863,10 +957,22 @@ const SystemManagerSettings: React.FC = () => {
         [name]: parseInt(value)
       }));
     }
-    else if (name === 'timeZone') {
+    else if (name === 'timeZone' || name === 'passwordGenerationStrategy' || name === 'passwordSeparator') {
       setSettings(prev => ({
         ...prev,
         [name]: value
+      }));
+    }
+    else if (name === 'passwordCardDigits') {
+      const numValue = parseInt(value);
+      const maxDigits = settings.cardNumberLength ?? 5;
+      if (numValue < 1 || numValue > maxDigits) {
+        setError(`Card digits must be between 1 and ${maxDigits}`);
+        return;
+      }
+      setSettings(prev => ({
+        ...prev,
+        [name]: numValue
       }));
     }
 
@@ -907,6 +1013,35 @@ const SystemManagerSettings: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Global System Manager nema pristup Settings-ima (early return nakon svih hooks)
+  if (manager?.organization_id === null) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <SettingsIcon className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Access Denied:</strong> Global System Manager cannot access organization-specific settings.
+              </p>
+              <p className="text-sm text-yellow-700 mt-2">
+                System Settings are managed by individual Organization System Managers.
+              </p>
+              <button
+                onClick={() => navigate('/system-manager')}
+                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 relative">

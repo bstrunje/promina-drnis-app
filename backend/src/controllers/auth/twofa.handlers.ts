@@ -116,7 +116,7 @@ export async function twoFaInitOtp(req: Request, res: Response) {
     if (!member) return res.status(404).json({ code: 'MEMBER_NOT_FOUND', error: 'Member not found' });
 
     // Dohvati postavke (TTL)
-    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: 1 } });
+    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
     const expirySec = (settings?.twoFactorOtpExpirySeconds ?? 300);
 
     // Generiraj 6-znamenkasti kod
@@ -286,7 +286,7 @@ export async function twoFaVerify(req: Request, res: Response) {
 
     // Remember device cookie (opcionalno)
     if (rememberDevice) {
-      const settings = await prisma.systemSettings.findFirst({ where: { organization_id: 1 } });
+      const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
       const days = Math.max(1, Number(settings?.twoFactorRememberDeviceDays ?? 30));
       const userAgent = req.headers['user-agent'] || 'unknown';
       const clientIp = (req.ip || (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown').toString();

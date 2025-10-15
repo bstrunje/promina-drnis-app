@@ -17,7 +17,6 @@ export interface ChangePasswordResponse {
   manager: SystemManager;
 }
 import { Member } from '@shared/member';
-import { navigateToSystemManagerPath } from '../hooks/useSystemManagerNavigation';
 
 // Tipovi za praćenje zdravlja sustava
 export type SystemHealthStatus = 'Healthy' | 'Warning' | 'Critical';
@@ -48,6 +47,20 @@ export interface BackupInfo {
   status: 'Success' | 'Failed' | 'Never' | 'Unknown';
 }
 
+// Activity tip za recent activities
+export interface DashboardActivity {
+  activity_id: string | number;
+  name: string;
+  activity_type: {
+    name: string;
+  };
+  participants: {
+    id: string | number;
+    name: string;
+  }[];
+  start_date: string | Date;
+}
+
 // Definicija statistika dashboarda
 export interface SystemManagerDashboardStats {
   totalMembers: number;
@@ -55,7 +68,7 @@ export interface SystemManagerDashboardStats {
   activeMembers: number;
   pendingApprovals: number;
   recentActivities: number;
-  recentActivitiesList: unknown[]; // TODO: Define a proper type for recent activities
+  recentActivitiesList: DashboardActivity[];
   systemHealth: string;
   lastBackup: string;
   healthDetails: SystemHealthInfo;
@@ -193,8 +206,14 @@ systemManagerApi.interceptors.response.use(
         localStorage.removeItem('systemManagerToken');
         localStorage.removeItem('systemManager');
         
-        // Preusmjeri na login stranicu
-        navigateToSystemManagerPath('/system-manager/login', { replace: true });
+        // Dohvati branding parametar ako postoji
+        const branding = localStorage.getItem('systemManagerBranding');
+        const brandingQuery = branding ? `?branding=${branding}` : '';
+        
+        // Preusmjeri na login stranicu korištenjem window.location (sigurnije od navigateInstance)
+        // Ovo osigurava da preusmjeravanje uvijek radi, čak i ako React Router kontekst nije dostupan
+        window.location.href = `${window.location.origin}/system-manager/login${brandingQuery}`;
+        
         return Promise.reject(new Error('Sesija je istekla. Molimo, prijavite se ponovno.'));
       } finally {
         // Resetiraj zastavicu

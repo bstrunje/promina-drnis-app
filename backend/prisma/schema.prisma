@@ -8,6 +8,12 @@ datasource db {
   url      = env("PRISMA_DATABASE_URL")
 }
 
+enum PasswordGenerationStrategy {
+  FULLNAME_ISK_CARD
+  RANDOM_8
+  EMAIL_PREFIX_CARD_SUFFIX
+}
+
 // ============================================
 // MULTI-TENANT: Organization Model
 // ============================================
@@ -21,6 +27,9 @@ model Organization {
   // Branding
   primary_color         String?   @default("#3b82f6") @db.VarChar(7)
   secondary_color       String?   @default("#1e40af") @db.VarChar(7)
+  
+  // Language
+  default_language      String    @default("hr") @db.VarChar(2)
   
   // Kontakt
   email                 String    @db.VarChar(255)
@@ -272,6 +281,10 @@ model SystemSettings {
   backupStorageLocation      String?      @default("local")   @map("backup_storage_location") // e.g., 'local', 's3', 'gcs'
   lastBackupAt               DateTime?    @map("last_backup_at") @db.Timestamp(6)
   nextBackupAt               DateTime?    @map("next_backup_at") @db.Timestamp(6)
+
+  passwordGenerationStrategy PasswordGenerationStrategy? @default(FULLNAME_ISK_CARD) @map("password_generation_strategy")
+  passwordSeparator          String?                     @default("-isk-") @map("password_separator")
+  passwordCardDigits         Int?                        @default(4) @map("password_card_digits")
 
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 

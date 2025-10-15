@@ -1,8 +1,17 @@
 // context/SystemManagerContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { systemManagerLogin, systemManagerLogout, systemManagerRefreshToken } from '../features/systemManager/utils/systemManagerApi';
 import { SystemManagerLoginData, SystemManager } from '@shared/systemManager';
+
+// JWT payload interface
+interface JwtPayload {
+  exp: number; // expiry timestamp u sekundama
+  iat: number; // issued at timestamp u sekundama
+  id: number;
+  role: string;
+}
 
 // Definicija tipa za kontekst
 // Definicija tipa za odgovor login funkcije
@@ -50,9 +59,49 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  // Funkcija za osvježavanje tokena - definirana prije useEffect-a koji je koristi
+  const refreshToken = React.useCallback(async () => {
+    try {
+      // console.log('Pokušavam osvježiti System Manager token iz konteksta...');
+      const response = await systemManagerRefreshToken();
+      
+      // Ažuriranje podataka o manageru u kontekstu
+      const managerData: SystemManager = {
+        ...response.manager,
+        email: response.manager.email || '' // Dodajemo email polje ako ga nema u odgovoru
+      };
+      setManager(managerData);
+      setIsAuthenticated(true);
+      
+      // console.log('System Manager token uspješno osvježen iz konteksta');
+    } catch (error) {
+      console.error('Greška prilikom osvježavanja tokena iz konteksta:', error);
+      
+      // U slučaju greške, čistimo stanje i preusmjeravamo na login
+      setManager(null);
+      setIsAuthenticated(false);
+      
+      // Dohvati branding parametar ako postoji
+      const branding = localStorage.getItem('systemManagerBranding');
+      const brandingQuery = branding ? `?branding=${branding}` : '';
+      
+      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
+      
+      throw error;
+    }
+  }, [navigate, setManager, setIsAuthenticated]);
+
   // Provjera postojeće sesije prilikom učitavanja
   useEffect(() => {
     const checkAuth = () => {
+      // Detekcija i spremanje branding parametra iz URL-a
+      const urlParams = new URLSearchParams(window.location.search);
+      const brandingParam = urlParams.get('branding') ?? urlParams.get('tenant');
+      if (brandingParam) {
+        localStorage.setItem('systemManagerBranding', brandingParam);
+        console.log('[SM-CONTEXT] Spremljen branding parametar:', brandingParam);
+      }
+      
       // console.log('Provjeravam System Manager autentikaciju...');
       
       const systemManagerToken = localStorage.getItem('systemManagerToken');
@@ -83,15 +132,76 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
           console.error('Greška pri parsiranju podataka system managera:', e);
           localStorage.removeItem('systemManagerToken');
           localStorage.removeItem('systemManager');
+          // KRITIČNO: Resetiraj state na null!
+          setManager(null);
+          setIsAuthenticated(false);
         }
       } else {
-        // console.log('System Manager nije prijavljen');
+        // KRITIČNO: Ako nema tokena, resetiraj state na null!
+        // Ovo sprječava fallback na GSM (organization_id: null)
+        console.log('[SM-CONTEXT] Nema tokena - resetiranje state-a');
+        setManager(null);
+        setIsAuthenticated(false);
       }
       setLoading(false);
     };
 
     checkAuth();
   }, []);
+
+  // Automatsko osvježavanje tokena prije isteka
+  useEffect(() => {
+    const setupAutoRefresh = () => {
+      const token = localStorage.getItem('systemManagerToken');
+      
+      if (!token) {
+        console.log('[SM-AUTO-REFRESH] Nema tokena - preskačem auto-refresh');
+        return;
+      }
+
+      try {
+        // Dekodiraj token da dohvatiš expiry vrijeme
+        const decoded = jwtDecode<JwtPayload>(token);
+        const now = Date.now() / 1000; // Trenutno vrijeme u sekundama
+        const expiresIn = decoded.exp - now; // Koliko sekundi do isteka
+        
+        console.log(`[SM-AUTO-REFRESH] Token istječe za ${Math.round(expiresIn / 60)} minuta`);
+        
+        // Ako token već istječe za manje od 5 minuta, odmah ga osvježi
+        if (expiresIn < 300) {
+          console.log('[SM-AUTO-REFRESH] Token ističe uskoro - osvrežavam odmah');
+          void refreshToken();
+          return;
+        }
+        
+        // Postavimo timeout da osvježi token 3 minute prije isteka
+        const refreshTime = (expiresIn - 180) * 1000; // 3 minute prije isteka, u milisekundama
+        
+        console.log(`[SM-AUTO-REFRESH] Postavljen auto-refresh za ${Math.round(refreshTime / 60000)} minuta`);
+        
+        const timeoutId = setTimeout(() => {
+          console.log('[SM-AUTO-REFRESH] Pokrećem automatsko osvježavanje tokena');
+          void refreshToken().catch(err => {
+            console.error('[SM-AUTO-REFRESH] Greška pri automatskom osvježavanju:', err);
+          });
+        }, refreshTime);
+        
+        // Cleanup funkcija
+        return () => {
+          console.log('[SM-AUTO-REFRESH] Čišćenje timeout-a');
+          clearTimeout(timeoutId);
+        };
+      } catch (error) {
+        console.error('[SM-AUTO-REFRESH] Greška pri dekodiranju tokena:', error);
+      }
+    };
+
+    // Pokreni setup nakon što je autentikacija provjerena i korisnik je prijavljen
+    if (isAuthenticated && !loading) {
+      const cleanup = setupAutoRefresh();
+      return cleanup;
+    }
+  }, [isAuthenticated, loading, refreshToken]);
 
   // Funkcija za osvježavanje podataka managera
   const refreshManager = React.useCallback((): Promise<void> => {
@@ -160,10 +270,14 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         setManager(managerData);
         setIsAuthenticated(true);
 
+        // Dohvati branding parametar ako postoji
+        const branding = localStorage.getItem('systemManagerBranding');
+        const brandingQuery = branding ? `?branding=${branding}` : '';
+        
         if (managerData.organization_id === null) {
           navigate('/system-manager/organizations');
         } else {
-          navigate('/system-manager/dashboard');
+          navigate(`/system-manager/dashboard${brandingQuery}`);
         }
       }
 
@@ -193,47 +307,29 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       
       // console.log('System manager uspješno odjavljen');
       
+      // Dohvati branding parametar ako postoji
+      const branding = localStorage.getItem('systemManagerBranding');
+      const brandingQuery = branding ? `?branding=${branding}` : '';
+      
       // Koristimo replace: true kako bismo spriječili povratak na dashboard nakon odjave
-      navigate('/system-manager/login', { replace: true });
+      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
     } catch (error) {
       console.error('Greška prilikom odjave system managera:', error);
       
       // Čak i u slučaju greške, čistimo stanje i preusmjeravamo korisnika
       setManager(null);
       setIsAuthenticated(false);
-      navigate('/system-manager/login', { replace: true });
+      
+      // Dohvati branding parametar ako postoji
+      const branding = localStorage.getItem('systemManagerBranding');
+      const brandingQuery = branding ? `?branding=${branding}` : '';
+      
+      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
     }
   }, [navigate, setManager, setIsAuthenticated]);
 
   // Funkcija za dohvat aktualnog managera iz backenda (npr. nakon promjene username-a)
-  // refreshManager funkcija je već definirana iznad
-
-  // Funkcija za osvježavanje tokena
-  const refreshToken = React.useCallback(async () => {
-    try {
-      // console.log('Pokušavam osvježiti System Manager token iz konteksta...');
-      const response = await systemManagerRefreshToken();
-      
-      // Ažuriranje podataka o manageru u kontekstu
-      const managerData: SystemManager = {
-        ...response.manager,
-        email: response.manager.email || '' // Dodajemo email polje ako ga nema u odgovoru
-      };
-      setManager(managerData);
-      setIsAuthenticated(true);
-      
-      // console.log('System Manager token uspješno osvježen iz konteksta');
-    } catch (error) {
-      console.error('Greška prilikom osvježavanja tokena iz konteksta:', error);
-      
-      // U slučaju greške, čistimo stanje i preusmjeravamo na login
-      setManager(null);
-      setIsAuthenticated(false);
-      navigate('/system-manager/login', { replace: true });
-      
-      throw error;
-    }
-  }, [navigate, setManager, setIsAuthenticated]);
+  // refreshManager i refreshToken funkcije su već definirane iznad
 
   // Vrijednosti koje će biti dostupne kroz kontekst
   const contextValue: SystemManagerContextType = {

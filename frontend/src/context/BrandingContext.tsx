@@ -6,7 +6,9 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiClient } from '../utils/api';
+import { useTranslation } from 'react-i18next';
 
 // Tipovi za branding podatke
 export interface OrganizationBranding {
@@ -18,6 +20,7 @@ export interface OrganizationBranding {
   logo_path: string | null;
   primary_color: string | null;
   secondary_color: string | null;
+  default_language: string;
   email: string | null; // može biti null iz API-ja
   phone: string | null;
   website_url: string | null;
@@ -66,12 +69,6 @@ const getTenantFromUrl = (): string => {
   console.log('[BRANDING] 🔍 Detecting tenant from hostname:', hostname);
   console.log('[BRANDING] 🔍 Current pathname:', pathname);
   
-  // System Manager rute ne trebaju tenant
-  if (pathname.startsWith('/system-manager')) {
-    console.log('[BRANDING] ⚠️  System Manager route - skipping tenant detection');
-    return 'system-manager'; // Poseban tenant za SM
-  }
-  
   // Development - localhost
   if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
     // Možemo koristiti query parameter za testiranje: ?tenant=test ili ?branding=test
@@ -80,8 +77,18 @@ const getTenantFromUrl = (): string => {
     console.log('[BRANDING] 🔍 Query param tenant:', tenantParam);
     if (tenantParam) {
       console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
+      // Spremi tenant u localStorage za kasnije korištenje
+      localStorage.setItem('current_tenant', tenantParam);
       return tenantParam;
     }
+    
+    // Pokušaj iz localStorage cache-a
+    const cached = localStorage.getItem('current_tenant');
+    if (cached) {
+      console.log('[BRANDING] ✅ Using cached tenant:', cached);
+      return cached;
+    }
+    
     // Sigurnosno: ne koristi default tenant u developmentu
     console.log('[BRANDING] ⚠️  Tenant not specified');
     return 'missing';
@@ -154,6 +161,7 @@ interface RawBranding {
   logo_path?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
+  default_language?: string;
   email?: string | null;
   phone?: string | null;
   website_url?: string | null;
@@ -175,10 +183,35 @@ interface ApiSuccessWrapper {
  * Branding Provider komponenta
  */
 export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const { i18n } = useTranslation();
   const [branding, setBranding] = useState<OrganizationBranding | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tenant] = useState(getTenantFromUrl);
+  const [tenant, setTenant] = useState(getTenantFromUrl());
+  
+  // Očisti stari cache pri mount-u ako je tenant različit
+  useEffect(() => {
+    const currentTenant = getTenantFromUrl();
+    if (currentTenant !== 'skip' && currentTenant !== 'missing') {
+      try {
+        const cachedStr = localStorage.getItem(BRANDING_CACHE_KEY);
+        const cachedTenantStr = localStorage.getItem('current_tenant');
+        if (cachedStr) {
+          const cachedData = JSON.parse(cachedStr) as CachedBranding;
+          if (cachedData.tenant !== currentTenant || (cachedTenantStr && cachedTenantStr !== currentTenant)) {
+            console.log('[BRANDING] 🗑️  Brišem stari cache pri inicijalizaciji - stari tenant:', cachedData.tenant, '/', cachedTenantStr, 'novi:', currentTenant);
+            localStorage.removeItem(BRANDING_CACHE_KEY);
+            setBranding(null); // Force reload
+          }
+        }
+      } catch (e) {
+        console.warn('[BRANDING] Greška pri inicijalnoj provjeri cache-a:', e);
+        localStorage.removeItem(BRANDING_CACHE_KEY);
+      }
+    }
+    // Izvršava se samo jednom pri mount-u
+  }, []);
 
   /**
    * Učitava branding podatke s API-ja
@@ -204,7 +237,22 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         return;
       }
       
-      // Provjeri cache prvo
+      // Provjeri je li cached branding za DRUGI tenant - ako je, obriši ga
+      try {
+        const cachedStr = localStorage.getItem(BRANDING_CACHE_KEY);
+        if (cachedStr) {
+          const cachedData = JSON.parse(cachedStr) as CachedBranding;
+          if (cachedData.tenant !== tenant) {
+            console.log('[BRANDING] 🗑️  Brišem stari cache za tenant:', cachedData.tenant);
+            localStorage.removeItem(BRANDING_CACHE_KEY);
+          }
+        }
+      } catch (e) {
+        console.warn('[BRANDING] Greška pri provjeri cache-a:', e);
+        localStorage.removeItem(BRANDING_CACHE_KEY);
+      }
+      
+      // Provjeri cache
       const cached = getCachedBranding(tenant);
       console.log('[BRANDING] 💾 Cache provjera:', cached ? 'HIT' : 'MISS');
       if (cached) {
@@ -239,6 +287,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         logo_path: raw.logo_path ?? null,
         primary_color: raw.primary_color ?? null,
         secondary_color: raw.secondary_color ?? null,
+        default_language: raw.default_language ?? 'hr',
         email: raw.email ?? null,
         phone: raw.phone ?? null,
         website_url: raw.website_url ?? null,
@@ -269,6 +318,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         logo_path: null,
         primary_color: '#2563eb',
         secondary_color: '#64748b',
+        default_language: 'hr',
         email: 'info@example.com',
         phone: null,
         website_url: null,
@@ -295,13 +345,23 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
     await loadBranding();
   };
 
-  // Učitaj branding pri mount-u
+  // Prati promjene URL-a kroz React Router location i ažuriraj tenant
+  useEffect(() => {
+    const newTenant = getTenantFromUrl();
+    if (newTenant !== tenant) {
+      console.log('[BRANDING] 🔄 URL promjena detektirana, novi tenant:', newTenant);
+      setTenant(newTenant);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search]);
+
+  // Učitaj branding pri mount-u i promjeni tenant-a
   useEffect(() => {
     void loadBranding();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenant]);
 
-  // Postavi CSS varijable kad se branding učita
+  // Postavi CSS varijable i jezik kad se branding učita
   useEffect(() => {
     if (branding) {
       const root = document.documentElement;
@@ -319,8 +379,14 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       
       // Postavi data-tenant atribut za CSS selektore
       document.body.setAttribute('data-tenant', branding.subdomain);
+
+      // Automatski postavi jezik prema organizaciji
+      if (branding.default_language && i18n.language !== branding.default_language) {
+        console.log(`[BRANDING] Postavljam jezik na: ${branding.default_language}`);
+        void i18n.changeLanguage(branding.default_language);
+      }
     }
-  }, [branding]);
+  }, [branding, i18n]);
 
   const contextValue: BrandingContextType = {
     branding,

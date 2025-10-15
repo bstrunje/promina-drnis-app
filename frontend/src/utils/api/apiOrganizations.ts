@@ -16,6 +16,7 @@ export interface Organization {
   logo_path: string | null;
   primary_color: string;
   secondary_color: string;
+  default_language: string;
   ethics_code_url: string | null;
   privacy_policy_url: string | null;
   membership_rules_url: string | null;
@@ -38,6 +39,7 @@ export interface Organization {
 
 export interface CreateOrganizationData {
   // Organization data
+  default_language?: string;
   name: string;
   short_name?: string;
   subdomain: string;
@@ -73,6 +75,7 @@ export interface UpdateOrganizationData {
   country?: string;
   primary_color?: string;
   secondary_color?: string;
+  default_language?: string;
   ethics_code_url?: string;
   privacy_policy_url?: string;
   membership_rules_url?: string;

@@ -9,7 +9,6 @@ import SystemManagerDashboard from './pages/dashboard/SystemManagerDashboard';
 import SystemManagerAuditLogs from './pages/auditLogs/SystemManagerAuditLogs';
 import HolidaysManager from './HolidaysManager';
 import DutyCalendarSettings from './DutyCalendarSettings';
-import OrganizationList from './organizations/OrganizationList';
 import OrganizationWizard from './organizations/OrganizationWizard';
 import OrganizationEdit from './organizations/OrganizationEdit';
 
@@ -51,14 +50,6 @@ const SystemManagerRoutesContent: React.FC = () => {
       />
       <Route 
         path="/dashboard" 
-        element={
-          <SystemManagerProtectedRoute>
-            <SystemManagerDashboard />
-          </SystemManagerProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/members" 
         element={
           <SystemManagerProtectedRoute>
             <SystemManagerDashboard />
@@ -117,7 +108,7 @@ const SystemManagerRoutesContent: React.FC = () => {
         path="/organizations" 
         element={
           <SystemManagerProtectedRoute>
-            <OrganizationList />
+            <SystemManagerDashboard />
           </SystemManagerProtectedRoute>
         } 
       />

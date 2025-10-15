@@ -39,6 +39,10 @@ export interface CardNumberSectionProps extends MembershipComponentProps {
   originalCardNumber: string;
   isSubmitting: boolean;
   handleCardNumberAssign: (e: React.FormEvent) => Promise<void>;
+  generatedPassword: string | null;
+  setGeneratedPassword: (value: string | null) => void;
+  handleRegeneratePassword: () => Promise<void>;
+  isRegeneratingPassword: boolean;
 }
 
 export interface StampManagementSectionProps extends MembershipComponentProps {

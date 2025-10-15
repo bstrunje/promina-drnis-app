@@ -4,7 +4,8 @@ import { CardNumberSectionProps } from "../types/membershipTypes";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Copy, X, RotateCw } from "lucide-react";
+import { useToast } from "@components/ui/use-toast";
 import {
   Select,
   SelectContent,
@@ -28,9 +29,14 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   originalCardNumber,
   setCardNumber,
   handleCardNumberAssign,
-  userRole
+  userRole,
+  generatedPassword,
+  setGeneratedPassword,
+  handleRegeneratePassword,
+  isRegeneratingPassword
 }) => {
   const { t } = useTranslation('profile');
+  const { toast } = useToast();
   // Možemo li uređivati podatke? Dopušteno samo za admin i superuser
   const canEdit = userRole === 'member_administrator' || userRole === 'member_superuser';
 
@@ -70,6 +76,27 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   // Stil za karticu ovisno o statusu člana (zadržavamo postojeću funkciju za kompatibilnost)
   const getStatusColor = () => cardBg;
 
+  // Funkcija za kopiranje passworda u clipboard
+  const copyPasswordToClipboard = async () => {
+    if (!generatedPassword) return;
+    
+    try {
+      await navigator.clipboard.writeText(generatedPassword);
+      toast({
+        title: t('membershipCard.toast.success'),
+        description: t('membershipCard.password.copySuccess'),
+        variant: "success",
+      });
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+      toast({
+        title: t('membershipCard.toast.error'),
+        description: t('membershipCard.password.copyError'),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Trenutni status kartice */}
@@ -95,22 +122,46 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
           )}
         </div>
         
-        {/* Trenutni broj kartice */}
+        {/* Trenutni broj kartice s Regenerate gumbom */}
         <div className="mb-3">
-          <span className="text-sm text-gray-500">{t('membershipCard.currentCardNumber')}</span>
-          {(() => {
-            const cardNumber =
-              member.membership_details?.card_number;
-            return cardNumber ? (
-              <span
-                className={`ml-2 px-3 py-1 rounded text-black ${getStatusColor()}`}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">{t('membershipCard.currentCardNumber')}</span>
+            {(() => {
+              const cardNumber =
+                member.membership_details?.card_number;
+              return cardNumber ? (
+                <span
+                  className={`ml-2 px-3 py-1 rounded text-black ${getStatusColor()}`}
+                >
+                  {cardNumber}
+                </span>
+              ) : (
+                <span className="ml-2 text-gray-400">{t('membershipCard.notAssigned')}</span>
+              );
+            })()}
+          </div>
+          
+          {/* Regenerate Password gumb - samo za RANDOM_8 i ako ima karticu */}
+          {canEdit && member.membership_details?.card_number && (
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { void handleRegeneratePassword(); }}
+                disabled={isRegeneratingPassword}
+                className="w-full text-xs"
               >
-                {cardNumber}
-              </span>
-            ) : (
-              <span className="ml-2 text-gray-400">{t('membershipCard.notAssigned')}</span>
-            );
-          })()}
+                <RotateCw className={cn(
+                  "w-3 h-3 mr-1",
+                  isRegeneratingPassword && "animate-spin"
+                )} />
+                {isRegeneratingPassword 
+                  ? t('membershipCard.regenerate.regenerating')
+                  : t('membershipCard.regenerate.button')
+                }
+              </Button>
+            </div>
+          )}
         </div>
         
         {/* Statistika kartica */}
@@ -203,6 +254,40 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
             {isSubmitting ? t('membershipCard.submit.submitting') : t('membershipCard.submit.change')}
           </Button>
         </form>
+      )}
+
+      {/* Prikaz generiranog passworda */}
+      {generatedPassword && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <h5 className="font-medium text-green-800">{t('membershipCard.password.title')}</h5>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setGeneratedPassword(null)}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <code className="flex-1 px-3 py-2 bg-white border border-green-300 rounded font-mono text-lg">
+              {generatedPassword}
+            </code>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { void copyPasswordToClipboard(); }}
+              className="shrink-0"
+            >
+              <Copy className="h-4 w-4 mr-1" />
+              {t('membershipCard.password.copy')}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-green-700">
+            {t('membershipCard.password.warning')}
+          </p>
+        </div>
       )}
     </div>
   );

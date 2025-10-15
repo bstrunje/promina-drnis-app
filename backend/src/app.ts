@@ -91,7 +91,6 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
-app.use(localeMiddleware); // Detekcija jezika (X-Lang / Accept-Language), fallback: en
 
 // Set up static file serving (centralizirano)
 const uploadsDir = getUploadsDir();
@@ -278,6 +277,9 @@ app.use('/api/system-manager', systemManagerRoutes);
 
 // TENANT MIDDLEWARE - Globalni tenant context za sve API pozive
 app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
+
+// LOCALE MIDDLEWARE - Mora biti NAKON tenantMiddleware jer koristi req.organization.default_language
+app.use('/api', localeMiddleware); // Multi-tenant language detection
 
 // Public routes (bez authMiddleware)
 app.use('/api', orgConfigRoutes); // Public org config endpoints

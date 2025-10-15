@@ -3,7 +3,6 @@ import express from 'express';
 import multer from 'multer';
 import * as organizationController from '../controllers/organization.controller.js';
 import { resetOrganizationManagerCredentials } from '../controllers/systemManager.controller.js';
-import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 import { 
   requireGlobalSystemManager, 
   requireOrganizationAccess 
@@ -24,8 +23,8 @@ const upload = multer({
   }
 });
 
-// Sve rute zahtijevaju System Manager autentikaciju
-router.use(authMiddleware, roles.requireSystemManager);
+// Sve rute unutar ovog routera su već zaštićene kroz systemManager.routes.ts
+// Nema potrebe za dvostrukim pozivanjem middleware-a
 
 // ============================================================================
 // JAVNE RUTE (za sve System Manager-e)

@@ -1,13 +1,11 @@
 // frontend/src/features/dashboard/SuperUserDashboard.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Users, Activity, Shield, ChevronRight, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
-import axios from "axios";
-import { API_BASE_URL } from "@/utils/config";
+import { apiClient } from "@/utils/api";
 import { useBranding } from "../../hooks/useBranding";
-import { getCurrentTenant } from "@/utils/tenantUtils";
 
 interface Props {
   member: Member;
@@ -40,7 +38,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   // console.log('Rendering SuperUserDashboard for:', member.full_name);
   const navigate = useNavigate();
   const { t } = useTranslation('dashboards');
-  const { getPrimaryColor } = useBranding();
+  const { getPrimaryColor, branding } = useBranding();
 
   // Dinamički odabir welcome poruke na temelju spola
   const getWelcomeKey = () => {
@@ -59,29 +57,17 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
     lastBackup: "Never",
   });
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      
-      // Fetch membership stats
-      const memberResponse = await axios.get<DashboardStatsResponse>(`${API_BASE_URL}/admin/dashboard/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { tenant: getCurrentTenant() },
-      });
-      
-      // If you have separate endpoints for different stats, you could use Promise.all
-      // const [memberData, activityData, systemData] = await Promise.all([
-      //   axios.get(`${API_BASE_URL}/admin/member-stats`),
-      //   axios.get(`${API_BASE_URL}/admin/activity-stats`),
-      //   axios.get(`${API_BASE_URL}/admin/system-stats`)
-      // ]);
+      // apiClient automatski dodaje Authorization header i tenant parametar
+      const memberResponse = await apiClient.get<DashboardStatsResponse>('/admin/dashboard/stats');
       
       // Update with real data
       setStats({
         totalMembers: memberResponse.data.totalMembers ?? 0,
-        registeredMembers: memberResponse.data.registeredMembers ?? 0, // New field
+        registeredMembers: memberResponse.data.registeredMembers ?? 0,
         activeMembers: memberResponse.data.activeMembers ?? 0,
         pendingApprovals: memberResponse.data.pendingRegistrations ?? 0,
         recentActivities: memberResponse.data.recentActivities ?? 0,
@@ -96,11 +82,15 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void fetchDashboardStats();
   }, []);
+
+  // Učitaj podatke pri mount-u i kad se promijeni branding (tenant)
+  useEffect(() => {
+    if (branding) {
+      console.log('[SUPERUSER-DASHBOARD] Učitavam podatke za tenant:', branding.subdomain, '(ID:', branding.id, ')');
+      void fetchDashboardStats();
+    }
+  }, [branding, fetchDashboardStats]);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -99,6 +99,9 @@ router.put('/:memberId/role', authenticateToken, roles.requireSuperUser, memberP
 // Dodjela broja iskaznice i generiranje lozinke - preusmjereno na ispravan kontroler
 router.post('/:memberId/card-number', authenticateToken, roles.requireAdmin, cardNumberController.assignCardNumber);
 
+// Regeneriranje lozinke za RANDOM_8 strategiju
+router.post('/:memberId/regenerate-password', authenticateToken, roles.requireAdmin, cardNumberController.regeneratePassword);
+
 // For returning stamps to inventory - only superuser can do this
 router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser, async (req, res) => {
   try {

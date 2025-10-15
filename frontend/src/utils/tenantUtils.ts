@@ -6,20 +6,32 @@
  */
 
 /**
- * Detektira trenutni tenant iz URL-a
+ * Detektira trenutni tenant iz URL-a ili localStorage cache-a
+ * Baca grešku ako tenant nije pronađen - korisnika treba preusmjeriti na login
  */
 export const getCurrentTenant = (): string => {
   const hostname = window.location.hostname;
   
   // Development okruženje
   if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-    // Provjeri query parameter za testiranje
+    // Provjeri query parameter za testiranje (podržava 'tenant' i 'branding')
     const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant');
-    if (tenantParam) return tenantParam;
+    const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
+    if (tenantParam) {
+      // Spremi u cache za kasnije korištenje
+      setCachedTenant(tenantParam);
+      return tenantParam;
+    }
     
-    // Default za development
-    return 'promina';
+    // Pokušaj iz cache-a
+    const cached = getCachedTenant();
+    if (cached) {
+      return cached;
+    }
+    
+    // NEMA fallback-a - korisnik mora odabrati tenant
+    console.warn('[TENANT] Tenant nije specificiran - potrebna prijava');
+    throw new Error('Tenant is required. Please login again.');
   }
   
   // Production okruženje - subdomena
@@ -28,8 +40,9 @@ export const getCurrentTenant = (): string => {
     return parts[0];
   }
   
-  // Fallback
-  return 'promina';
+  // NEMA fallback-a
+  console.warn('[TENANT] Ne mogu detektirati tenant iz URL-a');
+  throw new Error('Unable to detect tenant from URL');
 };
 
 /**

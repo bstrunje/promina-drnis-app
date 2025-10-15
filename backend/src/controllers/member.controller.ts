@@ -1,32 +1,23 @@
 // backend/src/controllers/member.controller.ts
 import type { Request, Response } from 'express';
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Response {
-      locale?: 'en' | 'hr';
-    }
-  }
-}
+import { format as formatDate } from 'date-fns';
+import prisma from '../utils/prisma.js';
 import memberService from "../services/member.service.js";
-import memberRepository from "../repositories/member.repository.js";
-import { parseDate, formatDate } from '../utils/dateUtils.js';
-import prisma from "../utils/prisma.js";
-import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import memberRepository from '../repositories/member.repository.js';
+import { getOrganizationId } from '../utils/tenant.helper.js';
 import { tBackend } from '../utils/i18n.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
-function handleControllerError(error: unknown, res: Response): void {
-  const locale = res.locale || 'en';
+function handleControllerError(error: unknown, req: Request, res: Response): void {
+  const locale = req.locale;
   console.error("Controller error:", error);
   
   if (error instanceof Error) {
     if (error.message.includes("not found")) {
       res.status(404).json({ 
         code: 'NOT_FOUND',
-        message: tBackend('errors.not_found', locale, { details: error.message })
+        message: tBackend('errors.server_error', locale, { details: error.message })
       });
     } else {
       res.status(500).json({
@@ -103,13 +94,13 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     res.status(200).json(response);
   } catch (error) {
     console.error('Dashboard stats error:', error);
-    handleControllerError(error, res);
+    handleControllerError(error, req, res);
   }
 };
 
 export const memberController = {
   async getAllMembers(req: Request, res: Response): Promise<void> {
-    const locale = req.locale || 'en';
+    const locale = req.locale;
     
     try {
       const organizationId = getOrganizationId(req);
@@ -170,16 +161,16 @@ export const memberController = {
                               'getTime' in paymentDate;
           
           if (isDateObject) {
-            member.membership_details.fee_payment_date = formatDate(paymentDate as Date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+            memberDetails.membership_details.fee_payment_date = formatDate(paymentDate as Date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
           } else if (typeof paymentDate === 'string') {
-            member.membership_details.fee_payment_date = formatDate(parseDate(paymentDate), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
+            memberDetails.membership_details.fee_payment_date = formatDate(new Date(paymentDate), 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
           }
         }
 
-        res.json(member);
+        res.json(memberDetails);
       }
     } catch (error) {
-      handleControllerError(error, res);
+      handleControllerError(error, req, res);
     }
   },
 };

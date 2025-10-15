@@ -28,7 +28,11 @@ import {
 import ManagerHeader from '../components/common/ManagerHeader';
 import { useSystemManager } from '../../../context/SystemManagerContext';
 
-const OrganizationList: React.FC = () => {
+interface OrganizationListProps {
+  standalone?: boolean; // Ako je false, ne prikazuje vlastiti header/wrapper
+}
+
+const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }) => {
   const navigate = useNavigate();
   const { manager } = useSystemManager();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -88,11 +92,9 @@ const OrganizationList: React.FC = () => {
     );
   }
 
-  return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-gray-100">
-        <ManagerHeader manager={manager} />
-        <div className="p-4 sm:p-6">
+  const content = (
+    <>
+      <div className="p-4 sm:p-6">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
@@ -235,38 +237,52 @@ const OrganizationList: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Organization</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{organizationToDelete?.name}</strong>?
-              This action cannot be undone and will delete all associated data.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => { void handleDelete(); }}
-              disabled={deleting}
-            >
-              {deleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-        </div>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Organization</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete <strong>{organizationToDelete?.name}</strong>?
+                This action cannot be undone and will delete all associated data.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => { void handleDelete(); }}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </TooltipProvider>
+    </>
   );
+
+  // Ako je standalone, wrapaj s header i full layout
+  if (standalone) {
+    return (
+      <TooltipProvider>
+        <div className="min-h-screen bg-gray-100">
+          <ManagerHeader manager={manager} />
+          {content}
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  // Ako nije standalone, vrati samo sadržaj (bez full-screen wrappera)
+  return <TooltipProvider>{content}</TooltipProvider>;
 };
 
 export default OrganizationList;

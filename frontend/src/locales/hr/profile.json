@@ -223,7 +223,28 @@
       "submit": {
           "submitting": "Mijenjam...",
           "change": "Promijeni broj iskaznice"
+      },
+      "password": {
+          "title": "Generirani Password",
+          "copy": "Kopiraj",
+          "warning": "⚠️ Ovaj password prikaži članu. Nakon zatvaranja neće biti ponovno dostupan.",
+          "copySuccess": "Password kopiran u clipboard",
+          "copyError": "Neuspjelo kopiranje passworda"
+      },
+      "toast": {
+          "success": "Uspjeh",
+          "error": "Greška",
+          "assignedWithPassword": "Broj kartice uspješno dodijeljen. Password: {{password}}",
+          "assigned": "Broj kartice uspješno dodijeljen"
+      },
+      "regenerate": {
+          "button": "Regeneriraj Password",
+          "regenerating": "Regeneriram...",
+          "success": "Password uspješno regeneriran: {{password}}"
       }
+  },
+  "cardManagement": {
+      "errorDetails": "Detalji greške kod dodjele kartice"
   },
   "stamp": {
       "title": "Upravljanje markicama",

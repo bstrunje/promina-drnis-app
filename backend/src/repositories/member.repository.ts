@@ -23,6 +23,7 @@ export interface MemberCreateData extends Omit<Member, 'member_id' | 'status' | 
     shell_jacket_size: Member['shell_jacket_size'];
     membership_type: Member['membership_type'];
     nickname?: string;
+    organization_id: number; // Dodano: obavezno za multi-tenant
     /**
      * Funkcije u Društvu (Predsjednik, Tajnik, Blagajnik...)
      * Višestruke vrijednosti odvojene zarezom

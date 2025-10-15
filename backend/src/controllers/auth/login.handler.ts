@@ -27,7 +27,7 @@ export async function loginHandler(
   req: Request<Record<string, never>, Record<string, never>, MemberLoginData>,
   res: Response
 ): Promise<void | Response> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     const { email, password } = req.body;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -233,7 +233,7 @@ export async function loginHandler(
     });
     
     // 2FA ENFORCEMENT LOGIC (minimalno, bez lomljenja postojećeg ponašanja)
-    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: 1 } });
+    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
     const twoFaGlobal = settings?.twoFactorGlobalEnabled === true;
     const twoFaMembersEnabled = settings?.twoFactorMembersEnabled === true;
     const requiredRoles: string[] = Array.isArray(settings?.twoFactorRequiredMemberRoles) ? (settings!.twoFactorRequiredMemberRoles as unknown as string[]) : [];

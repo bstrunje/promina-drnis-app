@@ -6,6 +6,7 @@ import prisma from "../utils/prisma.js";
 import memberRepository from '../repositories/member.repository.js';
 import bcrypt from 'bcrypt';
 import membershipService from '../services/membership.service.js';
+import passwordService from '../services/password.service.js';
 import { tBackend } from '../utils/i18n.js';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -13,7 +14,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const cardNumberController = {
   // Get all available card numbers
   async getAvailable(req: Request, res: Response, _next: NextFunction): Promise<void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     if (isDev) console.log("Fetching available card numbers - user role:", req.user?.role);
     try {
       const organizationId = getOrganizationId(req);
@@ -34,7 +35,7 @@ const cardNumberController = {
   
   // Add a single card number
   async addSingle(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       const { cardNumber } = req.body;
       
@@ -45,9 +46,11 @@ const cardNumberController = {
         });
       }
       
+      const organizationId = getOrganizationId(req);
+      
       // Get current card number length setting
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
       
       const cardNumberLength = settings?.cardNumberLength || 5;
@@ -59,8 +62,6 @@ const cardNumberController = {
           message: tBackend('validations.invalid_oib', locale, { length: cardNumberLength })
         });
       }
-      
-      const organizationId = getOrganizationId(req);
       await cardNumberRepository.addSingle(organizationId, cardNumber);
       
       await auditService.logAction(
@@ -87,7 +88,7 @@ const cardNumberController = {
   
   // Add a range of card numbers
   async addRange(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       const { start, end } = req.body;
       
@@ -112,14 +113,14 @@ const cardNumberController = {
         });
       }
       
+      const organizationId = getOrganizationId(req);
+      
       // Get current card number length setting
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
       
       const cardNumberLength = settings?.cardNumberLength || 5;
-      
-      const organizationId = getOrganizationId(req);
       const added = await cardNumberRepository.addRange(organizationId, start, end, cardNumberLength);
       
       await auditService.logAction(
@@ -146,7 +147,7 @@ const cardNumberController = {
 
   // Delete a card number
   async deleteCardNumber(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       const { cardNumber } = req.params;
       
@@ -194,7 +195,7 @@ const cardNumberController = {
 
   // Get all card numbers with statistics
   async getAllCardNumbers(req: Request, res: Response, _next: NextFunction): Promise<void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     if (isDev) console.log("Fetching all card numbers - user role:", req.user?.role);
     try {
       const organizationId = getOrganizationId(req);
@@ -227,7 +228,7 @@ const cardNumberController = {
 
   // Nova metoda za sinkronizaciju statusa brojeva iskaznica
   async syncCardNumberStatus(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       // Potrebna je admin/superuser razina pristupa
       if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
@@ -272,17 +273,19 @@ const cardNumberController = {
    * Dostupno samo adminima i superuserima
    */
   async getConsumedCardNumbers(req: Request, res: Response, _next: NextFunction): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       // Provjeri administratorska prava
-      if (req.user?.role !== 'member_administrator' && req.user?.role !== 'member_superuser') {
-        return res.status(403).json({ 
-          code: 'CARDNUM_FORBIDDEN_CONSUMED', 
-          message: tBackend('cardnumbers.forbidden_consumed', locale) 
+      const user = req.user;
+      if (!user || !['member_admin', 'member_superuser'].includes(user.role)) {
+        return res.status(403).json({
+          code: 'INSUFFICIENT_PERMISSIONS',
+          message: tBackend('cardnumbers.insufficient_permissions', locale),
         });
       }
+      const organizationId = getOrganizationId(req);
       const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-      const consumedCards = await cardNumberRepository.getConsumedCardNumbers(search);
+      const consumedCards = await cardNumberRepository.getConsumedCardNumbers(organizationId, search);
       return res.json(consumedCards);
     } catch (error) {
       console.error('Error in getConsumedCardNumbers:', error);
@@ -299,14 +302,16 @@ const cardNumberController = {
     res: Response,
     _next: NextFunction
   ): Promise<Response | void> {
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     try {
       const { memberId } = req.params;
       const { cardNumber } = req.body;
 
+      const organizationId = getOrganizationId(req);
+
       // Dohvati postavke sustava za validaciju duljine broja kartice
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
       const cardNumberLength = settings?.cardNumberLength || 5;
 
@@ -319,8 +324,6 @@ const cardNumberController = {
         });
       }
 
-      // Dohvati podatke o članu
-      const organizationId = getOrganizationId(req);
       const member = await memberRepository.findById(organizationId, parseInt(memberId));
       if (!member) {
         return res.status(404).json({ 
@@ -368,13 +371,25 @@ const cardNumberController = {
       }
 
       // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
-      const settingsForPassword = settings || await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
-      });
-      const passwordCardNumberLength = settingsForPassword?.cardNumberLength || 5;
+      const passwordStrategy = settings?.passwordGenerationStrategy;
+      const passwordSeparator = settings?.passwordSeparator;
+      const passwordCardDigits = settings?.passwordCardDigits;
 
-      // Automatski generiraj lozinku prema dogovorenom formatu s dinamičkom duljinom kartice
-      const password = `${member.full_name}-isk-${cardNumber.padStart(passwordCardNumberLength, '0')}`;
+      // Osiguraj da član ima ime prije generiranja lozinke
+      if (!member.full_name) {
+        return res.status(400).json({ 
+          code: 'CARDNUM_MEMBER_NAME_MISSING', 
+          message: tBackend('cardnumbers.member_name_missing', locale)
+        });
+      }
+
+      // Automatski generiraj lozinku koristeći novi servis s prilagođenim opcijama
+      const password = passwordService.generatePassword(
+        passwordStrategy, 
+        member, 
+        cardNumber,
+        { separator: passwordSeparator, cardDigits: passwordCardDigits }
+      );
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Pokreni transakciju za ažuriranje člana
@@ -404,7 +419,7 @@ const cardNumberController = {
         await tx.cardNumber.update({
           where: {
             organization_id_card_number: {
-              organization_id: 1, // PD Promina - TODO: Dodati tenant context
+              organization_id: organizationId,
               card_number: cardNumber
             }
           },
@@ -457,7 +472,8 @@ const cardNumberController = {
       });
       
       return res.status(200).json({ 
-        message: successMessage
+        message: successMessage,
+        generatedPassword: password // Vraćamo generirani password da ga admin vidi
       });
     } catch (error) {
       console.error('Error in assignCardNumber:', error);
@@ -466,6 +482,111 @@ const cardNumberController = {
       
       return res.status(500).json({
         code: 'CARDNUM_ASSIGN_FAILED',
+        message: tBackend('errors.unexpected', locale),
+        error: errorMessage
+      });
+    }
+  },
+
+  /**
+   * Regeneriranje lozinke za člana (samo za RANDOM_8 strategiju)
+   * Endpoint: POST /api/members/:memberId/regenerate-password
+   */
+  async regeneratePassword(
+    req: Request<{ memberId: string }>,
+    res: Response,
+    _next: NextFunction
+  ): Promise<Response> {
+    const locale = req.locale;
+    const organizationId = getOrganizationId(req);
+    
+    try {
+      const memberId = parseInt(req.params.memberId, 10);
+      
+      if (!memberId || isNaN(memberId)) {
+        return res.status(400).json({ 
+          code: 'INVALID_MEMBER_ID',
+          message: 'Invalid member ID'
+        });
+      }
+
+      // Dohvati system settings
+      const settings = await prisma.systemSettings.findFirst({
+        where: { organization_id: organizationId }
+      });
+      
+      // Provjeri da li je strategija RANDOM_8
+      if (settings?.passwordGenerationStrategy !== 'RANDOM_8') {
+        return res.status(400).json({ 
+          code: 'INVALID_STRATEGY',
+          message: 'Password regeneration is only available for RANDOM_8 strategy'
+        });
+      }
+
+      // Dohvati člana
+      const member = await prisma.member.findUnique({
+        where: { member_id: memberId },
+        include: {
+          membership_details: true
+        }
+      });
+
+      if (!member) {
+        return res.status(404).json({ 
+          code: 'MEMBER_NOT_FOUND',
+          message: 'Member not found'
+        });
+      }
+
+      // Provjeri da član ima dodijeljenu karticu
+      if (!member.membership_details?.card_number) {
+        return res.status(400).json({ 
+          code: 'NO_CARD_ASSIGNED',
+          message: 'Cannot regenerate password: member does not have a card number assigned'
+        });
+      }
+
+      // Generiraj novi random password
+      const newPassword = passwordService.generatePassword(
+        'RANDOM_8',
+        member,
+        member.membership_details.card_number
+      );
+      
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Ažuriraj password u bazi
+      await prisma.member.update({
+        where: { member_id: memberId },
+        data: {
+          password_hash: hashedPassword
+        }
+      });
+
+      // Audit log
+      const performerId = req.user?.id;
+      if (performerId) {
+        await auditService.logAction(
+          'REGENERATE_PASSWORD',
+          performerId,
+          `Regenerated password for member: ${member.full_name}`,
+          req,
+          'success',
+          memberId,
+          req.user?.performer_type
+        );
+      }
+
+      return res.status(200).json({ 
+        message: 'Password regenerated successfully',
+        generatedPassword: newPassword
+      });
+    } catch (error) {
+      console.error('Error in regeneratePassword:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      return res.status(500).json({
+        code: 'REGENERATE_PASSWORD_FAILED',
         message: tBackend('errors.unexpected', locale),
         error: errorMessage
       });

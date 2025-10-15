@@ -39,6 +39,10 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
     isLoadingCardLength,
     refreshCardStats,
     handleCardNumberAssign,
+    generatedPassword,
+    setGeneratedPassword,
+    handleRegeneratePassword,
+    isRegeneratingPassword,
   } = useCardManagement(member, onUpdate);
 
   const {
@@ -81,6 +85,10 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
             originalCardNumber={originalCardNumber}
             isSubmitting={isSubmitting}
             handleCardNumberAssign={handleCardNumberAssign}
+            generatedPassword={generatedPassword}
+            setGeneratedPassword={setGeneratedPassword}
+            handleRegeneratePassword={handleRegeneratePassword}
+            isRegeneratingPassword={isRegeneratingPassword}
           />
 
           {/* Sekcija za upravljanje markicama */}

@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { getUploadsDir, isBlobConfigured } from '../utils/uploads.js';
 import { seedSkills, seedActivityTypes } from '../../prisma/seed.js';
+import { clearOrganizationCache } from '../middleware/tenant.middleware.js';
 
 // Upload konfiguracija (ista logika kao za profile images)
 const isDev = process.env.NODE_ENV !== 'production';
@@ -68,7 +69,7 @@ export const checkSubdomainAvailability = async (req: Request, res: Response): P
  * POST /api/system-manager/organizations
  */
 export const createOrganization = async (req: Request, res: Response): Promise<void> => {
-  const locale = req.locale || 'hr';
+  const locale = req.locale;
 
   try {
     const {
@@ -85,6 +86,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       country,
       primary_color,
       secondary_color,
+      default_language,
       ethics_code_url,
       privacy_policy_url,
       membership_rules_url,
@@ -149,6 +151,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
           country: country || 'Hrvatska',
           primary_color: primary_color || '#2563eb',
           secondary_color: secondary_color || '#64748b',
+          default_language: default_language || 'hr',
           ethics_code_url: ethics_code_url || null,
           privacy_policy_url: privacy_policy_url || null,
           membership_rules_url: membership_rules_url || null,
@@ -178,6 +181,10 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
     });
 
     console.log(`[CREATE-ORG] Organization created: ${name} (ID: ${result.organization.id})`);
+
+    // Očisti cache da bi nova organizacija odmah bila dostupna
+    clearOrganizationCache();
+    console.log(`[CREATE-ORG] Organization cache cleared`);
 
     res.status(201).json({
       success: true,
@@ -281,7 +288,7 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
  * PUT /api/system-manager/organizations/:id
  */
 export const updateOrganization = async (req: Request, res: Response): Promise<void> => {
-  const locale = req.locale || 'hr';
+  const locale = req.locale;
 
   try {
     const organizationId = parseInt(req.params.id);
@@ -303,6 +310,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
       country,
       primary_color,
       secondary_color,
+      default_language,
       ethics_code_url,
       privacy_policy_url,
       membership_rules_url,
@@ -339,6 +347,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
         country: country !== undefined ? country : existing.country,
         primary_color: primary_color || existing.primary_color,
         secondary_color: secondary_color || existing.secondary_color,
+        default_language: default_language || existing.default_language,
         ethics_code_url: ethics_code_url !== undefined ? ethics_code_url : existing.ethics_code_url,
         privacy_policy_url: privacy_policy_url !== undefined ? privacy_policy_url : existing.privacy_policy_url,
         membership_rules_url: membership_rules_url !== undefined ? membership_rules_url : existing.membership_rules_url,
@@ -378,6 +387,10 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
 
     console.log(`[UPDATE-ORG] Organization updated: ${updated.name} (ID: ${updated.id})`);
 
+    // Očisti cache da bi novi language odmah bio vidljiv
+    clearOrganizationCache();
+    console.log(`[UPDATE-ORG] Organization cache cleared`);
+
     res.json({
       success: true,
       organization: updated,
@@ -396,7 +409,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
  * DELETE /api/system-manager/organizations/:id
  */
 export const deleteOrganization = async (req: Request, res: Response): Promise<void> => {
-  const locale = req.locale || 'hr';
+  const locale = req.locale;
 
   try {
     const organizationId = parseInt(req.params.id);

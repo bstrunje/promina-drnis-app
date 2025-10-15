@@ -28,10 +28,10 @@ class TimezoneService {
    * Inicijalizira vremensku zonu iz baze podataka
    * Ovu metodu trebalo bi pozvati pri pokretanju aplikacije i nakon svake promjene postavki
    */
-  public async initializeTimezone(): Promise<void> {
+  public async initializeTimezone(organizationId: number = 1): Promise<void> {
     try {
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
 
       if (settings?.timeZone) {
@@ -54,11 +54,12 @@ class TimezoneService {
   /**
    * Ažurira vremensku zonu u postavkama sustava
    * @param timeZone Nova vremenska zona (npr. 'Europe/Zagreb')
+   * @param organizationId ID organizacije
    */
-  public async updateTimezone(timeZone: string): Promise<void> {
+  public async updateTimezone(timeZone: string, organizationId: number = 1): Promise<void> {
     try {
       await prisma.systemSettings.update({
-        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId },
         data: { timeZone }
       });
 

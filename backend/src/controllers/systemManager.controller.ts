@@ -335,15 +335,7 @@ const systemManagerController = {
         }
     },
 
-    async getSystemSettings(req: Request, res: Response): Promise<void> {
-        try {
-            const settings = await systemManagerService.getSystemSettings(req);
-            res.json(settings);
-        } catch (error) {
-            console.error('Error fetching system settings:', error);
-            res.status(500).json({ message: 'Internal server error' });
-        }
-    },
+
 
     async updateSystemSettings(req: Request, res: Response): Promise<void> {
         try {
@@ -519,7 +511,8 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
 
 async function getDutySettings(req: Request, res: Response): Promise<void> {
     try {
-        const settings = await dutyService.getDutySettingsPublic();
+        const organizationId = getOrganizationId(req);
+        const settings = await dutyService.getDutySettingsPublic(organizationId);
         res.json(settings);
     } catch (error) {
         console.error('Error fetching duty settings:', error);
@@ -551,7 +544,8 @@ async function updateDutySettings(req: Request, res: Response): Promise<void> {
         
         if (dutyAutoCreateEnabled !== undefined) updateData.dutyAutoCreateEnabled = Boolean(dutyAutoCreateEnabled);
         
-        const settings = await dutyService.updateDutySettings(updateData);
+        const organizationId = getOrganizationId(req);
+        const settings = await dutyService.updateDutySettings(organizationId, updateData);
         
         await auditService.logAction('update', req.user.id, `Updated duty calendar settings: ${JSON.stringify(updateData)}`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, req.user?.organization_id);
         

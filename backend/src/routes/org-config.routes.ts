@@ -34,6 +34,7 @@ router.get('/org-config', tenantMiddleware, async (req: Request, res: Response) 
       logo_path: organization.logo_path || null,
       primary_color: organization.primary_color || '#0066cc',
       secondary_color: organization.secondary_color || '#1e40af',
+      default_language: organization.default_language || 'hr',
       
       // Kontakt informacije
       email: organization.email || null,
@@ -82,7 +83,8 @@ router.get('/org-config/branding', tenantMiddleware, async (req: Request, res: R
       short_name: organization.short_name,
       logo_path: organization.logo_path || null,
       primary_color: organization.primary_color || '#0066cc',
-      secondary_color: organization.secondary_color || '#1e40af'
+      secondary_color: organization.secondary_color || '#1e40af',
+      default_language: organization.default_language || 'hr'
     };
 
     res.json({

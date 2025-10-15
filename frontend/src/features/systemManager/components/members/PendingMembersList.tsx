@@ -1,6 +1,6 @@
 // features/systemManager/components/members/PendingMembersList.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, AlertCircle, UserCog, RefreshCw, UserPlus, Search, Key, Eye, EyeOff } from 'lucide-react';
+import { User, AlertCircle, UserCog, RefreshCw, UserPlus, Search, Key, Eye, EyeOff, Copy } from 'lucide-react';
 import { useToast } from '@components/ui/use-toast';
 import { getPendingMembers, assignPasswordToMember, assignRoleToMember, PendingMember } from '../../utils/systemManagerApi';
 
@@ -22,7 +22,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
   const [cardNumber, setCardNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [assignSuperuserRole, setAssignSuperuserRole] = useState(false);
+  // Superuser role je uvijek true za SM proces
   const [showPassword, setShowPassword] = useState(false);
 
   const loadPendingMembers = useCallback(async () => {
@@ -62,7 +62,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
     setCardNumber('');
     setPassword('');
     setConfirmPassword('');
-    setAssignSuperuserRole(false);
+    // setAssignSuperuserRole(false); // Više nije potrebno, uvijek je true
     setShowPassword(false);
   };
 
@@ -71,24 +71,53 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
     setIsModalOpen(true);
   };
 
-  const generateStandardPassword = () => {
-    if (!selectedMember) return;
-    if (!cardNumber) {
-      toast({
-        title: 'Info',
-        description: 'Please enter a card number to generate a standard password.',
-        variant: 'default',
-      });
-      return;
-    }
-    const fullName = selectedMember.full_name ?? `${selectedMember.first_name} ${selectedMember.last_name}`;
-    const generatedPassword = `${fullName}-isk-${cardNumber}`;
+  /**
+   * Generira siguran random 8-character password za bootstrap superuser-a
+   * Koristi crypto API za kriptografsku sigurnost
+   */
+  const generateRandomPassword = () => {
+    // Generiramo random 8-character password
+    const array = new Uint8Array(8);
+    crypto.getRandomValues(array);
+    const generatedPassword = Array.from(array, byte => 
+      byte.toString(16).padStart(2, '0')
+    ).join('').substring(0, 8);
+    
     setPassword(generatedPassword);
     setConfirmPassword(generatedPassword);
     toast({
       title: 'Success',
-      description: 'Standard password generated.',
+      description: 'Secure random password generated.',
     });
+  };
+
+  /**
+   * Kopira password u clipboard
+   */
+  const copyPasswordToClipboard = async () => {
+    if (!password) {
+      toast({
+        title: 'Info',
+        description: 'No password to copy.',
+        variant: 'default',
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(password);
+      toast({
+        title: 'Success',
+        description: 'Password copied to clipboard.',
+      });
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to copy password to clipboard.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleApprove = async (e: React.FormEvent) => {
@@ -103,22 +132,21 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
       toast({ title: 'Error', description: 'Password is required.', variant: 'destructive' });
       return;
     }
+    if (password.length < 8) {
+      toast({ title: 'Error', description: 'Password must be at least 8 characters long.', variant: 'destructive' });
+      return;
+    }
 
     setIsApproving(true);
     try {
       await assignPasswordToMember(selectedMember.member_id, password);
+      // SM proces - uvijek dodjeljujemo superuser role
+      await assignRoleToMember(selectedMember.member_id, 'member_superuser');
+      
       toast({
         title: 'Success',
-        description: `Password assigned to ${selectedMember.full_name}. Member is now active.`,
+        description: `${selectedMember.full_name} has been activated as a Superuser.`,
       });
-
-      if (assignSuperuserRole) {
-        await assignRoleToMember(selectedMember.member_id, 'member_superuser');
-        toast({
-          title: 'Success',
-          description: 'Superuser role has been assigned.',
-        });
-      }
 
       closeModal();
       await loadPendingMembers(); // Refresh list
@@ -212,7 +240,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
       {isModalOpen && selectedMember && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-medium mb-4">Approve Member: {selectedMember.full_name}</h3>
+            <h3 className="text-lg font-medium mb-4">Add Superuser: {selectedMember.full_name}</h3>
             <form onSubmit={(e) => { void handleApprove(e); }} className="space-y-4">
               <div>
                 <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">Membership Card Number (optional)</label>
@@ -222,7 +250,7 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter card number to enable generation"
+                  placeholder="Optional - can be assigned later"
                 />
               </div>
 
@@ -236,8 +264,9 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                      placeholder="Enter password manually"
+                      placeholder="Enter password (min. 8 characters) or click Generate"
                       required
+                      minLength={8}
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -245,10 +274,20 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
                   </div>
                   <button
                     type="button"
-                    onClick={generateStandardPassword}
+                    onClick={generateRandomPassword}
                     className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200 flex items-center"
+                    title="Generate secure random 8-character password"
                   >
                     <Key className="h-4 w-4 mr-1" /> Generate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { void copyPasswordToClipboard(); }}
+                    className="px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded-md hover:bg-blue-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Copy password to clipboard"
+                    disabled={!password}
+                  >
+                    <Copy className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -271,27 +310,18 @@ const PendingMembersList: React.FC<PendingMembersListProps> = ({ refreshTrigger 
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="assignSuperuserRole"
-                  checked={assignSuperuserRole}
-                  onChange={(e) => setAssignSuperuserRole(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="assignSuperuserRole" className="text-sm font-medium text-gray-700 flex items-center">
-                  <UserCog className="h-4 w-4 mr-1 text-gray-500" />
-                  Assign Superuser Role
-                </label>
+              <div className="flex items-center space-x-2 text-sm text-blue-600 bg-blue-50 p-3 rounded border border-blue-200">
+                <UserCog className="h-4 w-4" />
+                <span className="font-medium">This member will be assigned the Superuser role automatically</span>
               </div>
 
               <div className="flex justify-end space-x-3 pt-2">
                 <button type="button" onClick={closeModal} className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200" disabled={isApproving}>Cancel</button>
                 <button type="submit" className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50" disabled={isApproving}>
                   {isApproving ? (
-                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Approving...</>
+                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Creating Superuser...</>
                   ) : (
-                    <><UserPlus className="h-4 w-4 mr-2" /> Approve Member</>
+                    <><UserPlus className="h-4 w-4 mr-2" /> Add Superuser</>
                   )}
                 </button>
               </div>

@@ -223,7 +223,28 @@
         "submit": {
             "submitting": "Changing...",
             "change": "Change Card Number"
+        },
+        "password": {
+            "title": "Generated Password",
+            "copy": "Copy",
+            "warning": "⚠️ Show this password to the member. It will not be available again after closing.",
+            "copySuccess": "Password copied to clipboard",
+            "copyError": "Failed to copy password"
+        },
+        "toast": {
+            "success": "Success",
+            "error": "Error",
+            "assignedWithPassword": "Card number successfully assigned. Password: {{password}}",
+            "assigned": "Card number successfully assigned"
+        },
+        "regenerate": {
+            "button": "Regenerate Password",
+            "regenerating": "Regenerating...",
+            "success": "Password successfully regenerated: {{password}}"
         }
+    },
+    "cardManagement": {
+        "errorDetails": "Card assignment error details"
     },
     "stamp": {
         "title": "Stamp Management",

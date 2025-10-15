@@ -8,15 +8,16 @@ import {
 } from '../config/dutySchedule.js';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
 import { Request } from 'express';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 /**
  * Dohvaća ID tipa aktivnosti "DEŽURSTVA"
  */
-const getDutyActivityTypeId = async (): Promise<number> => {
+const getDutyActivityTypeId = async (organizationId: number): Promise<number> => {
   const dutyType = await prisma.activityType.findUnique({
     where: { 
       organization_id_key: {
-        organization_id: 1, // PD Promina - TODO: Dodati tenant context
+        organization_id: organizationId,
         key: 'dezurstva'
       }
     }
@@ -32,9 +33,9 @@ const getDutyActivityTypeId = async (): Promise<number> => {
 /**
  * Dohvaća System Settings za duty calendar
  */
-const getDutySettings = async () => {
+const getDutySettings = async (organizationId: number) => {
   const settings = await prisma.systemSettings.findUnique({
-    where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+    where: { organization_id: organizationId },
     select: {
       dutyCalendarEnabled: true,
       dutyMaxParticipants: true,
@@ -52,9 +53,9 @@ const getDutySettings = async () => {
 /**
  * Provjerava validnost dežurstva prije kreiranja
  */
-const validateDutySlot = async (date: Date, memberId: number) => {
+const validateDutySlot = async (organizationId: number, date: Date, memberId: number) => {
   // 1. Provjeri System Settings - je li kalendar omogućen
-  const settings = await getDutySettings();
+  const settings = await getDutySettings(organizationId);
   if (!settings.dutyCalendarEnabled) {
     throw new Error('Duty calendar is currently disabled by System Manager');
   }
@@ -69,7 +70,7 @@ const validateDutySlot = async (date: Date, memberId: number) => {
   }
   
   // 3. Dohvati postojeće dežurstvo za taj datum
-  const dutyTypeId = await getDutyActivityTypeId();
+  const dutyTypeId = await getDutyActivityTypeId(organizationId);
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
   
@@ -110,7 +111,8 @@ const validateDutySlot = async (date: Date, memberId: number) => {
  * Kreira novo dežurstvo ili dodaje člana na postojeće
  */
 export const createDutyShift = async (req: Request, memberId: number, date: Date) => {
-  const validation = await validateDutySlot(date, memberId);
+  const organizationId = await getOrganizationId(req);
+  const validation = await validateDutySlot(organizationId, date, memberId);
   
   // Ako već postoji dežurstvo, pridruži člana
   if (validation.existingDuty) {
@@ -158,7 +160,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
     : `Dežurstvo ${formattedDate}`;
   
   // Kreiraj aktivnost kroz postojeći service
-  const dutyTypeId = await getDutyActivityTypeId();
+  const dutyTypeId = await getDutyActivityTypeId(organizationId);
   
   // Aktivnost se kreira sa statusom PLANNED
   // start_date je postavljeno na planirano vrijeme početka dežurstva
@@ -180,11 +182,11 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
 /**
  * Dohvaća sve dužurstva za određeni mjesec
  */
-export const getDutiesForMonth = async (year: number, month: number) => {
+export const getDutiesForMonth = async (organizationId: number, year: number, month: number) => {
   const monthStart = startOfMonth(new Date(year, month - 1, 1));
   const monthEnd = endOfMonth(new Date(year, month - 1, 1));
   
-  const dutyTypeId = await getDutyActivityTypeId();
+  const dutyTypeId = await getDutyActivityTypeId(organizationId);
   
   const duties = await prisma.activity.findMany({
     where: {
@@ -244,11 +246,11 @@ export const getHolidaysForMonth = async (year: number, month: number) => {
 /**
  * Dohvaća kalendar za mjesec (duties + holidays + settings)
  */
-export const getCalendarForMonth = async (year: number, month: number) => {
+export const getCalendarForMonth = async (organizationId: number, year: number, month: number) => {
   const [duties, holidays, settings] = await Promise.all([
-    getDutiesForMonth(year, month),
+    getDutiesForMonth(organizationId, year, month),
     getHolidaysForMonth(year, month),
-    getDutySettings()
+    getDutySettings(organizationId)
   ]);
   
   return {
@@ -262,7 +264,7 @@ export const getCalendarForMonth = async (year: number, month: number) => {
 /**
  * Ažurira duty calendar settings (System Manager only)
  */
-export const updateDutySettings = async (data: {
+export const updateDutySettings = async (organizationId: number, data: {
   dutyCalendarEnabled?: boolean;
   dutyMaxParticipants?: number;
   dutyAutoCreateEnabled?: boolean;
@@ -284,7 +286,7 @@ export const updateDutySettings = async (data: {
   }
   
   return prisma.systemSettings.update({
-    where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+    where: { organization_id: organizationId },
     data: updateData
   });
 };
@@ -292,8 +294,8 @@ export const updateDutySettings = async (data: {
 /**
  * Dohvaća duty settings (za prikaz korisniku)
  */
-export const getDutySettingsPublic = async () => {
-  const settings = await getDutySettings();
+export const getDutySettingsPublic = async (organizationId: number) => {
+  const settings = await getDutySettings(organizationId);
   const scheduleInfo = getAllScheduleInfo();
   
   return {

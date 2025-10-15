@@ -12,7 +12,6 @@ import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
-import LanguageToggle from '../../components/LanguageToggle';
 import { useBranding } from '../../hooks/useBranding';
 
 interface SizeOptions {
@@ -48,6 +47,23 @@ const LoginPage = () => {
     branding,
     error: brandingError
   } = useBranding();
+
+  // Helper funkcija za navigaciju s tenant parametrom
+  const navigateWithTenant = (path: string) => {
+    const tenant = searchParams.get('tenant') ?? searchParams.get('branding');
+    if (tenant) {
+      // Provjeri je li path već sadrži branding parametar
+      if (path.includes('branding=') || path.includes('tenant=')) {
+        navigate(path); // Već ima tenant, ne dodaj ponovno
+      } else {
+        // Provjeri sadrži li path već query parametre
+        const separator = path.includes('?') ? '&' : '?';
+        navigate(`${path}${separator}branding=${tenant}`);
+      }
+    } else {
+      navigate(path);
+    }
+  };
   // location nije potreban, uklonjen zbog lint upozorenja
   const [step, setStep] = useState(0); // 0: Initial, 1: Enter Email, 2: Enter Password
   const [showPassword, setShowPassword] = useState(false);
@@ -190,25 +206,25 @@ const LoginPage = () => {
 
       // Navigacija kao nakon uspješnog login-a
       if (redirectPath) {
-        navigate(redirectPath);
+        navigateWithTenant(redirectPath);
       } else {
         const savedPath = sessionStorage.getItem('lastPath');
         if (savedPath) {
           sessionStorage.removeItem('lastPath');
-          navigate(savedPath);
+          navigateWithTenant(savedPath);
         } else {
           switch(member.role) {
             case 'member_administrator':
-              navigate('/admin/dashboard');
+              navigateWithTenant('/admin/dashboard');
               break;
             case 'member_superuser':
-              navigate('/superuser/dashboard');
+              navigateWithTenant('/superuser/dashboard');
               break;
             case 'member':
-              navigate('/member/dashboard');
+              navigateWithTenant('/member/dashboard');
               break;
             default:
-              navigate('/profile');
+              navigateWithTenant('/profile');
           }
         }
       }
@@ -244,10 +260,7 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
           <div className="p-6 bg-blue-600 text-white text-center relative">
-            <div className="absolute top-4 right-4">
-              <LanguageToggle />
-            </div>
-            <div className="text-sm text-white bg-blue-700/60 border border-blue-500 rounded px-3 py-2">
+          <div className="text-sm text-white bg-blue-700/60 border border-blue-500 rounded px-3 py-2">
               {t('login.addressInvalid', 'Adresa nije ispravno upisana')}
             </div>
           </div>
@@ -315,7 +328,7 @@ const LoginPage = () => {
       // Provjeri postoji li putanja za preusmjeravanje
       if (redirectPath) {
         console.log(`Preusmjeravam na spremljenu putanju: ${redirectPath}`);
-        navigate(redirectPath);
+        navigateWithTenant(redirectPath);
       } else {
         // Dohvati spremljenu putanju iz sessionStorage ako postoji
         const savedPath = sessionStorage.getItem('lastPath');
@@ -323,23 +336,23 @@ const LoginPage = () => {
           console.log(`Preusmjeravam na spremljenu putanju iz sessionStorage: ${savedPath}`);
           // Očisti spremljenu putanju
           sessionStorage.removeItem('lastPath');
-          navigate(savedPath);
+          navigateWithTenant(savedPath);
         } else {
           // Ako nema spremljene putanje, preusmjeri prema ulozi
           console.log('Nema spremljene putanje, preusmjeravam prema ulozi');
           // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
           switch(member.role) {
             case 'member_administrator':
-              navigate("/admin/dashboard");
+              navigateWithTenant("/admin/dashboard");
               break;
             case 'member_superuser':
-              navigate("/superuser/dashboard");
+              navigateWithTenant("/superuser/dashboard");
               break;
             case 'member':
-              navigate("/member/dashboard");
+              navigateWithTenant("/member/dashboard");
               break;
             default:
-              navigate("/profile");
+              navigateWithTenant("/profile");
           }
         }
       }
@@ -464,10 +477,6 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
         <div className="p-6 bg-blue-600 text-white text-center relative">
-          {/* Language Toggle in top right corner */}
-          <div className="absolute top-4 right-4">
-            <LanguageToggle />
-          </div>
           <div className="mb-4">
             {/* Neutral notice when tenant is missing and branding is blocked */}
             {(!branding && brandingError) && (
@@ -486,7 +495,7 @@ const LoginPage = () => {
               }}
             />
           </div>
-          <h2 className="text-2xl font-bold">{t('login.clubTitle')}</h2>
+          <h2 className="text-2xl font-bold">{getFullName()}</h2>
         </div>
 
         <div className="p-6 bg-blue-600 text-white text-center">

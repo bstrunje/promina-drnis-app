@@ -5,7 +5,6 @@ import { Member } from '@shared/member';
 import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle, Calendar } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/useUnreadMessages';
 import { useTranslation } from 'react-i18next';
-import LanguageToggle from '../src/components/LanguageToggle';
 import { useBranding } from '../src/hooks/useBranding';
 
 interface NavigationProps {
@@ -17,7 +16,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { unreadCount: unreadMessageCount } = useUnreadMessages();
   const { t } = useTranslation('common');
-  const { getLogoUrl, getFullName, getPrimaryColor } = useBranding();
+  const { getLogoUrl, getFullName, getShortName, getPrimaryColor } = useBranding();
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -38,8 +37,8 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
           <div className="flex w-full sm:w-auto items-center justify-between mb-4 sm:mb-0">
             <Link to="/profile" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
               <img 
-                src={getLogoUrl()} 
-                alt={getFullName()} 
+                src={getLogoUrl() || undefined} 
+                alt={getFullName() || undefined} 
                 className="h-10 w-10 flex-shrink-0 object-contain"
                 onError={(e) => {
                   // Fallback ako logo ne učita
@@ -50,13 +49,13 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                 className="hidden md:inline text-xl font-bold whitespace-nowrap" 
                 style={{ color: getPrimaryColor() }}
               >
-                {t('navigation.title')}
+                {getFullName()}
               </span>
               <span 
                 className="md:hidden text-xl font-bold whitespace-nowrap" 
                 style={{ color: getPrimaryColor() }}
               >
-                {t('navigation.titleShort')}
+                {getShortName()}
               </span>
             </Link>
             <button 
@@ -124,8 +123,6 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <span>{t('navigation.dashboard')}</span>
             </Link>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            <LanguageToggle onLanguageChange={closeMenu} />
-
               <button
                 onClick={() => {
                   closeMenu();

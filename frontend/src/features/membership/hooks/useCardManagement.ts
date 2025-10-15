@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@components/ui/use-toast";
+import { useTranslation } from 'react-i18next';
 import { Member } from "@shared/member";
 // Zamijenjeno prema novoj modularnoj API strukturi
-import { getAvailableCardNumbers, getAllCardNumbers } from '../../../utils/api/apiCards';
-import { updateMembership } from '../../../utils/api/apiMembership';
+import { getAvailableCardNumbers, getAllCardNumbers, assignCardNumber, regeneratePassword } from '../../../utils/api/apiCards';
 import { useCardNumberLength } from "../../../hooks/useCardNumberLength";
 import { CardStats } from "../types/membershipTypes";
 
@@ -19,6 +19,7 @@ interface CardInfo {
 
 export const useCardManagement = (member: Member, onUpdate: (member: Member) => Promise<void>) => {
   const { toast } = useToast();
+  const { t } = useTranslation('profile');
   
   // Inicijaliziraj stanje iz membership_details (izvor istine), a zatim iz direktnih property-a
   const [cardNumber, setCardNumber] = useState(
@@ -32,6 +33,8 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
   const [isLoadingCardNumbers, setIsLoadingCardNumbers] = useState(false);
   const [cardStats, setCardStats] = useState<CardStats | null>(null);
   const [isLoadingCardStats, setIsLoadingCardStats] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [isRegeneratingPassword, setIsRegeneratingPassword] = useState(false);
 
   // Dohvati dinamičku duljinu broja kartice
   const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
@@ -108,20 +111,23 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
   const handleCardNumberAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    const data = {
-      cardNumber,
-    };
+    setGeneratedPassword(null); // Reset passworda
 
     try {
-      const response = await updateMembership(member.member_id, data);
+      // Koristi assignCardNumber API koji automatski generira password
+      const response = await assignCardNumber(member.member_id, cardNumber);
 
       if (!response) {
         throw new Error("Nema odgovora od servera");
       }
 
+      // Spremi generirani password
+      if (response.generatedPassword) {
+        setGeneratedPassword(response.generatedPassword);
+      }
+
       // Ažuriraj lokalno stanje s prioritetom na membership_details
-      // Ažuriraj samo membership_details.card_number, Member.card_number se više ne koristi
+      // Napomena: Backend automatski postavlja status na 'registered' u cardnumber.controller.ts
       await onUpdate({
         ...member,
         membership_details: {
@@ -131,14 +137,16 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       });
 
       toast({
-        title: "Uspjeh",
-        description: "Broj kartice uspješno dodijeljen",
+        title: t('membershipCard.toast.success'),
+        description: response.generatedPassword 
+          ? t('membershipCard.toast.assignedWithPassword', { password: response.generatedPassword })
+          : t('membershipCard.toast.assigned'),
         variant: "success",
       });
-    }catch (error: unknown) {
+    } catch (error: unknown) {
       // Sigurno logiranje greške
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Detalji greške kod dodjele kartice:", {
+      console.error(t('cardManagement.errorDetails'), {
         error: errorMessage,
         memberId: member.member_id,
         cardNumber,
@@ -146,12 +154,51 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
       });
     
       toast({
-        title: "Greška",
+        title: t('membershipCard.toast.error'),
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Funkcija za regeneriranje passworda (samo za RANDOM_8)
+  const handleRegeneratePassword = async () => {
+    setIsRegeneratingPassword(true);
+    setGeneratedPassword(null); // Reset starog passworda
+
+    try {
+      const response = await regeneratePassword(member.member_id);
+
+      if (!response) {
+        throw new Error("Nema odgovora od servera");
+      }
+
+      // Spremi novi generirani password
+      if (response.generatedPassword) {
+        setGeneratedPassword(response.generatedPassword);
+      }
+
+      toast({
+        title: t('membershipCard.toast.success'),
+        description: t('membershipCard.regenerate.success', { password: response.generatedPassword }),
+        variant: "success",
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(t('cardManagement.errorDetails'), {
+        error: errorMessage,
+        memberId: member.member_id,
+      });
+    
+      toast({
+        title: t('membershipCard.toast.error'),
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegeneratingPassword(false);
     }
   };
 
@@ -168,5 +215,9 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
     isLoadingCardLength,
     refreshCardStats,
     handleCardNumberAssign,
+    generatedPassword,
+    setGeneratedPassword,
+    handleRegeneratePassword,
+    isRegeneratingPassword,
   };
 };

@@ -312,8 +312,8 @@ const membershipRepository = {
     }
   },
 
-  async endExpiredMemberships(year: number): Promise<void> {
-    console.log(`[MEMBERSHIP] Završavam istekla članstva za godinu ${year}...`);
+  async endExpiredMemberships(year: number, organizationId: number): Promise<void> {
+    console.log(`[MEMBERSHIP] Završavam istekla članstva za godinu ${year} (org: ${organizationId})...`);
 
     await prisma.$transaction(async (tx) => {
       // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
@@ -322,7 +322,8 @@ const membershipRepository = {
             SELECT m.member_id 
             FROM members m
             LEFT JOIN membership_details md ON m.member_id = md.member_id
-            WHERE m.status = 'registered' 
+            WHERE m.organization_id = ${organizationId}
+              AND m.status = 'registered' 
               AND (md.fee_payment_year < ${year} OR md.fee_payment_year IS NULL)
               AND m.role NOT IN ('member_superuser', 'member_administrator')
         `;

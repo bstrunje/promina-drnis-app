@@ -125,6 +125,23 @@ const BrandingStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) => {
         <p className="text-sm text-gray-500 mt-1">Used for secondary elements</p>
       </div>
 
+      {/* Default Language */}
+      <div>
+        <Label htmlFor="default_language">Default Language *</Label>
+        <select
+          id="default_language"
+          value={formData.default_language ?? 'hr'}
+          onChange={(e) => onUpdate({ default_language: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="hr">Croatian (Hrvatski)</option>
+          <option value="en">English</option>
+        </select>
+        <p className="text-sm text-gray-500 mt-1">
+          This language will be used by default for all members of this organization. SystemManager will always use English.
+        </p>
+      </div>
+
       {/* Document URLs */}
       <div className="pt-4 border-t">
         <h4 className="font-medium mb-4">Document Links (Optional)</h4>

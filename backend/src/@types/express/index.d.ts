@@ -6,6 +6,7 @@ import 'express';
 declare module 'express-serve-static-core' {
   interface Request {
     // Jezik detektiran u middleware/locale.ts (npr. 'hr' | 'en')
-    locale?: 'en' | 'hr';
+    // OBAVEZNO: localeMiddleware ga uvijek postavlja za sve API pozive
+    locale: 'en' | 'hr';
   }
 }

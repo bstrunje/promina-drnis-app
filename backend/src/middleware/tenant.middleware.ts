@@ -26,6 +26,7 @@ declare module 'express-serve-static-core' {
       logo_path: string | null;
       primary_color: string | null;
       secondary_color: string | null;
+      default_language: string;
       email: string;
       phone: string | null;
       website_url: string | null;
@@ -51,6 +52,7 @@ interface TenantContext {
     logo_path: string | null;
     primary_color: string | null;
     secondary_color: string | null;
+    default_language: string;
     email: string;
     phone: string | null;
     website_url: string | null;
@@ -126,6 +128,7 @@ async function getOrganizationBySubdomain(subdomain: string): Promise<TenantCont
         logo_path: true,
         primary_color: true,
         secondary_color: true,
+        default_language: true,
         email: true,
         phone: true,
         website_url: true,

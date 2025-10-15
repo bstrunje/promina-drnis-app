@@ -41,7 +41,7 @@ interface DashboardStatsResponse {
 const MemberDashboard: React.FC<Props> = ({ member }) => {
   const navigate = useNavigate();
   const { t } = useTranslation('dashboards');
-  const { getPrimaryColor } = useBranding();
+  const { getPrimaryColor, branding } = useBranding();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<MemberStats>({
@@ -109,7 +109,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     }
   };
 
+  // Učitaj podatke pri mount-u i kad se promijeni branding (tenant)
   useEffect(() => {
+    if (!branding) return; // Čekaj da se branding učita
+    
+    console.log('[MEMBER-DASHBOARD] Učitavam podatke za tenant:', branding.subdomain, '(ID:', branding.id, ')');
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
@@ -156,7 +160,8 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
     void fetchMemberDetails();
     void fetchAnnualStats();
-  }, [member?.member_id, fullMember?.member_id, refreshUnreadCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branding, member?.member_id, fullMember?.member_id]);
 
   return (
     <div className="min-h-screen bg-gray-50">

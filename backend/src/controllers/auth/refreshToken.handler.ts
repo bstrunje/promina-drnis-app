@@ -20,7 +20,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
   if (isDev) console.log('User-Agent:', req.headers['user-agent']);
   
   const refreshToken = req.cookies.refreshToken;
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   
   if (isDev) console.log('Provjera refresh tokena iz kolačića...');
   

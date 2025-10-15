@@ -202,3 +202,20 @@ export const assignCardNumber = async (memberId: number, cardNumber: string): Pr
     throw new Error('Failed to assign card number');
   }
 };
+
+/**
+ * Regenerira password za člana (samo za RANDOM_8 strategiju)
+ * @param memberId ID člana
+ * @returns Novi generirani password
+ */
+export const regeneratePassword = async (memberId: number): Promise<{ message: string; generatedPassword: string }> => {
+  try {
+    const response: AxiosResponse<{ message: string; generatedPassword: string }> = await api.post(`/members/${memberId}/regenerate-password`);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to regenerate password');
+  }
+};

@@ -31,8 +31,19 @@ apiInstance.interceptors.request.use(
         const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
         config.params = { ...currentParams, tenant } as unknown;
       }
-    } catch {
-      // Ne prekidaj zahtjev ako dođe do greške pri dodavanju parametra
+    } catch (error) {
+      // Ako tenant nije dostupan, preusmjeri na login
+      console.error('[API-CONFIG] Tenant nije dostupan:', error);
+      // Očisti localStorage i preusmjeri
+      localStorage.removeItem('current_tenant');
+      localStorage.removeItem('organization_branding');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      // Odbij zahtjev
+      return Promise.reject(new Error('Tenant is required'));
     }
 
     return config;

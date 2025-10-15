@@ -32,7 +32,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
   onViewDetails,
 }) => {
   const { t } = useTranslation('members');
-  const { getPrimaryColor } = useBranding();
+  const { getPrimaryColor, getFullName } = useBranding();
 
   // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
@@ -138,7 +138,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
       )}
       {/* Print-only header */}
       <div className="hidden print:block text-center pb-6 border-b-2 border-gray-300 mb-6" style={{ pageBreakInside: 'avoid' }} id="print-header">
-        <h1 className="text-2xl font-bold mb-2">{t('memberList.printHeader.title')}</h1>
+        <h1 className="text-2xl font-bold mb-2">{getFullName()}</h1>
         <h2 className="text-xl font-semibold mb-3">{t('memberList.printHeader.subtitle')}</h2>
         <div className="text-lg font-semibold inline-block px-6 py-2 mb-2 mt-2 rounded-md" style={{ backgroundColor: `${getPrimaryColor()}20`, borderWidth: '2px', borderStyle: 'solid', borderColor: `${getPrimaryColor()}80` }}>
           {t('memberList.printHeader.totalMembers')}: <span className="text-xl">{filteredMembers.reduce((count, group) => count + group.members.length, 0)}</span>

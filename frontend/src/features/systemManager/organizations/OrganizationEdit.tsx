@@ -42,6 +42,7 @@ const OrganizationEdit: React.FC = () => {
     country: '',
     primary_color: '#2563eb',
     secondary_color: '#e7ecf3',
+    default_language: 'hr',
     // Linkovi na dokumente (uređivi)
     ethics_code_url: '',
     privacy_policy_url: '',
@@ -78,6 +79,7 @@ const OrganizationEdit: React.FC = () => {
         country: data.organization.country ?? '',
         primary_color: data.organization.primary_color ?? '#2563eb',
         secondary_color: data.organization.secondary_color ?? '#64748b',
+        default_language: data.organization.default_language ?? 'hr',
         ethics_code_url: data.organization.ethics_code_url ?? '',
         privacy_policy_url: data.organization.privacy_policy_url ?? '',
         membership_rules_url: data.organization.membership_rules_url ?? '',
@@ -344,6 +346,22 @@ const OrganizationEdit: React.FC = () => {
                 value={formData.website_url}
                 onChange={(e) => handleChange('website_url', e.target.value)}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="default_language">Default Language</Label>
+              <select
+                id="default_language"
+                value={formData.default_language ?? 'hr'}
+                onChange={(e) => handleChange('default_language', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="hr">Croatian (Hrvatski)</option>
+                <option value="en">English</option>
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                This language will be used by default for all members of this organization. SystemManager will always use English.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

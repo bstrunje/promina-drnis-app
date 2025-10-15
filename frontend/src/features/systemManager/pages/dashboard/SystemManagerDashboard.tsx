@@ -8,9 +8,9 @@ import ManagerTabNav from '../../components/common/ManagerTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
 import PendingMembersList from '../../components/members/PendingMembersList';
 import SystemManagerSettings from '../settings/SystemManagerSettings';
-import SystemManagerMembersView from '../../components/members/SystemManagerMembersView';
 import useDashboardStats from '../../hooks/useDashboardStats';
 import TimeTravel from '../../../../../components/admin/TimeTravel';
+import OrganizationList from '../../organizations/OrganizationList';
 
 /**
  * Glavna komponenta System Manager dashboarda
@@ -20,20 +20,20 @@ const SystemManagerDashboard: React.FC = () => {
   const { manager } = useSystemManager();
   const location = useLocation();
   const { navigateTo } = useSystemManagerNavigation();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations'>('dashboard');
   
   // Prilagođeno rukovanje tabovima kroz URL
   useEffect(() => {
     // Dobivanje trenutnog taba iz URL-a
     const path = location.pathname;
-    if (path.includes('/system-manager/members')) {
-      setActiveTab('members');
-    } else if (path.includes('/system-manager/settings')) {
+    if (path.includes('/system-manager/settings')) {
       setActiveTab('settings');
     } else if (path.includes('/system-manager/register-members')) {
       setActiveTab('register-members');
     } else if (path.includes('/system-manager/audit-logs')) {
       setActiveTab('audit-logs');
+    } else if (path.includes('/system-manager/organizations')) {
+      setActiveTab('organizations');
     } else {
       // Default - dashboard
       setActiveTab('dashboard');
@@ -41,16 +41,16 @@ const SystemManagerDashboard: React.FC = () => {
   }, [location.pathname]);
   
   // Handler za promjenu taba koji ažurira URL
-  const handleTabChange = (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => {
+  const handleTabChange = (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => {
     let targetPath = '/system-manager/';
-    if (tab === 'members') {
-      targetPath = '/system-manager/members';
-    } else if (tab === 'settings') {
+    if (tab === 'settings') {
       targetPath = '/system-manager/settings';
     } else if (tab === 'register-members') {
       targetPath = '/system-manager/register-members';
     } else if (tab === 'audit-logs') {
       targetPath = '/system-manager/audit-logs';
+    } else if (tab === 'organizations') {
+      targetPath = '/system-manager/organizations';
     } else {
       targetPath = '/system-manager/dashboard';
     }
@@ -87,14 +87,6 @@ const SystemManagerDashboard: React.FC = () => {
           />
         )}
         
-        {/* Tab sadržaj - Članovi (System Manager) */}
-        {activeTab === 'members' && (
-          <>
-            <h2 className="text-xl font-semibold mb-6">Members</h2>
-            <SystemManagerMembersView />
-          </>
-        )}
-        
         {/* Tab sadržaj - Postavke sustava */}
         {activeTab === 'settings' && (
           <>
@@ -108,6 +100,11 @@ const SystemManagerDashboard: React.FC = () => {
             <h2 className="text-xl font-semibold mb-6">Member Registration</h2>
             <PendingMembersList />
           </>
+        )}
+        
+        {/* Tab sadržaj - Organizations (samo za GSM) */}
+        {activeTab === 'organizations' && (
+          <OrganizationList standalone={false} />
         )}
       </main>
     </div>

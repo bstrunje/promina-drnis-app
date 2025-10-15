@@ -9,7 +9,7 @@ import RecentActivities from './RecentActivities';
 interface DashboardStatsProps {
   stats: SystemManagerDashboardStats;
   statsLoading: boolean;
-  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs') => void;
+  setActiveTab: (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, setActiveTab }) => {
@@ -31,7 +31,6 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
             ''}`
         }
         loading={statsLoading}
-        onClick={() => { void setActiveTab('members'); }}
       />
 
       {/* Kartica aktivnosti */}

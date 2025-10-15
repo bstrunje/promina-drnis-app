@@ -3,10 +3,12 @@ import bcrypt from 'bcrypt';
 import authRepository from '../../repositories/auth.repository.js';
 import prisma from '../../utils/prisma.js';
 import { tOrDefault } from '../../utils/i18n.js';
+import passwordService from '../../services/password.service.js';
+import { getOrganizationId } from '../../middleware/tenant.middleware.js';
 const isDev = process.env.NODE_ENV === 'development';
 
 export async function searchMembersHandler(req: Request, res: Response): Promise<void> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     const { searchTerm } = req.query;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -42,12 +44,13 @@ export async function assignCardNumberHandler(
   req: Request<Record<string, never>, Record<string, never>, { member_id: number; card_number: string }>,
   res: Response
 ): Promise<void> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     const { member_id, card_number } = req.body;
+    const organizationId = getOrganizationId(req);
 
     const settings = await prisma.systemSettings.findFirst({
-      where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+      where: { organization_id: organizationId },
     });
     const cardNumberLength = settings?.cardNumberLength || 5;
 
@@ -68,8 +71,22 @@ export async function assignCardNumberHandler(
       return;
     }
 
-    const password = `${member.full_name}-isk-${card_number.padStart(cardNumberLength, '0')}`;
-    console.log(`Generating password: "${password}" for member ${member_id}`);
+    // Osiguraj da član ima ime prije generiranja lozinke
+    if (!member.full_name) {
+      res.status(400).json({ 
+        code: 'MEMBER_NAME_MISSING', 
+        message: tOrDefault('errorsByCode.MEMBER_NAME_MISSING', locale, 'Member name is missing')
+      });
+      return;
+    }
+
+    const password = passwordService.generatePassword(
+      settings?.passwordGenerationStrategy, 
+      member, 
+      card_number,
+      { separator: settings?.passwordSeparator, cardDigits: settings?.passwordCardDigits }
+    );
+    console.log(`Generating password for member ${member_id} using strategy: ${settings?.passwordGenerationStrategy || 'default'}`);
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await authRepository.updateMemberWithCardAndPassword(
@@ -94,7 +111,7 @@ export async function assignPasswordHandler(
   req: Request<Record<string, never>, Record<string, never>, { memberId: number; password: string }>,
   res: Response
 ): Promise<void> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     const { memberId, password } = req.body;
     console.log('Received password assignment request for member:', memberId);
@@ -109,7 +126,7 @@ export async function assignPasswordHandler(
 }
 
 export async function debugMemberHandler(req: Request, res: Response): Promise<void | Response> {
-  const locale: 'en' | 'hr' = req.locale ?? 'en';
+  const locale = req.locale;
   try {
     const memberId = parseInt(req.params.id);
     console.log(`Debug request for member ${memberId}`);

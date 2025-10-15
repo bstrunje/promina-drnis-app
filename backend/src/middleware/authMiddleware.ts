@@ -120,6 +120,7 @@ const authenticateToken = async (
     } catch (error) {
         console.error('Authentication error:', error);
         res.status(401).json({ message: 'Token is not valid' });
+        return;
     }
 };
 
@@ -174,8 +175,8 @@ const requireSystemManager = async (
 ): Promise<void> => {
     try {
         if (!req.user || !req.user.is_SystemManager) {
-            res.status(403).json({ 
-                message: 'Access denied. System manager privileges required.' 
+            res.status(401).json({ 
+                message: 'Authentication required. System manager privileges required.' 
             });
             return;
         }

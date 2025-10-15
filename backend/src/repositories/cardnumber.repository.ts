@@ -1,4 +1,5 @@
 import prisma from '../utils/prisma.js';
+import { Prisma } from '@prisma/client';
 
 const cardNumberRepository = {
   // OPTIMIZIRANA funkcija za dohvat dostupnih brojeva kartica - serverless friendly
@@ -289,10 +290,13 @@ const cardNumberRepository = {
           orderBy: { card_number: 'asc' }
         }),
 
-        // 2. Dohvati dodijeljene kartice iz membership_details
+        // 2. Dohvati dodijeljene kartice iz membership_details (samo za ovu organizaciju)
         prisma.membershipDetails.findMany({
           where: {
-            card_number: { not: null }
+            card_number: { not: null },
+            member: {
+              organization_id: organizationId
+            }
           },
           select: {
             card_number: true,
@@ -536,7 +540,7 @@ const cardNumberRepository = {
    * @param search optional - string za pretragu po broju kartice ili imenu člana (case-insensitive, djelomično podudaranje)
    * @returns Lista potrošenih kartica s imenom člana
    */
-  async getConsumedCardNumbers(search?: string): Promise<{
+  async getConsumedCardNumbers(organizationId: number, search?: string): Promise<{
     card_number: string;
     member_id: number | null;
     member_name: string | null;
@@ -544,25 +548,31 @@ const cardNumberRepository = {
     consumed_at: Date;
   }[]> {
     try {
-      const consumedCards = await prisma.consumedCardNumber.findMany({
-        where: search && search.trim() !== '' ? {
-          OR: [
-            {
-              card_number: {
+      const whereClause: Prisma.ConsumedCardNumberWhereInput = {
+        organization_id: organizationId
+      };
+
+      if (search && search.trim() !== '') {
+        whereClause.OR = [
+          {
+            card_number: {
+              contains: search.toLowerCase(),
+              mode: 'insensitive'
+            }
+          },
+          {
+            member: {
+              full_name: {
                 contains: search.toLowerCase(),
                 mode: 'insensitive'
               }
-            },
-            {
-              member: {
-                full_name: {
-                  contains: search.toLowerCase(),
-                  mode: 'insensitive'
-                }
-              }
             }
-          ]
-        } : undefined,
+          }
+        ];
+      }
+
+      const consumedCards = await prisma.consumedCardNumber.findMany({
+        where: whereClause,
         include: {
           member: {
             select: {

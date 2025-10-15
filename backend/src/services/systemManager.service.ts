@@ -43,6 +43,10 @@ type SystemSettingsExtended = {
     backupStorageLocation?: string | null;
     lastBackupAt?: Date | null;
     nextBackupAt?: Date | null;
+    // Password generation settings
+    passwordGenerationStrategy?: 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREFIX_CARD_SUFFIX' | null;
+    passwordSeparator?: string | null;
+    passwordCardDigits?: number | null;
 };
 
 type MemberSummary = {
@@ -286,87 +290,84 @@ const systemManagerService = {
         }
     },
 
-    async getSystemSettings(req: Request): Promise<SystemSettingsExtended | null> {
-        try {
-            if (!req.user) {
-                throw new Error('User not authenticated');
-            }
-
-            const organizationId = req.user.organization_id;
-
-            // Ako je Global Manager, nema postavki, vraćamo null
-            if (organizationId === null) {
-                return null;
-            }
-            
-            if (organizationId === null) {
-                // Ovo se ne bi trebalo dogoditi zbog provjere na početku, ali za svaki slučaj
-                return null;
-            }
-            const settings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } });
-            
-            const defaultSettings: SystemSettingsExtended = {
-                id: 'default',
-                cardNumberLength: 5,
-                renewalStartMonth: 11,
-                renewalStartDay: 1,
-                timeZone: 'Europe/Zagreb',
-                membershipTerminationDay: 1,
-                membershipTerminationMonth: 3,
-                updatedAt: getCurrentDate(),
-                updatedBy: null,
-                registrationRateLimitEnabled: false,
-                registrationWindowMs: 3600000,
-                registrationMaxAttempts: 5,
-                twoFactorGlobalEnabled: false,
-                twoFactorMembersEnabled: false,
-                twoFactorChannelEmailEnabled: false,
-                twoFactorChannelSmsEnabled: false,
-                twoFactorChannelTotpEnabled: false,
-                twoFactorTrustedDevicesEnabled: false,
-                twoFactorOtpExpirySeconds: 300,
-                twoFactorRememberDeviceDays: 30,
-                twoFactorTotpStepSeconds: 30,
-                twoFactorTotpWindow: 1,
-                twoFactorMaxAttemptsPerHour: 10,
-                twoFactorRequiredMemberRoles: [],
-                twoFactorRequiredMemberPermissions: []
-            };
-
-            if (!settings) return { ...defaultSettings, id: 'new' }; // Vraćamo 'new' da frontend zna da postavke ne postoje
-            
-            return {
-                ...defaultSettings,
-                ...settings,
-                id: String(settings.id),
-                cardNumberLength: settings.cardNumberLength ?? defaultSettings.cardNumberLength,
-                renewalStartMonth: settings.renewalStartMonth ?? defaultSettings.renewalStartMonth,
-                renewalStartDay: settings.renewalStartDay ?? defaultSettings.renewalStartDay,
-                membershipTerminationDay: settings.membershipTerminationDay ?? defaultSettings.membershipTerminationDay,
-                membershipTerminationMonth: settings.membershipTerminationMonth ?? defaultSettings.membershipTerminationMonth,
-                twoFactorRequiredMemberRoles: (settings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
-                twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
-                // Dodaj zadane vrijednosti za sve boolean polja koja mogu biti null
-                registrationRateLimitEnabled: settings.registrationRateLimitEnabled ?? false,
-                twoFactorGlobalEnabled: settings.twoFactorGlobalEnabled ?? false,
-                twoFactorMembersEnabled: settings.twoFactorMembersEnabled ?? false,
-                twoFactorChannelEmailEnabled: settings.twoFactorChannelEmailEnabled ?? false,
-                twoFactorChannelSmsEnabled: settings.twoFactorChannelSmsEnabled ?? false,
-                twoFactorChannelTotpEnabled: settings.twoFactorChannelTotpEnabled ?? false,
-                twoFactorTrustedDevicesEnabled: defaultSettings.twoFactorTrustedDevicesEnabled,
-                registrationWindowMs: settings.registrationWindowMs ?? 3600000,
-                registrationMaxAttempts: settings.registrationMaxAttempts ?? 5,
-                twoFactorOtpExpirySeconds: settings.twoFactorOtpExpirySeconds ?? 300,
-                twoFactorRememberDeviceDays: settings.twoFactorRememberDeviceDays ?? 30,
-                twoFactorTotpStepSeconds: settings.twoFactorTotpStepSeconds ?? 30,
-                twoFactorTotpWindow: settings.twoFactorTotpWindow ?? 1,
-                twoFactorMaxAttemptsPerHour: settings.twoFactorMaxAttemptsPerHour ?? 10,
-            };
-        } catch (error) {
-            console.error('Error fetching system settings:', error);
-            throw new Error('Failed to fetch system settings');
+async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
+    try {
+        // Global System Manager nema pristup Settings-ima
+        const organizationId = req.user?.organization_id ?? null;
+        
+        if (organizationId === null) {
+            throw new Error('Global System Manager cannot access organization-specific settings');
         }
-    },
+
+        const settings = await prisma.systemSettings.findFirst({
+            where: {
+                organization_id: organizationId,
+            },
+        });
+
+        const defaultSettings: SystemSettingsExtended = {
+            id: 'default',
+            cardNumberLength: 8,
+            renewalStartMonth: 11,
+            renewalStartDay: 1,
+            timeZone: 'Europe/Zagreb',
+            membershipTerminationDay: 1,
+            membershipTerminationMonth: 3,
+            updatedAt: getCurrentDate(),
+            updatedBy: null,
+            registrationRateLimitEnabled: false,
+            registrationWindowMs: 3600000,
+            registrationMaxAttempts: 5,
+            twoFactorGlobalEnabled: false,
+            twoFactorMembersEnabled: false,
+            twoFactorChannelEmailEnabled: false,
+            twoFactorChannelSmsEnabled: false,
+            twoFactorChannelTotpEnabled: false,
+            twoFactorTrustedDevicesEnabled: false,
+            twoFactorOtpExpirySeconds: 300,
+            twoFactorRememberDeviceDays: 30,
+            twoFactorTotpStepSeconds: 30,
+            twoFactorTotpWindow: 1,
+            twoFactorMaxAttemptsPerHour: 10,
+            twoFactorRequiredMemberRoles: [],
+            twoFactorRequiredMemberPermissions: [],
+            passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
+            passwordSeparator: '-isk-',
+            passwordCardDigits: 4
+        };
+
+        if (settings) {
+    // Spoji pronađene postavke sa zadanima da se popune sve vrijednosti
+    return {
+        ...defaultSettings,
+        ...settings,
+        id: String(settings.id), // Osiguraj da je id string
+        // Osiguraj da nullable polja imaju zadane vrijednosti ako su null
+        cardNumberLength: settings.cardNumberLength ?? defaultSettings.cardNumberLength,
+        renewalStartMonth: settings.renewalStartMonth ?? defaultSettings.renewalStartMonth,
+        renewalStartDay: settings.renewalStartDay ?? defaultSettings.renewalStartDay,
+        membershipTerminationDay: settings.membershipTerminationDay ?? defaultSettings.membershipTerminationDay,
+        membershipTerminationMonth: settings.membershipTerminationMonth ?? defaultSettings.membershipTerminationMonth,
+        registrationRateLimitEnabled: settings.registrationRateLimitEnabled ?? defaultSettings.registrationRateLimitEnabled,
+        twoFactorGlobalEnabled: settings.twoFactorGlobalEnabled ?? defaultSettings.twoFactorGlobalEnabled,
+        twoFactorMembersEnabled: settings.twoFactorMembersEnabled ?? defaultSettings.twoFactorMembersEnabled,
+        twoFactorChannelEmailEnabled: settings.twoFactorChannelEmailEnabled ?? defaultSettings.twoFactorChannelEmailEnabled,
+        twoFactorChannelSmsEnabled: settings.twoFactorChannelSmsEnabled ?? defaultSettings.twoFactorChannelSmsEnabled,
+        twoFactorChannelTotpEnabled: settings.twoFactorChannelTotpEnabled ?? defaultSettings.twoFactorChannelTotpEnabled,
+        twoFactorTrustedDevicesEnabled: settings.twoFactorTrustedDevicesEnabled ?? defaultSettings.twoFactorTrustedDevicesEnabled,
+        twoFactorRequiredMemberRoles: (settings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
+        twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
+    };
+}
+
+        // Ako postavke nisu pronađene, vrati zadane
+        return defaultSettings;
+
+    } catch (error) {
+        console.error('Error fetching system settings:', error);
+        throw new Error('Failed to fetch system settings');
+    }
+},
     
     async updateSystemSettings(data: Partial<SystemSettingsExtended>, updatedBy: string): Promise<SystemSettingsExtended> {
         try {
@@ -375,8 +376,12 @@ const systemManagerService = {
                 select: { organization_id: true }
             });
     
-            if (!manager?.organization_id) {
-                throw new Error('Organization context nije moguće odrediti za System Managera');
+            if (!manager) {
+                throw new Error('System Manager not found');
+            }
+            
+            if (manager.organization_id === null) {
+                throw new Error('Global System Manager cannot modify organization-specific settings');
             }
             const organizationId = manager.organization_id;
     
@@ -425,6 +430,9 @@ const systemManagerService = {
                 backupStorageLocation: updatedSettings.backupStorageLocation,
                 lastBackupAt: updatedSettings.lastBackupAt,
                 nextBackupAt: updatedSettings.nextBackupAt,
+                passwordGenerationStrategy: updatedSettings.passwordGenerationStrategy ?? 'FULLNAME_ISK_CARD',
+                passwordSeparator: updatedSettings.passwordSeparator ?? '-isk-',
+                passwordCardDigits: updatedSettings.passwordCardDigits ?? 4,
             };
     
         } catch (error) {
@@ -474,7 +482,10 @@ const systemManagerService = {
                 lastCheck: new Date(),
             };
 
-            const systemSettings = await prisma.systemSettings.findUnique({ where: { organization_id: organizationId ?? undefined } });
+            // Global SystemManager (organization_id = null) ili Organization-specific SystemManager
+            const systemSettings = organizationId !== undefined
+                ? await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } })
+                : await prisma.systemSettings.findFirst({ where: { organization_id: null } });
 
             return {
                 totalMembers,

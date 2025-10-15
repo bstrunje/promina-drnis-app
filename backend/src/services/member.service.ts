@@ -455,6 +455,7 @@ const memberService = {
                         status: 'pending',
                         role: 'member',
                         registration_completed: registration_completed,
+                        organization_id: basicMemberData.organization_id, // Dodano: koristi organization_id iz requesta
                     },
                 });
 
@@ -644,6 +645,13 @@ const memberService = {
 
     async getMemberAnnualStats(memberId: number): Promise<Awaited<ReturnType<typeof memberRepository.getAnnualStats>>> {
         try {
+            // 0. Dohvati člana da saznamo organizaciju
+            const member = await prisma.member.findUnique({
+                where: { member_id: memberId },
+                select: { organization_id: true }
+            });
+            const organizationId = member?.organization_id ?? 1;
+            
             // 1. Dohvati postojeće statistike iz annual_statistics tablice
             const existingStats = await memberRepository.getAnnualStats(memberId);
             
@@ -713,7 +721,7 @@ const memberService = {
                     // Dodaj izračunatu statistiku
                     allStats.push({
                         stat_id: 0, // Privremeni ID za izračunate statistike
-                        organization_id: 1, // PD Promina - TODO: Dodati tenant context
+                        organization_id: organizationId,
                         member_id: memberId,
                         year: year,
                         total_hours: new Prisma.Decimal(totalHours),

@@ -92,9 +92,9 @@ export function formatMinuteText(minutes: number, locale: 'en' | 'hr' = 'hr'): s
 }
 
 // Pomoćna funkcija za dohvat duljine broja kartice
-export async function getCardNumberLength(): Promise<number> {
+export async function getCardNumberLength(organizationId: number): Promise<number> {
   const settings = await prisma.systemSettings.findFirst({
-    where: { organization_id: 1 } // PD Promina - TODO: Dodati tenant context
+    where: { organization_id: organizationId }
   });
   return settings?.cardNumberLength ?? 5; // Koristi 5 kao fallback ako je null ili undefined
 }
@@ -102,6 +102,7 @@ export async function getCardNumberLength(): Promise<number> {
 // Ažurirana funkcija za validaciju lozinke
 export async function validatePassword(
   password: string,
+  organizationId: number,
   suffixNumbers?: string
 ): Promise<{
   isValid: boolean;
@@ -117,7 +118,7 @@ export async function validatePassword(
 
   if (suffixNumbers) {
     // Dohvati duljinu broja kartice iz postavki
-    const cardNumberLength = await getCardNumberLength();
+    const cardNumberLength = await getCardNumberLength(organizationId);
     const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
     
     if (!cardNumberRegex.test(suffixNumbers)) {

@@ -22,7 +22,7 @@ const ManagerHeader: React.FC<ManagerHeaderProps> = ({ manager }) => {
         </div>
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-600">
-            Prijavljeni kao: <span className="font-medium">{manager?.display_name}</span>
+            Logged: <span className="font-medium">{manager?.display_name}</span>
           </div>
           <button
             onClick={() => { void logout(); }}

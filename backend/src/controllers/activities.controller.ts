@@ -2,16 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import * as activityService from '../services/activities.service.js';
 import { tBackend } from '../utils/i18n.js';
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      locale?: 'en' | 'hr';
-    }
-  }
-}
-
-
 // --- Tipovi Aktivnosti ---
 
 export const getActivityTypes = async (req: Request, res: Response, next: NextFunction) => {
@@ -28,7 +18,7 @@ export const getActivityTypes = async (req: Request, res: Response, next: NextFu
 export const createActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const organizer_id = req.user?.id;
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     
     if (!organizer_id) {
       return res.status(401).json({ 
@@ -60,7 +50,7 @@ export const getAllActivities = async (req: Request, res: Response, next: NextFu
 export const getActivitiesByYearWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const year = parseInt(req.params.year, 10);
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     if (isNaN(year)) {
       return res.status(400).json({
         code: 'INVALID_YEAR',
@@ -150,7 +140,7 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
     const activity_id = parseInt(req.params.activityId, 10);
     const { cancellation_reason } = req.body;
 
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     if (!cancellation_reason) {
       return res.status(400).json({
         code: 'MISSING_CANCELLATION_REASON',
@@ -181,7 +171,7 @@ export const joinActivity = async (req: Request, res: Response, next: NextFuncti
   try {
     const activity_id = parseInt(req.params.activityId, 10);
     const member_id = req.user?.member_id;
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
 
     if (!member_id) {
       return res.status(401).json({ 
@@ -201,7 +191,7 @@ export const leaveActivity = async (req: Request, res: Response, next: NextFunct
   try {
     const activity_id = parseInt(req.params.activityId, 10);
     const member_id = req.user?.member_id;
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
 
     if (!member_id) {
       return res.status(401).json({ 
@@ -220,7 +210,7 @@ export const leaveActivity = async (req: Request, res: Response, next: NextFunct
 export const addParticipantToActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     
     const activity_id = parseInt(activityId, 10);
     const member_id = parseInt(memberId, 10);
@@ -242,7 +232,7 @@ export const addParticipantToActivity = async (req: Request, res: Response, next
 export const removeParticipantFromActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { activityId, memberId } = req.params;
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     
     const activity_id = parseInt(activityId, 10);
     const member_id = parseInt(memberId, 10);
@@ -264,7 +254,7 @@ export const removeParticipantFromActivity = async (req: Request, res: Response,
 export const updateParticipationDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.participationId, 10);
-    const locale = req.locale || 'hr';
+    const locale = req.locale;
     
     if (isNaN(id)) {
       return res.status(400).json({

@@ -28,7 +28,7 @@ const sizeOptions: SizeOptions[] = [
 
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   const { t } = useTranslation('members');
-  const { getPrimaryColor } = useBranding();
+  const { getPrimaryColor, branding } = useBranding();
   
   // Opcije za dropdown-ove - koriste postojeće ključeve
   const lifeStatusOptions = [
@@ -94,7 +94,13 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({ ...member, member_id: Date.now() } as Member);
+    // Dodaj organization_id iz branding contexta
+    const organizationId = branding?.id;
+    if (!organizationId) {
+      console.error('Cannot add member: organization_id is missing');
+      return;
+    }
+    onAdd({ ...member, member_id: Date.now(), organization_id: organizationId } as Member);
   };
 
   return (

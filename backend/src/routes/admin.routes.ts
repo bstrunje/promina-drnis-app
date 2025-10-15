@@ -45,6 +45,22 @@ router.get('/dashboard/stats', async (req, res) => {
   try {
     console.log('[ADMIN-STATS] Početak zahtjeva');
     
+    // Dohvati organizaciju iz tenanta
+    const tenant = req.query.tenant as string;
+    if (!tenant) {
+      return res.status(400).json({ error: 'Tenant parameter is required' });
+    }
+    
+    const organization = await prisma.organization.findUnique({
+      where: { subdomain: tenant }
+    });
+    
+    if (!organization) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+    
+    console.log('[ADMIN-STATS] Dohvaćam statistike za organizaciju:', organization.name, '(ID:', organization.id, ')');
+    
     // Test konekcije prema bazi
     const { testDatabaseConnection } = await import('../utils/prisma.js');
     const connectionOk = await testDatabaseConnection();
@@ -56,13 +72,13 @@ router.get('/dashboard/stats', async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    // PARALELNI upiti umjesto sekvencijalnih - dramatično poboljšanje performansi
+    // PARALELNI upiti s filtriranjem po organizaciji
     const [totalMembers, registeredMembers, activeMembers, pendingRegistrations, recentActivities] = await Promise.allSettled([
-      prisma.member.count(),
-      prisma.member.count({ where: { status: 'registered' } }),
-      prisma.member.count({ where: { status: 'registered', total_hours: { gte: 20 } } }),
-      prisma.member.count({ where: { registration_completed: false } }),
-      prisma.activity.count({ where: { created_at: { gte: thirtyDaysAgo } } })
+      prisma.member.count({ where: { organization_id: organization.id } }),
+      prisma.member.count({ where: { organization_id: organization.id, status: 'registered' } }),
+      prisma.member.count({ where: { organization_id: organization.id, status: 'registered', total_hours: { gte: 20 } } }),
+      prisma.member.count({ where: { organization_id: organization.id, registration_completed: false } }),
+      prisma.activity.count({ where: { organization_id: organization.id, created_at: { gte: thirtyDaysAgo } } })
     ]);
     
     // Sistemske informacije - bez čitanja datotečnog sustava (sporo na serverless)

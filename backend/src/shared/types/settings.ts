@@ -45,6 +45,11 @@ export interface SystemSettings {
   lastBackupAt?: Date | string | null;
   nextBackupAt?: Date | string | null;
 
+  // Password generation settings
+  passwordGenerationStrategy?: 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREFIX_CARD_SUFFIX' | null;
+  passwordSeparator?: string | null;
+  passwordCardDigits?: number | null;
+
   // Audit
   updatedAt?: Date | string;
   updatedBy?: number | null;

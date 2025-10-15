@@ -34,9 +34,11 @@ const membershipService = {
     performerType?: PerformerType
   ): Promise<Member | null> {
     try {
+      const organizationId = getOrganizationId(req);
+      
       // Get system settings
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
 
       const renewalStartDay = settings?.renewalStartDay || 31;
@@ -44,8 +46,6 @@ const membershipService = {
       // Koristimo direktno Date objekt umjesto parsiranja, jer već imamo Date
       const validPaymentDate = new Date(paymentDate);
       validPaymentDate.setHours(12, 0, 0, 0); // Standardize time // Standardize time
-
-      const organizationId = getOrganizationId(req);
       const member = await memberRepository.findById(organizationId, memberId);
       if (!member) {
         throw new Error("Member not found");
@@ -538,16 +538,25 @@ const membershipService = {
     };
   },
 
-  async checkAutoTerminations(): Promise<void> {
+  async checkAutoTerminations(organizationId?: number): Promise<void> {
     try {
       const currentYear = getCurrentDate().getFullYear();
       const currentDate = getCurrentDate();
       
       console.log(`🔧 [AUTO-TERMINATION] Pokretanje provjere - currentDate: ${formatDate(currentDate)}, currentYear: ${currentYear}`);
 
-      // Dohvati postavke sustava
+      // Ako organizationId nije proslijeđen, obradi sve organizacije
+      if (!organizationId) {
+        const allOrganizations = await prisma.organization.findMany({ where: { is_active: true } });
+        for (const org of allOrganizations) {
+          await this.checkAutoTerminations(org.id);
+        }
+        return;
+      }
+
+      // Dohvati postavke sustava za specifičnu organizaciju
       const settings = await prisma.systemSettings.findFirst({
-        where: { organization_id: 1 }, // PD Promina - TODO: Dodati tenant context
+        where: { organization_id: organizationId }
       });
 
       // Koristi postavke ili zadane vrijednosti (1. ožujak kao default)
@@ -569,8 +578,8 @@ const membershipService = {
 
       // Ako je trenutni datum nakon roka za obnovu, provjeri i završi sva članstva koja nisu obnovljena
       if (currentDate > renewalDeadline) {
-        console.log(`🔧 [AUTO-TERMINATION] POZIVAM endExpiredMemberships za godinu ${currentYear}`);
-        await membershipRepository.endExpiredMemberships(currentYear);
+        console.log(`🔧 [AUTO-TERMINATION] POZIVAM endExpiredMemberships za godinu ${currentYear}, org ${organizationId}`);
+        await membershipRepository.endExpiredMemberships(currentYear, organizationId);
       } else {
         console.log(`🔧 [AUTO-TERMINATION] PRESKAČEM provjeru - datum je prije roka`);
       }

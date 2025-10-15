@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as dutyService from '../services/duty.service.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 /**
  * Kreira novo dežurstvo ili pridružuje člana postojećem
@@ -57,7 +58,8 @@ export const getCalendarForMonth = async (req: Request, res: Response, next: Nex
       });
     }
     
-    const calendar = await dutyService.getCalendarForMonth(year, month);
+    const organizationId = getOrganizationId(req);
+    const calendar = await dutyService.getCalendarForMonth(organizationId, year, month);
     
     res.status(200).json(calendar);
   } catch (error) {
@@ -80,7 +82,8 @@ export const getDutiesForMonth = async (req: Request, res: Response, next: NextF
       });
     }
     
-    const duties = await dutyService.getDutiesForMonth(year, month);
+    const organizationId = getOrganizationId(req);
+    const duties = await dutyService.getDutiesForMonth(organizationId, year, month);
     
     res.status(200).json(duties);
   } catch (error) {
@@ -94,7 +97,8 @@ export const getDutiesForMonth = async (req: Request, res: Response, next: NextF
  */
 export const getDutySettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const settings = await dutyService.getDutySettingsPublic();
+    const organizationId = getOrganizationId(req);
+    const settings = await dutyService.getDutySettingsPublic(organizationId);
     
     res.status(200).json(settings);
   } catch (error) {
@@ -134,7 +138,8 @@ export const updateDutySettings = async (req: Request, res: Response, next: Next
       updateData.dutyAutoCreateEnabled = Boolean(dutyAutoCreateEnabled);
     }
     
-    const settings = await dutyService.updateDutySettings(updateData);
+    const organizationId = getOrganizationId(req);
+    const settings = await dutyService.updateDutySettings(organizationId, updateData);
     
     res.status(200).json(settings);
   } catch (error) {
