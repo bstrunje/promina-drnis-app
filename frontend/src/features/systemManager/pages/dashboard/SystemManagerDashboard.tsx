@@ -11,6 +11,7 @@ import SystemManagerSettings from '../settings/SystemManagerSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
 import TimeTravel from '../../../../../components/admin/TimeTravel';
 import OrganizationList from '../../organizations/OrganizationList';
+import SystemManagerMembersView from '../../components/members/SystemManagerMembersView';
 
 /**
  * Glavna komponenta System Manager dashboarda
@@ -20,7 +21,7 @@ const SystemManagerDashboard: React.FC = () => {
   const { manager } = useSystemManager();
   const location = useLocation();
   const { navigateTo } = useSystemManagerNavigation();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations'>('dashboard');
   
   // Prilagođeno rukovanje tabovima kroz URL
   useEffect(() => {
@@ -34,6 +35,8 @@ const SystemManagerDashboard: React.FC = () => {
       setActiveTab('audit-logs');
     } else if (path.includes('/system-manager/organizations')) {
       setActiveTab('organizations');
+    } else if (path.includes('/system-manager/members')) {
+      setActiveTab('members');
     } else {
       // Default - dashboard
       setActiveTab('dashboard');
@@ -41,9 +44,11 @@ const SystemManagerDashboard: React.FC = () => {
   }, [location.pathname]);
   
   // Handler za promjenu taba koji ažurira URL
-  const handleTabChange = (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => {
+  const handleTabChange = (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => {
     let targetPath = '/system-manager/';
-    if (tab === 'settings') {
+    if (tab === 'members') {
+      targetPath = '/system-manager/members';
+    } else if (tab === 'settings') {
       targetPath = '/system-manager/settings';
     } else if (tab === 'register-members') {
       targetPath = '/system-manager/register-members';
@@ -85,6 +90,14 @@ const SystemManagerDashboard: React.FC = () => {
             refreshDashboardStats={refreshDashboardStats}
             setActiveTab={handleTabChange}
           />
+        )}
+
+        {/* Tab sadržaj - Članovi (System Manager) */}
+        {activeTab === 'members' && (
+          <>
+            <h2 className="text-xl font-semibold mb-6">Members</h2>
+            <SystemManagerMembersView />
+          </>
         )}
         
         {/* Tab sadržaj - Postavke sustava */}

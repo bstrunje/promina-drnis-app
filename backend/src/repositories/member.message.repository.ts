@@ -31,11 +31,14 @@ export interface TransformedMessage {
 // Using shared prisma client
 
 const memberMessageRepository = {
-    async findById(messageId: number): Promise<PrismaMemberMessage | null> {
+    async findById(organizationId: number, messageId: number): Promise<PrismaMemberMessage | null> {
         // mapToMemberMessage će biti uklonjen ili refaktoriran
         // Direktno vraćanje raw objekta ili prilagođeno mapiranje kasnije
         return prisma.memberMessage.findUnique({
-            where: { message_id: messageId },
+            where: { 
+                message_id: messageId,
+                organization_id: organizationId // Multi-tenancy filter
+            },
         });
     },
 
@@ -43,6 +46,7 @@ const memberMessageRepository = {
         // 1. Kreiraj osnovnu poruku
         const newMessage = await prisma.memberMessage.create({
             data: {
+                organization_id: organizationId, // Multi-tenancy
                 message_text: messageText,
                 sender_id: memberId,
                 sender_type: 'member',
@@ -78,6 +82,7 @@ const memberMessageRepository = {
     },
 
     async createAdminMessage({
+        organizationId,
         senderId,
         messageText,
         recipientType = 'member',
@@ -85,6 +90,7 @@ const memberMessageRepository = {
         recipientId, // Koristi se samo ako je recipientType 'member'
         recipientMemberIds: inputRecipientMemberIds, // Koristi se samo ako je recipientType 'group'
     }: {
+        organizationId: number;
         senderId: number;
         messageText: string;
         recipientType?: 'member' | 'group' | 'all';
@@ -94,6 +100,7 @@ const memberMessageRepository = {
     }): Promise<TransformedMessage> {
         const newMessage = await prisma.memberMessage.create({
             data: {
+                organization_id: organizationId, // Multi-tenancy
                 message_text: messageText,
                 sender_id: senderId,
                 sender_type: senderType,
@@ -141,9 +148,10 @@ const memberMessageRepository = {
         return transformedMessage;
     },
 
-    async getAllForAdmin(currentMemberId: number): Promise<TransformedMessage[]> {
+    async getAllForAdmin(organizationId: number, currentMemberId: number): Promise<TransformedMessage[]> {
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 // Dohvati poruke za koje postoji status za trenutnog korisnika
                 recipient_statuses: {
                     some: {
@@ -204,7 +212,7 @@ const memberMessageRepository = {
         });
     },
 
-    async getByMemberId(memberId: number): Promise<TransformedMessage[]> {
+    async getByMemberId(organizationId: number, memberId: number): Promise<TransformedMessage[]> {
         // memberId je ovdje isto što i currentMemberId za kojeg dohvaćamo poruke
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
@@ -218,6 +226,7 @@ const memberMessageRepository = {
 
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 recipient_statuses: {
                     some: {
                         recipient_member_id: memberId,
@@ -258,7 +267,7 @@ const memberMessageRepository = {
         });
     },
 
-    async getMessagesSentByAdmin(adminId: number): Promise<TransformedMessage[]> {
+    async getMessagesSentByAdmin(organizationId: number, adminId: number): Promise<TransformedMessage[]> {
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
@@ -276,6 +285,7 @@ const memberMessageRepository = {
 
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 sender_id: adminId,
                 sender_type: { in: ['member_administrator', 'member_superuser'] },
             },
@@ -314,7 +324,7 @@ const memberMessageRepository = {
         });
     },
 
-    async getSentMessagesByMemberId(memberId: number): Promise<TransformedMessage[]> {
+    async getSentMessagesByMemberId(organizationId: number, memberId: number): Promise<TransformedMessage[]> {
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
@@ -327,16 +337,16 @@ const memberMessageRepository = {
 
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 sender_id: memberId,
+                sender_type: 'member',
             },
             include: messageWithDetailsPayload.include,
             orderBy: { created_at: 'desc' },
         });
 
         return (messagesData as MessageWithDetails[]).map((msg): TransformedMessage => {
-            // Pronađi status za trenutnog korisnika (pošiljatelja)
-            const currentUserStatus = msg.recipient_statuses.find(rs => rs.recipient_member_id === memberId);
-
+            const recipientStatus = msg.recipient_statuses[0];
             return {
                 message_id: msg.message_id,
                 member_id: msg.member_id,
@@ -346,18 +356,23 @@ const memberMessageRepository = {
                 recipient_id: msg.recipient_id,
                 recipient_type: msg.recipient_type,
                 sender_type: msg.sender_type,
-                currentUserStatus: currentUserStatus ? currentUserStatus.status as ('unread' | 'read' | 'archived' | undefined) : undefined,
-                currentUserReadAt: currentUserStatus ? currentUserStatus.read_at : undefined,
-                sender: msg.sender,
+                currentUserStatus: recipientStatus?.status as ('unread' | 'read' | 'archived' | undefined),
+                currentUserReadAt: recipientStatus?.read_at,
+                sender: msg.sender ? {
+                    member_id: msg.sender.member_id,
+                    first_name: msg.sender.first_name,
+                    last_name: msg.sender.last_name,
+                    full_name: msg.sender.full_name
+                } : null,
             };
         });
     },
 
-    async getAdHocGroupMessagesForMember(currentMemberId: number): Promise<TransformedMessage[]> {
+    async getAdHocGroupMessagesForMember(organizationId: number, currentMemberId: number): Promise<TransformedMessage[]> {
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
-            recipient_statuses: { 
+            recipient_statuses: {
               select: { status: true, read_at: true, recipient_member_id: true }
             },
           },
@@ -366,12 +381,11 @@ const memberMessageRepository = {
 
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 recipient_type: 'group',
-                // recipient_id bi trebao biti null za ad-hoc grupne poruke, pa ga ne filtriramo ovdje
                 recipient_statuses: {
                     some: {
                         recipient_member_id: currentMemberId,
-                        // status: { not: 'archived' } // Opcionalno, ako želimo izuzeti arhivirane
                     },
                 },
             },
@@ -408,11 +422,11 @@ const memberMessageRepository = {
         });
     },
 
-    async getMessagesForAllMembers(currentMemberId: number): Promise<TransformedMessage[]> {
+    async getMessagesForAllMembers(organizationId: number, currentMemberId: number): Promise<TransformedMessage[]> {
         const messageWithDetailsPayload = Prisma.validator<Prisma.MemberMessageDefaultArgs>()({
           include: {
             sender: { select: { member_id: true, first_name: true, last_name: true, full_name: true } },
-            recipient_statuses: { 
+            recipient_statuses: {
               select: { status: true, read_at: true, recipient_member_id: true }
             },
           },
@@ -421,18 +435,18 @@ const memberMessageRepository = {
 
         const messagesData = await prisma.memberMessage.findMany({
             where: {
+                organization_id: organizationId, // Multi-tenancy filter
                 recipient_type: 'all',
                 recipient_statuses: {
                     some: {
                         recipient_member_id: currentMemberId,
-                        // status: { not: 'archived' } // Opcionalno
                     },
                 },
             },
             include: {
                 sender: messageWithDetailsPayload.include.sender,
                 recipient_statuses: {
-                    where: { recipient_member_id: currentMemberId }, // Status samo za ovog člana
+                    where: { recipient_member_id: currentMemberId },
                     select: messageWithDetailsPayload.include.recipient_statuses.select
                 }
             },

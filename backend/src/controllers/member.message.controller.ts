@@ -60,6 +60,7 @@ const messageController = {
 
             const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
             const message = await messageService.createAdminMessage({
+                req,
                 senderId,
                 recipientId,
                 messageText,
@@ -115,6 +116,7 @@ const messageController = {
 
             const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
             const message = await messageService.createAdminMessage({
+                req,
                 senderId,
                 messageText,
                 recipientType: 'group',
@@ -162,6 +164,7 @@ const messageController = {
 
             const senderType = req.user?.role_name === 'member_superuser' ? SenderType.member_superuser : SenderType.member_administrator;
             const message = await messageService.createAdminMessage({
+                req,
                 senderId,
                 messageText,
                 recipientType: 'all',
@@ -200,7 +203,7 @@ const messageController = {
                 return;
             }
             
-            const messages = await messageService.getMessagesSentByAdmin(adminId);
+            const messages = await messageService.getMessagesSentByAdmin(req, adminId);
             // Mapiramo poruke za frontend
             const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
             res.status(200).json(mappedMessages);
@@ -220,7 +223,7 @@ const messageController = {
                 res.status(401).json({ code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized' });
                 return;
             }
-            const messages = await messageService.getAdminMessages(currentMemberId);
+            const messages = await messageService.getAdminMessages(req, currentMemberId);
             // Mapiramo poruke za frontend
             const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
             res.status(200).json(mappedMessages);
@@ -244,7 +247,7 @@ const messageController = {
             }
 
 
-            const messages = await messageService.getMemberMessages(memberId);
+            const messages = await messageService.getMemberMessages(req, memberId);
             // Mapiramo poruke za frontend
             const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
             res.status(200).json(mappedMessages);
@@ -266,7 +269,7 @@ const messageController = {
                 return;
             }
 
-            const messages = await messageService.getSentMessagesByMemberId(memberId);
+            const messages = await messageService.getSentMessagesByMemberId(req, memberId);
             const mappedMessages = messages.map(msg => mapToMemberMessage(msg));
             res.json(mappedMessages);
         } catch (error) {

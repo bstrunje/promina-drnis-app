@@ -73,6 +73,14 @@ const SystemManagerRoutesContent: React.FC = () => {
         } 
       />
       <Route 
+        path="/members" 
+        element={
+          <SystemManagerProtectedRoute>
+            <SystemManagerDashboard />
+          </SystemManagerProtectedRoute>
+        } 
+      />
+      <Route 
         path="/activities" 
         element={
           <SystemManagerProtectedRoute>

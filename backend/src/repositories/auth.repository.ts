@@ -131,30 +131,45 @@ const authRepository = {
         }
     },
 
-    async searchMembers(searchTerm: string): Promise<MemberSearchResult[]> {
+    async searchMembers(organizationId: number, searchTerm: string): Promise<MemberSearchResult[]> {
         // Osigurajmo da pretraživanje zahtijeva minimalno 1 znak
         if (searchTerm.length < 1) {
             return [];
         }
         
-        const result = await prisma.$queryRaw<MemberSearchResult[]>`
-            SELECT 
-                member_id,
-                -- Vraća puno ime i nadimak ako postoji
-                first_name || ' ' || last_name || 
-                  CASE WHEN nickname IS NOT NULL AND nickname != '' 
-                       THEN ' - ' || nickname 
-                       ELSE '' END as full_name,
-                nickname
-            FROM members 
-            WHERE 
-                LOWER(full_name) LIKE LOWER(${`%${searchTerm}%`})
-                AND registration_completed = true
-                AND (role = 'member_superuser' OR status = 'registered')
-            ORDER BY first_name, last_name 
-            -- Ograničavamo na maksimalno 5 rezultata da se spriječi preglašavanje svih članova
-            LIMIT 5`;
-        return result;
+        // Prebačeno na Prisma ORM za Vercel serverless kompatibilnost
+        const members = await prisma.member.findMany({
+            where: {
+                organization_id: organizationId,
+                full_name: {
+                    contains: searchTerm,
+                    mode: 'insensitive' // Case-insensitive pretraga (kao LOWER())
+                },
+                registration_completed: true,
+                OR: [
+                    { role: 'member_superuser' },
+                    { status: 'registered' }
+                ]
+            },
+            select: {
+                member_id: true,
+                full_name: true,
+                nickname: true
+                // oib: NE vraćamo - osjetljiv podatak, nije potreban za slanje poruka
+            },
+            orderBy: [
+                { first_name: 'asc' },
+                { last_name: 'asc' }
+            ],
+            take: 5 // Limit 5 rezultata
+        });
+
+        // Transformiramo u MemberSearchResult format (bez OIB-a - osjetljiv podatak)
+        return members.map(member => ({
+            member_id: member.member_id,
+            full_name: member.full_name ?? '',
+            nickname: member.nickname ?? undefined
+        })) as MemberSearchResult[];
     },
 
     async checkExistingOib(oib: string): Promise<boolean> {

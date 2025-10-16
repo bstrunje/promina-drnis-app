@@ -12,6 +12,7 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
   try {
     const { searchTerm } = req.query;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
+    const organizationId = getOrganizationId(req); // Multi-tenancy
 
     if (typeof searchTerm !== 'string' || searchTerm.length < 1) {
       res.status(400).json({ code: 'VALIDATION_ERROR', message: tOrDefault('common.errorsByCode.VALIDATION_ERROR', locale, 'Valid search term is required') });
@@ -26,7 +27,7 @@ export async function searchMembersHandler(req: Request, res: Response): Promise
       return;
     }
 
-    const results = await authRepository.searchMembers(searchTerm);
+    const results = await authRepository.searchMembers(organizationId, searchTerm);
 
     if (isDev) console.log(`Search for "${searchTerm}" returned ${results.length} results`);
 

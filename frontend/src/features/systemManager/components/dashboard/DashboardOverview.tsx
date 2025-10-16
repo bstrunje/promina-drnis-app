@@ -12,7 +12,7 @@ interface DashboardOverviewProps {
   statsLoading: boolean;
   statsError: string | null;
   refreshDashboardStats: () => Promise<void>;
-  setActiveTab: (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
 }
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({

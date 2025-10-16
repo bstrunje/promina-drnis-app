@@ -22,7 +22,7 @@
       "buttons": {
         "sending": "Sending...",
         "sendMessage": "Send Message",
-        "sendToGroup": "Send Message ({{count Âčlanova)",
+        "sendToGroup": "Send Message ({{count}} members)",
         "sendToAll": "Send to All Members",
         "clearAll": "Clear All"
       },

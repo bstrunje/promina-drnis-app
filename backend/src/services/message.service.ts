@@ -9,6 +9,7 @@ const messageService = {
     },
 
     async createAdminMessage({
+        req,
         senderId,
         messageText,
         recipientType = 'member',
@@ -16,6 +17,7 @@ const messageService = {
         recipientId, // Koristi se samo ako je recipientType 'member'
         recipientMemberIds, // Koristi se samo ako je recipientType 'group'
     }: {
+        req: Request;
         senderId: number;
         messageText: string;
         recipientType?: 'member' | 'group' | 'all';
@@ -23,7 +25,9 @@ const messageService = {
         recipientId?: number;
         recipientMemberIds?: number[];
     }): Promise<TransformedMessage> {
+        const organizationId = getOrganizationId(req);
         return await memberMessageRepository.createAdminMessage({
+            organizationId,
             senderId,
             messageText,
             recipientType,
@@ -33,28 +37,34 @@ const messageService = {
         });
     },
 
-    async getAdminMessages(currentMemberId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getAllForAdmin(currentMemberId);
+    async getAdminMessages(req: Request, currentMemberId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getAllForAdmin(organizationId, currentMemberId);
     },
 
-    async getMessagesSentByAdmin(adminId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getMessagesSentByAdmin(adminId);
+    async getMessagesSentByAdmin(req: Request, adminId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getMessagesSentByAdmin(organizationId, adminId);
     },
 
-    async getMemberMessages(memberId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getByMemberId(memberId);
+    async getMemberMessages(req: Request, memberId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getByMemberId(organizationId, memberId);
     },
 
-    async getAdHocGroupMessagesForMember(currentMemberId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getAdHocGroupMessagesForMember(currentMemberId);
+    async getAdHocGroupMessagesForMember(req: Request, currentMemberId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getAdHocGroupMessagesForMember(organizationId, currentMemberId);
     },
 
-    async getMessagesForAllMembers(currentMemberId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getMessagesForAllMembers(currentMemberId);
+    async getMessagesForAllMembers(req: Request, currentMemberId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getMessagesForAllMembers(organizationId, currentMemberId);
     },
 
-    async getMessageById(messageId: number): Promise<TransformedMessage | null> {
-        return await memberMessageRepository.findById(messageId);
+    async getMessageById(req: Request, messageId: number): Promise<TransformedMessage | null> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.findById(organizationId, messageId);
     },
 
     async markMessageAsRead(messageId: number, memberId: number): Promise<void> {
@@ -85,8 +95,9 @@ const messageService = {
         return await memberMessageRepository.countUnreadMessages(memberId);
     },
 
-    async getSentMessagesByMemberId(memberId: number): Promise<TransformedMessage[]> {
-        return await memberMessageRepository.getSentMessagesByMemberId(memberId);
+    async getSentMessagesByMemberId(req: Request, memberId: number): Promise<TransformedMessage[]> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.getSentMessagesByMemberId(organizationId, memberId);
     }
 };
 

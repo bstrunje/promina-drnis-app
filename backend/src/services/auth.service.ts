@@ -72,8 +72,8 @@ const authService = {
         };
     },
 
-    async searchMembers(searchTerm: string) {
-        return await authRepository.searchMembers(searchTerm);
+    async searchMembers(organizationId: number, searchTerm: string) {
+        return await authRepository.searchMembers(organizationId, searchTerm);
     },
 
     async getMemberById(memberId: number): Promise<Member | null> {

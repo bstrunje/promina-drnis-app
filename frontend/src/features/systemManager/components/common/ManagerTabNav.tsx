@@ -5,8 +5,8 @@ import { useSystemManager } from '../../../../context/SystemManagerContext';
 
 // Komponenta za navigacijske tabove u System Manager panelu
 interface ManagerTabNavProps {
-  activeTab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations';
-  setActiveTab: (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
+  activeTab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations';
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
 }
 
 const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }) => {

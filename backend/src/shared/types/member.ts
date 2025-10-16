@@ -124,12 +124,13 @@ export interface Member {
 }
 
 /**
- * Used for member search functionality in login
+ * Used for member search functionality (message recipients, etc.)
+ * Note: OIB is NOT included for privacy/security reasons
  */
 export interface MemberSearchResult {
     member_id: number;
     full_name: string;
-    oib: string;
+    oib?: string; // Optional - not returned by default
     nickname?: string;
 }
 

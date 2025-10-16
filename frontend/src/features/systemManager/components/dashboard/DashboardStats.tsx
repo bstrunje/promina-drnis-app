@@ -9,7 +9,7 @@ import RecentActivities from './RecentActivities';
 interface DashboardStatsProps {
   stats: SystemManagerDashboardStats;
   statsLoading: boolean;
-  setActiveTab: (tab: 'dashboard' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, setActiveTab }) => {
@@ -19,7 +19,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
   // TODO: Prilagoditi navigaciju specifično za System Manager područje
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-      {/* Kartica članova - samo informativna */}
+      {/* Kartica članova - klik otvara listu članova */}
       <StatisticCard
         title="Members"
         icon={<Users className="h-6 w-6 text-blue-600" />}
@@ -31,6 +31,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
             ''}`
         }
         loading={statsLoading}
+        onClick={() => { void setActiveTab('members'); }}
       />
 
       {/* Kartica aktivnosti */}
