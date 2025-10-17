@@ -28,6 +28,14 @@ model Organization {
   primary_color         String?   @default("#3b82f6") @db.VarChar(7)
   secondary_color       String?   @default("#1e40af") @db.VarChar(7)
   
+  // PWA (Progressive Web App) Configuration
+  pwa_name              String?   @db.VarChar(100)      // Puni naziv za PWA manifest
+  pwa_short_name        String?   @db.VarChar(20)       // Kratki naziv za ikonu (12 znakova max preporuka)
+  pwa_theme_color       String?   @default("#0066cc") @db.VarChar(7)  // Hex boja za status bar
+  pwa_background_color  String?   @default("#ffffff") @db.VarChar(7)  // Hex boja za splash screen
+  pwa_icon_192_url      String?   @db.Text              // URL ili base64 za 192x192 ikonu
+  pwa_icon_512_url      String?   @db.Text              // URL ili base64 za 512x512 ikonu
+  
   // Language
   default_language      String    @default("hr") @db.VarChar(2)
   

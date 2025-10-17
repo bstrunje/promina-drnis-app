@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promina-Drnis</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="icons/PD_Promina.png" />
+    <link rel="shortcut icon" type="image/png" href="icons/PD_Promina.png" />
+    <link rel="apple-touch-icon" href="icons/grbx512.png" />
+    <link rel="apple-touch-icon-precomposed" href="icons/grbx512.png" />
+    <meta name="theme-color" content="#0066cc" />
+
+    <!-- PWA meta tagovi -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Promina-Drnis" />
+    <meta name="application-name" content="PD Promina" />
+    <meta name="msapplication-TileColor" content="#0066cc" />
+    <meta name="msapplication-TileImage" content="icons/grbx512.png" />
+
+    <link rel="stylesheet" href="style.css">
+    
+    <script>
+      // URL vaše web aplikacije
+      const TARGET_URL = "https://promina-drnis-app.vercel.app/login";
+      
+      // Varijabla za čuvanje install prompta
+      let deferredPrompt;
+
+      // Funkcija za preusmjeravanje
+      function redirectToApp() {
+        window.location.href = TARGET_URL;
+      }
+
+      // Provjera je li aplikacija otvorena kao instalirana PWA
+      function isPWA() {
+        // Provjera je li aplikacija pokrenuta kao standalone (PWA s početnog zaslona)
+        return (
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone || // za iOS
+          document.referrer.includes("android-app://") ||
+          // Dodatne provjere za različite browsere
+          (window.location.search.includes('utm_source=homescreen')) ||
+          (window.location.search.includes('source=pwa'))
+        );
+      }
+
+      // Event listener za beforeinstallprompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Spriječimo automatski prikaz
+        e.preventDefault();
+        // Sačuvamo event za kasnije
+        deferredPrompt = e;
+        
+        // Pokazujemo naš custom banner
+        showInstallPrompt();
+      });
+
+      // Event listener za uspješnu instalaciju
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('Aplikacija je uspješno instalirana');
+        // Sakrijemo bannere
+        closeBanner('android-banner');
+        closeBanner('ios-banner');
+      });
+
+      // Provjera za prikaz bannera instalacije
+      function showInstallPrompt() {
+        console.log('Provjera za prikaz bannera instalacije');
+        
+        // Detekcija mobilnog uređaja
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        console.log('Je li mobilni uređaj?', isMobile);
+
+        // Provjera je li već instalirano kao PWA
+        if (isMobile && !isPWA()) {
+          console.log('Mobilni uređaj koji nije PWA - pokazujemo banner');
+          
+          // Detektiraj browser
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const isAndroid = /Android/.test(navigator.userAgent);
+          const isChrome = /Chrome/.test(navigator.userAgent);
+          const isFirefox = /Firefox/.test(navigator.userAgent);
+          const isSamsung = /SamsungBrowser/.test(navigator.userAgent);
+
+          console.log('Browser info:', { isIOS, isAndroid, isChrome, isFirefox, isSamsung });
+
+          if (isIOS) {
+            console.log('Prikazujemo iOS banner');
+            document.getElementById("ios-banner").style.display = "block";
+          } else if (isAndroid) {
+            console.log('Prikazujemo Android banner');
+            // Pokušaj s native prompt ako je dostupan
+            if (deferredPrompt) {
+              console.log('Deferred prompt je dostupan');
+              document.getElementById("android-banner").style.display = "block";
+            } else {
+              console.log('Deferred prompt nije dostupan, prikazujemo ručni banner');
+              document.getElementById("android-banner").style.display = "block";
+            }
+          }
+        } else {
+          console.log('Nije mobilni uređaj ili je već PWA');
+        }
+      }
+
+      // Funkcija za native instalaciju (Android)
+      function installApp() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('Korisnik je prihvatio instalaciju');
+              closeBanner('android-banner');
+            }
+            deferredPrompt = null;
+          });
+        }
+      }
+
+      // Učitavanje
+      window.onload = function () {
+        console.log('Aplikacija se učitala');
+        console.log('User agent:', navigator.userAgent);
+        console.log('Je li PWA?', isPWA());
+        console.log('Display mode:', window.matchMedia("(display-mode: standalone)").matches ? 'standalone' : 'browser');
+        console.log('Service Worker podržan?', 'serviceWorker' in navigator);
+        console.log('Manifest link:', document.querySelector('link[rel="manifest"]')?.href);
+        console.log('Ikone:', document.querySelectorAll('link[rel*="icon"]').length);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoRedirect = urlParams.get("autoredirect");
+        const noRedirect = urlParams.get("noredirect");
+
+        console.log('URL parametri:', { autoRedirect, noRedirect });
+
+        // Prikaži banner za instalaciju ako je potrebno
+        setTimeout(showInstallPrompt, 1500); // Malo odgodimo da korisnik prvo vidi sadržaj stranice
+
+        // Ako je aplikacija pokrenuta kao PWA, odmah preusmjeri - ALI samo ako je PWA
+        if (isPWA() && noRedirect !== "true") {
+          console.log('Preusmjeravanje jer je PWA');
+          redirectToApp();
+          return;
+        }
+
+        // Auto-preusmjeravanje samo ako je eksplicitno zatraženo parametrom
+        if (autoRedirect === "true" && noRedirect !== "true") {
+          console.log('Auto-preusmjeravanje aktivno');
+          const countdownElement = document.getElementById("countdown");
+          let seconds = 5;
+
+          const countdownInterval = setInterval(function () {
+            countdownElement.textContent = seconds;
+            seconds--;
+
+            if (seconds < 0) {
+              clearInterval(countdownInterval);
+              redirectToApp();
+            }
+          }, 1000);
+
+          document.getElementById("countdown-container").style.display =
+            "block";
+        }
+      };
+
+      function closeBanner(id) {
+        document.getElementById(id).style.display = "none";
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Banner za iOS uređaje -->
+    <div id="ios-banner" class="install-banner">
+      <div class="banner-content">
+        <span class="banner-close" onclick="closeBanner('ios-banner')"
+          >&times;</span
+        >
+        <strong>Dodajte na početni zaslon:</strong>
+        <ol>
+          <li>
+            Kliknite <span class="icon-text">↑</span> (Dijeli) na dnu ekrana
+          </li>
+          <li>Odaberite "Dodaj na početni zaslon"</li>
+          <li>Kliknite "Dodaj" u gornjem desnom kutu</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Banner za Android uređaje -->
+    <div id="android-banner" class="install-banner">
+      <div class="banner-content">
+        <span class="banner-close" onclick="closeBanner('android-banner')"
+          >&times;</span
+        >
+        <strong>Dodajte na početni zaslon:</strong>
+        <div class="banner-buttons">
+          <button onclick="installApp()" class="install-button">Instaliraj</button>
+          <span class="manual-instructions">ili ručno:</span>
+        </div>
+        <ol>
+          <li>
+            Kliknite <span class="icon-text">⋮</span> (izbornik) gore desno
+          </li>
+          <li>Odaberite "Dodaj na početni zaslon"</li>
+          <li>Kliknite "Dodaj" na prozoru koji se pojavi</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="container">
+      <img
+        src="icons/grbx512.png"
+        alt="Promina-Drnis Logo"
+        class="logo"
+      />
+      <h1>PD Promina Drniš</h1>
+      <p>Dobrodošli u PD Mobilnu aplikaciju!</p>
+
+      <div id="countdown-container" style="display: none">
+        <p>
+          Automatsko preusmjeravanje za <span id="countdown">5</span> sekundi...
+        </p>
+      </div>
+
+      <button onclick="redirectToApp()" class="primary-button">
+        Pristupi aplikaciji
+      </button>
+    </div>
+
+    <script>
+      // Registracija service workera za PWA funkcionalnost
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("service-worker.js")
+            .then(function (registration) {
+              console.log(
+                "ServiceWorker registriran uspješno:",
+                registration.scope
+              );
+              
+              // Provjeri ima li updates
+              registration.addEventListener('updatefound', () => {
+                console.log('Novi service worker je dostupan');
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed') {
+                    console.log('Novi service worker je instaliran');
+                    if (navigator.serviceWorker.controller) {
+                      console.log('Restart aplikacije za update');
+                    }
+                  }
+                });
+              });
+            })
+            .catch(function (error) {
+              console.log("ServiceWorker registracija nije uspjela:", error);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
