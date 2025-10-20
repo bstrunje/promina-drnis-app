@@ -643,7 +643,16 @@ const memberService = {
         }
     },
 
-    async getMemberAnnualStats(memberId: number): Promise<Awaited<ReturnType<typeof memberRepository.getAnnualStats>>> {
+    async getMemberAnnualStats(memberId: number): Promise<Array<{
+        stat_id: number;
+        organization_id: number | null;
+        member_id: number | null;
+        year: number;
+        total_hours: number; // Changed from Decimal to number
+        total_activities: number;
+        membership_status: string;
+        calculated_at: string; // Changed from Date to string
+    }>> {
         try {
             // 0. Dohvati člana da saznamo organizaciju
             const member = await prisma.member.findUnique({
@@ -652,15 +661,17 @@ const memberService = {
             });
             const organizationId = member?.organization_id ?? 1;
             
-            // 1. Dohvati postojeće statistike iz annual_statistics tablice
-            const existingStats = await memberRepository.getAnnualStats(memberId);
+            // 1. Dohvati postojeće statistike iz annual_statistics tablice (MULTI-TENANCY)
+            const existingStats = await memberRepository.getAnnualStats(memberId, organizationId);
             
-            // 2. Dohvati sve participacije za člana s aktivnostima
+            // 2. Dohvati sve participacije za člana s aktivnostima (MULTI-TENANCY)
             const participations = await prisma.activityParticipation.findMany({
                 where: { 
                     member_id: memberId,
+                    organization_id: organizationId, // MULTI-TENANCY: Filter by organization
                     activity: {
-                        status: 'COMPLETED' // Samo završene aktivnosti
+                        organization_id: organizationId // MULTI-TENANCY: Also filter activity by organization
+                        // Remove status filter - show all activities (PLANNED, ACTIVE, COMPLETED, CANCELLED)
                     }
                 },
                 include: { 
@@ -733,7 +744,14 @@ const memberService = {
             }
             
             // 5. Sortiraj po godini, najnovije prvo
-            return allStats.sort((a, b) => b.year - a.year);
+            const sortedStats = allStats.sort((a, b) => b.year - a.year);
+            
+            // 6. Serialize Decimal and Date objects for proper JSON response
+            return sortedStats.map(stat => ({
+                ...stat,
+                total_hours: Number(stat.total_hours), // Convert Prisma Decimal to number
+                calculated_at: stat.calculated_at?.toISOString() || new Date().toISOString() // Convert Date to ISO string with null check
+            }));
             
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

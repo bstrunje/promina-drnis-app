@@ -318,9 +318,12 @@ const memberRepository = {
         });
     },
 
-    async getAnnualStats(memberId: number) {
+    async getAnnualStats(memberId: number, organizationId: number) {
         return prisma.annualStatistics.findMany({
-            where: { member_id: memberId },
+            where: { 
+                member_id: memberId,
+                organization_id: organizationId // MULTI-TENANCY: Filter by organization
+            },
             orderBy: { year: 'desc' },
         });
     },

@@ -203,9 +203,10 @@ const ActivitiesList: React.FC = () => {
             });
             const yearHours = calculateGrandTotalHours(yearActivities);
 
-            // Provjera za aktivne i najavljene aktivnosti unutar godine
+            // Provjera za aktivne, najavljene i otkazane aktivnosti unutar godine
             const hasActive = totalYearActivities.some(a => a.status === ActivityStatus.ACTIVE);
             const hasPlanned = totalYearActivities.some(a => a.status === ActivityStatus.PLANNED);
+            const hasCancelled = totalYearActivities.some(a => a.status === ActivityStatus.CANCELLED);
             
             // Link bi vodio na posebnu stranicu za pregled aktivnosti po godini
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
@@ -221,6 +222,7 @@ const ActivitiesList: React.FC = () => {
                       <div className="flex items-center gap-1">
                         {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title={t('list.tooltips.activeActivities')}></div>}
                         {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title={t('list.tooltips.plannedActivities')}></div>}
+                        {hasCancelled && <div className="w-3 h-3 bg-red-600 rounded-full" title={t('list.tooltips.cancelledActivities')}></div>}
                       </div>
                     </CardTitle>
                   </CardHeader>

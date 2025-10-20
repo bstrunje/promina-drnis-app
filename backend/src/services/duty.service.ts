@@ -6,7 +6,7 @@ import {
   createDutyStartTime,
   getAllScheduleInfo
 } from '../config/dutySchedule.js';
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, isWeekend } from 'date-fns';
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
 import { Request } from 'express';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 

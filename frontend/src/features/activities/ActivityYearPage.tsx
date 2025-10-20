@@ -13,6 +13,7 @@ interface Activity {
   activity_id: number;
   name: string;
   start_date: string;
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 }
 
 interface ActivityParticipation {
@@ -107,7 +108,16 @@ const ActivityYearPage: React.FC = () => {
                   className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 >
                   <div className="flex justify-between items-center">
-                    <p className="font-semibold text-gray-700">{participation.activity.name}</p>
+                    <div className="flex items-center gap-2">
+                      {/* Status indicator */}
+                      <div className={`w-3 h-3 rounded-full ${
+                        participation.activity.status === 'PLANNED' ? 'bg-green-600' :
+                        participation.activity.status === 'ACTIVE' ? 'bg-blue-600' :
+                        participation.activity.status === 'COMPLETED' ? 'bg-gray-400' :
+                        participation.activity.status === 'CANCELLED' ? 'bg-red-600' : 'bg-gray-300'
+                      }`} title={participation.activity.status}></div>
+                      <p className="font-semibold text-gray-700">{participation.activity.name}</p>
+                    </div>
                     <div className="flex items-center text-sm text-gray-500 space-x-4">
                       <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" />{new Date(participation.activity.start_date).toLocaleDateString('hr-HR')}</span>
                       <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{formatHoursToHHMM(participation.recognized_hours)}</span>
