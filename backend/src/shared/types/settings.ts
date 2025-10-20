@@ -27,6 +27,7 @@ export interface SystemSettings {
   twoFactorChannelEmailEnabled?: boolean | null;
   twoFactorChannelSmsEnabled?: boolean | null;
   twoFactorChannelTotpEnabled?: boolean | null;
+  twoFactorChannelPinEnabled?: boolean | null;
   twoFactorTrustedDevicesEnabled?: boolean | null;
   twoFactorRequireForSystemManager?: boolean | null;
   twoFactorTotpStepSeconds?: number | null;

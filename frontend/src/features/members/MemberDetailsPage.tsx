@@ -19,6 +19,7 @@ import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import ActivityHistory from "../../../components/ActivityHistory";
+import PinSetup from "../../components/PinSetup";
 
 
 interface Props {
@@ -526,6 +527,11 @@ setEditedMember(memberData);
       {/* Always visible sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <MemberMessagesSection member={member} />
+        
+        {/* PIN Setup - samo za vlastiti profil */}
+        {user?.member_id === member.member_id && (
+          <PinSetup memberId={member.member_id} />
+        )}
       </div>
 
     </div>

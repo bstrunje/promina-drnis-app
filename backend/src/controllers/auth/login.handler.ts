@@ -19,6 +19,7 @@ import {
 import auditService from "../../services/audit.service.js";
 import { tOrDefault } from "../../utils/i18n.js";
 import { PerformerType } from "@prisma/client";
+import { verifyPin } from "../members/pinController.js";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -29,7 +30,7 @@ export async function loginHandler(
 ): Promise<void | Response> {
   const locale = req.locale;
   try {
-    const { email, password } = req.body;
+    const { email, password, pin } = req.body;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (!email || !password) {
@@ -232,8 +233,39 @@ export async function loginHandler(
       data: { last_login: new Date() }
     });
     
-    // 2FA ENFORCEMENT LOGIC (minimalno, bez lomljenja postojećeg ponašanja)
+    // Dohvati system settings za 2FA provjere
     const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
+    
+    // PIN 2FA PROVJERA - prije ostalih 2FA metoda
+    const pinEnabled = settings?.twoFactorChannelPinEnabled === true;
+    if (pinEnabled && member.pin_hash) {
+      if (!pin) {
+        // PIN je potreban, ali nije poslan
+        return res.status(200).json({ 
+          status: 'REQUIRES_PIN',
+          message: 'PIN is required for login'
+        });
+      }
+      
+      try {
+        const isPinValid = await verifyPin(member.member_id, pin);
+        if (!isPinValid) {
+          return res.status(401).json({
+            code: 'AUTH_INVALID_PIN',
+            message: tOrDefault('auth.errorsByCode.AUTH_INVALID_PIN', locale, 'Invalid PIN')
+          });
+        }
+        // PIN je valjan, nastavi s login procesom
+      } catch (error) {
+        // PIN lockout ili druga greška
+        return res.status(423).json({
+          code: 'AUTH_PIN_LOCKED',
+          message: error instanceof Error ? error.message : 'PIN verification failed'
+        });
+      }
+    }
+    
+    // 2FA ENFORCEMENT LOGIC (minimalno, bez lomljenja postojećeg ponašanja)
     const twoFaGlobal = settings?.twoFactorGlobalEnabled === true;
     const twoFaMembersEnabled = settings?.twoFactorMembersEnabled === true;
     const requiredRoles: string[] = Array.isArray(settings?.twoFactorRequiredMemberRoles) ? (settings!.twoFactorRequiredMemberRoles as unknown as string[]) : [];

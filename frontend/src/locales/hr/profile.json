@@ -351,5 +351,58 @@
         "saving": "Spremanje...",
         "addPeriod": "Dodaj period"
       }
+    },
+    "pinSetup": {
+      "title": "Sigurnosni PIN",
+      "loading": "Učitavanje PIN postavki...",
+      "status": {
+        "hasPin": "PIN je postavljen",
+        "noPinWarning": "PIN nije postavljen. Postavite PIN za dodatnu sigurnost.",
+        "locked": "PIN je zaključan zbog previše neuspješnih pokušaja.",
+        "lockedUntil": "Pokušajte ponovno nakon {{date}}."
+      },
+      "buttons": {
+        "setPin": "Postavi PIN",
+        "changePin": "Promijeni PIN",
+        "removePin": "Ukloni PIN",
+        "cancel": "Odustani",
+        "saving": "Spremanje...",
+        "removing": "Uklanjanje..."
+      },
+      "form": {
+        "currentPinLabel": "Trenutni PIN",
+        "currentPinPlaceholder": "Unesite trenutni PIN",
+        "newPinLabel": "Novi PIN",
+        "pinLabel": "PIN",
+        "pinLengthHint": "(4-6 znamenki)",
+        "pinPlaceholder": "Unesite PIN",
+        "confirmPinLabel": "Potvrdite PIN",
+        "confirmPinPlaceholder": "Ponovite PIN"
+      },
+      "validation": {
+        "required": "PIN je obavezan",
+        "tooShort": "PIN mora imati najmanje 4 znamenke",
+        "tooLong": "PIN može imati najviše 6 znamenki",
+        "numbersOnly": "PIN može sadržavati samo brojeve",
+        "noRepeating": "PIN ne može biti isti broj (npr. 1111)",
+        "noSequence": "PIN ne može biti jednostavna sekvenca (npr. 1234)",
+        "mismatch": "PIN-ovi se ne poklapaju",
+        "currentRequired": "Unesite trenutni PIN za uklanjanje"
+      },
+      "messages": {
+        "setSuccess": "PIN je uspješno postavljen",
+        "changeSuccess": "PIN je uspješno promijenjen",
+        "removeSuccess": "PIN je uspješno uklonjen",
+        "setError": "Greška pri postavljanju PIN-a",
+        "removeError": "Greška pri uklanjanju PIN-a",
+        "fetchError": "Greška pri dohvaćanju PIN statusa"
+      },
+      "security": {
+        "title": "Sigurnosne preporuke:",
+        "noBirthDate": "Ne koristite datum rođenja ili jednostavne brojeve",
+        "noSequence": "Izbjegavajte sekvence poput 1234 ili 4321",
+        "loginRequired": "PIN će se tražiti pri svakoj prijavi",
+        "rememberDevice": "Možete koristiti \"Zapamti uređaj\" opciju"
+      }
     }
 }

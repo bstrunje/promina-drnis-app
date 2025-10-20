@@ -127,6 +127,11 @@ model Member {
   two_factor_enabled        Boolean?                @default(false)
   two_factor_confirmed_at   DateTime?               @db.Timestamp(6)
   two_factor_secret         String?                 @db.VarChar(255)
+  // PIN 2FA polja
+  pin_hash                  String?                 @db.VarChar(255)
+  pin_attempts              Int                     @default(0)
+  pin_locked_until          DateTime?               @db.Timestamp(6)
+  pin_set_at                DateTime?               @db.Timestamp(6)
   two_factor_recovery_codes_hash Json?
   two_factor_preferred_channel String?              @db.VarChar(10)
   organization             Organization?            @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -275,6 +280,7 @@ model SystemSettings {
   twoFactorChannelTotpEnabled      Boolean? @default(true)  @map("two_factor_channel_totp_enabled")
   twoFactorChannelEmailEnabled     Boolean? @default(false) @map("two_factor_channel_email_enabled")
   twoFactorChannelSmsEnabled       Boolean? @default(false) @map("two_factor_channel_sms_enabled")
+  twoFactorChannelPinEnabled       Boolean? @default(false) @map("two_factor_channel_pin_enabled")
   // trajanja i sigurnosne politike
   twoFactorTotpStepSeconds         Int?     @default(30)    @map("two_factor_totp_step_seconds")
   twoFactorTotpWindow              Int?     @default(1)     @map("two_factor_totp_window")

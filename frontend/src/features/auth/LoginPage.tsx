@@ -82,6 +82,11 @@ const LoginPage = () => {
   const [rememberDevice, setRememberDevice] = useState(false);
   const [sendEmailLoading, setSendEmailLoading] = useState(false);
   
+  // PIN 2FA state
+  const [pinRequired, setPinRequired] = useState(false);
+  const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
   // isSoftLogout se ne koristi, uklonjeno radi lint čistoće
@@ -275,9 +280,21 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      // Uklonjen loginPayload, šaljemo loginData direktno
-      // login funkcija u api.ts je ažurirana da šalje { email, password }
-      const data = await login(loginData);
+      // Uklonjen loginPayload, šaljemo loginData direktno s PIN-om ako je potreban
+      const loginPayload = { ...loginData };
+      if (pinRequired && pin) {
+        loginPayload.pin = pin;
+      }
+      
+      const data = await login(loginPayload);
+
+      // PIN 2FA: backend može vratiti { status: 'REQUIRES_PIN' }
+      if (data && (data as unknown as { status?: string }).status === 'REQUIRES_PIN') {
+        setPinRequired(true);
+        setMessage(null);
+        setError('');
+        return;
+      }
 
       // 2FA drugi korak: backend može vratiti { status: 'REQUIRES_2FA' }
       if (data && (data as unknown as { status?: string }).status === 'REQUIRES_2FA') {
@@ -1054,6 +1071,41 @@ const LoginPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* PIN input - prikaži samo ako je potreban */}
+                  {pinRequired && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('login.pinLabel', 'Sigurnosni PIN')}
+                      </label>
+                      <div className="mt-1 relative">
+                        <input
+                          type={showPin ? "text" : "password"}
+                          name="pin"
+                          required
+                          placeholder={t('login.pinPlaceholder', 'Unesite vaš PIN')}
+                          className="mt-2 p-2 w-full border rounded"
+                          value={pin}
+                          maxLength={6}
+                          onChange={(e) => setPin(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          onClick={() => setShowPin(!showPin)}
+                        >
+                          {showPin ? (
+                            <EyeOff className="h-5 w-5 text-gray-400" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-gray-400" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {t('login.pinHint', 'Unesite 4-6 znamenkasti PIN koji ste postavili u postavkama')}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex space-x-4">
                     <button

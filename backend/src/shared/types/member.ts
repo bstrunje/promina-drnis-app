@@ -147,6 +147,7 @@ export interface MemberProfile {
 export interface MemberLoginData {
     email: string; // Dodano
     password: string;
+    pin?: string; // PIN za 2FA
 }
 
 export type RegistrationStatus = 'pending' | 'completed';

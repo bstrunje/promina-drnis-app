@@ -14,6 +14,7 @@ import memberProfileController from '../controllers/memberProfile.controller.js'
 import cardNumberController from '../controllers/cardnumber.controller.js';
 import memberStatsController from '../controllers/memberStats.controller.js';
 import memberMessageController from '../controllers/member.message.controller.js';
+import { getPinStatus, setPin, removePin } from '../controllers/members/pinController.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
 import memberService from '../services/member.service.js';
@@ -693,5 +694,10 @@ router.post('/check-auto-terminations', roles.requireAdmin, async (req, res) => 
     });
   }
 });
+
+// PIN 2FA rute
+router.get('/:memberId/pin-status', authenticateToken, getPinStatus);
+router.post('/:memberId/set-pin', authenticateToken, setPin);
+router.delete('/:memberId/remove-pin', authenticateToken, removePin);
   
 export default router;

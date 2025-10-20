@@ -351,5 +351,58 @@
             "saving": "Saving...",
             "addPeriod": "Add Period"
         }
+    },
+    "pinSetup": {
+        "title": "Security PIN",
+        "loading": "Loading PIN settings...",
+        "status": {
+            "hasPin": "PIN is set",
+            "noPinWarning": "PIN is not set. Set up a PIN for additional security.",
+            "locked": "PIN is locked due to too many failed attempts.",
+            "lockedUntil": "Try again after {{date}}."
+        },
+        "buttons": {
+            "setPin": "Set PIN",
+            "changePin": "Change PIN",
+            "removePin": "Remove PIN",
+            "cancel": "Cancel",
+            "saving": "Saving...",
+            "removing": "Removing..."
+        },
+        "form": {
+            "currentPinLabel": "Current PIN",
+            "currentPinPlaceholder": "Enter current PIN",
+            "newPinLabel": "New PIN",
+            "pinLabel": "PIN",
+            "pinLengthHint": "(4-6 digits)",
+            "pinPlaceholder": "Enter PIN",
+            "confirmPinLabel": "Confirm PIN",
+            "confirmPinPlaceholder": "Repeat PIN"
+        },
+        "validation": {
+            "required": "PIN is required",
+            "tooShort": "PIN must have at least 4 digits",
+            "tooLong": "PIN can have at most 6 digits",
+            "numbersOnly": "PIN can only contain numbers",
+            "noRepeating": "PIN cannot be the same number (e.g. 1111)",
+            "noSequence": "PIN cannot be a simple sequence (e.g. 1234)",
+            "mismatch": "PINs do not match",
+            "currentRequired": "Enter current PIN to remove"
+        },
+        "messages": {
+            "setSuccess": "PIN successfully set",
+            "changeSuccess": "PIN successfully changed",
+            "removeSuccess": "PIN successfully removed",
+            "setError": "Error setting PIN",
+            "removeError": "Error removing PIN",
+            "fetchError": "Error fetching PIN status"
+        },
+        "security": {
+            "title": "Security recommendations:",
+            "noBirthDate": "Don't use birth date or simple numbers",
+            "noSequence": "Avoid sequences like 1234 or 4321",
+            "loginRequired": "PIN will be required at every login",
+            "rememberDevice": "You can use \"Remember device\" option"
+        }
     }
 }
