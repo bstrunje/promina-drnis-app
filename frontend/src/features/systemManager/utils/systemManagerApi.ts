@@ -4,6 +4,9 @@ import { API_BASE_URL } from '../../../utils/config';
 import { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto, SystemManagerLoginResponse } from '@shared/systemManager';
 import { SystemSettings } from '@shared/settings';
 
+// Re-export tipova za lakši pristup u komponentama
+export type { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto, SystemManagerLoginResponse };
+
 // Tipovi za 2FA i force password change flow
 export interface Verify2faResponse {
   resetRequired?: boolean;
@@ -86,6 +89,28 @@ const systemManagerApi = axios.create({
   withCredentials: true, // Omogućuje slanje i primanje kolačića u cross-origin zahtjevima
 });
 
+/**
+ * Ekstraktuje org slug iz trenutnog URL-a
+ * - /system-manager/... → null (Global SM)
+ * - /promina/system-manager/... → 'promina' (Org SM)
+ */
+const extractOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/').filter(Boolean);
+  
+  // Ako path počinje s 'system-manager', to je Global SM
+  if (pathParts[0] === 'system-manager') {
+    return null;
+  }
+  
+  // Ako drugi dio je 'system-manager', prvi je org slug
+  if (pathParts[1] === 'system-manager') {
+    return pathParts[0];
+  }
+  
+  return null;
+};
+
 // Interceptor za dodavanje tokena u zahtjeve
 systemManagerApi.interceptors.request.use(
   (config) => {
@@ -105,24 +130,47 @@ systemManagerApi.interceptors.request.use(
     }
     
     try {
-      // Propagiraj tenant/branding za sve System Manager rute bez duplikata
+      // Dohvati org slug ako postoji
+      const orgSlug = extractOrgSlugFromPath();
+      console.log(`[SM-API] Detected orgSlug: ${orgSlug}, current path: ${window.location.pathname}`);
+      
+      // Propagiraj tenant/branding za sve System Manager rute
       const url = config.url ?? '';
       if (url.startsWith('/system-manager')) {
-        const current = new URL(window.location.href);
-        const t = current.searchParams.get('tenant');
-        const b = current.searchParams.get('branding');
-        if (t || b) {
-          const [path, queryStr] = url.split('?');
+        // Svi SM pozivi idu na /api/system-manager/*
+        // Org-specific SM dodaje ?tenant=orgSlug query param
+        
+        config.url = url; // Zadrži /system-manager/login
+        // baseURL je već API_BASE_URL (http://localhost:3000/api)
+        
+        // MULTI-TENANCY: Uvijek dodaj tenant parametar ako je dostupan
+        // Ovo omogućuje Global SM-u da radi s organizacijskim podacima
+        const tenant = localStorage.getItem('current_tenant') ?? orgSlug;
+        console.log(`[SM-API-DEBUG] current_tenant: '${localStorage.getItem('current_tenant')}', orgSlug: '${orgSlug}', final tenant: '${tenant}'`);
+        
+        if (tenant) {
+          const [path, queryStr] = config.url.split('?');
           const params = new URLSearchParams(queryStr ?? '');
-          // Postavi samo ako već ne postoji na URL-u
-          if (t && !params.has('tenant')) params.set('tenant', t);
-          if (b && !params.has('branding')) params.set('branding', b);
-          const merged = params.toString();
-          config.url = merged ? `${path}?${merged}` : path;
+          params.set('tenant', tenant); // Dodaj tenant param
+          config.url = `${path}?${params.toString()}`;
+          console.log(`[SM-API] Adding tenant param: ${url} → ${config.baseURL}${config.url}`);
+        } else {
+          console.log(`[SM-API] No tenant available: ${config.baseURL}${config.url}`);
+        }
+        
+        // Dodatno: propagiraj branding query parametar ako postoji
+        const current = new URL(window.location.href);
+        const b = current.searchParams.get('branding');
+        if (b) {
+          const [path, queryStr] = config.url.split('?');
+          const params = new URLSearchParams(queryStr ?? '');
+          if (!params.has('branding')) params.set('branding', b);
+          config.url = `${path}?${params.toString()}`;
         }
       }
-    } catch {
-      // Ne ruši zahtjev ako window.location nije dostupan
+    } catch (error) {
+      console.error('[SM-API] Greška u interceptoru:', error);
+      // Ne ruši zahtjev
     }
     return config;
   },
@@ -174,8 +222,8 @@ systemManagerApi.interceptors.response.use(
     }
     
     // Provjeri je li greška 401 (Unauthorized) i nije zahtjev za login ili refresh token
-    const isLoginRequest = originalRequest.url?.includes('/system-manager/login');
-    const isRefreshRequest = originalRequest.url?.includes('/system-manager/refresh-token');
+    const isLoginRequest = (originalRequest.url?.includes('/system-manager/login') ?? false) || (originalRequest.url?.includes('/api/system-manager/login') ?? false);
+    const isRefreshRequest = (originalRequest.url?.includes('/system-manager/refresh-token') ?? false) || (originalRequest.url?.includes('/api/system-manager/refresh-token') ?? false);
     
     // Ako je greška 401 i nije login ili refresh zahtjev i nismo već u procesu osvježavanja
     if (error.response?.status === 401 && !isLoginRequest && !isRefreshRequest && !isRefreshing) {
@@ -747,6 +795,7 @@ export const getAllHolidays = async (): Promise<Holiday[]> => {
  */
 export const getHolidaysForYear = async (year: number): Promise<Holiday[]> => {
   try {
+    // Tenant parametar se automatski dodaje u request interceptoru
     const response = await systemManagerApi.get<Holiday[]>(`/system-manager/holidays/${year}`);
     return response.data;
   } catch (error: unknown) {
@@ -755,7 +804,7 @@ export const getHolidaysForYear = async (year: number): Promise<Holiday[]> => {
     }
     throw error;
   }
-};
+}
 
 /**
  * Kreira novi praznik

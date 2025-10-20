@@ -14,6 +14,7 @@ import systemManagerController, {
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
+import { tenantMiddleware, optionalTenantMiddleware } from '../middleware/tenant.middleware.js';
 import organizationRoutes from './organization.routes.js';
 
 const router = express.Router();
@@ -47,9 +48,9 @@ router.get('/all', systemManagerController.getAllSystemManagers);
 // Ruta za dohvat statistika dashboarda
 router.get('/dashboard/stats', systemManagerController.getDashboardStats);
 
-// Rute za sistemske postavke (koristimo izdvojene handlere)
-router.get('/settings', getSystemSettings);
-router.put('/settings', updateSystemSettings);
+// Rute za sistemske postavke (mogu raditi za Global i Org SM)
+router.get('/settings', optionalTenantMiddleware, getSystemSettings);
+router.put('/settings', optionalTenantMiddleware, updateSystemSettings);
 
 // Rute za upravljanje ovlastima članova
 router.get('/members-with-permissions', systemManagerController.getMembersWithPermissions);
@@ -75,22 +76,22 @@ router.post('/assign-role', systemManagerController.assignRoleToMember);
 // router.post('/system-backup', systemManagerController.createSystemBackup);
 // router.post('/system-restore', systemManagerController.restoreSystemBackup);
 
-// --- RUTE ZA UPRAVLJANJE PRAZNICIMA (Holidays Management) ---
-router.get('/holidays', holidayController.getAllHolidays);
-router.get('/holidays/:year', holidayController.getHolidaysForYear);
-router.post('/holidays', holidayController.createHoliday);
-router.put('/holidays/:id', holidayController.updateHoliday);
-router.delete('/holidays/:id', holidayController.deleteHoliday);
+// --- HOLIDAY MANAGEMENT (org-specific, trebaju tenant context) ---
+router.get('/holidays', tenantMiddleware, holidayController.getAllHolidays);
+router.get('/holidays/:year', tenantMiddleware, holidayController.getHolidaysForYear);
+router.post('/holidays', tenantMiddleware, holidayController.createHoliday);
+router.put('/holidays/:id', tenantMiddleware, holidayController.updateHoliday);
+router.delete('/holidays/:id', tenantMiddleware, holidayController.deleteHoliday);
 
 // Seed default hrvatski praznici za godinu
-router.post('/holidays/seed', holidayController.seedDefaultHolidays);
+router.post('/holidays/seed', tenantMiddleware, holidayController.seedDefaultHolidays);
 
 // Brisanje svih praznika za godinu
-router.delete('/holidays/year/:year', holidayController.deleteHolidaysForYear);
+router.delete('/holidays/year/:year', tenantMiddleware, holidayController.deleteHolidaysForYear);
 
-// --- DUTY CALENDAR SETTINGS ---
-router.get('/duty-settings', getDutySettings);
-router.put('/duty-settings', updateDutySettings);
+// --- DUTY CALENDAR SETTINGS (org-specific, trebaju tenant context) ---
+router.get('/duty-settings', optionalTenantMiddleware, getDutySettings);
+router.put('/duty-settings', optionalTenantMiddleware, updateDutySettings);
 
 // --- ORGANIZATION MANAGEMENT ---
 // Sve organization rute su već zaštićene s authMiddleware i requireSystemManager

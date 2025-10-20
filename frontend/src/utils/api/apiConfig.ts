@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getApiBaseUrl, getCurrentTenant } from '../tenantUtils';
+import { getApiBaseUrl, getCurrentTenant, extractOrgSlugFromPath } from '../tenantUtils';
 
 type ParamsRecord = Record<string, unknown>;
 
@@ -39,8 +39,24 @@ apiInstance.interceptors.request.use(
       localStorage.removeItem('organization_branding');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      
+      // Dohvati org slug i preusmjeri na odgovarajući login
+      const orgSlug = extractOrgSlugFromPath();
+      
+      // MULTI-TENANCY: NE smijemo fallback-ati na specifičnu organizaciju!
+      // Ako nema org slug-a, redirect na welcome stranicu
+      if (!orgSlug) {
+        // Welcome stranica gdje korisnik može odabrati organizaciju
+        if (window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+        return Promise.reject(new Error('Tenant selection required'));
+      }
+      
+      // Ako ima org slug, redirect na login te organizacije
+      const loginPath = `/${orgSlug}/login`;
+      if (window.location.pathname !== loginPath) {
+        window.location.href = loginPath;
       }
       // Odbij zahtjev
       return Promise.reject(new Error('Tenant is required'));

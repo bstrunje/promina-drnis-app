@@ -3,6 +3,22 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { forceChangePassword, type SystemManager } from '../../utils/systemManagerApi';
 
+/**
+ * Helper za detekciju org slug-a iz URL-a
+ */
+const getOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/').filter(Boolean);
+  
+  // /system-manager/... → null (Global SM)
+  if (pathParts[0] === 'system-manager') return null;
+  
+  // /promina/system-manager/... → 'promina' (Org SM)
+  if (pathParts[1] === 'system-manager') return pathParts[0];
+  
+  return null;
+};
+
 interface LocationState {
   tempToken?: string;
 }
@@ -40,7 +56,13 @@ const ForcePasswordChangePage: React.FC = () => {
       // Postavljamo stanje kao da smo se normalno prijavili
       localStorage.setItem('systemManagerToken', response.token);
       localStorage.setItem('systemManager', JSON.stringify(response.manager));
-      window.location.href = '/system-manager/dashboard'; // Puni refresh da se kontekst resetira
+      
+      // Dinamički dashboard path baziran na org slug
+      const orgSlug = getOrgSlugFromPath();
+      const dashboardPath = orgSlug 
+        ? `/${orgSlug}/system-manager/dashboard`
+        : '/system-manager/dashboard';
+      window.location.href = dashboardPath; // Puni refresh da se kontekst resetira
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {

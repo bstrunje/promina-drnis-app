@@ -7,6 +7,7 @@ import { AuthTokenService } from '../utils/auth/AuthTokenService';
 import { useNavigate } from 'react-router-dom';
 import { setNavigateInstance } from '../utils/auth/navigationHelper';
 import { AuthContext, AuthContextType } from './authContextObject';
+import { extractOrgSlugFromPath } from '../utils/tenantUtils';
 
 // Tip premješten u 'context/authContextObject.ts'
 
@@ -27,8 +28,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Ne radimo preusmjeravanje ovdje jer to radi App.tsx
   const logout = React.useCallback(async () => {
     try {
+      // Provjeri da li je trenutna putanja login stranica
+      const orgSlug = extractOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+      
       // Spremimo trenutnu putanju sa query parametrima u slučaju da je kasnije trebamo
-      if (window?.location && window.location.pathname !== '/' && window.location.pathname !== '/login') {
+      if (window?.location && window.location.pathname !== '/' && window.location.pathname !== loginPath) {
         const fullPath = window.location.pathname + window.location.search;
         sessionStorage.setItem('lastPath', fullPath);
       }
@@ -53,9 +58,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Nova funkcija za soft-logout - ne briše token odmah
   const softLogout = React.useCallback(() => {
     try {
+      // Dohvati org slug za provjeru login path-a i preusmjeravanje
+      const orgSlug = extractOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+      
       // Spremi trenutnu putanju sa query parametrima za kasnije preusmjeravanje
       const currentPath = window.location.pathname + window.location.search;
-      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+      if (window.location.pathname !== '/' && window.location.pathname !== loginPath) {
         setLastPath(currentPath);
         // Također spremamo u sessionStorage za slučaj osvježavanja stranice
         sessionStorage.setItem('lastPath', currentPath);
@@ -65,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setUser(null);
       
       // Preusmjeri na login stranicu s query parametrom koji kaže da je soft-logout
-      navigate(`/login?soft=true&redirect=${encodeURIComponent(currentPath)}`);
+      navigate(`${loginPath}?soft=true&redirect=${encodeURIComponent(currentPath)}`);
     } catch {
       // U slučaju greške, napravi puni logout
       void logout();
@@ -112,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       try {
         const savedUser = localStorage.getItem("user");
         const savedToken = tokenStorage.getAccessToken();
+        const cachedTenant = localStorage.getItem("current_tenant");
         
         if (savedUser && savedToken) {
           // Postavljamo privremeno stanje korisnika i tokena
@@ -129,6 +139,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           };
 
           if (parsedUser && isMember(parsedUser)) {
+            // MULTI-TENANCY VALIDACIJA: Provjeri da li tenant odgovara
+            // (ne možemo garantirati da će uvijek imati organization podatke, pa samo upozoravamo)
+            if (cachedTenant) {
+              console.log('[AUTH] Cached tenant:', cachedTenant, '| User loaded from localStorage');
+            }
+            
             setUser({
               ...parsedUser,
               registration_completed: !!(parsedUser).registration_completed,

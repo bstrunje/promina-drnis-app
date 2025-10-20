@@ -91,8 +91,9 @@ const messageService = {
         return await memberMessageRepository.messageExists(messageId);
     },
     
-    async countUnreadMessages(memberId: number): Promise<number> {
-        return await memberMessageRepository.countUnreadMessages(memberId);
+    async countUnreadMessages(req: Request, memberId: number): Promise<number> {
+        const organizationId = getOrganizationId(req);
+        return await memberMessageRepository.countUnreadMessages(organizationId, memberId);
     },
 
     async getSentMessagesByMemberId(req: Request, memberId: number): Promise<TransformedMessage[]> {

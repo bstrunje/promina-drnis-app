@@ -1,9 +1,9 @@
 // frontend/components/BackToDashboard.tsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../src/context/useAuth';
 import { useTranslation } from 'react-i18next';
+import { useTenantNavigation } from '../src/hooks/useTenantNavigation';
 
 /**
  * Komponenta koja prikazuje gumb za povratak na dashboard
@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
  */
 const BackToDashboard: React.FC = () => {
   const { t } = useTranslation('common');
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const { user } = useAuth();
 
   // Određivanje rute dashboarda prema ulozi korisnika
@@ -32,7 +32,7 @@ const BackToDashboard: React.FC = () => {
 
   return (
     <button
-      onClick={() => navigate(getDashboardRoute())}
+      onClick={() => navigateTo(getDashboardRoute())}
       className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors"
     >
       <ArrowLeft size={16} />

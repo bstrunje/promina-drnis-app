@@ -6,43 +6,94 @@
  */
 
 /**
+ * Izvlači org slug iz URL path-a (path-based multi-tenancy)
+ * Primjeri:
+ * - /promina/dashboard → 'promina'
+ * - /split/members → 'split'
+ * - /system-manager/login → null (izuzeće)
+ */
+export const extractOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  
+  if (!pathname || pathname === '/') return null;
+  
+  // Ukloni leading slash
+  const cleanPath = pathname.startsWith('/') ? pathname.substring(1) : pathname;
+  
+  // Split po slash
+  const parts = cleanPath.split('/');
+  
+  if (parts.length === 0) return null;
+  
+  const orgSlug = parts[0];
+  
+  // Izuzeci - samo infrastrukturne rute koje nisu org slugovi
+  // SVE ostale rute MORAJU biti pod organizacijom (/{orgSlug}/...)
+  const excludedPrefixes = [
+    'api',           // Backend API pozivi
+    'uploads',       // Statički resursi
+    'health',        // Health check endpoint
+    'system-manager' // Globalni System Manager (jedinstvena iznimka)
+  ];
+  if (excludedPrefixes.includes(orgSlug)) {
+    return null;
+  }
+  
+  // Osnovni format check
+  const validSlugRegex = /^[a-z0-9-]+$/;
+  if (!validSlugRegex.test(orgSlug)) {
+    return null;
+  }
+  
+  return orgSlug;
+};
+
+/**
  * Detektira trenutni tenant iz URL-a ili localStorage cache-a
+ * PRIORITET:
+ * 1. URL Path (/promina/...) - path-based routing
+ * 2. Query parameter (?tenant=promina) - development override
+ * 3. Subdomain (promina.managemembers.com) - legacy fallback
+ * 4. localStorage cache
+ * 
  * Baca grešku ako tenant nije pronađen - korisnika treba preusmjeriti na login
  */
 export const getCurrentTenant = (): string => {
+  // 1. Pokušaj iz URL path-a (prioritet!)
+  const pathSlug = extractOrgSlugFromPath();
+  if (pathSlug) {
+    setCachedTenant(pathSlug); // Cache za buduće korištenje
+    return pathSlug;
+  }
+  
+  // 2. Provjeri query parameter (development override)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
+  if (tenantParam) {
+    setCachedTenant(tenantParam);
+    return tenantParam;
+  }
+  
+  // 3. Pokušaj iz subdomene (legacy/fallback)
   const hostname = window.location.hostname;
-  
-  // Development okruženje
-  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-    // Provjeri query parameter za testiranje (podržava 'tenant' i 'branding')
-    const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
-    if (tenantParam) {
-      // Spremi u cache za kasnije korištenje
-      setCachedTenant(tenantParam);
-      return tenantParam;
+  if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 3) {
+      const subdomain = parts[0];
+      setCachedTenant(subdomain);
+      return subdomain;
     }
-    
-    // Pokušaj iz cache-a
-    const cached = getCachedTenant();
-    if (cached) {
-      return cached;
-    }
-    
-    // NEMA fallback-a - korisnik mora odabrati tenant
-    console.warn('[TENANT] Tenant nije specificiran - potrebna prijava');
-    throw new Error('Tenant is required. Please login again.');
   }
   
-  // Production okruženje - subdomena
-  const parts = hostname.split('.');
-  if (parts.length >= 2) {
-    return parts[0];
+  // 4. Pokušaj iz localStorage cache-a
+  const cached = getCachedTenant();
+  if (cached) {
+    return cached;
   }
   
-  // NEMA fallback-a
-  console.warn('[TENANT] Ne mogu detektirati tenant iz URL-a');
-  throw new Error('Unable to detect tenant from URL');
+  // NEMA fallback-a - korisnik mora odabrati tenant
+  console.warn('[TENANT] Tenant nije specificiran - potrebna prijava');
+  throw new Error('Tenant is required. Please login again.');
 };
 
 /**
@@ -201,6 +252,29 @@ export const getTenantDebugInfo = () => {
   };
 };
 
+/**
+ * Generiraj org-aware path za navigaciju
+ * VAŽNO: SVE aplikacijske rute MORAJU koristiti ovu funkciju!
+ * 
+ * @example
+ * getOrgPath('/activities') → '/promina/activities'
+ * getOrgPath('/members/123') → '/promina/members/123'
+ * getOrgPath('activities') → '/promina/activities' (automatski dodaje leading slash)
+ */
+export const getOrgPath = (path: string): string => {
+  const tenant = getCurrentTenant();
+  
+  // Ukloni leading slash ako postoji
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  // Provjeri da path već ne sadrži org slug
+  if (cleanPath.startsWith(`${tenant}/`)) {
+    return `/${cleanPath}`;
+  }
+  
+  return `/${tenant}/${cleanPath}`;
+};
+
 export default {
   getCurrentTenant,
   isDevelopment,
@@ -216,5 +290,6 @@ export default {
   isCurrentTenant,
   isKnownTenant,
   getTenantDebugInfo,
+  getOrgPath,
   KNOWN_TENANTS,
 };

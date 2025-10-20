@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/useAuth';
 import { AdminPermissionsModel } from '@shared/systemManager';
-import { tokenStorage } from '../utils/auth/tokenStorage';
-import { API_BASE_URL } from '../utils/config';
+import api from '../utils/api/apiConfig';
 
 /**
  * Hook za provjeru korisničkih dozvola
@@ -48,17 +47,10 @@ export const usePermissions = () => {
 
       // Za ostale korisnike, dohvati dozvole iz API-ja
       try {
-        const token = tokenStorage.getAccessToken();
-        const response = await fetch(`${API_BASE_URL}/admin/permissions/${user.member_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json() as AdminPermissionsModel;
-          setPermissions(data);
+        const response = await api.get<AdminPermissionsModel>(`/admin/permissions/${user.member_id}`);
+        
+        if (response.data) {
+          setPermissions(response.data);
         } else {
           // Ako nema dozvola ili greška, postavi prazne dozvole
           setPermissions({

@@ -1,6 +1,6 @@
 // features/systemManager/SystemManagerRoutes.tsx
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { SystemManagerProvider, useSystemManager } from '../../context/SystemManagerContext';
 import SystemManagerLoginPage from './pages/login/SystemManagerLoginPage';
 import TwoFactorEntryPage from './pages/login/TwoFactorEntryPage';
@@ -12,9 +12,35 @@ import DutyCalendarSettings from './DutyCalendarSettings';
 import OrganizationWizard from './organizations/OrganizationWizard';
 import OrganizationEdit from './organizations/OrganizationEdit';
 
+/**
+ * Helper za detekciju org slug-a iz URL-a
+ * - /system-manager/... → null (Global SM)
+ * - /promina/system-manager/... → 'promina' (Org SM)
+ */
+const useOrgSlug = (): string | null => {
+  const location = useLocation();
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  
+  // Ako path počinje s 'system-manager', to je Global SM
+  if (pathParts[0] === 'system-manager') {
+    return null;
+  }
+  
+  // Ako drugi dio je 'system-manager', prvi je org slug
+  if (pathParts[1] === 'system-manager') {
+    return pathParts[0];
+  }
+  
+  return null;
+};
+
 // Zaštićena ruta za system manager
 const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useSystemManager();
+  const orgSlug = useOrgSlug();
+  
+  // Dinamički login path
+  const loginPath = orgSlug ? `/${orgSlug}/system-manager/login` : '/system-manager/login';
 
   if (loading) {
     return (
@@ -26,7 +52,7 @@ const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ 
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/system-manager/login" replace />;
+    return <Navigate to={loginPath} replace />;
   }
 
   return <>{children}</>;
@@ -34,6 +60,9 @@ const SystemManagerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ 
 
 // Komponenta za System Manager rute
 const SystemManagerRoutesContent: React.FC = () => {
+  const orgSlug = useOrgSlug();
+  const dashboardPath = orgSlug ? `/${orgSlug}/system-manager/dashboard` : '/system-manager/dashboard';
+  
   return (
     <Routes>
       <Route 
@@ -138,7 +167,7 @@ const SystemManagerRoutesContent: React.FC = () => {
       />
       <Route 
         path="/" 
-        element={<Navigate to="/system-manager/dashboard" replace />} 
+        element={<Navigate to={dashboardPath} replace />} 
       />
     </Routes>
   );

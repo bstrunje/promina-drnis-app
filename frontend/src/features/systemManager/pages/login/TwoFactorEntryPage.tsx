@@ -3,6 +3,22 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verify2faAndProceed, type SystemManager } from '../../utils/systemManagerApi';
 
+/**
+ * Helper za detekciju org slug-a iz URL-a
+ */
+const getOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/').filter(Boolean);
+  
+  // /system-manager/... → null (Global SM)
+  if (pathParts[0] === 'system-manager') return null;
+  
+  // /promina/system-manager/... → 'promina' (Org SM)
+  if (pathParts[1] === 'system-manager') return pathParts[0];
+  
+  return null;
+};
+
 interface LocationState {
   tempToken?: string;
 }
@@ -36,11 +52,21 @@ const TwoFactorEntryPage: React.FC = () => {
       const response = await verify2faAndProceed(state.tempToken, code) as Verify2faResponse;
 
       if (response.resetRequired) {
-        navigate('/system-manager/force-change-password', { state: { tempToken: response.tempToken } });
+        const orgSlug = getOrgSlugFromPath();
+        const forceChangePath = orgSlug 
+          ? `/${orgSlug}/system-manager/force-change-password`
+          : '/system-manager/force-change-password';
+        navigate(forceChangePath, { state: { tempToken: response.tempToken } });
       } else if (response.token && response.manager) {
         localStorage.setItem('systemManagerToken', response.token);
         localStorage.setItem('systemManager', JSON.stringify(response.manager));
-        window.location.href = '/system-manager/dashboard'; // Puni refresh
+        
+        // Dinamički dashboard path baziran na org slug
+        const orgSlug = getOrgSlugFromPath();
+        const dashboardPath = orgSlug 
+          ? `/${orgSlug}/system-manager/dashboard`
+          : '/system-manager/dashboard';
+        window.location.href = dashboardPath; // Puni refresh
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');

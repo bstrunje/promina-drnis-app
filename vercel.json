@@ -2,9 +2,41 @@
   "version": 2,
   "buildCommand": "npm run build:vercel",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/[...slug]" },
-    { "source": "/uploads/(.*)", "destination": "/api/[...slug]" },
-    { "source": "/health", "destination": "/api/[...slug]" },
-    { "source": "/(.*)", "destination": "/frontend/dist/$1" }
+    { 
+      "source": "/:orgSlug/api/system-manager/:path*", 
+      "destination": "/api/system-manager/:path*"
+    },
+    { 
+      "source": "/:orgSlug/api/:path*", 
+      "destination": "/api/:path*"
+    },
+    { 
+      "source": "/api/system-manager/:path*", 
+      "destination": "/api/[...slug]" 
+    },
+    { 
+      "source": "/api/:path*", 
+      "destination": "/api/[...slug]" 
+    },
+    { 
+      "source": "/uploads/:path*", 
+      "destination": "/api/[...slug]" 
+    },
+    { 
+      "source": "/health", 
+      "destination": "/api/[...slug]" 
+    },
+    { 
+      "source": "/system-manager/:path*", 
+      "destination": "/frontend/dist/index.html" 
+    },
+    { 
+      "source": "/:orgSlug/:path*", 
+      "destination": "/frontend/dist/index.html" 
+    },
+    { 
+      "source": "/:path*", 
+      "destination": "/frontend/dist/$1" 
+    }
   ]
 }

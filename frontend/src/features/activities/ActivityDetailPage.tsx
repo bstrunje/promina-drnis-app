@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction, i18n as I18n } from 'i18next';
 import './activities.css';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { getActivityById, cancelActivity as apiCancelActivity, joinActivity, leaveActivity } from '../../utils/api/apiActivities';
 import { Activity, ActivityStatus } from '@shared/activity.types';
 import { useAuth } from '../../context/useAuth';
@@ -209,18 +210,18 @@ const ActivityDetailPage: React.FC = () => {
         >
           {yearParam ? (
             // Ako imamo parametar godine, vodimo na pregled kategorija za tu godinu
-            <Link to={activity.type_id 
+            <TenantLink to={activity.type_id 
               ? `/activities/category/${activity.type_id}?year=${yearParam}` 
               : `/activities/year/${yearParam}`}>
               <ArrowLeft className="mr-2 h-4 w-4" /> 
               {activity.type_id ? t('activityDetail.backToCategory') : t('activityDetail.backToCategories')}
-            </Link>
+            </TenantLink>
           ) : (
             // Ako nemamo parametar godine, standardni povratak na kategoriju
-            <Link to={activity.type_id ? `/activities/category/${activity.type_id}` : "/activities"}>
+            <TenantLink to={activity.type_id ? `/activities/category/${activity.type_id}` : "/activities"}>
               <ArrowLeft className="mr-2 h-4 w-4" /> 
               {activity.type_id ? t('activityDetail.backToCategory') : t('common:back')}
-            </Link>
+            </TenantLink>
           )}
         </Button>
       )}
@@ -256,12 +257,12 @@ const ActivityDetailPage: React.FC = () => {
                 )}
                 {canEdit && !isCancelled && (
                   <div className="flex flex-wrap items-start gap-2">
-                    <Link to={`/activities/${activity.activity_id}/edit`}>
+                    <TenantLink to={`/activities/${activity.activity_id}/edit`}>
                       <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
                         <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
                         <span className="text-xs sm:text-sm">{t('edit', { ns: 'common' })}</span>
                       </Button>
-                    </Link>
+                    </TenantLink>
                     {!isCompleted && (
                       <Button 
                         variant="destructive" 

@@ -5,43 +5,12 @@
  * Automatski detektira tenant po subdomeni i učitava odgovarajući branding
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { apiClient } from '../utils/api';
+import apiClient from '../utils/api/apiConfig';
 import { useTranslation } from 'react-i18next';
-
-// Tipovi za branding podatke
-export interface OrganizationBranding {
-  id: number;
-  name: string;
-  subdomain: string;
-  short_name: string;
-  is_active: boolean;
-  logo_path: string | null;
-  primary_color: string | null;
-  secondary_color: string | null;
-  default_language: string;
-  email: string | null; // može biti null iz API-ja
-  phone: string | null;
-  website_url: string | null;
-  street_address: string | null;
-  city: string | null;
-  postal_code: string | null;
-  country: string | null;
-  ethics_code_url: string | null;
-  privacy_policy_url: string | null;
-  membership_rules_url: string | null;
-}
-
-interface BrandingContextType {
-  branding: OrganizationBranding | null;
-  isLoading: boolean;
-  error: string | null;
-  refreshBranding: () => Promise<void>;
-  tenant: string;
-}
-
-const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
+import { updateManifestLink, updateThemeColor, updatePageMeta } from '../utils/pwaUtils';
+import { BrandingContext, type OrganizationBranding, type BrandingContextType } from './brandingContextObject';
 
 // Cache ključ za localStorage
 const BRANDING_CACHE_KEY = 'organization_branding';
@@ -55,6 +24,11 @@ interface CachedBranding {
 
 /**
  * Detektira tenant iz URL-a
+ * PRIORITET:
+ * 1. URL Path (/promina/...) - path-based routing
+ * 2. Query parameter (?tenant=promina) - development override
+ * 3. Subdomain (promina.managemembers.com) - legacy fallback
+ * 4. localStorage cache
  */
 const getTenantFromUrl = (): string => {
   const hostname = window.location.hostname;
@@ -66,40 +40,60 @@ const getTenantFromUrl = (): string => {
     return 'skip';
   }
   
-  console.log('[BRANDING] 🔍 Detecting tenant from hostname:', hostname);
-  console.log('[BRANDING] 🔍 Current pathname:', pathname);
+  console.log('[BRANDING] 🔍 Detecting tenant from URL');
+  console.log('[BRANDING] 🔍 Hostname:', hostname, 'Pathname:', pathname);
   
-  // Development - localhost
-  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-    // Možemo koristiti query parameter za testiranje: ?tenant=test ili ?branding=test
-    const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
-    console.log('[BRANDING] 🔍 Query param tenant:', tenantParam);
-    if (tenantParam) {
-      console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
-      // Spremi tenant u localStorage za kasnije korištenje
-      localStorage.setItem('current_tenant', tenantParam);
-      return tenantParam;
-    }
+  // 1. Pokušaj iz URL path-a (PRIORITET!)
+  if (pathname && pathname !== '/') {
+    const cleanPath = pathname.startsWith('/') ? pathname.substring(1) : pathname;
+    const parts = cleanPath.split('/');
     
-    // Pokušaj iz localStorage cache-a
-    const cached = localStorage.getItem('current_tenant');
-    if (cached) {
-      console.log('[BRANDING] ✅ Using cached tenant:', cached);
-      return cached;
+    if (parts.length > 0) {
+      const pathSlug = parts[0];
+      
+      // Izuzeci - samo infrastrukturne rute koje nisu org slugovi
+      // SVE ostale rute MORAJU biti pod organizacijom (/{orgSlug}/...)
+      const excludedPrefixes = [
+        'api',           // Backend API pozivi
+        'uploads',       // Statički resursi
+        'health',        // Health check endpoint
+        'system-manager' // Globalni System Manager (jedinstvena iznimka)
+      ];
+      const validSlugRegex = /^[a-z0-9-]+$/;
+      
+      if (!excludedPrefixes.includes(pathSlug) && validSlugRegex.test(pathSlug)) {
+        console.log('[BRANDING] ✅ Detected tenant from path:', pathSlug);
+        localStorage.setItem('current_tenant', pathSlug);
+        return pathSlug;
+      }
     }
-    
-    // Sigurnosno: ne koristi default tenant u developmentu
-    console.log('[BRANDING] ⚠️  Tenant not specified');
-    return 'missing';
   }
   
-  // Production - subdomena
-  const parts = hostname.split('.');
-  if (parts.length >= 2) {
-    const subdomain = parts[0];
-    console.log('[BRANDING] ✅ Detected tenant from subdomain:', subdomain);
-    return subdomain; // Prvi dio je subdomena
+  // 2. Query parameter (development override)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
+  if (tenantParam) {
+    console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
+    localStorage.setItem('current_tenant', tenantParam);
+    return tenantParam;
+  }
+  
+  // 3. Subdomain (legacy/fallback)
+  if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 3) {
+      const subdomain = parts[0];
+      console.log('[BRANDING] ✅ Detected tenant from subdomain:', subdomain);
+      localStorage.setItem('current_tenant', subdomain);
+      return subdomain;
+    }
+  }
+  
+  // 4. localStorage cache
+  const cached = localStorage.getItem('current_tenant');
+  if (cached) {
+    console.log('[BRANDING] ✅ Using cached tenant:', cached);
+    return cached;
   }
   
   console.log('[BRANDING] ⚠️  No tenant detected');
@@ -258,6 +252,14 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (cached) {
         console.log('[BRANDING] ✅ Koristi cached podatke:', cached);
         setBranding(cached);
+        
+        // Ažuriraj PWA manifest i meta tagove i za cached branding
+        updateManifestLink();
+        if (cached.primary_color) {
+          updateThemeColor(cached.primary_color);
+        }
+        updatePageMeta(cached.name);
+        
         setIsLoading(false);
         return;
       }
@@ -303,6 +305,13 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Spremi u state i cache
       setBranding(brandingData);
       setCachedBranding(brandingData, tenant);
+      
+      // Ažuriraj PWA manifest i meta tagove
+      updateManifestLink();
+      if (brandingData.primary_color) {
+        updateThemeColor(brandingData.primary_color);
+      }
+      updatePageMeta(brandingData.name);
       
     } catch (err) {
       console.error('Greška pri učitavanju branding podataka:', err);
@@ -403,14 +412,5 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
   );
 };
 
-/**
- * Hook za korištenje branding context-a
- */
-// eslint-disable-next-line react-refresh/only-export-components
-export const useBranding = (): BrandingContextType => {
-  const context = useContext(BrandingContext);
-  if (context === undefined) {
-    throw new Error('useBranding must be used within a BrandingProvider');
-  }
-  return context;
-};
+// Re-export tipova za backward compatibility
+export type { OrganizationBranding, BrandingContextType } from './brandingContextObject';

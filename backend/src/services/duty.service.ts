@@ -6,7 +6,7 @@ import {
   createDutyStartTime,
   getAllScheduleInfo
 } from '../config/dutySchedule.js';
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, isWeekend } from 'date-fns';
 import { Request } from 'express';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
@@ -60,13 +60,9 @@ const validateDutySlot = async (organizationId: number, date: Date, memberId: nu
     throw new Error('Duty calendar is currently disabled by System Manager');
   }
   
-  // 2. Provjeri je li datum dopušten (vikend ili specifična logika)
+  // 2. Check if date is allowed (weekend or specific logic per month)
   if (!isDutyDateAllowed(date)) {
-    const month = date.getMonth() + 1;
-    if (month === 7 || month === 8) {
-      throw new Error('Dežurstva u srpnju/kolovozu samo nedjeljom');
-    }
-    throw new Error('Dežurstva su moguća samo vikendom');
+    throw new Error('Duty shifts are not available on this date');
   }
   
   // 3. Dohvati postojeće dežurstvo za taj datum
@@ -92,42 +88,42 @@ const validateDutySlot = async (organizationId: number, date: Date, memberId: nu
     return { canCreate: true, existingDuty: null };
   }
   
-  // 5. Provjeri broj sudionika (iz settings)
+  // 5. Check participant count (from settings)
   const maxParticipants = settings.dutyMaxParticipants || 2;
   if (existingDuty.participants.length >= maxParticipants) {
-    throw new Error(`Dežurstvo je popunjeno (maksimalno ${maxParticipants} člana)`);
+    throw new Error(`Duty shift is full (maximum ${maxParticipants} members)`);
   }
   
-  // 6. Provjeri da član nije već prijavljen
+  // 6. Check if member is already registered
   const alreadyJoined = existingDuty.participants.some(p => p.member_id === memberId);
   if (alreadyJoined) {
-    throw new Error('Već ste prijavljeni na ovo dežurstvo');
+    throw new Error('You are already registered for this duty shift');
   }
   
   return { canCreate: false, existingDuty };
 };
 
 /**
- * Kreira novo dežurstvo ili dodaje člana na postojeće
+ * Creates a new duty shift or adds member to existing one
  */
 export const createDutyShift = async (req: Request, memberId: number, date: Date) => {
   const organizationId = await getOrganizationId(req);
   const validation = await validateDutySlot(organizationId, date, memberId);
   
-  // Ako već postoji dežurstvo, pridruži člana
+  // If duty shift already exists, add member to it
   if (validation.existingDuty) {
     await prisma.activityParticipation.create({
       data: {
         activity_id: validation.existingDuty.activity_id,
         member_id: memberId,
-        // start_time i end_time se postavljaju samo ako su actual vremena već upisana
-        // Za PLANNED aktivnosti ostavlja se null
+        // start_time and end_time are set only if actual times are already recorded
+        // For PLANNED activities, leave as null
         start_time: validation.existingDuty.actual_start_time || null,
         end_time: validation.existingDuty.actual_end_time || null
       }
     });
     
-    // Vrati ažurirani duty
+    // Return updated duty
     return prisma.activity.findUnique({
       where: { activity_id: validation.existingDuty.activity_id },
       include: {
@@ -146,32 +142,32 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
     });
   }
   
-  // Inače kreiraj novo dežurstvo
+  // Otherwise create new duty shift
   const startTime = createDutyStartTime(date);
-  // const endTime = createDutyEndTime(date); // Ne trebamo end time za PLANNED aktivnost
+  // const endTime = createDutyEndTime(date); // We don't need end time for PLANNED activity
   
-  // Provjeri je li praznik
+  // Check if it's a holiday
   const holiday = await holidayService.getHolidayForDate(date);
   
-  // Generiraj naziv aktivnosti
+  // Generate activity name
   const formattedDate = format(date, 'dd.MM.yyyy');
   const activityName = holiday 
-    ? `Dežurstvo - ${holiday.name} (${formattedDate})`
-    : `Dežurstvo ${formattedDate}`;
+    ? `Duty Shift - ${holiday.name} (${formattedDate})`
+    : `Duty Shift ${formattedDate}`;
   
-  // Kreiraj aktivnost kroz postojeći service
+  // Create activity through existing service
   const dutyTypeId = await getDutyActivityTypeId(organizationId);
   
-  // Aktivnost se kreira sa statusom PLANNED
-  // start_date je postavljeno na planirano vrijeme početka dežurstva
-  // actual_start_time i actual_end_time ostaju null dok admin ne završi aktivnost
-  // Status će automatski biti 'PLANNED' jer actual_start_time i actual_end_time nisu postavljeni
+  // Activity is created with PLANNED status
+  // start_date is set to planned duty shift start time
+  // actual_start_time and actual_end_time remain null until admin completes the activity
+  // Status will automatically be 'PLANNED' because actual_start_time and actual_end_time are not set
   const activity = await createActivityService(req, {
     name: activityName,
     activity_type_id: dutyTypeId,
-    start_date: startTime, // Postavljamo na planirano vrijeme početka (npr. 07:00)
-    // actual_start_time: NE šaljemo - ostavlja se null
-    // actual_end_time: NE šaljemo - ostavlja se null
+    start_date: startTime, // Set to planned start time (e.g. 07:00)
+    // actual_start_time: DON'T send - leave as null
+    // actual_end_time: DON'T send - leave as null
     participant_ids: [memberId],
     recognition_percentage: 100
   }, memberId);
@@ -190,6 +186,7 @@ export const getDutiesForMonth = async (organizationId: number, year: number, mo
   
   const duties = await prisma.activity.findMany({
     where: {
+      organization_id: organizationId, // MULTI-TENANCY: Filter by organization
       type_id: dutyTypeId,
       start_date: {
         gte: monthStart,
@@ -220,7 +217,25 @@ export const getDutiesForMonth = async (organizationId: number, year: number, mo
     }
   });
   
-  return duties;
+  // Transform dates to ISO strings for proper JSON serialization
+  return duties.map(duty => ({
+    ...duty,
+    start_date: duty.start_date.toISOString(),
+    actual_start_time: duty.actual_start_time?.toISOString() || null,
+    actual_end_time: duty.actual_end_time?.toISOString() || null,
+    created_at: duty.created_at.toISOString(),
+    updated_at: duty.updated_at.toISOString(),
+    activity_type: {
+      ...duty.activity_type,
+      created_at: duty.activity_type.created_at?.toISOString() || null
+    },
+    participants: duty.participants.map(p => ({
+      ...p,
+      created_at: p.created_at.toISOString(),
+      start_time: p.start_time?.toISOString() || null,
+      end_time: p.end_time?.toISOString() || null
+    }))
+  }));
 };
 
 /**
@@ -230,7 +245,7 @@ export const getHolidaysForMonth = async (year: number, month: number) => {
   const monthStart = startOfMonth(new Date(year, month - 1, 1));
   const monthEnd = endOfMonth(new Date(year, month - 1, 1));
   
-  return prisma.holiday.findMany({
+  const holidays = await prisma.holiday.findMany({
     where: {
       date: {
         gte: monthStart,
@@ -241,6 +256,13 @@ export const getHolidaysForMonth = async (year: number, month: number) => {
       date: 'asc'
     }
   });
+  
+  // Transform dates to ISO strings for proper JSON serialization
+  return holidays.map(holiday => ({
+    ...holiday,
+    date: holiday.date.toISOString(),
+    created_at: holiday.created_at.toISOString()
+  }));
 };
 
 /**

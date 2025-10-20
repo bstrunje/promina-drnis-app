@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Navigation from '../components/Navigation';
 import AuthProvider from './context/AuthContext';
@@ -13,6 +13,7 @@ import { BrandingProvider } from './context/BrandingContext';
 import SpeedInsightsWrapper from './components/SpeedInsights';
 import BrandingDemo from './components/BrandingDemo';
 import Footer from './components/Footer';
+import TenantSelector from './components/TenantSelector';
 
 // Lazy učitavanje većih stranica radi smanjenja početnog bundle-a
 const ActivitiesList = lazy(() => import('./features/activities/ActivitiesList'));
@@ -39,43 +40,46 @@ const Settings = lazy(() => import('./features/settings/Settings'));
 const SystemManagerRoutes = lazy(() => import('./features/systemManager/SystemManagerRoutes'));
 const DutyCalendar = lazy(() => import('./features/duty/DutyCalendar'));
 
-function AppContent() {
+/**
+ * Wrapper komponenta za org-specific rute
+ * Izvlači orgSlug iz URL-a i omogućava pristup svim rutama unutar organizacije
+ */
+function OrgRoutes() {
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  
+  // Debug: provjeri je li orgSlug uspješno izvučen
+  console.log('[APP] OrgRoutes - orgSlug:', orgSlug);
 
   const handleLogout = async () => {
     try {
       console.log('Započinjem odjavu korisnika iz App komponente...');
       
-      // Pozivamo funkciju za odjavu
       await logout();
       
-      // Koristimo replace: true kako bismo spriječili povratak na prethodnu stranicu nakon odjave
-      // i osigurali da korisnik ne može koristiti back button za povratak na zaštićene stranice
-      navigate("/login", { replace: true });
+      // Preusmjeri na login unutar iste organizacije
+      navigate(`/${orgSlug}/login`, { replace: true });
       
       console.log('Korisnik uspješno preusmjeren na login stranicu');
     } catch (error) {
       console.error('Greška prilikom odjave korisnika:', error);
-      
-      // Čak i u slučaju greške, preusmjeravamo korisnika na login
-      navigate("/login", { replace: true });
+      navigate(`/${orgSlug}/login`, { replace: true });
     }
   };
 
-  // Pomoćna funkcija za određivanje početne stranice na temelju uloge
   const getDashboardRoute = () => {
-    if (!user) return "/login";
+    if (!user) return `/${orgSlug}/login`;
     
     switch (user.role) {
       case 'member_administrator':
-        return "/administrator/dashboard";
+        return `/${orgSlug}/administrator/dashboard`;
       case 'member_superuser':
-        return "/superuser/dashboard";
+        return `/${orgSlug}/superuser/dashboard`;
       case 'member':
-        return "/member/dashboard";
+        return `/${orgSlug}/member/dashboard`;
       default:
-        return "/profile";
+        return `/${orgSlug}/profile`;
     }
   };
 
@@ -84,60 +88,85 @@ function AppContent() {
       {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
       <main className="flex-1">
         <Routes>
-        {/* System Manager rute - potpuno odvojene od postojećeg sustava autentikacije */}
-        <Route path="/system-manager/*" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><SystemManagerRoutes /></Suspense>} />
-        
-        <Route path="/" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
-        <Route path="/login" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
-        
-        <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
-          {/* Lazy učitavanje ActivitiesList i većih activity stranica */}
-          <Route path="/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesList /></Suspense>} />
-          <Route path="/activities/category/:type_id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
-          <Route path="/activities/year/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
-          <Route path="/activities/:activityId" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityDetailPageLazy /></Suspense>} />
-          <Route path="/activities/:activityId/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><EditActivityPage /></Suspense>} />
-          <Route path="/members/:memberId/activities-overview" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityOverviewPage /></Suspense>} />
-          <Route path="/members/:memberId/activities/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityYearPageLazy /></Suspense>} />
-          <Route path="/events" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><EventsList /></Suspense>} />
-          <Route path="/hours" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><HoursLog /></Suspense>} />
+          {/* Organization System Manager rute - odvojene od member auth-a */}
+          <Route 
+            path="/system-manager/*" 
+            element={
+              <Suspense fallback={<div className="p-6">Učitavanje...</div>}>
+                <SystemManagerRoutes />
+              </Suspense>
+            } 
+          />
+          
+          <Route path="/" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
+          <Route path="/login" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
+            <Route path="/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesList /></Suspense>} />
+            <Route path="/activities/category/:type_id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
+            <Route path="/activities/year/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityCategoryPageLazy /></Suspense>} />
+            <Route path="/activities/:activityId" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityDetailPageLazy /></Suspense>} />
+            <Route path="/activities/:activityId/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><EditActivityPage /></Suspense>} />
+            <Route path="/members/:memberId/activities-overview" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityOverviewPage /></Suspense>} />
+            <Route path="/members/:memberId/activities/:year" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivityYearPageLazy /></Suspense>} />
+            <Route path="/events" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><EventsList /></Suspense>} />
+            <Route path="/hours" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><HoursLog /></Suspense>} />
 
-          <Route path="/messages" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MessageList /></Suspense>} />
-          {/* Omogućavanje pristupa listi članova svim korisnicima, ne samo adminu i superuser-u */}
-          <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />
-          <Route path="/members/:id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
-          
-          {/* Duty Calendar - dostupno svim prijavljenim članovima */}
-          <Route path="/duty-calendar" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><DutyCalendar /></Suspense>} />
-          
-          {/* Dashboard rute za različite uloge korisnika */}
-          {user && <Route path="/member/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDashboard member={user} /></Suspense>} />}
-          
-          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
-            <>
-              <Route path="/administrator" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
-              <Route path="/administrator/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
-              {/* Putanja /members je sad već definirana iznad za sve korisnike */}
-              <Route path="/members/:id/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
-              <Route path="/assign-password" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AssignPassword /></Suspense>} />
-              <Route path="/settings" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><Settings /></Suspense>} />
-              <Route path="/admin/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesAdminPageLazy /></Suspense>} /> {/* Nova ruta za administraciju aktivnosti */}
-            </>
-          )}
-          {user?.role === 'member_superuser' && (
-            <>
-              {/* Standardizirana ruta za SuperUser dashboard */}
-              <Route path="/superuser/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><SuperUserDashboard member={user} /></Suspense>} />
-              {/* Preusmjeravanje sa stare rute na standardiziranu */}
-              <Route path="/super-user" element={<Navigate to="/superuser/dashboard" replace />} />
-            </>
-          )}
-        </Route>
-      </Routes>
+            <Route path="/messages" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MessageList /></Suspense>} />
+            <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />
+            <Route path="/members/:id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
+            
+            <Route path="/duty-calendar" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><DutyCalendar /></Suspense>} />
+            
+            {user && <Route path="/member/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDashboard /></Suspense>} />}
+            
+            {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+              <>
+                <Route path="/administrator" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
+                <Route path="/administrator/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
+                <Route path="/members/:id/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
+                <Route path="/assign-password" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AssignPassword /></Suspense>} />
+                <Route path="/settings" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><Settings /></Suspense>} />
+                <Route path="/admin/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesAdminPageLazy /></Suspense>} />
+              </>
+            )}
+            {user?.role === 'member_superuser' && (
+              <>
+                <Route path="/superuser/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><SuperUserDashboard member={user} /></Suspense>} />
+                <Route path="/super-user" element={<Navigate to={`/${orgSlug}/superuser/dashboard`} replace />} />
+              </>
+            )}
+          </Route>
+        </Routes>
       </main>
       {user && <Footer />}
     </div>
+  );
+}
+
+/**
+ * Glavna App komponenta sa routing logikom
+ */
+function AppContent() {
+  return (
+    <Routes>
+      {/* System Manager rute - potpuno odvojene od org context-a */}
+      <Route 
+        path="/system-manager/*" 
+        element={
+          <Suspense fallback={<div className="p-6">Učitavanje...</div>}>
+            <SystemManagerRoutes />
+          </Suspense>
+        } 
+      />
+      
+      {/* Organization-specific rute - sve unutar /:orgSlug/* */}
+      <Route path="/:orgSlug/*" element={<OrgRoutes />} />
+      
+      {/* Root path - Tenant Selector (MULTI-TENANCY: NE smije biti hardcoded fallback!) */}
+      <Route path="/" element={<TenantSelector />} />
+    </Routes>
   );
 }
 

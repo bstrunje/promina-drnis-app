@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Member } from "@shared/member";
 import { useToast } from "@components/ui/use-toast";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { getAdminMessages } from '@/utils/api/apiMessages';
+import { useTenantNavigation } from '@/hooks/useTenantNavigation';
 
 // Uvoz komponenti
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -21,7 +21,7 @@ interface Props {
  * Refaktorirana verzija koja koristi manje, specijalizirane komponente
  */
 const AdminDashboard: React.FC<Props> = ({ member }) => {
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const { toast } = useToast();
   const { t } = useTranslation(['dashboards', 'common']);
   const [unreadMessages, setUnreadMessages] = useState(false);
@@ -82,7 +82,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       {/* Navigation Cards - First Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <DashboardNavCards 
-          navigate={navigate} 
+          navigateTo={navigateTo} 
           unreadMessages={unreadMessages} 
         />
       </div>

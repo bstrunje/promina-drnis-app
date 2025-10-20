@@ -55,10 +55,21 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
+    // MULTI-TENANCY: Dohvati organization_id iz middleware-a
+    const organizationId = req.organizationId;
+    if (!organizationId) {
+      res.status(400).json({ 
+        code: 'MISSING_TENANT',
+        message: tBackend('tenant.required', locale)
+      });
+      return;
+    }
+
     const [unreadMessages, recentActivities, memberCount] = await Promise.allSettled([
-      // Optimizirani upit za nepročitane poruke
+      // Optimizirani upit za nepročitane poruke (filtrirano po tenant-u)
       prisma.memberMessage.count({
         where: {
+          organization_id: organizationId, // MULTI-TENANCY filter
           recipient_statuses: {
             some: {
               recipient_member_id: memberId,
@@ -68,18 +79,22 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
         }
       }),
       
-      // Optimizirani upit za nedavne aktivnosti
+      // Optimizirani upit za nedavne aktivnosti (filtrirano po tenant-u)
       prisma.activity.count({
         where: {
+          organization_id: organizationId, // MULTI-TENANCY filter
           created_at: {
             gte: thirtyDaysAgo
           }
         }
       }),
       
-      // Optimizirani upit za broj članova - koristi count umjesto findMany
+      // Optimizirani upit za broj članova (filtrirano po tenant-u)
       prisma.member.count({
-        where: { status: 'registered' }
+        where: { 
+          organization_id: organizationId, // MULTI-TENANCY filter
+          status: 'registered' 
+        }
       })
     ]);
 

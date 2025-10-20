@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './activities.css';
-import { Link } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { Card, CardHeader, CardTitle, CardFooter } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { getActivityTypes, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
@@ -66,7 +66,9 @@ const ActivitiesList: React.FC = () => {
       // Izdvajamo jedinstvene godine iz svih aktivnosti
       const years = allActivities.map(activity => {
         // Provjera ima li aktivnost datum početka
-        if (!activity.start_date) return new Date().getFullYear(); // Defaultno trenutna godina
+        if (!activity.start_date) {
+          return new Date().getFullYear(); // Defaultno trenutna godina
+        }
         
         // Izvlačimo godinu iz ISO formata ili direktno iz datuma
         let year: number;
@@ -84,6 +86,7 @@ const ActivitiesList: React.FC = () => {
       
       // Sortiramo godine silazno (od najnovije prema starijima)
       const uniqueYears = Array.from(new Set(years)).sort((a, b) => b - a);
+      
       setActivityYears(uniqueYears);
     }
   }, [allActivities]);
@@ -207,7 +210,7 @@ const ActivitiesList: React.FC = () => {
             // Link bi vodio na posebnu stranicu za pregled aktivnosti po godini
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
             return (
-              <Link to={`/activities/year/${year}`} key={year}>
+              <TenantLink to={`/activities/year/${year}`} key={year}>
                 <Card className="hover:bg-muted/50 transition-colors activity-card">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
@@ -243,7 +246,7 @@ const ActivitiesList: React.FC = () => {
                      )}
                    </CardFooter>
                 </Card>
-              </Link>
+              </TenantLink>
             );
           })
         ) : (

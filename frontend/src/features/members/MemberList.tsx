@@ -1,8 +1,9 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import { useTenantNavigation } from "../../hooks/useTenantNavigation";
 import {
   // CalendarDays se ne koristi pa ga uklanjamo
   BarChart,
@@ -53,7 +54,7 @@ export default function MemberList(): JSX.Element {
   } = useMemberData();
 
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const printRef = useRef<HTMLDivElement>(null);
 
   // Style for printing directly in the component
@@ -446,7 +447,7 @@ export default function MemberList(): JSX.Element {
                   filteredMembers={filteredMembers}
                   isAdmin={isAdmin}
                   isSuperuser={isSuperuser}
-                  onViewDetails={(memberId) => navigate(`/members/${memberId}`)}
+                  onViewDetails={(memberId) => navigateTo(`/members/${memberId}`)}
                 />
               </div>
             </TabsContent>

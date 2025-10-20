@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { NavigateFunction } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Users, Activity, Mail } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@components/ui/dropdown-menu";
@@ -9,7 +8,7 @@ import type { Member } from "@shared/member";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@components/ui/dialog";
 
 interface DashboardNavCardsProps {
-  navigate: NavigateFunction;
+  navigateTo: (path: string) => void;
   unreadMessages: boolean;
 }
 
@@ -17,7 +16,7 @@ interface DashboardNavCardsProps {
  * Komponenta za prikaz navigacijskih kartica na admin dashboardu
  */
 export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({ 
-  navigate, 
+  navigateTo, 
   unreadMessages 
 }) => {
   const { t } = useTranslation('dashboards');
@@ -112,7 +111,7 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
               <Badge variant="secondary">{loadingCounts && members === null ? '…' : withoutStampCount}</Badge>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-           <DropdownMenuItem onSelect={() => { setMenuOpen(false); navigate("/members"); }}>
+           <DropdownMenuItem onSelect={() => { setMenuOpen(false); navigateTo("/members"); }}>
              {t('navigation.memberManagement.quick.openList')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -164,7 +163,7 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
                  setDialogOpen(false);
                  setMenuOpen(false);
                  if (quickView) {
-                   setTimeout(() => navigate(quickNavigateParam), 0);
+                   setTimeout(() => navigateTo(quickNavigateParam), 0);
                  }
                }}
              >
@@ -175,7 +174,7 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
        </Dialog>
 
       <div
-        onClick={() => navigate("/activities")}
+        onClick={() => navigateTo("/activities")}
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">
@@ -186,7 +185,7 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
       </div>
 
       <div
-        onClick={() => navigate("/messages")}
+        onClick={() => navigateTo("/messages")}
         className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
       >
         <div className="flex justify-between items-center mb-4">

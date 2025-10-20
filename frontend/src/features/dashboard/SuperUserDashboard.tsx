@@ -1,11 +1,11 @@
 // frontend/src/features/dashboard/SuperUserDashboard.tsx
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Users, Activity, Shield, ChevronRight, RefreshCw } from "lucide-react";
 import { Member } from "@shared/member";
 import { apiClient } from "@/utils/api";
 import { useBranding } from "../../hooks/useBranding";
+import { useTenantNavigation } from "../../hooks/useTenantNavigation";
 
 interface Props {
   member: Member;
@@ -36,7 +36,7 @@ interface DashboardStatsResponse {
 
 const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   // console.log('Rendering SuperUserDashboard for:', member.full_name);
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const { t } = useTranslation('dashboards');
   const { getPrimaryColor, branding } = useBranding();
 
@@ -118,7 +118,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <div
-          onClick={() => navigate("/members")}
+          onClick={() => navigateTo("/members")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -143,7 +143,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         <div
-          onClick={() => navigate("/activities")}
+          onClick={() => navigateTo("/activities")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -163,7 +163,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         <div
-          onClick={() => navigate("/members?filter=pending")}
+          onClick={() => navigateTo("/members?filter=pending")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -188,21 +188,21 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           <h3 className="text-lg font-medium mb-4">{t("quickActions.title")}</h3>
           <div className="space-y-3">
             <button
-              onClick={() => navigate("/members")}
+              onClick={() => navigateTo("/members")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.memberManagement")}</span>
               <ChevronRight className="h-5 w-5 text-gray-400" />
             </button>
             <button
-              onClick={() => navigate("/activities")}
+              onClick={() => navigateTo("/activities")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.activityApprovals")}</span>
               <ChevronRight className="h-5 w-5 text-gray-400" />
             </button>
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigateTo("/settings")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >
               <span>{t("quickActions.systemSettings")}</span>

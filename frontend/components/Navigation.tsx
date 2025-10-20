@@ -1,11 +1,11 @@
 // frontend/components/Navigation.tsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Member } from '@shared/member';
 import { LayoutDashboard, Menu, X, User, Activity, Users, Settings, Shield, LogOut, MessageCircle, Calendar } from 'lucide-react';
 import { useUnreadMessages } from '../src/contexts/useUnreadMessages';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../src/hooks/useBranding';
+import { TenantLink } from '../src/components/TenantLink';
 
 interface NavigationProps {
   user: Member | null;
@@ -35,7 +35,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
       <div className="container mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex w-full sm:w-auto items-center justify-between mb-4 sm:mb-0">
-            <Link to="/profile" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
+            <TenantLink to="/profile" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>
               <img 
                 src={getLogoUrl() || undefined} 
                 alt={getFullName() || undefined} 
@@ -57,7 +57,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               >
                 {getShortName()}
               </span>
-            </Link>
+            </TenantLink>
             <button 
               onClick={toggleMenu} 
               className="sm:hidden text-gray-700 focus:outline-none"
@@ -66,16 +66,16 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
             </button>
           </div>
           <div className={`${isMenuOpen ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row w-full sm:w-auto items-center gap-4 justify-center`}>
-            <Link to="/profile" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+            <TenantLink to="/profile" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <User size={20} className="inline sm:hidden" />
               <span>{t('navigation.profile')}</span>
-            </Link>
-            <Link to="/activities" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+            </TenantLink>
+            <TenantLink to="/activities" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Activity size={20} className="inline sm:hidden" />
               <span>{t('navigation.activities')}</span>
-            </Link>
+            </TenantLink>
             {/* Dodana poveznica na poruke za sve korisnike */}
-            <Link to="/messages" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 relative" onClick={closeMenu}>
+            <TenantLink to="/messages" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 relative" onClick={closeMenu}>
               <MessageCircle size={20} className="inline sm:hidden" />
               <span>{t('navigation.messages')}</span>
               {unreadMessageCount > 0 && (
@@ -83,45 +83,45 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
                   {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                 </span>
               )}
-            </Link>
+            </TenantLink>
             {/* Duty Calendar - dostupan svim članovima */}
-            <Link to="/duty-calendar" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+            <TenantLink to="/duty-calendar" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Calendar size={20} className="inline sm:hidden" />
               <span>{t('navigation.dutyCalendar')}</span>
-            </Link>
+            </TenantLink>
             {/* Omogući svim članovima pristup listi članova */}
-            <Link to="/members" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+            <TenantLink to="/members" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <Users size={20} className="inline sm:hidden" />
               <span>{t('navigation.members')}</span>
-            </Link>
+            </TenantLink>
             {(user.role === 'member_administrator' || user.role === 'member_superuser') && (
               <>
-                <Link to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+                <TenantLink to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Settings size={20} className="inline sm:hidden" />
                   <span>{t('navigation.administrator')}</span>
-                </Link>
+                </TenantLink>
                 {!user.registration_completed && (
-                  <Link to="/assign-password" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+                  <TenantLink to="/assign-password" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                     <Shield size={20} className="inline sm:hidden" />
                     <span>{t('navigation.assignPasswords')}</span>
-                  </Link>
+                  </TenantLink>
                 )}
               </>
             )}
             {user.role === 'member_superuser' && (
               <>
-                <Link to="/super-user" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+                <TenantLink to="/super-user" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
                   <Shield size={20} className="inline sm:hidden" />
                   <span>{t('navigation.superuser')}</span>
-                </Link>
+                </TenantLink>
               </>
             )}
             {/* System Manager je potpuno odvojeni sustav i ne prikazuje se u navigaciji članske aplikacije */}
             {/* Pristup System Manager sučelju moguć je samo direktnim unosom URL-a /system-manager/login */}
-            <Link to="/member/dashboard" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+            <TenantLink to="/member/dashboard" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
               <LayoutDashboard size={20} className="inline sm:hidden" />
               <span>{t('navigation.dashboard')}</span>
-            </Link>
+            </TenantLink>
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <button
                 onClick={() => {

@@ -3,7 +3,7 @@ import { useToast } from "@components/ui/use-toast";
 // Uklonjeno: import { Member } from "@shared/member"; // nije korišteno
 import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
 import { getCurrentDate, getCurrentYear } from "../../../utils/dateUtils";
-import { API_BASE_URL } from "../../../utils/config";
+import api from "../../../utils/api/apiConfig";
 import { format, parseISO, isValid, isBefore, isAfter, addYears, parse, getMonth } from "date-fns";
 import { useAuth } from "../../../context/useAuth";
 // import { useTranslation } from "react-i18next";
@@ -91,17 +91,8 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
     const fetchMemberPermissions = async () => {
       if (user?.role === 'member_administrator') {
         try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(
-            `${API_BASE_URL}/admin/permissions/${user.member_id}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            }
-          );
-                    // TypeScript: response.json() vraća any, pa je potreban dvostruki cast na unknown pa na MemberPermissions radi tipne sigurnosti
-const permissions = (await response.json()) as unknown as MemberPermissions;
+          const response = await api.get<MemberPermissions>(`/admin/permissions/${user.member_id}`);
+          const permissions = response.data;
           // Backend bi uvijek trebao vratiti { can_manage_end_reasons: boolean }, ali fallback osigurava tipnu sigurnost
           setMemberPermissions(
             permissions && typeof permissions.can_manage_end_reasons === 'boolean'
@@ -120,17 +111,10 @@ const permissions = (await response.json()) as unknown as MemberPermissions;
   // Promjena razloga završetka perioda
   const handleEndReasonChange = useCallback(async (periodId: number, newReason: string) => {
     try {
-      await fetch(
-        `${API_BASE_URL}/members/${memberId}/membership-periods/${periodId}/end-reason`,
+      await api.put(
+        `/members/${memberId}/membership-periods/${periodId}/end-reason`,
         {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            endReason: newReason,
-          }),
+          endReason: newReason,
         }
       );
 

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '@/utils/config';
+import { useParams } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { formatHoursToHHMM } from '@/utils/activityHours';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
+import { useTenantNavigation } from '../../hooks/useTenantNavigation';
+import api from '@/utils/api/apiConfig';
 
 // Sučelja za podatke
 interface Activity {
@@ -27,7 +28,7 @@ const ActivityYearPage: React.FC = () => {
   const { t } = useTranslation('activities');
   const { getPrimaryColor } = useBranding();
   const { memberId, year } = useParams<{ memberId: string; year: string }>();
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [participations, setParticipations] = useState<ActivityParticipation[]>([]);
@@ -38,16 +39,12 @@ const ActivityYearPage: React.FC = () => {
       if (!memberId || !year) return;
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
 
       try {
+        // api.get automatski dodaje tenant parameter i Authorization header
         const [participationsRes, memberRes] = await Promise.all([
-          axios.get<ActivityParticipation[]>(`${API_BASE_URL}/activities/member/${memberId}/${year}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get<Member>(`${API_BASE_URL}/members/${memberId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+          api.get<ActivityParticipation[]>(`/activities/member/${memberId}/${year}`),
+          api.get<Member>(`/members/${memberId}`)
         ]);
         setParticipations(participationsRes.data ?? []);
         setMember(memberRes.data);
@@ -78,7 +75,7 @@ const ActivityYearPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <button onClick={() => navigate(`/members/${memberId}/activities-overview`)} className="flex items-center hover:underline mb-4" style={{ color: getPrimaryColor() }}>
+        <button onClick={() => navigateTo(`/members/${memberId}/activities-overview`)} className="flex items-center hover:underline mb-4" style={{ color: getPrimaryColor() }}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Povratak na pregled po godinama
         </button>
@@ -104,7 +101,7 @@ const ActivityYearPage: React.FC = () => {
           <div className="space-y-3">
             {participations.map(participation => {
               return (
-                <Link
+                <TenantLink
                   to={`/activities/${participation.activity.activity_id}`}
                   key={participation.activity.activity_id}
                   className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
@@ -116,7 +113,7 @@ const ActivityYearPage: React.FC = () => {
                       <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{formatHoursToHHMM(participation.recognized_hours)}</span>
                     </div>
                   </div>
-                </Link>
+                </TenantLink>
               );
             })}
           </div>

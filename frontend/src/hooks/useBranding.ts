@@ -5,14 +5,13 @@
  * i dodatne utility funkcije za rad s branding podacima
  */
 
-import { useBranding as useBaseBranding } from '../context/BrandingContext';
-import { IMAGE_BASE_URL } from '../utils/config';
+import { useBrandingContext } from '../context/useBrandingContext';
 
 /**
  * Extended branding hook s dodatnim utility funkcijama
  */
 export const useBranding = () => {
-  const brandingContext = useBaseBranding();
+  const brandingContext = useBrandingContext();
   
   /**
    * Dohvaća logo URL ili null ako nema loga
@@ -26,13 +25,9 @@ export const useBranding = () => {
         return logoPath;
       }
       
-      // Ako je relativan path, dodaj IMAGE_BASE_URL
-      if (logoPath.startsWith('/uploads')) {
-        return `${IMAGE_BASE_URL}${logoPath.replace('/uploads', '')}`;
-      }
-      
-      // Fallback za stare formate
-      return logoPath;
+      // logo_path u bazi je puni path s leading slash: "/uploads/organization_logos/..."
+      // Samo dodaj host/protocol
+      return `${window.location.protocol}//${window.location.host}${logoPath}`;
     }
     
     // Nema loga - vrati null
@@ -179,4 +174,5 @@ export const useBranding = () => {
   };
 };
 
+// Default export za kompatibilnost
 export default useBranding;

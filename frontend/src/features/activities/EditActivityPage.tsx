@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useTenantNavigation } from '../../hooks/useTenantNavigation';
 import { getActivityById, updateActivity, updateParticipationAdmin } from '../../utils/api/apiActivities';
 import { ActivityStatus, ActivityParticipation } from '@shared/activity.types';
 import { Button } from '@components/ui/button';
@@ -19,7 +20,7 @@ import { formatHoursToHHMM } from '../../utils/activityHours';
 const EditActivityPage: React.FC = () => {
   const { t } = useTranslation('activities');
   const { activityId } = useParams<{ activityId: string }>();
-  const navigate = useNavigate();
+  const { navigateTo } = useTenantNavigation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
 
@@ -297,7 +298,7 @@ const EditActivityPage: React.FC = () => {
       }
       
       toast({ title: t('editing.success'), description: t('editing.activityUpdated') });
-      navigate(`/activities/${activityId}`);
+      navigateTo(`/activities/${activityId}`);
     } catch {
       toast({ title: t('editing.error'), description: t('editing.updateFailed'), variant: 'destructive' });
     }
@@ -540,7 +541,7 @@ const EditActivityPage: React.FC = () => {
               )}
 
               <div className="flex justify-end gap-2 pt-4">
-                 <Button type="button" variant="outline" onClick={() => navigate(-1)}>{t('cancel', { ns: 'common' })}</Button>
+                 <Button type="button" variant="outline" onClick={() => navigateTo(-1)}>{t('cancel', { ns: 'common' })}</Button>
                 <Button type="submit">{t('save', { ns: 'common' })}</Button>
               </div>
             </div>

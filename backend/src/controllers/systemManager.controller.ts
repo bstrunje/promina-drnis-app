@@ -511,8 +511,14 @@ async function logoutHandler(req: Request, res: Response): Promise<void> {
 
 async function getDutySettings(req: Request, res: Response): Promise<void> {
     try {
-        const organizationId = getOrganizationId(req);
-        const settings = await dutyService.getDutySettingsPublic(organizationId);
+        // Dohvati organizationId iz System Manager user-a
+        const manager = req.user as { id: number; organization_id: number | null };
+        if (!manager || manager.organization_id === null) {
+            res.status(400).json({ message: 'Organization context required for this operation' });
+            return;
+        }
+        
+        const settings = await dutyService.getDutySettingsPublic(manager.organization_id);
         res.json(settings);
     } catch (error) {
         console.error('Error fetching duty settings:', error);
@@ -524,6 +530,13 @@ async function updateDutySettings(req: Request, res: Response): Promise<void> {
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+        
+        // Dohvati organizationId iz System Manager user-a
+        const manager = req.user as { id: number; organization_id: number | null };
+        if (!manager || manager.organization_id === null) {
+            res.status(400).json({ message: 'Organization context required for this operation' });
             return;
         }
 
@@ -544,8 +557,7 @@ async function updateDutySettings(req: Request, res: Response): Promise<void> {
         
         if (dutyAutoCreateEnabled !== undefined) updateData.dutyAutoCreateEnabled = Boolean(dutyAutoCreateEnabled);
         
-        const organizationId = getOrganizationId(req);
-        const settings = await dutyService.updateDutySettings(organizationId, updateData);
+        const settings = await dutyService.updateDutySettings(manager.organization_id, updateData);
         
         await auditService.logAction('update', req.user.id, `Updated duty calendar settings: ${JSON.stringify(updateData)}`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, req.user?.organization_id);
         

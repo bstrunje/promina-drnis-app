@@ -26,6 +26,14 @@ declare module 'express-serve-static-core' {
       logo_path: string | null;
       primary_color: string | null;
       secondary_color: string | null;
+      // PWA polja
+      pwa_name: string | null;
+      pwa_short_name: string | null;
+      pwa_theme_color: string | null;
+      pwa_background_color: string | null;
+      pwa_icon_192_url: string | null;
+      pwa_icon_512_url: string | null;
+      // Ostala polja
       default_language: string;
       email: string;
       phone: string | null;
@@ -52,6 +60,14 @@ interface TenantContext {
     logo_path: string | null;
     primary_color: string | null;
     secondary_color: string | null;
+    // PWA polja
+    pwa_name: string | null;
+    pwa_short_name: string | null;
+    pwa_theme_color: string | null;
+    pwa_background_color: string | null;
+    pwa_icon_192_url: string | null;
+    pwa_icon_512_url: string | null;
+    // Ostala polja
     default_language: string;
     email: string;
     phone: string | null;
@@ -72,6 +88,43 @@ interface TenantContext {
  */
 const organizationCache = new Map<string, TenantContext>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minuta
+
+/**
+ * Izvlači org slug iz URL path-a (path-based multi-tenancy)
+ * Primjeri:
+ * - /promina/api/members → 'promina'
+ * - /split/dashboard → 'split'
+ * - /system-manager/login → null (izuzeće)
+ */
+function extractOrgSlugFromPath(path: string): string | null {
+  if (!path || path === '/') return null;
+  
+  // Ukloni leading slash
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  // Split po slash
+  const parts = cleanPath.split('/');
+  
+  if (parts.length === 0) return null;
+  
+  const orgSlug = parts[0];
+  
+  // Izuzeci - infrastrukturne rute koje ne pripadaju nijednoj organizaciji
+  // Path-based tenant extraction radi SAMO za frontend rute (/:orgSlug/...)
+  // API pozivi dolaze bez org prefiksa i koriste query parameter
+  const excludedPrefixes = ['api', 'uploads', 'health', 'system-manager'];
+  if (excludedPrefixes.includes(orgSlug)) {
+    return null;
+  }
+  
+  // Osnovni format check (slova, brojevi, crtice)
+  const validSlugRegex = /^[a-z0-9-]+$/;
+  if (!validSlugRegex.test(orgSlug)) {
+    return null;
+  }
+  
+  return orgSlug;
+}
 
 /**
  * Izvlači subdomenu iz host header-a
@@ -128,6 +181,14 @@ async function getOrganizationBySubdomain(subdomain: string): Promise<TenantCont
         logo_path: true,
         primary_color: true,
         secondary_color: true,
+        // PWA polja
+        pwa_name: true,
+        pwa_short_name: true,
+        pwa_theme_color: true,
+        pwa_background_color: true,
+        pwa_icon_192_url: true,
+        pwa_icon_512_url: true,
+        // Ostala polja
         default_language: true,
         email: true,
         phone: true,
@@ -180,32 +241,46 @@ export async function tenantMiddleware(
     const host = req.get('host') || req.headers.host as string;
     const path = req.path;
 
-    // 🔧 IZUZEĆE: System Manager rute ne trebaju tenant context
+    // 🔧 IZUZEĆE: SAMO Global System Manager rute ne trebaju tenant context
     // jer Global System Manager može kreirati organizacije
+    // Organization-specific SM rute (/:orgSlug/system-manager/*) TREBAJU tenant!
     if (path.startsWith('/system-manager') || path === '/api/system-manager/login') {
-      console.log(`[TENANT-MIDDLEWARE] System Manager ruta - preskačem tenant detekciju: ${path}`);
+      console.log(`[TENANT-MIDDLEWARE] Global System Manager ruta - preskačem tenant detekciju: ${path}`);
       return next();
     }
+    
+    // Organization SM API pozivi se identificiraju kroz path
+    // Frontend šalje: /:orgSlug/api/system-manager/*
+    // Backend prima: /api/system-manager/* (nakon rewrite-a)
+    // Tenant se ekstraktuje iz URL-a prije rewrite-a
 
-    // Provjeri query parametre za tenant (podržano za development)
+    // PRIORITET DETEKCIJE TENANTA:
+    // 1. Query parameter (?tenant=promina) - development override
+    // 2. URL Path (/promina/api/...) - path-based routing
+    // 3. Subdomain (promina.managemembers.com) - legacy/fallback
+    
     const tenantQuery = (req.query.tenant as string | undefined) ?? (req.query.branding as string | undefined);
-    const subdomain = tenantQuery ?? extractSubdomain(host);
+    const pathSlug = extractOrgSlugFromPath(path);
+    const subdomain = extractSubdomain(host);
+    
+    // Koristi prvi dostupni tenant identifier
+    const orgSlug = tenantQuery ?? pathSlug ?? subdomain;
 
-    console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Subdomain: ${subdomain}, Query: ${tenantQuery}`);
+    console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Path: ${path}, Final Org Slug: ${orgSlug} (Query: ${tenantQuery}, Path: ${pathSlug}, Subdomain: ${subdomain})`);
 
     let tenantContext: TenantContext | null = null;
 
-    // Obavezno: mora postojati eksplicitni tenant (subdomena ili query)
-    if (!subdomain) {
+    // Obavezno: mora postojati eksplicitni tenant (query, path ili subdomain)
+    if (!orgSlug) {
       res.status(400).json({
         error: 'Bad Request',
-        message: 'Tenant is required'
+        message: 'Organization slug is required. Use format: /orgSlug/api/... or ?tenant=orgSlug'
       });
       return;
     }
 
-    // Pokušaj dohvatiti organizaciju po subdomeni
-    tenantContext = await getOrganizationBySubdomain(subdomain);
+    // Pokušaj dohvatiti organizaciju po slug-u (koji može biti iz path-a, query-ja ili subdomene)
+    tenantContext = await getOrganizationBySubdomain(orgSlug);
 
     if (!tenantContext) {
       console.error('[TENANT-MIDDLEWARE] Organizacija nije pronađena ili nije aktivna');
@@ -278,4 +353,53 @@ export function getOrganization(req: Request): TenantContext['organization'] {
  */
 export function clearOrganizationCache(): void {
   organizationCache.clear();
+}
+
+/**
+ * OPTIONAL TENANT MIDDLEWARE
+ * 
+ * Postavlja tenant context AKO postoji ?tenant= query param,
+ * ali NE baca grešku ako tenant nije proslijeđen.
+ * 
+ * Korisno za rute koje mogu raditi i za Global i za Org context.
+ */
+export async function optionalTenantMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const host = req.get('host') || req.headers.host as string;
+    const _path = req.path;
+    
+    // Za System Manager rute, org slug MORA biti iz query parametra ili subdomene
+    // Path-based parsing preskačemo jer će inače izvući dio rute kao org slug
+    const tenantQuery = (req.query.tenant as string | undefined) ?? (req.query.branding as string | undefined);
+    const subdomain = extractSubdomain(host);
+    
+    // NE koristimo pathSlug za System Manager rute
+    const orgSlug = tenantQuery ?? subdomain;
+    
+    if (!orgSlug) {
+      // Nema org slug-a - to je OK, nastavi bez tenant context-a
+      console.log('[OPTIONAL-TENANT-MIDDLEWARE] No org slug - continuing without tenant context');
+      next();
+      return;
+    }
+    
+    // Ima org slug - dohvati organizaciju
+    const tenantContext = await getOrganizationBySubdomain(orgSlug);
+    
+    if (tenantContext) {
+      // Postavi tenant context
+      req.organizationId = tenantContext.organizationId;
+      req.organization = tenantContext.organization;
+      console.log(`[OPTIONAL-TENANT-MIDDLEWARE] Tenant set: ${tenantContext.organization.name} (ID: ${tenantContext.organizationId})`);
+    } else {
+      console.warn(`[OPTIONAL-TENANT-MIDDLEWARE] Org not found for slug: ${orgSlug} - continuing without tenant`);
+    }
+    
+    // Nastavi dalje (čak i ako org nije pronađena)
+    next();
+  } catch (error) {
+    // Ne baci grešku - samo loggiraj i nastavi
+    console.warn('[OPTIONAL-TENANT-MIDDLEWARE] Error:', error);
+    next();
+  }
 }

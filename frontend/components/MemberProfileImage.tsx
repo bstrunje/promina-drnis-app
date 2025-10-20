@@ -7,6 +7,7 @@ import { User, Info } from 'lucide-react';
 import { formatDate } from '../src/utils/dateUtils';
 import { useAuth } from '../src/context/useAuth';
 import { useTranslation } from 'react-i18next';
+import api from '../src/utils/api/apiConfig';
 
 interface Props {
   member: Member;
@@ -94,22 +95,14 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
       console.log(`Uploading image for member ${member.member_id}`);
 
-      const response = await fetch(`${API_BASE_URL}/members/${member.member_id}/profile-image`, {
-        method: 'POST',
-        body: formData,
+      // MULTI-TENANCY: Koristi api instance koja automatski dodaje tenant parametar
+      const response = await api.post(`/members/${member.member_id}/profile-image`, formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload response error:', response.status, errorText);
-        throw new Error(`Image upload failed: ${response.statusText}`);
-      }
-
-      const result: unknown = await response.json();
-      console.log('Upload successful, server response:', result);
+      console.log('Upload successful, server response:', response.data);
 
       // Force refresh member data from server
       if (onUpdate) await onUpdate();

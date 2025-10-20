@@ -28,7 +28,9 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
     }
 
     const activity = await activityService.createActivityService(req, req.body, organizer_id);
-    res.status(201).json(activity);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activity));
+    res.status(201).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -37,7 +39,9 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
 export const getAllActivities = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const activities = await activityService.getAllActivitiesService(req);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -58,7 +62,9 @@ export const getActivitiesByYearWithParticipants = async (req: Request, res: Res
       });
     }
     const activities = await activityService.getActivitiesByYearWithParticipantsService(req, year);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -67,7 +73,9 @@ export const getActivitiesByYearWithParticipants = async (req: Request, res: Res
 export const getAllActivitiesWithParticipants = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const activities = await activityService.getAllActivitiesWithParticipantsService(req);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -77,7 +85,9 @@ export const getActivityById = async (req: Request, res: Response, next: NextFun
   try {
     const id = parseInt(req.params.activityId, 10);
     const activity = await activityService.getActivityByIdService(req, id);
-    res.status(200).json(activity);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activity));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -88,7 +98,9 @@ export const getActivitiesByTypeId = async (req: Request, res: Response, next: N
     const typeId = parseInt(req.params.typeId, 10);
     const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
     const activities = await activityService.getActivitiesByTypeIdService(req, typeId, year);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -98,7 +110,9 @@ export const getActivitiesByMemberId = async (req: Request, res: Response, next:
   try {
     const memberId = parseInt(req.params.memberId, 10);
     const activities = await activityService.getActivitiesByMemberIdService(req, memberId);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -108,7 +122,9 @@ export const getActivitiesByStatus = async (req: Request, res: Response, next: N
   try {
     const { status } = req.params;
     const activities = await activityService.getActivitiesByStatusService(req, status);
-    res.status(200).json(activities);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activities));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -119,7 +135,9 @@ export const getParticipationsByMemberIdAndYear = async (req: Request, res: Resp
     const memberId = parseInt(req.params.memberId, 10);
     const year = parseInt(req.params.year, 10);
     const participations = await activityService.getParticipationsByMemberIdAndYearService(req, memberId, year);
-    res.status(200).json(participations);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(participations));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -129,7 +147,9 @@ export const updateActivity = async (req: Request, res: Response, next: NextFunc
   try {
     const id = parseInt(req.params.activityId, 10);
     const activity = await activityService.updateActivityService(req, id, req.body);
-    res.status(200).json(activity);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(activity));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -149,7 +169,9 @@ export const cancelActivity = async (req: Request, res: Response, next: NextFunc
     }
 
     const updatedActivity = await activityService.cancelActivityService(req, activity_id, cancellation_reason);
-    res.status(200).json(updatedActivity);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(updatedActivity));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -181,7 +203,9 @@ export const joinActivity = async (req: Request, res: Response, next: NextFuncti
     }
 
     const participation = await activityService.addParticipantService(req, activity_id, member_id);
-    res.status(201).json(participation);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(participation));
+    res.status(201).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -223,7 +247,9 @@ export const addParticipantToActivity = async (req: Request, res: Response, next
     }
     
     const participation = await activityService.addParticipantService(req, activity_id, member_id);
-    res.status(201).json(participation);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(participation));
+    res.status(201).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -279,7 +305,9 @@ export const updateParticipationDetails = async (req: Request, res: Response, ne
       });
     }
     
-    res.status(200).json(updatedParticipation);
+    // Serijalizacija Date objekata
+    const serialized = JSON.parse(JSON.stringify(updatedParticipation));
+    res.status(200).json(serialized);
   } catch (error) {
     next(error);
   }

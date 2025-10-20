@@ -38,6 +38,7 @@ import dutyRoutes from './routes/duty.routes.js';
 import skillRoutes from './routes/skillRoutes.js';
 import devRoutes from './routes/dev.routes.js'; // Dodano za podršku razvojnim rutama
 import orgConfigRoutes from './routes/org-config.routes.js'; // Multi-tenant org config
+import pwaRoutes from './routes/pwa.routes.js'; // PWA dynamic manifest
 import { tenantMiddleware } from './middleware/tenant.middleware.js'; // Multi-tenant support
 
 // (prepareDirectories, migrateExistingFiles) se više ne koriste
@@ -288,6 +289,7 @@ app.use(sanitizationMiddleware);
 
 // Public routes (bez authMiddleware)
 app.use('/api', orgConfigRoutes); // Public org config endpoints
+app.use('/api', pwaRoutes); // PWA dynamic manifest (needs tenant context)
 
 app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);

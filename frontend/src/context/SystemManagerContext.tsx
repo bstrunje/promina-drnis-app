@@ -1,6 +1,6 @@
 // context/SystemManagerContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { systemManagerLogin, systemManagerLogout, systemManagerRefreshToken } from '../features/systemManager/utils/systemManagerApi';
 import { SystemManagerLoginData, SystemManager } from '@shared/systemManager';
@@ -59,6 +59,29 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  const location = useLocation();
+  
+  /**
+   * Helper za detekciju org slug-a iz URL-a
+   * - /system-manager/... → null (Global SM)
+   * - /promina/system-manager/... → 'promina' (Org SM)
+   */
+  const getOrgSlug = React.useCallback((): string | null => {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    
+    // Ako path počinje s 'system-manager', to je Global SM
+    if (pathParts[0] === 'system-manager') {
+      return null;
+    }
+    
+    // Ako drugi dio je 'system-manager', prvi je org slug
+    if (pathParts[1] === 'system-manager') {
+      return pathParts[0];
+    }
+    
+    return null;
+  }, [location.pathname]);
+  
   // Funkcija za osvježavanje tokena - definirana prije useEffect-a koji je koristi
   const refreshToken = React.useCallback(async () => {
     try {
@@ -81,15 +104,19 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       setManager(null);
       setIsAuthenticated(false);
       
+      // Dinamički login path baziran na org slug-u
+      const orgSlug = getOrgSlug();
+      const loginPath = orgSlug ? `/${orgSlug}/system-manager/login` : '/system-manager/login';
+      
       // Dohvati branding parametar ako postoji
       const branding = localStorage.getItem('systemManagerBranding');
       const brandingQuery = branding ? `?branding=${branding}` : '';
       
-      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
+      navigate(`${loginPath}${brandingQuery}`, { replace: true });
       
       throw error;
     }
-  }, [navigate, setManager, setIsAuthenticated]);
+  }, [navigate, setManager, setIsAuthenticated, getOrgSlug]);
 
   // Provjera postojeće sesije prilikom učitavanja
   useEffect(() => {
@@ -270,14 +297,18 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         setManager(managerData);
         setIsAuthenticated(true);
 
-        // Dohvati branding parametar ako postoji
-        const branding = localStorage.getItem('systemManagerBranding');
-        const brandingQuery = branding ? `?branding=${branding}` : '';
+        // Dinamički redirect baziran na org slug i manager tipu
+        const orgSlug = getOrgSlug();
         
         if (managerData.organization_id === null) {
+          // Global System Manager → Organizations page
           navigate('/system-manager/organizations');
         } else {
-          navigate(`/system-manager/dashboard${brandingQuery}`);
+          // Organization System Manager → Dashboard s org slug
+          const dashboardPath = orgSlug 
+            ? `/${orgSlug}/system-manager/dashboard`
+            : '/system-manager/dashboard';
+          navigate(dashboardPath);
         }
       }
 
@@ -291,7 +322,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
     } finally {
       setLoading(false);
     }
-  }, [navigate, setManager, setIsAuthenticated, setLoading]);
+  }, [navigate, setManager, setIsAuthenticated, setLoading, getOrgSlug]);
 
   // Funkcija za odjavu
   const logout = React.useCallback(() => {
@@ -350,4 +381,4 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
 };
 
  
-export default SystemManagerContext;
+

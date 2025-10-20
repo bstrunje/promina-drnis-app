@@ -239,13 +239,16 @@ export const calculateGrandTotalHours = (activities: Activity[]): number => {
 };
 
 /**
- * Formatira broj sati u format HH:MM
+ * Formatira sate u HH:MM format
  * @param hours Broj sati kao decimalni broj (npr. 2.5 = 2h 30min)
  * @returns Formatirani string (npr. "02:30")
  */
-export const formatHoursToHHMM = (hours: number): string => {
+export const formatHoursToHHMM = (hours: number | null | undefined): string => {
+  // Zaštita od NaN, null, undefined
+  const safeHours = Number(hours) || 0;
+  
   // Zaokruživanje na najbližu minutu
-  const totalMinutes = Math.round(hours * 60);
+  const totalMinutes = Math.round(safeHours * 60);
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
   

@@ -521,15 +521,16 @@ const memberMessageRepository = {
     },
 
     // OPTIMIZIRANA funkcija za brojanje nepročitanih poruka - serverless friendly
-    async countUnreadMessages(memberId: number): Promise<number> {
+    async countUnreadMessages(organizationId: number, memberId: number): Promise<number> {
         try {
             // Optimiziran upit s minimalnim JOIN-om za serverless performanse
             const count = await prisma.messageRecipientStatus.count({
                 where: {
                     recipient_member_id: memberId,
                     status: 'unread',
-                    // Optimiziran pristup - direktno isključujemo self-sent poruke
+                    // MULTI-TENANCY: Filtriranje po organizaciji + isključujemo self-sent poruke
                     message: {
+                        organization_id: organizationId, // MULTI-TENANCY filter
                         sender_id: { not: memberId }
                     }
                 },

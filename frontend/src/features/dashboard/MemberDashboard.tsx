@@ -1,6 +1,6 @@
 // frontend/src/features/dashboard/MemberDashboard.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { useTranslation } from 'react-i18next';
 
 import { useUnreadMessages } from '../../contexts/useUnreadMessages';
@@ -12,10 +12,7 @@ import { getAllActivitiesWithParticipants } from '../../utils/api/apiActivities'
 import api from '@/utils/api/apiConfig';
 import { formatInputDate } from '../../utils/dateUtils';
 import { useBranding } from '../../hooks/useBranding';
-
-interface Props {
-  member: Member;
-}
+import { useTenantNavigation } from '../../hooks/useTenantNavigation';
 
 interface MemberStats {
   unreadMessages: number;
@@ -38,8 +35,8 @@ interface DashboardStatsResponse {
   memberCount: number;
 }
 
-const MemberDashboard: React.FC<Props> = ({ member }) => {
-  const navigate = useNavigate();
+const MemberDashboard: React.FC = () => {
+  const { navigateTo } = useTenantNavigation();
   const { t } = useTranslation('dashboards');
   const { getPrimaryColor, branding } = useBranding();
   const [loading, setLoading] = useState(true);
@@ -51,7 +48,9 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
   });
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
-  const [fullMember, setFullMember] = useState<Member>(member);
+  // MULTI-TENANCY FIX: Ne inicijaliziraj s member prop-om jer može biti iz starog tenanta
+  // Uvijek fetchuj fresh data iz trenutnog tenanta
+  const [fullMember, setFullMember] = useState<Member | null>(null);
   const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
 
   const getActivityStatus = (totalHours: number | null | undefined) => {
@@ -118,7 +117,8 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
     const fetchAnnualStats = async () => {
-      const targetId = fullMember?.member_id ?? member?.member_id;
+      // Koristi SAMO fullMember da izbjegnemo miješanje tenanta
+      const targetId = fullMember?.member_id;
       if (targetId) {
         try {
           console.log('Fetching annual stats for member ID:', targetId);
@@ -136,7 +136,8 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
           setActivityTotals(totals);
         } catch (err) {
           console.error("Error fetching annual stats:", err);
-          // Ovdje ne postavljamo globalnu grešku da ne bi blokiralo ostatak dashboarda
+          // Postavi default vrijednosti u slučaju greške
+          setActivityTotals({ activities: 0, hours: 0 });
         }
       }
     };
@@ -161,10 +162,22 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
     void fetchMemberDetails();
     void fetchAnnualStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branding, member?.member_id, fullMember?.member_id]);
+  }, [branding]); // SAMO branding dependency - ne ovisimo o member prop-u!
+
+  // Zaštita: Ne prikazuj dashboard dok fullMember nije učitan
+  if (!fullMember) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Učitavanje profila...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
         <h1 className="text-xl md:text-2xl font-bold">
@@ -189,7 +202,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {/* Messages Sekcija */}
         <div
-          onClick={() => navigate("/messages")}
+          onClick={() => navigateTo("/messages")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -218,9 +231,9 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
         </div>
 
         {/* Aktivnosti Sekcija */}
-        <Link
-          to={`/members/${member.member_id}/activities-overview`}
-          className="block bg-white p-6 rounded-lg shadow-sm border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+        <div
+          onClick={() => navigateTo(`/members/${fullMember.member_id}/activities-overview`)}
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-600 font-medium">{t("activities.allMyActivities")}</h3>
@@ -245,11 +258,11 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
               </>
             )}
           </div>
-        </Link>
+        </div>
 
         {/* Members Sekcija */}
         <div
-          onClick={() => navigate("/members")}
+          onClick={() => navigateTo("/members")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -270,7 +283,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
 
         {/* Profile Sekcija */}
         <div
-          onClick={() => navigate("/profile")}
+          onClick={() => navigateTo("/profile")}
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
@@ -335,7 +348,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
             <ul className="space-y-3">
               {upcomingActivities.map(activity => (
                 <li key={activity.activity_id} className="p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
-                  <Link to={`/activities/${activity.activity_id}`} className="block">
+                  <TenantLink to={`/activities/${activity.activity_id}`} className="block">
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-semibold text-gray-800">{activity.name}</p>
@@ -354,7 +367,7 @@ const MemberDashboard: React.FC<Props> = ({ member }) => {
                         }
                       })()}
                     </div>
-                  </Link>
+                  </TenantLink>
                 </li>
               ))}
             </ul>

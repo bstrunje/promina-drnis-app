@@ -492,7 +492,7 @@ async getUnreadMessageCount(req: Request, res: Response): Promise<void> {
         }
 
         if (isDev) console.log(`[UNREAD-COUNT] Dohvaćam broj nepročitanih poruka za člana ${memberId}...`);
-        const count = await messageService.countUnreadMessages(memberId);
+        const count = await messageService.countUnreadMessages(req, memberId);
         
         const duration = Date.now() - startTime;
         if (isDev) console.log(`[UNREAD-COUNT] Uspješno dohvaćen broj: ${count} u ${duration}ms`);

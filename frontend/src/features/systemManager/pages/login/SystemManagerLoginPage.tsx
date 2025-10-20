@@ -3,16 +3,44 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
-import logoImage from '../../../../assets/images/grbPD_bez_natpisa_pozadina.png';
+import { useBranding } from '../../../../hooks/useBranding';
+
+/**
+ * Helper za detekciju org slug-a iz URL-a
+ */
+const getOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/').filter(Boolean);
+  
+  // /system-manager/... → null (Global SM)
+  if (pathParts[0] === 'system-manager') return null;
+  
+  // /promina/system-manager/... → 'promina' (Org SM)
+  if (pathParts[1] === 'system-manager') return pathParts[0];
+  
+  return null;
+};
 
 const SystemManagerLoginPage: React.FC = () => {
   const { login } = useSystemManager();
+  const { branding } = useBranding();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Dohvati org slug za detekciju tipa SM-a
+  const orgSlug = getOrgSlugFromPath();
+  const isOrgSM = Boolean(orgSlug);
+  
+  // Dinamički logo
+  // logo_path u bazi je vec puni path npr. "/uploads/organization_logos/..."
+  const logoUrl = branding?.logo_path 
+    ? `${window.location.protocol}//${window.location.host}${branding.logo_path}`
+    : null;
+  const orgName = branding?.name ?? 'System Manager';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +55,18 @@ const SystemManagerLoginPage: React.FC = () => {
     
     try {
       const response = await login({ username, password });
+      const orgSlug = getOrgSlugFromPath();
 
       if (response.twoFactorRequired) {
-        navigate('/system-manager/verify-2fa', { state: { tempToken: response.tempToken } });
+        const verify2faPath = orgSlug 
+          ? `/${orgSlug}/system-manager/verify-2fa`
+          : '/system-manager/verify-2fa';
+        navigate(verify2faPath, { state: { tempToken: response.tempToken } });
       } else if (response.resetRequired) {
-        navigate('/system-manager/force-change-password', { state: { tempToken: response.tempToken } });
+        const forceChangePath = orgSlug 
+          ? `/${orgSlug}/system-manager/force-change-password`
+          : '/system-manager/force-change-password';
+        navigate(forceChangePath, { state: { tempToken: response.tempToken } });
       }
       // Uspješan login bez dodatnih koraka se rješava unutar useSystemManager hooka
 
@@ -51,14 +86,20 @@ const SystemManagerLoginPage: React.FC = () => {
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
           <div className="w-24 h-24 mb-4 flex items-center justify-center">
-            <img src={logoImage} alt="Logo" className="w-full h-full object-contain" />
+            {logoUrl ? (
+              <img src={logoUrl} alt={orgName} className="w-full h-full object-contain" />
+            ) : (
+              <Shield className="w-20 h-20 text-blue-600" />
+            )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 text-center">
-            System Manager Access
+            {isOrgSM ? `${orgName}` : 'Global System Manager'}
           </h1>
           <div className="flex items-center mt-2">
             <Shield className="w-5 h-5 text-blue-600 mr-1" />
-            <p className="text-sm text-gray-600">Restricted access - system managers only</p>
+            <p className="text-sm text-gray-600">
+              {isOrgSM ? 'Organization Management Access' : 'Platform Administration Access'}
+            </p>
           </div>
         </div>
 

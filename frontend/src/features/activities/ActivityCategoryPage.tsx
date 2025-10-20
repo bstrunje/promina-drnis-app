@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './activities.css'; // Dodajemo CSS za custom stilove
-import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { Activity as ActivityIcon, ArrowLeft, Calendar, Clock, PlusCircle, Trash2, MountainSnow, Users, ClipboardList, ListChecks, Axe, Route, ConciergeBell } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@components/ui/card';
@@ -199,10 +200,10 @@ const ActivityCategoryPage: React.FC = () => {
     <div className="p-6">
       <div className="mb-6">
         <Button asChild variant="outline" className="mb-4">
-          <Link to={yearParam && !isYearView ? `/activities/year/${yearParam}` : "/activities"}>
+          <TenantLink to={yearParam && !isYearView ? `/activities/year/${yearParam}` : "/activities"}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             {isYearView ? t('activityCategoryPage.summary.allYears') : (yearParam ? t('activityCategoryPage.summary.activitiesInYear', { year: yearParam }) : t('activityCategoryPage.summary.allCategories'))}
-          </Link>
+          </TenantLink>
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
@@ -271,7 +272,7 @@ const ActivityCategoryPage: React.FC = () => {
               const hasPlanned = activitiesForType.some(a => a.status === ActivityStatus.PLANNED);
               
               return (
-                <Link 
+                <TenantLink 
                   to={`/activities/category/${type.type_id}${yearParam ? `?year=${yearParam}` : ''}`} 
                   key={type.type_id}
                   className="block"
@@ -312,7 +313,7 @@ const ActivityCategoryPage: React.FC = () => {
                       </div>
                     </CardFooter>
                   </Card>
-                </Link>
+                </TenantLink>
               );
             })
           ) : (
@@ -334,7 +335,7 @@ const ActivityCategoryPage: React.FC = () => {
             activities.map(activity => {
               return (
                 <div key={activity.activity_id} className="relative">
-                  <Link to={`/activities/${activity.activity_id}${yearParam ? `?year=${yearParam}` : ''}`} className="block">
+                  <TenantLink to={`/activities/${activity.activity_id}${yearParam ? `?year=${yearParam}` : ''}`} className="block">
                     <Card className="h-full transition-colors hover:bg-muted/50">
                       <CardHeader>
                         <div className="flex justify-between items-start">
@@ -390,7 +391,7 @@ const ActivityCategoryPage: React.FC = () => {
                         </CardFooter>
                       )}
                     </Card>
-                  </Link>
+                  </TenantLink>
                 </div>
               );
             })

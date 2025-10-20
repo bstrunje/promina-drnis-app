@@ -7,7 +7,7 @@ import { tokenStorage } from './tokenStorage';
 import { API_BASE_URL } from '../config';
 import { jwtDecode } from 'jwt-decode';
 import { navigateToLogin } from './navigationHelper';
-import { getCurrentTenant } from '../tenantUtils';
+import { getCurrentTenant, extractOrgSlugFromPath } from '../tenantUtils';
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -257,9 +257,11 @@ export class AuthTokenService {
         navigateToLogin();
       } catch (e) {
         console.error('[AuthTokenService.logout] Greška pri importu navigationHelper ili pozivu navigateToLogin:', e);
-        // console.log('[AuthTokenService.logout] Fallback: window.location.replace("/login")');
-        // Ako helper nije dostupan, koristimo klasični redirect
-        window.location.replace('/login');
+        // Ako helper nije dostupan, koristimo klasični redirect s org prefix-om
+        const orgSlug = extractOrgSlugFromPath();
+        const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+        console.log(`[AuthTokenService.logout] Fallback: window.location.replace("${loginPath}")`);
+        window.location.replace(loginPath);
       }
     }
   }

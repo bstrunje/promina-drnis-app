@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../src/context/useAuth';
 import { AuthTokenService } from '../src/utils/auth/AuthTokenService';
+import { extractOrgSlugFromPath } from '../src/utils/tenantUtils';
 
 interface ProtectedRouteProps {
   allowedRoles?: string[];
@@ -15,9 +16,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   
   // Spremi trenutnu putanju kada korisnik pristupa zaštićenoj ruti
   useEffect(() => {
-    if (user && location.pathname !== '/' && location.pathname !== '/login') {
-      // Spremamo putanju samo ako je korisnik prijavljen
-      sessionStorage.setItem('lastPath', location.pathname);
+    if (user && location.pathname !== '/') {
+      const orgSlug = extractOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+      
+      // Spremamo putanju samo ako nije login stranica i korisnik je prijavljen
+      if (location.pathname !== loginPath) {
+        sessionStorage.setItem('lastPath', location.pathname);
+      }
     }
   }, [location.pathname, user]);
   
@@ -56,9 +62,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   // Ovaj effect rješava problem "No routes matched" warning-a
   // Kada se korisnik odjavi, odmah ga preusmjeravamo na login stranicu
   useEffect(() => {
-    if (!isLoading && !user && location.pathname !== '/login' && location.pathname !== '/unauthorized') {
-      const redirectParam = location.pathname ? encodeURIComponent(location.pathname) : '';
-      navigate(`/login?redirect=${redirectParam}`, { replace: true });
+    if (!isLoading && !user && location.pathname !== '/unauthorized') {
+      const orgSlug = extractOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+      
+      // Provjeri da već nismo na login stranici
+      if (location.pathname !== loginPath) {
+        const redirectParam = location.pathname ? encodeURIComponent(location.pathname) : '';
+        navigate(`${loginPath}?redirect=${redirectParam}`, { replace: true });
+      }
     }
   }, [user, isLoading, location.pathname, navigate]);
 

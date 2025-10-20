@@ -1,6 +1,6 @@
 // frontend/components/ActivityHistory.tsx
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { TenantLink } from '../src/components/TenantLink';
 import { History } from 'lucide-react'; // Mijenjamo ikonu
 import { useTranslation } from 'react-i18next';
 import { getMemberAnnualStats } from '../src/utils/api';
@@ -46,7 +46,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
   }, [fetchAnnualStats]);
 
   return (
-    <Link
+    <TenantLink
       to={`/members/${memberId}/activities-overview`}
       className="block bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
     >
@@ -67,7 +67,7 @@ export const ActivityHistory: React.FC<Props> = ({ memberId }) => {
           </div>
         )}
       </div>
-    </Link>
+    </TenantLink>
   );
 };
 

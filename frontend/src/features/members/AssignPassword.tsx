@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../../utils/config';
+import api from '../../utils/api/apiConfig';
 
 // Definiramo tip za člana koji dolazi s API-ja
 interface ApiMember {
@@ -26,10 +26,9 @@ const AssignPassword: React.FC = () => {
 
     const fetchPendingMembers = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/members/pending`);
-            if (response.ok) {
-                // Eksplicitno definiramo tip podataka koji očekujemo od API-ja
-                const data = await response.json() as ApiMember[];
+            const response = await api.get<ApiMember[]>('/members/pending');
+            if (response.data) {
+                const data = response.data;
                 
                 // Validiramo podatke prije korištenja
                 const validatedMembers = data
@@ -57,18 +56,12 @@ const AssignPassword: React.FC = () => {
         if (!selectedMember || !password) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/members/assign-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    memberId: selectedMember,
-                    password,
-                }),
+            const response = await api.post('/members/assign-password', {
+                memberId: selectedMember,
+                password,
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 alert(t('auth.assignPassword.messages.passwordAssignedSuccessfully'));
                 setSelectedMember('');
                 setPassword('');

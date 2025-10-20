@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '@/utils/config';
+import { useParams } from 'react-router-dom';
+import { TenantLink } from '../../components/TenantLink';
 import { Calendar, ChevronRight } from 'lucide-react';
 import BackToDashboard from '@components/BackToDashboard';
 import { formatHoursToHHMM } from '@/utils/activityHours';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
+import api from '@/utils/api/apiConfig';
 
 // Sučelje za člana s ukupnim satima kroz povijest
 interface Member {
@@ -35,13 +35,13 @@ const ActivityOverviewPage: React.FC = () => {
       if (!memberId) return;
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
 
       try {
         // Dohvaćamo samo podatke o članu i godišnje statistike
+        // api.get automatski dodaje tenant parameter i Authorization header
         const [memberRes, statsRes] = await Promise.all([
-          axios.get<Member>(`${API_BASE_URL}/members/${memberId}`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get<AnnualStat[]>(`${API_BASE_URL}/members/${memberId}/annual-stats`, { headers: { Authorization: `Bearer ${token}` } })
+          api.get<Member>(`/members/${memberId}`),
+          api.get<AnnualStat[]>(`/members/${memberId}/annual-stats`)
         ]);
 
         setMember(memberRes.data);
@@ -104,7 +104,7 @@ const ActivityOverviewPage: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-700">{t('activityOverview.yearView')}</h2>
             {sortedStats.map(stat => (
-              <Link 
+              <TenantLink 
                 to={`/members/${memberId}/activities/${stat.year}`}
                 key={stat.year} 
                 className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
@@ -122,7 +122,7 @@ const ActivityOverviewPage: React.FC = () => {
                   </div>
                   <ChevronRight className="h-6 w-6 text-gray-400" />
                 </div>
-              </Link>
+              </TenantLink>
             ))}
           </div>
         )}
