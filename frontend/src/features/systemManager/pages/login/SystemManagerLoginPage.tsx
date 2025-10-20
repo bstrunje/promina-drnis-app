@@ -179,7 +179,11 @@ const SystemManagerLoginPage: React.FC = () => {
             <p className="text-sm text-gray-600">
               This page is for system manager login only.
               <br />For member login, please visit{' '}
-              <a href="/login" className="text-blue-600 hover:underline">standard login</a>.
+              {getOrgSlugFromPath() ? (
+                <a href={`/${getOrgSlugFromPath()}/login`} className="text-blue-600 hover:underline">standard login</a>
+              ) : (
+                <span className="text-gray-500">standard login (select organization first)</span>
+              )}.
             </p>
           </div>
         </form>

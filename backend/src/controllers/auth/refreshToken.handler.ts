@@ -189,10 +189,10 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       if (verifyToken) {
         if (isDev) console.log(`[REFRESH-TOKEN] Potvrda: novi token je uspješno kreiran u bazi s ID: ${verifyToken.id}`);
       } else {
-        console.error('[REFRESH-TOKEN] KRITIČNA GREŠKA: novi token nije pronađen u bazi nakon kreiranja!');
+        if (isDev) console.error('[REFRESH-TOKEN] KRITIČNA GREŠKA: novi token nije pronađen u bazi nakon kreiranja!');
       }
     } catch (error) {
-      console.error('[REFRESH-TOKEN] Greška pri zamjeni refresh tokena:', error);
+      if (isDev) console.error('[REFRESH-TOKEN] Greška pri zamjeni refresh tokena:', error);
       
       // Dodatna provjera za duplicate key grešku
       if (error instanceof Error && error.message.includes('duplicate key')) {
@@ -209,7 +209,7 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
           if (isDev) console.log('[REFRESH-TOKEN] Postojeći token pronađen, koristim ga...');
           storedToken = existingToken;
         } else {
-          console.error('[REFRESH-TOKEN] Duplicate key greška, ali token nije pronađen!');
+          if (isDev) console.error('[REFRESH-TOKEN] Duplicate key greška, ali token nije pronađen!');
           throw error;
         }
       } else {

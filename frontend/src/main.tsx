@@ -23,3 +23,25 @@ root.render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// PWA Setup
+if (import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    // Dinamički dodaj manifest link
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = '/api/manifest';
+    document.head.appendChild(manifestLink);
+    
+    // Service Worker registracija
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/pwa/service-worker.js')
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+    }
+  });
+}

@@ -599,7 +599,7 @@ router.post(
 
       res.json(updatedMember);
     } catch (error) {
-      console.error(`[UPLOAD] Greška pri upload-u slike za člana ${memberId}:`, error);
+      if (isDev) console.error(`[UPLOAD] Greška pri upload-u slike za člana ${memberId}:`, error);
       const message = error instanceof Error ? error.message : 'Neuspješan upload slike.';
       res.status(500).json({ message });
     }

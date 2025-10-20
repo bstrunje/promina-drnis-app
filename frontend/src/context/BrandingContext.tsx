@@ -224,9 +224,9 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
       
       // Sigurnosno: ako tenant nedostaje, ne učitavaj branding
+      // U multi-tenant konfiguraciji, root path (/) prikazuje TenantSelector
       if (tenant === 'missing') {
         setBranding(null);
-        setError('Tenant is required');
         setIsLoading(false);
         return;
       }
@@ -317,29 +317,9 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Greška pri učitavanju branding podataka:', err);
       setError('Nije moguće učitati podatke organizacije');
       
-      // Fallback na default branding
-      const fallbackBranding: OrganizationBranding = {
-        id: 1,
-        name: 'Planinarska Organizacija',
-        subdomain: tenant,
-        short_name: 'PO',
-        is_active: true,
-        logo_path: null,
-        primary_color: '#2563eb',
-        secondary_color: '#64748b',
-        default_language: 'hr',
-        email: 'info@example.com',
-        phone: null,
-        website_url: null,
-        street_address: null,
-        city: null,
-        postal_code: null,
-        country: null,
-        ethics_code_url: null,
-        privacy_policy_url: null,
-        membership_rules_url: null,
-      };
-      setBranding(fallbackBranding);
+      // U multi-tenant konfiguraciji ne postavljamo fallback branding
+      // Komponente trebaju gracefully handleati null branding
+      setBranding(null);
     } finally {
       setIsLoading(false);
     }

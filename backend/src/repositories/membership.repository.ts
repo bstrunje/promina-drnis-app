@@ -317,18 +317,38 @@ const membershipRepository = {
 
     await prisma.$transaction(async (tx) => {
       // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
-      //    i koji su trenutno 'registered' - koristimo Prisma raw query za složeni join
-      const expiredMembers = await tx.$queryRaw<{ member_id: number }[]>`
-            SELECT m.member_id 
-            FROM members m
-            LEFT JOIN membership_details md ON m.member_id = md.member_id
-            WHERE m.organization_id = ${organizationId}
-              AND m.status = 'registered' 
-              AND (md.fee_payment_year < ${year} OR md.fee_payment_year IS NULL)
-              AND m.role NOT IN ('member_superuser', 'member_administrator')
-        `;
+      //    i koji su trenutno 'registered' - optimizirano s Prisma relacijama
+      const expiredMembers = await tx.member.findMany({
+        where: {
+          organization_id: organizationId,
+          status: 'registered',
+          role: {
+            notIn: ['member_superuser', 'member_administrator']
+          },
+          OR: [
+            {
+              membership_details: {
+                fee_payment_year: {
+                  lt: year
+                }
+              }
+            },
+            {
+              membership_details: {
+                fee_payment_year: null
+              }
+            },
+            {
+              membership_details: null
+            }
+          ]
+        },
+        select: {
+          member_id: true
+        }
+      });
 
-      const memberIdsToExpire = expiredMembers.map(row => row.member_id);
+      const memberIdsToExpire = expiredMembers.map(member => member.member_id);
 
       if (memberIdsToExpire.length === 0) {
         console.log(`[MEMBERSHIP] Nema članova s isteklim članstvom za godinu ${year}.`);

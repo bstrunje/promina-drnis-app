@@ -241,11 +241,13 @@ export async function tenantMiddleware(
     const host = req.get('host') || req.headers.host as string;
     const path = req.path;
 
-    // 🔧 IZUZEĆE: SAMO Global System Manager rute ne trebaju tenant context
+    // 🔧 IZUZEĆE: Global System Manager rute ne trebaju tenant context
     // jer Global System Manager može kreirati organizacije
-    // Organization-specific SM rute (/:orgSlug/system-manager/*) TREBAJU tenant!
-    if (path.startsWith('/system-manager') || path === '/api/system-manager/login') {
-      console.log(`[TENANT-MIDDLEWARE] Global System Manager ruta - preskačem tenant detekciju: ${path}`);
+    // Organization-specific SM rute (s ?tenant= parametrom) TREBAJU tenant!
+    if (path.startsWith('/system-manager') && !req.query.tenant && !req.query.branding) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TENANT-MIDDLEWARE] Global System Manager ruta (bez tenant param) - preskačem tenant detekciju: ${path}`);
+      }
       return next();
     }
     
@@ -266,7 +268,9 @@ export async function tenantMiddleware(
     // Koristi prvi dostupni tenant identifier
     const orgSlug = tenantQuery ?? pathSlug ?? subdomain;
 
-    console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Path: ${path}, Final Org Slug: ${orgSlug} (Query: ${tenantQuery}, Path: ${pathSlug}, Subdomain: ${subdomain})`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[TENANT-MIDDLEWARE] Host: ${host}, Path: ${path}, Final Org Slug: ${orgSlug} (Query: ${tenantQuery}, Path: ${pathSlug}, Subdomain: ${subdomain})`);
+    }
 
     let tenantContext: TenantContext | null = null;
 
@@ -283,7 +287,9 @@ export async function tenantMiddleware(
     tenantContext = await getOrganizationBySubdomain(orgSlug);
 
     if (!tenantContext) {
-      console.error('[TENANT-MIDDLEWARE] Organizacija nije pronađena ili nije aktivna');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[TENANT-MIDDLEWARE] Organizacija nije pronađena ili nije aktivna');
+      }
       res.status(404).json({
         error: 'Not Found',
         message: 'Organization not found'
@@ -295,7 +301,9 @@ export async function tenantMiddleware(
     req.organizationId = tenantContext.organizationId;
     req.organization = tenantContext.organization;
 
-    console.log(`[TENANT-MIDDLEWARE] Organizacija: ${tenantContext.organization.name} (ID: ${tenantContext.organizationId})`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[TENANT-MIDDLEWARE] Organizacija: ${tenantContext.organization.name} (ID: ${tenantContext.organizationId})`);
+    }
 
     next();
   } catch (error) {

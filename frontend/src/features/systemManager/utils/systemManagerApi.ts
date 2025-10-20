@@ -126,13 +126,17 @@ systemManagerApi.interceptors.request.use(
       }
     } else {
       // Upozorenje ako nedostaje System Manager token
-      console.warn('System Manager API pozvan bez System Manager tokena!');
+      if (import.meta.env.DEV) {
+        console.warn('System Manager API pozvan bez System Manager tokena!');
+      }
     }
     
     try {
       // Dohvati org slug ako postoji
       const orgSlug = extractOrgSlugFromPath();
-      console.log(`[SM-API] Detected orgSlug: ${orgSlug}, current path: ${window.location.pathname}`);
+      if (import.meta.env.DEV) {
+        console.log(`[SM-API] Detected orgSlug: ${orgSlug}, current path: ${window.location.pathname}`);
+      }
       
       // Propagiraj tenant/branding za sve System Manager rute
       const url = config.url ?? '';
@@ -143,19 +147,26 @@ systemManagerApi.interceptors.request.use(
         config.url = url; // Zadrži /system-manager/login
         // baseURL je već API_BASE_URL (http://localhost:3000/api)
         
-        // MULTI-TENANCY: Uvijek dodaj tenant parametar ako je dostupan
-        // Ovo omogućuje Global SM-u da radi s organizacijskim podacima
-        const tenant = localStorage.getItem('current_tenant') ?? orgSlug;
-        console.log(`[SM-API-DEBUG] current_tenant: '${localStorage.getItem('current_tenant')}', orgSlug: '${orgSlug}', final tenant: '${tenant}'`);
+        // MULTI-TENANCY: Dodaj tenant parametar SAMO za Organization-specific SM
+        // Global SM (orgSlug === null) ne šalje tenant parametar
+        if (import.meta.env.DEV) {
+          console.log(`[SM-API-DEBUG] orgSlug: '${orgSlug}', isGlobalSM: ${orgSlug === null}`);
+        }
         
-        if (tenant) {
+        if (orgSlug) {
+          // Organization-specific System Manager - dodaj tenant parametar
           const [path, queryStr] = config.url.split('?');
           const params = new URLSearchParams(queryStr ?? '');
-          params.set('tenant', tenant); // Dodaj tenant param
+          params.set('tenant', orgSlug); // Dodaj tenant param
           config.url = `${path}?${params.toString()}`;
-          console.log(`[SM-API] Adding tenant param: ${url} → ${config.baseURL}${config.url}`);
+          if (import.meta.env.DEV) {
+            console.log(`[SM-API] Org SM - Adding tenant param: ${url} → ${config.baseURL}${config.url}`);
+          }
         } else {
-          console.log(`[SM-API] No tenant available: ${config.baseURL}${config.url}`);
+          // Global System Manager - ne dodavaj tenant parametar
+          if (import.meta.env.DEV) {
+            console.log(`[SM-API] Global SM - No tenant param: ${config.baseURL}${config.url}`);
+          }
         }
         
         // Dodatno: propagiraj branding query parametar ako postoji
@@ -169,7 +180,9 @@ systemManagerApi.interceptors.request.use(
         }
       }
     } catch (error) {
-      console.error('[SM-API] Greška u interceptoru:', error);
+      if (import.meta.env.DEV) {
+        console.error('[SM-API] Greška u interceptoru:', error);
+      }
       // Ne ruši zahtjev
     }
     return config;
@@ -360,7 +373,9 @@ export const systemManagerRefreshToken = async (): Promise<SystemManagerLoginRes
     // console.log('System Manager token uspješno osvježen');
     return response.data;
   } catch (error: unknown) {
-    console.error('Greška prilikom osvježavanja tokena:', error);
+    if (import.meta.env.DEV) {
+      console.error('Greška prilikom osvježavanja tokena:', error);
+    }
     // U slučaju greške, čistimo tokene
     localStorage.removeItem('systemManagerToken');
     localStorage.removeItem('systemManager');
@@ -408,7 +423,9 @@ export const systemManagerLogout = async (): Promise<boolean> => {
     // Ne preusmjeravamo ovdje, prepuštamo to komponenti koja poziva ovu funkciju
     return true;
   } catch (error: unknown) {
-    console.error('Greška pri odjavi System Managera:', error);
+    if (import.meta.env.DEV) {
+      console.error('Greška pri odjavi System Managera:', error);
+    }
     return false;
   }
 };
@@ -666,18 +683,22 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
     return data as SystemSettings;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      console.error('AxiosError:', error.response?.data);
-      console.error('Status:', error.response?.status);
-      console.error('Headers:', error.response?.headers);
+      if (import.meta.env.DEV) {
+        console.error('AxiosError:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        console.error('Headers:', error.response?.headers);
+      }
       const respData: unknown = error.response?.data;
       let apiMessage: string | undefined;
       if (respData && typeof respData === 'object' && 'message' in (respData as Record<string, unknown>)) {
-        const maybe = (respData as { message?: unknown }).message;
-        apiMessage = typeof maybe === 'string' ? maybe : undefined;
+        const messageValue = (respData as Record<string, unknown>).message;
+        apiMessage = typeof messageValue === 'string' ? messageValue : undefined;
       }
       throw new Error(apiMessage ?? error.message);
     }
-    console.error('Nepoznata greška:', error);
+    if (import.meta.env.DEV) {
+      console.error('Nepoznata greška:', error);
+    }
     throw new Error('Dogodila se greška.');
   }
 };
