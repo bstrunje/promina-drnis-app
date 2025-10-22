@@ -20,6 +20,12 @@ import auditService from "../../services/audit.service.js";
 import { tOrDefault } from "../../utils/i18n.js";
 import { PerformerType } from "@prisma/client";
 import { verifyPin } from "../members/pinController.js";
+import { 
+  generateDeviceHash, 
+  extractDeviceName, 
+  isTrustedDevice, 
+  addTrustedDevice 
+} from "../../utils/trustedDevices.js";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -30,7 +36,7 @@ export async function loginHandler(
 ): Promise<void | Response> {
   const locale = req.locale;
   try {
-    const { email, password, pin } = req.body;
+    const { email, password, pin, rememberDevice } = req.body;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (!email || !password) {
@@ -236,9 +242,20 @@ export async function loginHandler(
     // Dohvati system settings za 2FA provjere
     const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
     
-    // PIN 2FA PROVJERA - prije ostalih 2FA metoda
+    // TRUSTED DEVICE PROVJERA - ako je uređaj trusted, preskačemo 2FA
+    const deviceHash = generateDeviceHash(req);
+    let skipTwoFA = false;
+    
+    if (settings?.twoFactorTrustedDevicesEnabled) {
+      skipTwoFA = await isTrustedDevice(member.organization_id!, member.member_id, deviceHash);
+      if (isDev && skipTwoFA) {
+        console.log(`Trusted device detected for member ${member.member_id}, skipping 2FA`);
+      }
+    }
+    
+    // PIN 2FA PROVJERA - prije ostalih 2FA metoda (ali samo ako nije trusted device)
     const pinEnabled = settings?.twoFactorChannelPinEnabled === true;
-    if (pinEnabled && member.pin_hash) {
+    if (!skipTwoFA && pinEnabled && member.pin_hash) {
       if (!pin) {
         // PIN je potreban, ali nije poslan
         return res.status(200).json({ 
@@ -378,6 +395,27 @@ export async function loginHandler(
       can_manage_card_numbers: member.permissions.can_manage_card_numbers || false,
       can_assign_passwords: member.permissions.can_assign_passwords || false,
     } : {};
+
+    // TRUSTED DEVICE SPREMANJE - ako je korisnik označio "Remember Device"
+    if (rememberDevice && settings?.twoFactorTrustedDevicesEnabled && settings.twoFactorRememberDeviceDays) {
+      try {
+        const deviceName = extractDeviceName(req);
+        await addTrustedDevice(
+          member.organization_id!,
+          member.member_id,
+          deviceHash,
+          deviceName,
+          settings.twoFactorRememberDeviceDays
+        );
+        
+        if (isDev) {
+          console.log(`Added trusted device for member ${member.member_id}: ${deviceName}`);
+        }
+      } catch (error) {
+        // Ne prekidamo login ako trusted device spremanje ne uspije
+        console.error('Failed to add trusted device:', error);
+      }
+    }
 
     res.json({
       message: tOrDefault('auth.success.AUTH_LOGIN_OK', locale, 'Login successful'),

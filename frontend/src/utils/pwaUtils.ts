@@ -5,6 +5,7 @@
  */
 
 import { extractOrgSlugFromPath } from './tenantUtils';
+import { API_BASE_URL } from './config';
 
 /**
  * Dodaje ili ažurira <link rel="manifest"> tag u <head>
@@ -20,6 +21,13 @@ export const updateManifestLink = (): void => {
       return;
     }
 
+    // Preskači PWA za System Manager stranice
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/system-manager/')) {
+      console.log('[PWA] System Manager detected - skipping PWA manifest');
+      return;
+    }
+
     // Ukloni postojeći manifest link ako postoji
     const existingLink = document.querySelector('link[rel="manifest"]');
     if (existingLink) {
@@ -29,7 +37,7 @@ export const updateManifestLink = (): void => {
     // Kreiraj novi manifest link
     const manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
-    manifestLink.href = `/api/manifest?tenant=${orgSlug}`;
+    manifestLink.href = `${API_BASE_URL}/manifest?tenant=${orgSlug}`;
     
     // Dodaj u <head>
     document.head.appendChild(manifestLink);
@@ -45,6 +53,12 @@ export const updateManifestLink = (): void => {
  */
 export const updateThemeColor = (color: string): void => {
   try {
+    // Preskači PWA za System Manager stranice
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/system-manager/')) {
+      console.log('[PWA] System Manager detected - skipping theme color update');
+      return;
+    }
     let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     
     if (!themeColorMeta) {
@@ -65,6 +79,12 @@ export const updateThemeColor = (color: string): void => {
  */
 export const updatePageMeta = (orgName: string): void => {
   try {
+    // Preskači PWA za System Manager stranice
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/system-manager/')) {
+      console.log('[PWA] System Manager detected - skipping page meta update');
+      return;
+    }
     // Title
     document.title = orgName;
     

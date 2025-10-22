@@ -181,19 +181,10 @@ Authorization: Bearer {globalSystemManagerToken}
 ]
 ```
 
-### 2. Skills (10 default)
+### 2. Skills 
 ```typescript
 [
-  { key: 'first_aid', name: 'Prva pomoć' },
-  { key: 'navigation', name: 'Orijentacija' },
-  { key: 'climbing', name: 'Penjanje' },
-  { key: 'skiing', name: 'Skijanje' },
-  { key: 'mountaineering', name: 'Alpinizam' },
-  { key: 'rescue', name: 'Spašavanje' },
-  { key: 'weather', name: 'Meteorologija' },
-  { key: 'flora_fauna', name: 'Flora i fauna' },
-  { key: 'photography', name: 'Fotografija' },
-  { key: 'cooking', name: 'Kuhanje' }
+ 
 ]
 ```
 

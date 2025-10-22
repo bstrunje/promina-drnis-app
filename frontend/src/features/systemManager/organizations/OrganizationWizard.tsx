@@ -41,7 +41,7 @@ const OrganizationWizard: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreateOrganizationData>>({
     primary_color: '#2563eb',
-    secondary_color: '#64748b',
+    secondary_color: '#e7eaee',
     default_language: 'hr',
     name: '',
     subdomain: '',

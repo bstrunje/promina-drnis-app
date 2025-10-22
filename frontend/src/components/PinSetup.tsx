@@ -178,7 +178,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
         {pinStatus.hasPin ? (
           <div className="bg-green-50 p-3 rounded border border-green-200">
             <p className="text-sm text-green-800">
-              ✅ {t('pinSetup.status.hasPin')} {pinStatus.pinSetAt && `(${new Date(pinStatus.pinSetAt).toLocaleDateString()})`}
+              ✅ {t('pinSetup.status.hasPin')} {pinStatus.pinSetAt && !isNaN(new Date(pinStatus.pinSetAt).getTime()) && `(${new Date(pinStatus.pinSetAt).toLocaleDateString()})`}
             </p>
           </div>
         ) : (

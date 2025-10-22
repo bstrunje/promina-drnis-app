@@ -2,6 +2,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { API_BASE_URL } from './utils/config';
 import './index.css'
 import './i18n'
 import App from './App.tsx'
@@ -30,7 +31,7 @@ if (import.meta.env.PROD) {
     // Dinamički dodaj manifest link
     const manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
-    manifestLink.href = '/api/manifest';
+    manifestLink.href = `${API_BASE_URL}/manifest`;
     document.head.appendChild(manifestLink);
     
     // Service Worker registracija

@@ -132,7 +132,6 @@ async function seedGlobalSystemManager(tx: Prisma.TransactionClient) {
 
   const username = process.env.GLOBAL_SYSTEM_MANAGER_USERNAME || 'global_manager';
   const password = process.env.GLOBAL_SYSTEM_MANAGER_PASSWORD || 'GlobalManager123';
-  const email = process.env.GLOBAL_SYSTEM_MANAGER_EMAIL || 'global@platforma.hr';
 
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash(password, salt);
@@ -143,7 +142,7 @@ async function seedGlobalSystemManager(tx: Prisma.TransactionClient) {
       username,
       display_name: 'Global System Manager',
       password_hash,
-      email,
+      email: 'global@system.local', // Dummy email - ne koristi se za login
     },
   });
   

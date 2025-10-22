@@ -9,19 +9,19 @@ import { getCurrentTenant } from '../tenantUtils';
  * @param credentials Podaci za prijavu (email, password)
  * @returns Podaci o prijavljenom korisniku i token
  */
-export const login = async ({ email, password }: MemberLoginData): Promise<ApiLoginResponse> => {
+export const login = async ({ email, password, pin, rememberDevice }: MemberLoginData): Promise<ApiLoginResponse> => {
   try {
     // Šalje se email umjesto full_name
     const response: AxiosResponse<ApiLoginResponse> = await api.post<ApiLoginResponse>(
       '/auth/login', 
-      { email, password },
+      { email, password, pin, rememberDevice },
       {
         withCredentials: true, // Eksplicitno omogućujemo slanje i primanje kolačića
         params: { tenant: getCurrentTenant() }, // Dodan tenant za multi-tenant context
       }
     );
-    // Spremanje role ostaje isto
-    if (response.data.member.role) {
+    // Spremanje role ostaje isto - provjeri da member postoji
+    if (response.data.member?.role) {
       localStorage.setItem('userRole', response.data.member.role);
     }
     return response.data;

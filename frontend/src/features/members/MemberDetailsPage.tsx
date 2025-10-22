@@ -18,6 +18,9 @@ import MembershipFeeSection from "../../../components/MembershipFeeSection";
 import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
+import { useSystemSettings } from "../../hooks/useSystemSettings";
+import { isPinEligible } from "../../utils/pinEligibility";
+import { usePermissions } from "../../hooks/usePermissions";
 import ActivityHistory from "../../../components/ActivityHistory";
 import PinSetup from "../../components/PinSetup";
 
@@ -36,6 +39,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation('profile');
+  const { systemSettings } = useSystemSettings();
+  const { permissions } = usePermissions();
   // Ako id nije definiran, koristi user.member_id ili fallback na "0" (default)
 const memberId = useMemo(() => {
   if (id) return parseInt(id, 10);
@@ -528,8 +533,8 @@ setEditedMember(memberData);
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <MemberMessagesSection member={member} />
         
-        {/* PIN Setup - samo za vlastiti profil */}
-        {user?.member_id === member.member_id && (
+        {/* PIN Setup - samo za vlastiti profil i ako je eligible prema System Settings */}
+        {user?.member_id === member.member_id && isPinEligible(member, systemSettings, permissions) && (
           <PinSetup memberId={member.member_id} />
         )}
       </div>

@@ -148,6 +148,7 @@ export interface MemberLoginData {
     email: string; // Dodano
     password: string;
     pin?: string; // PIN za 2FA
+    rememberDevice?: boolean; // Remember device za trusted devices
 }
 
 export type RegistrationStatus = 'pending' | 'completed';

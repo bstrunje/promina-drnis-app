@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useBranding } from '../../../../hooks/useBranding';
+import { IMAGE_BASE_URL } from '../../../../utils/config';
 
 /**
  * Helper za detekciju org slug-a iz URL-a
@@ -38,7 +39,9 @@ const SystemManagerLoginPage: React.FC = () => {
   // Dinamički logo
   // logo_path u bazi je vec puni path npr. "/uploads/organization_logos/..."
   const logoUrl = branding?.logo_path 
-    ? `${window.location.protocol}//${window.location.host}${branding.logo_path}`
+    ? (branding.logo_path.startsWith('http') 
+        ? branding.logo_path 
+        : `${IMAGE_BASE_URL}${branding.logo_path.replace('/uploads', '')}`)
     : null;
   const orgName = branding?.name ?? 'System Manager';
 

@@ -1,7 +1,10 @@
 // features/systemManager/pages/login/ForcePasswordChangePage.tsx
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Shield } from 'lucide-react';
 import { forceChangePassword, type SystemManager } from '../../utils/systemManagerApi';
+import { useBranding } from '../../../../hooks/useBranding';
+import { IMAGE_BASE_URL } from '../../../../utils/config';
 
 /**
  * Helper za detekciju org slug-a iz URL-a
@@ -10,11 +13,15 @@ const getOrgSlugFromPath = (): string | null => {
   const pathname = window.location.pathname;
   const pathParts = pathname.split('/').filter(Boolean);
   
-  // /system-manager/... → null (Global SM)
-  if (pathParts[0] === 'system-manager') return null;
+  // Ako path počinje s 'system-manager', to je Global SM
+  if (pathParts[0] === 'system-manager') {
+    return null;
+  }
   
-  // /promina/system-manager/... → 'promina' (Org SM)
-  if (pathParts[1] === 'system-manager') return pathParts[0];
+  // Ako drugi dio je 'system-manager', prvi je org slug
+  if (pathParts[1] === 'system-manager') {
+    return pathParts[0];
+  }
   
   return null;
 };
@@ -35,6 +42,17 @@ const ForcePasswordChangePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const state = location.state as LocationState;
+  
+  // Branding za logo
+  const { branding } = useBranding();
+  
+  // Dinamički logo
+  const logoUrl = branding?.logo_path 
+    ? (branding.logo_path.startsWith('http') 
+        ? branding.logo_path 
+        : `${IMAGE_BASE_URL}${branding.logo_path.replace('/uploads', '')}`)
+    : null;
+  const orgName = branding?.name ?? 'System Manager';
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -73,6 +91,16 @@ const ForcePasswordChangePage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-24 h-24 mb-4 flex items-center justify-center">
+            {logoUrl ? (
+              <img src={logoUrl} alt={orgName} className="w-full h-full object-contain" />
+            ) : (
+              <Shield className="w-20 h-20 text-blue-600" />
+            )}
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800">{orgName}</h2>
+        </div>
         <h1 className="text-2xl font-bold text-center mb-6">Change Your Password</h1>
         <p className="text-center text-gray-600 mb-6">For security reasons, you must change your temporary password before proceeding.</p>
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}

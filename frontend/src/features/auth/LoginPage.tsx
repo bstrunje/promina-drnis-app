@@ -8,11 +8,11 @@ import { useAuth } from "../../context/useAuth";
 import { login, register, initOtp, verify2FA, getAuthHealth } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
-import logoImage from '../../assets/images/grbPD_bez_natpisa_pozadina.png';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
+import { useSystemSettings } from '../../hooks/useSystemSettings';
 
 interface SizeOptions {
   value: string;
@@ -36,6 +36,7 @@ const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { systemSettings } = useSystemSettings();
   const { 
     getLogoUrl, 
     getFullName, 
@@ -280,10 +281,13 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      // Uklonjen loginPayload, šaljemo loginData direktno s PIN-om ako je potreban
+      // Uklonjen loginPayload, šaljemo loginData direktno s PIN-om i rememberDevice ako je potreban
       const loginPayload = { ...loginData };
       if (pinRequired && pin) {
         loginPayload.pin = pin;
+      }
+      if (systemSettings?.twoFactorTrustedDevicesEnabled && rememberDevice) {
+        loginPayload.rememberDevice = rememberDevice;
       }
       
       const data = await login(loginPayload);
@@ -502,15 +506,20 @@ const LoginPage = () => {
               </div>
             )}
             {/* Logo - dinamički iz branding-a */}
-            <img 
-              src={getLogoUrl() ?? undefined} 
-              alt={getFullName() ?? undefined}
-              className="w-28 h-28 mx-auto rounded-full object-cover"
-              onError={(e) => {
-                // Fallback na default logo ako branding logo ne učita
-                e.currentTarget.src = logoImage;
-              }}
-            />
+            {getLogoUrl() ? (
+              <img 
+                src={getLogoUrl() ?? undefined} 
+                alt={getFullName() ?? undefined}
+                className="w-28 h-28 mx-auto rounded-full object-cover"
+              />
+            ) : (
+              <div 
+                className="w-28 h-28 mx-auto rounded-full flex items-center justify-center text-white font-bold text-4xl"
+                style={{ backgroundColor: getPrimaryColor() }}
+              >
+                {getFullName()?.charAt(0) ?? 'O'}
+              </div>
+            )}
           </div>
           <h2 className="text-2xl font-bold">{getFullName()}</h2>
         </div>
@@ -1072,6 +1081,24 @@ const LoginPage = () => {
                     </div>
                   </div>
 
+                  {/* Remember Device checkbox - prikaži ako je trusted devices uključen */}
+                  {systemSettings?.twoFactorTrustedDevicesEnabled && (
+                    <div className="mt-4">
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input 
+                          type="checkbox" 
+                          checked={rememberDevice} 
+                          onChange={(e) => setRememberDevice(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {t('login.rememberDevice', 'Zapamti ovaj uređaj za')} {systemSettings.twoFactorRememberDeviceDays} {t('login.days', 'dana')}
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {t('login.rememberDeviceHint', 'Nećete trebati unositi sigurnosni kod na ovom uređaju')}
+                      </p>
+                    </div>
+                  )}
+
                   {/* PIN input - prikaži samo ako je potreban */}
                   {pinRequired && (
                     <div>
@@ -1087,7 +1114,20 @@ const LoginPage = () => {
                           className="mt-2 p-2 w-full border rounded"
                           value={pin}
                           maxLength={6}
-                          onChange={(e) => setPin(e.target.value)}
+                          onChange={(e) => {
+                            const newPin = e.target.value;
+                            setPin(newPin);
+                            // Automatski submit kada se unese PIN od 4-6 znamenki
+                            if (newPin.length >= 4 && newPin.length <= 6 && /^\d+$/.test(newPin)) {
+                              // Kratka pauza da korisnik vidi unos, zatim automatski submit
+                              setTimeout(() => {
+                                const form = e.target.closest('form');
+                                if (form) {
+                                  form.requestSubmit();
+                                }
+                              }, 300);
+                            }
+                          }}
                         />
                         <button
                           type="button"

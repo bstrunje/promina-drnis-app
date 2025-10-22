@@ -42,6 +42,9 @@ const BrandingStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) => {
       {/* Logo Upload */}
       <div>
         <Label>Organization Logo</Label>
+        <p className="text-sm text-blue-600 mb-2">
+          ℹ️ Logo will be uploaded after the organization is created. You can add it later via the Edit page.
+        </p>
         <div className="mt-2 flex items-center gap-4">
           {logoPreview ? (
             <div className="relative">
@@ -123,6 +126,15 @@ const BrandingStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) => {
         </div>
         {errors.secondary_color && <p className="text-sm text-red-500 mt-1">{errors.secondary_color}</p>}
         <p className="text-sm text-gray-500 mt-1">Used for secondary elements</p>
+      </div>
+
+      {/* PWA Info */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 className="font-medium text-blue-900 mb-2">📱 Progressive Web App (PWA)</h4>
+        <p className="text-sm text-blue-800">
+          PWA settings will be automatically generated from your organization name and colors. 
+          PWA icons (192x192 and 512x512) can be uploaded after the organization is created.
+        </p>
       </div>
 
       {/* Default Language */}

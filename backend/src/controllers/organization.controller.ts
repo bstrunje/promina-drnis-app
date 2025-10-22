@@ -156,6 +156,16 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
           privacy_policy_url: privacy_policy_url || null,
           membership_rules_url: membership_rules_url || null,
           logo_path: null, // Logo će biti uploadan kasnije
+          
+          // PWA podaci - automatski generirani iz osnovnih podataka
+          pwa_name: name,
+          pwa_short_name: short_name || name,
+          pwa_theme_color: primary_color || '#2563eb',
+          pwa_background_color: '#ffffff',
+          // Default PWA ikone (dok se ne uploada logo)
+          pwa_icon_192_url: '/pwa/icons/icon-192x192.png',
+          pwa_icon_512_url: '/pwa/icons/icon-512x512.png',
+          
           is_active: true
         }
       });
@@ -168,7 +178,8 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
           username: sm_username,
           email: sm_email,
           display_name: sm_display_name,
-          password_hash: hashedPassword
+          password_hash: hashedPassword,
+          password_reset_required: true // Obavezna promjena lozinke pri prvom logiranju
         }
       });
 
@@ -591,10 +602,15 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
       if (isDev) console.log(`[LOGO-UPLOAD] Relative path: ${logoPath}`);
     }
 
-    // Ažuriraj bazu
+    // Ažuriraj bazu s logo i PWA ikonama
     const updatedOrganization = await prisma.organization.update({
       where: { id: organizationId },
-      data: { logo_path: logoPath },
+      data: { 
+        logo_path: logoPath,
+        // Koristi logo za PWA ikone (iste kao logo)
+        pwa_icon_192_url: logoPath,
+        pwa_icon_512_url: logoPath
+      },
     });
 
     if (isDev) console.log(`[LOGO-UPLOAD] Database updated for organization ${id}`);
@@ -654,10 +670,15 @@ export const deleteOrganizationLogo = async (req: Request, res: Response): Promi
       }
     }
 
-    // Ažuriraj bazu
+    // Ažuriraj bazu - vrati default PWA ikone
     await prisma.organization.update({
       where: { id: organizationId },
-      data: { logo_path: null },
+      data: { 
+        logo_path: null,
+        // Vrati default PWA ikone kada se obriše logo
+        pwa_icon_192_url: '/pwa/icons/icon-192x192.png',
+        pwa_icon_512_url: '/pwa/icons/icon-512x512.png'
+      },
     });
 
     if (isDev) console.log(`[LOGO-DELETE] Database updated for organization ${id}`);

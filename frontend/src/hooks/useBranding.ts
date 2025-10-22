@@ -6,6 +6,7 @@
  */
 
 import { useBrandingContext } from '../context/useBrandingContext';
+import { IMAGE_BASE_URL } from '../utils/config';
 
 /**
  * Extended branding hook s dodatnim utility funkcijama
@@ -26,8 +27,8 @@ export const useBranding = () => {
       }
       
       // logo_path u bazi je puni path s leading slash: "/uploads/organization_logos/..."
-      // Samo dodaj host/protocol
-      return `${window.location.protocol}//${window.location.host}${logoPath}`;
+      // Koristi IMAGE_BASE_URL za ispravni port
+      return `${IMAGE_BASE_URL}${logoPath.replace('/uploads', '')}`;
     }
     
     // Nema loga - vrati null

@@ -9,6 +9,144 @@ import { getCurrentDate } from '../../../../utils/dateUtils';
 import systemManagerApi, { updateSystemSettings, getSystemSettings } from '../../utils/systemManagerApi';
 import { useNavigate } from 'react-router-dom';
 
+// Konstante za uloge i dozvole
+const MEMBER_ROLES = [
+  { value: 'member_superuser', label: 'Superuser' },
+  { value: 'member_administrator', label: 'Administrator' }
+];
+
+const MEMBER_PERMISSIONS = [
+  { value: 'canViewMembers', label: 'View Members' },
+  { value: 'canEditMembers', label: 'Edit Members' },
+  { value: 'canAddMembers', label: 'Add Members' },
+  { value: 'canManageMembership', label: 'Manage Membership' },
+  { value: 'canViewActivities', label: 'View Activities' },
+  { value: 'canCreateActivities', label: 'Create Activities' },
+  { value: 'canApproveActivities', label: 'Approve Activities' },
+  { value: 'canViewFinancials', label: 'View Financials' },
+  { value: 'canManageFinancials', label: 'Manage Financials' },
+  { value: 'canSendGroupMessages', label: 'Send Group Messages' },
+  { value: 'canManageAllMessages', label: 'Manage All Messages' },
+  { value: 'canViewStatistics', label: 'View Statistics' },
+  { value: 'canExportData', label: 'Export Data' },
+  { value: 'canManageEndReasons', label: 'Manage End Reasons' },
+  { value: 'canManageCardNumbers', label: 'Manage Card Numbers' },
+  { value: 'canAssignPasswords', label: 'Assign Passwords' }
+];
+
+// Multi-select komponenta za dropdown selektor
+interface MultiSelectProps {
+  options: { value: string; label: string }[];
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
+  placeholder: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const MultiSelect: React.FC<MultiSelectProps> = ({
+  options,
+  selectedValues,
+  onChange,
+  placeholder,
+  disabled = false,
+  className = ""
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Zatvaranje dropdown-a kada se klikne izvan njega
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleToggleOption = (value: string) => {
+    if (selectedValues.includes(value)) {
+      onChange(selectedValues.filter(v => v !== value));
+    } else {
+      onChange([...selectedValues, value]);
+    }
+  };
+
+  const handleRemoveOption = (value: string) => {
+    onChange(selectedValues.filter(v => v !== value));
+  };
+
+  return (
+    <div ref={dropdownRef} className={`relative ${className}`}>
+      <div
+        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer min-h-[38px] ${
+          disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+        }`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        {selectedValues.length === 0 ? (
+          <span className="text-gray-400">{placeholder}</span>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {selectedValues.map(value => {
+              const option = options.find(opt => opt.value === value);
+              return (
+                <span
+                  key={value}
+                  className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                >
+                  {option?.label ?? value}
+                  {!disabled && (
+                    <button
+                      type="button"
+                      className="ml-1 text-blue-600 hover:text-blue-800"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveOption(value);
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          {options.map(option => (
+            <div
+              key={option.value}
+              className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                selectedValues.includes(option.value) ? 'bg-blue-50 text-blue-700' : ''
+              }`}
+              onClick={() => handleToggleOption(option.value)}
+            >
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedValues.includes(option.value)}
+                  onChange={() => { /* Handled by parent onClick */ }}
+                  className="mr-2"
+                />
+                {option.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Lokalno proširenje postavki – bez mijenjanja shared tipova
 type LocalSystemSettings = SystemSettings & {
   registrationRateLimitEnabled?: boolean | null;
@@ -34,6 +172,8 @@ interface SystemSettingsFormProps {
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onRolesChange: (values: string[]) => void;
+  onPermissionsChange: (values: string[]) => void;
   showFixedSuccess?: boolean; // Dodajemo showFixedSuccess kao opcionalni prop
 }
 
@@ -170,6 +310,8 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
   isLoading,
   onChange,
   onSubmit,
+  onRolesChange,
+  onPermissionsChange,
   showFixedSuccess
 }) => {
   // UI rules: Global vs Roles/Permissions are mutually exclusive in UI
@@ -635,15 +777,13 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Required Roles (CSV)</label>
-            <input
-              type="text"
-              name="twoFactorRequiredMemberRolesCsv"
-              value={(settings.twoFactorRequiredMemberRoles ?? []).join(', ')}
-              onChange={onChange}
-              placeholder="member_administrator, member_superuser"
+            <label className="block text-gray-700 text-sm font-bold mb-2">Required Roles</label>
+            <MultiSelect
+              options={MEMBER_ROLES}
+              selectedValues={settings.twoFactorRequiredMemberRoles ?? []}
+              onChange={onRolesChange}
+              placeholder="Select member roles..."
               disabled={disableMembersControls}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
             <p className="text-sm text-gray-500 mt-1">Apply 2FA if member role matches any listed values.</p>
             {disableMembersControls && (
@@ -655,19 +795,21 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
             )}
           </div>
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Required Permissions (CSV)</label>
-            <input
-              type="text"
-              name="twoFactorRequiredMemberPermissionsCsv"
-              value={(settings.twoFactorRequiredMemberPermissions ?? []).join(', ')}
-              onChange={onChange}
-              placeholder="canManageMembers, canEditFinances"
+            <label className="block text-gray-700 text-sm font-bold mb-2">Required Permissions</label>
+            <MultiSelect
+              options={MEMBER_PERMISSIONS}
+              selectedValues={settings.twoFactorRequiredMemberPermissions ?? []}
+              onChange={onPermissionsChange}
+              placeholder="Select member permissions..."
               disabled={disableMembersControls}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
             <p className="text-sm text-gray-500 mt-1">Apply 2FA if member has any of these permissions set to true.</p>
             {disableMembersControls && (
-              <p className="text-xs text-gray-500 mt-1">Disabled while Global 2FA is enabled.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {isGlobalOn
+                  ? 'Disabled while Global 2FA is enabled.'
+                  : 'Disabled until "Enable 2FA for members by roles/permissions" is turned on.'}
+              </p>
             )}
           </div>
         </div>
@@ -809,6 +951,7 @@ const SystemManagerSettings: React.FC = () => {
     twoFactorChannelEmailEnabled: false,
     twoFactorChannelSmsEnabled: false,
     twoFactorChannelTotpEnabled: true,
+    twoFactorChannelPinEnabled: false,
     twoFactorTrustedDevicesEnabled: false,
     // Password generation defaults
     passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
@@ -853,6 +996,11 @@ const SystemManagerSettings: React.FC = () => {
         }
         extended.twoFactorOtpExpirySeconds ??= 300;
         extended.twoFactorRememberDeviceDays ??= 30;
+        extended.twoFactorChannelEmailEnabled ??= false;
+        extended.twoFactorChannelSmsEnabled ??= false;
+        extended.twoFactorChannelTotpEnabled ??= true;
+        extended.twoFactorChannelPinEnabled ??= false;
+        extended.twoFactorTrustedDevicesEnabled ??= false;
         extended.passwordGenerationStrategy ??= 'FULLNAME_ISK_CARD';
         extended.passwordSeparator ??= '-isk-';
         extended.passwordCardDigits ??= 4;
@@ -880,6 +1028,17 @@ const SystemManagerSettings: React.FC = () => {
   }, []);
 
   // Obrada promjene vrijednosti u poljima
+  // Funkcije za upravljanje multi-select vrijednostima
+  const handleRolesChange = (values: string[]) => {
+    setSettings(prev => ({ ...prev, twoFactorRequiredMemberRoles: values }));
+    setError(null);
+  };
+
+  const handlePermissionsChange = (values: string[]) => {
+    setSettings(prev => ({ ...prev, twoFactorRequiredMemberPermissions: values }));
+    setError(null);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
@@ -897,6 +1056,7 @@ const SystemManagerSettings: React.FC = () => {
       name === 'twoFactorChannelEmailEnabled' ||
       name === 'twoFactorChannelSmsEnabled' ||
       name === 'twoFactorChannelTotpEnabled' ||
+      name === 'twoFactorChannelPinEnabled' ||
       name === 'twoFactorTrustedDevicesEnabled'
     ) {
       const boolVal = value === 'true' || value === 'on' || value === '1';
@@ -929,19 +1089,7 @@ const SystemManagerSettings: React.FC = () => {
       setError(null);
       return;
     }
-    // 2FA CSV arrays
-    if (name === 'twoFactorRequiredMemberRolesCsv') {
-      const csvArray: string[] = value.split(',').map(s => s.trim()).filter(Boolean);
-      setSettings(prev => ({ ...prev, twoFactorRequiredMemberRoles: csvArray }));
-      setError(null);
-      return;
-    }
-    if (name === 'twoFactorRequiredMemberPermissionsCsv') {
-      const csvArray: string[] = value.split(',').map(s => s.trim()).filter(Boolean);
-      setSettings(prev => ({ ...prev, twoFactorRequiredMemberPermissions: csvArray }));
-      setError(null);
-      return;
-    }
+    // CSV logika uklonjena - sada koristimo multi-select komponente
 
     if (name === 'renewalStartDay' || name === 'membershipTerminationDay') {
       const numValue = parseInt(value);
@@ -1003,8 +1151,6 @@ const SystemManagerSettings: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      // Dodajemo console.log za debugging
-      console.log('Podaci koji se šalju na backend:', settings);
 
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
       const updatedSettings = await updateSystemSettings(settings as SystemSettings);
@@ -1138,6 +1284,8 @@ const SystemManagerSettings: React.FC = () => {
           isLoading={isLoading}
           onChange={handleChange}
           onSubmit={e => void handleSubmit(e)} // void zbog lint pravila
+          onRolesChange={handleRolesChange}
+          onPermissionsChange={handlePermissionsChange}
           showFixedSuccess={showFixedSuccess}
         />
 

@@ -79,6 +79,7 @@ model Organization {
   membership_periods       MembershipPeriod[]
   annual_statistics        AnnualStatistics[]
   stamp_history            stamp_history[]
+  trusted_devices          TrustedDevice[]
   
   @@index([subdomain])
   @@index([is_active])
@@ -152,7 +153,7 @@ model Member {
   password_update_queue    password_update_queue[]
   refresh_tokens           refresh_tokens[]
   stamp_history            stamp_history[]
-
+  trusted_devices          TrustedDevice[]
 
   @@index([organization_id])
   @@index([full_name], map: "idx_members_full_name")
@@ -631,4 +632,27 @@ model Holiday {
   @@unique([organization_id, date])
   @@index([organization_id])
   @@map("holidays")
+}
+
+// ============================================
+// TRUSTED DEVICES - Remember Device funkcionalnost
+// ============================================
+model TrustedDevice {
+  id              Int          @id @default(autoincrement())
+  organization_id Int
+  member_id       Int
+  device_hash     String       @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
+  device_name     String?      @db.VarChar(100) // Opcionalno ime uređaja (browser info)
+  expires_at      DateTime     @db.Timestamp(6)
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  last_used_at    DateTime?    @db.Timestamp(6)
+  
+  // Relations
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  member          Member       @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  
+  @@unique([organization_id, member_id, device_hash])
+  @@index([organization_id, member_id])
+  @@index([expires_at])
+  @@map("trusted_devices")
 }
