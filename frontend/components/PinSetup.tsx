@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '../../components/ui/button';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { useToast } from '../../components/ui/use-toast';
+import { Button } from '@components/ui/button';
+import { Alert, AlertDescription } from '@components/ui/alert';
+import { useToast } from '@components/ui/use-toast';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import api from '../utils/api/apiConfig';
+import api from '../src/utils/api/apiConfig';
 
 interface PinSetupProps {
   memberId: number;

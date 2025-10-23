@@ -1,7 +1,7 @@
 // frontend/src/features/systemManager/organizations/OrganizationEdit.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, X, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Eye, EyeOff, Shield } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
@@ -17,6 +17,7 @@ import {
 import { IMAGE_BASE_URL } from '../../../utils/config';
 import { useSystemManager } from '../../../context/SystemManagerContext';
 import { getApiBaseUrl } from '../../../utils/tenantUtils';
+import systemManagerApi from '../utils/systemManagerApi';
 
 const OrganizationEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +27,9 @@ const OrganizationEdit: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSmPassword, setShowSmPassword] = useState(false); // Prikaz lozinke za System Managera
+  const [show2faModal, setShow2faModal] = useState(false);
+  const [twoFactorPin, setTwoFactorPin] = useState('');
+  const [twoFactorAction, setTwoFactorAction] = useState<'enable' | 'disable'>('enable');
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -171,6 +175,48 @@ const OrganizationEdit: React.FC = () => {
       console.error('Error resetting credentials:', err);
       setError('Failed to reset credentials.');
     }
+  };
+
+  const handle2faAction = async (): Promise<void> => {
+    if (!organization?.system_manager?.id) return;
+
+    try {
+      setError(null);
+      setSaving(true);
+
+      const endpoint = twoFactorAction === 'enable' 
+        ? '/system-manager/enable-2fa-for-user'
+        : '/system-manager/disable-2fa-for-user';
+
+      const body = twoFactorAction === 'enable' 
+        ? { systemManagerId: organization.system_manager.id, pin: twoFactorPin }
+        : { systemManagerId: organization.system_manager.id };
+
+      await systemManagerApi.post(endpoint, body);
+
+      // Refresh organization data
+      await loadOrganization();
+      setShow2faModal(false);
+      setTwoFactorPin('');
+      
+      alert(`2FA ${twoFactorAction === 'enable' ? 'enabled' : 'disabled'} successfully!`);
+    } catch (err) {
+      console.error('Error updating 2FA:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update 2FA');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEnable2faModal = (): void => {
+    setTwoFactorAction('enable');
+    setTwoFactorPin('');
+    setShow2faModal(true);
+  };
+
+  const openDisable2faModal = (): void => {
+    setTwoFactorAction('disable');
+    setShow2faModal(true);
   };
 
   if (loading) {
@@ -501,6 +547,62 @@ const OrganizationEdit: React.FC = () => {
               </div>
             </div>
 
+            {/* System Manager Security Section */}
+            {currentManager?.organization_id === null && organization?.system_manager && (
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-semibold mb-4">System Manager Security</h3>
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Two-Factor Authentication</h4>
+                        <p className="text-sm text-gray-600">
+                          {organization.system_manager.two_factor_enabled 
+                            ? `Enabled (${organization.system_manager.two_factor_preferred_channel?.toUpperCase()})` 
+                            : 'Disabled'}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {organization.system_manager.two_factor_enabled ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={openDisable2faModal}
+                            disabled={saving}
+                          >
+                            Disable 2FA
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={openEnable2faModal}
+                            disabled={saving}
+                          >
+                            Enable 2FA
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">System Manager Account</h4>
+                        <p className="text-sm text-gray-600">
+                          Username: {organization.system_manager.username}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Email: {organization.system_manager.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {currentManager?.organization_id === null && (
               <div className="pt-6 border-t">
                 <h3 className="text-lg font-semibold mb-2">Danger Zone</h3>
@@ -539,6 +641,68 @@ const OrganizationEdit: React.FC = () => {
           </CardContent>
         </Card>
       </form>
+
+      {/* 2FA Modal */}
+      {show2faModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-semibold">
+                {twoFactorAction === 'enable' ? 'Enable 2FA' : 'Disable 2FA'}
+              </h3>
+            </div>
+            
+            {twoFactorAction === 'enable' ? (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Enter a 6-digit PIN that the System Manager will use for two-factor authentication.
+                </p>
+                <div>
+                  <Label htmlFor="pin">6-Digit PIN</Label>
+                  <Input
+                    id="pin"
+                    type="password"
+                    maxLength={6}
+                    value={twoFactorPin}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, ''); // Samo brojevi
+                      setTwoFactorPin(value);
+                    }}
+                    placeholder="123456"
+                    className="w-24 text-center"
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Are you sure you want to disable two-factor authentication for this System Manager?
+              </p>
+            )}
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShow2faModal(false);
+                  setTwoFactorPin('');
+                }}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handle2faAction()}
+                disabled={saving || (twoFactorAction === 'enable' && twoFactorPin.length !== 6)}
+              >
+                {saving ? 'Processing...' : (twoFactorAction === 'enable' ? 'Enable 2FA' : 'Disable 2FA')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

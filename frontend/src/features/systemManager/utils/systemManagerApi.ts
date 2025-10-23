@@ -915,8 +915,8 @@ export const deleteHolidaysForYear = async (year: number): Promise<{ count: numb
   }
 };
 
-export const verify2faAndProceed = async (tempToken: string, code: string): Promise<Verify2faResponse> => {
-  const response = await systemManagerApi.post<Verify2faResponse>('/system-manager/verify-2fa', { tempToken, code });
+export const verify2faAndProceed = async (tempToken: string, code: string, rememberDevice = false): Promise<Verify2faResponse> => {
+  const response = await systemManagerApi.post<Verify2faResponse>('/system-manager/verify-2fa', { tempToken, code, rememberDevice });
   return response.data;
 };
 

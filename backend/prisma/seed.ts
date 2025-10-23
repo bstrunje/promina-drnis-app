@@ -143,6 +143,7 @@ async function seedGlobalSystemManager(tx: Prisma.TransactionClient) {
       display_name: 'Global System Manager',
       password_hash,
       email: 'global@system.local', // Dummy email - ne koristi se za login
+      password_reset_required: true, // Obavezna promjena lozinke pri prvom logiranju
     },
   });
   

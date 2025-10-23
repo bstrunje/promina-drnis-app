@@ -28,12 +28,15 @@ export interface Organization {
     activities: number;
     activity_types?: number;
     skills?: number;
-  };
+  } | null;
   system_manager?: {
     id: number;
     username: string;
     email: string;
     display_name: string;
+    two_factor_enabled?: boolean;
+    two_factor_preferred_channel?: string;
+    two_factor_confirmed_at?: string;
   } | null;
 }
 
@@ -61,6 +64,11 @@ export interface CreateOrganizationData {
   sm_email: string;
   sm_display_name: string;
   sm_password: string;
+  
+  // System Manager 2FA data
+  sm_enable_2fa?: boolean;
+  sm_pin?: string;
+  sm_pin_confirm?: string;
 }
 
 export interface UpdateOrganizationData {

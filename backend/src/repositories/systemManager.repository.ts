@@ -116,6 +116,17 @@ const systemManagerRepository = {
                 updated_at: true
             }
         });
+    },
+
+    // Update system manager
+    async update(id: number, data: Partial<Omit<SystemManager, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+        await prisma.systemManager.update({
+            where: { id },
+            data: {
+                ...data,
+                updated_at: getCurrentDate()
+            } as Parameters<typeof prisma.systemManager.update>[0]['data']
+        });
     }
 };
 

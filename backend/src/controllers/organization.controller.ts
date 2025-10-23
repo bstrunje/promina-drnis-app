@@ -95,7 +95,11 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       sm_username,
       sm_email,
       sm_display_name,
-      sm_password
+      sm_password,
+      
+      // System Manager 2FA data
+      sm_enable_2fa,
+      sm_pin
     } = req.body;
 
     // Validacija obaveznih polja
@@ -172,6 +176,20 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
 
       // 2. Kreiraj System Manager za novu organizaciju
       const hashedPassword = await bcrypt.hash(sm_password, 10);
+      
+      // Pripremi 2FA podatke
+      let twoFactorData = {};
+      if (sm_enable_2fa && sm_pin) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(sm_pin, salt);
+        twoFactorData = {
+          two_factor_enabled: true,
+          two_factor_secret: hashedPin,
+          two_factor_preferred_channel: 'pin',
+          two_factor_confirmed_at: new Date()
+        };
+      }
+      
       const systemManager = await tx.systemManager.create({
         data: {
           organization_id: organization.id,
@@ -179,7 +197,8 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
           email: sm_email,
           display_name: sm_display_name,
           password_hash: hashedPassword,
-          password_reset_required: true // Obavezna promjena lozinke pri prvom logiranju
+          password_reset_required: true, // Obavezna promjena lozinke pri prvom logiranju
+          ...twoFactorData
         }
       });
 
@@ -267,7 +286,10 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
             id: true,
             username: true,
             email: true,
-            display_name: true
+            display_name: true,
+            two_factor_enabled: true,
+            two_factor_preferred_channel: true,
+            two_factor_confirmed_at: true
             // password_hash se ne vraća iz sigurnosnih razloga
           }
         }

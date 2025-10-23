@@ -1,12 +1,12 @@
 // features/systemManager/components/common/ManagerTabNav.tsx
 import React from 'react';
-import { Activity, Settings, FileText, Building2 } from 'lucide-react';
+import { Activity, Settings, FileText, Building2, Shield, Headphones } from 'lucide-react';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 
 // Komponenta za navigacijske tabove u System Manager panelu
 interface ManagerTabNavProps {
-  activeTab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations';
-  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
+  activeTab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations' | 'support';
+  setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations' | 'support') => void;
 }
 
 const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }) => {
@@ -59,6 +59,35 @@ const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab }
           </div>
         </button>
       )}
+      {/* GSM Settings - samo za Global System Manager */}
+      {isGlobalManager && (
+        <button
+          className={`px-4 py-2 font-medium ${
+            activeTab === 'settings'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+          onClick={() => { void setActiveTab('settings'); }}
+        >
+          <div className="flex items-center">
+            <Shield className="h-4 w-4 mr-2" />
+            <span>Security Settings</span>
+          </div>
+        </button>
+      )}
+      <button
+        className={`px-4 py-2 font-medium ${
+          activeTab === 'support'
+            ? 'text-blue-600 border-b-2 border-blue-600'
+            : 'text-gray-600 hover:text-blue-600'
+        }`}
+        onClick={() => { void setActiveTab('support'); }}
+      >
+        <div className="flex items-center">
+          <Headphones className="h-4 w-4 mr-2" />
+          <span>Support & Feedback</span>
+        </div>
+      </button>
       <button
         className={`px-4 py-2 font-medium ${
           activeTab === 'audit-logs'

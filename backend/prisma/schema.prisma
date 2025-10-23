@@ -80,6 +80,7 @@ model Organization {
   annual_statistics        AnnualStatistics[]
   stamp_history            stamp_history[]
   trusted_devices          TrustedDevice[]
+  support_tickets          SupportTicket[]
   
   @@index([subdomain])
   @@index([is_active])
@@ -584,6 +585,7 @@ model SystemManager {
   two_factor_preferred_channel String?   @db.VarChar(10)
   password_reset_required      Boolean      @default(false)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  trusted_devices SystemManagerTrustedDevice[]
 
 
   @@unique([organization_id, username])
@@ -655,4 +657,95 @@ model TrustedDevice {
   @@index([organization_id, member_id])
   @@index([expires_at])
   @@map("trusted_devices")
+}
+
+// ============================================
+// SYSTEM MANAGER TRUSTED DEVICES
+// ============================================
+model SystemManagerTrustedDevice {
+  id                    Int           @id @default(autoincrement())
+  system_manager_id     Int
+  device_hash           String        @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
+  device_name           String?       @db.VarChar(100) // Opcionalno ime uređaja (browser info)
+  expires_at            DateTime      @db.Timestamp(6)
+  created_at            DateTime      @default(now()) @db.Timestamp(6)
+  last_used_at          DateTime?     @db.Timestamp(6)
+  
+  // Relations
+  system_manager        SystemManager @relation(fields: [system_manager_id], references: [id], onDelete: Cascade)
+  
+  @@unique([system_manager_id, device_hash])
+  @@index([system_manager_id])
+  @@index([expires_at])
+  @@map("system_manager_trusted_devices")
+}
+
+// ============================================
+// SUPPORT & FEEDBACK SYSTEM
+// ============================================
+model SupportTicket {
+  id              Int                @id @default(autoincrement())
+  title           String             @db.VarChar(200)
+  description     String             @db.Text
+  category        TicketCategory
+  priority        TicketPriority     @default(MEDIUM)
+  status          TicketStatus       @default(OPEN)
+  
+  // Relacije
+  organization_id Int
+  organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  created_by      Int               // Organization SM ID
+  assigned_to     Int?              // GSM ID (nullable)
+  
+  // Timestamps
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @updatedAt @db.Timestamptz(6)
+  resolved_at     DateTime?         @db.Timestamptz(6)
+  
+  // Responses/Comments
+  responses       TicketResponse[]
+  
+  @@index([organization_id])
+  @@index([status])
+  @@index([category])
+  @@index([created_by])
+  @@index([assigned_to])
+  @@map("support_tickets")
+}
+
+model TicketResponse {
+  id              Int           @id @default(autoincrement())
+  ticket_id       Int
+  response_text   String        @db.Text
+  created_by      Int          // SM ID koji je odgovorio
+  is_internal     Boolean       @default(false) // Internal note ili public response
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  
+  // Relations
+  ticket          SupportTicket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  
+  @@index([ticket_id])
+  @@index([created_by])
+  @@map("ticket_responses")
+}
+
+enum TicketCategory {
+  BUG_REPORT
+  FEATURE_REQUEST
+  COMPLAINT
+  GENERAL_SUPPORT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

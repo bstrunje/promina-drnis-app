@@ -1,5 +1,5 @@
 // features/systemManager/pages/login/TwoFactorEntryPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verify2faAndProceed, type SystemManager } from '../../utils/systemManagerApi';
 
@@ -34,12 +34,25 @@ const TwoFactorEntryPage: React.FC = () => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState;
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
+  // Ref za timeout da možemo ga cancelirati ako je potrebno
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout na unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
+    if (e) e.preventDefault();
     if (!state?.tempToken) {
       setError('Invalid session. Please try logging in again.');
       return;
@@ -49,7 +62,7 @@ const TwoFactorEntryPage: React.FC = () => {
     setError('');
 
     try {
-      const response = await verify2faAndProceed(state.tempToken, code) as Verify2faResponse;
+      const response = await verify2faAndProceed(state.tempToken, code, rememberDevice) as Verify2faResponse;
 
       if (response.resetRequired) {
         const orgSlug = getOrgSlugFromPath();
@@ -79,7 +92,7 @@ const TwoFactorEntryPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">Two-Factor Authentication</h1>
-        <p className="text-center text-gray-600 mb-6">Please enter the code from your authenticator app.</p>
+        <p className="text-center text-gray-600 mb-6">Please enter your 6-digit PIN or code from your authenticator app.</p>
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
         <form onSubmit={(e) => void handleSubmit(e)}>
           <div className="mb-4">
@@ -87,11 +100,44 @@ const TwoFactorEntryPage: React.FC = () => {
             <input
               type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Samo brojevi
+                if (value.length <= 6) { // Maksimalno 6 znamenki
+                  setCode(value);
+                  
+                  // Automatski submit za 6-znamenkasti PIN
+                  if (value.length === 6 && /^\d{6}$/.test(value) && !loading) {
+                    // Očisti postojeći timeout ako postoji
+                    if (timeoutRef.current) {
+                      clearTimeout(timeoutRef.current);
+                    }
+                    // Kratka pauza da korisnik vidi unos, zatim automatski submit
+                    timeoutRef.current = setTimeout(() => {
+                      void handleSubmit();
+                    }, 300);
+                  }
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+              placeholder="123456"
+              maxLength={6}
               required
             />
           </div>
+          
+          <div className="mb-4 flex items-center">
+            <input
+              id="rememberDevice"
+              type="checkbox"
+              checked={rememberDevice}
+              onChange={(e) => setRememberDevice(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="rememberDevice" className="ml-2 block text-sm text-gray-700">
+              Remember this device for 30 days
+            </label>
+          </div>
+          
           <button type="submit" disabled={loading} className="w-full py-2 px-4 rounded-md text-white font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400">
             {loading ? 'Verifying...' : 'Verify Code'}
           </button>

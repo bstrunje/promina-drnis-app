@@ -11,6 +11,7 @@ import prisma from '../utils/prisma.js';
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
+import { generateDeviceHash, isTrustedDevice, addTrustedDevice } from '../utils/systemManagerTrustedDevices.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
@@ -177,9 +178,16 @@ const systemManagerController = {
                 return;
             }
 
-            // Provjera 2FA i prisilne promjene lozinke
-            if (manager.two_factor_enabled) {
-                const tempToken = jwt.sign({ id: manager.id, scope: '2fa' }, JWT_SECRET, { expiresIn: '5m' });
+            // Provjera trusted device i 2FA
+            const userAgent = req.headers['user-agent'] || '';
+            const ipAddress = req.ip || req.connection.remoteAddress || '';
+            const deviceHash = generateDeviceHash(userAgent, ipAddress);
+            
+            const isDeviceTrusted = await isTrustedDevice(manager.id, deviceHash);
+            
+            // Ako je 2FA uključen i uređaj nije trusted
+            if (manager.two_factor_enabled && !isDeviceTrusted) {
+                const tempToken = jwt.sign({ id: manager.id, scope: '2fa', deviceHash }, JWT_SECRET, { expiresIn: '5m' });
                 res.status(200).json({ twoFactorRequired: true, tempToken });
                 return;
             }
@@ -713,6 +721,318 @@ async function forceChangePassword(req: Request, res: Response): Promise<void> {
     }
 }
 
-export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword };
+// --- PIN 2FA FUNCTIONS FOR SYSTEM MANAGER ---
+
+/**
+ * Setup PIN 2FA za System Manager
+ */
+const setupSystemManager2faPin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { pin } = req.body;
+        const managerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+            res.status(400).json({ message: 'PIN must be exactly 6 digits' });
+            return;
+        }
+
+        // Hash PIN
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(pin, salt);
+
+        // Update System Manager
+        await systemManagerRepository.update(managerId, {
+            two_factor_enabled: true,
+            two_factor_secret: hashedPin,
+            two_factor_preferred_channel: 'pin',
+            two_factor_confirmed_at: new Date()
+        });
+
+        res.json({ message: 'PIN 2FA successfully enabled' });
+    } catch (error) {
+        console.error('Error setting up PIN 2FA:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Verify PIN 2FA za System Manager
+ */
+const verifySystemManager2faPin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { pin, tempToken, rememberDevice } = req.body;
+
+        if (!pin || !tempToken) {
+            res.status(400).json({ message: 'PIN and temp token are required' });
+            return;
+        }
+
+        // Verify temp token
+        const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string; deviceHash?: string };
+        if (decoded.scope !== '2fa') {
+            res.status(403).json({ message: 'Invalid token scope' });
+            return;
+        }
+
+        // Get manager
+        const manager = await systemManagerRepository.findById(decoded.id);
+        if (!manager || !manager.two_factor_enabled || !manager.two_factor_secret) {
+            res.status(404).json({ message: 'Manager not found or 2FA not enabled' });
+            return;
+        }
+
+        // Verify PIN
+        const isValidPin = await bcrypt.compare(pin, manager.two_factor_secret);
+        if (!isValidPin) {
+            res.status(401).json({ message: 'Invalid PIN' });
+            return;
+        }
+
+        // Ako je rememberDevice true, dodaj uređaj kao trusted
+        if (rememberDevice && decoded.deviceHash) {
+            const userAgent = req.headers['user-agent'] || '';
+            const deviceName = userAgent.substring(0, 100); // Ograniči na 100 znakova
+            await addTrustedDevice(manager.id, decoded.deviceHash, deviceName, 30);
+        }
+
+        // Generate access token
+        const token = jwt.sign({ 
+            id: manager.id, 
+            role: 'SystemManager', 
+            type: 'SystemManager', 
+            tokenType: 'access' 
+        }, JWT_SECRET, { expiresIn: '15m' });
+
+        const refreshToken = jwt.sign({ 
+            id: manager.id, 
+            role: 'SystemManager', 
+            type: 'SystemManager', 
+            tokenType: 'refresh' 
+        }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({ 
+            token, 
+            refreshToken,
+            manager: { 
+                id: manager.id, 
+                username: manager.username, 
+                email: manager.email, 
+                display_name: manager.display_name, 
+                role: 'SystemManager', 
+                organization_id: manager.organization_id, 
+                is_global: manager.organization_id === null, 
+                last_login: manager.last_login 
+            } 
+        });
+    } catch (error) {
+        console.error('Error verifying PIN 2FA:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Disable 2FA za System Manager
+ */
+const disableSystemManager2fa = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        // Update System Manager
+        await systemManagerRepository.update(managerId, {
+            two_factor_enabled: false,
+            two_factor_secret: null,
+            two_factor_preferred_channel: null,
+            two_factor_confirmed_at: null
+        });
+
+        res.json({ message: '2FA successfully disabled' });
+    } catch (error) {
+        console.error('Error disabling 2FA:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Get 2FA status za System Manager
+ */
+const getSystemManager2faStatus = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const manager = await systemManagerRepository.findById(managerId);
+        if (!manager) {
+            res.status(404).json({ message: 'Manager not found' });
+            return;
+        }
+
+        res.json({
+            twoFactorEnabled: manager.two_factor_enabled || false,
+            preferredChannel: manager.two_factor_preferred_channel,
+            confirmedAt: manager.two_factor_confirmed_at
+        });
+    } catch (error) {
+        console.error('Error getting 2FA status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Enable 2FA za specifičnog System Manager (samo Global SM može)
+ */
+const enableSystemManager2faForUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { systemManagerId, pin } = req.body;
+        const currentManagerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!currentManagerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        // Provjeri je li trenutni manager Global SM
+        const currentManager = await systemManagerRepository.findById(currentManagerId);
+        if (!currentManager || currentManager.organization_id !== null) {
+            res.status(403).json({ message: 'Only Global System Manager can manage 2FA for other managers' });
+            return;
+        }
+
+        if (!systemManagerId || !pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+            res.status(400).json({ message: 'System Manager ID and 6-digit PIN are required' });
+            return;
+        }
+
+        // Hash PIN
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(pin, salt);
+
+        // Update System Manager
+        await systemManagerRepository.update(systemManagerId, {
+            two_factor_enabled: true,
+            two_factor_secret: hashedPin,
+            two_factor_preferred_channel: 'pin',
+            two_factor_confirmed_at: new Date()
+        });
+
+        res.json({ message: 'PIN 2FA successfully enabled for System Manager' });
+    } catch (error) {
+        console.error('Error enabling 2FA for System Manager:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Disable 2FA za specifičnog System Manager (samo Global SM može)
+ */
+const disableSystemManager2faForUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { systemManagerId } = req.body;
+        const currentManagerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!currentManagerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        // Provjeri je li trenutni manager Global SM
+        const currentManager = await systemManagerRepository.findById(currentManagerId);
+        if (!currentManager || currentManager.organization_id !== null) {
+            res.status(403).json({ message: 'Only Global System Manager can manage 2FA for other managers' });
+            return;
+        }
+
+        if (!systemManagerId) {
+            res.status(400).json({ message: 'System Manager ID is required' });
+            return;
+        }
+
+        // Update System Manager
+        await systemManagerRepository.update(systemManagerId, {
+            two_factor_enabled: false,
+            two_factor_secret: null,
+            two_factor_preferred_channel: null,
+            two_factor_confirmed_at: null
+        });
+
+        res.json({ message: '2FA successfully disabled for System Manager' });
+    } catch (error) {
+        console.error('Error disabling 2FA for System Manager:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Get trusted devices za System Manager
+ */
+const getSystemManagerTrustedDevices = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const { getTrustedDevices } = await import('../utils/systemManagerTrustedDevices.js');
+        const devices = await getTrustedDevices(managerId);
+
+        res.json(devices);
+    } catch (error) {
+        console.error('Error getting trusted devices:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Remove trusted device za System Manager
+ */
+const removeSystemManagerTrustedDevice = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as { user?: { id: number } }).user?.id;
+        const deviceId = parseInt(req.params.deviceId);
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        if (isNaN(deviceId)) {
+            res.status(400).json({ message: 'Invalid device ID' });
+            return;
+        }
+
+        // Provjeri pripada li device ovom manageru
+        const { getTrustedDevices, removeTrustedDevice } = await import('../utils/systemManagerTrustedDevices.js');
+        const devices = await getTrustedDevices(managerId);
+        const device = devices.find((d: { id: number; device_hash: string }) => d.id === deviceId);
+
+        if (!device) {
+            res.status(404).json({ message: 'Device not found or does not belong to you' });
+            return;
+        }
+
+        await removeTrustedDevice(managerId, device.device_hash);
+        res.json({ message: 'Trusted device removed successfully' });
+    } catch (error) {
+        console.error('Error removing trusted device:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword, setupSystemManager2faPin, verifySystemManager2faPin, disableSystemManager2fa, getSystemManager2faStatus, enableSystemManager2faForUser, disableSystemManager2faForUser, getSystemManagerTrustedDevices, removeSystemManagerTrustedDevice };
 
 export default systemManagerController;

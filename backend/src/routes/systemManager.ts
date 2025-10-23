@@ -11,6 +11,14 @@ import systemManagerController, {
   updateSystemSettings,
   verify2faAndProceed,
   forceChangePassword,
+  setupSystemManager2faPin,
+  verifySystemManager2faPin,
+  disableSystemManager2fa,
+  getSystemManager2faStatus,
+  enableSystemManager2faForUser,
+  disableSystemManager2faForUser,
+  getSystemManagerTrustedDevices,
+  removeSystemManagerTrustedDevice,
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
@@ -22,6 +30,7 @@ const router = express.Router();
 // Javne rute (bez autentikacije)
 router.post('/login', systemManagerController.login);
 router.post('/verify-2fa', verify2faAndProceed);
+router.post('/verify-2fa-pin', verifySystemManager2faPin);
 router.post('/force-change-password', forceChangePassword);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', logoutHandler);
@@ -38,6 +47,19 @@ router.get('/audit-logs', systemManagerController.getAuditLogs);
 // Rute za promjenu lozinke i username-a (PATCH)
 router.patch('/change-password', changePassword);
 router.patch('/change-username', changeUsername);
+
+// 2FA rute za System Manager
+router.post('/setup-2fa-pin', setupSystemManager2faPin);
+router.post('/disable-2fa', disableSystemManager2fa);
+router.get('/2fa-status', getSystemManager2faStatus);
+
+// 2FA upravljanje za druge System Manager-e (samo Global SM)
+router.post('/enable-2fa-for-user', enableSystemManager2faForUser);
+router.post('/disable-2fa-for-user', disableSystemManager2faForUser);
+
+// Trusted devices rute
+router.get('/trusted-devices', getSystemManagerTrustedDevices);
+router.delete('/trusted-devices/:deviceId', removeSystemManagerTrustedDevice);
 
 // Napomena: za dohvat profila trenutnog managera koristimo rutu '/me' ispod
 

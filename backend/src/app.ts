@@ -34,6 +34,7 @@ import cardNumberRoutes from './routes/cardnumber.js';
 import debugRoutes from './routes/debug.routes.js';
 import systemManagerRoutes from './routes/systemManager.js';
 import dutyRoutes from './routes/duty.routes.js';
+import supportTicketRoutes from './routes/supportTicket.routes.js';
 
 import skillRoutes from './routes/skillRoutes.js';
 import devRoutes from './routes/dev.routes.js'; // Dodano za podršku razvojnim rutama
@@ -296,6 +297,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
 app.use('/api/duty', dutyRoutes); // Duty Calendar routes
+app.use('/api/support', supportTicketRoutes); // Support & Feedback system
 app.use('/api/audit', authMiddleware, auditRoutes);
 // ISPRAVAK REDOSLIJEDA: Specifične rute moraju ići prije općenitih
 app.use('/api/members/permissions', permissionsRouter);
