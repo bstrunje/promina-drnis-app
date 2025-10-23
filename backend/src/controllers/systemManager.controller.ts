@@ -35,25 +35,46 @@ interface UpdateMemberPermissionsBody {
 }
 
 export const changePassword = async (req: Request, res: Response) => {
-    if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        const managerId = req.user.id;
+        const { oldPassword, currentPassword, newPassword } = req.body;
+        
+        // Prihvaćamo i oldPassword i currentPassword (frontend šalje currentPassword)
+        const actualOldPassword = oldPassword || currentPassword;
+
+        // Validacija input parametara
+        if (!actualOldPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+
+        if (typeof actualOldPassword !== 'string' || typeof newPassword !== 'string') {
+            return res.status(400).json({ message: 'Passwords must be strings' });
+        }
+
+        const manager = await prisma.systemManager.findUnique({ where: { id: managerId } });
+        if (!manager || !manager.password_hash) {
+            return res.status(404).json({ message: 'System Manager not found' });
+        }
+
+        const isMatch = await bcrypt.compare(actualOldPassword, manager.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Incorrect old password' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await prisma.systemManager.update({
+            where: { id: managerId },
+            data: { password_hash: newHash },
+        });
+
+        return res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
-    const managerId = req.user.id;
-    const { oldPassword, newPassword } = req.body;
-
-    const manager = await prisma.systemManager.findUnique({ where: { id: managerId } });
-    if (!manager || !manager.password_hash) return res.status(404).json({ message: 'System Manager not found' });
-
-    const isMatch = await bcrypt.compare(oldPassword, manager.password_hash);
-    if (!isMatch) return res.status(400).json({ message: 'Incorrect old password' });
-
-    const newHash = await bcrypt.hash(newPassword, 10);
-    await prisma.systemManager.update({
-        where: { id: managerId },
-        data: { password_hash: newHash },
-    });
-
-    return res.json({ message: 'Password changed successfully' });
 };
 
 export const changeUsername = async (req: Request, res: Response) => {
