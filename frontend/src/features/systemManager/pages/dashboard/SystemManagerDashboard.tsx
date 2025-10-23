@@ -13,7 +13,7 @@ import useDashboardStats from '../../hooks/useDashboardStats';
 import TimeTravel from '../../../../../components/admin/TimeTravel';
 import OrganizationList from '../../organizations/OrganizationList';
 import SystemManagerMembersView from '../../components/members/SystemManagerMembersView';
-import { SupportFeedbackPage } from '../../SupportFeedbackPage';
+import { SupportPageRouter } from '../../SupportPageRouter';
 
 /**
  * Glavna komponenta System Manager dashboarda
@@ -132,7 +132,7 @@ const SystemManagerDashboard: React.FC = () => {
 
         {/* Tab sadržaj - Support & Feedback */}
         {activeTab === 'support' && (
-          <SupportFeedbackPage />
+          <SupportPageRouter />
         )}
       </main>
     </div>

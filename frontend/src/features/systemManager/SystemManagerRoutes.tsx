@@ -12,7 +12,7 @@ import DutyCalendarSettings from './DutyCalendarSettings';
 import OrganizationWizard from './organizations/OrganizationWizard';
 import OrganizationEdit from './organizations/OrganizationEdit';
 import GlobalSystemManagerSettings from './pages/settings/GlobalSystemManagerSettings';
-import { SupportFeedbackPage } from './SupportFeedbackPage';
+import { SupportPageRouter } from './SupportPageRouter';
 
 /**
  * Helper za detekciju org slug-a iz URL-a
@@ -179,7 +179,7 @@ const SystemManagerRoutesContent: React.FC = () => {
         path="/support" 
         element={
           <SystemManagerProtectedRoute>
-            <SupportFeedbackPage />
+            <SupportPageRouter />
           </SystemManagerProtectedRoute>
         } 
       />

@@ -35,6 +35,18 @@ export interface SupportTicket {
   updated_at: string;
   resolved_at?: string;
   responses?: TicketResponse[];
+  // Organization relation (populated by backend)
+  organization?: {
+    id: number;
+    name: string;
+    subdomain: string;
+  };
+  // Creator relation (populated by backend)
+  creator?: {
+    id: number;
+    display_name: string;
+    email: string;
+  };
 }
 
 export interface TicketResponse {
@@ -44,6 +56,12 @@ export interface TicketResponse {
   created_by: number;
   is_internal: boolean;
   created_at: string;
+  // Creator relation (populated by backend)
+  creator?: {
+    id: number;
+    display_name: string;
+    email: string;
+  };
 }
 
 export interface CreateTicketRequest {

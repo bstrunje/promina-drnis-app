@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import { Switch } from '@components/ui/switch';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { API_BASE_URL } from '../../../../utils/config';
 
@@ -43,10 +44,12 @@ const GlobalSystemManagerSettings: React.FC = () => {
   
   // Trusted devices state
   const [trustedDevices, setTrustedDevices] = useState<TrustedDevice[]>([]);
+  const [trustedDevicesEnabled, setTrustedDevicesEnabled] = useState(false);
 
   useEffect(() => {
     void load2faStatus();
     void loadTrustedDevices();
+    void loadTrustedDevicesSettings();
   }, []);
 
   const load2faStatus = async (): Promise<void> => {
@@ -80,6 +83,51 @@ const GlobalSystemManagerSettings: React.FC = () => {
       }
     } catch (err) {
       console.error('Error loading trusted devices:', err);
+    }
+  };
+
+  const loadTrustedDevicesSettings = async (): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/system-manager/trusted-devices-settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('systemManagerToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json() as { enabled: boolean };
+        setTrustedDevicesEnabled(data.enabled);
+      }
+    } catch (err) {
+      console.error('Error loading trusted devices settings:', err);
+    }
+  };
+
+  const updateTrustedDevicesSettings = async (enabled: boolean): Promise<void> => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/system-manager/trusted-devices-settings`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('systemManagerToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (response.ok) {
+        setTrustedDevicesEnabled(enabled);
+        setSuccess('Trusted devices settings updated successfully');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError('Failed to update trusted devices settings');
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch {
+      setError('Error updating trusted devices settings');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -429,6 +477,24 @@ const GlobalSystemManagerSettings: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Trusted Devices Toggle */}
+          <div className="flex items-center justify-between mb-4 p-3 border rounded-lg">
+            <div>
+              <Label htmlFor="trusted-devices-toggle" className="text-sm font-medium">
+                Enable Trusted Devices
+              </Label>
+              <p className="text-xs text-gray-600">
+                Allow devices to be remembered for 30 days to skip 2FA
+              </p>
+            </div>
+            <Switch
+              id="trusted-devices-toggle"
+              checked={trustedDevicesEnabled}
+              onCheckedChange={(checked) => void updateTrustedDevicesSettings(checked)}
+              disabled={loading}
+            />
+          </div>
+
           {trustedDevices.length === 0 ? (
             <p className="text-gray-600">No trusted devices found.</p>
           ) : (

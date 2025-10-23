@@ -1,6 +1,6 @@
 // frontend/src/features/auth/LoginPage.tsx
 // Uklonjen useCallback iz import-a
-import { FormEvent, useState, useEffect } from "react"; 
+import React, { FormEvent, useState, useEffect, useRef } from "react"; 
 import { Eye, EyeOff, LogIn, FileText, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/useAuth";
@@ -12,7 +12,7 @@ import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
-import { useSystemSettings } from '../../hooks/useSystemSettings';
+// useSystemSettings uklonjen jer se ne koristi
 
 interface SizeOptions {
   value: string;
@@ -36,7 +36,7 @@ const LoginPage = () => {
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { systemSettings } = useSystemSettings();
+  // Uklonjen systemSettings state jer se ne koristi
   const { 
     getLogoUrl, 
     getFullName, 
@@ -80,13 +80,22 @@ const LoginPage = () => {
   const [twoFaRequired, setTwoFaRequired] = useState(false);
   const [twoFaCode, setTwoFaCode] = useState('');
   const [twoFaChannel, setTwoFaChannel] = useState<'totp' | 'email'>('totp');
-  const [rememberDevice, setRememberDevice] = useState(false);
   const [sendEmailLoading, setSendEmailLoading] = useState(false);
   
   // PIN 2FA state
   const [pinRequired, setPinRequired] = useState(false);
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
+  
+  // Ref za PIN input polje
+  const pinInputRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-focus na PIN input kada se prikaže
+  useEffect(() => {
+    if (pinRequired && pinInputRef.current) {
+      pinInputRef.current.focus();
+    }
+  }, [pinRequired]);
   
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
@@ -170,7 +179,7 @@ const LoginPage = () => {
       return;
     }
     try {
-      const verifyResp = await verify2FA({ code: twoFaCode, channel: twoFaChannel, rememberDevice });
+      const verifyResp = await verify2FA({ code: twoFaCode, channel: twoFaChannel });
 
       // Dohvati minimalne podatke o korisniku iz health endpointa
       const health = await getAuthHealth();
@@ -285,9 +294,6 @@ const LoginPage = () => {
       const loginPayload = { ...loginData };
       if (pinRequired && pin) {
         loginPayload.pin = pin;
-      }
-      if (systemSettings?.twoFactorTrustedDevicesEnabled && rememberDevice) {
-        loginPayload.rememberDevice = rememberDevice;
       }
       
       const data = await login(loginPayload);
@@ -623,10 +629,6 @@ const LoginPage = () => {
                   placeholder={twoFaChannel === 'totp' ? t('twofa.codeTotpPlaceholder', 'Unesite kod iz aplikacije') : t('twofa.codeEmailPlaceholder', 'Unesite kod iz e-maila')}
                 />
               </div>
-              <label className="flex items-center gap-2 mb-3 text-sm text-gray-700">
-                <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
-                {t('twofa.remember', 'Zapamti ovaj uređaj')}
-              </label>
               <div className="flex gap-2">
                 <button type="button" className="px-4 py-2 rounded bg-blue-600 text-white" onClick={() => { void handleVerify2FA(); }}>{t('twofa.verify', 'Potvrdi kod')}</button>
                 <button type="button" className="px-4 py-2 rounded border" onClick={() => { setTwoFaRequired(false); setTwoFaCode(''); }}>{t('twofa.cancel', 'Odustani')}</button>
@@ -1081,36 +1083,20 @@ const LoginPage = () => {
                     </div>
                   </div>
 
-                  {/* Remember Device checkbox - prikaži ako je trusted devices uključen */}
-                  {systemSettings?.twoFactorTrustedDevicesEnabled && (
-                    <div className="mt-4">
-                      <label className="flex items-center gap-2 text-sm text-gray-700">
-                        <input 
-                          type="checkbox" 
-                          checked={rememberDevice} 
-                          onChange={(e) => setRememberDevice(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {t('login.rememberDevice', 'Zapamti ovaj uređaj za')} {systemSettings.twoFactorRememberDeviceDays} {t('login.days', 'dana')}
-                      </label>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {t('login.rememberDeviceHint', 'Nećete trebati unositi sigurnosni kod na ovom uređaju')}
-                      </p>
-                    </div>
-                  )}
 
                   {/* PIN input - prikaži samo ako je potreban */}
                   {pinRequired && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('login.pinLabel', 'Sigurnosni PIN')}
+                        {t('login.pinLabel')}
                       </label>
                       <div className="mt-1 relative">
                         <input
+                          ref={pinInputRef}
                           type={showPin ? "text" : "password"}
                           name="pin"
                           required
-                          placeholder={t('login.pinPlaceholder', 'Unesite vaš PIN')}
+                          placeholder={t('login.pinPlaceholder')}
                           className="mt-2 p-2 w-full border rounded"
                           value={pin}
                           maxLength={6}
@@ -1142,7 +1128,7 @@ const LoginPage = () => {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        {t('login.pinHint', 'Unesite 4-6 znamenkasti PIN koji ste postavili u postavkama')}
+                        {t('login.pinHint')}
                       </p>
                     </div>
                   )}

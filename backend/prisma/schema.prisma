@@ -586,6 +586,11 @@ model SystemManager {
   password_reset_required      Boolean      @default(false)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   trusted_devices SystemManagerTrustedDevice[]
+  
+  // Support ticket relations
+  created_tickets SupportTicket[] @relation("TicketCreator")
+  assigned_tickets SupportTicket[] @relation("TicketAssignee")
+  ticket_responses TicketResponse[] @relation("ResponseCreator")
 
 
   @@unique([organization_id, username])
@@ -694,8 +699,10 @@ model SupportTicket {
   // Relacije
   organization_id Int
   organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  created_by      Int               // Organization SM ID
+  created_by      Int               // System Manager ID
+  creator         SystemManager      @relation("TicketCreator", fields: [created_by], references: [id])
   assigned_to     Int?              // GSM ID (nullable)
+  assignee        SystemManager?     @relation("TicketAssignee", fields: [assigned_to], references: [id])
   
   // Timestamps
   created_at      DateTime          @default(now()) @db.Timestamptz(6)
@@ -723,6 +730,7 @@ model TicketResponse {
   
   // Relations
   ticket          SupportTicket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  creator         SystemManager @relation("ResponseCreator", fields: [created_by], references: [id])
   
   @@index([ticket_id])
   @@index([created_by])

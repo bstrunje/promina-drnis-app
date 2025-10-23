@@ -1,5 +1,26 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+
+// Dedicirani axios instance za Support API koji koristi systemManagerToken
+const supportApiInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
+});
+
+// Interceptor koji koristi systemManagerToken
+supportApiInstance.interceptors.request.use(
+  (config) => {
+    const systemManagerToken = localStorage.getItem('systemManagerToken');
+    if (systemManagerToken && config.headers) {
+      config.headers.Authorization = `Bearer ${systemManagerToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(new Error(String(error)))
+);
 import { 
   SupportTicket, 
   CreateTicketRequest, 
@@ -15,13 +36,13 @@ import {
 export const supportTicketApi = {
   // Create new support ticket
   createTicket: async (data: CreateTicketRequest): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.post<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support`, data);
+    const response = await supportApiInstance.post<{ success: boolean; message: string; ticket: SupportTicket }>('/support', data);
     return response.data;
   },
 
   // Get ticket by ID
   getTicketById: async (id: number): Promise<{ success: boolean; ticket: SupportTicket }> => {
-    const response = await axios.get<{ success: boolean; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}`);
+    const response = await supportApiInstance.get<{ success: boolean; ticket: SupportTicket }>(`/support/${id}`);
     return response.data;
   },
 
@@ -48,7 +69,7 @@ export const supportTicketApi = {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
-    const response = await axios.get<{ success: boolean; tickets: SupportTicket[]; total: number; page: number; limit: number; totalPages: number; }>(`${API_BASE_URL}/api/support?${params.toString()}`);
+    const response = await supportApiInstance.get<{ success: boolean; tickets: SupportTicket[]; total: number; page: number; limit: number; totalPages: number; }>(`/support?${params.toString()}`);
     return response.data;
   },
 
@@ -68,19 +89,19 @@ export const supportTicketApi = {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
-    const response = await axios.get<{ success: boolean; tickets: SupportTicket[]; total: number; page: number; limit: number; totalPages: number; }>(`${API_BASE_URL}/api/support/my-tickets?${params.toString()}`);
+    const response = await supportApiInstance.get<{ success: boolean; tickets: SupportTicket[]; total: number; page: number; limit: number; totalPages: number; }>(`/support/my-tickets?${params.toString()}`);
     return response.data;
   },
 
   // Update ticket
   updateTicket: async (id: number, data: UpdateTicketRequest): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.put<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}`, data);
+    const response = await supportApiInstance.put<{ success: boolean; message: string; ticket: SupportTicket }>(`/support/${id}`, data);
     return response.data;
   },
 
   // Add response to ticket
   addTicketResponse: async (id: number, data: CreateTicketResponseRequest): Promise<{ success: boolean; message: string; response: TicketResponse }> => {
-    const response = await axios.post<{ success: boolean; message: string; response: TicketResponse }>(`${API_BASE_URL}/api/support/${id}/responses`, data);
+    const response = await supportApiInstance.post<{ success: boolean; message: string; response: TicketResponse }>(`/support/${id}/responses`, data);
     return response.data;
   },
 
@@ -95,31 +116,31 @@ export const supportTicketApi = {
       closed: number;
     }
   }> => {
-    const response = await axios.get<{ success: boolean; stats: { total: number; open: number; in_progress: number; resolved: number; closed: number; } }>(`${API_BASE_URL}/api/support/stats`);
+    const response = await supportApiInstance.get<{ success: boolean; stats: { total: number; open: number; in_progress: number; resolved: number; closed: number; } }>('/support/stats');
     return response.data;
   },
 
   // Close ticket
   closeTicket: async (id: number): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.put<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}/close`);
+    const response = await supportApiInstance.put<{ success: boolean; message: string; ticket: SupportTicket }>(`/support/${id}/close`);
     return response.data;
   },
 
   // Assign ticket (for GSM)
   assignTicket: async (id: number, assigned_to: number): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.put<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}`, { assigned_to });
+    const response = await supportApiInstance.put<{ success: boolean; message: string; ticket: SupportTicket }>(`/support/${id}`, { assigned_to });
     return response.data;
   },
 
   // Update ticket status
   updateTicketStatus: async (id: number, status: TicketStatus): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.put<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}`, { status });
+    const response = await supportApiInstance.put<{ success: boolean; message: string; ticket: SupportTicket }>(`/support/${id}`, { status });
     return response.data;
   },
 
   // Update ticket priority
   updateTicketPriority: async (id: number, priority: TicketPriority): Promise<{ success: boolean; message: string; ticket: SupportTicket }> => {
-    const response = await axios.put<{ success: boolean; message: string; ticket: SupportTicket }>(`${API_BASE_URL}/api/support/${id}`, { priority });
+    const response = await supportApiInstance.put<{ success: boolean; message: string; ticket: SupportTicket }>(`/support/${id}`, { priority });
     return response.data;
   }
 };

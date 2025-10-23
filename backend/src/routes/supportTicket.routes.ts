@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
-import { requireTenant } from '../middleware/tenant.middleware.js';
 import {
   createTicket,
   getTicketById,
@@ -14,8 +13,8 @@ import {
 
 const router = Router();
 
-// Apply tenant and auth middleware to all routes
-router.use(requireTenant);
+// Apply auth middleware to all routes
+// Tenant context is handled at app.ts level (before tenantMiddleware for GSM support)
 router.use(authMiddleware);
 
 // Support ticket routes

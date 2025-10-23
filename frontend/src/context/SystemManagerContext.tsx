@@ -187,6 +187,9 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       }
 
       try {
+        // Debug: Provjeri token prije dekodiranja
+        console.log('[SM-AUTO-REFRESH] Token za dekodiranje:', token ? `${token.substring(0, 20)}...` : 'null');
+        
         // Dekodiraj token da dohvatiš expiry vrijeme
         const decoded = jwtDecode<JwtPayload>(token);
         const now = Date.now() / 1000; // Trenutno vrijeme u sekundama

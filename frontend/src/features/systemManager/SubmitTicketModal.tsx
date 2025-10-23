@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
@@ -91,6 +91,9 @@ export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
           <DialogTitle className="flex items-center space-x-2">
             <span>Submit Support Ticket</span>
           </DialogTitle>
+          <DialogDescription>
+            Create a new support ticket to report issues, request features, or get help with the system.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
@@ -122,7 +125,14 @@ export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                position="popper" 
+                side="bottom" 
+                align="start"
+                sideOffset={4}
+                avoidCollisions={true}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 <SelectItem value={TicketCategory.BUG_REPORT}>
                   🔴 {TICKET_CATEGORY_LABELS[TicketCategory.BUG_REPORT]}
                 </SelectItem>
@@ -150,7 +160,14 @@ export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                position="popper" 
+                side="bottom" 
+                align="start"
+                sideOffset={4}
+                avoidCollisions={true}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 <SelectItem value={TicketPriority.LOW}>Low</SelectItem>
                 <SelectItem value={TicketPriority.MEDIUM}>Medium</SelectItem>
                 <SelectItem value={TicketPriority.HIGH}>High</SelectItem>

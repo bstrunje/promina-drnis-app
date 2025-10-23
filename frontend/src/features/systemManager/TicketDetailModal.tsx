@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { Textarea } from '@components/ui/textarea';
 import { Label } from '@components/ui/label';
 import { Card, CardContent } from '@components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { 
   SupportTicket, 
   TicketResponse,
@@ -15,6 +16,7 @@ import {
 } from '@shared/supportTicket';
 import { supportTicketApi } from '../../utils/api/supportTicketApi';
 import { useToast } from '@components/ui/use-toast';
+import { useSystemManager } from '../../context/SystemManagerContext';
 import { AlertCircle, CheckCircle, Clock, XCircle, MessageSquare, User } from 'lucide-react';
 
 interface TicketDetailModalProps {
@@ -25,15 +27,39 @@ interface TicketDetailModalProps {
 }
 
 export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
-  ticket,
+  ticket: initialTicket,
   isOpen,
   onClose,
   onTicketUpdated
 }) => {
   const { toast } = useToast();
+  const { manager } = useSystemManager();
+  const [ticket, setTicket] = useState<SupportTicket>(initialTicket);
   const [responseText, setResponseText] = useState('');
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [isClosingTicket, setIsClosingTicket] = useState(false);
+
+  // Refresh ticket data from server
+  const refreshTicket = useCallback(async () => {
+    try {
+      const response = await supportTicketApi.getTicketById(initialTicket.id);
+      setTicket(response.ticket);
+    } catch (error) {
+      console.error('Error refreshing ticket:', error);
+    }
+  }, [initialTicket.id]);
+
+  // Sync local ticket state with prop changes
+  useEffect(() => {
+    setTicket(initialTicket);
+  }, [initialTicket]);
+
+  // Refresh ticket data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      void refreshTicket();
+    }
+  }, [isOpen, refreshTicket]);
 
   const getStatusIcon = (status: TicketStatus) => {
     switch (status) {
@@ -95,7 +121,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
       });
 
       setResponseText('');
-      onTicketUpdated();
+      await refreshTicket(); // Refresh ticket data to show new response
       toast({
         title: 'Success',
         description: 'Response added successfully'
@@ -109,6 +135,24 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
       });
     } finally {
       setIsSubmittingResponse(false);
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: TicketStatus) => {
+    try {
+      await supportTicketApi.updateTicket(ticket.id, { status: newStatus });
+      await refreshTicket(); // Refresh to show updated status
+      toast({
+        title: 'Success',
+        description: `Ticket status updated to ${TICKET_STATUS_LABELS[newStatus]}`
+      });
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update ticket status',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -147,6 +191,9 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             {getStatusIcon(ticket.status)}
             <span>Support Ticket #{ticket.id}</span>
           </DialogTitle>
+          <DialogDescription>
+            View and manage support ticket details, responses, and status updates.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -167,7 +214,26 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             <div className="flex items-center space-x-6 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 {getStatusIcon(ticket.status)}
-                <span>Status: {TICKET_STATUS_LABELS[ticket.status]}</span>
+                {manager?.organization_id === null ? (
+                  // GSM can change status
+                  <div className="flex items-center space-x-2">
+                    <span>Status:</span>
+                    <Select value={ticket.status} onValueChange={(value) => void handleStatusUpdate(value as TicketStatus)}>
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={TicketStatus.OPEN}>Open</SelectItem>
+                        <SelectItem value={TicketStatus.IN_PROGRESS}>In Progress</SelectItem>
+                        <SelectItem value={TicketStatus.RESOLVED}>Resolved</SelectItem>
+                        <SelectItem value={TicketStatus.CLOSED}>Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  // Org SM sees read-only status
+                  <span>Status: {TICKET_STATUS_LABELS[ticket.status]}</span>
+                )}
               </div>
               <span>Created: {formatDate(ticket.created_at)}</span>
               {ticket.updated_at !== ticket.created_at && (
@@ -183,7 +249,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <User className="h-5 w-5 text-gray-400 mt-1" />
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-medium text-gray-900">You</span>
+                    <span className="font-medium text-gray-900">{ticket.creator?.display_name ?? 'Unknown User'}</span>
                     <span className="text-sm text-gray-500">{formatDate(ticket.created_at)}</span>
                   </div>
                   <div className="prose prose-sm max-w-none">
@@ -211,7 +277,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <span className="font-medium text-gray-900">
-                              {response.is_internal ? 'Support Team (Internal)' : 'Support Team'}
+                              {response.creator?.display_name ?? 'Support Team'}{response.is_internal ? ' (Internal)' : ''}
                             </span>
                             <span className="text-sm text-gray-500">{formatDate(response.created_at)}</span>
                             {response.is_internal && (
@@ -219,7 +285,9 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                             )}
                           </div>
                           <div className="prose prose-sm max-w-none">
-                            <p className="text-gray-700 whitespace-pre-wrap">{response.response_text}</p>
+                            <p className="text-gray-700 whitespace-pre-wrap">
+                              {response.response_text || '[No response text available]'}
+                            </p>
                           </div>
                         </div>
                       </div>

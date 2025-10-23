@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import { Switch } from '@components/ui/switch';
 import { 
   getOrganizationById,
   updateOrganization,
@@ -30,6 +31,7 @@ const OrganizationEdit: React.FC = () => {
   const [show2faModal, setShow2faModal] = useState(false);
   const [twoFactorPin, setTwoFactorPin] = useState('');
   const [twoFactorAction, setTwoFactorAction] = useState<'enable' | 'disable'>('enable');
+  const [trustedDevicesEnabled, setTrustedDevicesEnabled] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -101,9 +103,39 @@ const OrganizationEdit: React.FC = () => {
     }
   }, [id]);
 
+  const loadTrustedDevicesSettings = useCallback(async (): Promise<void> => {
+    if (!id) return;
+    
+    try {
+      const response = await systemManagerApi.get(`/system-manager/organizations/${id}/trusted-devices-settings`);
+      const data = response.data as { enabled?: boolean };
+      setTrustedDevicesEnabled(Boolean(data.enabled));
+    } catch (err) {
+      console.error('Error loading trusted devices settings:', err);
+    }
+  }, [id]);
+
   useEffect(() => {
     void loadOrganization();
   }, [loadOrganization]);
+
+  useEffect(() => {
+    if (id) {
+      void loadTrustedDevicesSettings();
+    }
+  }, [id, loadTrustedDevicesSettings]);
+
+  const updateTrustedDevicesSettings = async (enabled: boolean): Promise<void> => {
+    if (!id) return;
+    
+    try {
+      await systemManagerApi.put(`/system-manager/organizations/${id}/trusted-devices-settings`, { enabled });
+      setTrustedDevicesEnabled(enabled);
+    } catch (err) {
+      console.error('Error updating trusted devices settings:', err);
+      setError('Failed to update trusted devices settings');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -598,6 +630,33 @@ const OrganizationEdit: React.FC = () => {
                         </p>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* System Manager Security Settings */}
+            {currentManager?.organization_id === null && (
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-semibold mb-4">System Manager Security</h3>
+                
+                {/* Trusted Devices Settings */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <Label htmlFor="org-trusted-devices-toggle" className="text-sm font-medium">
+                        Enable Trusted Devices
+                      </Label>
+                      <p className="text-xs text-gray-600">
+                        Allow organization members' devices to be remembered for 30 days to skip 2FA
+                      </p>
+                    </div>
+                    <Switch
+                      id="org-trusted-devices-toggle"
+                      checked={trustedDevicesEnabled}
+                      onCheckedChange={(checked) => void updateTrustedDevicesSettings(checked)}
+                      disabled={saving}
+                    />
                   </div>
                 </div>
               </div>

@@ -19,6 +19,10 @@ import systemManagerController, {
   disableSystemManager2faForUser,
   getSystemManagerTrustedDevices,
   removeSystemManagerTrustedDevice,
+  getSystemManagerTrustedDevicesSettings,
+  updateSystemManagerTrustedDevicesSettings,
+  getOrganizationTrustedDevicesSettings,
+  updateOrganizationTrustedDevicesSettings,
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
@@ -60,6 +64,10 @@ router.post('/disable-2fa-for-user', disableSystemManager2faForUser);
 // Trusted devices rute
 router.get('/trusted-devices', getSystemManagerTrustedDevices);
 router.delete('/trusted-devices/:deviceId', removeSystemManagerTrustedDevice);
+router.get('/trusted-devices-settings', getSystemManagerTrustedDevicesSettings);
+router.put('/trusted-devices-settings', updateSystemManagerTrustedDevicesSettings);
+router.get('/organizations/:organizationId/trusted-devices-settings', getOrganizationTrustedDevicesSettings);
+router.put('/organizations/:organizationId/trusted-devices-settings', updateOrganizationTrustedDevicesSettings);
 
 // Napomena: za dohvat profila trenutnog managera koristimo rutu '/me' ispod
 

@@ -1,12 +1,22 @@
 import prisma from '../utils/prisma.js';
 import { TicketCategory, TicketStatus, TicketPriority, Prisma } from '@prisma/client';
 
+// Tip za Prisma where input koji podržava null organization_id
+type SupportTicketWhereInputWithNullOrg = Omit<Prisma.SupportTicketWhereInput, 'organization_id'> & {
+  organization_id?: number | null;
+};
+
+type SupportTicketWhereUniqueInputWithNullOrg = Omit<Prisma.SupportTicketWhereUniqueInput, 'organization_id'> & {
+  id: number;
+  organization_id?: number | null;
+};
+
 export interface CreateTicketData {
   title: string;
   description: string;
   category: TicketCategory;
   priority: TicketPriority;
-  organization_id: number;
+  organization_id: number | null; // null za GSM tickete
   created_by: number;
 }
 
@@ -18,7 +28,7 @@ export interface UpdateTicketData {
 }
 
 export interface TicketFilters {
-  organization_id?: number;
+  organization_id?: number | null;
   status?: TicketStatus;
   category?: TicketCategory;
   priority?: TicketPriority;
@@ -37,7 +47,15 @@ class SupportTicketRepository {
   // Create new support ticket
   async createTicket(data: CreateTicketData) {
     return await prisma.supportTicket.create({
-      data,
+      data: {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        priority: data.priority,
+        organization_id: data.organization_id as number,
+        created_by: data.created_by,
+        status: TicketStatus.OPEN
+      },
       include: {
         organization: {
           select: {
@@ -51,14 +69,15 @@ class SupportTicketRepository {
   }
 
   // Get ticket by ID with responses
-  async getTicketById(id: number, organization_id?: number) {
-    const where: Prisma.SupportTicketWhereUniqueInput = { id };
-    if (organization_id) {
+  async getTicketById(id: number, organization_id?: number | null) {
+    const where: SupportTicketWhereUniqueInputWithNullOrg = { id };
+    // Za Org SM dodaj organization_id filter, za GSM (null) ne dodavaj filter
+    if (organization_id !== undefined && organization_id !== null) {
       where.organization_id = organization_id;
     }
 
     return await prisma.supportTicket.findUnique({
-      where,
+      where: where as Prisma.SupportTicketWhereUniqueInput,
       include: {
         organization: {
           select: {
@@ -67,7 +86,28 @@ class SupportTicketRepository {
             subdomain: true
           }
         },
+        creator: {
+          select: {
+            id: true,
+            display_name: true,
+            email: true
+          }
+        },
         responses: {
+          select: {
+            id: true,
+            response_text: true,
+            created_by: true,
+            is_internal: true,
+            created_at: true,
+            creator: {
+              select: {
+                id: true,
+                display_name: true,
+                email: true
+              }
+            }
+          },
           orderBy: {
             created_at: 'asc'
           }
@@ -78,9 +118,13 @@ class SupportTicketRepository {
 
   // Get tickets with filters
   async getTickets(filters: TicketFilters = {}, limit = 50, offset = 0) {
-    const where: Prisma.SupportTicketWhereInput = {};
+    const where: SupportTicketWhereInputWithNullOrg = {};
     
-    if (filters.organization_id) where.organization_id = filters.organization_id;
+    // Za GSM (organization_id = null), ne dodavaj organization_id filter
+    // Za Org SM (organization_id = broj), dodaj filter
+    if (filters.organization_id !== undefined && filters.organization_id !== null) {
+      where.organization_id = filters.organization_id;
+    }
     if (filters.status) where.status = filters.status;
     if (filters.category) where.category = filters.category;
     if (filters.priority) where.priority = filters.priority;
@@ -89,13 +133,20 @@ class SupportTicketRepository {
 
     const [tickets, total] = await Promise.all([
       prisma.supportTicket.findMany({
-        where,
+        where: where as Prisma.SupportTicketWhereInput,
         include: {
           organization: {
             select: {
               id: true,
               name: true,
               subdomain: true
+            }
+          },
+          creator: {
+            select: {
+              id: true,
+              display_name: true,
+              email: true
             }
           },
           responses: {
@@ -117,21 +168,22 @@ class SupportTicketRepository {
         take: limit,
         skip: offset
       }),
-      prisma.supportTicket.count({ where })
+      prisma.supportTicket.count({ where: where as Prisma.SupportTicketWhereInput })
     ]);
 
     return { tickets, total };
   }
 
   // Update ticket
-  async updateTicket(id: number, data: UpdateTicketData, organization_id?: number) {
-    const where: Prisma.SupportTicketWhereUniqueInput = { id };
-    if (organization_id) {
+  async updateTicket(id: number, data: UpdateTicketData, organization_id?: number | null) {
+    const where: SupportTicketWhereUniqueInputWithNullOrg = { id };
+    // Za Org SM dodaj organization_id filter, za GSM (null) ne dodavaj filter
+    if (organization_id !== undefined && organization_id !== null) {
       where.organization_id = organization_id;
     }
 
     return await prisma.supportTicket.update({
-      where,
+      where: where as Prisma.SupportTicketWhereUniqueInput,
       data,
       include: {
         organization: {
@@ -177,18 +229,20 @@ class SupportTicketRepository {
   }
 
   // Get tickets count by status for dashboard
-  async getTicketStats(organization_id?: number) {
-    const where: Prisma.SupportTicketWhereInput = {};
-    if (organization_id) {
+  async getTicketStats(organization_id?: number | null) {
+    const where: SupportTicketWhereInputWithNullOrg = {};
+    // Za GSM (organization_id = null), ne dodavaj organization_id filter
+    // Za Org SM (organization_id = broj), dodaj filter
+    if (organization_id !== undefined && organization_id !== null) {
       where.organization_id = organization_id;
     }
 
     const [total, open, inProgress, resolved, closed] = await Promise.all([
-      prisma.supportTicket.count({ where }),
-      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.OPEN } }),
-      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.IN_PROGRESS } }),
-      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.RESOLVED } }),
-      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.CLOSED } })
+      prisma.supportTicket.count({ where: where as Prisma.SupportTicketWhereInput }),
+      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.OPEN } as Prisma.SupportTicketWhereInput }),
+      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.IN_PROGRESS } as Prisma.SupportTicketWhereInput }),
+      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.RESOLVED } as Prisma.SupportTicketWhereInput }),
+      prisma.supportTicket.count({ where: { ...where, status: TicketStatus.CLOSED } as Prisma.SupportTicketWhereInput })
     ]);
 
     return {
@@ -201,14 +255,14 @@ class SupportTicketRepository {
   }
 
   // Get recent tickets for dashboard
-  async getRecentTickets(organization_id?: number, limit = 5) {
-    const where: Prisma.SupportTicketWhereInput = {};
-    if (organization_id) {
+  async getRecentTickets(organization_id?: number | null, limit = 5) {
+    const where: SupportTicketWhereInputWithNullOrg = {};
+    if (organization_id !== undefined) {
       where.organization_id = organization_id;
     }
 
     return await prisma.supportTicket.findMany({
-      where,
+      where: where as Prisma.SupportTicketWhereInput,
       include: {
         organization: {
           select: {
@@ -226,14 +280,14 @@ class SupportTicketRepository {
   }
 
   // Delete ticket (soft delete by closing)
-  async deleteTicket(id: number, organization_id?: number) {
-    const where: Prisma.SupportTicketWhereUniqueInput = { id };
-    if (organization_id) {
+  async deleteTicket(id: number, organization_id?: number | null) {
+    const where: SupportTicketWhereUniqueInputWithNullOrg = { id };
+    if (organization_id !== undefined) {
       where.organization_id = organization_id;
     }
 
     return await prisma.supportTicket.update({
-      where,
+      where: where as Prisma.SupportTicketWhereUniqueInput,
       data: {
         status: TicketStatus.CLOSED,
         resolved_at: new Date()

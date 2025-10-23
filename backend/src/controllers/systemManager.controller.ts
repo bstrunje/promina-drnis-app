@@ -13,6 +13,8 @@ import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
 import { generateDeviceHash, isTrustedDevice, addTrustedDevice } from '../utils/systemManagerTrustedDevices.js';
 
+// Koristimo type assertion umjesto interface-a zbog kompatibilnosti s postojećim tipovima
+
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
 interface SystemManagerLoginData {
@@ -653,7 +655,7 @@ async function resetOrganizationManagerCredentials(req: Request, res: Response):
 async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
     try {
         const { tempToken, _code } = req.body;
-        const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string };
+        const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string; deviceHash?: string };
 
         if (decoded.scope !== '2fa') {
             res.status(403).json({ message: 'Invalid token scope' });
@@ -677,6 +679,28 @@ async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
             const newTempToken = jwt.sign({ id: manager.id, scope: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' });
             res.status(200).json({ resetRequired: true, tempToken: newTempToken });
         } else {
+            // Provjeri System Settings za trusted devices
+            const systemSettings = await prisma.systemSettings.findFirst({
+                where: { organization_id: manager.organization_id },
+                select: {
+                    twoFactorTrustedDevicesEnabled: true,
+                    twoFactorRememberDeviceDays: true
+                }
+            });
+
+            // Ako je trusted devices omogućeno u System Settings, dodaj uređaj
+            if (systemSettings?.twoFactorTrustedDevicesEnabled && decoded.deviceHash) {
+                const userAgent = req.headers['user-agent'] || '';
+                const deviceName = userAgent.substring(0, 100); // Ograniči na 100 znakova
+                const rememberDays = systemSettings.twoFactorRememberDeviceDays || 30;
+                try {
+                    await addTrustedDevice(manager.id, decoded.deviceHash, deviceName, rememberDays);
+                    console.log(`Added trusted device for SystemManager ${manager.id}: ${deviceName}`);
+                } catch (error) {
+                    console.error('Failed to add trusted device:', error);
+                }
+            }
+
             // Normalan login nakon 2FA
             const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
             const _refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
@@ -765,7 +789,7 @@ const setupSystemManager2faPin = async (req: Request, res: Response): Promise<vo
  */
 const verifySystemManager2faPin = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { pin, tempToken, rememberDevice } = req.body;
+        const { pin, tempToken } = req.body;
 
         if (!pin || !tempToken) {
             res.status(400).json({ message: 'PIN and temp token are required' });
@@ -793,11 +817,20 @@ const verifySystemManager2faPin = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        // Ako je rememberDevice true, dodaj uređaj kao trusted
-        if (rememberDevice && decoded.deviceHash) {
+        // Provjeri System Settings za trusted devices
+        const systemSettings = await prisma.systemSettings.findFirst({
+            select: {
+                twoFactorTrustedDevicesEnabled: true,
+                twoFactorRememberDeviceDays: true
+            }
+        });
+
+        // Ako je trusted devices omogućeno u System Settings, dodaj uređaj
+        if (systemSettings?.twoFactorTrustedDevicesEnabled && decoded.deviceHash) {
             const userAgent = req.headers['user-agent'] || '';
             const deviceName = userAgent.substring(0, 100); // Ograniči na 100 znakova
-            await addTrustedDevice(manager.id, decoded.deviceHash, deviceName, 30);
+            const rememberDays = systemSettings.twoFactorRememberDeviceDays || 30;
+            await addTrustedDevice(manager.id, decoded.deviceHash, deviceName, rememberDays);
         }
 
         // Generate access token
@@ -1033,6 +1066,197 @@ const removeSystemManagerTrustedDevice = async (req: Request, res: Response): Pr
     }
 };
 
-export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword, setupSystemManager2faPin, verifySystemManager2faPin, disableSystemManager2fa, getSystemManager2faStatus, enableSystemManager2faForUser, disableSystemManager2faForUser, getSystemManagerTrustedDevices, removeSystemManagerTrustedDevice };
+// Get trusted devices settings for SystemManager
+const getSystemManagerTrustedDevicesSettings = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as Request & { user?: { id: number } }).user?.id;
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const manager = await prisma.systemManager.findUnique({
+            where: { id: managerId }
+        });
+
+        if (!manager) {
+            res.status(404).json({ message: 'System Manager not found' });
+            return;
+        }
+
+        // Za GSM (organization_id = null) koristimo globalne settings
+        // Za Org SM koristimo organizacijske settings
+        const settings = await prisma.systemSettings.findFirst({
+            where: { organization_id: manager.organization_id },
+            select: { twoFactorTrustedDevicesEnabled: true }
+        });
+
+        res.json({ 
+            enabled: settings?.twoFactorTrustedDevicesEnabled ?? false 
+        });
+    } catch (error) {
+        console.error('Error getting trusted devices settings:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Update trusted devices settings for SystemManager
+const updateSystemManagerTrustedDevicesSettings = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as Request & { user?: { id: number } }).user?.id;
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const manager = await prisma.systemManager.findUnique({
+            where: { id: managerId }
+        });
+
+        if (!manager) {
+            res.status(404).json({ message: 'System Manager not found' });
+            return;
+        }
+
+        const { enabled } = req.body;
+        if (typeof enabled !== 'boolean') {
+            res.status(400).json({ message: 'Invalid enabled value' });
+            return;
+        }
+
+        // Za GSM (organization_id = null) ažuriramo globalne settings
+        // Za Org SM ažuriramo organizacijske settings
+        if (manager.organization_id === null) {
+            // GSM - globalne settings
+            const existingSettings = await prisma.systemSettings.findFirst({
+                where: { organization_id: null }
+            });
+
+            if (existingSettings) {
+                await prisma.systemSettings.update({
+                    where: { id: existingSettings.id },
+                    data: { twoFactorTrustedDevicesEnabled: enabled }
+                });
+            } else {
+                await prisma.systemSettings.create({
+                    data: {
+                        organization_id: null,
+                        twoFactorTrustedDevicesEnabled: enabled
+                    }
+                });
+            }
+        } else {
+            // Org SM - organizacijske settings
+            await prisma.systemSettings.upsert({
+                where: { organization_id: manager.organization_id },
+                create: {
+                    organization_id: manager.organization_id,
+                    twoFactorTrustedDevicesEnabled: enabled
+                },
+                update: {
+                    twoFactorTrustedDevicesEnabled: enabled
+                }
+            });
+        }
+
+        res.json({ message: 'Trusted devices settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating trusted devices settings:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Get organization trusted devices settings
+const getOrganizationTrustedDevicesSettings = async (req: Request, res: Response): Promise<void> => {
+    try {
+        console.log('GET organization trusted devices settings called for org:', req.params.organizationId);
+        const managerId = (req as Request & { user?: { id: number } }).user?.id;
+        const organizationId = parseInt(req.params.organizationId);
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const manager = await prisma.systemManager.findUnique({
+            where: { id: managerId }
+        });
+
+        if (!manager) {
+            res.status(404).json({ message: 'System Manager not found' });
+            return;
+        }
+
+        // Samo GSM može upravljati organizacijskim settings
+        if (manager.organization_id !== null) {
+            res.status(403).json({ message: 'Only Global System Managers can manage organization settings' });
+            return;
+        }
+
+        const settings = await prisma.systemSettings.findFirst({
+            where: { organization_id: organizationId },
+            select: { twoFactorTrustedDevicesEnabled: true }
+        });
+
+        res.json({ 
+            enabled: settings?.twoFactorTrustedDevicesEnabled ?? false 
+        });
+    } catch (error) {
+        console.error('Error getting organization trusted devices settings:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Update organization trusted devices settings
+const updateOrganizationTrustedDevicesSettings = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const managerId = (req as Request & { user?: { id: number } }).user?.id;
+        const organizationId = parseInt(req.params.organizationId);
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const manager = await prisma.systemManager.findUnique({
+            where: { id: managerId }
+        });
+
+        if (!manager) {
+            res.status(404).json({ message: 'System Manager not found' });
+            return;
+        }
+
+        // Samo GSM može upravljati organizacijskim settings
+        if (manager.organization_id !== null) {
+            res.status(403).json({ message: 'Only Global System Managers can manage organization settings' });
+            return;
+        }
+
+        const { enabled } = req.body;
+        if (typeof enabled !== 'boolean') {
+            res.status(400).json({ message: 'Invalid enabled value' });
+            return;
+        }
+
+        await prisma.systemSettings.upsert({
+            where: { organization_id: organizationId },
+            create: {
+                organization_id: organizationId,
+                twoFactorTrustedDevicesEnabled: enabled
+            },
+            update: {
+                twoFactorTrustedDevicesEnabled: enabled
+            }
+        });
+
+        res.json({ message: 'Organization trusted devices settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating organization trusted devices settings:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword, setupSystemManager2faPin, verifySystemManager2faPin, disableSystemManager2fa, getSystemManager2faStatus, enableSystemManager2faForUser, disableSystemManager2faForUser, getSystemManagerTrustedDevices, removeSystemManagerTrustedDevice, getSystemManagerTrustedDevicesSettings, updateSystemManagerTrustedDevicesSettings, getOrganizationTrustedDevicesSettings, updateOrganizationTrustedDevicesSettings };
 
 export default systemManagerController;

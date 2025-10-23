@@ -1,5 +1,5 @@
 // features/systemManager/pages/login/TwoFactorEntryPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verify2faAndProceed, type SystemManager } from '../../utils/systemManagerApi';
 
@@ -34,13 +34,14 @@ const TwoFactorEntryPage: React.FC = () => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberDevice, setRememberDevice] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState;
 
   // Ref za timeout da možemo ga cancelirati ako je potrebno
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  // Ref za input polje
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Cleanup timeout na unmount
   useEffect(() => {
@@ -49,6 +50,13 @@ const TwoFactorEntryPage: React.FC = () => {
         clearTimeout(timeoutRef.current);
       }
     };
+  }, []);
+
+  // Auto-focus na input polje kada se komponenta učita
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   }, []);
 
   const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
@@ -62,7 +70,7 @@ const TwoFactorEntryPage: React.FC = () => {
     setError('');
 
     try {
-      const response = await verify2faAndProceed(state.tempToken, code, rememberDevice) as Verify2faResponse;
+      const response = await verify2faAndProceed(state.tempToken, code, false) as Verify2faResponse;
 
       if (response.resetRequired) {
         const orgSlug = getOrgSlugFromPath();
@@ -98,8 +106,10 @@ const TwoFactorEntryPage: React.FC = () => {
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Authentication Code</label>
             <input
+              ref={inputRef}
               type="text"
               value={code}
+              autoFocus
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, ''); // Samo brojevi
                 if (value.length <= 6) { // Maksimalno 6 znamenki
@@ -123,19 +133,6 @@ const TwoFactorEntryPage: React.FC = () => {
               maxLength={6}
               required
             />
-          </div>
-          
-          <div className="mb-4 flex items-center">
-            <input
-              id="rememberDevice"
-              type="checkbox"
-              checked={rememberDevice}
-              onChange={(e) => setRememberDevice(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="rememberDevice" className="ml-2 block text-sm text-gray-700">
-              Remember this device for 30 days
-            </label>
           </div>
           
           <button type="submit" disabled={loading} className="w-full py-2 px-4 rounded-md text-white font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400">

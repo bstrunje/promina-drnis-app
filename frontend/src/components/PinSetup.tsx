@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { useToast } from '../../components/ui/use-toast';
@@ -28,6 +28,10 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
   const [isChanging, setIsChanging] = useState(false);
   const { toast } = useToast();
 
+  // Refs za input polja
+  const currentPinRef = useRef<HTMLInputElement>(null);
+  const newPinRef = useRef<HTMLInputElement>(null);
+
   const fetchPinStatus = useCallback(async () => {
     try {
       const response = await api.get(`/members/${memberId}/pin-status`);
@@ -41,6 +45,18 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
   useEffect(() => {
     void fetchPinStatus();
   }, [fetchPinStatus]);
+
+  // Auto-focus na prvo vidljivo input polje
+  useEffect(() => {
+    if (isChanging) {
+      // Ako ima PIN, fokusiraj na trenutni PIN, inače na novi PIN
+      if (pinStatus?.hasPin && currentPinRef.current) {
+        currentPinRef.current.focus();
+      } else if (newPinRef.current) {
+        newPinRef.current.focus();
+      }
+    }
+  }, [isChanging, pinStatus?.hasPin]);
 
   const validatePin = (pinValue: string): string | null => {
     if (!pinValue) return t('pinSetup.validation.required');
@@ -216,6 +232,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                 </label>
                 <div className="relative">
                   <input
+                    ref={currentPinRef}
                     type={showPin ? 'text' : 'password'}
                     value={currentPin}
                     onChange={(e) => setCurrentPin(e.target.value)}
@@ -239,6 +256,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                 {pinStatus.hasPin ? t('pinSetup.form.newPinLabel') : t('pinSetup.form.pinLabel')} {t('pinSetup.form.pinLengthHint')}
               </label>
               <input
+                ref={newPinRef}
                 type={showPin ? 'text' : 'password'}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}

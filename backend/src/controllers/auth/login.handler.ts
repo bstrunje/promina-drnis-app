@@ -36,7 +36,7 @@ export async function loginHandler(
 ): Promise<void | Response> {
   const locale = req.locale;
   try {
-    const { email, password, pin, rememberDevice } = req.body;
+    const { email, password, pin } = req.body;
     const userIP = req.ip || req.socket.remoteAddress || 'unknown';
 
     if (!email || !password) {
@@ -239,8 +239,11 @@ export async function loginHandler(
       data: { last_login: new Date() }
     });
     
-    // Dohvati system settings za 2FA provjere
-    const settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
+    // Dohvati system settings za 2FA provjere - prvo organizacijske, zatim globalne
+    let settings = await prisma.systemSettings.findFirst({ where: { organization_id: member.organization_id } });
+    if (!settings) {
+      settings = await prisma.systemSettings.findFirst({ where: { organization_id: null } });
+    }
     
     // TRUSTED DEVICE PROVJERA - ako je uređaj trusted, preskačemo 2FA
     const deviceHash = generateDeviceHash(req);
@@ -377,7 +380,7 @@ export async function loginHandler(
       PerformerType.MEMBER
     );
 
-    const _permissions = member.permissions ? {
+    const permissions = member.permissions ? {
       can_view_members: member.permissions.can_view_members || false,
       can_edit_members: member.permissions.can_edit_members || false,
       can_add_members: member.permissions.can_add_members || false,
@@ -396,8 +399,8 @@ export async function loginHandler(
       can_assign_passwords: member.permissions.can_assign_passwords || false,
     } : {};
 
-    // TRUSTED DEVICE SPREMANJE - ako je korisnik označio "Remember Device"
-    if (rememberDevice && settings?.twoFactorTrustedDevicesEnabled && settings.twoFactorRememberDeviceDays) {
+    // TRUSTED DEVICE SPREMANJE - ako je omogućeno u System Settings
+    if (settings?.twoFactorTrustedDevicesEnabled && settings.twoFactorRememberDeviceDays) {
       try {
         const deviceName = extractDeviceName(req);
         await addTrustedDevice(
@@ -418,24 +421,31 @@ export async function loginHandler(
     }
 
     res.json({
-      message: tOrDefault('auth.success.AUTH_LOGIN_OK', locale, 'Login successful'),
-      token: accessToken, 
+      token: accessToken,
+      refreshToken,
       member: {
-        id: member.member_id,
-        full_name: member.full_name, 
+        member_id: member.member_id,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        full_name: member.full_name,
+        email: member.email,
         role: member.role,
-      },
+        status: member.status,
+        organization_id: member.organization_id,
+        permissions,
+        last_login: member.last_login
+      }
     });
 
   } catch (error) {
     console.error("Login error:", error);
-    const _userIP = req.ip || req.socket.remoteAddress || 'unknown';
+    const userIP = req.ip || req.socket.remoteAddress || 'unknown';
     const emailAttempt = req.body?.email || 'unknown email';
     await auditService.logAction(
         'LOGIN_FAILED_SERVER_ERROR',
-        null, 
-        `Serverska greška prilikom pokušaja prijave za: ${emailAttempt}. Greška: ${String(error)}`,
-        req, 
+        null,
+        `Server error during login attempt for ${emailAttempt} from IP ${userIP}.`,
+        req,
         'error',
         undefined,
         PerformerType.MEMBER

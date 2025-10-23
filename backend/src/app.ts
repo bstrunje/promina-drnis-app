@@ -278,6 +278,10 @@ app.use('/api/messages', (req, res, next) => {
 // jer Global System Manager ne treba tenant context (može kreirati organizacije)
 app.use('/api/system-manager', systemManagerRoutes);
 
+// 🔧 SUPPORT rute također PRIJE tenant middleware-a
+// jer GSM (Global System Manager) ne treba tenant context za support tickete
+app.use('/api/support', supportTicketRoutes); // Support & Feedback system
+
 // TENANT MIDDLEWARE - Globalni tenant context za sve API pozive
 app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
 
@@ -297,7 +301,6 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
 app.use('/api/duty', dutyRoutes); // Duty Calendar routes
-app.use('/api/support', supportTicketRoutes); // Support & Feedback system
 app.use('/api/audit', authMiddleware, auditRoutes);
 // ISPRAVAK REDOSLIJEDA: Specifične rute moraju ići prije općenitih
 app.use('/api/members/permissions', permissionsRouter);

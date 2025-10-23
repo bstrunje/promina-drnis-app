@@ -28,7 +28,7 @@ class SupportTicketService {
   }
 
   // Get ticket by ID
-  async getTicketById(id: number, organization_id?: number) {
+  async getTicketById(id: number, organization_id?: number | null) {
     try {
       const ticket = await supportTicketRepository.getTicketById(id, organization_id);
       
@@ -63,7 +63,7 @@ class SupportTicketService {
   }
 
   // Update ticket
-  async updateTicket(id: number, data: UpdateTicketData, performerId: number, organization_id?: number) {
+  async updateTicket(id: number, data: UpdateTicketData, performerId: number, organization_id?: number | null) {
     try {
       // If status is being changed to resolved, set resolved_at
       if (data.status === TicketStatus.RESOLVED && !data.resolved_at) {
@@ -130,7 +130,7 @@ class SupportTicketService {
   }
 
   // Get ticket statistics for dashboard
-  async getTicketStats(organization_id?: number) {
+  async getTicketStats(organization_id?: number | null) {
     try {
       return await supportTicketRepository.getTicketStats(organization_id);
     } catch (error) {
@@ -140,7 +140,7 @@ class SupportTicketService {
   }
 
   // Get recent tickets for dashboard
-  async getRecentTickets(organization_id?: number, limit = 5) {
+  async getRecentTickets(organization_id?: number | null, limit = 5) {
     try {
       return await supportTicketRepository.getRecentTickets(organization_id, limit);
     } catch (error) {
@@ -150,7 +150,7 @@ class SupportTicketService {
   }
 
   // Close ticket
-  async closeTicket(id: number, performerId: number, organization_id?: number) {
+  async closeTicket(id: number, performerId: number, organization_id?: number | null) {
     try {
       const ticket = await supportTicketRepository.updateTicket(
         id,
@@ -181,7 +181,7 @@ class SupportTicketService {
   }
 
   // Assign ticket to GSM
-  async assignTicket(id: number, assigned_to: number, performerId: number, organization_id?: number) {
+  async assignTicket(id: number, assigned_to: number, performerId: number, organization_id?: number | null) {
     try {
       const ticket = await supportTicketRepository.updateTicket(
         id,
@@ -212,7 +212,7 @@ class SupportTicketService {
   }
 
   // Get my tickets (for organization SM)
-  async getMyTickets(created_by: number, organization_id: number, page = 1, limit = 20) {
+  async getMyTickets(created_by: number, organization_id: number | null, page = 1, limit = 20) {
     try {
       const filters: TicketFilters = {
         created_by,

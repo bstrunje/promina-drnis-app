@@ -16,7 +16,11 @@ const apiInstance = axios.create({
 // Interceptor za dodavanje tokena u zaglavlje
 apiInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    // Provjeri GSM/Org SM token prvo, zatim obični member/admin token
+    const systemManagerToken = localStorage.getItem('systemManagerToken');
+    const regularToken = localStorage.getItem('token');
+    
+    const token = systemManagerToken ?? regularToken;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +30,8 @@ apiInstance.interceptors.request.use(
       const url = config.url ?? '';
       const hasTenantParam = Boolean((config.params as ParamsRecord | undefined)?.tenant);
       const isSystemManagerRoute = url.startsWith('/system-manager');
-      if (!hasTenantParam && !isSystemManagerRoute) {
+      const isSupportRoute = url.startsWith('/support');
+      if (!hasTenantParam && !isSystemManagerRoute && !isSupportRoute) {
         const tenant = getCurrentTenant();
         const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
         config.params = { ...currentParams, tenant } as unknown;

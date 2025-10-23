@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { supportTicketService } from '../services/supportTicket.service.js';
 import { TicketCategory, TicketStatus, TicketPriority } from '@prisma/client';
-import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 // Create new support ticket
 export const createTicket = async (req: Request, res: Response) => {
   try {
     const { title, description, category, priority } = req.body;
-    const organization_id = getOrganizationId(req);
+    // Za Support API, organization_id dolazi iz System Manager tokena
+    const organization_id = req.user?.organization_id || null;
     const created_by = req.user?.id;
 
     if (!created_by) {
@@ -53,7 +53,7 @@ export const createTicket = async (req: Request, res: Response) => {
 export const getTicketById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
@@ -87,7 +87,7 @@ export const getTicketById = async (req: Request, res: Response) => {
 // Get tickets list
 export const getTickets = async (req: Request, res: Response) => {
   try {
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
@@ -102,8 +102,9 @@ export const getTickets = async (req: Request, res: Response) => {
 
     const filters: Record<string, unknown> = {};
 
-    // For organization SM, only show their organization's tickets
-    if (user.role !== 'global_system_manager') {
+    // For Org SM (organization_id = number), filter by organization_id
+    // For GSM (organization_id = null), show all tickets
+    if (organization_id !== null) {
       filters.organization_id = organization_id;
     }
 
@@ -133,7 +134,7 @@ export const getTickets = async (req: Request, res: Response) => {
 // Get my tickets (for organization SM)
 export const getMyTickets = async (req: Request, res: Response) => {
   try {
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
@@ -160,7 +161,7 @@ export const updateTicket = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, priority, assigned_to } = req.body;
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
@@ -247,15 +248,16 @@ export const addTicketResponse = async (req: Request, res: Response) => {
 // Get ticket statistics
 export const getTicketStats = async (req: Request, res: Response) => {
   try {
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // For organization SM, filter by organization_id
-    const filterByOrg = user.role !== 'global_system_manager' ? organization_id : undefined;
+    // For GSM (organization_id = null), show all tickets (undefined filter)
+    // For Org SM (organization_id = number), filter by organization_id
+    const filterByOrg = organization_id !== null ? organization_id : undefined;
 
     const stats = await supportTicketService.getTicketStats(filterByOrg);
 
@@ -273,7 +275,7 @@ export const getTicketStats = async (req: Request, res: Response) => {
 export const closeTicket = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const organization_id = getOrganizationId(req);
+    const organization_id = req.user?.organization_id || null;
     const user = req.user;
 
     if (!user) {
