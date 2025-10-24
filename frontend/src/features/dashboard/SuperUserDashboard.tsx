@@ -6,6 +6,8 @@ import { Member } from "@shared/member";
 import { apiClient } from "@/utils/api";
 import { useBranding } from "../../hooks/useBranding";
 import { useTenantNavigation } from "../../hooks/useTenantNavigation";
+import { useAuth } from "../../context/useAuth";
+import api from '@/utils/api/apiConfig';
 
 interface Props {
   member: Member;
@@ -39,6 +41,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
   const { navigateTo } = useTenantNavigation();
   const { t } = useTranslation('dashboards');
   const { getPrimaryColor, branding } = useBranding();
+  const { updateUser } = useAuth();
 
   // Dinamički odabir welcome poruke na temelju spola
   const getWelcomeKey = () => {
@@ -61,8 +64,10 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
     setLoading(true);
     setError(null);
     try {
+      console.log('[SUPERUSER-DASHBOARD] Pozivam /admin/dashboard/stats...');
       // apiClient automatski dodaje Authorization header i tenant parametar
       const memberResponse = await apiClient.get<DashboardStatsResponse>('/admin/dashboard/stats');
+      console.log('[SUPERUSER-DASHBOARD] Odgovor:', memberResponse.data);
       
       // Update with real data
       setStats({
@@ -74,23 +79,31 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         systemHealth: memberResponse.data.systemHealth ?? "Unknown",
         lastBackup: memberResponse.data.lastBackup ?? "Never",
       });
-    } catch (err) {
-      console.error("Error fetching dashboard stats:", err);
+    } catch (error) {
+      console.error("[SUPERUSER-DASHBOARD] Error fetching dashboard stats:", error);
       setError("Failed to load dashboard data. Please try again later.");
-      
-      // Keep the default stats if there's an error
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Funkcija za ažuriranje user objekta s najnovijim podacima
+  const updateUserData = useCallback(async () => {
+    try {
+      const response = await api.get<Member>(`/members/me`);
+      updateUser(response.data);
+    } catch (error) {
+      console.error('Failed to update user data:', error);
+    }
+  }, [updateUser]);
+
   // Učitaj podatke pri mount-u i kad se promijeni branding (tenant)
   useEffect(() => {
     if (branding) {
-      console.log('[SUPERUSER-DASHBOARD] Učitavam podatke za tenant:', branding.subdomain, '(ID:', branding.id, ')');
       void fetchDashboardStats();
+      void updateUserData();
     }
-  }, [branding, fetchDashboardStats]);
+  }, [branding, fetchDashboardStats, updateUserData]);
 
   return (
     <div className="min-h-screen bg-gray-50">

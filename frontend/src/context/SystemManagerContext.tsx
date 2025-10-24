@@ -300,19 +300,8 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
         setManager(managerData);
         setIsAuthenticated(true);
 
-        // Dinamički redirect baziran na org slug i manager tipu
-        const orgSlug = getOrgSlug();
-        
-        if (managerData.organization_id === null) {
-          // Global System Manager → Organizations page
-          navigate('/system-manager/organizations');
-        } else {
-          // Organization System Manager → Dashboard s org slug
-          const dashboardPath = orgSlug 
-            ? `/${orgSlug}/system-manager/dashboard`
-            : '/system-manager/dashboard';
-          navigate(dashboardPath);
-        }
+        // Preusmjeravanje će biti upravljano od strane komponenti koje koriste ovaj context
+        // Context se fokusira samo na upravljanje autentifikacijom
       }
 
       // Vrati cijeli odgovor da ga pozivatelj može obraditi
@@ -325,7 +314,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
     } finally {
       setLoading(false);
     }
-  }, [navigate, setManager, setIsAuthenticated, setLoading, getOrgSlug]);
+  }, [setManager, setIsAuthenticated, setLoading]);
 
   // Funkcija za odjavu
   const logout = React.useCallback(() => {
@@ -341,12 +330,7 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       
       // console.log('System manager uspješno odjavljen');
       
-      // Dohvati branding parametar ako postoji
-      const branding = localStorage.getItem('systemManagerBranding');
-      const brandingQuery = branding ? `?branding=${branding}` : '';
-      
-      // Koristimo replace: true kako bismo spriječili povratak na dashboard nakon odjave
-      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
+      // Preusmjeravanje će biti upravljano od strane komponenti koje pozivaju logout
     } catch (error) {
       console.error('Greška prilikom odjave system managera:', error);
       
@@ -354,13 +338,9 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       setManager(null);
       setIsAuthenticated(false);
       
-      // Dohvati branding parametar ako postoji
-      const branding = localStorage.getItem('systemManagerBranding');
-      const brandingQuery = branding ? `?branding=${branding}` : '';
-      
-      navigate(`/system-manager/login${brandingQuery}`, { replace: true });
+      // Preusmjeravanje će biti upravljano od strane komponenti koje pozivaju logout
     }
-  }, [navigate, setManager, setIsAuthenticated]);
+  }, [setManager, setIsAuthenticated]);
 
   // Funkcija za dohvat aktualnog managera iz backenda (npr. nakon promjene username-a)
   // refreshManager i refreshToken funkcije su već definirane iznad

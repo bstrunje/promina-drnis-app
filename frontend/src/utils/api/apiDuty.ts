@@ -104,6 +104,32 @@ export const dutyApi = {
   },
 
   /**
+   * Dohvaća opcije za kreiranje dežurstva (Smart Grouping preview)
+   */
+  getDutyCreationOptions: async (date: string): Promise<{
+    canCreate: boolean;
+    error?: string;
+    options: {
+      type: 'join_existing' | 'extend_own' | 'join_group' | 'create_new';
+      activity?: DutyActivity;
+      newName?: string;
+      message: string;
+    }[];
+  }> => {
+    const response = await apiInstance.post<{
+      canCreate: boolean;
+      error?: string;
+      options: {
+        type: 'join_existing' | 'extend_own' | 'join_group' | 'create_new';
+        activity?: DutyActivity;
+        newName?: string;
+        message: string;
+      }[];
+    }>('/duty/options', { date });
+    return response.data;
+  },
+
+  /**
    * Kreira novo dežurstvo ili pridružuje člana postojećem
    */
   createDutyShift: async (date: string): Promise<DutyActivity> => {

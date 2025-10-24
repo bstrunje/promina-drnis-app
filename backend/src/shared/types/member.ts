@@ -83,6 +83,14 @@ export interface Member {
     password_hash?: string;
     last_login?: Date;
     status?: 'registered' | 'inactive' | 'pending';  // Added status field
+    organization_id?: number;
+    
+    // Organization relation (populated by backend when included)
+    organization?: {
+        id: number;
+        name: string;
+        short_name: string;
+    };
     
     // Authentication security fields
     failed_login_attempts?: number;  // Broj neuspjelih pokušaja prijave

@@ -39,6 +39,18 @@
   
   "scheduleNote": "Duties are only available on weekends and holidays. In July and August, only Sundays.",
   
+  "smartGrouping": {
+    "optionsTitle": "Duty Options",
+    "extendOwn": "Extend your existing duty shift to include {{date}}?",
+    "joinGroup": "Join existing duty shift '{{activityName}}'?",
+    "createNew": "Create new duty shift '{{activityName}}'?",
+    "joinExisting": "Join duty shift for {{date}}?",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "loadingOptions": "Loading options...",
+    "errorLoadingOptions": "Error loading duty options"
+  },
+  
   "days": {
     "pon": "Mon",
     "uto": "Tue",

@@ -107,6 +107,37 @@ export const getDutySettings = async (req: Request, res: Response, next: NextFun
 };
 
 /**
+ * Dohvaća opcije za kreiranje dežurstva (Smart Grouping preview)
+ * POST /api/duty/options
+ */
+export const getDutyCreationOptions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { date } = req.body;
+    const memberId = req.user?.id;
+    
+    if (!memberId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    if (!date) {
+      return res.status(400).json({ message: 'Date is required' });
+    }
+    
+    const dutyDate = new Date(date);
+    
+    if (isNaN(dutyDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+    
+    const options = await dutyService.getDutyCreationOptions(req, memberId, dutyDate);
+    
+    res.status(200).json(options);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Ažurira duty settings (System Manager only)
  * PUT /api/duty/settings
  */

@@ -1,6 +1,6 @@
 // frontend/src/features/systemManager/organizations/OrganizationWizard.tsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManagerNavigation } from '../hooks/useSystemManagerNavigation';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -37,7 +37,7 @@ const steps: WizardStep[] = [
 ];
 
 const OrganizationWizard: React.FC = () => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreateOrganizationData>>({
     primary_color: '#2563eb',
@@ -170,7 +170,7 @@ const OrganizationWizard: React.FC = () => {
       }
       
       // Success - redirect to list
-      navigate('/system-manager/organizations');
+      navigateTo('/system-manager/organizations');
     } catch (err) {
       console.error('Error creating organization:', err);
       setSubmitError('Failed to create organization. Please try again.');
@@ -184,7 +184,7 @@ const OrganizationWizard: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <Button variant="ghost" onClick={() => navigate('/system-manager/organizations')}>
+        <Button variant="ghost" onClick={() => navigateTo('/system-manager/organizations')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Organizations
         </Button>

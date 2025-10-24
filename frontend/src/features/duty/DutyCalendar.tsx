@@ -64,13 +64,49 @@ const DutyCalendar: React.FC = () => {
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  // Helper - izvuci datume iz naziva aktivnosti (kopija backend logike)
+  const extractDatesFromActivity = (activity: DutyActivity): Date[] => {
+    const dates = [new Date(activity.start_date)];
+    
+    // Pokušaj parsirati dodatne datume iz naziva aktivnosti
+    // Format: "Dežurstvo 26.10-27.10.2024" ili "Dežurstvo 26.10.2024"
+    const regex = /(\d{1,2}\.\d{1,2})(?:-(\d{1,2}\.\d{1,2}))?\.(\d{4})/;
+    const nameMatch = regex.exec(activity.name);
+    if (nameMatch) {
+      const year = parseInt(nameMatch[3]);
+      const startDateStr = `${nameMatch[1]}.${year}`;
+      const endDateStr = nameMatch[2] ? `${nameMatch[2]}.${year}` : null;
+      
+      try {
+        // Dodaj start datum ako nije već dodan
+        const startDate = new Date(startDateStr.split('.').reverse().join('-'));
+        if (!dates.some(d => isSameDay(d, startDate))) {
+          dates.push(startDate);
+        }
+        
+        // Dodaj end datum ako postoji
+        if (endDateStr) {
+          const endDate = new Date(endDateStr.split('.').reverse().join('-'));
+          if (!dates.some(d => isSameDay(d, endDate))) {
+            dates.push(endDate);
+          }
+        }
+      } catch {
+        // Ignoriraj greške parsiranja
+      }
+    }
+    
+    return dates;
+  };
+
   // Helper - pronađi duty za određeni datum
   const getDutyForDate = (date: Date): DutyActivity | undefined => {
     if (!calendarData) return undefined;
     
-    return calendarData.duties.find(duty => 
-      isSameDay(new Date(duty.start_date), date)
-    );
+    return calendarData.duties.find(duty => {
+      const activityDates = extractDatesFromActivity(duty);
+      return activityDates.some(activityDate => isSameDay(activityDate, date));
+    });
   };
 
   // Helper - provjeri je li praznik
@@ -80,6 +116,16 @@ const DutyCalendar: React.FC = () => {
     return calendarData.holidays.find(holiday => 
       isSameDay(new Date(holiday.date), date)
     );
+  };
+
+  // Helper - izračunaj koliko praznih ćelija treba na početku mjeseca
+  const getEmptyDaysAtStart = (): number => {
+    const firstDayOfMonth = startOfMonth(currentDate);
+    const dayOfWeek = firstDayOfMonth.getDay();
+    
+    // getDay() vraća: 0=nedjelja, 1=ponedjeljak, 2=utorak, ..., 6=subota
+    // Trebamo konvertirati u: 0=ponedjeljak, 1=utorak, ..., 6=nedjelja
+    return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   };
 
   // Helper - provjeri popunjenost dežurstva
@@ -143,10 +189,51 @@ const DutyCalendar: React.FC = () => {
     setCurrentDate(new Date());
   };
 
-  // Handler za pridruživanje dežurstvu
+  // Handler za pridruživanje dežurstvu s Smart Grouping
   const handleJoinDuty = async (date: Date) => {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
+      
+      // Dohvati opcije za Smart Grouping
+      const options = await dutyApi.getDutyCreationOptions(dateStr);
+      
+      if (!options.canCreate) {
+        alert(options.error ?? t('errorJoining'));
+        return;
+      }
+      
+      // Ako ima više opcija, prikaži dijalog
+      if (options.options.length > 1) {
+        const optionTexts = options.options.map((opt, index) => {
+          let message = '';
+          switch (opt.type) {
+            case 'extend_own':
+              message = t('smartGrouping.extendOwn', { date: format(date, 'dd.MM.yyyy') });
+              break;
+            case 'join_group':
+              message = t('smartGrouping.joinGroup', { activityName: opt.activity?.name ?? '' });
+              break;
+            case 'create_new':
+              message = t('smartGrouping.createNew', { activityName: opt.newName ?? '' });
+              break;
+            case 'join_existing':
+              message = t('smartGrouping.joinExisting', { date: format(date, 'dd.MM.yyyy') });
+              break;
+          }
+          return `${index + 1}. ${message}`;
+        }).join('\n');
+        
+        const choice = window.prompt(
+          `${t('smartGrouping.optionsTitle')}:\n\n${optionTexts}\n\n${t('smartGrouping.confirm')} (1-${options.options.length}):`
+        );
+        
+        const choiceIndex = parseInt(choice ?? '1', 10) - 1;
+        if (choiceIndex < 0 || choiceIndex >= options.options.length) {
+          return; // Korisnik je odustao ili unio nevaljan broj
+        }
+      }
+      
+      // Kreiraj dežurstvo (backend će automatski primijeniti Smart Grouping)
       await dutyApi.createDutyShift(dateStr);
       
       // Osvježi podatke
@@ -283,6 +370,11 @@ const DutyCalendar: React.FC = () => {
           <div key={day} className="calendar-day-header">
             {t(`days.${day.toLowerCase()}`)}
           </div>
+        ))}
+
+        {/* Prazne ćelije na početku mjeseca da se prvi dan postavi na pravu poziciju */}
+        {Array.from({ length: getEmptyDaysAtStart() }, (_, i) => (
+          <div key={`empty-${i}`} className="calendar-day-empty" />
         ))}
 
         {/* Dani */}

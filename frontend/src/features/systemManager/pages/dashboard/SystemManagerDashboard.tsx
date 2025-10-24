@@ -100,10 +100,7 @@ const SystemManagerDashboard: React.FC = () => {
 
         {/* Tab sadržaj - Članovi (System Manager) */}
         {activeTab === 'members' && (
-          <>
-            <h2 className="text-xl font-semibold mb-6">Members</h2>
-            <SystemManagerMembersView />
-          </>
+          <SystemManagerMembersView setActiveTab={setActiveTab} />
         )}
         
         {/* Tab sadržaj - Postavke sustava */}

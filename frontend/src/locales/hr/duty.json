@@ -39,6 +39,18 @@
   
   "scheduleNote": "Dežurstva su moguća samo vikendom i praznicima. U srpnju i kolovozu samo nedjeljom.",
   
+  "smartGrouping": {
+    "optionsTitle": "Opcije dežurstva",
+    "extendOwn": "Proširiti postojeće dežurstvo na {{date}}?",
+    "joinGroup": "Pridružiti se postojećem dežurstvu '{{activityName}}'?",
+    "createNew": "Kreirati novo dežurstvo '{{activityName}}'?",
+    "joinExisting": "Pridružiti se dežurstvu za {{date}}?",
+    "confirm": "Potvrdi",
+    "cancel": "Odustani",
+    "loadingOptions": "Učitavanje opcija...",
+    "errorLoadingOptions": "Greška pri učitavanju opcija dežurstva"
+  },
+  
   "days": {
     "pon": "Pon",
     "uto": "Uto",

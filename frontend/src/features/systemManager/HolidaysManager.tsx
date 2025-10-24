@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManagerNavigation } from './hooks/useSystemManagerNavigation';
 import { ArrowLeft } from 'lucide-react';
 import { 
   getHolidaysForYear, 
@@ -13,7 +13,7 @@ import {
 import './HolidaysManager.css';
 
 const HolidaysManager: React.FC = () => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -126,7 +126,7 @@ const HolidaysManager: React.FC = () => {
     <div className="holidays-manager">
       <div className="holidays-header">
         <button
-          onClick={() => navigate('/system-manager/settings')}
+          onClick={() => navigateTo('/system-manager/settings')}
           className="back-button"
           style={{
             display: 'flex',

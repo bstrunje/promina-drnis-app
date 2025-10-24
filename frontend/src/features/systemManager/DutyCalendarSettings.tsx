@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManagerNavigation } from './hooks/useSystemManagerNavigation';
 import { ArrowLeft } from 'lucide-react';
 import { getDutySettings, updateDutySettings } from './utils/systemManagerApi';
 import './DutyCalendarSettings.css';
@@ -11,7 +11,7 @@ interface DutySettingsState {
 }
 
 const DutyCalendarSettings: React.FC = () => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const [settings, setSettings] = useState<DutySettingsState>({
     dutyCalendarEnabled: false,
     dutyMaxParticipants: 2,
@@ -80,7 +80,7 @@ const DutyCalendarSettings: React.FC = () => {
     <div className="duty-calendar-settings">
       <div className="settings-header">
         <button
-          onClick={() => navigate('/system-manager/settings')}
+          onClick={() => navigateTo('/system-manager/settings')}
           className="back-button"
           style={{
             display: 'flex',

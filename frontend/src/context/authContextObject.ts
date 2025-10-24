@@ -10,6 +10,7 @@ export interface AuthContextType {
   login: (user: Member, token: string, refreshToken?: string) => void;
   logout: () => void | Promise<void>;
   refreshToken: () => Promise<string | null>;
+  updateUser: (user: Member) => void; // Ažurira user objekt
   isLoading: boolean;
   softLogout: () => void; // 'soft logout'
   lastPath: string | null; // posljednja putanja

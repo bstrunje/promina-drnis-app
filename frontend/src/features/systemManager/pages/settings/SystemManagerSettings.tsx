@@ -7,7 +7,7 @@ import { useTimeZone } from '../../../../context/useTimeZone'; // Premješten u 
 import { SystemSettings } from '@shared/settings';
 import { getCurrentDate } from '../../../../utils/dateUtils';
 import systemManagerApi, { updateSystemSettings, getSystemSettings } from '../../utils/systemManagerApi';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigation';
 
 // Konstante za uloge i dozvole
 const MEMBER_ROLES = [
@@ -924,7 +924,7 @@ const SystemSettingsForm: React.FC<SystemSettingsFormProps> = ({
 };
 
 const SystemManagerSettings: React.FC = () => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const { manager } = useSystemManager();
   const { refreshTimeZone } = useTimeZone(); // Dodana linija
   
@@ -1193,7 +1193,7 @@ const SystemManagerSettings: React.FC = () => {
                 System Settings are managed by individual Organization System Managers.
               </p>
               <button
-                onClick={() => navigate('/system-manager')}
+                onClick={() => navigateTo('/system-manager')}
                 className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
               >
                 Back to Dashboard
@@ -1233,7 +1233,7 @@ const SystemManagerSettings: React.FC = () => {
         {/* Quick Links to Advanced Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <button
-            onClick={() => navigate('/system-manager/holidays')}
+            onClick={() => navigateTo('/system-manager/holidays')}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left group"
           >
             <div className="flex items-start space-x-4">
@@ -1250,7 +1250,7 @@ const SystemManagerSettings: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/system-manager/duty-settings')}
+            onClick={() => navigateTo('/system-manager/duty-settings')}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left group"
           >
             <div className="flex items-start space-x-4">

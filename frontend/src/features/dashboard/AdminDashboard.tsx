@@ -11,6 +11,8 @@ import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardNavCards } from "./components/DashboardNavCards";
 import { StampInventoryManager } from "./components/StampInventoryManager";
 import { EquipmentInventoryManager } from "./components/EquipmentInventoryManager";
+import { useAuth } from '../../context/useAuth';
+import api from '@/utils/api/apiConfig';
 
 interface Props {
   member: Member;
@@ -24,6 +26,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   const { navigateTo } = useTenantNavigation();
   const { toast } = useToast();
   const { t } = useTranslation(['dashboards', 'common']);
+  const { updateUser } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   
@@ -47,11 +50,22 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       });
     }
   }, [toast, t]);
+
+  // Funkcija za ažuriranje user objekta s najnovijim podacima
+  const updateUserData = useCallback(async () => {
+    try {
+      const response = await api.get<Member>(`/members/me`);
+      updateUser(response.data);
+    } catch (error) {
+      console.error('Failed to update user data:', error);
+    }
+  }, [updateUser]);
   
   // Efekt za dohvaćanje nepročitanih poruka
   useEffect(() => {
     // Dohvati odmah na početku
     void checkUnreadMessages();
+    void updateUserData();
     
     // Postavi interval za periodičko dohvaćanje
     const intervalId = setInterval(() => {
@@ -72,7 +86,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [checkUnreadMessages]);
+  }, [checkUnreadMessages, updateUserData]);
 
   return (
     <div className="min-h-screen bg-gray-50">

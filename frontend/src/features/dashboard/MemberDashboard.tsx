@@ -13,6 +13,7 @@ import api from '@/utils/api/apiConfig';
 import { formatInputDate } from '../../utils/dateUtils';
 import { useBranding } from '../../hooks/useBranding';
 import { useTenantNavigation } from '../../hooks/useTenantNavigation';
+import { useAuth } from '../../context/useAuth';
 
 interface MemberStats {
   unreadMessages: number;
@@ -48,6 +49,7 @@ const MemberDashboard: React.FC = () => {
   });
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
+  const { updateUser } = useAuth();
   // MULTI-TENANCY FIX: Ne inicijaliziraj s member prop-om jer može biti iz starog tenanta
   // Uvijek fetchuj fresh data iz trenutnog tenanta
   const [fullMember, setFullMember] = useState<Member | null>(null);
@@ -148,6 +150,9 @@ const MemberDashboard: React.FC = () => {
           // Dohvati trenutno prijavljenog člana neovisno o ID-u iz propsa
           const response = await api.get<Member>(`/members/me`);
           setFullMember(response.data);
+          
+          // Ažuriraj user objekt u AuthContext-u s najnovijim podacima
+          updateUser(response.data);
         } catch (error) {
           console.error('Failed to fetch full member data:', error);
         }

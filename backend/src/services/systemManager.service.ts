@@ -581,7 +581,23 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
 
     async getAllMembers(organizationId: number | null | undefined) {
         const whereClause = organizationId ? { organization_id: organizationId } : {};
-        return prisma.member.findMany({ where: whereClause });
+        return prisma.member.findMany({ 
+            where: whereClause,
+            include: {
+                organization: {
+                    select: {
+                        id: true,
+                        name: true,
+                        short_name: true
+                    }
+                }
+            },
+            orderBy: [
+                { status: 'asc' }, // pending first, then registered
+                { last_name: 'asc' },
+                { first_name: 'asc' }
+            ]
+        });
     },
 
     async assignPasswordToMember(memberId: number, password: string, cardNumber: string | null, organizationId: number | null | undefined) {

@@ -47,6 +47,14 @@ export const usePermissions = () => {
 
       // Za ostale korisnike, dohvati dozvole iz API-ja
       try {
+        // Provjeri da li user ima member_id (može biti undefined za neke tipove korisnika)
+        if (!user.member_id) {
+          console.warn('User object missing member_id:', user);
+          setPermissions(null);
+          setLoading(false);
+          return;
+        }
+        
         const response = await api.get<AdminPermissionsModel>(`/admin/permissions/${user.member_id}`);
         
         if (response.data) {

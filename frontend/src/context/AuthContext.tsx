@@ -114,6 +114,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     AuthTokenService.startAutoRefresh();
   }, []);
 
+  // Funkcija za ažuriranje user objekta
+  const updateUser = React.useCallback((updatedUser: Member) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  }, []);
+
   // Inicijalizacija stanja iz localStorage i provjera valjanosti tokena
   useEffect(() => {
     const checkAuth = async () => {
@@ -199,6 +205,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     login,
     logout,
     refreshToken,
+    updateUser,
     isLoading,
     softLogout,
     lastPath,

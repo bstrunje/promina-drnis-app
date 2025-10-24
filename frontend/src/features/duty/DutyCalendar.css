@@ -147,6 +147,12 @@
   border-radius: 5px 5px 0 0;
 }
 
+.calendar-day-empty {
+  /* Prazna ćelija za poravnavanje početka mjeseca */
+  background: transparent;
+  border: none;
+}
+
 /* Loading & Error states */
 .duty-calendar-loading,
 .duty-calendar-error,

@@ -6,7 +6,7 @@ import {
   createDutyStartTime,
   getAllScheduleInfo
 } from '../config/dutySchedule.js';
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, addDays, subDays, isSameDay } from 'date-fns';
 import { Request } from 'express';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
@@ -48,6 +48,153 @@ const getDutySettings = async (organizationId: number) => {
     dutyMaxParticipants: 2,
     dutyAutoCreateEnabled: true
   };
+};
+
+/**
+ * Smart Grouping: Pronalazi povezana dežurstva u rasponu ±2 dana
+ * Traži aktivnosti istog člana ili bilo kojeg člana (za pridruživanje)
+ */
+const findRelatedDutyActivities = async (
+  organizationId: number, 
+  date: Date, 
+  memberId: number
+): Promise<{
+  memberOwnDuties: unknown[];
+  availableGroupDuties: unknown[];
+}> => {
+  const dutyTypeId = await getDutyActivityTypeId(organizationId);
+  
+  // Definiraj raspon pretraživanja (±2 dana)
+  const searchStart = startOfDay(subDays(date, 2));
+  const searchEnd = endOfDay(addDays(date, 2));
+  
+  // Pronađi sve duty aktivnosti u rasponu
+  const relatedActivities = await prisma.activity.findMany({
+    where: {
+      organization_id: organizationId,
+      type_id: dutyTypeId,
+      start_date: {
+        gte: searchStart,
+        lte: searchEnd
+      }
+    },
+    include: {
+      participants: {
+        include: {
+          member: {
+            select: {
+              member_id: true,
+              full_name: true
+            }
+          }
+        }
+      },
+      activity_type: true,
+      organizer: {
+        select: {
+          member_id: true,
+          full_name: true
+        }
+      }
+    },
+    orderBy: {
+      start_date: 'asc'
+    }
+  });
+  
+  // Filtriraj aktivnosti člana (za grupiranje vlastitih dežurstava)
+  const memberOwnDuties = relatedActivities.filter(activity => 
+    activity.participants.some(p => p.member_id === memberId)
+  );
+  
+  // Filtriraj dostupne aktivnosti drugih članova (za pridruživanje)
+  const settings = await getDutySettings(organizationId);
+  const maxParticipants = settings.dutyMaxParticipants || 2;
+  
+  const availableGroupDuties = relatedActivities.filter(activity => {
+    const isNotMemberOwn = !activity.participants.some(p => p.member_id === memberId);
+    const hasSpace = activity.participants.length < maxParticipants;
+    return isNotMemberOwn && hasSpace;
+  });
+  
+  return {
+    memberOwnDuties,
+    availableGroupDuties
+  };
+};
+
+/**
+ * Generiraj pametni naziv aktivnosti na temelju datuma
+ */
+const generateSmartActivityName = async (dates: Date[]): Promise<string> => {
+  if (dates.length === 0) return 'Dežurstvo';
+  
+  // Sortiraj datume
+  const sortedDates = dates.sort((a, b) => a.getTime() - b.getTime());
+  const firstDate = sortedDates[0];
+  const lastDate = sortedDates[sortedDates.length - 1];
+  
+  // Provjeri ima li blagdana u rasponu
+  const holidays = await Promise.all(
+    sortedDates.map(date => holidayService.getHolidayForDate(date))
+  );
+  const hasHoliday = holidays.some(h => h !== null);
+  
+  if (sortedDates.length === 1) {
+    const holiday = holidays[0];
+    const formattedDate = format(firstDate, 'dd.MM.yyyy');
+    return holiday 
+      ? `Dežurstvo - ${holiday.name} (${formattedDate})`
+      : `Dežurstvo ${formattedDate}`;
+  }
+  
+  // Više datuma - generiraj raspon
+  const startFormatted = format(firstDate, 'dd.MM');
+  const endFormatted = format(lastDate, 'dd.MM.yyyy');
+  
+  if (hasHoliday) {
+    const holidayNames = holidays.filter(h => h).map(h => h!.name).join(', ');
+    return `Dežurstvo - ${holidayNames} (${startFormatted}-${endFormatted})`;
+  }
+  
+  return `Dežurstvo ${startFormatted}-${endFormatted}`;
+};
+
+/**
+ * Izvuci datume iz aktivnosti (iz start_date i naziva)
+ */
+const extractDatesFromActivity = (activity: unknown): Date[] => {
+  const activityData = activity as { start_date: string; name: string };
+  const dates = [new Date(activityData.start_date)];
+  
+  // Pokušaj parsirati dodatne datume iz naziva aktivnosti
+  // Format: "Dežurstvo 26.10-27.10.2024" ili "Dežurstvo 26.10.2024"
+  const nameMatch = activityData.name.match(/(\d{1,2}\.\d{1,2})(?:-(\d{1,2}\.\d{1,2}))?\.(\d{4})/);
+  if (nameMatch) {
+    const year = parseInt(nameMatch[3]);
+    const startDateStr = `${nameMatch[1]}.${year}`;
+    const endDateStr = nameMatch[2] ? `${nameMatch[2]}.${year}` : null;
+    
+    try {
+      // Dodaj start datum ako nije već dodan
+      const startDate = new Date(startDateStr.split('.').reverse().join('-'));
+      if (!dates.some(d => isSameDay(d, startDate))) {
+        dates.push(startDate);
+      }
+      
+      // Dodaj end datum ako postoji
+      if (endDateStr) {
+        const endDate = new Date(endDateStr.split('.').reverse().join('-'));
+        if (!dates.some(d => isSameDay(d, endDate))) {
+          dates.push(endDate);
+        }
+      }
+    } catch {
+      // Ignoriraj greške parsiranja
+    }
+  }
+  
+  return dates.sort((a, b) => a.getTime() - b.getTime());
 };
 
 /**
@@ -104,20 +251,18 @@ const validateDutySlot = async (organizationId: number, date: Date, memberId: nu
 };
 
 /**
- * Creates a new duty shift or adds member to existing one
+ * Creates a new duty shift or adds member to existing one with Smart Grouping
  */
 export const createDutyShift = async (req: Request, memberId: number, date: Date) => {
   const organizationId = await getOrganizationId(req);
   const validation = await validateDutySlot(organizationId, date, memberId);
   
-  // If duty shift already exists, add member to it
+  // If duty shift already exists for this exact date, add member to it
   if (validation.existingDuty) {
     await prisma.activityParticipation.create({
       data: {
         activity_id: validation.existingDuty.activity_id,
         member_id: memberId,
-        // start_time and end_time are set only if actual times are already recorded
-        // For PLANNED activities, leave as null
         start_time: validation.existingDuty.actual_start_time || null,
         end_time: validation.existingDuty.actual_end_time || null
       }
@@ -137,37 +282,126 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
             }
           }
         },
-        activity_type: true
+        activity_type: true,
+        organizer: {
+          select: {
+            member_id: true,
+            full_name: true
+          }
+        }
       }
     });
   }
   
-  // Otherwise create new duty shift
+  // Smart Grouping: Provjeri ima li povezanih dežurstava
+  const relatedDuties = await findRelatedDutyActivities(organizationId, date, memberId);
+  
+  // Prioritet 1: Dodaj u vlastito postojeće dežurstvo (grupiranje)
+  if (relatedDuties.memberOwnDuties.length > 0) {
+    const targetDuty = relatedDuties.memberOwnDuties[0] as { activity_id: number; actual_start_time?: Date; actual_end_time?: Date; participants: { member_id: number }[] }; // Uzmi prvo pronađeno
+    
+    // Provjeri je li član već u aktivnosti
+    const alreadyParticipating = targetDuty.participants?.some(p => p.member_id === memberId);
+    
+    if (!alreadyParticipating) {
+      // Dodaj člana u postojeću aktivnost
+      await prisma.activityParticipation.create({
+        data: {
+          activity_id: targetDuty.activity_id,
+          member_id: memberId,
+          start_time: targetDuty.actual_start_time || null,
+          end_time: targetDuty.actual_end_time || null
+        }
+      });
+    }
+    
+    // Ažuriraj naziv aktivnosti da uključuje novi datum
+    const existingDates = extractDatesFromActivity(targetDuty);
+    const allDates = [...existingDates, date];
+    const newName = await generateSmartActivityName(allDates);
+    
+    await prisma.activity.update({
+      where: { activity_id: targetDuty.activity_id },
+      data: { name: newName }
+    });
+    
+    // Vrati ažuriranu aktivnost
+    return prisma.activity.findUnique({
+      where: { activity_id: targetDuty.activity_id },
+      include: {
+        participants: {
+          include: {
+            member: {
+              select: {
+                member_id: true,
+                full_name: true
+              }
+            }
+          }
+        },
+        activity_type: true,
+        organizer: {
+          select: {
+            member_id: true,
+            full_name: true
+          }
+        }
+      }
+    });
+  }
+  
+  // Prioritet 2: Pridruži se tuđem dežurstvu (ako ima mjesta)
+  if (relatedDuties.availableGroupDuties.length > 0) {
+    const targetDuty = relatedDuties.availableGroupDuties[0] as { activity_id: number; actual_start_time?: Date; actual_end_time?: Date; participants: { member_id: number }[] }; // Uzmi prvo dostupno
+    
+    // Provjeri je li član već u aktivnosti
+    const alreadyParticipating = targetDuty.participants?.some(p => p.member_id === memberId);
+    
+    if (!alreadyParticipating) {
+      await prisma.activityParticipation.create({
+        data: {
+          activity_id: targetDuty.activity_id,
+          member_id: memberId,
+          start_time: targetDuty.actual_start_time || null,
+          end_time: targetDuty.actual_end_time || null
+        }
+      });
+    }
+    
+    // Vrati ažuriranu aktivnost
+    return prisma.activity.findUnique({
+      where: { activity_id: targetDuty.activity_id },
+      include: {
+        participants: {
+          include: {
+            member: {
+              select: {
+                member_id: true,
+                full_name: true
+              }
+            }
+          }
+        },
+        activity_type: true,
+        organizer: {
+          select: {
+            member_id: true,
+            full_name: true
+          }
+        }
+      }
+    });
+  }
+  
+  // Prioritet 3: Kreiraj novo dežurstvo
   const startTime = createDutyStartTime(date);
-  // const endTime = createDutyEndTime(date); // We don't need end time for PLANNED activity
-  
-  // Check if it's a holiday
-  const holiday = await holidayService.getHolidayForDate(date);
-  
-  // Generate activity name
-  const formattedDate = format(date, 'dd.MM.yyyy');
-  const activityName = holiday 
-    ? `Duty Shift - ${holiday.name} (${formattedDate})`
-    : `Duty Shift ${formattedDate}`;
-  
-  // Create activity through existing service
+  const activityName = await generateSmartActivityName([date]);
   const dutyTypeId = await getDutyActivityTypeId(organizationId);
   
-  // Activity is created with PLANNED status
-  // start_date is set to planned duty shift start time
-  // actual_start_time and actual_end_time remain null until admin completes the activity
-  // Status will automatically be 'PLANNED' because actual_start_time and actual_end_time are not set
   const activity = await createActivityService(req, {
     name: activityName,
     activity_type_id: dutyTypeId,
-    start_date: startTime, // Set to planned start time (e.g. 07:00)
-    // actual_start_time: DON'T send - leave as null
-    // actual_end_time: DON'T send - leave as null
+    start_date: startTime,
     participant_ids: [memberId],
     recognition_percentage: 100
   }, memberId);
@@ -324,4 +558,77 @@ export const getDutySettingsPublic = async (organizationId: number) => {
     ...settings,
     scheduleInfo
   };
+};
+
+/**
+ * Dohvaća opcije za kreiranje dežurstva (za Smart Grouping preview)
+ */
+export const getDutyCreationOptions = async (req: Request, memberId: number, date: Date) => {
+  const organizationId = await getOrganizationId(req);
+  
+  try {
+    // Provjeri osnovne uvjete
+    const validation = await validateDutySlot(organizationId, date, memberId);
+    
+    // Ako već postoji dežurstvo za taj datum
+    if (validation.existingDuty) {
+      return {
+        canCreate: true,
+        options: [{
+          type: 'join_existing',
+          activity: validation.existingDuty,
+          message: 'Join existing duty shift for this date'
+        }]
+      };
+    }
+    
+    // Smart Grouping opcije
+    const relatedDuties = await findRelatedDutyActivities(organizationId, date, memberId);
+    const options: unknown[] = [];
+    
+    // Opcija 1: Dodaj u vlastito dežurstvo
+    if (relatedDuties.memberOwnDuties.length > 0) {
+      const targetDuty = relatedDuties.memberOwnDuties[0] as { activity_id: number; name: string };
+      const existingDates = extractDatesFromActivity(targetDuty);
+      const allDates = [...existingDates, date];
+      const newName = await generateSmartActivityName(allDates);
+      
+      options.push({
+        type: 'extend_own',
+        activity: targetDuty,
+        newName,
+        message: `Extend your existing duty shift to include ${format(date, 'dd.MM.yyyy')}`
+      });
+    }
+    
+    // Opcija 2: Pridruži se tuđem dežurstvu
+    if (relatedDuties.availableGroupDuties.length > 0) {
+      const targetDuty = relatedDuties.availableGroupDuties[0] as { activity_id: number; name: string };
+      options.push({
+        type: 'join_group',
+        activity: targetDuty,
+        message: `Join existing duty shift: ${targetDuty.name}`
+      });
+    }
+    
+    // Opcija 3: Kreiraj novo
+    const newActivityName = await generateSmartActivityName([date]);
+    options.push({
+      type: 'create_new',
+      newName: newActivityName,
+      message: `Create new duty shift: ${newActivityName}`
+    });
+    
+    return {
+      canCreate: true,
+      options
+    };
+    
+  } catch (error) {
+    return {
+      canCreate: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      options: []
+    };
+  }
 };

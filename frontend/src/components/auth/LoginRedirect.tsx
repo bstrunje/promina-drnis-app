@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
+import { extractOrgSlugFromPath } from '../../utils/tenantUtils';
 
 /**
  * Komponenta koja upravlja preusmjeravanjem nakon uspješne prijave
@@ -21,19 +22,23 @@ const LoginRedirect: React.FC = () => {
       if (redirectPath && redirectPath !== '/' && redirectPath !== '/login') {
         navigate(redirectPath);
       } else {
+        // Dohvati org slug iz trenutnog URL-a
+        const orgSlug = extractOrgSlugFromPath();
+        const orgPrefix = orgSlug ? `/${orgSlug}` : '';
+        
         // Preusmjeri korisnika na odgovarajući dashboard prema ulozi (role)
         switch(user.role) {
           case 'member_administrator':
-            navigate("/admin/dashboard");
+            navigate(`${orgPrefix}/admin/dashboard`);
             break;
           case 'member_superuser':
-            navigate("/superuser/dashboard");
+            navigate(`${orgPrefix}/superuser/dashboard`);
             break;
           case 'member':
-            navigate("/member/dashboard");
+            navigate(`${orgPrefix}/member/dashboard`);
             break;
           default:
-            navigate("/profile");
+            navigate(`${orgPrefix}/profile`);
         }
       }
     }

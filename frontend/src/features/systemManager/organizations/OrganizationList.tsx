@@ -1,6 +1,6 @@
 // frontend/src/features/systemManager/organizations/OrganizationList.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManagerNavigation } from '../hooks/useSystemManagerNavigation';
 import { Plus, Building2, Users, Activity, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -33,7 +33,7 @@ interface OrganizationListProps {
 }
 
 const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }) => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const { manager } = useSystemManager();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,7 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
               <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all organizations in the system</p>
             </div>
             <Button 
-              onClick={() => navigate('/system-manager/organizations/create')}
+              onClick={() => navigateTo('/system-manager/organizations/create')}
               className="w-full sm:w-auto"
             >
               {/* Gumb za kreiranje organizacije */}
@@ -121,7 +121,7 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
             <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold mb-2">No organizations yet</h3>
             <p className="text-gray-600 mb-4">Get started by creating your first organization</p>
-            <Button onClick={() => navigate('/system-manager/organizations/create')}>
+            <Button onClick={() => navigateTo('/system-manager/organizations/create')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Organization
             </Button>
@@ -188,7 +188,7 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => navigate(`/system-manager/organizations/${org.id}`)}
+                          onClick={() => navigateTo(`/system-manager/organizations/${org.id}`)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           <span className="hidden sm:inline">Edit</span>

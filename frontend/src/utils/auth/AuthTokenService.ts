@@ -19,6 +19,7 @@ export interface RefreshTokenResponse {
  */
 // Varijabla za praćenje timera za automatsko osvježavanje
 let refreshTimerId: number | null = null;
+let visibilityChangeHandler: (() => void) | null = null;
 
 // Vrijeme u milisekundama prije isteka tokena kada ćemo ga osvježiti (2 minute)
 const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
@@ -155,32 +156,47 @@ export class AuthTokenService {
     // Prvo očisti postojeći timer ako postoji
     this.stopAutoRefresh();
 
-    // console.log('Započeto automatsko osvježavanje tokena');
-
     // Postavi interval koji će provjeravati treba li osvježiti token svakih 30 sekundi
     refreshTimerId = window.setInterval(() => {
-      // Ne prosljeđujemo async funkciju direktno setInterval-u (lint: no-misused-promises)
       void (async () => {
         try {
           if (this.shouldRefreshToken()) {
-            // console.log('Automatsko osvježavanje tokena...');
-            // Zaštita: ako je refresh već u tijeku, ne pokreći drugi
             const newToken = await this.refreshToken();
 
             if (newToken) {
-              // console.log('Token uspješno osvježen automatski');
+              // Token uspješno osvježen
             } else {
-              console.warn('Automatsko osvježavanje tokena nije uspjelo. Pokrećem odjavu korisnika.');
               // Ako osvježavanje nije uspjelo, zaustavi automatsko osvježavanje i odjavi korisnika
               this.stopAutoRefresh();
-              void this.logout(); // Pozivamo logout
+              void this.logout();
             }
           }
         } catch (error) {
           console.error('Greška pri automatskom osvježavanju tokena:', error);
         }
       })();
-    }, 30000); // Provjera svakih 30 sekundi
+    }, 30000);
+
+    // Dodaj listener za kada se tab reaktivira - provjeri token odmah
+    visibilityChangeHandler = () => {
+      if (document.visibilityState === 'visible') {
+        void (async () => {
+          try {
+            if (this.shouldRefreshToken()) {
+              const newToken = await this.refreshToken();
+              if (!newToken) {
+                this.stopAutoRefresh();
+                void this.logout();
+              }
+            }
+          } catch (error) {
+            console.error('Greška pri provjeri tokena nakon reaktiviranja taba:', error);
+          }
+        })();
+      }
+    };
+
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
   }
 
   /**
@@ -190,7 +206,11 @@ export class AuthTokenService {
     if (refreshTimerId !== null) {
       window.clearInterval(refreshTimerId);
       refreshTimerId = null;
-      // console.log('Zaustavljeno automatsko osvježavanje tokena');
+    }
+    
+    if (visibilityChangeHandler !== null) {
+      document.removeEventListener('visibilitychange', visibilityChangeHandler);
+      visibilityChangeHandler = null;
     }
   }
 
@@ -247,20 +267,18 @@ export class AuthTokenService {
     } finally {
       // Čistimo sve tokene
       tokenStorage.clearAllTokens();
+      
       // console.log("Uklonjeni svi tokeni");
       // Preusmjeri korisnika na login stranicu
       // Preusmjeravanje na login koristeći globalni navigate helper (ako je dostupan)
       // ili window.location.replace kao fallback
       // Komentar: Ovo omogućuje SPA redirect gdje god je moguće
       try {
-        console.log('[AuthTokenService.logout] Pokušavam pozvati navigateToLogin...');
         navigateToLogin();
-      } catch (e) {
-        console.error('[AuthTokenService.logout] Greška pri importu navigationHelper ili pozivu navigateToLogin:', e);
+      } catch {
         // Ako helper nije dostupan, koristimo klasični redirect s org prefix-om
         const orgSlug = extractOrgSlugFromPath();
         const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
-        console.log(`[AuthTokenService.logout] Fallback: window.location.replace("${loginPath}")`);
         window.location.replace(loginPath);
       }
     }

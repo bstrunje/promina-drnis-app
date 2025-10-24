@@ -29,6 +29,13 @@ router.get('/duties/:year/:month', dutyController.getDutiesForMonth);
 router.get('/settings', dutyController.getDutySettings);
 
 /**
+ * POST /api/duty/options
+ * Dohvaća opcije za kreiranje dežurstva (Smart Grouping preview)
+ * Dostupno svim prijavljenim članovima
+ */
+router.post('/options', dutyController.getDutyCreationOptions);
+
+/**
  * POST /api/duty/create
  * Kreira novo dežurstvo ili pridružuje člana postojećem
  * Dostupno svim prijavljenim članovima (za sebe)

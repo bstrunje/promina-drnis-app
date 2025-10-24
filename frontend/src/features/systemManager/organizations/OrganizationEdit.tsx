@@ -1,6 +1,7 @@
 // frontend/src/features/systemManager/organizations/OrganizationEdit.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useSystemManagerNavigation } from '../hooks/useSystemManagerNavigation';
 import { ArrowLeft, Save, Upload, X, Eye, EyeOff, Shield } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -21,7 +22,7 @@ import { getApiBaseUrl } from '../../../utils/tenantUtils';
 import systemManagerApi from '../utils/systemManagerApi';
 
 const OrganizationEdit: React.FC = () => {
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const { id } = useParams<{ id: string }>();
   const { manager: currentManager } = useSystemManager();
   const [loading, setLoading] = useState(true);
@@ -165,7 +166,7 @@ const OrganizationEdit: React.FC = () => {
       
       // Zatim ažuriraj ostale podatke
       await updateOrganization(parseInt(id), formData);
-      navigate('/system-manager/organizations');
+      navigateTo('/system-manager/organizations');
     } catch (err) {
       console.error('Error updating organization:', err);
       setError('Failed to update organization');
@@ -276,7 +277,7 @@ const OrganizationEdit: React.FC = () => {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate('/system-manager/organizations')}
+          onClick={() => navigateTo('/system-manager/organizations')}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -687,7 +688,7 @@ const OrganizationEdit: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/system-manager/organizations')}
+                onClick={() => navigateTo('/system-manager/organizations')}
                 disabled={saving}
               >
                 Cancel

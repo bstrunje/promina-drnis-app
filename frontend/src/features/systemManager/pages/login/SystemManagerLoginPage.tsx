@@ -1,10 +1,11 @@
 // features/systemManager/pages/login/SystemManagerLoginPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useBranding } from '../../../../hooks/useBranding';
 import { IMAGE_BASE_URL } from '../../../../utils/config';
+import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigation';
 
 /**
  * Helper za detekciju org slug-a iz URL-a
@@ -23,9 +24,10 @@ const getOrgSlugFromPath = (): string | null => {
 };
 
 const SystemManagerLoginPage: React.FC = () => {
-  const { login } = useSystemManager();
+  const { login, isAuthenticated, manager } = useSystemManager();
   const { branding } = useBranding();
   const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +36,19 @@ const SystemManagerLoginPage: React.FC = () => {
   
   // Dohvati org slug za detekciju tipa SM-a
   const orgSlug = getOrgSlugFromPath();
+
+  // Preusmjeri nakon uspješne autentifikacije
+  useEffect(() => {
+    if (isAuthenticated && manager) {
+      if (manager.organization_id === null) {
+        // Global System Manager → Organizations page
+        navigateTo('/system-manager/organizations');
+      } else {
+        // Organization System Manager → Dashboard
+        navigateTo('/system-manager/dashboard');
+      }
+    }
+  }, [isAuthenticated, manager, navigateTo]);
   const isOrgSM = Boolean(orgSlug);
   
   // Dinamički logo

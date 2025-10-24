@@ -167,7 +167,7 @@
     },
     "roles": {
         "superuser": "Superuser",
-        "admin": "Admin",
+        "admin": "Administrator",
         "member": "Član"
     },
     "noEmail": "Nema email adrese",
