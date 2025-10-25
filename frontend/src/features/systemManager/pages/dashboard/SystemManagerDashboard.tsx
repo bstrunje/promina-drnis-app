@@ -7,7 +7,7 @@ import ManagerHeader from '../../components/common/ManagerHeader';
 import ManagerTabNav from '../../components/common/ManagerTabNav';
 import DashboardOverview from '../../components/dashboard/DashboardOverview';
 import PendingMembersList from '../../components/members/PendingMembersList';
-import SystemManagerSettings from '../settings/SystemManagerSettings';
+import SystemManagerSettings from '../settings/SystemManagerSettingsRefactored';
 import GlobalSystemManagerSettings from '../settings/GlobalSystemManagerSettings';
 import useDashboardStats from '../../hooks/useDashboardStats';
 import TimeTravel from '../../../../../components/admin/TimeTravel';
