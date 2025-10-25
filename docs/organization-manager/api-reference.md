@@ -1,15 +1,19 @@
 # Organization System Manager API Reference
 
 **For:** Organization System Manager (OSM)  
-**Base URL:** `/api/system-manager`  
+**Base URL:** `https://managemembers.vercel.app/[org-path]/api/system-manager`  
 **Authentication:** JWT Token (SystemManager type)
+
+**Napomena:** `[org-path]` je jedinstveni identifikator organizacije (npr. `velebit`).
 
 ---
 
 ## 🔐 Authentication
 
-### POST /api/system-manager/login
+### POST /[org-path]/api/system-manager/login
 Login as Organization System Manager.
+
+**Full URL:** `https://managemembers.vercel.app/[org-path]/api/system-manager/login`
 
 **Request:**
 ```json
@@ -19,8 +23,7 @@ Login as Organization System Manager.
 }
 ```
 
-**Query Parameters:**
-- `tenant` - Organization subdomain (optional, for multi-tenant)
+**Napomena:** Path (`[org-path]`) automatski identificira organizaciju. Nije potreban `tenant` query parameter.
 
 **Response:**
 ```json
@@ -47,7 +50,7 @@ Login as Organization System Manager.
 }
 ```
 
-### POST /api/system-manager/verify-2fa-pin
+### POST /[org-path]/api/system-manager/verify-2fa-pin
 Verify PIN for 2FA login.
 
 **Request:**
@@ -58,7 +61,7 @@ Verify PIN for 2FA login.
 }
 ```
 
-### POST /api/system-manager/refresh-token
+### POST /[org-path]/api/system-manager/refresh-token
 Refresh access token using refresh token cookie.
 
 **Response:**
@@ -69,14 +72,14 @@ Refresh access token using refresh token cookie.
 }
 ```
 
-### POST /api/system-manager/logout
+### POST /[org-path]/api/system-manager/logout
 Logout and clear cookies.
 
 ---
 
 ## 👥 Member Management
 
-### GET /api/system-manager/members
+### GET /[org-path]/api/system-manager/members
 Get all members in your organization.
 
 **Headers:** `Authorization: Bearer {token}`
@@ -100,7 +103,7 @@ Get all members in your organization.
 ]
 ```
 
-### GET /api/system-manager/pending-members
+### GET /[org-path]/api/system-manager/pending-members
 Get members awaiting password assignment.
 
 **Response:**
@@ -116,7 +119,7 @@ Get members awaiting password assignment.
 ]
 ```
 
-### POST /api/system-manager/assign-password
+### POST /[org-path]/api/system-manager/assign-password
 Assign password to pending member.
 
 **Request:**
@@ -135,7 +138,7 @@ Assign password to pending member.
 }
 ```
 
-### POST /api/system-manager/assign-role
+### POST /[org-path]/api/system-manager/assign-role
 Change member role.
 
 **Request:**
@@ -153,7 +156,7 @@ Change member role.
 }
 ```
 
-### DELETE /api/system-manager/members/:memberId
+### DELETE /[org-path]/api/system-manager/members/:memberId
 Delete a member from your organization.
 
 **Response:**
@@ -168,7 +171,7 @@ Delete a member from your organization.
 
 ## 🎛️ Permission Management
 
-### GET /api/system-manager/member-permissions/:memberId
+### GET /[org-path]/api/system-manager/member-permissions/:memberId
 Get permissions for a specific member.
 
 **Response:**
@@ -201,7 +204,7 @@ Get permissions for a specific member.
 }
 ```
 
-### POST /api/system-manager/update-permissions
+### POST /[org-path]/api/system-manager/update-permissions
 Update member permissions.
 
 **Request:**
@@ -223,7 +226,7 @@ Update member permissions.
 }
 ```
 
-### GET /api/system-manager/members-without-permissions
+### GET /[org-path]/api/system-manager/members-without-permissions
 Get members without custom permissions.
 
 **Response:**
@@ -239,7 +242,7 @@ Get members without custom permissions.
 ]
 ```
 
-### DELETE /api/system-manager/member-permissions/:memberId
+### DELETE /[org-path]/api/system-manager/member-permissions/:memberId
 Remove custom permissions (revert to role defaults).
 
 **Response:**
@@ -253,11 +256,8 @@ Remove custom permissions (revert to role defaults).
 
 ## ⚙️ Organization Settings
 
-### GET /api/system-manager/settings
+### GET /[org-path]/api/system-manager/settings
 Get organization settings.
-
-**Query Parameters:**
-- `tenant` - Organization subdomain (optional)
 
 **Response:**
 ```json
@@ -281,7 +281,7 @@ Get organization settings.
 }
 ```
 
-### PUT /api/system-manager/settings
+### PUT /[org-path]/api/system-manager/settings
 Update organization settings.
 
 **Request:**
@@ -309,11 +309,8 @@ Update organization settings.
 
 ## 📅 Holiday Management
 
-### GET /api/system-manager/holidays
+### GET /[org-path]/api/system-manager/holidays
 Get all holidays for your organization.
-
-**Query Parameters:**
-- `tenant` - Organization subdomain (required)
 
 **Response:**
 ```json
@@ -328,7 +325,7 @@ Get all holidays for your organization.
 ]
 ```
 
-### GET /api/system-manager/holidays/:year
+### GET /[org-path]/api/system-manager/holidays/:year
 Get holidays for specific year.
 
 **Response:**
@@ -343,7 +340,7 @@ Get holidays for specific year.
 ]
 ```
 
-### POST /api/system-manager/holidays
+### POST /[org-path]/api/system-manager/holidays
 Create a new holiday.
 
 **Request:**
@@ -366,7 +363,7 @@ Create a new holiday.
 }
 ```
 
-### PUT /api/system-manager/holidays/:id
+### PUT /[org-path]/api/system-manager/holidays/:id
 Update a holiday.
 
 **Request:**
@@ -377,10 +374,10 @@ Update a holiday.
 }
 ```
 
-### DELETE /api/system-manager/holidays/:id
+### DELETE /[org-path]/api/system-manager/holidays/:id
 Delete a holiday.
 
-### POST /api/system-manager/holidays/seed
+### POST /[org-path]/api/system-manager/holidays/seed
 Seed default Croatian holidays for a year.
 
 **Request:**
@@ -390,14 +387,14 @@ Seed default Croatian holidays for a year.
 }
 ```
 
-### DELETE /api/system-manager/holidays/year/:year
+### DELETE /[org-path]/api/system-manager/holidays/year/:year
 Delete all holidays for a specific year.
 
 ---
 
 ## 🎛️ Duty Calendar Settings
 
-### GET /api/system-manager/duty-settings
+### GET /[org-path]/api/system-manager/duty-settings
 Get duty calendar settings.
 
 **Response:**
@@ -409,7 +406,7 @@ Get duty calendar settings.
 }
 ```
 
-### PUT /api/system-manager/duty-settings
+### PUT /[org-path]/api/system-manager/duty-settings
 Update duty calendar settings.
 
 **Request:**
@@ -425,7 +422,7 @@ Update duty calendar settings.
 
 ## 📊 Dashboard & Statistics
 
-### GET /api/system-manager/dashboard/stats
+### GET /[org-path]/api/system-manager/dashboard/stats
 Get dashboard statistics for your organization.
 
 **Response:**
@@ -454,7 +451,7 @@ Get dashboard statistics for your organization.
 
 ## 🛡️ Audit Logs
 
-### GET /api/system-manager/audit-logs
+### GET /[org-path]/api/system-manager/audit-logs
 Get audit logs for your organization.
 
 **Query Parameters:**
@@ -493,7 +490,7 @@ Get audit logs for your organization.
 
 ## 🔐 2FA Management
 
-### POST /api/system-manager/setup-2fa-pin
+### POST /[org-path]/api/system-manager/setup-2fa-pin
 Setup PIN 2FA for your account.
 
 **Request:**
@@ -510,7 +507,7 @@ Setup PIN 2FA for your account.
 }
 ```
 
-### POST /api/system-manager/disable-2fa
+### POST /[org-path]/api/system-manager/disable-2fa
 Disable 2FA for your account.
 
 **Response:**
@@ -520,7 +517,7 @@ Disable 2FA for your account.
 }
 ```
 
-### GET /api/system-manager/2fa-status
+### GET /[org-path]/api/system-manager/2fa-status
 Get 2FA status for your account.
 
 **Response:**
@@ -532,7 +529,7 @@ Get 2FA status for your account.
 }
 ```
 
-### GET /api/system-manager/trusted-devices
+### GET /[org-path]/api/system-manager/trusted-devices
 Get list of trusted devices.
 
 **Response:**
@@ -547,14 +544,14 @@ Get list of trusted devices.
 ]
 ```
 
-### DELETE /api/system-manager/trusted-devices/:deviceId
+### DELETE /[org-path]/api/system-manager/trusted-devices/:deviceId
 Remove a trusted device.
 
 ---
 
 ## 🔧 Account Management
 
-### PATCH /api/system-manager/change-password
+### PATCH /[org-path]/api/system-manager/change-password
 Change your password.
 
 **Request:**
@@ -572,7 +569,7 @@ Change your password.
 }
 ```
 
-### PATCH /api/system-manager/change-username
+### PATCH /[org-path]/api/system-manager/change-username
 Change your username.
 
 **Request:**

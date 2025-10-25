@@ -14,7 +14,9 @@
 #### 1️⃣ **Osnovne informacije organizacije** (OBAVEZNO)
 - **Naziv organizacije** - Puni naziv (npr. "Planinarska družina Velebit")
 - **Kratki naziv** - Skraćeni naziv za kompaktne prikaze (npr. "PD Velebit") - 
-- **Subdomena** - Jedinstvena subdomena za pristup (npr. "velebit" → velebit.managemembers.vercel.app)
+- **Path (organizacijski identifikator)** - Jedinstveni identifikator za pristup (npr. "velebit")
+  - Pristup: `https://managemembers.vercel.app/velebit/login` (članovi)
+  - Pristup: `https://managemembers.vercel.app/velebit/system-manager/login` (OSM)
   - Samo mala slova, brojevi i crtice
   - **Ne može se promijeniti kasnije!**
 - **Email organizacije** - Kontakt email (npr. "info@velebit.hr")
@@ -51,9 +53,13 @@
 ---
 
 ### Prva prijava
-1. Prijavi se s kredencijalima koje ti je dao GSM
-2. **Moraš promijeniti lozinku** pri prvoj prijavi
-3. Preporučujemo postavljanje PIN 2FA za sigurnost
+1. Idi na `https://managemembers.vercel.app/[tvoj-path]/system-manager/login`
+   - Primjer: `https://managemembers.vercel.app/velebit/system-manager/login`
+2. Prijavi se s kredencijalima koje ti je dao GSM
+3. **Moraš promijeniti lozinku** pri prvoj prijavi
+4. Preporučujemo postavljanje PIN 2FA za sigurnost
+
+**Alternativno:** Možeš ići na `https://managemembers.vercel.app` i odabrati svoju organizaciju iz tenant selektora.
 
 ---
 
@@ -75,12 +81,7 @@
      - **Strategija 3:** `EmailPrefix+Last4DigitsOfCardNumber`
      - Primjer: `ivo.ivic0000` (iz email-a ivo.ivic@example.com + zadnje 4 znamenke kartice)
    - Superuser će kasnije sam sebi dodijeliti pravi broj kartice
-4. **OSTALI ČLANOVI:**
-   - Klikni **Assign Password**
-   - Sustav generira lozinku prema strategiji
-   - Opcionalno dodijeli broj iskaznice
-   - Odaberi ulogu (member ili member_administrator)
-5. Član sada može pristupiti sustavu
+4. Superuser nastavlja s upravljanjem članstvom
 
 **API:** `POST /api/system-manager/assign-password`
 
