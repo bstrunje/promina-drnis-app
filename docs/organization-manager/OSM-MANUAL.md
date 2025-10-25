@@ -7,6 +7,49 @@
 
 ## 🚀 Brzi start
 
+### Prije nego što postaneš OSM
+
+**Global System Manager (GSM) kreira tvoju organizaciju i OSM račun.** Ti trebaš dostaviti GSM-u sljedeće podatke:
+
+#### 1️⃣ **Osnovne informacije organizacije** (OBAVEZNO)
+- **Naziv organizacije** - Puni naziv (npr. "Planinarska družina Velebit")
+- **Kratki naziv** - Skraćeni naziv za kompaktne prikaze (npr. "PD Velebit") - 
+- **Subdomena** - Jedinstvena subdomena za pristup (npr. "velebit" → velebit.managemembers.vercel.app)
+  - Samo mala slova, brojevi i crtice
+  - **Ne može se promijeniti kasnije!**
+- **Email organizacije** - Kontakt email (npr. "info@velebit.hr")
+- **Telefon** - Kontakt telefon - *opciono*
+- **Website** - URL web stranice - *opciono*
+
+#### 2️⃣ **Adresa organizacije** (opciono)
+- Ulica i broj
+- Grad
+- Poštanski broj
+- Država
+
+#### 3️⃣ **Branding** (OBAVEZNO)
+- **Primarna boja** - Hex kod boje za gumbe i linkove (npr. "#2563eb")
+- **Sekundarna boja** - Hex kod boje za sekundarne elemente (npr. "#64748b")
+- **Logo** - Slika logotipa (PNG, JPG ili SVG, max 2MB) - *opciono*
+- **Zadani jezik** - Hrvatski (hr) ili Engleski (en)
+
+#### 4️⃣ **Dokumenti** (opciono)
+- URL za Etički kodeks
+- URL za Politiku privatnosti
+- URL za Pravila članstva
+
+#### 5️⃣ **Tvoji OSM podaci** (OBAVEZNO)
+- **Username** - Tvoje korisničko ime (npr. "velebit_admin")
+- **Email** - Tvoj email (npr. "admin@velebit.hr")
+- **Display Name** - Ime za prikaz (npr. "Velebit Administrator")
+- **Lozinka** - Početna lozinka (min. 8 znakova)
+  - **Morat ćeš je promijeniti pri prvoj prijavi!**
+- **PIN 2FA** (opciono) - 6-znamenkasti PIN za dodatnu sigurnost
+
+**Napomena:** GSM će kreirati organizaciju i tvoj OSM račun s ovim podacima. Nakon toga, ti preuzmaš upravljanje organizacijom.
+
+---
+
 ### Prva prijava
 1. Prijavi se s kredencijalima koje ti je dao GSM
 2. **Moraš promijeniti lozinku** pri prvoj prijavi
