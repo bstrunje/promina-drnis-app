@@ -5,7 +5,7 @@
  * Podržava offline pristup i cache-iranje resursa
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
@@ -57,6 +57,12 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome extensions and other protocols
   if (!event.request.url.startsWith('http')) {
     return;
+  }
+
+  // KRITIČNO: NE CACHE-IRAJ API POZIVE!
+  // API pozivi moraju uvijek biti fresh s servera
+  if (event.request.url.includes('/api/')) {
+    return; // Pusti da ide direktno na network
   }
 
   event.respondWith(
