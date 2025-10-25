@@ -9,10 +9,10 @@ const CACHE_VERSION = 'v1';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
+// NAPOMENA: manifest.json se ne cache-ira jer se dinamički generira preko API-ja
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
   '/pwa/icons/icon-192x192.png',
   '/pwa/icons/icon-512x512.png'
 ];

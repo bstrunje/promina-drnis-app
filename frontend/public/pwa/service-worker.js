@@ -2,11 +2,11 @@
 const CACHE_NAME = 'pd-mobilna-v2';
 
 // Datoteke koje ćemo spremiti u cache
+// NAPOMENA: manifest.json se ne cache-ira jer se dinamički generira preko API-ja
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
-  './manifest.json',
   './icons/grbx512.png',
   './icons/PD_Promina.png'
 ];

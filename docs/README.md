@@ -1,116 +1,191 @@
-# Dokumentacija - Multi-Tenant Planinarska Aplikacija
+# Dokumentacija
 
-Dobrodošli u dokumentaciju multi-tenant sustava za upravljanje planinarskim društvima.
-
-**Zadnje ažuriranje:** 7. listopad 2025.  
-**Status:** ✅ Multi-tenant branding potpuno implementiran
-
----
-
-## 📚 Sadržaj dokumentacije
-
-### 🌐 Multi-Tenant Implementacija (⭐ NOVO)
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Brzi pregled multi-tenant implementacije
-- **[branding-system-implementation.md](branding-system-implementation.md)** ⭐ - Potpuni vodič za branding sistem
-- **[multi-tenant-implementation.md](multi-tenant-implementation.md)** - Detaljna implementacija multi-tenancy
-- **[multi-tenant-next-steps.md](multi-tenant-next-steps.md)** - Sljedeći koraci i roadmap
-- **[multi-tenant-bug-fixes.md](multi-tenant-bug-fixes.md)** - Bug fix-ovi i rješenja
-- **[organization-management-implementation.md](organization-management-implementation.md)** - Organization Management sustav
-- **[organization-creation-flow.md](organization-creation-flow.md)** - Flow za kreiranje organizacija
-- **[tenant-middleware-usage.md](tenant-middleware-usage.md)** - Korištenje tenant middleware
-- **[frontend-multi-tenant-implementation.md](frontend-multi-tenant-implementation.md)** - Frontend multi-tenant
-- **[backend-multi-tenant-complete.md](backend-multi-tenant-complete.md)** - Backend multi-tenant
-
-### 🔐 Autentifikacija i autorizacija
-- **[auth-system.md](auth-system.md)** - Sustav autentifikacije, JWT tokeni, refresh tokeni, uloge korisnika
-- **[prisma-enum-best-practices.md](prisma-enum-best-practices.md)** - Najbolje prakse za rad s Prisma enumima
-
-### 👥 Članovi i članstvo
-- **[membership-and-activity-hours-rules.md](membership-and-activity-hours-rules.md)** ⭐ *NOVO* - Pravila za praćenje sati aktivnosti i automatsko završavanje članstava
-- **[member-status-sync-fixes.md](member-status-sync-fixes.md)** - Ispravke u sustavu sinkronizacije statusa članova
-
-### 📊 Aktivnosti i statistika
-- **[aktivnosti.md](aktivnosti.md)** - Modul aktivnosti, vrste aktivnosti, uloge sudionika
-- **[annual-statistics.md](annual-statistics.md)** - Sustav za godišnju statistiku aktivnosti i odrađenih sati
-- **[date-time-standardization.md](date-time-standardization.md)** - Standardizacija rada s datumima i vremenom
-
-### 🎫 Markice (Stamps)
-- **[stamp-module-localization.md](stamp-module-localization.md)** ⭐ *NOVO* - Lokalizacija stamp modula (HR/EN)
-
-### 💬 Komunikacija
-- **[messages.md](messages.md)** - Sustav poruka između članova i administratora
-
-### 🔧 Tehnička dokumentacija
-- **[api-docs.md](api-docs.md)** - API dokumentacija, endpointi, formati odgovora
-- **[frontend-architecture.md](frontend-architecture.md)** - Arhitektura frontend dijela aplikacije
-- **[prisma-coding-practices.md](prisma-coding-practices.md)** - Najbolje prakse za Prisma ORM
-- **[refactoring-member-controller.md](refactoring-member-controller.md)** - Refaktoring member kontrolera
-- **[type-sync-process.md](type-sync-process.md)** - Proces sinkronizacije tipova između backend i frontend
-
-### 🛠️ Razvoj i deployment
-- **[backup-configuration.md](backup-configuration.md)** - Konfiguracija sustava za sigurnosne kopije
-- **[dev-endpoint-debugging.md](dev-endpoint-debugging.md)** - Debug endpointi za razvoj
-- **[testing.md](testing.md)** - Testiranje aplikacije
+**Verzija:** 2025-10-25  
+**Status:** ✅ Multi-tenant aplikacija s potpunim branding sustavom  
+**Okruženje:** Produkcija na Vercel, lokalni razvoj s Docker podrškom
 
 ---
 
-## 🆕 Nedavne promjene
+## 📚 Pregled dokumentacije
 
-### 7. listopad 2025. - Multi-Tenant Branding ✅
-- ✅ **branding-system-implementation.md** - Novi dokument s potpunom dokumentacijom:
-  - BrandingContext i useBranding hook
-  - Null-safe fallback-ovi
-  - Dashboard standardizacija
-  - Organization Management s System Manager edit
-  - Automatsko brisanje resursa
-  - Best practices i deployment checklist
+Dokumentacija je organizirana prema ulogama korisnika u sustavu. Svaka uloga ima svoje specifične funkcionalnosti i pristupe.
 
-- ✅ **Ažurirani dokumenti:**
-  - `multi-tenant-next-steps.md` - Faza 3A označena kao završena
-  - `multi-tenant-implementation.md` - Uklonjen "hardkodirano" status
-  - `frontend-multi-tenant-implementation.md` - Uklonjeni zastarjeli CSS primjeri
-  - `IMPLEMENTATION_SUMMARY.md` - Ažurirane sve komponente i statusi
-  - `CHANGELOG.md` - Dodana sekcija za 7. listopad
+### 📖 Struktura dokumentacije
 
-### 4. listopad 2025. - Multi-Tenant Backend
-- ✅ **Organization Management** - Potpuno implementiran
-- ✅ **Tenant Middleware** - Subdomen detection i cache
-- ✅ **Backend Refactoring** - Repository/Service/Controller layer
+#### 👥 Members (Članovi organizacije)
+- **[Member Guide](./members/member-guide.md)** - Vodič za osnovne članove
+- **[Administrator Guide](./members/administrator-guide.md)** - Vodič za administratore
+- **[Superuser Guide](./members/superuser-guide.md)** - Vodič za superusere
+- **[API Reference](./members/api-reference.md)** - API dokumentacija za članove
 
-### 30. rujan 2025. - Business Logic
-- ✅ **Pravila za praćenje sati aktivnosti**
-- ✅ **Lokalizacija stamp modula**
+#### 🏢 Organization System Manager (OSM)
+- **[OSM Guide](./organization-manager/osm-guide.md)** - Vodič za OSM
+- **[API Reference](./organization-manager/api-reference.md)** - API dokumentacija za OSM
+
+#### 🌐 Global System Manager (GSM)
+- **[GSM Guide](./global-manager/gsm-guide.md)** - Vodič za GSM
+- **[API Reference](./global-manager/api-reference.md)** - API dokumentacija za GSM
 
 ---
 
-## 🎯 Kako koristiti dokumentaciju
+## 🎯 Hijerarhija korisnika
 
-1. **Za nove članove tima**: Počnite s `IMPLEMENTATION_SUMMARY.md` i `branding-system-implementation.md`
-2. **Za multi-tenant razvoj**: Čitajte `multi-tenant-implementation.md`, `tenant-middleware-usage.md`
-3. **Za backend razvoj**: Pogledajte `api-docs.md`, `prisma-coding-practices.md`
-4. **Za frontend razvoj**: Čitajte `frontend-architecture.md`, `frontend-multi-tenant-implementation.md`
-5. **Za business logiku**: Pročitajte `membership-and-activity-hours-rules.md`, `annual-statistics.md`
-6. **Za branding**: Detaljni vodič u `branding-system-implementation.md`
+```
+┌─────────────────────────────────────────────────────────────┐
+│  GLOBAL SYSTEM MANAGER (GSM)                                 │
+│  • organization_id = null                                    │
+│  • Pristup svim organizacijama                              │
+│  • Kreiranje organizacija                                   │
+│  • Upravljanje OSM-ovima                                    │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ORGANIZATION SYSTEM MANAGER (OSM)                           │
+│  • organization_id = [specific_id]                          │
+│  • Upravljanje jednom organizacijom                         │
+│  • Sistemske postavke organizacije                          │
+│  • Registracija članova                                     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  MEMBERS (Članovi organizacije)                             │
+│  ├─ Superuser (member_superuser)                           │
+│  │  • Sve admin ovlasti + sistemske postavke org.          │
+│  │  • Dodjela uloga                                        │
+│  │  • Brisanje podataka                                    │
+│  │                                                          │
+│  ├─ Administrator (member_administrator)                    │
+│  │  • Upravljanje članovima                               │
+│  │  • Kreiranje aktivnosti                                │
+│  │  • Upravljanje markicama i opremom                     │
+│  │  • Slanje poruka                                        │
+│  │                                                          │
+│  └─ Member (member)                                         │
+│     • Upload profilne slike                                │
+│     • Slanje poruke administratoru                         │
+└─────────────────────────────────────────────────────────────┘
+---
+
+## 🔑 Ključne razlike
+
+### GSM vs OSM
+| Značajka | GSM | OSM |
+|----------|-----|-----|
+| **organization_id** | `null` | Specifičan ID |
+| **Pristup organizacijama** | Sve organizacije | Samo vlastita |
+| **Kreiranje organizacija** | ✅ Da | ❌ Ne |
+| **Upravljanje OSM-ovima** | ✅ Da | ❌ Ne |
+| **Sistemske postavke org.** | ❌ Ne (to radi OSM) | ✅ Da |
+| **Registracija članova** | ❌ Ne (to radi OSM) | ✅ Da |
+| **Cross-org audit logs** | ✅ Da | ❌ Ne |
+
+### OSM vs Member Superuser
+| Značajka | OSM | Member Superuser |
+|----------|-----|------------------|
+| **Tip korisnika** | SystemManager | Member |
+| **Registracija članova** | ✅ Da | ❌ Ne |
+| **Sistemske postavke** | ✅ Da | ✅ Da (ograničeno) |
+| **Dodjela lozinki** | ✅ Da | ❌ Ne |
+| **Upravljanje članovima** | ❌ Ne (to rade members) | ✅ Da |
+| **Kreiranje aktivnosti** | ❌ Ne | ✅ Da |
 
 ---
 
-## 📝 Konvencije dokumentacije
+## 📖 Brzi linkovi
 
-- Svi MD fajlovi trebaju imati datum zadnje izmjene
-- Novi dokumenti se označavaju s ⭐ *NOVO*
-- Zastarjeli dijelovi se označavaju ~~ovako~~ ili se uklanjaju
-- Implementirane značajke se označavaju ✅
-- Hardkodirane vrijednosti se označavaju ❌ i uklanjaju
-- Sve promjene se dokumentiraju u `CHANGELOG.md`
+### 👥 [MEMBERS](./members/)
+Dokumentacija za članove organizacije (sve razine)
+- **[Member Guide](./members/member-guide.md)** - Vodič za osnovne članove
+- **[Administrator Guide](./members/administrator-guide.md)** - Vodič za administratore
+- **[Superuser Guide](./members/superuser-guide.md)** - Vodič za superusere
+- **[Member API Reference](./members/api-reference.md)** - API dokumentacija za member funkcionalnosti
+
+### 🏢 [ORGANIZATION SYSTEM MANAGER](./organization-manager/)
+Dokumentacija za Organization System Manager (OSM)
+- **[OSM Guide](./organization-manager/osm-guide.md)** - Potpuni vodič za OSM
+- **[OSM API Reference](./organization-manager/api-reference.md)** - API dokumentacija za OSM
+
+### 🌐 [GLOBAL SYSTEM MANAGER](./global-manager/)
+Dokumentacija za Global System Manager (GSM)
+- **[GSM Guide](./global-manager/gsm-guide.md)** - Potpuni vodič za GSM
+- **[GSM API Reference](./global-manager/api-reference.md)** - API dokumentacija za GSM
 
 ---
 
-## 🔗 Vanjske poveznice
+## 🔧 Tehnička dokumentacija
 
-- **Prisma dokumentacija**: https://www.prisma.io/docs
-- **React dokumentacija**: https://react.dev
-- **TypeScript dokumentacija**: https://www.typescriptlang.org/docs
+### 📋 Osnove
+- **[Installation Guide](./technical/installation.md)** - Instalacija i pokretanje
+- **[Architecture Overview](./technical/architecture.md)** - Arhitektura aplikacije
+- **[Database Schema](./technical/database-schema.md)** - Struktura baze podataka
+- **[Multi-Tenant System](./technical/multi-tenant.md)** - Multi-tenant implementacija
+
+### 🔐 Sigurnost i autentifikacija
+- **[Authentication System](./technical/authentication.md)** - Sustav autentifikacije
+- **[Authorization & Permissions](./technical/authorization.md)** - Autorizacija i dozvole
+- **[Security Best Practices](./technical/security.md)** - Sigurnosne najbolje prakse
+
+### 🛠️ Razvoj
+- **[Development Setup](./technical/development-setup.md)** - Postavljanje razvojnog okruženja
+- **[API Documentation](./technical/api-documentation.md)** - Potpuna API dokumentacija
+- **[Frontend Architecture](./technical/frontend-architecture.md)** - Frontend arhitektura
+- **[Backend Architecture](./technical/backend-architecture.md)** - Backend arhitektura
+
+### 🚀 Deployment i održavanje
+- **[Deployment Guide](./technical/deployment.md)** - Deployment na Vercel
+- **[Environment Configuration](./technical/environment.md)** - Konfiguracija okruženja
+- **[Backup & Recovery](./technical/backup-recovery.md)** - Sigurnosne kopije i oporavak
+- **[Monitoring & Logging](./technical/monitoring.md)** - Praćenje i logiranje
 
 ---
 
-*Dokumentacija se redovito ažurira. Za pitanja ili nejasnoće kontaktirajte tim za razvoj.*
+## 🆕 Najnovije promjene
+
+### Listopad 2025
+- ✅ **Multi-tenant branding sustav** - Dinamički logo, boje, nazivi
+- ✅ **Organization Management** - GSM može kreirati i upravljati organizacijama
+- ✅ **Tenant middleware** - Automatska detekcija organizacije po subdomeni
+- ✅ **Frontend multi-tenant** - BrandingContext i dinamički UI
+- ✅ **Equipment Management** - Sustav za opremu (majice, jakne, kape)
+- ✅ **Activity Management** - Poboljšan sustav aktivnosti s ulogama
+- ✅ **Lokalizacija** - HR/EN podrška kroz i18next
+
+### Rujan 2025
+- ✅ **Prisma ORM migracija** - Potpuna migracija s legacy SQL-a
+- ✅ **Refresh token sustav** - Sigurniji autentifikacijski sustav
+- ✅ **Docker podrška** - Lokalni razvoj s Docker Compose
+- ✅ **Vercel deployment** - Produkcijska platforma
+
+---
+
+## 🎯 Brzi start
+
+### Za nove korisnike
+1. Pročitajte [Installation Guide](./technical/installation.md)
+2. Odaberite svoju ulogu i pročitajte odgovarajući vodič
+3. Pogledajte [API Documentation](./technical/api-documentation.md) za integracije
+
+### Za developere
+1. [Development Setup](./technical/development-setup.md)
+2. [Architecture Overview](./technical/architecture.md)
+3. [Frontend](./technical/frontend-architecture.md) i [Backend Architecture](./technical/backend-architecture.md)
+
+### Za administratore
+1. [Deployment Guide](./technical/deployment.md)
+2. [Environment Configuration](./technical/environment.md)
+3. [Backup & Recovery](./technical/backup-recovery.md)
+
+---
+
+## 📞 Podrška
+
+Za tehnička pitanja ili podršku:
+- Provjerite odgovarajuću dokumentaciju za vašu ulogu
+- Pogledajte API dokumentaciju za specifične endpointe
+- Kontaktirajte tim za razvoj za dodatnu pomoć
+
+---
+
+*Dokumentacija se redovito ažurira. Zadnje ažuriranje: 25. listopad 2025.*

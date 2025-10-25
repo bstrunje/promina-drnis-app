@@ -150,7 +150,7 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
                     )}
                     <div>
                       <CardTitle className="text-lg">{org.name}</CardTitle>
-                      <p className="text-sm text-gray-500">{org.subdomain}.platforma.hr</p>
+                      <p className="text-sm text-gray-500">{org.subdomain}.managemembers.vercel.app</p>
                     </div>
                   </div>
                   <div className={`px-2 py-1 rounded text-xs font-semibold ${
