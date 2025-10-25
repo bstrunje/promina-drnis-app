@@ -133,27 +133,30 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
             <Card key={org.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     {org.logo_path ? (
                       <img 
                         src={org.logo_path.startsWith('http') ? org.logo_path : `${IMAGE_BASE_URL}${org.logo_path.replace('/uploads', '')}`}
                         alt={org.name}
-                        className="h-12 w-12 rounded-lg object-cover"
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg object-cover flex-shrink-0"
                       />
                     ) : (
                       <div 
-                        className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold"
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0"
                         style={{ backgroundColor: org.primary_color }}
                       >
                         {org.name.charAt(0)}
                       </div>
                     )}
-                    <div>
-                      <CardTitle className="text-lg">{org.name}</CardTitle>
-                      <p className="text-sm text-gray-500">{org.subdomain}.managemembers.vercel.app</p>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-base sm:text-lg truncate">{org.name}</CardTitle>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">
+                        <span className="sm:hidden">{org.subdomain}</span>
+                        <span className="hidden sm:inline">{org.subdomain}.managemembers.vercel.app</span>
+                      </p>
                     </div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-xs font-semibold ${
+                  <div className={`px-2 py-1 rounded text-xs font-semibold flex-shrink-0 ${
                     org.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
                     {org.is_active ? 'Active' : 'Inactive'}
@@ -175,9 +178,9 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
                   </div>
 
                   {/* Contact */}
-                  <div className="text-sm text-gray-600">
-                    <p>{org.email}</p>
-                    {org.phone && <p>{org.phone}</p>}
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    <p className="truncate">{org.email}</p>
+                    {org.phone && <p className="truncate">{org.phone}</p>}
                   </div>
 
                   {/* Actions */}

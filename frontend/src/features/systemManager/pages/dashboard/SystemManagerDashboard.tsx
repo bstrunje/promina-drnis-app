@@ -24,6 +24,7 @@ const SystemManagerDashboard: React.FC = () => {
   const location = useLocation();
   const { navigateTo } = useSystemManagerNavigation();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations' | 'support'>('dashboard');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // Prilagođeno rukovanje tabovima kroz URL
   useEffect(() => {
@@ -77,15 +78,28 @@ const SystemManagerDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header komponenta */}
-      <ManagerHeader manager={manager} />
+      <ManagerHeader 
+        manager={manager} 
+        onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        isMenuOpen={isMenuOpen}
+      />
 
       {/* Glavni sadržaj */}
       <main className="container mx-auto p-4">
-        {/* Razvojni alati - vidljivi samo u development modu */}
-        {import.meta.env.DEV && <TimeTravel />}
+        {/* Razvojni alati - vidljivi samo u development modu i na desktop ekranima */}
+        {import.meta.env.DEV && (
+          <div className="hidden lg:block">
+            <TimeTravel />
+          </div>
+        )}
 
         {/* Navigacija između tabova */}
-        <ManagerTabNav activeTab={activeTab} setActiveTab={handleTabChange} />
+        <ManagerTabNav 
+          activeTab={activeTab} 
+          setActiveTab={handleTabChange}
+          isMenuOpen={isMenuOpen}
+          onMenuClose={() => setIsMenuOpen(false)}
+        />
 
         {/* Tab sadržaj - Dashboard */}
         {activeTab === 'dashboard' && (
