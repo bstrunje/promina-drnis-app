@@ -13,18 +13,24 @@ import { API_BASE_URL } from './config';
  */
 export const updateManifestLink = (): void => {
   try {
+    // PRVO provjeri je li System Manager stranica - prije bilo čega drugog
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/system-manager/')) {
+      console.log('[PWA] System Manager detected - removing any existing manifest link');
+      // Ukloni postojeći manifest link ako postoji
+      const existingLink = document.querySelector('link[rel="manifest"]');
+      if (existingLink) {
+        existingLink.remove();
+        console.log('[PWA] Manifest link removed for System Manager');
+      }
+      return;
+    }
+
     const orgSlug = extractOrgSlugFromPath();
     
     // Samo ako je unutar org context-a
     if (!orgSlug) {
       console.log('[PWA] No org slug detected - skipping manifest update');
-      return;
-    }
-
-    // Preskači PWA za System Manager stranice
-    const currentPath = window.location.pathname;
-    if (currentPath.includes('/system-manager/')) {
-      console.log('[PWA] System Manager detected - skipping PWA manifest');
       return;
     }
 

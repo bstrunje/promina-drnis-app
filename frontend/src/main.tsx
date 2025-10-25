@@ -2,7 +2,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { API_BASE_URL } from './utils/config';
 import './index.css'
 import './i18n'
 import App from './App.tsx'
@@ -25,18 +24,13 @@ root.render(
   </StrictMode>,
 )
 
-// PWA Setup
+// PWA Setup - Service Worker registracija
+// NAPOMENA: Manifest link se dodaje dinamički kroz BrandingContext i pwaUtils.ts
 if (import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    // Dinamički dodaj manifest link
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = `${API_BASE_URL}/manifest`;
-    document.head.appendChild(manifestLink);
-    
     // Service Worker registracija
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/pwa/service-worker.js')
+      navigator.serviceWorker.register('/service-worker.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
         })

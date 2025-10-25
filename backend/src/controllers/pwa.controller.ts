@@ -8,11 +8,22 @@ import { getOrganization } from '../middleware/tenant.middleware.js';
  */
 export const getManifest = async (req: Request, res: Response): Promise<void> => {
   try {
+    // Provjeri je li tenant parametar prisutan
+    const tenantParam = req.query.tenant as string | undefined;
+    
+    if (!tenantParam) {
+      // Ako nema tenant parametra, ne vraćaj 404 nego prazan odgovor
+      // Ovo sprječava 404 greške u browser console-u
+      console.log('[PWA] Manifest request bez tenant parametra - ignoriram');
+      res.status(204).send(); // 204 No Content
+      return;
+    }
+    
     // Dohvati organizaciju iz tenant middleware
     const organization = getOrganization(req);
     
     if (!organization) {
-      res.status(404).json({ error: 'Organization not found' });
+      res.status(404).json({ error: 'Organization not found', message: 'Organization not found' });
       return;
     }
 

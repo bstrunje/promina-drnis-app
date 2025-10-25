@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { systemManagerLogin, systemManagerLogout, systemManagerRefreshToken } from '../features/systemManager/utils/systemManagerApi';
 import { SystemManagerLoginData, SystemManager } from '@shared/systemManager';
+import { updateManifestLink } from '../utils/pwaUtils';
 
 // JWT payload interface
 interface JwtPayload {
@@ -121,6 +122,9 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
   // Provjera postojeće sesije prilikom učitavanja
   useEffect(() => {
     const checkAuth = () => {
+      // Ukloni PWA manifest link za System Manager stranice
+      updateManifestLink();
+      
       // Detekcija i spremanje branding parametra iz URL-a
       const urlParams = new URLSearchParams(window.location.search);
       const brandingParam = urlParams.get('branding') ?? urlParams.get('tenant');
