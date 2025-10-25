@@ -1154,7 +1154,11 @@ const SystemManagerSettings: React.FC = () => {
 
       // Korištenje centralizirane API funkcije za ažuriranje postavki sustava
       const updatedSettings = await updateSystemSettings(settings as SystemSettings);
-      setSettings(updatedSettings as LocalSystemSettings);
+      
+      // VAŽNO: Refetch podatke iz baze da osiguramo konzistentnost
+      const freshSettings = await getSystemSettings();
+      setSettings(freshSettings as LocalSystemSettings);
+      
       setSuccessMessage("Settings successfully updated!");
 
       // Postavi fiksnu poruku o uspjehu
