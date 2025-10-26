@@ -113,11 +113,18 @@ router.post('/holidays', tenantMiddleware, holidayController.createHoliday);
 router.put('/holidays/:id', tenantMiddleware, holidayController.updateHoliday);
 router.delete('/holidays/:id', tenantMiddleware, holidayController.deleteHoliday);
 
-// Seed default hrvatski praznici za godinu
+// Seed default hrvatski praznici za godinu (lokalni fallback)
 router.post('/holidays/seed', tenantMiddleware, holidayController.seedDefaultHolidays);
 
 // Brisanje svih praznika za godinu
 router.delete('/holidays/year/:year', tenantMiddleware, holidayController.deleteHolidaysForYear);
+
+// --- NAGER.DATE API INTEGRATION ---
+// Dohvaća dostupne države iz Nager.Date API-ja
+router.get('/holidays/countries', holidayController.getAvailableCountries);
+
+// Sinkronizira praznike s Nager.Date API-jem
+router.post('/holidays/sync-nager', tenantMiddleware, holidayController.syncHolidaysFromNagerDate);
 
 // --- DUTY CALENDAR SETTINGS (org-specific, trebaju tenant context) ---
 router.get('/duty-settings', optionalTenantMiddleware, getDutySettings);

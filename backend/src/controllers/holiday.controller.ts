@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as holidayService from '../services/holiday.service.js';
+import * as nagerDateService from '../services/nagerDate.service.js';
 
 /**
  * Dohvaća sve praznike
@@ -185,6 +186,84 @@ export const deleteHolidaysForYear = async (req: Request, res: Response, next: N
       count: deletedCount 
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Dohvaća dostupne države iz Nager.Date API-ja
+ */
+export const getAvailableCountries = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const countries = await nagerDateService.getAvailableCountries();
+    res.status(200).json(countries);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Sinkronizira praznike s Nager.Date API-jem za određenu državu i godinu (System Manager only)
+ */
+export const syncHolidaysFromNagerDate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { year, countryCode } = req.body;
+    
+    if (!year || !countryCode) {
+      return res.status(400).json({ 
+        message: 'Year and countryCode are required' 
+      });
+    }
+    
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      return res.status(400).json({ 
+        message: 'Invalid year. Must be between 2000 and 2100.' 
+      });
+    }
+    
+    const systemManagerId = req.user?.id;
+    
+    // Dohvati praznike iz Nager.Date API-ja
+    const nagerHolidays = await nagerDateService.getPublicHolidays(year, countryCode);
+    
+    // Konvertiraj i spremi u bazu
+    let created = 0;
+    let skipped = 0;
+    
+    for (const nagerHoliday of nagerHolidays) {
+      try {
+        const appHoliday = nagerDateService.convertNagerHolidayToAppFormat(nagerHoliday);
+        await holidayService.createHoliday({
+          date: new Date(appHoliday.date),
+          name: appHoliday.name,
+          is_recurring: appHoliday.is_recurring,
+          created_by: systemManagerId
+        });
+        created++;
+      } catch (error) {
+        // Ako praznik već postoji, preskači
+        if (error instanceof Error && error.message.includes('already exists')) {
+          skipped++;
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    res.status(200).json({
+      message: `Synced ${created} holidays from Nager.Date API, skipped ${skipped} (already exist)`,
+      created,
+      skipped,
+      total: nagerHolidays.length,
+      countryCode,
+      year
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Nager.Date API error')) {
+      return res.status(502).json({ 
+        message: 'Failed to fetch holidays from Nager.Date API. Please try again later.' 
+      });
+    }
     next(error);
   }
 };

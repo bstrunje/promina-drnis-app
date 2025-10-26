@@ -19,7 +19,7 @@ export interface PaginatedAuditLogsResponse {
  * @param limit - Broj logova po stranici (default: 50)
  * @returns Paginirani audit logovi
  */
-export const getAuditLogs = async (page: number = 1, limit: number = 50): Promise<PaginatedAuditLogsResponse> => {
+export const getAuditLogs = async (page = 1, limit = 50): Promise<PaginatedAuditLogsResponse> => {
   try {
     const response: AxiosResponse<PaginatedAuditLogsResponse> = await api.get('/audit/logs', {
       params: { page, limit }
