@@ -2,13 +2,36 @@
 import { Request, Response, NextFunction } from 'express';
 import auditService from '../services/audit.service.js';
 import { tBackend } from '../utils/i18n.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 const auditController = {
     async getAllLogs(req: Request, res: Response, _next: NextFunction): Promise<void> {
         try {
             const _locale = req.locale || 'hr';
-            const logs = await auditService.getAllLogs();
-            res.json(logs);
+            
+            // Paginacija parametri
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 50;
+            
+            // Dohvati organization_id za filtriranje
+            let organizationId: number | null = null;
+            try {
+                organizationId = getOrganizationId(req);
+            } catch (_error) {
+                // Global Manager ili nema organizacije - dohvati sve
+            }
+            
+            const result = await auditService.getPaginatedAuditLogs(organizationId, page, limit);
+            
+            res.json({
+                logs: result.logs,
+                pagination: {
+                    page,
+                    limit,
+                    total: result.total,
+                    totalPages: Math.ceil(result.total / limit)
+                }
+            });
         } catch (error) {
             const locale = req.locale || 'hr';
             console.error('Error fetching audit logs:', error);

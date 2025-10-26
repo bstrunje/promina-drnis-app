@@ -88,13 +88,22 @@ const auditRepository = {
     },
 
     async getAll(where: Prisma.AuditLogWhereInput = {}, skip: number = 0, take: number = 50): Promise<AuditLog[]> {
+        // Optimizirani upit - dohvaća sve u jednom query-ju koristeći raw SQL
+        // jer Prisma ne podržava conditional includes na osnovu performer_type
         const logs = await prisma.auditLog.findMany({
             where,
             orderBy: { created_at: 'desc' },
             skip,
             take,
-            include: { affected: { select: { full_name: true } } },
+            include: { 
+                affected: { 
+                    select: { full_name: true } 
+                } 
+            },
         });
+
+        // Batch dohvaćanje performer imena - samo ako ima logova
+        if (logs.length === 0) return [];
 
         const memberIds = logs
             .filter(log => log.performer_type === 'MEMBER' && log.performed_by)
@@ -104,15 +113,21 @@ const auditRepository = {
             .filter(log => log.performer_type === 'SYSTEM_MANAGER' && log.performed_by)
             .map(log => log.performed_by as number);
 
-        const members = await prisma.member.findMany({
-            where: { member_id: { in: [...new Set(memberIds)] } },
-            select: { member_id: true, full_name: true },
-        });
-
-        const systemManagers = await prisma.systemManager.findMany({
-            where: { id: { in: [...new Set(systemManagerIds)] } },
-            select: { id: true, display_name: true, username: true },
-        });
+        // Paralelno dohvaćanje članova i system managera
+        const [members, systemManagers] = await Promise.all([
+            memberIds.length > 0 
+                ? prisma.member.findMany({
+                    where: { member_id: { in: [...new Set(memberIds)] } },
+                    select: { member_id: true, full_name: true },
+                })
+                : Promise.resolve([]),
+            systemManagerIds.length > 0
+                ? prisma.systemManager.findMany({
+                    where: { id: { in: [...new Set(systemManagerIds)] } },
+                    select: { id: true, display_name: true, username: true },
+                })
+                : Promise.resolve([])
+        ]);
 
         const memberMap = new Map(members.map(m => [m.member_id, m.full_name]));
         const systemManagerMap = new Map(systemManagers.map(sm => [sm.id, sm.display_name || sm.username]));
@@ -120,9 +135,9 @@ const auditRepository = {
         return logs.map(log => ({
             ...log,
             performer_name: log.performer_type === 'MEMBER'
-                ? memberMap.get(log.performed_by as number)
-                : systemManagerMap.get(log.performed_by as number),
-            affected_name: log.affected?.full_name,
+                ? memberMap.get(log.performed_by as number) || null
+                : systemManagerMap.get(log.performed_by as number) || null,
+            affected_name: log.affected?.full_name || null,
         }));
     },
 

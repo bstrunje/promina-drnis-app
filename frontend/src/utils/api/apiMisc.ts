@@ -3,13 +3,27 @@ import { AuditLog } from '../../../shared/types/audit.js';
 import { ApiCleanupTestDataResult } from './apiTypes';
 import { AxiosResponse } from 'axios';
 
+export interface PaginatedAuditLogsResponse {
+  logs: AuditLog[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 /**
- * Dohvaćanje audit logova
- * @returns Lista audit logova
+ * Dohvaćanje audit logova s paginacijom
+ * @param page - Broj stranice (default: 1)
+ * @param limit - Broj logova po stranici (default: 50)
+ * @returns Paginirani audit logovi
  */
-export const getAuditLogs = async (): Promise<AuditLog[]> => {
+export const getAuditLogs = async (page: number = 1, limit: number = 50): Promise<PaginatedAuditLogsResponse> => {
   try {
-    const response: AxiosResponse<AuditLog[]> = await api.get('/audit/logs');
+    const response: AxiosResponse<PaginatedAuditLogsResponse> = await api.get('/audit/logs', {
+      params: { page, limit }
+    });
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
