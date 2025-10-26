@@ -1,6 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build:vercel",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     { 
       "source": "/:orgSlug/api/system-manager/:path*", 
@@ -28,15 +29,11 @@
     },
     { 
       "source": "/system-manager/:path*", 
-      "destination": "/frontend/dist/index.html" 
+      "destination": "/index.html" 
     },
     { 
       "source": "/:orgSlug/:path*", 
-      "destination": "/frontend/dist/index.html" 
-    },
-    { 
-      "source": "/:path*", 
-      "destination": "/frontend/dist/$1" 
+      "destination": "/index.html" 
     }
   ]
 }
