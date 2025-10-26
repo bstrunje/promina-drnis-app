@@ -120,8 +120,8 @@ router.post('/holidays/seed', tenantMiddleware, holidayController.seedDefaultHol
 router.delete('/holidays/year/:year', tenantMiddleware, holidayController.deleteHolidaysForYear);
 
 // --- NAGER.DATE API INTEGRATION ---
-// Dohvaća dostupne države iz Nager.Date API-ja
-router.get('/holidays/countries', holidayController.getAvailableCountries);
+// Dohvaća dostupne države iz Nager.Date API-ja (globalni podaci, ne treba tenant)
+router.get('/holidays/countries', optionalTenantMiddleware, holidayController.getAvailableCountries);
 
 // Sinkronizira praznike s Nager.Date API-jem
 router.post('/holidays/sync-nager', tenantMiddleware, holidayController.syncHolidaysFromNagerDate);
