@@ -915,6 +915,56 @@ export const deleteHolidaysForYear = async (year: number): Promise<{ count: numb
   }
 };
 
+/**
+ * Nager.Date API tipovi
+ */
+export interface NagerCountry {
+  countryCode: string;
+  name: string;
+}
+
+export interface SyncNagerHolidaysResponse {
+  message: string;
+  created: number;
+  skipped: number;
+  total: number;
+  countryCode: string;
+  year: number;
+}
+
+/**
+ * Dohvaća dostupne države iz Nager.Date API-ja
+ */
+export const getAvailableCountries = async (): Promise<NagerCountry[]> => {
+  try {
+    const response = await systemManagerApi.get<NagerCountry[]>('/system-manager/holidays/countries');
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Sinkronizira praznike s Nager.Date API-jem
+ */
+export const syncHolidaysFromNager = async (year: number, countryCode: string): Promise<SyncNagerHolidaysResponse> => {
+  try {
+    const response = await systemManagerApi.post<SyncNagerHolidaysResponse>('/system-manager/holidays/sync-nager', {
+      year,
+      countryCode
+    });
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || error.message);
+    }
+    throw error;
+  }
+};
+
 export const verify2faAndProceed = async (tempToken: string, code: string, rememberDevice = false): Promise<Verify2faResponse> => {
   const response = await systemManagerApi.post<Verify2faResponse>('/system-manager/verify-2fa', { tempToken, code, rememberDevice });
   return response.data;

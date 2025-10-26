@@ -9,7 +9,7 @@
 
 ### Prije nego što postaneš OSM
 
-**Global System Manager (GSM) kreira tvoju organizaciju i OSM račun.** Ti trebaš dostaviti GSM-u sljedeće podatke:
+**Podrška kreira tvoju organizaciju i OSM račun.** Ti trebaš dostaviti podršci sljedeće podatke:
 
 #### 1️⃣ **Osnovne informacije organizacije** (OBAVEZNO)
 - **Naziv organizacije** - Puni naziv (npr. "Planinarska družina Velebit")
@@ -44,18 +44,18 @@
 - **Username** - Tvoje korisničko ime (npr. "velebit_admin")
 - **Email** - Tvoj email (npr. "admin@velebit.hr")
 - **Display Name** - Ime za prikaz (npr. "Velebit Administrator")
-- **Lozinka** - Početna lozinka (min. 8 znakova)
+- **Lozinka** - Automatski postavljena na `manager123`
   - **Morat ćeš je promijeniti pri prvoj prijavi!**
 - **PIN 2FA** (opciono) - 6-znamenkasti PIN za dodatnu sigurnost
 
-**Napomena:** GSM će kreirati organizaciju i tvoj OSM račun s ovim podacima. Nakon toga, ti preuzmaš upravljanje organizacijom.
+**Napomena:** Podrška će kreirati organizaciju i tvoj OSM račun s ovim podacima. Nakon toga, ti preuzmaš upravljanje organizacijom.
 
 ---
 
 ### Prva prijava
 1. Idi na `https://managemembers.vercel.app/[tvoj-path]/system-manager/login`
    - Primjer: `https://managemembers.vercel.app/velebit/system-manager/login`
-2. Prijavi se s kredencijalima koje ti je dao GSM
+2. Prijavi se s username-om i lozinkom `manager123`
 3. **Moraš promijeniti lozinku** pri prvoj prijavi
 4. Preporučujemo postavljanje PIN 2FA za sigurnost
 
@@ -201,9 +201,33 @@
 
 ---
 
+### 9️⃣ Upravljanje praznicima
+
+**Opcija 1: Lokalni hrvatski praznici**
+- Klikni "Seed Default Holidays"
+- Odaberi godinu (2025, 2026...)
+- Automatski se dodaju hrvatski praznici
+
+**Opcija 2: Sync s Nager.Date API (100+ država)**
+- Klikni "Sync with Nager.Date"
+- Odaberi državu (HR, BA, ME, RS, SI...)
+- Odaberi godinu
+- Automatski se dohvate najnoviji praznici za tu državu
+
+**Ručno dodavanje:**
+- Datum, naziv, je li recurring
+- Možeš dodavati specifične praznike organizacije
+
+**API:**
+- `GET /api/system-manager/holidays/countries` - Dostupne države
+- `POST /api/system-manager/holidays/sync-nager` - Sync praznika
+- `POST /api/system-manager/holidays/seed` - Lokalni hrvatski
+
+---
+
 ## ❌ Što NE možeš raditi
 
-- ❌ Kreirati nove organizacije (to radi GSM)
+- ❌ Kreirati nove organizacije (to radi Podrška)
 - ❌ Pristupiti drugim organizacijama
 - ❌ Mijenjati globalne postavke platforme
 - ❌ Kreirati druge OSM račune
@@ -215,10 +239,10 @@
 ## 🆘 Pomoć
 
 **Zaboravio si lozinku?**  
-Kontaktiraj Global System Manager da ti resetira lozinku.
+Kontaktiraj Podršku da ti resetira lozinku.
 
 **Trebaju ti dodatne organizacije?**  
-Kontaktiraj Global System Manager.
+Kontaktiraj Podršku.
 
 **Tehnički problemi?**  
 Kontaktiraj tehničku podršku.

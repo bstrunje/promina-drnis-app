@@ -194,7 +194,7 @@ Za probleme s aplikacijom kontaktirajte tehničku podršku.
 - Upravljati dozvolama (`GET /api/permissions`, `PUT /api/permissions/:memberId`)
 
 ### ❌ Što superuser NE MOŽE
-- Kreirati nove organizacije (to radi Global System Manager)
+- Kreirati nove organizacije (to radi Podrška)
 - Pristupiti drugim organizacijama
 - Upravljati 2FA postavkama na razini organizacije (to radi OSM)
 

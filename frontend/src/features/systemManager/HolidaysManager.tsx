@@ -8,7 +8,10 @@ import {
   deleteHoliday, 
   seedDefaultHolidays, 
   deleteHolidaysForYear,
-  type Holiday 
+  getAvailableCountries,
+  syncHolidaysFromNager,
+  type Holiday,
+  type NagerCountry
 } from './utils/systemManagerApi';
 import './HolidaysManager.css';
 
@@ -19,6 +22,12 @@ const HolidaysManager: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
+  
+  // Nager.Date sync state
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [countries, setCountries] = useState<NagerCountry[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState('HR');
+  const [syncLoading, setSyncLoading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -122,6 +131,38 @@ const HolidaysManager: React.FC = () => {
     }
   };
 
+  const handleOpenSyncModal = async () => {
+    try {
+      const countriesData = await getAvailableCountries();
+      setCountries(countriesData);
+      setIsSyncModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching countries:', error);
+      alert('Failed to load countries list');
+    }
+  };
+
+  const handleSyncNager = async () => {
+    if (!selectedCountry) {
+      alert('Please select a country');
+      return;
+    }
+
+    setSyncLoading(true);
+    try {
+      const result = await syncHolidaysFromNager(selectedYear, selectedCountry);
+      alert(`Synced ${result.created} holidays from Nager.Date API, skipped ${result.skipped} (already exist)`);
+      setIsSyncModalOpen(false);
+      await fetchHolidays();
+    } catch (error) {
+      console.error('Error syncing holidays:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to sync holidays';
+      alert(errorMsg);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   return (
     <div className="holidays-manager">
       <div className="holidays-header">
@@ -170,8 +211,20 @@ const HolidaysManager: React.FC = () => {
         </div>
 
         <div className="toolbar-actions">
+          <button className="btn-sync" onClick={() => void handleOpenSyncModal()} style={{
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500'
+          }}>
+            🌍 Sync with Nager.Date
+          </button>
           <button className="btn-seed" onClick={() => void handleSeedDefaults()}>
-            🌱 Seed Default Holidays
+            🌱 Seed Croatian Holidays
           </button>
           <button className="btn-add" onClick={handleAdd}>
             ➕ Add Holiday
@@ -271,6 +324,78 @@ const HolidaysManager: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Nager.Date Sync Modal */}
+      {isSyncModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsSyncModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>🌍 Sync Holidays from Nager.Date API</h3>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+              Select a country to automatically fetch public holidays for {selectedYear}
+            </p>
+            
+            <div className="form-group">
+              <label>Country:</label>
+              <select 
+                value={selectedCountry} 
+                onChange={(e) => setSelectedCountry(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {countries.map(country => (
+                  <option key={country.countryCode} value={country.countryCode}>
+                    {country.name} ({country.countryCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Year:</label>
+              <input 
+                type="number" 
+                value={selectedYear} 
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  backgroundColor: '#f3f4f6'
+                }}
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                onClick={() => setIsSyncModalOpen(false)} 
+                className="btn-cancel"
+                disabled={syncLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={() => void handleSyncNager()} 
+                className="btn-save"
+                disabled={syncLoading}
+                style={{
+                  backgroundColor: syncLoading ? '#9ca3af' : '#10b981'
+                }}
+              >
+                {syncLoading ? 'Syncing...' : 'Sync Holidays'}
+              </button>
+            </div>
           </div>
         </div>
       )}
