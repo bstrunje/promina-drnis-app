@@ -50,7 +50,7 @@ const BasicInfoStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) => {
             placeholder="velebit"
             className={errors.subdomain ? 'border-red-500' : ''}
           />
-          <span className="text-gray-600 whitespace-nowrap">.managemembers.vercel.app</span>
+          <span className="text-gray-600 whitespace-nowrap">managemembers.vercel.app/</span>
         </div>
         {errors.subdomain && <p className="text-sm text-red-500 mt-1">{errors.subdomain}</p>}
         <p className="text-sm text-gray-500 mt-1">

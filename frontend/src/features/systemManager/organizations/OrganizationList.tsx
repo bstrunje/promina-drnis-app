@@ -151,8 +151,8 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base sm:text-lg truncate">{org.name}</CardTitle>
                       <p className="text-xs sm:text-sm text-gray-500 truncate">
-                        <span className="sm:hidden">{org.subdomain}</span>
-                        <span className="hidden sm:inline">{org.subdomain}.managemembers.vercel.app</span>
+                        <span className="sm:hidden">/{org.subdomain}</span>
+                        <span className="hidden sm:inline">managemembers.vercel.app/{org.subdomain}</span>
                       </p>
                     </div>
                   </div>

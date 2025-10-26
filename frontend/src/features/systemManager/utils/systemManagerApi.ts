@@ -959,7 +959,8 @@ export const syncHolidaysFromNager = async (year: number, countryCode: string): 
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || error.message);
+      const message = (error.response?.data as { message?: string })?.message ?? error.message;
+      throw new Error(message);
     }
     throw error;
   }
