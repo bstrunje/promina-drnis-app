@@ -5,7 +5,8 @@
  * Podržava offline pristup i cache-iranje resursa
  */
 
-const CACHE_VERSION = 'v4';
+// NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
+const CACHE_VERSION = 'v2025-01-26';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
