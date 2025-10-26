@@ -4,6 +4,8 @@ import { hasActiveMembershipPeriod } from '@shared/memberStatus.types';
 import { getCurrentDate, getCurrentYear, getMonth, getDate } from '../../../utils/dateUtils';
 import { parseISO } from 'date-fns';
 import { getMembershipDisplayStatusExternal } from '../components/memberTableUtils';
+import { useSystemSettings } from '../../../hooks/useSystemSettings';
+import { isActiveMember } from '../../../utils/activityStatusHelpers';
 
 interface UseFilteredMembersProps {
   members: MemberWithDetails[];
@@ -28,6 +30,10 @@ export const useFilteredMembers = ({
   groupByType
 }: UseFilteredMembersProps) => {
   const [filteredMembers, setFilteredMembers] = useState<MemberWithDetails[]>(members);
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
 
   // Primijeni filtere i sortiranje kad se promijene ulazni podaci ili postavke filtera
   useEffect(() => {
@@ -74,8 +80,6 @@ export const useFilteredMembers = ({
       }
       else if (activeFilter === "active" || activeFilter === "passive") {
         const isActive = activeFilter === "active";
-        // Aktivni su članovi koji imaju 20 ili više sati aktivnosti (koristimo total_hours - prošla + tekuća godina)
-        const requiredHoursForActive = 20 * 60; // 20 sati u minutama
         result = result.filter(member => {
           // Logika za filtriranje mora biti identična logici za prikaz (getMembershipDisplayStatusExternal)
           // Član je kandidat za aktivnog/pasivnog samo ako NIJE 'Bivši član'.
@@ -88,8 +92,8 @@ export const useFilteredMembers = ({
           }
 
           // Koristimo activity_hours (sati iz tekuće i prošle godine)
-          const activityHours = member.activity_hours ?? 0;
-          return isActive ? (activityHours >= requiredHoursForActive) : (activityHours < requiredHoursForActive);
+          const memberIsActive = isActiveMember(member.activity_hours, activityHoursThreshold);
+          return isActive ? memberIsActive : !memberIsActive;
         });
       } 
       else if (activeFilter === "paid") {
@@ -156,7 +160,7 @@ export const useFilteredMembers = ({
     }
     
     setFilteredMembers(result);
-  }, [members, searchTerm, activeFilter, ageFilter, sortCriteria, sortOrder]);
+  }, [members, searchTerm, activeFilter, ageFilter, sortCriteria, sortOrder, activityHoursThreshold]);
 
   const groupMembersByType = groupByType ? 
     filteredMembers.reduce((groups, member) => {

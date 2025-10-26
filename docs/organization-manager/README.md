@@ -25,6 +25,9 @@ Dokumentacija za Organization System Manager (OSM) - upravljanje jednom organiza
 - 2FA postavke za organizaciju
 - Holiday management
 - Duty calendar postavke
+- **Postavke aktivnosti:**
+  - Postotci priznavanja sati po ulogama (vodič, pomoćni vodič, vozač, sudionik)
+  - Prag sati za aktivan status člana
 
 ### ❌ Što OSM ne može raditi
 - Kreiranje novih organizacija

@@ -2,6 +2,7 @@
 
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
+import { invalidateSettingsCache } from '../utils/systemSettingsCache.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import bcrypt from 'bcrypt';
 
@@ -47,6 +48,8 @@ type SystemSettingsExtended = {
     passwordGenerationStrategy?: 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREFIX_CARD_SUFFIX' | null;
     passwordSeparator?: string | null;
     passwordCardDigits?: number | null;
+    // Activity settings
+    activityHoursThreshold?: number | null;
 };
 
 type MemberSummary = {
@@ -333,7 +336,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             twoFactorRequiredMemberPermissions: [],
             passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
             passwordSeparator: '-isk-',
-            passwordCardDigits: 4
+            passwordCardDigits: 4,
+            activityHoursThreshold: 20
         };
 
         if (settings) {
@@ -357,6 +361,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
         twoFactorTrustedDevicesEnabled: settings.twoFactorTrustedDevicesEnabled ?? defaultSettings.twoFactorTrustedDevicesEnabled,
         twoFactorRequiredMemberRoles: (settings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
         twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
+        activityHoursThreshold: settings.activityHoursThreshold ?? defaultSettings.activityHoursThreshold,
     };
 }
 
@@ -399,6 +404,9 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                 },
             });
     
+            // Invalidira cache nakon update-a
+            invalidateSettingsCache(organizationId);
+    
             return {
                 id: String(updatedSettings.id),
                 cardNumberLength: updatedSettings.cardNumberLength ?? 5,
@@ -433,6 +441,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                 passwordGenerationStrategy: updatedSettings.passwordGenerationStrategy ?? 'FULLNAME_ISK_CARD',
                 passwordSeparator: updatedSettings.passwordSeparator ?? '-isk-',
                 passwordCardDigits: updatedSettings.passwordCardDigits ?? 4,
+                activityHoursThreshold: updatedSettings.activityHoursThreshold ?? 20,
             };
     
         } catch (error) {

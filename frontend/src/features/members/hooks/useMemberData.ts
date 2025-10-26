@@ -10,6 +10,7 @@ import {
 import { getCurrentDate } from '../../../utils/dateUtils';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { useToast } from "@components/ui/use-toast";
+import { useSystemSettings } from '../../../hooks/useSystemSettings';
 
 /**
  * Custom hook za dohvaćanje i manipulaciju podataka o članovima
@@ -17,6 +18,11 @@ import { useToast } from "@components/ui/use-toast";
  */
 export const useMemberData = () => {
   const { toast } = useToast();
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
+  
   const [members, setMembers] = useState<MemberWithDetails[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<MemberWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -98,7 +104,7 @@ export const useMemberData = () => {
         // Koristi podatke koji su već dostupni u osnovnim podacima o članu
         const membersWithDetails = processedMembers.map(member => {
           // Koristi centraliziranu funkciju za određivanje aktivnosti člana
-          const isActive = determineMemberActivityStatus(member) === 'active';
+          const isActive = determineMemberActivityStatus(member, activityHoursThreshold) === 'active';
           
           // Koristi centraliziranu funkciju za određivanje statusa članstva
           // Napomena: Ne možemo ovdje koristiti determineMembershipStatus jer nemamo periods podatke
@@ -188,7 +194,7 @@ export const useMemberData = () => {
     };
 
     void fetchMembers();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, activityHoursThreshold]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

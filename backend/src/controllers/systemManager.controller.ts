@@ -110,7 +110,7 @@ export const changeUsername = async (req: Request, res: Response) => {
         data: { username },
     });
 
-    await auditService.logAction('update', managerId, `System manager changed username to: ${username}`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, req.user?.organization_id);
+    await auditService.logAction('update', managerId, `Changed username to: ${username}`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, req.user?.organization_id);
 
     return res.json({ message: 'Username changed successfully', username });
 };
@@ -139,7 +139,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
         const token = systemManagerService.generateToken(manager);
         const newRefreshToken = systemManagerService.generateRefreshToken(manager);
 
-        await auditService.logAction('token_refresh', manager.id, `System manager ${manager.username} has refreshed the token`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, manager.organization_id);
+        await auditService.logAction('token_refresh', manager.id, `${manager.display_name || manager.username} has refreshed the token`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, manager.organization_id);
         
         await systemManagerRepository.updateLastLogin(manager.id);
         
@@ -225,7 +225,7 @@ const systemManagerController = {
             const token = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'access' }, JWT_SECRET, { expiresIn: '15m' });
             const _refreshToken = jwt.sign({ id: manager.id, role: 'SystemManager', type: 'SystemManager', tokenType: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
 
-            await auditService.logAction('login', manager.id, `System manager ${username} has logged into the system`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, manager.organization_id);
+            await auditService.logAction('login', manager.id, `${manager.display_name || manager.username} has logged into the system`, req, 'success', undefined, PerformerType.SYSTEM_MANAGER, manager.organization_id);
 
             const isProduction = process.env.NODE_ENV === 'production';
             const protocol = req.headers['x-forwarded-proto'] || req.protocol;

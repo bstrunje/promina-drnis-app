@@ -112,6 +112,18 @@
 #### Password Generation (Generiranje lozinki)
 - Odaberi strategiju generiranja lozinki za nove članove
 
+#### Activities (Aktivnosti)
+- **Trip Role Setup** - Postavi postotke priznavanja sati za različite uloge u aktivnostima:
+  - Guide (Vodič) - 100% sati
+  - Assistant Guide (Pomoćni vodič) - 50% sati
+  - Driver (Vozač) - 100% sati
+  - Participant (Sudionik) - 10% sati
+- **Activity Status** - Postavi prag sati za aktivan status člana:
+  - Članovi s dovoljno sati = **Aktivni**
+  - Članovi ispod praga = **Pasivni**
+  - Default: 20 sati (prošla + tekuća godina)
+  - Utječe na prikaz statusa u cijeloj aplikaciji
+
 #### Time Zone
 - Postavi vremensku zonu organizacije
 

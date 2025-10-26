@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { getCurrentDate } from '../../../utils/dateUtils';
 import { parseDate } from '../../../utils/dateUtils';
+import { useSystemSettings } from '../../../hooks/useSystemSettings';
+import { isActiveMember } from '../../../utils/activityStatusHelpers';
 
 interface StatisticsViewProps {
   members: MemberWithDetails[];
@@ -13,6 +15,11 @@ interface StatisticsViewProps {
  */
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
   const { t } = useTranslation('members');
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
+  
   // Računanje dobnih skupina u rasponima od 5 godina
   const ageGroups = useMemo(() => {
     const groups: Record<string, number> = {};
@@ -61,8 +68,8 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
   );
 
   const activeMembersCount = useMemo(
-    () => registeredMembers.filter(member => (member.activity_hours ?? 0) >= 1200).length,
-    [registeredMembers]
+    () => registeredMembers.filter(member => isActiveMember(member.activity_hours, activityHoursThreshold)).length,
+    [registeredMembers, activityHoursThreshold]
   );
 
   const passiveMembersCount = useMemo(

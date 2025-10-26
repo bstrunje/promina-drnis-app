@@ -7,7 +7,7 @@ import { useSystemSettings } from './hooks/useSystemSettings';
 import { BasicSettingsSectionComplete } from './sections/BasicSettingsSectionComplete';
 import { SecuritySettingsSection } from './sections/SecuritySettingsSection';
 import { BackupSettingsSection } from './sections/BackupSettingsSection';
-import { ActivityRecognitionSection } from './sections/ActivityRecognitionSection';
+import { ActivitiesSection } from './sections/ActivitiesSection';
 import { ChangePasswordSection } from './sections/ChangePasswordSection';
 
 /**
@@ -29,10 +29,12 @@ const SystemManagerSettingsRefactored: React.FC = () => {
     error,
     successMessage,
     saveAllSettings,
+    savePartialSettings,
     handleChange,
     handleRolesChange,
     handlePermissionsChange,
-    setSuccessMessage
+    setSuccessMessage,
+    setError
   } = useSystemSettings();
 
   // Globalni System Manager nema pristup Settings-ima
@@ -73,6 +75,20 @@ const SystemManagerSettingsRefactored: React.FC = () => {
     setSuccessMessage('Activity recognition rates updated successfully!');
     await new Promise(resolve => setTimeout(resolve, 0)); // ESLint requires await
     setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
+  // Handler za spremanje Activity Hours Threshold
+  const handleSaveActivityThreshold = async (threshold: number): Promise<void> => {
+    try {
+      // Spremi samo activityHoursThreshold u bazu (partial update)
+      await savePartialSettings({ activityHoursThreshold: threshold });
+      
+      setSuccessMessage(`Activity status threshold updated to ${threshold} hours!`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save threshold';
+      setError(errorMessage);
+    }
   };
 
   return (
@@ -149,12 +165,14 @@ const SystemManagerSettingsRefactored: React.FC = () => {
             onSave={handleSaveBasicSettings}
           />
 
-          {/* Activity Recognition Rates */}
-          <ActivityRecognitionSection
+          {/* Activities Section */}
+          <ActivitiesSection
             isLoading={isLoading}
             error={error}
             successMessage={successMessage}
-            onSave={handleSaveActivityRecognition}
+            activityHoursThreshold={settings.activityHoursThreshold ?? 20}
+            onSaveRoles={handleSaveActivityRecognition}
+            onSaveThreshold={handleSaveActivityThreshold}
           />
 
           {/* Change Password - Otvorena po defaultu */}

@@ -290,7 +290,8 @@ Update organization settings.
   "cardNumberLength": 6,
   "twoFactorMembersEnabled": true,
   "twoFactorChannelPinEnabled": true,
-  "passwordGenerationStrategy": "RANDOM_8"
+  "passwordGenerationStrategy": "RANDOM_8",
+  "activityHoursThreshold": 25
 }
 ```
 
@@ -299,9 +300,21 @@ Update organization settings.
 {
   "id": "1",
   "cardNumberLength": 6,
+  "activityHoursThreshold": 25,
   /* updated settings */
 }
 ```
+
+**Activity Hours Threshold:**
+- Određuje koliko sati član mora prikupiti da bi dospio u status "Aktivan"
+- Default: 20 sati
+- Računa se na temelju activity_hours (prošla + tekuća godina)
+- Utječe na:
+  - Prikaz statusa u Member List
+  - Prikaz statusa u Member Dashboard
+  - Prikaz statusa u Member Profile
+  - Filtriranje članova po aktivnosti
+  - Statistike aktivnih/pasivnih članova
 
 **Note:** Global System Manager cannot modify organization-specific settings.
 

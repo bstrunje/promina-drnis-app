@@ -369,8 +369,8 @@ const SystemManagerAuditLogs: React.FC = () => {
                         <span className="font-medium text-gray-900">{log.performer_name}</span>
                       ) : log.performer_type ? (
                         <span className="font-medium text-blue-600">
-                          {log.performer_type === 'SYSTEM_MANAGER' ? 'System Manager' : 
-                           log.performer_type === 'MEMBER' ? 'Member' : log.performer_type}
+                          {log.performer_type === 'SYSTEM_MANAGER' ? 'Unknown System Manager' : 
+                           log.performer_type === 'MEMBER' ? 'Unknown Member' : log.performer_type}
                           {log.performed_by && (
                             <span className="text-gray-500 font-normal"> #{log.performed_by}</span>
                           )}
@@ -398,7 +398,7 @@ const SystemManagerAuditLogs: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      <div className="max-w-xs truncate">
+                      <div className="max-w-xs truncate" title={log.action_details || 'No details'}>
                         {log.action_details || 'No details'}
                       </div>
                     </td>

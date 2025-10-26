@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react';
 import { Member } from '@shared/member';
 import { formatMinutesToHoursAndMinutes } from '../src/utils/dateUtils';
+import { useSystemSettings } from '../src/hooks/useSystemSettings';
+import { getActivityStatus as getActivityStatusHelper, minutesToHours } from '../src/utils/activityStatusHelpers';
 
 interface MemberActivityStatusProps {
   member: Member;
@@ -10,17 +12,18 @@ interface MemberActivityStatusProps {
 
 const MemberActivityStatus: React.FC<MemberActivityStatusProps> = ({ member }) => {
   const { t } = useTranslation('profile');
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
+  
   // Koristimo activity_hours za status aktivnosti (prošla + tekuća godina)
   // Ako je članstvo završeno (inactive), prikaži 0 sati
   const activityMinutes = member.status === 'inactive' ? 0 : (member.activity_hours ?? 0);
-  const activityHours = activityMinutes / 60;
+  const activityHours = minutesToHours(activityMinutes);
 
-  const getActivityStatus = (hours: number) => {
-    return hours >= 20 ? 'active' : 'passive';
-  };
-
-  const status = getActivityStatus(activityHours);
-  const hoursNeeded = Math.max(0, 20 - activityHours);
+  const status = getActivityStatusHelper(activityMinutes, activityHoursThreshold);
+  const hoursNeeded = Math.max(0, activityHoursThreshold - activityHours);
 
   return (
     <div className="mt-6 pt-4 border-t">

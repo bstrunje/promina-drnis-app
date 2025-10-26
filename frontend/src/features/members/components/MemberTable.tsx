@@ -11,6 +11,8 @@ import { formatMinutesToHoursAndMinutes, formatDate, getCurrentDate } from '../.
 import { useTranslation } from 'react-i18next';
 import { getMembershipDisplayStatusExternal as getMembershipDisplayStatus } from "./memberTableUtils";
 import { useBranding } from '../../../hooks/useBranding';
+import { useSystemSettings } from '../../../hooks/useSystemSettings';
+import { isActiveMember } from '../../../utils/activityStatusHelpers';
 
 
 interface MemberTableProps {
@@ -33,6 +35,10 @@ export const MemberTable: React.FC<MemberTableProps> = ({
 }) => {
   const { t } = useTranslation('members');
   const { getPrimaryColor, getFullName } = useBranding();
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
 
   // Pomoćna funkcija za određivanje boje statusa članstva
   // Bazirana na originalnoj implementaciji iz MemberList.tsx
@@ -152,10 +158,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   // Samo registrirani članovi mogu biti na listi
                   if (m.detailedStatus?.status !== 'registered') return false;
                   
-                  // Aktivni su oni s 20+ sati (koristimo activity_hours - tekuća i prošla godina)
-                  const activityMinutes = Number(m.activity_hours ?? 0);
-                  const activityHours = activityMinutes / 60;
-                  return activityHours >= 20;
+                  // Aktivni su oni s dovoljno sati (koristimo activity_hours - tekuća i prošla godina)
+                  return isActiveMember(m.activity_hours, activityHoursThreshold);
                 }).length
             }</span>
           </div>
@@ -167,10 +171,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   // Samo registrirani članovi mogu biti na listi
                   if (m.detailedStatus?.status !== 'registered') return false;
                   
-                  // Neaktivni su oni s manje od 20 sati (koristimo activity_hours - tekuća i prošla godina)
-                  const activityMinutes = Number(m.activity_hours ?? 0);
-                  const activityHours = activityMinutes / 60;
-                  return activityHours < 20;
+                  // Neaktivni su oni s nedovoljno sati (koristimo activity_hours - tekuća i prošla godina)
+                  return !isActiveMember(m.activity_hours, activityHoursThreshold);
                 }).length
             }</span>
           </div>
@@ -224,12 +226,12 @@ export const MemberTable: React.FC<MemberTableProps> = ({
           </thead>
           <tbody>
             {filteredMembers.flatMap((group) => {
-              // Odvajamo članove u dvije kategorije: ≥20 sati i <20 sati (koristimo activity_hours za status)
+              // Odvajamo članove u dvije kategorije: aktivni i pasivni (koristimo activity_hours za status)
               const activeMembers = group.members.filter((m) => {
-                return Number(m.activity_hours ?? 0) >= 20;
+                return isActiveMember(m.activity_hours, activityHoursThreshold);
               });
               const inactiveMembers = group.members.filter(
-                (m) => Number(m.activity_hours ?? 0) < 20
+                (m) => !isActiveMember(m.activity_hours, activityHoursThreshold)
               );
 
               let activeCounter = 1;
@@ -427,10 +429,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   // Samo registrirani članovi mogu biti na listi
                   if (m.detailedStatus?.status !== 'registered') return false;
                   
-                  // Aktivni su oni s 20+ sati (koristimo activity_hours - tekuća i prošla godina)
-                  const activityMinutes = Number(m.activity_hours ?? 0);
-                  const activityHours = activityMinutes / 60; // activity_hours je u minutama
-                  return activityHours >= 20;
+                  // Aktivni su oni s dovoljno sati (koristimo activity_hours - tekuća i prošla godina)
+                  return isActiveMember(m.activity_hours, activityHoursThreshold);
                 });
                 return activeMembers;
               })
@@ -488,10 +488,8 @@ export const MemberTable: React.FC<MemberTableProps> = ({
                   // Samo registrirani članovi mogu biti na listi
                   if (m.detailedStatus?.status !== 'registered') return false;
                   
-                  // Neaktivni su oni s manje od 20 sati (koristimo activity_hours - tekuća i prošla godina)
-                  const activityMinutes = Number(m.activity_hours ?? 0);
-                  const activityHours = activityMinutes / 60; // activity_hours je u minutama
-                  return activityHours < 20;
+                  // Neaktivni su oni s nedovoljno sati (koristimo activity_hours - tekuća i prošla godina)
+                  return !isActiveMember(m.activity_hours, activityHoursThreshold);
                 });
                 return inactiveMembers;
               })

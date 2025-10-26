@@ -51,6 +51,9 @@ export interface SystemSettings {
   passwordSeparator?: string | null;
   passwordCardDigits?: number | null;
 
+  // Activity settings
+  activityHoursThreshold?: number | null;
+
   // Audit
   updatedAt?: Date | string;
   updatedBy?: number | null;

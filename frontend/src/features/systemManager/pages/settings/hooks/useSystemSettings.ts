@@ -52,6 +52,7 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
     passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
     passwordSeparator: '-isk-',
     passwordCardDigits: 4,
+    activityHoursThreshold: 20,
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -85,6 +86,7 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
         data.passwordGenerationStrategy ??= 'FULLNAME_ISK_CARD';
         data.passwordSeparator ??= '-isk-';
         data.passwordCardDigits ??= 4;
+        data.activityHoursThreshold ??= 20;
       } catch (err: unknown) {
         let errorMessage: string;
         if (axios.isAxiosError(err)) {
@@ -119,6 +121,11 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
       const freshSettings = await getSystemSettings();
       setSettings(freshSettings);
       
+      // Emit custom event za invalidaciju globalnog cache-a
+      window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { 
+        detail: freshSettings 
+      }));
+      
       setSuccessMessage("Settings successfully updated!");
       
       // Automatski sakrij poruku nakon 5 sekundi
@@ -148,6 +155,11 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
       // Refetch podatke iz baze
       const freshSettings = await getSystemSettings();
       setSettings(freshSettings);
+      
+      // Emit custom event za invalidaciju globalnog cache-a
+      window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { 
+        detail: freshSettings 
+      }));
       
       setSuccessMessage("Settings successfully updated!");
       

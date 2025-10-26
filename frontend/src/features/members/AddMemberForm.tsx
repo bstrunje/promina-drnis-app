@@ -26,6 +26,11 @@ const sizeOptions: SizeOptions[] = [
   { value: 'XXXL', label: 'XXXL' }
 ];
 
+const hatSizeOptions: SizeOptions[] = [
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' }
+];
+
 const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   const { t } = useTranslation('members');
   const { getPrimaryColor, branding } = useBranding();
@@ -56,6 +61,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     membership_type: MembershipTypeEnum.Regular,
     tshirt_size: 'M',
     shell_jacket_size: 'M',
+    hat_size: 'L',
     role: 'member',
     membership_details: {
       card_number: undefined,
@@ -208,11 +214,16 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               </option>
             ))}
           </select>
+          
+          {/* Majica */}
+          <label className="mt-4 block text-sm font-medium text-gray-700">
+            {t('equipmentDelivery.tShirt', { ns: 'dashboards' })}
+          </label>
           <select
             name="tshirt_size"
             value={member.tshirt_size}
             onChange={handleChange}
-            className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+            className="mt-1 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             required
           >
             {sizeOptions.map(option => (
@@ -221,14 +232,37 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               </option>
             ))}
           </select>
+          
+          {/* Vjetrena jakna */}
+          <label className="mt-4 block text-sm font-medium text-gray-700">
+            {t('equipmentDelivery.shellJacket', { ns: 'dashboards' })}
+          </label>
           <select
             name="shell_jacket_size"
             value={member.shell_jacket_size}
             onChange={handleChange}
-            className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+            className="mt-1 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
             required
           >
             {sizeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          
+          {/* Kapa */}
+          <label className="mt-4 block text-sm font-medium text-gray-700">
+            {t('equipmentTypes.hat', { ns: 'dashboards' })}
+          </label>
+          <select
+            name="hat_size"
+            value={member.hat_size}
+            onChange={handleChange}
+            className="mt-1 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+            required
+          >
+            {hatSizeOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

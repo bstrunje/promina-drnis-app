@@ -4,6 +4,7 @@ import { mapToMember } from '../utils/memberMapper.js';
 import { Member, Gender, MembershipTypeEnum } from '../shared/types/member.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import { Prisma } from '@prisma/client';
+import { getActivityHoursThreshold } from '../utils/activityStatusHelpers.js';
 
 // Interfaces for data operations
 import { mapMembershipTypeToEnum } from '../services/member.service.js';
@@ -94,12 +95,15 @@ const memberRepository = {
             // total_hours je već dostupan kao osnovno polje na member entitetu
         });
 
+        // Dohvati activity hours threshold iz cache-a
+        const threshold = await getActivityHoursThreshold(organizationId);
+
         // Koristimo total_hours direktno iz baze podataka
         return members.map(m => {
             // Konverzija iz Decimal u number
             const totalHours = m.total_hours ? Number(m.total_hours) : 0;
             const activityHours = m.activity_hours ? Number(m.activity_hours) : 0;
-            return mapToMember(m, totalHours, activityHours);
+            return mapToMember(m, totalHours, activityHours, threshold);
         });
     },
 
@@ -122,11 +126,14 @@ const memberRepository = {
 
         if (!raw) return null;
 
+        // Dohvati activity hours threshold iz cache-a
+        const threshold = await getActivityHoursThreshold(organizationId);
+
         // Konverzija iz Decimal u number za izbjegavanje TypeScript greške
         const totalMinutes = raw.total_hours ? Number(raw.total_hours) : 0;
         const activityMinutes = raw.activity_hours ? Number(raw.activity_hours) : 0;
 
-        return mapToMember(raw, totalMinutes, activityMinutes);
+        return mapToMember(raw, totalMinutes, activityMinutes, threshold);
     },
 
     async update(organizationId: number, memberId: number, memberData: MemberUpdateData): Promise<Member> {
@@ -161,7 +168,10 @@ const memberRepository = {
             nickname: memberData.nickname,
             functions_in_society: memberData.functions_in_society
         } });
-        return mapToMember(raw);
+        
+        // Dohvati activity hours threshold iz cache-a
+        const threshold = await getActivityHoursThreshold(organizationId);
+        return mapToMember(raw, 0, 0, threshold);
     },
 
     async create(organizationId: number, memberData: MemberCreateData): Promise<Member> {
@@ -186,7 +196,10 @@ const memberRepository = {
             nickname: memberData.nickname,
             functions_in_society: memberData.functions_in_society
         } });
-        return mapToMember(raw);
+        
+        // Dohvati activity hours threshold iz cache-a
+        const threshold = await getActivityHoursThreshold(organizationId);
+        return mapToMember(raw, 0, 0, threshold);
     },
 
     async getStats(organizationId: number, memberId: number): Promise<MemberStats> {
@@ -255,7 +268,10 @@ const memberRepository = {
             }, 
             data: { role } 
         });
-        return mapToMember(raw);
+        
+        // Dohvati activity hours threshold iz cache-a
+        const threshold = await getActivityHoursThreshold(organizationId);
+        return mapToMember(raw, 0, 0, threshold);
     },
 
     async updatePassword(organizationId: number, memberId: number, password: string): Promise<void> {

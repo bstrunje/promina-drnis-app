@@ -1,6 +1,7 @@
 import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSize, ActivityStatus } from '../shared/types/member.js';
 import { MembershipEndReason } from '../shared/types/membership.js';
 import { formatDate } from './dateUtils.js';
+import { determineActivityStatus } from './activityStatusHelpers.js';
 
 /**
  * Mapira raw objekt iz Prisma na naš Member interfejs
@@ -55,7 +56,7 @@ type MemberRaw = {
   functions_in_society?: string | null;
 };
 
-export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_hours: number = 0): Member {
+export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_hours: number = 0, activityHoursThreshold: number = 20): Member {
   // Pomoćna funkcija za konverziju string | Date u Date
   const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
   const full_name = raw.nickname && raw.nickname !== ''
@@ -91,7 +92,7 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
     })(),
     total_hours,
     activity_hours,
-    activity_status: activity_hours >= 20 ? 'active' : 'passive',
+    activity_status: determineActivityStatus(activity_hours, activityHoursThreshold),
     membership_type: ((): MembershipTypeEnum | undefined => {
       const t = raw.membership_type ?? undefined;
       if (t === 'regular' || t === 'honorary' || t === 'supporting') {

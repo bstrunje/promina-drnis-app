@@ -29,6 +29,11 @@ const sizeOptions: SizeOptions[] = [
   { value: "XXXL", label: "XXXL" },
 ];
 
+const hatSizeOptions: SizeOptions[] = [
+  { value: "L", label: "L" },
+  { value: "XL", label: "XL" },
+];
+
 // Ove opcije će biti generirane dinamički koristeći useTranslation hook
 
 const LoginPage = () => {
@@ -122,6 +127,7 @@ const LoginPage = () => {
     life_status: "employed/unemployed", // Set a default value from the allowed types
     tshirt_size: "M", // Default size
     shell_jacket_size: "M", // Default size
+    hat_size: "L", // Default hat size
     registration_completed: true,
     membership_type: MembershipTypeEnum.Regular,
     role: "member",
@@ -207,6 +213,7 @@ const LoginPage = () => {
         life_status: 'employed/unemployed',
         tshirt_size: 'M',
         shell_jacket_size: 'M',
+        hat_size: 'L',
         membership_details: { card_stamp_issued: false, card_number: '' },
         profile_image_path: undefined,
         profile_image_updated_at: undefined,
@@ -336,6 +343,7 @@ const LoginPage = () => {
         life_status: "employed/unemployed", // Nema u data.member, zadana vrijednost
         tshirt_size: "M",             // Nema u data.member, zadana vrijednost
         shell_jacket_size: "M",       // Nema u data.member, zadana vrijednost
+        hat_size: "L",                // Nema u data.member, zadana vrijednost
         membership_details: {
           card_stamp_issued: false,
           card_number: ""
@@ -913,6 +921,31 @@ const LoginPage = () => {
                 >
                   <option value="">{t('login.shellJacketPlaceholder', 'Odaberite veličinu')}</option>
                   {sizeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Hat */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  {t('equipmentTypes.hat', { ns: 'dashboards', defaultValue: 'Kapa' })}
+                </label>
+                <select
+                  required
+                  className="mt-2 p-2 w-full border rounded bg-blue-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+                  value={registerData.hat_size}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      hat_size: e.target.value as "L" | "XL",
+                    })
+                  }
+                >
+                  <option value="">{t('login.shellJacketPlaceholder', 'Odaberite veličinu')}</option>
+                  {hatSizeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>

@@ -302,6 +302,9 @@ model SystemSettings {
   passwordSeparator          String?                     @default("-isk-") @map("password_separator")
   passwordCardDigits         Int?                        @default(4) @map("password_card_digits")
 
+  // Activity settings
+  activityHoursThreshold     Int?                        @default(20) @map("activity_hours_threshold")
+
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("system_settings")

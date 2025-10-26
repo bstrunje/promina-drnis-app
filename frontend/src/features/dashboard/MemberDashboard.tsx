@@ -14,6 +14,7 @@ import { formatInputDate } from '../../utils/dateUtils';
 import { useBranding } from '../../hooks/useBranding';
 import { useTenantNavigation } from '../../hooks/useTenantNavigation';
 import { useAuth } from '../../context/useAuth';
+import { useSystemSettings } from '../../hooks/useSystemSettings';
 
 interface MemberStats {
   unreadMessages: number;
@@ -50,13 +51,20 @@ const MemberDashboard: React.FC = () => {
   const [activityTotals, setActivityTotals] = useState({ activities: 0, hours: 0 });
   const { unreadCount, refreshUnreadCount } = useUnreadMessages();
   const { updateUser } = useAuth();
+  const { systemSettings } = useSystemSettings();
+  
+  // Dohvati activity hours threshold iz system settings (default 20)
+  const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
+  
   // MULTI-TENANCY FIX: Ne inicijaliziraj s member prop-om jer može biti iz starog tenanta
   // Uvijek fetchuj fresh data iz trenutnog tenanta
   const [fullMember, setFullMember] = useState<Member | null>(null);
   const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
 
-  const getActivityStatus = (totalHours: number | null | undefined) => {
-    return (totalHours ?? 0) >= 20 ? "active" : "passive";
+  // Funkcija za određivanje activity status-a na temelju activity_hours
+  const getActivityStatus = (activityMinutes: number | null | undefined) => {
+    const hours = (activityMinutes ?? 0) / 60;
+    return hours >= activityHoursThreshold ? "active" : "passive";
   };
 
   const fetchDashboardStats = async () => {

@@ -130,14 +130,15 @@ export function isFeePaidForYear(member: MemberStatusData, yearToCheck: number):
 /**
  * Određuje status aktivnosti člana na temelju broja odrađenih sati za prošlu i tekuću godinu
  * @param member Podaci o članu
- * @returns 'active' ako član ima 20+ sati (activity_hours), 'passive' inače
+ * @param thresholdHours Prag sati za aktivan status (default 20)
+ * @returns 'active' ako član ima dovoljno sati (activity_hours), 'passive' inače
  */
-export function determineMemberActivityStatus(member: MemberStatusData): ActivityStatus {
+export function determineMemberActivityStatus(member: MemberStatusData, thresholdHours = 20): ActivityStatus {
   const activityHours = typeof member.activity_hours === 'string' 
     ? parseFloat(member.activity_hours) 
     : Number(member.activity_hours ?? 0);
     
-  return activityHours >= 20 ? 'active' : 'passive';
+  return activityHours >= thresholdHours ? 'active' : 'passive';
 }
 
 // Prošireni tip rezultata statusa s više detalja
