@@ -1,13 +1,12 @@
 // frontend/src/features/systemManager/organizations/steps/SystemManagerStep.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
-import { Eye, EyeOff, Shield, Info } from 'lucide-react';
+import { Shield, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import type { StepProps } from '../OrganizationWizard';
 
 const SystemManagerStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) => {
-  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -58,31 +57,15 @@ const SystemManagerStep: React.FC<StepProps> = ({ formData, onUpdate, errors }) 
         {errors.sm_display_name && <p className="text-sm text-red-500 mt-1">{errors.sm_display_name}</p>}
       </div>
 
-      {/* Password */}
-      <div>
-        <Label htmlFor="sm_password">Password *</Label>
-        <div className="relative">
-          <Input
-            id="sm_password"
-            type={showPassword ? 'text' : 'password'}
-            value={formData.sm_password ?? ''}
-            onChange={(e) => onUpdate({ sm_password: e.target.value })}
-            placeholder="Minimum 8 characters"
-            className={errors.sm_password ? 'border-red-500 pr-10' : 'pr-10'}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        {errors.sm_password && <p className="text-sm text-red-500 mt-1">{errors.sm_password}</p>}
-        <p className="text-sm text-gray-500 mt-1">
-          Minimum 8 characters. Use a strong password.
-        </p>
-      </div>
+      {/* Default Password Info */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Default Password:</strong> <code className="bg-gray-100 px-2 py-1 rounded">manager123</code>
+          <br />
+          The System Manager will be required to change this password upon first login.
+        </AlertDescription>
+      </Alert>
 
       {/* 2FA Security Section */}
       <div className="border-t pt-6">

@@ -95,7 +95,6 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       sm_username,
       sm_email,
       sm_display_name,
-      sm_password,
       
       // System Manager 2FA data
       sm_enable_2fa,
@@ -110,7 +109,7 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    if (!sm_username || !sm_email || !sm_display_name || !sm_password) {
+    if (!sm_username || !sm_email || !sm_display_name) {
       res.status(400).json({ 
         error: tOrDefault('organization.errors.missingSystemManager', locale, 'Missing System Manager data') 
       });
@@ -175,7 +174,9 @@ export const createOrganization = async (req: Request, res: Response): Promise<v
       });
 
       // 2. Kreiraj System Manager za novu organizaciju
-      const hashedPassword = await bcrypt.hash(sm_password, 10);
+      // Uvijek koristi default lozinku "manager123" - OSM će morati promijeniti pri prvom logiranju
+      const defaultPassword = 'manager123';
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
       
       // Pripremi 2FA podatke
       let twoFactorData = {};

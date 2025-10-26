@@ -108,11 +108,7 @@ const OrganizationWizard: React.FC = () => {
           newErrors.sm_email = 'Invalid email format';
         }
         if (!formData.sm_display_name) newErrors.sm_display_name = 'Display name is required';
-        if (!formData.sm_password) {
-          newErrors.sm_password = 'Password is required';
-        } else if (formData.sm_password.length < 8) {
-          newErrors.sm_password = 'Password must be at least 8 characters';
-        }
+        // Password se automatski postavlja na "manager123" - ne treba validacija
         break;
     }
 
