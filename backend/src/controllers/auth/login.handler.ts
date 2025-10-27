@@ -354,8 +354,15 @@ export async function loginHandler(
 
     const expiresAt = getTokenExpiryDate(7); 
 
+    // Multi-device support: Ne brišemo sve tokene, samo istekle
+    // Ovo omogućava korisniku da bude prijavljen na više uređaja istovremeno
     await prisma.refresh_tokens.deleteMany({
-      where: { member_id: member.member_id }
+      where: { 
+        member_id: member.member_id,
+        expires_at: {
+          lt: new Date() // Briši samo istekle tokene
+        }
+      }
     });
     
     await prisma.refresh_tokens.create({

@@ -68,7 +68,15 @@ async function issueTokens(res: Response, memberId: number, role: string, req: R
   );
 
   const expiresAt = getTokenExpiryDate(7);
-  await prisma.refresh_tokens.deleteMany({ where: { member_id: memberId } });
+  // Multi-device support: Ne brišemo sve tokene, samo istekle
+  await prisma.refresh_tokens.deleteMany({ 
+    where: { 
+      member_id: memberId,
+      expires_at: {
+        lt: new Date() // Briši samo istekle tokene
+      }
+    } 
+  });
   await prisma.refresh_tokens.create({ data: { token: refreshToken, member_id: memberId, expires_at: expiresAt } });
 
   // Postavi refresh cookie u skladu s generateCookieOptions (koristimo istu politiku kao login)
