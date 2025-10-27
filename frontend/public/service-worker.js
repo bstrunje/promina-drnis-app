@@ -6,7 +6,7 @@
  */
 
 // NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
-const CACHE_VERSION = 'v2025-10-27';
+const CACHE_VERSION = 'v2025-10-27-fix';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
