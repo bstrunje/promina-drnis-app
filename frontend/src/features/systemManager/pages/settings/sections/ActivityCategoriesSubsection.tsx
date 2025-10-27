@@ -159,7 +159,7 @@ export const ActivityCategoriesSubsection: React.FC<ActivityCategoriesSubsection
           activityTypes.map((type) => (
             <div
               key={type.type_id}
-              className="flex items-center justify-between p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors gap-3"
             >
               <div className="flex-1">
                 
@@ -191,7 +191,8 @@ export const ActivityCategoriesSubsection: React.FC<ActivityCategoriesSubsection
                   />
                 </div>
 
-                <p className="text-xs text-gray-500">
+                {/* Note - sakrij na malim ekranima */}
+                <p className="text-xs text-gray-500 hidden md:block">
                   <strong>Note:</strong> Changes will be saved when you click "Save Categories" button.
                 </p>
               </div>
@@ -201,7 +202,7 @@ export const ActivityCategoriesSubsection: React.FC<ActivityCategoriesSubsection
                 disabled={loading}
                 variant={type.is_visible ? 'default' : 'outline'}
                 size="sm"
-                className="ml-4"
+                className="ml-0 sm:ml-4 shrink-0"
                 style={
                   type.is_visible
                     ? {
@@ -222,15 +223,9 @@ export const ActivityCategoriesSubsection: React.FC<ActivityCategoriesSubsection
                 }}
               >
                 {type.is_visible ? (
-                  <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Visible
-                  </>
+                  <Eye className="h-4 w-4" />
                 ) : (
-                  <>
-                    <EyeOff className="h-4 w-4 mr-2" />
-                    Hidden
-                  </>
+                  <EyeOff className="h-4 w-4" />
                 )}
               </Button>
             </div>

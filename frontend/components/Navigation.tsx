@@ -95,18 +95,10 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
               <span>{t('navigation.members')}</span>
             </TenantLink>
             {(user.role === 'member_administrator' || user.role === 'member_superuser') && (
-              <>
-                <TenantLink to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
-                  <Settings size={20} className="inline sm:hidden" />
-                  <span>{t('navigation.administrator')}</span>
-                </TenantLink>
-                {!user.registration_completed && (
-                  <TenantLink to="/assign-password" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
-                    <Shield size={20} className="inline sm:hidden" />
-                    <span>{t('navigation.assignPasswords')}</span>
-                  </TenantLink>
-                )}
-              </>
+              <TenantLink to="/administrator" className="flex items-center gap-2 text-gray-700 hover:text-blue-600" onClick={closeMenu}>
+                <Settings size={20} className="inline sm:hidden" />
+                <span>{t('navigation.administrator')}</span>
+              </TenantLink>
             )}
             {user.role === 'member_superuser' && (
               <>

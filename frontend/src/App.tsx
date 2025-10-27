@@ -32,7 +32,6 @@ const ActivityOverviewPage = lazy(() => import('./features/activities/ActivityOv
 const EditActivityPage = lazy(() => import('./features/activities/EditActivityPage'));
 const EventsList = lazy(() => import('./features/events/EventsList'));
 const HoursLog = lazy(() => import('./features/hours/HoursLog'));
-const AssignPassword = lazy(() => import('./features/members/AssignPassword'));
 
 const MessageList = lazy(() => import('./features/messages/MessageList'));
 const Settings = lazy(() => import('./features/settings/Settings'));
@@ -125,7 +124,6 @@ function OrgRoutes() {
                 <Route path="/administrator" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
                 <Route path="/administrator/dashboard" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AdminDashboard member={user} /></Suspense>} />
                 <Route path="/members/:id/edit" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
-                <Route path="/assign-password" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><AssignPassword /></Suspense>} />
                 <Route path="/settings" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><Settings /></Suspense>} />
                 <Route path="/admin/activities" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><ActivitiesAdminPageLazy /></Suspense>} />
               </>
