@@ -62,6 +62,32 @@ export const getActivityTypesServiceNew = async (req: Request) => {
   return activityRepository.findAllActivityTypes(organizationId);
 };
 
+export const updateActivityTypeVisibilityService = async (
+  req: Request,
+  typeId: number,
+  isVisible: boolean
+) => {
+  const organizationId = getOrganizationId(req);
+  if (!organizationId) {
+    throw new Error('Organization ID is required');
+  }
+  return activityRepository.updateActivityTypeVisibility(typeId, organizationId, isVisible);
+};
+
+export const updateActivityTypeCustomFieldsService = async (
+  req: Request,
+  typeId: number,
+  customLabel?: string | null,
+  customDescription?: string | null,
+  isVisible?: boolean
+) => {
+  const organizationId = getOrganizationId(req);
+  if (!organizationId) {
+    throw new Error('Organization ID is required');
+  }
+  return activityRepository.updateActivityTypeCustomFields(typeId, organizationId, customLabel, customDescription, isVisible);
+};
+
 // --- Aktivnosti --- //
 
 export const createActivityService = async (req: Request, data: CreateActivityDTO, organizer_id: number) => {
@@ -293,6 +319,7 @@ export const getActivitiesByMemberIdService = async (req: Request, member_id: nu
   const organizationId = getOrganizationId(req);
   return activityRepository.findActivitiesByParticipantId(organizationId, member_id);
 };
+
 
 
 

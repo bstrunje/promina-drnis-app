@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
+import { format, isBefore, startOfDay } from 'date-fns';
 import { DutyActivity, Holiday } from '../../utils/api/apiDuty';
 import './DutyCalendarDay.css';
 
@@ -11,6 +11,7 @@ interface DutyCalendarDayProps {
   isWeekend: boolean;
   maxParticipants: number;
   onJoin: (date: Date) => void;
+  isSuperUser?: boolean;
 }
 
 const DutyCalendarDay: React.FC<DutyCalendarDayProps> = ({
@@ -19,15 +20,23 @@ const DutyCalendarDay: React.FC<DutyCalendarDayProps> = ({
   holiday,
   isWeekend,
   maxParticipants,
-  onJoin
+  onJoin,
+  isSuperUser = false
 }) => {
   const { t } = useTranslation('duty');
   
   const participantCount = duty?.participants?.length ?? 0;
   const isFull = participantCount >= maxParticipants;
   
+  // Provjera je li datum u prošlosti
+  const isPastDate = isBefore(startOfDay(date), startOfDay(new Date()));
+  
   // Određivanje može li se kliknuti
-  const canJoin = (isWeekend || holiday) && !isFull;
+  // Prošli datumi: samo superuser može kliknuti (za editiranje povijesti)
+  // Budući datumi: svi mogu kliknuti ako je vikend/praznik i nije puno
+  const canJoin = isPastDate 
+    ? isSuperUser 
+    : (isWeekend || holiday) && !isFull;
   
   // Određivanje CSS klasa
   const getDayClasses = () => {

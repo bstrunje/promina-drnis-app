@@ -12,17 +12,19 @@ import api from '@/utils/api/apiConfig';
 interface Activity {
   activity_id: number;
   name: string;
-  start_date: string;
+  date: string;
+  hours_spent?: number;
   status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  activity_type?: {
+    name: string;
+    custom_label?: string | null;
+  };
 }
 
-interface ActivityParticipation {
-  activity: Activity;
-  recognized_hours: number;
-}
-
-interface Member {
+interface MemberWithActivities {
+  member_id: number;
   full_name: string;
+  activities: Activity[];
 }
 
 const ActivityYearPage: React.FC = () => {
@@ -32,8 +34,7 @@ const ActivityYearPage: React.FC = () => {
   const { navigateTo } = useTenantNavigation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [participations, setParticipations] = useState<ActivityParticipation[]>([]);
-  const [member, setMember] = useState<Member | null>(null);
+  const [memberWithActivities, setMemberWithActivities] = useState<MemberWithActivities | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,12 +44,10 @@ const ActivityYearPage: React.FC = () => {
 
       try {
         // api.get automatski dodaje tenant parameter i Authorization header
-        const [participationsRes, memberRes] = await Promise.all([
-          api.get<ActivityParticipation[]>(`/activities/member/${memberId}/${year}`),
-          api.get<Member>(`/members/${memberId}`)
-        ]);
-        setParticipations(participationsRes.data ?? []);
-        setMember(memberRes.data);
+        const response = await api.get<MemberWithActivities>(`/members/${memberId}/activities?year=${year}`);
+        console.log('[ActivityYearPage] API response:', response.data);
+        console.log('[ActivityYearPage] First activity status:', response.data.activities[0]?.status, typeof response.data.activities[0]?.status);
+        setMemberWithActivities(response.data);
       } catch (err) {
         console.error(`Error fetching activities for year ${year}:`, err);
         setError(t('activityYear.errorFetchingData'));
@@ -61,9 +60,9 @@ const ActivityYearPage: React.FC = () => {
   }, [memberId, year, t]);
 
   // Izračunaj ukupne sate za godinu
-  const totalHoursForYear = participations.reduce((total, participation) => {
-    return total + (participation.recognized_hours || 0);
-  }, 0);
+  const totalHoursForYear = memberWithActivities?.activities.reduce((total, activity) => {
+    return total + (activity.hours_spent ?? 0);
+  }, 0) ?? 0;
 
   if (loading) {
     return <div className="p-6"><div className="h-16 bg-gray-200 animate-pulse rounded-md w-1/2 mx-auto"></div></div>;
@@ -85,7 +84,7 @@ const ActivityYearPage: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">{t('activityYear.title', { year })}</h1>
-              <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {member?.full_name}</p>
+              <p className="text-lg text-gray-600">{t('activityOverview.memberLabel')} {memberWithActivities?.full_name}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">{t('activityYear.totalHoursInYear', { year })}</p>
@@ -94,33 +93,36 @@ const ActivityYearPage: React.FC = () => {
           </div>
         </div>
 
-        {participations.length === 0 ? (
+        {!memberWithActivities?.activities || memberWithActivities.activities.length === 0 ? (
           <div className="text-center bg-white p-8 rounded-lg shadow-md">
             <p className="text-gray-500">{t('activityYear.noActivities')}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {participations.map(participation => {
+            {memberWithActivities.activities.map(activity => {
               return (
                 <TenantLink
-                  to={`/activities/${participation.activity.activity_id}`}
-                  key={participation.activity.activity_id}
+                  to={`/activities/${activity.activity_id}`}
+                  key={activity.activity_id}
                   className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       {/* Status indicator */}
                       <div className={`w-3 h-3 rounded-full ${
-                        participation.activity.status === 'PLANNED' ? 'bg-green-600' :
-                        participation.activity.status === 'ACTIVE' ? 'bg-blue-600' :
-                        participation.activity.status === 'COMPLETED' ? 'bg-gray-400' :
-                        participation.activity.status === 'CANCELLED' ? 'bg-red-600' : 'bg-gray-300'
-                      }`} title={participation.activity.status}></div>
-                      <p className="font-semibold text-gray-700">{participation.activity.name}</p>
+                        activity.status === 'PLANNED' ? 'bg-green-600' :
+                        activity.status === 'ACTIVE' ? 'bg-blue-600' :
+                        activity.status === 'COMPLETED' ? 'bg-gray-400' :
+                        activity.status === 'CANCELLED' ? 'bg-red-600' : 'bg-gray-300'
+                      }`} title={activity.status}></div>
+                      <div>
+                        <p className="font-semibold text-gray-700">{activity.name}</p>
+                        <p className="text-xs text-gray-500">{activity.activity_type?.custom_label ?? activity.activity_type?.name}</p>
+                      </div>
                     </div>
                     <div className="flex items-center text-sm text-gray-500 space-x-4">
-                      <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" />{new Date(participation.activity.start_date).toLocaleDateString('hr-HR')}</span>
-                      <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{formatHoursToHHMM(participation.recognized_hours)}</span>
+                      <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" />{new Date(activity.date).toLocaleDateString('hr-HR')}</span>
+                      <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{formatHoursToHHMM(activity.hours_spent ?? 0)}</span>
                     </div>
                   </div>
                 </TenantLink>

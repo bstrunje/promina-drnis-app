@@ -3,6 +3,10 @@ export interface ActivityType {
   name: string;
   description: string | null;
   key: string;
+  custom_label?: string | null;
+  custom_description?: string | null;
+  is_visible: boolean;
+  organization_id: number | null;
 }
 
 export enum ActivityStatus {

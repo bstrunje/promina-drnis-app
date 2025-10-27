@@ -165,11 +165,14 @@ model Member {
 }
 
 model ActivityType {
-  type_id         Int          @id @default(autoincrement())
+  type_id         Int           @id @default(autoincrement())
   organization_id Int?
   key             String       @db.VarChar(100)
   name            String       @db.VarChar(50)
   description     String?
+  custom_label    String?      @db.VarChar(255) // Custom naziv za tenant
+  custom_description String?   @db.Text         // Custom opis za tenant
+  is_visible      Boolean      @default(true) // Kontrola vidljivosti kategorije za tenant
   created_at      DateTime?    @default(now()) @db.Timestamp(6)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   activities      Activity[]

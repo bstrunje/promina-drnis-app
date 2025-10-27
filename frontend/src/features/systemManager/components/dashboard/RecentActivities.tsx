@@ -10,6 +10,7 @@ interface Activity {
   name: string;
   activity_type: {
     name: string;
+    custom_label?: string | null;
   };
   participants: Participant[];
   start_date: string | Date;
@@ -34,7 +35,7 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities }) => {
         <div key={activity.activity_id} className="flex justify-between items-center p-2 rounded-md hover:bg-gray-100">
           <div>
             <div className="font-medium">{activity.name}</div>
-            <div className="text-xs text-gray-500">{activity.activity_type.name}</div>
+            <div className="text-xs text-gray-500">{activity.activity_type.custom_label ?? activity.activity_type.name}</div>
           </div>
           <div className="text-right">
             <div className="font-medium">{activity.participants.length} participants</div>

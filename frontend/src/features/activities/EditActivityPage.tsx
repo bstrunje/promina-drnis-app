@@ -315,7 +315,13 @@ const EditActivityPage: React.FC = () => {
         <CardContent>
           <form onSubmit={(e) => { void handleSubmit(e); }}>
             <div className="grid gap-6">
-              {/* Naslov aktivnosti je sakriven */}
+              {/* Naslov aktivnosti */}
+              <div>
+                <Label htmlFor="name">{t('editing.name')}</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+
+              {/* Opis aktivnosti */}
               <div>
                 <Label htmlFor="description">{t('editing.description')}</Label>
                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />

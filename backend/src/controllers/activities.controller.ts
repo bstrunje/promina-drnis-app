@@ -13,6 +13,46 @@ export const getActivityTypes = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const updateActivityTypeVisibility = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const typeId = parseInt(req.params.typeId, 10);
+    const { is_visible } = req.body;
+    const locale = req.locale;
+
+    if (typeof is_visible !== 'boolean') {
+      return res.status(400).json({
+        code: 'INVALID_INPUT',
+        message: tBackend('errors.invalid_input', locale),
+      });
+    }
+
+    const updatedType = await activityService.updateActivityTypeVisibilityService(req, typeId, is_visible);
+    res.status(200).json(updatedType);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateActivityType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const typeId = parseInt(req.params.typeId, 10);
+    const { is_visible, custom_label, custom_description } = req.body;
+    const locale = req.locale;
+
+    if (typeof is_visible !== 'boolean') {
+      return res.status(400).json({
+        code: 'INVALID_INPUT',
+        message: tBackend('errors.invalid_input', locale),
+      });
+    }
+
+    const updatedType = await activityService.updateActivityTypeCustomFieldsService(req, typeId, custom_label, custom_description, is_visible);
+    res.status(200).json(updatedType);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // --- Aktivnosti --- //
 
 export const createActivity = async (req: Request, res: Response, next: NextFunction) => {

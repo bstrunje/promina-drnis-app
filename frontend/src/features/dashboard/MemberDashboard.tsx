@@ -126,56 +126,52 @@ const MemberDashboard: React.FC = () => {
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
-    const fetchAnnualStats = async () => {
-      // Koristi SAMO fullMember da izbjegnemo miješanje tenanta
-      const targetId = fullMember?.member_id;
-      if (targetId) {
-        try {
-          console.log('Fetching annual stats for member ID:', targetId);
-          const response = await api.get<AnnualStat[]>(`/members/${targetId}/annual-stats`);
-          
-          console.log('Received annual stats data:', response.data);
-
-          const totals = response.data.reduce((acc, stat) => {
-            acc.activities += stat.total_activities;
-            acc.hours += Number(stat.total_hours ?? 0);
-            return acc;
-          }, { activities: 0, hours: 0 });
-
-          console.log('Calculated totals:', totals);
-          setActivityTotals(totals);
-        } catch (err) {
-          console.error("Error fetching annual stats:", err);
-          // Postavi default vrijednosti u slučaju greške
-          setActivityTotals({ activities: 0, hours: 0 });
-        }
+    const fetchMemberData = async () => {
+      try {
+        // Dohvati trenutno prijavljenog člana neovisno o ID-u iz propsa
+        const response = await api.get<Member>(`/members/me`);
+        setFullMember(response.data);
+        
+        // Ažuriraj user objekt u AuthContext-u s najnovijim podacima
+        updateUser(response.data);
+      } catch (error) {
+        console.error('Failed to fetch full member data:', error);
       }
     };
 
-    const fetchMemberDetails = () => {
-      const fetchMemberData = async () => {
-        try {
-          // Dohvati trenutno prijavljenog člana neovisno o ID-u iz propsa
-          const response = await api.get<Member>(`/members/me`);
-          setFullMember(response.data);
-          
-          // Ažuriraj user objekt u AuthContext-u s najnovijim podacima
-          updateUser(response.data);
-        } catch (error) {
-          console.error('Failed to fetch full member data:', error);
-        }
-      };
-
-
-
-      void fetchMemberData();
-      void fetchUpcomingActivities();
-    };
-
-    void fetchMemberDetails();
-    void fetchAnnualStats();
+    void fetchMemberData();
+    void fetchUpcomingActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branding]); // SAMO branding dependency - ne ovisimo o member prop-u!
+
+  // Dohvati annual stats NAKON što se fullMember postavi
+  useEffect(() => {
+    if (!fullMember?.member_id) return;
+
+    const fetchAnnualStats = async () => {
+      try {
+        console.log('Fetching annual stats for member ID:', fullMember.member_id);
+        const response = await api.get<AnnualStat[]>(`/members/${fullMember.member_id}/annual-stats`);
+        
+        console.log('Received annual stats data:', response.data);
+
+        const totals = response.data.reduce((acc, stat) => {
+          acc.activities += stat.total_activities;
+          acc.hours += Number(stat.total_hours ?? 0);
+          return acc;
+        }, { activities: 0, hours: 0 });
+
+        console.log('Calculated totals:', totals);
+        setActivityTotals(totals);
+      } catch (err) {
+        console.error("Error fetching annual stats:", err);
+        // Postavi default vrijednosti u slučaju greške
+        setActivityTotals({ activities: 0, hours: 0 });
+      }
+    };
+
+    void fetchAnnualStats();
+  }, [fullMember?.member_id]); // Pokreni kad se fullMember postavi
 
   // Zaštita: Ne prikazuj dashboard dok fullMember nije učitan
   if (!fullMember) {
@@ -366,7 +362,7 @@ const MemberDashboard: React.FC = () => {
                       <div>
                         <p className="font-semibold text-gray-800">{activity.name}</p>
                         <p className="text-sm text-gray-600">
-                          {formatInputDate(activity.start_date)} - {activity.activity_type?.name}
+                          {formatInputDate(activity.start_date)} - {activity.activity_type?.custom_label ?? activity.activity_type?.name}
                         </p>
                       </div>
                       {(() => {

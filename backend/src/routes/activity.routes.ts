@@ -11,6 +11,12 @@ const router = express.Router();
 // Dohvati sve tipove aktivnosti (dostupno svim prijavljenim korisnicima)
 router.get('/types', authenticateToken, activityController.getActivityTypes);
 
+// Ažuriraj vidljivost tipa aktivnosti (samo System Manager)
+router.patch('/types/:typeId/visibility', authenticateToken, roles.requireSystemManager, activityController.updateActivityTypeVisibility);
+
+// Ažuriraj sva polja tipa aktivnosti (samo System Manager)
+router.patch('/types/:typeId', authenticateToken, roles.requireSystemManager, activityController.updateActivityType);
+
 // Dohvati sve aktivnosti s detaljima o sudionicima (za izračun sati - dostupno svim prijavljenim korisnicima)
 router.get('/with-participants', authenticateToken, activityController.getAllActivitiesWithParticipants);
 

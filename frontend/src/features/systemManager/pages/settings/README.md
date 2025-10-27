@@ -12,7 +12,8 @@ settings/
 ├── sections/
 │   ├── index.ts                           (Export all sections)
 │   ├── BasicSettingsSection.tsx           (Card Number, Renewal, Time Zone, Password Gen)
-│   ├── ActivityRecognitionSection.tsx     (Postotci za uloge - NOVO)
+│   ├── ActivityCategoriesSection.tsx      (Upravljanje vidljivošću kategorija - NOVO)
+│   ├── ActivityRecognitionSection.tsx     (Postotci za uloge)
 │   └── ChangePasswordSection.tsx          (Username & Password)
 └── hooks/
     └── useSystemSettings.ts               (Shared state & API logic)
@@ -42,7 +43,17 @@ settings/
 - Password Card Digits
 - **Vlastiti Save button**
 
-### 4. **ActivityRecognitionSection** (NOVO)
+### 4. **ActivityCategoriesSection** (NOVO)
+- Upravljanje vidljivošću kategorija aktivnosti po tenantu
+- Toggle visibility (Eye/EyeOff ikone)
+- Prikaz key-a svake kategorije
+- **Lokalizacija kroz translation datoteke**:
+  - Labele i opisi se ne hardkodiraju
+  - Promjene u `locales/[lang]/activities.json`
+  - Automatska podrška za sve jezike
+- **Vlastiti Save button** (automatski pri toggle-u)
+
+### 5. **ActivityRecognitionSection**
 - Konfigurirajući postotci za uloge:
   - Vodič (100%)
   - Pomoćni vodič (50%)
@@ -197,3 +208,61 @@ import { SecuritySettingsSection } from './sections';
 - **Activity Recognition Rates** trenutno nisu u bazi - potrebno dodati backend support
 - **Global System Manager** koristi svoj zasebni Settings (GlobalSystemManagerSettings.tsx)
 - **Service Worker** cache verzija povećana na v2 (fix za NS_ERROR_CORRUPTED_CONTENT)
+
+## 🌍 Lokalizacija Kategorija Aktivnosti
+
+### Kako Promijeniti Labele i Opise
+
+Kategorije aktivnosti koriste **lokalizaciju** umjesto hardkodiranih stringova. To znači da se labele i opisi mogu lako mijenjati za sve jezike bez promjene koda.
+
+#### Struktura Translation Datoteka
+
+```
+frontend/src/locales/
+├── hr/
+│   └── activities.json
+└── en/
+    └── activities.json
+```
+
+#### Primjer: activities.json
+
+```json
+{
+  "activitiesAdmin": {
+    "types": {
+      "akcija-drustvo": "AKCIJA DRUŠTVO",
+      "akcija-trail": "AKCIJA TRAIL",
+      "dezurstva": "DEŽURSTVA",
+      "izleti": "IZLETI",
+      "razno": "RAZNO",
+      "sastanci": "SASTANCI"
+    }
+  },
+  "activityCategoryPage": {
+    "descriptions": {
+      "akcija-drustvo": "Radne akcije u organizaciji Društva",
+      "akcija-trail": "Radne akcije za Trail",
+      "dezurstva": "Dežurstva u domu",
+      "izleti": "Organizacija, vođenje i sudjelovanje na izletima",
+      "razno": "Ostale razne aktivnosti",
+      "sastanci": "Sastanci članova i upravnog odbora"
+    }
+  }
+}
+```
+
+#### Dodavanje Novog Jezika
+
+1. Kreiraj novu folder strukturu: `frontend/src/locales/[lang]/`
+2. Kopiraj `activities.json` iz postojećeg jezika
+3. Prevedi sve stringove na novi jezik
+4. Kategorije će automatski koristiti nove prijevode
+
+### Prednosti Ovog Pristupa
+
+✅ **Multi-language support** - Dodavanje novih jezika je jednostavno  
+✅ **Centralizirano** - Sve labele na jednom mjestu  
+✅ **Bez hardkodiranja** - Nema potrebe mijenjati kod za promjenu teksta  
+✅ **Konzistentnost** - Iste labele se koriste kroz cijelu aplikaciju  
+✅ **Tenant-specific visibility** - Svaki tenant može sakriti kategorije koje ne koristi

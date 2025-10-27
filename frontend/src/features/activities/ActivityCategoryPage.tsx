@@ -253,7 +253,9 @@ const ActivityCategoryPage: React.FC = () => {
         // Prikaz kategorija kada gledamo po godini
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {activityTypes.length > 0 ? (
-            activityTypes.map(type => {
+            activityTypes
+              .filter(type => type.is_visible)
+              .map(type => {
               // Za svaki tip aktivnosti, filtriraj aktivnosti te godine koje pripadaju tom tipu
               const activitiesForType = activities.filter(activity => 
                 activity.type_id === type.type_id
@@ -271,6 +273,10 @@ const ActivityCategoryPage: React.FC = () => {
               const hasActive = activitiesForType.some(a => a.status === ActivityStatus.ACTIVE);
               const hasPlanned = activitiesForType.some(a => a.status === ActivityStatus.PLANNED);
               
+              // Koristi custom label ako postoji, inače lokalizirani naziv
+              const displayName = type.custom_label ?? t(`activitiesAdmin.types.${type.key}`).toUpperCase();
+              const displayDescription = type.custom_description ?? t(`activityCategoryPage.descriptions.${type.key}`);
+              
               return (
                 <TenantLink 
                   to={`/activities/category/${type.type_id}${yearParam ? `?year=${yearParam}` : ''}`} 
@@ -282,15 +288,15 @@ const ActivityCategoryPage: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           {React.createElement(iconMap[type.key] ?? iconMap.default, { className: 'h-6 w-6 text-primary' })}
-                          <CardTitle className="text-base sm:text-lg">{t(`activitiesAdmin.types.${type.key}`).toUpperCase()}</CardTitle>
+                          <CardTitle className="text-base sm:text-lg">{displayName}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
                           {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title="Postoje aktivne aktivnosti"></div>}
                           {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title="Postoje najavljene aktivnosti"></div>}
                         </div>
                       </div>
-                      {type.description && (
-                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{t(`activityCategoryPage.descriptions.${type.key}`)}</p>
+                      {displayDescription && (
+                        <p className="text-sm text-muted-foreground mt-1 mb-0 hidden md:block">{displayDescription}</p>
                       )}
                     </CardHeader>
                     <CardFooter className="pt-2 flex flex-col gap-2 activity-card-footer">

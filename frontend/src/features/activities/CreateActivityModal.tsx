@@ -31,8 +31,9 @@ interface CreateActivityModalProps {
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
   const { t } = useTranslation('activities');
+  const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState('');
   const [actualStartDate, setActualStartDate] = useState('');
   const [actualStartTime, setActualStartTime] = useState('');
@@ -91,6 +92,19 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     setParticipantsWithRoles([]);
   }, [selectedTypeId]);
 
+  // Auto-generiranje naslova iz datuma i tipa aktivnosti
+  useEffect(() => {
+    if (startDate && selectedTypeId && activityTypes.length > 0) {
+      const selectedType = activityTypes.find(type => String(type.type_id) === selectedTypeId);
+      if (selectedType) {
+        const dateObj = new Date(startDate);
+        const formattedDate = format(dateObj, 'dd.MM.yyyy');
+        const typeName = (selectedType.custom_label ?? t(`types.${selectedType.key}`)).toUpperCase();
+        setName(`${typeName} ${formattedDate}`);
+      }
+    }
+  }, [startDate, selectedTypeId, activityTypes, t]);
+
   const handleSetNow = (
     dateSetter: React.Dispatch<React.SetStateAction<string>>,
     timeSetter: React.Dispatch<React.SetStateAction<string>>
@@ -119,8 +133,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     setIsLoading(true);
     setError(null);
 
-    const activityName = description.length > 20 ? `${description.substring(0, 20)}...` : description;
-
     const combinedStartDate = `${startDate}T${startTime}`;
     const combinedActualStartTime = actualStartDate && actualStartTime ? `${actualStartDate}T${actualStartTime}` : null;
     const combinedActualEndTime = actualEndDate && actualEndTime ? `${actualEndDate}T${actualEndTime}` : null;
@@ -132,7 +144,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       if (isExcursionActivity && participantsWithRoles.length > 0) {
         // Prvo stvori aktivnost s osnovnim sudionicima
         const payload = {
-          name: activityName,
+          name,
           description,
           start_date: new Date(combinedStartDate),
           actual_start_time: manualHours ? null : (combinedActualStartTime ? new Date(combinedActualStartTime) : null),
@@ -151,7 +163,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       } else {
         // Za ostale tipove aktivnosti koristimo standardni način
         await createActivity({
-          name: activityName,
+          name,
           description,
           start_date: new Date(combinedStartDate),
           // Ako su uneseni ručni sati, ne šaljemo stvarna vremena
@@ -166,8 +178,9 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       toast({ title: t('creation.success'), description: t('creation.activityCreated') });
       onActivityCreated();
       // Reset form
+      setName('');
       setDescription('');
-      setStartDate('');
+      setStartDate(format(new Date(), 'yyyy-MM-dd'));
       setStartTime('');
       setActualStartDate('');
       setActualStartTime('');
@@ -213,7 +226,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   <SelectContent className="z-[9999]" position="popper" sideOffset={5}>
                     {activityTypes.map((type) => (
                       <SelectItem key={type.type_id} value={String(type.type_id)}>
-                        {t(`types.${type.key}`).toUpperCase()}
+                        {(type.custom_label ?? t(`types.${type.key}`)).toUpperCase()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -221,6 +234,22 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
               </Select>
               {fieldErrors.selectedTypeId && <p className="text-red-500 text-xs mt-1">{t('creation.validation.activityTypeRequired')}</p>}
               {loadingTypes && <p className="text-sm text-muted-foreground mt-1">{t('creation.loadingTypes')}</p>}
+            </div>
+          </div>
+
+          {/* Naslov aktivnosti - auto-generiran */}
+          <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+            <Label htmlFor="name" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
+              {t('creation.nameLabel')}
+            </Label>
+            <div className="sm:col-span-3">
+              <Input
+                id="name"
+                value={name}
+                disabled
+                className="w-full bg-gray-50"
+              />
+              <p className="text-xs text-gray-500 mt-1">{t('creation.nameAutoGenerated')}</p>
             </div>
           </div>
             

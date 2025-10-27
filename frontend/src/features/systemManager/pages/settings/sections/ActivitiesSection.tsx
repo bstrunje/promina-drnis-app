@@ -3,6 +3,9 @@ import React from 'react';
 import { Save } from 'lucide-react';
 import { CollapsibleSection } from '../components/CollapsibleSection';
 import { useBranding } from '../../../../../hooks/useBranding';
+import { ActivityCategoriesSubsection } from './ActivityCategoriesSubsection';
+import { ActivityType } from '@shared/activity.types';
+import api from '../../../../../utils/api/apiConfig';
 
 // Tipovi za uloge i njihove postotke
 interface ActivityRole {
@@ -101,16 +104,42 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
     void onSaveThreshold(threshold);
   };
 
+  const handleSaveCategories = async (updatedCategories: ActivityType[]) => {
+    try {
+      // Pozovi API za svaku kategoriju koja se promijenila
+      const updatePromises = updatedCategories.map(category => 
+        api.patch(`/activities/types/${category.type_id}`, {
+          is_visible: category.is_visible,
+          custom_label: category.custom_label,
+          custom_description: category.custom_description,
+        })
+      );
+
+      await Promise.all(updatePromises);
+    } catch (err) {
+      console.error('Error saving categories:', err);
+      throw err; // Propagate error za subsection
+    }
+  };
+
   return (
     <CollapsibleSection title="Activities" defaultOpen={false}>
       <div className="space-y-8 mt-4">
         
+        {/* Activity Categories Subsection */}
+        <ActivityCategoriesSubsection
+          isLoading={isLoading}
+          error={error}
+          onSave={handleSaveCategories}
+        />
+
         {/* Trip Role Setup Subsection */}
-        <div className="border-b border-gray-200 pb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Trip Role Setup</h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Set hour recognition percentages for different roles in activities (trips, actions, etc.)
-          </p>
+        <CollapsibleSection
+          title="Trip Role Setup"
+          description="Set hour recognition percentages for different roles in activities (trips, actions, etc.)"
+          defaultOpen={false}
+          variant="subsection"
+        >
 
           <form onSubmit={(e) => void handleRolesSubmit(e)} className="space-y-4">
             {roles.map((role) => (
@@ -167,14 +196,15 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
               {isLoading ? 'Saving...' : 'Save Recognition Rates'}
             </button>
           </form>
-        </div>
+        </CollapsibleSection>
 
         {/* Activity Status Subsection */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Activity Status</h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Set the minimum number of hours required for a member to achieve "Active" status. Members with fewer hours will be marked as "Passive".
-          </p>
+        <CollapsibleSection
+          title="Activity Status"
+          description="Set the minimum number of hours required for a member to achieve 'Active' status. Members with fewer hours will be marked as 'Passive'."
+          defaultOpen={false}
+          variant="subsection"
+        >
 
           <form onSubmit={(e) => void handleThresholdSubmit(e)} className="space-y-4">
             <div className="flex items-center gap-4">
@@ -214,7 +244,7 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
               {isLoading ? 'Saving...' : 'Save Activity Status Threshold'}
             </button>
           </form>
-        </div>
+        </CollapsibleSection>
 
         {/* Messages */}
         {error && (

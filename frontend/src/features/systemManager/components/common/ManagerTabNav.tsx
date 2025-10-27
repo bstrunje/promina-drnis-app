@@ -125,7 +125,7 @@ const ManagerTabNav: React.FC<ManagerTabNavProps> = ({ activeTab, setActiveTab, 
               className="px-4 py-3 rounded-lg text-left flex items-center space-x-3 text-red-600 hover:bg-red-50 w-full"
             >
               <LogOut className="h-5 w-5" />
-              <span>Odjava</span>
+              <span>Log out</span>
             </button>
           </div>
         </nav>

@@ -89,7 +89,7 @@ const memberStatsController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const stats = await memberService.getMemberAnnualStats(memberId);
+      const stats = await memberService.getMemberAnnualStats(req, memberId);
       res.json(stats);
     } catch (error) {
       handleControllerError(error, res);
@@ -102,7 +102,11 @@ const memberStatsController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
-      const member = await memberService.getMemberWithActivities(req, memberId);
+      const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+      const member = await memberService.getMemberWithActivities(req, memberId, year);
+      if (member && member.activities && member.activities.length > 0) {
+        console.log('[CONTROLLER] Šaljem response, prva aktivnost:', JSON.stringify(member.activities[0], null, 2));
+      }
       res.json(member);
     } catch (error) {
       handleControllerError(error, res);

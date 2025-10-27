@@ -201,20 +201,6 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
           <h3 className="text-lg font-medium mb-4">{t("quickActions.title")}</h3>
           <div className="space-y-3">
             <button
-              onClick={() => navigateTo("/members")}
-              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
-            >
-              <span>{t("quickActions.memberManagement")}</span>
-              <ChevronRight className="h-5 w-5 text-gray-400" />
-            </button>
-            <button
-              onClick={() => navigateTo("/activities")}
-              className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
-            >
-              <span>{t("quickActions.activityApprovals")}</span>
-              <ChevronRight className="h-5 w-5 text-gray-400" />
-            </button>
-            <button
               onClick={() => navigateTo("/settings")}
               className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
             >

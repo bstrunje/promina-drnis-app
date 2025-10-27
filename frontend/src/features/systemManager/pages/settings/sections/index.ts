@@ -4,4 +4,5 @@ export { BasicSettingsSectionComplete } from './BasicSettingsSectionComplete';
 export { SecuritySettingsSection } from './SecuritySettingsSection';
 export { BackupSettingsSection } from './BackupSettingsSection';
 export { ActivityRecognitionSection } from './ActivityRecognitionSection';
+export { ActivityCategoriesSubsection } from './ActivityCategoriesSubsection';
 export { ChangePasswordSection } from './ChangePasswordSection';

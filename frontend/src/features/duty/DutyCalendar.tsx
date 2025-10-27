@@ -13,14 +13,19 @@ import { hr } from 'date-fns/locale';
 import { dutyApi, DutyCalendarData, DutyActivity, Holiday } from '../../utils/api/apiDuty';
 import DutyCalendarDay from './DutyCalendarDay';
 import DutyScheduleInfo from './DutyScheduleInfo';
+import { useAuth } from '../../context/useAuth';
 import './DutyCalendar.css';
 
 const DutyCalendar: React.FC = () => {
   const { t, i18n } = useTranslation('duty');
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<DutyCalendarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Provjera je li korisnik superuser
+  const isSuperUser = user?.role === 'member_superuser';
   
   // Filtri
   const [filters, setFilters] = useState({
@@ -405,6 +410,7 @@ const DutyCalendar: React.FC = () => {
               isWeekend={isWeekend}
               maxParticipants={calendarData.settings.dutyMaxParticipants ?? 2}
               onJoin={(date) => void handleJoinDuty(date)}
+              isSuperUser={isSuperUser}
             />
           );
         })}

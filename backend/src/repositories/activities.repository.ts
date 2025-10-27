@@ -13,6 +13,40 @@ export const findAllActivityTypes = async (organizationId: number) => {
   });
 };
 
+export const updateActivityTypeVisibility = async (
+  typeId: number,
+  organizationId: number,
+  isVisible: boolean
+) => {
+  return prisma.activityType.update({
+    where: {
+      type_id: typeId,
+      organization_id: organizationId,
+    },
+    data: { is_visible: isVisible },
+  });
+};
+
+export const updateActivityTypeCustomFields = async (
+  typeId: number,
+  organizationId: number,
+  customLabel?: string | null,
+  customDescription?: string | null,
+  isVisible?: boolean
+) => {
+  return prisma.activityType.update({
+    where: {
+      type_id: typeId,
+      organization_id: organizationId,
+    },
+    data: { 
+      custom_label: customLabel,
+      custom_description: customDescription,
+      is_visible: isVisible,
+    },
+  });
+};
+
 // --- Aktivnosti ---
 
 export const findAllActivities = async (organizationId: number) => {
@@ -52,7 +86,14 @@ export const findActivitiesByYearWithParticipants = async (organizationId: numbe
         select: { member_id: true, first_name: true, last_name: true },
       },
       participants: {
-        include: {
+        select: {
+          participation_id: true,
+          member_id: true,
+          start_time: true,
+          end_time: true,
+          manual_hours: true,
+          recognition_override: true,
+          participant_role: true,
           member: {
             select: {
               member_id: true,
@@ -81,7 +122,14 @@ export const findAllActivitiesWithParticipants = async (organizationId: number) 
         select: { member_id: true, first_name: true, last_name: true },
       },
       participants: {
-        include: {
+        select: {
+          participation_id: true,
+          member_id: true,
+          start_time: true,
+          end_time: true,
+          manual_hours: true,
+          recognition_override: true,
+          participant_role: true,
           member: {
             select: {
               member_id: true,
@@ -208,6 +256,7 @@ export const findActivitiesByParticipantId = async (organizationId: number, memb
     }
   });
 };
+
 
 export const findParticipationsByMemberIdAndYear = async (organizationId: number, member_id: number, year: number) => {
   const startDate = new Date(year, 0, 1);

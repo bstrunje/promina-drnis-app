@@ -15,7 +15,7 @@ import { ChangePasswordSection } from './sections/ChangePasswordSection';
  * 
  * Struktura:
  * - Svaka sekcija je odvojena u zasebnu komponentu
- * - Collapsible sekcije (samo Change Password otvorena po defaultu)
+ * - Collapsible sekcije
  * - Svaka sekcija ima svoj Save button
  * - Shared state management kroz useSystemSettings hook
  */
@@ -175,7 +175,7 @@ const SystemManagerSettingsRefactored: React.FC = () => {
             onSaveThreshold={handleSaveActivityThreshold}
           />
 
-          {/* Change Password - Otvorena po defaultu */}
+          {/* Change Password */}
           <ChangePasswordSection />
         </div>
       </div>

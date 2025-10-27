@@ -511,7 +511,7 @@ const memberService = {
         }
     },
 
-    async getMemberWithActivities(req: Request, memberId: number): Promise<MemberWithActivities | null> {
+    async getMemberWithActivities(req: Request, memberId: number, year?: number): Promise<MemberWithActivities | null> {
         try {
             const member = await this.getMemberById(req, memberId);
             if (!member) return null;
@@ -523,7 +523,15 @@ const memberService = {
             try {
                 const participations = await prisma.activityParticipation.findMany({
                     where: {
-                        member_id: memberId
+                        member_id: memberId,
+                        ...(year && {
+                            activity: {
+                                start_date: {
+                                    gte: new Date(`${year}-01-01`),
+                                    lt: new Date(`${year + 1}-01-01`)
+                                }
+                            }
+                        })
                     },
                     include: {
                         activity: {
@@ -531,8 +539,15 @@ const memberService = {
                                 activity_id: true,
                                 name: true,
                                 start_date: true,
+                                status: true,
                                 actual_start_time: true,
-                                actual_end_time: true
+                                actual_end_time: true,
+                                activity_type: {
+                                    select: {
+                                        name: true,
+                                        custom_label: true
+                                    }
+                                }
                             }
                         }
                     },
@@ -548,12 +563,16 @@ const memberService = {
                     activity_id: p.activity.activity_id,
                     name: p.activity.name,
                     date: p.activity.start_date,
+                    status: p.activity.status,
                     manual_hours: p.manual_hours,
+                    hours_spent: p.manual_hours || 0,
                     actual_start_time: p.activity.actual_start_time,
-                    actual_end_time: p.activity.actual_end_time
+                    actual_end_time: p.activity.actual_end_time,
+                    activity_type: p.activity.activity_type
                 }));
                 
                 console.log(`[MEMBER] Dohvaćeno ${activitiesData.length} aktivnosti za člana ${memberId}`);
+                console.log(`[MEMBER] Prva aktivnost:`, JSON.stringify(activitiesData[0], null, 2));
             } catch (error) {
                 console.error(`[MEMBER] Greška prilikom dohvaćanja aktivnosti za člana ${memberId}:`, error);
                 throw error;
@@ -607,7 +626,9 @@ const memberService = {
                     activity_id: activity.activity_id,
                     name: activity.name,
                     date: activity.date.toISOString().split('T')[0], // Konvertiraj Date u string format YYYY-MM-DD
-                    hours_spent
+                    status: activity.status,
+                    hours_spent,
+                    activity_type: activity.activity_type
                 };
             });
 
@@ -643,7 +664,7 @@ const memberService = {
         }
     },
 
-    async getMemberAnnualStats(memberId: number): Promise<Array<{
+    async getMemberAnnualStats(req: Request, memberId: number): Promise<Array<{
         stat_id: number;
         organization_id: number | null;
         member_id: number | null;
@@ -654,30 +675,36 @@ const memberService = {
         calculated_at: string; // Changed from Date to string
     }>> {
         try {
-            // 0. Dohvati člana da saznamo organizaciju
-            const member = await prisma.member.findUnique({
-                where: { member_id: memberId },
-                select: { organization_id: true }
-            });
-            const organizationId = member?.organization_id ?? 1;
+            // MULTI-TENANCY: Dohvati organization_id iz tenant middleware-a
+            const organizationId = getOrganizationId(req);
+            if (!organizationId) {
+                throw new Error('Organization ID is required');
+            }
             
-            // 1. Dohvati postojeće statistike iz annual_statistics tablice (MULTI-TENANCY)
-            const existingStats = await memberRepository.getAnnualStats(memberId, organizationId);
-            
-            // 2. Dohvati sve participacije za člana s aktivnostima (MULTI-TENANCY)
+            // 1. Dohvati sve participacije za člana s aktivnostima (MULTI-TENANCY)
+            // NAPOMENA: Ne koristimo keširane podatke iz annual_statistics tablice
+            // jer mogu biti zastarjeli. Uvijek izračunavamo svježe podatke.
+            console.log(`[ANNUAL-STATS] Tražim participacije za member_id=${memberId}, org_id=${organizationId}, SVE aktivnosti`);
             const participations = await prisma.activityParticipation.findMany({
                 where: { 
                     member_id: memberId,
                     organization_id: organizationId, // MULTI-TENANCY: Filter by organization
                     activity: {
                         organization_id: organizationId // MULTI-TENANCY: Also filter activity by organization
-                        // Remove status filter - show all activities (PLANNED, ACTIVE, COMPLETED, CANCELLED)
+                        // Prikazujemo SVE aktivnosti (PLANNED, ACTIVE, COMPLETED, CANCELLED)
                     }
                 },
                 include: { 
                     activity: true 
                 }
             });
+            console.log(`[ANNUAL-STATS] Member ${memberId}, Org ${organizationId}: Found ${participations.length} participations`);
+            console.log(`[ANNUAL-STATS] Participations:`, participations.map(p => ({ 
+                activity_id: p.activity.activity_id, 
+                name: p.activity.name, 
+                status: p.activity.status,
+                manual_hours: p.manual_hours 
+            })));
             
             // 3. Grupiraj participacije po godinama
             const yearlyParticipations = new Map<number, typeof participations>();
@@ -689,7 +716,7 @@ const memberService = {
                 yearlyParticipations.get(year)!.push(p);
             });
             
-            // 4. Kreiraj statistike za godine koje nedostaju
+            // 4. Izračunaj statistike za sve godine
             const allStats: Array<{
                 stat_id: number;
                 organization_id: number | null;
@@ -699,11 +726,9 @@ const memberService = {
                 total_activities: number;
                 membership_status: string;
                 calculated_at: Date | null;
-            }> = [...existingStats];
-            const existingYears = new Set(existingStats.map(s => s.year));
+            }> = [];
             
             for (const [year, yearParticipations] of yearlyParticipations) {
-                if (!existingYears.has(year)) {
                     // Izračunaj statistike za tu godinu koristeći istu logiku kao updateAnnualStatistics
                     const totalActivities = yearParticipations.length;
                     
@@ -740,7 +765,6 @@ const memberService = {
                         membership_status: 'calculated', // Status za izračunate statistike
                         calculated_at: new Date()
                     });
-                }
             }
             
             // 5. Sortiraj po godini, najnovije prvo
