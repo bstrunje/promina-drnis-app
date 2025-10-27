@@ -92,17 +92,16 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
       orientation: 'portrait',
       // Ikone - PWA zahtijeva minimum 144x144
       icons: logoUrl ? [
-        // Tenant logo - koristi 'any' jer ne znamo točnu veličinu
-        // Browser će automatski resize-ati za potrebne veličine
+        // Tenant logo - koristi multiple sizes (browser će resize-ati)
         {
           src: logoUrl,
-          sizes: '192x192 512x512', // Preporučene veličine (browser će resize-ati)
+          sizes: '192x192 512x512 612x612', // Uključi stvarnu veličinu
           type: 'image/png',
           purpose: 'any'
         },
         {
           src: logoUrl,
-          sizes: '512x512',
+          sizes: '512x512 612x612',
           type: 'image/png',
           purpose: 'maskable'
         }

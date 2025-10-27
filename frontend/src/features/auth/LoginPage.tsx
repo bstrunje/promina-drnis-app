@@ -527,12 +527,11 @@ const LoginPage = () => {
                 className="w-28 h-28 mx-auto rounded-full object-cover"
               />
             ) : (
-              <div 
-                className="w-28 h-28 mx-auto rounded-full flex items-center justify-center text-white font-bold text-4xl"
-                style={{ backgroundColor: getPrimaryColor() }}
-              >
-                {getFullName()?.charAt(0) ?? 'O'}
-              </div>
+              <img 
+                src="/pwa/icons/icon-192x192.png" 
+                alt={getFullName() ?? 'Organization'}
+                className="w-28 h-28 mx-auto rounded-full object-cover"
+              />
             )}
           </div>
           <h2 className="text-2xl font-bold">{getFullName()}</h2>
