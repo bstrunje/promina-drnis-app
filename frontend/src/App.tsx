@@ -10,6 +10,8 @@ import { ToastProvider } from "@components/ui/use-toast";
 import { TimeZoneProvider } from './context/TimeZoneContext';
 import { UnreadMessagesProvider } from './contexts/UnreadMessagesContext';
 import { BrandingProvider } from './context/BrandingContext';
+import { useBrandingContext } from './context/useBrandingContext';
+import { useFavicon } from './hooks/useFavicon';
 import SpeedInsightsWrapper from './components/SpeedInsights';
 import Footer from './components/Footer';
 import TenantSelector from './components/TenantSelector';
@@ -46,6 +48,10 @@ function OrgRoutes() {
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { branding } = useBrandingContext();
+  
+  // Dinamički postavi favicon na tenant logo ili fallback
+  useFavicon(branding?.logo_path ?? '/pwa/icons/icon-192x192.png');
   
   // Debug: provjeri je li orgSlug uspješno izvučen
   console.log('[APP] OrgRoutes - orgSlug:', orgSlug);
