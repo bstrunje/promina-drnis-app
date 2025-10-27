@@ -48,9 +48,17 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
     
     // Logo URL-ovi trebaju koristiti backend origin za slike
     const backendOrigin = `${req.protocol}://${req.get('host')}`;
-    const logoUrl = organization.logo_path
-      ? `${backendOrigin}${organization.logo_path}`
-      : null;
+    let logoUrl = null;
+    
+    if (organization.logo_path) {
+      // Ako je puni URL (Vercel Blob), koristi direktno
+      if (organization.logo_path.startsWith('http')) {
+        logoUrl = organization.logo_path;
+      } else {
+        // Lokalni path - dodaj backend origin
+        logoUrl = `${backendOrigin}${organization.logo_path}`;
+      }
+    }
     
     // Ako tenant ima logo, koristi ga za sve veličine
     // Inače koristi fallback ikone odgovarajućih veličina
