@@ -90,18 +90,24 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
       background_color: organization.pwa_background_color || '#ffffff',
       theme_color: organization.pwa_theme_color || organization.primary_color || '#0066cc',
       orientation: 'portrait',
-      // Ikone - ako je tenant logo, ne specificiraj veličinu (browser će resize-ati)
+      // Ikone - PWA zahtijeva konkretne veličine (minimum 144x144)
       icons: logoUrl ? [
-        // Tenant logo - browser će automatski resize-ati
+        // Tenant logo - specificiraj veličine za PWA compliance
         {
           src: logoUrl,
-          sizes: 'any',
+          sizes: '192x192',
           type: 'image/png',
           purpose: 'any'
         },
         {
           src: logoUrl,
-          sizes: 'any',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: logoUrl,
+          sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
         }
