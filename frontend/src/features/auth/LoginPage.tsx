@@ -666,6 +666,22 @@ const LoginPage = () => {
                 </label>
               </div>
 
+              {/* PRIVREMENO: Broj iskaznice za postojeće članove */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  className="mt-2 p-2 w-full border rounded bg-yellow-50"
+                  placeholder="Unesi broj iskaznice (samo za postojeće članove)"
+                  value={registerData.other_skills ?? ''}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      other_skills: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">

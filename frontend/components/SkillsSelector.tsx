@@ -182,7 +182,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
             value={otherSkills}
             onChange={handleOtherSkillsChange}
             disabled={!isEditing}
-            placeholder={t('skillsSelector.otherPlaceholder', 'Unesite ostale vještine...')}
+            placeholder={t('skillsSelector.otherPlaceholder')}
             className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
