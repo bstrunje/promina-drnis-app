@@ -13,21 +13,40 @@ interface SubmitTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTicketCreated: () => void;
+  defaultCategory?: TicketCategory;
 }
 
 export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
   isOpen,
   onClose,
-  onTicketCreated
+  onTicketCreated,
+  defaultCategory
 }) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    category: TicketCategory | '';
+    priority: TicketPriority;
+  }>({
     title: '',
     description: '',
-    category: '' as TicketCategory | '',
+    category: defaultCategory ?? '',
     priority: TicketPriority.MEDIUM
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset form when modal opens with new default category
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: '',
+        description: '',
+        category: defaultCategory ?? '',
+        priority: TicketPriority.MEDIUM
+      });
+    }
+  }, [isOpen, defaultCategory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,8 +104,8 @@ export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={handleClose} modal={false}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <span>Submit Support Ticket</span>
@@ -250,7 +269,7 @@ export const SubmitTicketModal: React.FC<SubmitTicketModalProps> = ({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.title.trim() || !formData.description.trim() || !formData.category}
+              disabled={isSubmitting ? true : (!formData.title.trim() ? true : (!formData.description.trim() ? true : !formData.category))}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Support Ticket'}

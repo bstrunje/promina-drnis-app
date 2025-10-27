@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
-import { Headphones, Plus, MessageSquare, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft } from 'lucide-react';
+import { Headphones, Plus, MessageSquare, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { supportTicketApi } from '../../utils/api/supportTicketApi';
-import { SupportTicket, TicketStatus, TicketPriority, TICKET_CATEGORY_LABELS, TICKET_CATEGORY_COLORS, TICKET_STATUS_LABELS } from '@shared/supportTicket';
+import { SupportTicket, TicketStatus, TicketPriority, TICKET_CATEGORY_LABELS, TICKET_CATEGORY_COLORS, TICKET_STATUS_LABELS, TicketCategory } from '@shared/supportTicket';
 import { SubmitTicketModal } from './SubmitTicketModal';
 import { TicketDetailModal } from './TicketDetailModal';
 import { useToast } from '@components/ui/use-toast';
 import { useSystemManagerNavigation } from './hooks/useSystemManagerNavigation';
 import { useSystemManager } from '../../context/SystemManagerContext';
+import ManagerHeader from './components/common/ManagerHeader';
+import ManagerTabNav from './components/common/ManagerTabNav';
 
 export const OrgSupportPage: React.FC = () => {
   const { toast } = useToast();
@@ -19,6 +21,8 @@ export const OrgSupportPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<TicketCategory | undefined>(undefined);
 
   // Org SM može vidjeti samo svoje tickete
   const loadTickets = useCallback(async () => {
@@ -121,74 +125,120 @@ export const OrgSupportPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={() => navigateTo('/system-manager/dashboard')}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Dashboard</span>
-          </Button>
-          <div className="flex items-center space-x-3">
-            <Headphones className="h-8 w-8 text-blue-600" />
+      <ManagerHeader 
+        manager={manager} 
+        onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        isMenuOpen={isMenuOpen}
+      />
+
+      {/* Navigation */}
+      <ManagerTabNav 
+        activeTab="support" 
+        setActiveTab={(tab) => {
+          if (tab === 'dashboard') navigateTo('/system-manager/dashboard');
+          else if (tab === 'audit-logs') navigateTo('/system-manager/audit-logs');
+        }}
+        isMenuOpen={isMenuOpen}
+        onMenuClose={() => setIsMenuOpen(false)}
+      />
+
+      <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
+        {/* Title section */}
+        <div className="mb-6 sm:mb-8">
+          <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Support & Feedback</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Support & Feedback</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-2">
                 Need help or found an issue? Submit a support ticket and our team will get back to you.
               </p>
             </div>
+            <Button 
+              onClick={() => {
+                setSelectedCategory(undefined);
+                setShowSubmitModal(true);
+              }} 
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 mt-4 sm:mt-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Submit Ticket</span>
+            </Button>
           </div>
         </div>
-        <Button onClick={() => setShowSubmitModal(true)} className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>Submit Support Ticket</span>
-        </Button>
-      </div>
 
-      {/* Category Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-800">Bug Reports</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
+      {/* Category Cards - responsive grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
+        <Card 
+          className="border-red-200 bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setSelectedCategory(TicketCategory.BUG_REPORT);
+            setShowSubmitModal(true);
+          }}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-base sm:text-sm font-semibold text-red-800 mb-1">Bug Reports</CardTitle>
+                <p className="text-xs sm:text-xs text-red-700">Report system issues</p>
+              </div>
+              <AlertCircle className="h-5 w-5 sm:h-4 sm:w-4 text-red-600 flex-shrink-0 ml-2" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-red-700">Report system issues</div>
-          </CardContent>
         </Card>
 
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-800">Complaints</CardTitle>
-            <MessageSquare className="h-4 w-4 text-orange-600" />
+        <Card 
+          className="border-orange-200 bg-orange-50 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setSelectedCategory(TicketCategory.COMPLAINT);
+            setShowSubmitModal(true);
+          }}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-base sm:text-sm font-semibold text-orange-800 mb-1">Complaints</CardTitle>
+                <p className="text-xs sm:text-xs text-orange-700">Report problems</p>
+              </div>
+              <MessageSquare className="h-5 w-5 sm:h-4 sm:w-4 text-orange-600 flex-shrink-0 ml-2" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-orange-700">Report problems</div>
-          </CardContent>
         </Card>
 
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Feature Requests</CardTitle>
-            <Plus className="h-4 w-4 text-blue-600" />
+        <Card 
+          className="border-blue-200 bg-blue-50 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setSelectedCategory(TicketCategory.FEATURE_REQUEST);
+            setShowSubmitModal(true);
+          }}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-base sm:text-sm font-semibold text-blue-800 mb-1">Feature Requests</CardTitle>
+                <p className="text-xs sm:text-xs text-blue-700">Suggest improvements</p>
+              </div>
+              <Plus className="h-5 w-5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0 ml-2" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-blue-700">Suggest improvements</div>
-          </CardContent>
         </Card>
 
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">General Support</CardTitle>
-            <Headphones className="h-4 w-4 text-green-600" />
+        <Card 
+          className="border-green-200 bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setSelectedCategory(TicketCategory.GENERAL_SUPPORT);
+            setShowSubmitModal(true);
+          }}
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-base sm:text-sm font-semibold text-green-800 mb-1">General Support</CardTitle>
+                <p className="text-xs sm:text-xs text-green-700">Get help & guidance</p>
+              </div>
+              <Headphones className="h-5 w-5 sm:h-4 sm:w-4 text-green-600 flex-shrink-0 ml-2" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-green-700">Get help & guidance</div>
-          </CardContent>
         </Card>
       </div>
 
@@ -253,6 +303,7 @@ export const OrgSupportPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Submit Ticket Modal */}
       {showSubmitModal && (
@@ -260,6 +311,7 @@ export const OrgSupportPage: React.FC = () => {
           isOpen={showSubmitModal}
           onClose={() => setShowSubmitModal(false)}
           onTicketCreated={handleTicketCreated}
+          defaultCategory={selectedCategory}
         />
       )}
 

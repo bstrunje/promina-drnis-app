@@ -1,21 +1,24 @@
 // features/systemManager/pages/auditLogs/SystemManagerAuditLogs.tsx
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, ArrowLeft } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
-import { Button } from '@components/ui/button';
 import { AuditLog } from '@shared/audit';
 import { formatDate, parseDate, setCurrentTimeZone } from "../../../../utils/dateUtils";
 import { useToast } from '@components/ui/use-toast';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../../utils/config';
 import { useTimeZone } from '../../../../context/useTimeZone';
-import { useNavigate } from 'react-router-dom';
+import { useSystemManager } from '../../../../context/SystemManagerContext';
+import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigation';
+import ManagerHeader from '../../components/common/ManagerHeader';
+import ManagerTabNav from '../../components/common/ManagerTabNav';
 
 const SystemManagerAuditLogs: React.FC = () => {
-  // const { manager } = useSystemManager(); // Uklonjeno jer nije korišteno
+  const { manager } = useSystemManager();
   const { toast } = useToast();
   const { timeZone } = useTimeZone();
-  const navigate = useNavigate();
+  const { navigateTo } = useSystemManagerNavigation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
@@ -199,38 +202,54 @@ const SystemManagerAuditLogs: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <Button onClick={() => navigate(-1)} variant="outline">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <ManagerHeader 
+        manager={manager} 
+        onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        isMenuOpen={isMenuOpen}
+      />
 
+      {/* Navigation */}
+      <ManagerTabNav 
+        activeTab="audit-logs" 
+        setActiveTab={(tab) => {
+          if (tab === 'dashboard') navigateTo('/system-manager/dashboard');
+          else if (tab === 'support') navigateTo('/system-manager/support');
+        }}
+        isMenuOpen={isMenuOpen}
+        onMenuClose={() => setIsMenuOpen(false)}
+      />
 
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter Logs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">Time Range</label>
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  className="w-full p-2 border rounded"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="w-full p-2 border rounded"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                />
+      <div className="p-4 sm:p-6">
+        {/* Filter Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg sm:text-xl">Filter Logs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Time Range - full width on mobile */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Time Range</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded text-sm"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded text-sm"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+              
+              {/* Other filters in grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Action Type</label>
               <select
@@ -261,82 +280,84 @@ const SystemManagerAuditLogs: React.FC = () => {
                 <option value="warning">Warning</option>
               </select>
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">User</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded"
-              placeholder="Search by user..."
-              value={filters.user}
-              onChange={(e) => handleFilterChange('user', e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <div>
+              <label className="block text-sm font-medium mb-1">User</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded"
+                placeholder="Search by user..."
+                value={filters.user}
+                onChange={(e) => handleFilterChange('user', e.target.value)}
+              />
+            </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="mt-6 bg-white rounded-lg shadow">
+      {/* Logs Table - responsive with horizontal scroll */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="w-full divide-y divide-gray-200" style={{ minWidth: '800px' }}>
             <thead className="bg-gray-50">
               <tr>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-1 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer"
                   onClick={() => handleSort('log_id')}
                 >
                   ID
                   {sortField === 'log_id' && (
                     <span className="ml-1 inline-block">
-                      {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                     </span>
                   )}
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-1 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer"
                   onClick={() => handleSort('created_at')}
                 >
                   Time
                   {sortField === 'created_at' && (
                     <span className="ml-1 inline-block">
-                      {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                     </span>
                   )}
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-1 sm:px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer"
                   onClick={() => handleSort('action_type')}
                 >
                   Action
                   {sortField === 'action_type' && (
                     <span className="ml-1 inline-block">
-                      {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                     </span>
                   )}
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-1 sm:px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer"
                   onClick={() => handleSort('performed_by')}
                 >
                   User
                   {sortField === 'performed_by' && (
                     <span className="ml-1 inline-block">
-                      {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                     </span>
                   )}
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-1 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer"
                   onClick={() => handleSort('status')}
                 >
                   Status
                   {sortField === 'status' && (
                     <span className="ml-1 inline-block">
-                      {sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                      {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                     </span>
                   )}
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-1 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase"
                 >
                   Details
                 </th>
@@ -346,14 +367,15 @@ const SystemManagerAuditLogs: React.FC = () => {
               {filteredLogs.length > 0 ? (
                 filteredLogs.map((log) => (
                   <tr key={log.log_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-1 sm:px-3 py-1.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                       {log.log_id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(log.created_at, 'dd.MM.yyyy HH:mm:ss')}
+                    <td className="px-1 sm:px-3 py-1.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                      <span className="sm:hidden">{formatDate(log.created_at, 'dd.MM HH:mm')}</span>
+                      <span className="hidden sm:inline">{formatDate(log.created_at, 'dd.MM.yyyy HH:mm:ss')}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    <td className="px-1 sm:px-2 py-1.5 sm:py-3 whitespace-nowrap">
+                      <span className={`px-1 sm:px-2 py-0.5 inline-flex text-xs sm:text-sm font-semibold rounded ${
                         log.action_type.includes('LOGIN') ? 'bg-green-100 text-green-800' :
                         log.action_type.includes('LOGOUT') ? 'bg-yellow-100 text-yellow-800' :
                         log.action_type.includes('UPDATE') ? 'bg-blue-100 text-blue-800' :
@@ -364,32 +386,13 @@ const SystemManagerAuditLogs: React.FC = () => {
                         {log.action_type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.performer_name ? (
-                        <span className="font-medium text-gray-900">{log.performer_name}</span>
-                      ) : log.performer_type ? (
-                        <span className="font-medium text-blue-600">
-                          {log.performer_type === 'SYSTEM_MANAGER' ? 'Unknown System Manager' : 
-                           log.performer_type === 'MEMBER' ? 'Unknown Member' : log.performer_type}
-                          {log.performed_by && (
-                            <span className="text-gray-500 font-normal"> #{log.performed_by}</span>
-                          )}
-                        </span>
-                      ) : log.performed_by ? (
-                        <span>
-                          User <span className="text-blue-600 font-medium">#{log.performed_by}</span>
-                        </span>
-                      ) : (
-                        <span className="italic">System</span>
-                      )}
-                      {log.affected_name && (
-                        <span className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-full">
-                          For member: {log.affected_name}
-                        </span>
-                      )}
+                    <td className="px-1 sm:px-2 py-1.5 sm:py-3 text-xs sm:text-sm text-gray-500">
+                      <div className="max-w-[120px] sm:max-w-xs truncate">
+                        {log.performer_name ?? log.performer_type ?? 'System'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    <td className="px-1 sm:px-3 py-1.5 sm:py-3 whitespace-nowrap">
+                      <span className={`px-1 sm:px-2 py-0.5 inline-flex text-xs sm:text-sm font-semibold rounded ${
                         log.status === 'success' ? 'bg-green-100 text-green-800' :
                         log.status === 'error' ? 'bg-red-100 text-red-800' :
                         'bg-yellow-100 text-yellow-800'
@@ -397,9 +400,9 @@ const SystemManagerAuditLogs: React.FC = () => {
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      <div className="max-w-xs truncate" title={log.action_details || 'No details'}>
-                        {log.action_details || 'No details'}
+                    <td className="px-1 sm:px-3 py-1.5 sm:py-3 text-xs sm:text-sm text-gray-500">
+                      <div className="max-w-[180px] sm:max-w-md truncate" title={log.action_details || 'No details'}>
+                        {log.action_details || '-'}
                       </div>
                     </td>
                   </tr>
@@ -414,9 +417,10 @@ const SystemManagerAuditLogs: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 bg-gray-50 text-sm text-gray-500">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 bg-gray-50 text-xs sm:text-sm text-gray-500">
           Total records: {filteredLogs.length} (of {auditLogs.length})
         </div>
+      </div>
       </div>
     </div>
   );
