@@ -19,10 +19,16 @@ export const useBranding = () => {
    */
   const getLogoUrl = (): string | null => {
     if (brandingContext.branding?.logo_path) {
-      const logoPath = brandingContext.branding.logo_path;
+      let logoPath = brandingContext.branding.logo_path;
       
       // Ako je puni URL (Vercel Blob), koristi direktno
       if (logoPath.startsWith('http')) {
+        // FIX: Ispravi URL ako fali dvotočka nakon https
+        if (logoPath.startsWith('https//')) {
+          logoPath = logoPath.replace('https//', 'https://');
+        } else if (logoPath.startsWith('http//')) {
+          logoPath = logoPath.replace('http//', 'http://');
+        }
         return logoPath;
       }
       

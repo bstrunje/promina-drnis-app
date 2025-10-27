@@ -594,6 +594,15 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
 
       logoPath = blob.url;
       if (isDev) console.log(`[LOGO-UPLOAD] Logo uploaded to Vercel Blob: ${logoPath}`);
+      
+      // FIX: Ispravi URL ako Vercel Blob vrati pogrešan format
+      if (logoPath.startsWith('https//')) {
+        logoPath = logoPath.replace('https//', 'https://');
+        console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
+      } else if (logoPath.startsWith('http//')) {
+        logoPath = logoPath.replace('http//', 'http://');
+        console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
+      }
     } else {
       if (isDev) console.log(`[LOGO-UPLOAD] Using local uploads folder...`);
 

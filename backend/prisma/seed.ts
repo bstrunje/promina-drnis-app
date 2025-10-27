@@ -153,9 +153,17 @@ async function seedGlobalSystemManager(tx: Prisma.TransactionClient) {
 
 // --- MAIN SEEDING FUNCTION --- //
 async function main() {
-  console.log('🚀 Starting database seeding process...');
-  console.log(`📊 Database URL: ${process.env.DATABASE_URL?.substring(0, 50)}...`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('🌱 Starting database seeding...');
+  
+  // Provjeri postoji li već globalni SM PRIJE transakcije (brže)
+  const globalManagerExists = await prisma.systemManager.findFirst({
+    where: { organization_id: null }
+  });
+  
+  if (globalManagerExists) {
+    console.log('✅ Global System Manager already exists - skipping seed.');
+    return;
+  }
   
   await prisma.$transaction(async (tx) => {
     // NAPOMENA: Skills i ActivityTypes se NE seed-aju ovdje!
@@ -166,7 +174,7 @@ async function main() {
     // Samo Global System Manager se seed-a
     await seedGlobalSystemManager(tx);
   }, {
-    timeout: 12000, // 12 sekundi - ispod Prisma Accelerate limita od 15s
+    timeout: 60000, // 60 sekundi - povećan timeout za bcrypt operacije
   });
   console.log('🎉 Database seeding completed successfully.');
 }
