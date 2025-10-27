@@ -8,8 +8,8 @@
   "scripts": {
     "start": "node dist/src/server.js",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && prisma generate && tsc",
-    "build:vercel": "prisma migrate deploy && prisma generate && tsc -p tsconfig.vercel.json && npm run seed",
-    "postinstall": "prisma generate",
+    "build:vercel": "prisma migrate deploy && prisma generate --no-engine && tsc -p tsconfig.vercel.json && npm run seed",
+    "postinstall": "prisma generate --no-engine",
     "seed": "node dist/prisma/seed.js",
     "test": "vitest run",
     "test:ui": "vitest",
