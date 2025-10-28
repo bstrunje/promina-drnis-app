@@ -119,7 +119,7 @@ export const createActivity = async (activityData: {
   activity_type_id: number;
   recognition_percentage: number;
   participant_ids?: number[];
-  participations?: { member_id: number; recognition_override: number; }[]; 
+  participations?: { member_id: number; recognition_override: number | null; participant_role?: string; }[]; 
   manual_hours?: number | null; 
 }): Promise<Activity> => {
   const response = await apiInstance.post<Activity>('/activities', activityData);

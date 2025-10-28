@@ -154,6 +154,8 @@ const MemberDashboard: React.FC = () => {
         const response = await api.get<AnnualStat[]>(`/members/${fullMember.member_id}/annual-stats`);
         
         console.log('Received annual stats data:', response.data);
+        console.log('Number of years in stats:', response.data.length);
+        console.log('Years:', response.data.map(s => s.year));
 
         const totals = response.data.reduce((acc, stat) => {
           acc.activities += stat.total_activities;

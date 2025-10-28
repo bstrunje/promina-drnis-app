@@ -69,12 +69,29 @@ const SystemManagerSettingsRefactored: React.FC = () => {
 
   // Handler za spremanje Activity Recognition Rates
   const handleSaveActivityRecognition = async (roles: { key: string; name: string; percentage: number; description: string }[]): Promise<void> => {
-    // TODO: Implementirati spremanje u bazu kad dodamo backend support
-    // Za sada samo simuliramo uspjeh
-    console.log('[SETTINGS] Activity recognition rates:', roles);
-    setSuccessMessage('Activity recognition rates updated successfully!');
-    await new Promise(resolve => setTimeout(resolve, 0)); // ESLint requires await
-    setTimeout(() => setSuccessMessage(null), 5000);
+    try {
+      // Konvertiraj roles array u objekt { "GUIDE": 100, "ASSISTANT_GUIDE": 50, ... }
+      const roleRecognition = roles.reduce((acc, role) => {
+        // Konvertiraj key u uppercase format (guide -> GUIDE, assistant_guide -> ASSISTANT_GUIDE)
+        const roleKey = role.key.toUpperCase();
+        acc[roleKey] = role.percentage;
+        return acc;
+      }, {} as Record<string, number>);
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('[SETTINGS] Saving activity recognition rates:', roleRecognition);
+      }
+      
+      // Spremi u bazu (partial update)
+      await savePartialSettings({ activityRoleRecognition: roleRecognition });
+      
+      setSuccessMessage('Activity recognition rates updated successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save recognition rates';
+      setError(errorMessage);
+      setTimeout(() => setError(null), 5000);
+    }
   };
 
   // Handler za spremanje Activity Hours Threshold
@@ -171,6 +188,7 @@ const SystemManagerSettingsRefactored: React.FC = () => {
             error={error}
             successMessage={successMessage}
             activityHoursThreshold={settings.activityHoursThreshold ?? 20}
+            activityRoleRecognition={settings.activityRoleRecognition ?? undefined}
             onSaveRoles={handleSaveActivityRecognition}
             onSaveThreshold={handleSaveActivityThreshold}
           />

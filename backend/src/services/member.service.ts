@@ -14,6 +14,7 @@ import prisma from '../utils/prisma.js';
 import type { PrismaClient } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { getRoleRecognitionSettings, getRoleRecognitionPercentage } from '../utils/roleRecognitionCache.js';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -685,6 +686,25 @@ const memberService = {
             // NAPOMENA: Ne koristimo keširane podatke iz annual_statistics tablice
             // jer mogu biti zastarjeli. Uvijek izračunavamo svježe podatke.
             console.log(`[ANNUAL-STATS] Tražim participacije za member_id=${memberId}, org_id=${organizationId}, SVE aktivnosti`);
+            
+            // Prvo dohvati SVE participacije bez org_id filtera da vidimo što postoji
+            const allParticipations = await prisma.activityParticipation.findMany({
+                where: { 
+                    member_id: memberId
+                },
+                include: { 
+                    activity: true 
+                }
+            });
+            console.log(`[ANNUAL-STATS] TOTAL participations for member ${memberId} (no org filter):`, allParticipations.length);
+            console.log(`[ANNUAL-STATS] All participations:`, allParticipations.map(p => ({
+                participation_id: p.participation_id,
+                activity_id: p.activity_id,
+                participation_org_id: p.organization_id,
+                activity_org_id: p.activity.organization_id,
+                year: new Date(p.activity.start_date).getFullYear()
+            })));
+            
             const participations = await prisma.activityParticipation.findMany({
                 where: { 
                     member_id: memberId,
@@ -695,7 +715,11 @@ const memberService = {
                     }
                 },
                 include: { 
-                    activity: true 
+                    activity: {
+                        include: {
+                            activity_type: true // Trebamo activity_type da provjerimo je li IZLETI
+                        }
+                    }
                 }
             });
             console.log(`[ANNUAL-STATS] Member ${memberId}, Org ${organizationId}: Found ${participations.length} participations`);
@@ -703,6 +727,8 @@ const memberService = {
                 activity_id: p.activity.activity_id, 
                 name: p.activity.name, 
                 status: p.activity.status,
+                start_date: p.activity.start_date,
+                year: new Date(p.activity.start_date).getFullYear(),
                 manual_hours: p.manual_hours 
             })));
             
@@ -710,11 +736,18 @@ const memberService = {
             const yearlyParticipations = new Map<number, typeof participations>();
             participations.forEach(p => {
                 const year = new Date(p.activity.start_date).getFullYear();
+                console.log(`[ANNUAL-STATS] Processing participation: activity_id=${p.activity.activity_id}, year=${year}`);
                 if (!yearlyParticipations.has(year)) {
                     yearlyParticipations.set(year, []);
                 }
                 yearlyParticipations.get(year)!.push(p);
             });
+            
+            console.log(`[ANNUAL-STATS] Grouped years:`, Array.from(yearlyParticipations.keys()));
+            console.log(`[ANNUAL-STATS] Participations per year:`, Array.from(yearlyParticipations.entries()).map(([year, parts]) => ({ year, count: parts.length })));
+            
+            // Dohvati role recognition settings za organizaciju
+            const roleRecognitionSettings = await getRoleRecognitionSettings(organizationId);
             
             // 4. Izračunaj statistike za sve godine
             const allStats: Array<{
@@ -735,12 +768,15 @@ const memberService = {
                     const totalHours = yearParticipations.reduce((acc, p) => {
                         let minuteValue = 0;
                         
-                        // Ista logika kao u updateAnnualStatistics
-                        if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
-                            minuteValue = p.activity.manual_hours * 60;
-                        } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
+                        // Prioritet: individualni manual_hours > activity manual_hours > actual times
+                        if (p.manual_hours !== null && p.manual_hours !== undefined) {
+                            // Individualni override sudionika ima najviši prioritet
                             minuteValue = Math.round(p.manual_hours * 60);
+                        } else if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+                            // Ručno uneseni sati na razini aktivnosti
+                            minuteValue = p.activity.manual_hours * 60;
                         } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+                            // Automatski izračun iz stvarnog vremena
                             const minutes = differenceInMinutes(
                                 new Date(p.activity.actual_end_time),
                                 new Date(p.activity.actual_start_time)
@@ -748,8 +784,16 @@ const memberService = {
                             minuteValue = minutes > 0 ? minutes : 0;
                         }
                         
+                        // Primijeni recognition_override ili activity recognition_percentage
                         const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
-                        const recognizedMinutes = minuteValue * (finalRecognitionPercentage / 100);
+                        let recognizedMinutes = minuteValue * (finalRecognitionPercentage / 100);
+                        
+                        // Primijeni role-based recognition percentage SAMO za IZLETI
+                        const isExcursion = p.activity.activity_type?.key === 'izleti';
+                        if (isExcursion) {
+                            const rolePercentage = getRoleRecognitionPercentage(roleRecognitionSettings, p.participant_role);
+                            recognizedMinutes = recognizedMinutes * (rolePercentage / 100);
+                        }
                         
                         return acc + recognizedMinutes;
                     }, 0) / 60; // Pretvaramo u sate

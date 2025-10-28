@@ -18,7 +18,7 @@ import { Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { MemberSelect } from './MemberSelect';
 import MemberRoleSelect from './MemberRoleSelect';
-import { MemberWithRole, calculateRecognitionPercentage } from './memberRole';
+import { MemberWithRole } from './memberRole';
 import { ActivityType } from '@shared/activity.types';
 import { SelectPortal } from '@radix-ui/react-select';
 
@@ -155,7 +155,9 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           participations: participantsWithRoles.map(p => ({
             member_id: Number(p.memberId),
             participant_role: p.role,
-            recognition_override: p.manualRecognition ?? calculateRecognitionPercentage(p.role, participantsWithRoles)
+            // Za IZLETI: recognition_override je null (role-based postotak se primjenjuje automatski)
+            // Osim ako korisnik ručno postavi manualRecognition
+            recognition_override: p.manualRecognition ?? null
           }))
         };
 

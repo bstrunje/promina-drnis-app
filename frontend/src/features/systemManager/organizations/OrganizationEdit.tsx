@@ -182,12 +182,36 @@ const OrganizationEdit: React.FC = () => {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+      // Validacija veličine (min 192x192, max 512x512)
+      const img = new Image();
+      img.onload = () => {
+        if (img.width < 192 || img.height < 192) {
+          alert('Logo mora biti minimalno 192x192 piksela.');
+          e.target.value = '';
+          return;
+        }
+        if (img.width > 512 || img.height > 512) {
+          alert('Logo ne smije biti veći od 512x512 piksela.');
+          e.target.value = '';
+          return;
+        }
+        
+        setLogoFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
       };
-      reader.readAsDataURL(file);
+      
+      // Validacija file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Logo ne smije biti veći od 2MB.');
+        e.target.value = '';
+        return;
+      }
+      
+      img.src = URL.createObjectURL(file);
     }
   };
 
@@ -336,7 +360,7 @@ const OrganizationEdit: React.FC = () => {
                     className="cursor-pointer"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    Upload PNG, JPG or SVG (max 2MB)
+                    PNG, JPG ili SVG | Min: 192×192px | Max: 512×512px, 2MB
                   </p>
                 </div>
               </div>

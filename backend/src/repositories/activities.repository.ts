@@ -70,12 +70,14 @@ export const findAllActivities = async (organizationId: number) => {
  * Ova funkcija je specijalizirana verzija findAllActivities koja uključuje i podatke o sudionicima
  */
 export const findActivitiesByYearWithParticipants = async (organizationId: number, year: number) => {
+  const startDateFilter = {
+    gte: new Date(`${year}-01-01T00:00:00.000Z`),
+    lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
+  };
+
   const whereClause: Prisma.ActivityWhereInput = {
     organization_id: organizationId,
-    start_date: {
-      gte: new Date(`${year}-01-01T00:00:00.000Z`),
-      lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
-    },
+    start_date: startDateFilter,
   };
 
   return prisma.activity.findMany({
@@ -192,10 +194,11 @@ export const getActivitiesByTypeId = (organizationId: number, type_id: number, y
   } as Prisma.ActivityWhereInput;
 
   if (year) {
-    whereClause.start_date = {
+    const startDateFilter = {
       gte: new Date(`${year}-01-01T00:00:00.000Z`),
       lt: new Date(`${year + 1}-01-01T00:00:00.000Z`),
     };
+    whereClause.start_date = startDateFilter;
   }
 
   return prisma.activity.findMany({
@@ -274,7 +277,11 @@ export const findParticipationsByMemberIdAndYear = async (organizationId: number
       },
     },
     include: {
-      activity: true, // Uključujemo cijeli objekt aktivnosti
+      activity: {
+        include: {
+          activity_type: true // Trebamo activity_type za provjeru je li IZLETI
+        }
+      }
     },
     orderBy: {
       activity: {

@@ -28,13 +28,26 @@ apiInstance.interceptors.request.use(
     // Globalno dodaj tenant parametar za sve member/admin API pozive
     try {
       const url = config.url ?? '';
-      const hasTenantParam = Boolean((config.params as ParamsRecord | undefined)?.tenant);
       const isSystemManagerRoute = url.startsWith('/system-manager');
       const isSupportRoute = url.startsWith('/support');
-      if (!hasTenantParam && !isSystemManagerRoute && !isSupportRoute) {
+      
+      if (!isSystemManagerRoute && !isSupportRoute) {
         const tenant = getCurrentTenant();
-        const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
-        config.params = { ...currentParams, tenant } as unknown;
+        
+        // Provjeri je li params URLSearchParams ili plain objekt
+        if (config.params instanceof URLSearchParams) {
+          // Ako je URLSearchParams, dodaj tenant samo ako već ne postoji
+          if (!config.params.has('tenant')) {
+            config.params.append('tenant', tenant);
+          }
+        } else {
+          // Ako je plain objekt ili undefined
+          const currentParams: ParamsRecord = (config.params as ParamsRecord | undefined) ?? {};
+          const hasTenantParam = Boolean(currentParams.tenant);
+          if (!hasTenantParam) {
+            config.params = { ...currentParams, tenant } as unknown;
+          }
+        }
       }
     } catch (error) {
       // Ako tenant nije dostupan, preusmjeri na login

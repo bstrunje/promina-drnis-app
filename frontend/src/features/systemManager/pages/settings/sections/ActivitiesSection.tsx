@@ -20,6 +20,7 @@ interface ActivitiesSectionProps {
   error: string | null;
   successMessage: string | null;
   activityHoursThreshold: number;
+  activityRoleRecognition?: Record<string, number>;
   onSaveRoles: (roles: ActivityRole[]) => Promise<void>;
   onSaveThreshold: (threshold: number) => Promise<void>;
 }
@@ -29,6 +30,7 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
   error,
   successMessage,
   activityHoursThreshold,
+  activityRoleRecognition,
   onSaveRoles,
   onSaveThreshold
 }) => {
@@ -52,33 +54,30 @@ export const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({
   
   const primaryColorHover = darkenColor(primaryColor);
   
-  // Trip Role Setup - trenutne hardkodirane vrijednosti
-  const [roles, setRoles] = React.useState<ActivityRole[]>([
-    {
-      key: 'guide',
-      name: 'Guide',
-      percentage: 100,
-      description: 'Responsible for leading the trip'
-    },
-    {
-      key: 'assistant_guide',
-      name: 'Assistant Guide',
-      percentage: 50,
-      description: 'Assists the guide in leading'
-    },
-    {
-      key: 'driver',
-      name: 'Driver',
-      percentage: 100,
-      description: 'Drives the vehicle'
-    },
-    {
-      key: 'participant',
-      name: 'Participant',
-      percentage: 10,
-      description: 'Participates in the activity'
-    }
-  ]);
+  // Inicijaliziraj roles iz activityRoleRecognition ili koristi default vrijednosti
+  const getInitialRoles = React.useMemo((): ActivityRole[] => {
+    const defaultRoles = [
+      { key: 'guide', name: 'Guide', percentage: 100, description: 'Responsible for leading the trip' },
+      { key: 'assistant_guide', name: 'Assistant Guide', percentage: 50, description: 'Assists the guide in leading' },
+      { key: 'driver', name: 'Driver', percentage: 100, description: 'Drives the vehicle' },
+      { key: 'regular', name: 'Participant', percentage: 10, description: 'Participates in the activity' }
+    ];
+
+    if (!activityRoleRecognition) return defaultRoles;
+
+    // Mapiraj iz baze (GUIDE, ASSISTANT_GUIDE) u frontend format (guide, assistant_guide)
+    return defaultRoles.map(role => ({
+      ...role,
+      percentage: activityRoleRecognition[role.key.toUpperCase()] ?? role.percentage
+    }));
+  }, [activityRoleRecognition]);
+
+  const [roles, setRoles] = React.useState<ActivityRole[]>(getInitialRoles);
+
+  // Ažuriraj roles kada se activityRoleRecognition promijeni
+  React.useEffect(() => {
+    setRoles(getInitialRoles);
+  }, [getInitialRoles]);
 
   // Activity Status Threshold - lokalni state
   const [threshold, setThreshold] = React.useState<number>(activityHoursThreshold);

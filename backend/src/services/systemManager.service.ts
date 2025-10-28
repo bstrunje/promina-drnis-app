@@ -3,6 +3,7 @@
 import systemManagerRepository from '../repositories/systemManager.repository.js';
 import prisma from '../utils/prisma.js';
 import { invalidateSettingsCache } from '../utils/systemSettingsCache.js';
+import { invalidateRoleRecognitionCache } from '../utils/roleRecognitionCache.js';
 import { getCurrentDate } from '../utils/dateUtils.js';
 import bcrypt from 'bcrypt';
 
@@ -50,6 +51,7 @@ type SystemSettingsExtended = {
     passwordCardDigits?: number | null;
     // Activity settings
     activityHoursThreshold?: number | null;
+    activityRoleRecognition?: Record<string, number> | null; // { "GUIDE": 100, "ASSISTANT_GUIDE": 50, ... }
 };
 
 type MemberSummary = {
@@ -337,7 +339,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
             passwordSeparator: '-isk-',
             passwordCardDigits: 4,
-            activityHoursThreshold: 20
+            activityHoursThreshold: 20,
+            activityRoleRecognition: { GUIDE: 100, ASSISTANT_GUIDE: 50, DRIVER: 100, REGULAR: 10 }
         };
 
         if (settings) {
@@ -362,6 +365,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
         twoFactorRequiredMemberRoles: (settings.twoFactorRequiredMemberRoles as string[] | null) ?? [],
         twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
         activityHoursThreshold: settings.activityHoursThreshold ?? defaultSettings.activityHoursThreshold,
+        activityRoleRecognition: (settings.activityRoleRecognition as Record<string, number> | null) ?? defaultSettings.activityRoleRecognition,
     };
 }
 
@@ -401,11 +405,13 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                     updatedBy: parseInt(updatedBy, 10),
                     twoFactorRequiredMemberRoles: validData.twoFactorRequiredMemberRoles ?? Prisma.JsonNull,
                     twoFactorRequiredMemberPermissions: validData.twoFactorRequiredMemberPermissions ?? Prisma.JsonNull,
+                    activityRoleRecognition: validData.activityRoleRecognition ?? Prisma.JsonNull,
                 },
             });
     
             // Invalidira cache nakon update-a
             invalidateSettingsCache(organizationId);
+            invalidateRoleRecognitionCache(organizationId);
     
             return {
                 id: String(updatedSettings.id),
@@ -442,6 +448,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                 passwordSeparator: updatedSettings.passwordSeparator ?? '-isk-',
                 passwordCardDigits: updatedSettings.passwordCardDigits ?? 4,
                 activityHoursThreshold: updatedSettings.activityHoursThreshold ?? 20,
+                activityRoleRecognition: (updatedSettings.activityRoleRecognition as Record<string, number> | null) ?? { GUIDE: 100, ASSISTANT_GUIDE: 50, DRIVER: 100, REGULAR: 10 },
             };
     
         } catch (error) {

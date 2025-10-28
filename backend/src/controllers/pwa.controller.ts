@@ -95,13 +95,13 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
         // Tenant logo - koristi multiple sizes (browser će resize-ati)
         {
           src: logoUrl,
-          sizes: '192x192 512x512 612x612', // Uključi stvarnu veličinu
+          sizes: '192x192 512x512',
           type: 'image/png',
           purpose: 'any'
         },
         {
           src: logoUrl,
-          sizes: '512x512 612x612',
+          sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
         }

@@ -75,18 +75,30 @@ export const BasicSettingsSectionComplete: React.FC<BasicSettingsSectionComplete
               {settings.passwordGenerationStrategy === 'RANDOM_8' && (
                 <>
                   <strong>a3f7b2c9</strong> - Random 8 hexadecimal characters
+                  <br />
+                  <span className="text-xs text-blue-600 mt-1 block">
+                    ⚠️ Note: With RANDOM_8, members can be registered with only a paid membership fee (card number not required)
+                  </span>
                 </>
               )}
               {(settings.passwordGenerationStrategy === 'FULLNAME_ISK_CARD' || !settings.passwordGenerationStrategy) && (
                 <>
                   <strong>Božo Božić{settings.passwordSeparator ?? '-isk-'}{String(settings.cardNumberLength ?? 5).padStart(settings.cardNumberLength ?? 5, '0').replace(/./g, '3')}</strong>
                   {' '}- Full name + separator + card number
+                  <br />
+                  <span className="text-xs text-blue-600 mt-1 block">
+                    ℹ️ Requires: Paid membership fee AND assigned card number
+                  </span>
                 </>
               )}
               {settings.passwordGenerationStrategy === 'EMAIL_PREFIX_CARD_SUFFIX' && (
                 <>
                   <strong>bozo.bozic{String(settings.cardNumberLength ?? 5).padStart(settings.passwordCardDigits ?? 4, '3').slice(-(settings.passwordCardDigits ?? 4))}</strong>
                   {' '}- Email prefix + last {settings.passwordCardDigits ?? 4} digits of card number
+                  <br />
+                  <span className="text-xs text-blue-600 mt-1 block">
+                    ℹ️ Requires: Paid membership fee AND assigned card number
+                  </span>
                 </>
               )}
             </p>

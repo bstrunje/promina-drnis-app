@@ -13,7 +13,7 @@ import { useToast } from '@components/ui/use-toast';
 import { format, parseISO } from 'date-fns';
 import { Clock, X } from 'lucide-react';
 import MemberRoleSelect from './MemberRoleSelect';
-import { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage, calculateRecognitionPercentage } from './memberRole';
+import { MemberWithRole, ParticipantRole, rolesToRecognitionPercentage } from './memberRole';
 import { MemberSelect } from './MemberSelect';
 import { formatHoursToHHMM } from '../../utils/activityHours';
 
@@ -287,10 +287,12 @@ const EditActivityPage: React.FC = () => {
           const participation = updatedParticipants.find(p => p.member.member_id.toString() === memberWithRole.memberId);
           
           if (participation) {
-            const recognitionPercentageValue = memberWithRole.manualRecognition ?? calculateRecognitionPercentage(memberWithRole.role, participantsWithRoles);
+            // recognition_override je SAMO za ručne izmjene, ne za role-based postotak
+            // Role-based postotak se automatski primjenjuje na backendu
+            const recognitionOverrideValue = memberWithRole.manualRecognition ?? null;
             
             await updateParticipationAdmin(participation.participation_id, { 
-              recognition_override: recognitionPercentageValue,
+              recognition_override: recognitionOverrideValue,
               participant_role: memberWithRole.role
             });
           }

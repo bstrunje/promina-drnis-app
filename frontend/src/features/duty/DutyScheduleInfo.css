@@ -1,101 +1,221 @@
 .duty-schedule-info {
-  background-color: #f8f9fa;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
   padding: 30px;
   margin-top: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .duty-schedule-info {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  }
 }
 
 .duty-schedule-info h3 {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 10px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 8px;
   text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .duty-schedule-info h3 {
+    color: #f7fafc;
+  }
 }
 
 .schedule-description {
   text-align: center;
-  color: #7f8c8d;
+  color: #4a5568;
   margin-bottom: 30px;
+  font-size: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .schedule-description {
+    color: #cbd5e0;
+  }
 }
 
 .schedule-seasons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
   margin-bottom: 20px;
 }
 
 .season-card {
   background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: transform 0.3s;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .season-card {
+    background-color: #2d3748;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .season-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.season-card.winter {
+  border-color: #3b82f6;
+}
+
+.season-card.summer {
+  border-color: #f59e0b;
+}
+
+.season-card.summer-peak {
+  border-color: #ef4444;
 }
 
 .season-card h4 {
-  font-size: 1.3rem;
-  margin-bottom: 15px;
-  color: #2c3e50;
-  border-bottom: 2px solid #ecf0f1;
-  padding-bottom: 10px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .season-card.winter h4 {
-  color: #3498db;
-  border-bottom-color: #3498db;
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
 }
 
 .season-card.summer h4 {
-  color: #f39c12;
-  border-bottom-color: #f39c12;
+  color: #f59e0b;
+  border-bottom-color: #f59e0b;
 }
 
 .season-card.summer-peak h4 {
-  color: #e74c3c;
-  border-bottom-color: #e74c3c;
+  color: #ef4444;
+  border-bottom-color: #ef4444;
+}
+
+@media (prefers-color-scheme: dark) {
+  .season-card.winter h4 {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+  }
+  
+  .season-card.summer h4 {
+    color: #fbbf24;
+    border-bottom-color: #fbbf24;
+  }
+  
+  .season-card.summer-peak h4 {
+    color: #f87171;
+    border-bottom-color: #f87171;
+  }
 }
 
 .season-details p {
-  margin: 8px 0;
-  color: #34495e;
+  margin: 10px 0;
+  color: #374151;
   font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .season-details p {
+    color: #d1d5db;
+  }
 }
 
 .season-details strong {
-  color: #2c3e50;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .season-details strong {
+    color: #f3f4f6;
+  }
 }
 
 .schedule-note {
-  background-color: #e8f4f8;
-  border-left: 4px solid #3498db;
-  padding: 15px;
-  border-radius: 5px;
-  margin-top: 20px;
+  background-color: #dbeafe;
+  border-left: 5px solid #3b82f6;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-top: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .schedule-note {
+    background-color: #1e3a5f;
+    border-left-color: #60a5fa;
+  }
 }
 
 .schedule-note p {
   margin: 0;
-  color: #2c3e50;
+  color: #1e40af;
   font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .schedule-note p {
+    color: #bfdbfe;
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .duty-schedule-info {
-    padding: 20px;
+    padding: 15px;
+    margin-top: 20px;
+  }
+  
+  .duty-schedule-info h3 {
+    font-size: 1.2rem;
+  }
+  
+  .schedule-description {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
   }
   
   .schedule-seasons {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
   
   .season-card {
     padding: 15px;
+  }
+  
+  .season-card h4 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  
+  .season-details p {
+    font-size: 0.85rem;
+    margin: 6px 0;
+  }
+  
+  .schedule-note {
+    padding: 12px;
+    margin-top: 15px;
+  }
+  
+  .schedule-note p {
+    font-size: 0.85rem;
   }
 }

@@ -53,6 +53,7 @@ export interface SystemSettings {
 
   // Activity settings
   activityHoursThreshold?: number | null;
+  activityRoleRecognition?: Record<string, number> | null; // { "GUIDE": 100, "ASSISTANT_GUIDE": 50, ... }
 
   // Audit
   updatedAt?: Date | string;

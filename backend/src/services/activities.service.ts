@@ -7,6 +7,7 @@ import { differenceInMinutes } from 'date-fns';
 import { updateAnnualStatistics, cleanupEmptyAnnualStatistics } from './statistics.service.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
+import { getRoleRecognitionSettings, getRoleRecognitionPercentage } from '../utils/roleRecognitionCache.js';
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -243,6 +244,14 @@ export const getActivityByIdService = async (req: Request, activity_id: number) 
     throw new NotFoundError('Aktivnost nije pronađena.');
   }
 
+  // Provjeri je li ovo IZLETI kategorija
+  const isExcursion = activity.activity_type.key === 'izleti';
+  
+  // Dohvati role recognition settings samo ako je IZLETI
+  const roleRecognitionSettings = isExcursion 
+    ? await getRoleRecognitionSettings(activity.organization_id)
+    : null;
+
   // Izračunaj priznate sate za svakog sudionika
   const participantsWithRecognizedHours = activity.participants.map(p => {
     let minuteValue = 0;
@@ -261,8 +270,16 @@ export const getActivityByIdService = async (req: Request, activity_id: number) 
       minuteValue = minutes > 0 ? minutes : 0;
     }
 
+    // Primijeni recognition_override ili activity recognition_percentage
     const finalRecognitionPercentage = p.recognition_override ?? activity.recognition_percentage ?? 100;
-    const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    let recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    
+    // Primijeni role-based recognition percentage SAMO za IZLETI
+    if (isExcursion && roleRecognitionSettings) {
+      const rolePercentage = getRoleRecognitionPercentage(roleRecognitionSettings, p.participant_role);
+      recognizedMinutes = Math.round(recognizedMinutes * (rolePercentage / 100));
+    }
+    
     const recognizedHours = recognizedMinutes / 60;
 
     return {
@@ -327,14 +344,18 @@ export const getParticipationsByMemberIdAndYearService = async (req: Request, me
   const organizationId = getOrganizationId(req);
   const participations = await activityRepository.findParticipationsByMemberIdAndYear(organizationId, member_id, year);
 
+  // Dohvati role recognition settings (koristit će se samo za IZLETI)
+  const roleRecognitionSettings = await getRoleRecognitionSettings(organizationId);
+
   // Izračunaj priznate sate za svako sudjelovanje
   const participationsWithRecognizedHours = participations.map(p => {
     let minuteValue = 0;
 
-    if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
-      minuteValue = Math.round(p.activity.manual_hours * 60);
-    } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
+    // Prioritet: individualni manual_hours > activity manual_hours > actual times
+    if (p.manual_hours !== null && p.manual_hours !== undefined) {
       minuteValue = Math.round(p.manual_hours * 60);
+    } else if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+      minuteValue = Math.round(p.activity.manual_hours * 60);
     } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
       const minutes = differenceInMinutes(
         new Date(p.activity.actual_end_time),
@@ -343,8 +364,17 @@ export const getParticipationsByMemberIdAndYearService = async (req: Request, me
       minuteValue = minutes > 0 ? minutes : 0;
     }
 
+    // Primijeni recognition_override ili activity recognition_percentage
     const finalRecognitionPercentage = p.recognition_override ?? p.activity.recognition_percentage ?? 100;
-    const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    let recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+    
+    // Primijeni role-based recognition percentage SAMO za IZLETI
+    const isExcursion = p.activity.activity_type?.key === 'izleti';
+    if (isExcursion) {
+      const rolePercentage = getRoleRecognitionPercentage(roleRecognitionSettings, p.participant_role);
+      recognizedMinutes = Math.round(recognizedMinutes * (rolePercentage / 100));
+    }
+    
     const recognizedHours = recognizedMinutes / 60;
 
     return {
@@ -499,11 +529,19 @@ export const updateActivityService = async (req: Request, activity_id: number, d
       await updateAnnualStatistics(memberId, year, tx);
     }
 
+    // Provjeri je li ovo IZLETI kategorija (za role-based recognition)
+    const isExcursionForRecognition = updatedActivityWithRelations.activity_type.key === 'izleti';
+    
+    // Dohvati role recognition settings samo ako je IZLETI
+    const roleRecognitionSettings = isExcursionForRecognition
+      ? await getRoleRecognitionSettings(updatedActivityWithRelations.organization_id)
+      : null;
+
     // Izračunaj priznate sate za svakog sudionika, kao u getActivityByIdService
     const participantsWithRecognizedHours = updatedActivityWithRelations.participants.map(p => {
       let minuteValue = 0;
 
-      // Logika je ista kao u getActivityByIdService, ali koristi `updatedActivityWithRelations`
+      // Prioritet: individualni manual_hours > activity manual_hours > actual times
       if (p.manual_hours !== null && p.manual_hours !== undefined) {
         minuteValue = Math.round(p.manual_hours * 60);
       } else if (updatedActivityWithRelations.manual_hours !== null && updatedActivityWithRelations.manual_hours !== undefined && updatedActivityWithRelations.manual_hours > 0) {
@@ -516,8 +554,16 @@ export const updateActivityService = async (req: Request, activity_id: number, d
         minuteValue = minutes > 0 ? minutes : 0;
       }
 
+      // Primijeni recognition_override ili activity recognition_percentage
       const finalRecognitionPercentage = p.recognition_override ?? updatedActivityWithRelations.recognition_percentage ?? 100;
-      const recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+      let recognizedMinutes = Math.round(minuteValue * (finalRecognitionPercentage / 100));
+      
+      // Primijeni role-based recognition percentage SAMO za IZLETI
+      if (isExcursionForRecognition && roleRecognitionSettings) {
+        const rolePercentage = getRoleRecognitionPercentage(roleRecognitionSettings, p.participant_role);
+        recognizedMinutes = Math.round(recognizedMinutes * (rolePercentage / 100));
+      }
+      
       const recognizedHours = recognizedMinutes / 60;
 
       return {

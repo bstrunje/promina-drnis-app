@@ -6,7 +6,7 @@ import {
   createDutyStartTime,
   getAllScheduleInfo
 } from '../config/dutySchedule.js';
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, addDays, subDays, isSameDay } from 'date-fns';
+import { startOfDay, endOfDay, format, addDays, subDays, isSameDay } from 'date-fns';
 import { Request } from 'express';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
@@ -413,8 +413,9 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
  * Dohvaća sve dužurstva za određeni mjesec
  */
 export const getDutiesForMonth = async (organizationId: number, year: number, month: number) => {
-  const monthStart = startOfMonth(new Date(year, month - 1, 1));
-  const monthEnd = endOfMonth(new Date(year, month - 1, 1));
+  // Pravilno filtriranje po godini i mjesecu
+  const monthStart = new Date(year, month - 1, 1); // Prvi dan mjeseca
+  const monthEnd = new Date(year, month, 1); // Prvi dan sljedećeg mjeseca
   
   const dutyTypeId = await getDutyActivityTypeId(organizationId);
   
@@ -424,7 +425,7 @@ export const getDutiesForMonth = async (organizationId: number, year: number, mo
       type_id: dutyTypeId,
       start_date: {
         gte: monthStart,
-        lte: monthEnd
+        lt: monthEnd // Koristimo lt umjesto lte za točno filtriranje
       }
     },
     include: {
@@ -476,14 +477,15 @@ export const getDutiesForMonth = async (organizationId: number, year: number, mo
  * Dohvaća praznike za mjesec (za prikaz u kalendaru)
  */
 export const getHolidaysForMonth = async (year: number, month: number) => {
-  const monthStart = startOfMonth(new Date(year, month - 1, 1));
-  const monthEnd = endOfMonth(new Date(year, month - 1, 1));
+  // Pravilno filtriranje po godini i mjesecu
+  const monthStart = new Date(year, month - 1, 1); // Prvi dan mjeseca
+  const monthEnd = new Date(year, month, 1); // Prvi dan sljedećeg mjeseca
   
   const holidays = await prisma.holiday.findMany({
     where: {
       date: {
         gte: monthStart,
-        lte: monthEnd
+        lt: monthEnd // Koristimo lt umjesto lte za točno filtriranje
       }
     },
     orderBy: {

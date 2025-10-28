@@ -307,6 +307,8 @@ model SystemSettings {
 
   // Activity settings
   activityHoursThreshold     Int?                        @default(20) @map("activity_hours_threshold")
+  // Role recognition percentages: { "GUIDE": 100, "ASSISTANT_GUIDE": 50, "DRIVER": 100, "REGULAR": 10 }
+  activityRoleRecognition    Json?                       @map("activity_role_recognition")
 
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 

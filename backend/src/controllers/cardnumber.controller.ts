@@ -362,8 +362,8 @@ const cardNumberController = {
         });
       }
 
-      // Provjeri je li član već registriran
-      if (member.registration_completed) {
+      // Provjeri je li član već registriran (status 'registered' znači da već ima i karticu i uplatu)
+      if (member.status === 'registered') {
         return res.status(400).json({ 
           code: 'CARDNUM_ONLY_PENDING', 
           message: tBackend('cardnumbers.member_not_pending', locale) 
@@ -395,6 +395,7 @@ const cardNumberController = {
       // Pokreni transakciju za ažuriranje člana
       await prisma.$transaction(async (tx) => {
         // Ažuriraj podatke o članu - dodaj broj iskaznice
+        // NAPOMENA: updateCardDetails će postaviti status 'registered' samo ako član ima I uplatu I karticu
         await membershipService.updateCardDetails(
           req,
           parseInt(memberId),
@@ -403,19 +404,20 @@ const cardNumberController = {
           req.user?.id
         );
 
-        // Ažuriraj lozinku člana i status registracije
+        // Ažuriraj lozinku člana i registration_completed
+        // Status će biti postavljen u updateCardDetails() ovisno o tome ima li član plaćenu članarinu
         await tx.member.update({
           where: {
             member_id: parseInt(memberId)
           },
           data: {
             password_hash: hashedPassword,
-            registration_completed: true,
-            status: 'registered'
+            registration_completed: true
+            // status se NE postavlja ovdje - to radi updateCardDetails()
           }
         });
 
-        // Označi broj iskaznice kao potrošen
+        // Označi broj iskaznice kao dodijeljen (assigned)
         await tx.cardNumber.update({
           where: {
             organization_id_card_number: {
@@ -424,7 +426,8 @@ const cardNumberController = {
             }
           },
           data: {
-            status: 'consumed'
+            status: 'assigned',
+            member_id: parseInt(memberId)
           }
         });
       });
@@ -538,19 +541,20 @@ const cardNumberController = {
         });
       }
 
-      // Provjeri da član ima dodijeljenu karticu
-      if (!member.membership_details?.card_number) {
+      // Za RANDOM_8 strategiju, kartica nije potrebna
+      // Ali provjerimo da li je član platio članarinu
+      if (!member.membership_details?.fee_payment_date) {
         return res.status(400).json({ 
-          code: 'NO_CARD_ASSIGNED',
-          message: 'Cannot regenerate password: member does not have a card number assigned'
+          code: 'NO_MEMBERSHIP_FEE',
+          message: 'Cannot generate password: member has not paid membership fee'
         });
       }
 
-      // Generiraj novi random password
+      // Generiraj novi random password (kartica nije potrebna za RANDOM_8)
       const newPassword = passwordService.generatePassword(
         'RANDOM_8',
         member,
-        member.membership_details.card_number
+        '' // Kartica nije potrebna za RANDOM_8
       );
       
       const hashedPassword = await bcrypt.hash(newPassword, 10);

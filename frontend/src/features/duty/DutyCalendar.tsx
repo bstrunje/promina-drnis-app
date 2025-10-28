@@ -14,11 +14,13 @@ import { dutyApi, DutyCalendarData, DutyActivity, Holiday } from '../../utils/ap
 import DutyCalendarDay from './DutyCalendarDay';
 import DutyScheduleInfo from './DutyScheduleInfo';
 import { useAuth } from '../../context/useAuth';
+import { useBranding } from '../../hooks/useBranding';
 import './DutyCalendar.css';
 
 const DutyCalendar: React.FC = () => {
   const { t, i18n } = useTranslation('duty');
   const { user } = useAuth();
+  const { branding } = useBranding();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<DutyCalendarData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -506,8 +508,10 @@ const DutyCalendar: React.FC = () => {
         })}
       </div>
 
-      {/* Schedule Info */}
-      <DutyScheduleInfo scheduleInfo={calendarData.scheduleInfo} />
+      {/* Schedule Info - samo za pdpromina tenant */}
+      {branding?.subdomain === 'promina' && (
+        <DutyScheduleInfo scheduleInfo={calendarData.scheduleInfo} />
+      )}
     </div>
   );
 };

@@ -112,11 +112,13 @@ const ActivityCategoryPage: React.FC = () => {
         setActivities(activitiesForYear);
         setActivityType(null); // Nema specifičnog tipa aktivnosti u prikazu po godini
       } else if (activityTypeId) {
-        // Standardni dohvat po kategoriji (bez filtriranja po godini)
+        // Standardni dohvat po kategoriji (s opcionalnim filtriranjem po godini)
         const currentType = types.find(t => t.type_id.toString() === activityTypeId);
         setActivityType(currentType ?? null);
         if (currentType) {
-          const activitiesData = await getActivitiesByTypeId(activityTypeId, year ?? undefined);
+          // Ako postoji year parametar, prosljeđujemo ga backendu
+          const yearToSend = year ?? undefined;
+          const activitiesData = await getActivitiesByTypeId(activityTypeId, yearToSend);
           setActivities(activitiesData);
         }
       }

@@ -22,30 +22,29 @@ const Footer: React.FC = () => {
     getPrimaryColor,
   } = useBranding();
 
-  const currentYear = new Date().getFullYear();
-
   return (
-    <footer className="bg-gray-800 text-white mt-auto">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white mt-auto border-t border-gray-200 dark:border-gray-700">
+      <div className="container mx-auto px-4 py-6">
+        {/* Tenant-specific sadržaj */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4 text-center sm:text-left">
           {/* Kontakt informacije */}
           <div>
-            <h3 className="text-lg font-bold mb-4" style={{ color: getPrimaryColor() }}>
+            <h3 className="text-base font-bold mb-3" style={{ color: getPrimaryColor() }}>
               {getFullName()}
             </h3>
             <div className="space-y-2 text-sm">
               {getFullAddress() && (
-                <div className="flex items-start gap-2">
-                  <MapPin size={16} className="mt-1 flex-shrink-0" />
-                  <span>{getFullAddress()}</span>
+                <div className="flex items-start gap-2 justify-center sm:justify-start">
+                  <MapPin size={14} className="mt-1 flex-shrink-0" />
+                  <span className="text-gray-600 dark:text-gray-300">{getFullAddress()}</span>
                 </div>
               )}
               {getContactEmail() && (
-                <div className="flex items-center gap-2">
-                  <Mail size={16} className="flex-shrink-0" />
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Mail size={14} className="flex-shrink-0" />
                   <a 
                     href={`mailto:${getContactEmail()}`}
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
                     {getContactEmail()}
@@ -53,24 +52,24 @@ const Footer: React.FC = () => {
                 </div>
               )}
               {getContactPhone() && (
-                <div className="flex items-center gap-2">
-                  <Phone size={16} className="flex-shrink-0" />
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Phone size={14} className="flex-shrink-0" />
                   <a 
                     href={`tel:${getContactPhone()}`}
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                   >
                     {getContactPhone()}
                   </a>
                 </div>
               )}
               {getWebsiteUrl() && (
-                <div className="flex items-center gap-2">
-                  <Globe size={16} className="flex-shrink-0" />
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Globe size={14} className="flex-shrink-0" />
                   <a 
                     href={getWebsiteUrl() ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
                     {(getWebsiteUrl() ?? '').replace(/^https?:\/\//, '')}
@@ -82,7 +81,7 @@ const Footer: React.FC = () => {
 
           {/* Dokumenti */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Dokumenti</h3>
+            <h3 className="text-base font-bold mb-3">Dokumenti</h3>
             <div className="space-y-2 text-sm">
               {getEthicsCodeUrl() && (
                 <div>
@@ -90,7 +89,7 @@ const Footer: React.FC = () => {
                     href={getEthicsCodeUrl() ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
                     Etički kodeks
@@ -103,7 +102,7 @@ const Footer: React.FC = () => {
                     href={getPrivacyPolicyUrl() ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
                     Pravila privatnosti
@@ -116,7 +115,7 @@ const Footer: React.FC = () => {
                     href={getMembershipRulesUrl() ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
                     Pravila članstva
@@ -126,16 +125,21 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Copyright */}
+          {/* O aplikaciji */}
           <div>
-            <h3 className="text-lg font-bold mb-4">O aplikaciji</h3>
-            <p className="text-sm text-gray-400">
-              Sustav za upravljanje članstvom i aktivnostima planinarskih društava.
-            </p>
-            <p className="text-sm text-gray-400 mt-4">
-              © {currentYear} {getFullName()}
+            <h3 className="text-base font-bold mb-3">O aplikaciji</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Sustav za upravljanje članstvom i aktivnostima.
             </p>
           </div>
+        </div>
+
+        {/* Hardkodirani copyright - developer */}
+        <div className="border-t border-gray-300 dark:border-gray-700 pt-3 mt-2">
+          <p className="text-xs text-gray-500 dark:text-gray-500 text-center leading-relaxed">
+            © 2025 Božo Strunje. Sva prava pridržana.<br className="sm:hidden" />
+            <span className="hidden sm:inline"> </span>Aplikacija dostupna besplatno za ograničenu upotrebu.
+          </p>
         </div>
       </div>
     </footer>
