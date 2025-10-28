@@ -27,6 +27,7 @@ const HolidaysManager: React.FC = () => {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [countries, setCountries] = useState<NagerCountry[]>([]);
   const [selectedCountry, setSelectedCountry] = useState('HR');
+  const [syncYear, setSyncYear] = useState(new Date().getFullYear());
   const [syncLoading, setSyncLoading] = useState(false);
   
   // Form state
@@ -135,6 +136,7 @@ const HolidaysManager: React.FC = () => {
     try {
       const countriesData = await getAvailableCountries();
       setCountries(countriesData);
+      setSyncYear(selectedYear); // Inicijaliziraj s trenutno odabranom godinom
       setIsSyncModalOpen(true);
     } catch (error) {
       console.error('Error fetching countries:', error);
@@ -150,7 +152,7 @@ const HolidaysManager: React.FC = () => {
 
     setSyncLoading(true);
     try {
-      const result = await syncHolidaysFromNager(selectedYear, selectedCountry);
+      const result = await syncHolidaysFromNager(syncYear, selectedCountry);
       alert(`Synced ${result.created} holidays from Nager.Date API, skipped ${result.skipped} (already exist)`);
       setIsSyncModalOpen(false);
       await fetchHolidays();
@@ -334,7 +336,7 @@ const HolidaysManager: React.FC = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>🌍 Sync Holidays from Nager.Date API</h3>
             <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
-              Select a country to automatically fetch public holidays for {selectedYear}
+              Select a country and year to automatically fetch public holidays
             </p>
             
             <div className="form-group">
@@ -362,15 +364,16 @@ const HolidaysManager: React.FC = () => {
               <label>Year:</label>
               <input 
                 type="number" 
-                value={selectedYear} 
-                disabled
+                value={syncYear} 
+                onChange={(e) => setSyncYear(Number(e.target.value))}
+                min={2000}
+                max={2100}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
                   border: '1px solid #d1d5db',
                   borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  backgroundColor: '#f3f4f6'
+                  fontSize: '0.875rem'
                 }}
               />
             </div>
