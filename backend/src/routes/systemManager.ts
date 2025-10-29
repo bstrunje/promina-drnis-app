@@ -108,10 +108,14 @@ router.post('/assign-role', systemManagerController.assignRoleToMember);
 
 // --- HOLIDAY MANAGEMENT (org-specific, trebaju tenant context) ---
 router.get('/holidays', tenantMiddleware, holidayController.getAllHolidays);
-router.get('/holidays/:year', tenantMiddleware, holidayController.getHolidaysForYear);
-router.post('/holidays', tenantMiddleware, holidayController.createHoliday);
-router.put('/holidays/:id', tenantMiddleware, holidayController.updateHoliday);
-router.delete('/holidays/:id', tenantMiddleware, holidayController.deleteHoliday);
+
+// --- NAGER.DATE API INTEGRATION ---
+// VAŽNO: Specifične rute MORAJU biti prije generičkih s parametrima!
+// Dohvaća dostupne države iz Nager.Date API-ja (globalni podaci, ne treba tenant)
+router.get('/holidays/countries', optionalTenantMiddleware, holidayController.getAvailableCountries);
+
+// Sinkronizira praznike s Nager.Date API-jem
+router.post('/holidays/sync-nager', tenantMiddleware, holidayController.syncHolidaysFromNagerDate);
 
 // Seed default hrvatski praznici za godinu (lokalni fallback)
 router.post('/holidays/seed', tenantMiddleware, holidayController.seedDefaultHolidays);
@@ -119,12 +123,11 @@ router.post('/holidays/seed', tenantMiddleware, holidayController.seedDefaultHol
 // Brisanje svih praznika za godinu
 router.delete('/holidays/year/:year', tenantMiddleware, holidayController.deleteHolidaysForYear);
 
-// --- NAGER.DATE API INTEGRATION ---
-// Dohvaća dostupne države iz Nager.Date API-ja (globalni podaci, ne treba tenant)
-router.get('/holidays/countries', optionalTenantMiddleware, holidayController.getAvailableCountries);
-
-// Sinkronizira praznike s Nager.Date API-jem
-router.post('/holidays/sync-nager', tenantMiddleware, holidayController.syncHolidaysFromNagerDate);
+// Generičke rute s parametrima na kraju
+router.get('/holidays/:year', tenantMiddleware, holidayController.getHolidaysForYear);
+router.post('/holidays', tenantMiddleware, holidayController.createHoliday);
+router.put('/holidays/:id', tenantMiddleware, holidayController.updateHoliday);
+router.delete('/holidays/:id', tenantMiddleware, holidayController.deleteHoliday);
 
 // --- DUTY CALENDAR SETTINGS (org-specific, trebaju tenant context) ---
 router.get('/duty-settings', optionalTenantMiddleware, getDutySettings);
