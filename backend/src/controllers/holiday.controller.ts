@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as holidayService from '../services/holiday.service.js';
 import * as nagerDateService from '../services/nagerDate.service.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 /**
  * Dohvaća sve praznike
@@ -27,7 +28,8 @@ export const getHolidaysForYear = async (req: Request, res: Response, next: Next
       });
     }
     
-    const holidays = await holidayService.getHolidaysForYear(year);
+    const organizationId = getOrganizationId(req);
+    const holidays = await holidayService.getHolidaysForYear(year, organizationId);
     res.status(200).json(holidays);
   } catch (error) {
     next(error);
@@ -70,12 +72,14 @@ export const createHoliday = async (req: Request, res: Response, next: NextFunct
       });
     }
     
+    const organizationId = getOrganizationId(req);
     const systemManagerId = req.user?.id; // System Manager ID from auth middleware
     
     const holiday = await holidayService.createHoliday({
       date: new Date(date),
       name,
       is_recurring: is_recurring || false,
+      organization_id: organizationId,
       created_by: systemManagerId
     });
     
@@ -153,9 +157,10 @@ export const seedDefaultHolidays = async (req: Request, res: Response, next: Nex
       });
     }
     
+    const organizationId = getOrganizationId(req);
     const systemManagerId = req.user?.id;
     
-    const result = await holidayService.seedDefaultHolidays(year, systemManagerId);
+    const result = await holidayService.seedDefaultHolidays(year, organizationId, systemManagerId);
     
     res.status(200).json({
       message: `Seeded ${result.created} holidays, skipped ${result.skipped} (already exist)`,
@@ -179,7 +184,8 @@ export const deleteHolidaysForYear = async (req: Request, res: Response, next: N
       });
     }
     
-    const deletedCount = await holidayService.deleteHolidaysForYear(year);
+    const organizationId = getOrganizationId(req);
+    const deletedCount = await holidayService.deleteHolidaysForYear(year, organizationId);
     
     res.status(200).json({ 
       message: `Deleted ${deletedCount} holidays for year ${year}`,
@@ -221,6 +227,7 @@ export const syncHolidaysFromNagerDate = async (req: Request, res: Response, nex
       });
     }
     
+    const organizationId = getOrganizationId(req);
     const systemManagerId = req.user?.id;
     
     // Dohvati praznike iz Nager.Date API-ja
@@ -237,6 +244,7 @@ export const syncHolidaysFromNagerDate = async (req: Request, res: Response, nex
           date: new Date(appHoliday.date),
           name: appHoliday.name,
           is_recurring: appHoliday.is_recurring,
+          organization_id: organizationId,
           created_by: systemManagerId
         });
         created++;

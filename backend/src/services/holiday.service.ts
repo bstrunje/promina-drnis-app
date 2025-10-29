@@ -6,6 +6,7 @@ export interface HolidayData {
   date: Date | string;
   name: string;
   is_recurring: boolean;
+  organization_id?: number;
   created_by?: number;
 }
 
@@ -21,12 +22,13 @@ export const getAllHolidays = async () => {
 /**
  * Dohvaća praznike za određenu godinu
  */
-export const getHolidaysForYear = async (year: number) => {
+export const getHolidaysForYear = async (year: number, organizationId?: number) => {
   const yearStart = startOfYear(new Date(year, 0, 1));
   const yearEnd = endOfYear(new Date(year, 11, 31));
   
   return prisma.holiday.findMany({
     where: {
+      organization_id: organizationId,
       date: {
         gte: yearStart,
         lte: yearEnd
@@ -88,6 +90,7 @@ export const createHoliday = async (data: HolidayData) => {
       date: holidayDate,
       name: data.name,
       is_recurring: data.is_recurring,
+      organization_id: data.organization_id,
       created_by: data.created_by
     }
   });
@@ -132,7 +135,7 @@ export const deleteHoliday = async (id: number) => {
  * Seeduje default hrvatske praznike za određenu godinu
  * Ova funkcija omogućuje System Manageru da jednim klikom uveze sve službene praznike
  */
-export const seedDefaultHolidays = async (year: number, createdBy?: number) => {
+export const seedDefaultHolidays = async (year: number, organizationId?: number, createdBy?: number) => {
   const defaultHolidays = getDefaultHolidaysForYear(year);
   const created: Array<{ id: number; name: string }> = [];
   const skipped: string[] = [];
@@ -153,6 +156,7 @@ export const seedDefaultHolidays = async (year: number, createdBy?: number) => {
         date: holidayDate,
         name: holiday.name,
         is_recurring: holiday.is_recurring,
+        organization_id: organizationId,
         created_by: createdBy
       });
       
@@ -177,12 +181,13 @@ export const seedDefaultHolidays = async (year: number, createdBy?: number) => {
  * Briše sve praznike za određenu godinu
  * Korisno za cleanup ili reset
  */
-export const deleteHolidaysForYear = async (year: number) => {
+export const deleteHolidaysForYear = async (year: number, organizationId?: number) => {
   const yearStart = startOfYear(new Date(year, 0, 1));
   const yearEnd = endOfYear(new Date(year, 11, 31));
   
   const result = await prisma.holiday.deleteMany({
     where: {
+      organization_id: organizationId,
       date: {
         gte: yearStart,
         lte: yearEnd
