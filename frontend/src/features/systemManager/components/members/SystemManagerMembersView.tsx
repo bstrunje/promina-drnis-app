@@ -83,9 +83,9 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
     }
   }, [activeTab, handleFilterChange]);
   
-  // Reset kad se mijenja filter (samo ako već ima učitanih podataka)
+  // Reset kad se mijenja filter (samo nakon inicijalnog učitavanja)
   useEffect(() => {
-    if (hasInitiallyLoaded.current && members.length > 0) {
+    if (hasInitiallyLoaded.current) {
       handleFilterChange();
     }
   }, [selectedOrganization, handleFilterChange]);
