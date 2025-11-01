@@ -90,5 +90,11 @@
                 "back": "Natrag"
             }
         }
+    },
+    "activities": {
+        "allowFormerMembers": {
+            "title": "Dozvoli dodavanje bivših članova u selektoru aktivnosti",
+            "description": "Privremeno proširi pretragu sudionika na sve članove radi unosa starih aktivnosti. Kada je isključeno, prikazuju se samo registrirani članovi."
+        }
     }
 }

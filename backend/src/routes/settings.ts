@@ -34,7 +34,8 @@ router.get('/', async (req, res) => {
 });
 
 // Add new PUT route for general settings
-router.put('/', authMiddleware, roles.requireSystemManager, updateSettings);
+// Permission checks are handled inside the controller (System Manager OR member_superuser)
+router.put('/', authMiddleware, updateSettings);
 
 // Postojeće rute
 router.get('/card-length', async (req, res) => {

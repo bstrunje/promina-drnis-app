@@ -42,17 +42,24 @@ export const updateSettings = [
   createRateLimit({ windowMs: 15 * 60 * 1000, max: 5 }),
   async (req: Request, res: Response) => {
     const { 
-      cardNumberLength = 5, 
-      renewalStartDay = 1, 
-      renewalStartMonth = 11 
-    } = req.body;
+      cardNumberLength, 
+      renewalStartDay, 
+      renewalStartMonth,
+      allowFormerMembersInSelectors
+    } = req.body as {
+      cardNumberLength?: number;
+      renewalStartDay?: number;
+      renewalStartMonth?: number;
+      allowFormerMembersInSelectors?: boolean;
+    };
 
-    if (isDev) console.log('Received settings update:', { cardNumberLength, renewalStartDay, renewalStartMonth });
+    if (isDev) console.log('Received settings update:', { cardNumberLength, renewalStartDay, renewalStartMonth, allowFormerMembersInSelectors });
     
     const sanitizedInput = sanitizeInput({ 
       cardNumberLength, 
       renewalStartDay, 
-      renewalStartMonth 
+      renewalStartMonth,
+      allowFormerMembersInSelectors: typeof allowFormerMembersInSelectors === 'boolean' ? allowFormerMembersInSelectors : undefined
     });
 
     if (isDev) console.log('Sanitized input:', sanitizedInput);
@@ -76,21 +83,47 @@ export const updateSettings = [
     try {
       const organizationId = getOrganizationId(req);
       await prisma.$transaction(async (prisma) => {
+        const updateData: Record<string, unknown> = { updatedBy: user.id };
+        if (typeof sanitizedInput.cardNumberLength === 'number') {
+          updateData.cardNumberLength = sanitizedInput.cardNumberLength;
+        }
+        if (typeof sanitizedInput.renewalStartDay === 'number') {
+          updateData.renewalStartDay = sanitizedInput.renewalStartDay;
+        }
+        if (typeof sanitizedInput.renewalStartMonth === 'number') {
+          updateData.renewalStartMonth = sanitizedInput.renewalStartMonth;
+        }
+        if (typeof sanitizedInput.allowFormerMembersInSelectors === 'boolean') {
+          updateData.allowFormerMembersInSelectors = sanitizedInput.allowFormerMembersInSelectors;
+        }
+
+        const createData: Record<string, unknown> = {
+          organization_id: organizationId,
+          updatedBy: user.id
+        };
+        if (typeof sanitizedInput.cardNumberLength === 'number') {
+          createData.cardNumberLength = sanitizedInput.cardNumberLength;
+        } else {
+          createData.cardNumberLength = 5;
+        }
+        if (typeof sanitizedInput.renewalStartDay === 'number') {
+          createData.renewalStartDay = sanitizedInput.renewalStartDay;
+        } else {
+          createData.renewalStartDay = 1;
+        }
+        if (typeof sanitizedInput.renewalStartMonth === 'number') {
+          createData.renewalStartMonth = sanitizedInput.renewalStartMonth;
+        } else {
+          createData.renewalStartMonth = 11;
+        }
+        if (typeof sanitizedInput.allowFormerMembersInSelectors === 'boolean') {
+          createData.allowFormerMembersInSelectors = sanitizedInput.allowFormerMembersInSelectors;
+        }
+
         const settings = await prisma.systemSettings.upsert({
           where: { organization_id: organizationId },
-          update: { 
-            cardNumberLength: sanitizedInput.cardNumberLength!,
-            renewalStartDay: sanitizedInput.renewalStartDay!,
-            renewalStartMonth: sanitizedInput.renewalStartMonth!,
-            updatedBy: user.id
-          },
-          create: {
-            organization_id: organizationId,
-            cardNumberLength: sanitizedInput.cardNumberLength!,
-            renewalStartDay: sanitizedInput.renewalStartDay!,
-            renewalStartMonth: sanitizedInput.renewalStartMonth!,
-            updatedBy: user.id
-          }
+          update: updateData,
+          create: createData
         });
 
         if (isDev) console.log('Updated settings:', settings);

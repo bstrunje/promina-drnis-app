@@ -4,11 +4,12 @@ import { Check, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@components/ui/command';
-import { getActiveMembers } from '@/utils/api/apiMembers';
+import { getActiveMembers, getAllMembers } from '@/utils/api/apiMembers';
 import { Member } from '@shared/member';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Button } from '@components/ui/button';
 import { ParticipantRole, MemberWithRole, isExclusiveRole } from './memberRole';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 // Uloge se sada lokaliziraju putem i18next
 
@@ -25,6 +26,7 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
   const [selectedRole, setSelectedRole] = useState<ParticipantRole>(ParticipantRole.REGULAR);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { systemSettings } = useSystemSettings();
 
   // Mapiranje enum vrijednosti na ključeve prijevoda u activities.roles
   // Napomena: koristimo camelCase ključeve u prijevodima (npr. assistantGuide)
@@ -50,14 +52,15 @@ export const MemberRoleSelect: React.FC<MemberRoleSelectProps> = ({ selectedMemb
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const activeMembers = await getActiveMembers();
-        setMembers(activeMembers);
+        const allowFormer = Boolean(systemSettings?.allowFormerMembersInSelectors);
+        const list = allowFormer ? await getAllMembers() : await getActiveMembers();
+        setMembers(list);
       } catch (error) {
         console.error('Failed to fetch active members:', error);
       }
     };
     void fetchMembers();
-  }, []);
+  }, [systemSettings?.allowFormerMembersInSelectors]);
 
   // Dodaje novog sudionika s odabranom ulogom
   const handleSelect = (memberId: number) => {

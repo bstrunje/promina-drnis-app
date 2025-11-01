@@ -52,6 +52,7 @@ type SystemSettingsExtended = {
     // Activity settings
     activityHoursThreshold?: number | null;
     activityRoleRecognition?: Record<string, number> | null; // { "GUIDE": 100, "ASSISTANT_GUIDE": 50, ... }
+    allowFormerMembersInSelectors?: boolean | null;
 };
 
 type MemberSummary = {
@@ -340,7 +341,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             passwordSeparator: '-isk-',
             passwordCardDigits: 4,
             activityHoursThreshold: 20,
-            activityRoleRecognition: { GUIDE: 100, ASSISTANT_GUIDE: 50, DRIVER: 100, REGULAR: 10 }
+            activityRoleRecognition: { GUIDE: 100, ASSISTANT_GUIDE: 50, DRIVER: 100, REGULAR: 10 },
+            allowFormerMembersInSelectors: false
         };
 
         if (settings) {
@@ -366,6 +368,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
         twoFactorRequiredMemberPermissions: (settings.twoFactorRequiredMemberPermissions as string[] | null) ?? [],
         activityHoursThreshold: settings.activityHoursThreshold ?? defaultSettings.activityHoursThreshold,
         activityRoleRecognition: (settings.activityRoleRecognition as Record<string, number> | null) ?? defaultSettings.activityRoleRecognition,
+        allowFormerMembersInSelectors: (settings.allowFormerMembersInSelectors as boolean | null) ?? defaultSettings.allowFormerMembersInSelectors,
     };
 }
 
@@ -449,6 +452,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                 passwordCardDigits: updatedSettings.passwordCardDigits ?? 4,
                 activityHoursThreshold: updatedSettings.activityHoursThreshold ?? 20,
                 activityRoleRecognition: (updatedSettings.activityRoleRecognition as Record<string, number> | null) ?? { GUIDE: 100, ASSISTANT_GUIDE: 50, DRIVER: 100, REGULAR: 10 },
+                allowFormerMembersInSelectors: (updatedSettings.allowFormerMembersInSelectors as boolean | null) ?? false,
             };
     
         } catch (error) {

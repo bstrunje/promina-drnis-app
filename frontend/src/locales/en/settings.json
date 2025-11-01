@@ -2,6 +2,12 @@
     "settings": {
         "title": "Member Management Settings"
     },
+    "activities": {
+        "allowFormerMembers": {
+            "title": "Allow adding former members in activity selector",
+            "description": "Temporarily expand participant search to all members for entering historical activities. When disabled, only registered members are shown."
+        }
+    },
     "cardNumberManagement": {
         "title": "Card Number Management",
         "description": "Add and manage membership card numbers",

@@ -5,8 +5,9 @@ import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@components/ui/command';
 import { Badge } from '@components/ui/badge';
-import { getActiveMembers } from '@/utils/api/apiMembers';
+import { getActiveMembers, getAllMembers } from '@/utils/api/apiMembers';
 import { Member } from '@shared/member';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface MemberSelectProps {
   selectedMemberIds: string[];
@@ -20,6 +21,7 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
   const [inputValue, setInputValue] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { systemSettings } = useSystemSettings();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,15 +38,16 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const activeMembers = await getActiveMembers();
-        setMembers(activeMembers);
+        const allowFormer = Boolean(systemSettings?.allowFormerMembersInSelectors);
+        const list = allowFormer ? await getAllMembers() : await getActiveMembers();
+        setMembers(list);
       } catch (error) {
         console.error('Failed to fetch active members:', error);
       }
     };
     
     void fetchMembers();
-  }, []);
+  }, [systemSettings?.allowFormerMembersInSelectors]);
 
   const handleSelect = (memberId: number) => {
     const newSelection = selectedMemberIds.includes(memberId.toString())
@@ -56,12 +59,14 @@ export const MemberSelect: React.FC<MemberSelectProps> = ({ selectedMemberIds, o
   };
 
   const selectedMembers = members.filter(m => selectedMemberIds.includes(m.member_id.toString()));
+  const allowFormer = Boolean(systemSettings?.allowFormerMembersInSelectors);
   const filteredMembers = inputValue
-    ? members.filter(m => 
-        `${m.first_name} ${m.last_name}`.toLowerCase().includes(inputValue.toLowerCase()) &&
-        m.status === 'registered' &&
-        !selectedMemberIds.includes(m.member_id.toString())
-      )
+    ? members.filter(m => {
+        const matchesName = `${m.first_name} ${m.last_name}`.toLowerCase().includes(inputValue.toLowerCase());
+        const notSelected = !selectedMemberIds.includes(m.member_id.toString());
+        const statusOk = allowFormer ? true : m.status === 'registered';
+        return matchesName && statusOk && notSelected;
+      })
     : [];
 
   return (

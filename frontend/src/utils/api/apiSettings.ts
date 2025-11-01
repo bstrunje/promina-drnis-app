@@ -19,3 +19,16 @@ export const getSystemSettings = async (): Promise<SystemSettings> => {
     throw error;
   }
 };
+
+/**
+ * Ažurira system settings za trenutnu organizaciju
+ */
+export const updateSystemSettings = async (partial: Partial<SystemSettings>): Promise<SystemSettings> => {
+  try {
+    const response = await api.put<SystemSettings>('/settings', partial);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating system settings:', error);
+    throw error;
+  }
+};

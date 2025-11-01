@@ -314,6 +314,9 @@ model SystemSettings {
   // Role recognition percentages: { "GUIDE": 100, "ASSISTANT_GUIDE": 50, "DRIVER": 100, "REGULAR": 10 }
   activityRoleRecognition    Json?                       @map("activity_role_recognition")
 
+  // Activities selectors behavior
+  allowFormerMembersInSelectors Boolean? @default(false) @map("allow_former_members_in_selectors")
+
   organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("system_settings")

@@ -55,6 +55,9 @@ export interface SystemSettings {
   activityHoursThreshold?: number | null;
   activityRoleRecognition?: Record<string, number> | null; // { "GUIDE": 100, "ASSISTANT_GUIDE": 50, ... }
 
+  // Activities selectors behavior (Superuser Settings)
+  allowFormerMembersInSelectors?: boolean | null;
+
   // Audit
   updatedAt?: Date | string;
   updatedBy?: number | null;
