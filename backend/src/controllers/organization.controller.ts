@@ -28,6 +28,25 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
 }
 
 /**
+ * Validira da li logo datoteka postoji na disku
+ * Vraća true ako datoteka postoji, false inače
+ */
+async function validateLogoFileExists(logoPath: string, uploadsDir: string): Promise<boolean> {
+  if (!logoPath || !logoPath.startsWith('/uploads')) {
+    // Vercel Blob URL-ovi se ne mogu validirati lokalno
+    return logoPath?.startsWith('https://') || false;
+  }
+  
+  try {
+    const fullPath = path.join(uploadsDir, logoPath.replace('/uploads', ''));
+    await fs.access(fullPath, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Provjera dostupnosti subdomene
  * GET /api/system-manager/organizations/check-subdomain
  */
@@ -544,6 +563,43 @@ async function seedSystemSettings(tx: Omit<typeof prisma, '$connect' | '$disconn
 }
 
 /**
+ * Čisti nevažeće logo_path-ove u bazi podataka
+ * Ova funkcija se poziva prije svakog uploada da osigura konzistentnost
+ */
+async function cleanupInvalidLogoPaths(organizationId: number): Promise<void> {
+  try {
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { logo_path: true, pwa_icon_192_url: true, pwa_icon_512_url: true }
+    });
+
+    if (!organization) return;
+
+    const needsUpdate = 
+      organization.logo_path && !await validateLogoFileExists(organization.logo_path, uploadsDir) ||
+      organization.pwa_icon_192_url && !await validateLogoFileExists(organization.pwa_icon_192_url, uploadsDir) ||
+      organization.pwa_icon_512_url && !await validateLogoFileExists(organization.pwa_icon_512_url, uploadsDir);
+
+    if (needsUpdate) {
+      console.log(`[LOGO-CLEANUP] Cleaning invalid logo paths for organization ${organizationId}`);
+      
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          logo_path: null,
+          pwa_icon_192_url: '/pwa/icons/icon-192x192.png',
+          pwa_icon_512_url: '/pwa/icons/icon-512x512.png'
+        }
+      });
+      
+      console.log(`[LOGO-CLEANUP] Invalid logo paths cleaned for organization ${organizationId}`);
+    }
+  } catch (error) {
+    console.error(`[LOGO-CLEANUP] Error cleaning logo paths:`, error);
+  }
+}
+
+/**
  * Upload logo organizacije
  * POST /api/system-manager/organizations/:id/logo
  */
@@ -564,6 +620,9 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
     }
     if (isDev) console.log(`[LOGO-UPLOAD] Starting logo upload for organization ${id}`);
     if (isDev) console.log(`[LOGO-UPLOAD] File: ${req.file.originalname}, size: ${req.file.size} bytes`);
+
+    // TRAJNO RJEŠENJE: Cleanup nevažećih logo_path-ova prije uploada
+    await cleanupInvalidLogoPaths(organizationId);
 
     // Dohvati organizaciju
     const organization = await prisma.organization.findUnique({ 
@@ -591,21 +650,45 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
       }
 
       const fileName = `organization-logos/${organizationId}-${Date.now()}-${req.file.originalname}`;
-      const blob = await put(fileName, req.file.buffer, {
-        access: 'public',
-        contentType: req.file.mimetype,
-      });
-
-      logoPath = blob.url;
-      if (isDev) console.log(`[LOGO-UPLOAD] Logo uploaded to Vercel Blob: ${logoPath}`);
       
-      // FIX: Ispravi URL ako Vercel Blob vrati pogrešan format
-      if (logoPath.startsWith('https//')) {
-        logoPath = logoPath.replace('https//', 'https://');
-        console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
-      } else if (logoPath.startsWith('http//')) {
-        logoPath = logoPath.replace('http//', 'http://');
-        console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
+      // Debug logging za Vercel Blob
+      console.log(`[LOGO-UPLOAD] BLOB_READ_WRITE_TOKEN exists: ${!!process.env.BLOB_READ_WRITE_TOKEN}`);
+      console.log(`[LOGO-UPLOAD] Uploading to Vercel Blob: ${fileName}`);
+      
+      try {
+        const blob = await put(fileName, req.file.buffer, {
+          access: 'public',
+          contentType: req.file.mimetype,
+          token: process.env.BLOB_READ_WRITE_TOKEN, // Eksplicitno proslijedi token
+        });
+
+        logoPath = blob.url;
+        if (isDev) console.log(`[LOGO-UPLOAD] Logo uploaded to Vercel Blob: ${logoPath}`);
+        
+        // FIX: Ispravi URL ako Vercel Blob vrati pogrešan format
+        if (logoPath.startsWith('https//')) {
+          logoPath = logoPath.replace('https//', 'https://');
+          console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
+        } else if (logoPath.startsWith('http//')) {
+          logoPath = logoPath.replace('http//', 'http://');
+          console.warn(`[LOGO-UPLOAD] Fixed malformed URL from Vercel Blob: ${logoPath}`);
+        }
+      } catch (blobError) {
+        console.error(`[LOGO-UPLOAD] Vercel Blob upload failed:`, blobError);
+        console.log(`[LOGO-UPLOAD] Falling back to /tmp/uploads storage`);
+        
+        // Fallback na /tmp/uploads ako Vercel Blob ne radi
+        const tmpUploadsDir = '/tmp/uploads/organization_logos';
+        await fs.mkdir(tmpUploadsDir, { recursive: true });
+        
+        const fileExtension = path.extname(req.file.originalname);
+        const fallbackFileName = `org-${organizationId}-${Date.now()}${fileExtension}`;
+        const fallbackFilePath = path.join(tmpUploadsDir, fallbackFileName);
+        
+        await fs.writeFile(fallbackFilePath, req.file.buffer);
+        logoPath = `/uploads/organization_logos/${fallbackFileName}`;
+        
+        console.log(`[LOGO-UPLOAD] Logo saved to fallback storage: ${logoPath}`);
       }
     } else {
       if (isDev) console.log(`[LOGO-UPLOAD] Using local uploads folder...`);
@@ -638,6 +721,13 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
       if (isDev) console.log(`[LOGO-UPLOAD] Relative path: ${logoPath}`);
     }
 
+    // TRAJNO RJEŠENJE: Validiraj da li datoteka postoji prije spremanja u bazu
+    const isValidLocalLogo = await validateLogoFileExists(logoPath, uploadsDir);
+    
+    if (!isValidLocalLogo && !logoPath.startsWith('https://')) {
+      throw new Error(`Logo file validation failed: ${logoPath} does not exist on disk`);
+    }
+
     // Ažuriraj bazu s logo i PWA ikonama
     const updatedOrganization = await prisma.organization.update({
       where: { id: organizationId },
@@ -649,7 +739,25 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
       },
     });
 
-    if (isDev) console.log(`[LOGO-UPLOAD] Database updated for organization ${id}`);
+    // TRAJNO RJEŠENJE: Finalna provjera da li je sve ispravno spremljeno
+    if (updatedOrganization.logo_path) {
+      const finalValidation = await validateLogoFileExists(updatedOrganization.logo_path, uploadsDir);
+      if (!finalValidation && !updatedOrganization.logo_path.startsWith('https://')) {
+        console.error(`[LOGO-UPLOAD] CRITICAL: Logo path saved but file does not exist: ${updatedOrganization.logo_path}`);
+        // Rollback na sigurne default vrijednosti
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            logo_path: null,
+            pwa_icon_192_url: '/pwa/icons/icon-192x192.png',
+            pwa_icon_512_url: '/pwa/icons/icon-512x512.png'
+          }
+        });
+        throw new Error('Logo upload failed - file could not be validated after save');
+      }
+    }
+
+    if (isDev) console.log(`[LOGO-UPLOAD] Database updated and validated for organization ${id}`);
 
     res.json({ 
       success: true, 

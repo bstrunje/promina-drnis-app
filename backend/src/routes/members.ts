@@ -44,15 +44,34 @@ if (isDev) console.log(`[UPLOAD] BLOB_READ_WRITE_TOKEN: ${hasVercelBlobToken ? '
 if (isDev) console.log(`[UPLOAD] useVercelBlob: ${useVercelBlob}`);
 if (isDev) console.log(`[UPLOAD] uploadsDir: ${uploadsDir}`);
 
-// Funkcija za kreiranje direktorija ako ne postoji
-const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
+// Helper za kreiranje direktorija
+async function ensureDirectoryExists(dirPath: string): Promise<void> {
   try {
     await fs.access(dirPath);
   } catch {
     await fs.mkdir(dirPath, { recursive: true });
     if (isDev) console.log(`[UPLOAD] Kreiran direktorij: ${dirPath}`);
   }
-};
+}
+
+/**
+ * Validira da li profilna slika postoji na disku
+ * Vraća true ako datoteka postoji, false inače
+ */
+async function validateProfileImageExists(imagePath: string, uploadsDir: string): Promise<boolean> {
+  if (!imagePath || !imagePath.startsWith('/uploads')) {
+    // Vercel Blob URL-ovi se ne mogu validirati lokalno
+    return imagePath?.startsWith('https://') || false;
+  }
+  
+  try {
+    const fullPath = path.join(uploadsDir, imagePath.replace('/uploads', ''));
+    await fs.access(fullPath, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Public routes
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
@@ -514,6 +533,40 @@ router.get('/equipment/members/:equipmentType/:size/:gender', authenticateToken,
   }
 });
 
+/**
+ * Čisti nevažeće profile_image_path-ove u bazi podataka
+ * Ova funkcija se poziva prije svakog uploada da osigura konzistentnost
+ */
+async function cleanupInvalidProfileImages(memberId: number): Promise<void> {
+  try {
+    const member = await prisma.member.findUnique({
+      where: { member_id: memberId },
+      select: { profile_image_path: true }
+    });
+
+    if (!member) return;
+
+    const needsUpdate = member.profile_image_path && 
+      !await validateProfileImageExists(member.profile_image_path, uploadsDir);
+
+    if (needsUpdate) {
+      console.log(`[PROFILE-CLEANUP] Cleaning invalid profile image for member ${memberId}`);
+      
+      await prisma.member.update({
+        where: { member_id: memberId },
+        data: {
+          profile_image_path: null,
+          profile_image_updated_at: new Date()
+        }
+      });
+      
+      console.log(`[PROFILE-CLEANUP] Invalid profile image cleaned for member ${memberId}`);
+    }
+  } catch (error) {
+    console.error(`[PROFILE-CLEANUP] Error cleaning profile image:`, error);
+  }
+}
+
 // Rute za profilnu sliku (Uvjetno: Vercel Blob ili lokalni uploads)
 router.post(
   '/:memberId/profile-image',
@@ -531,6 +584,9 @@ router.post(
       if (isDev) console.log(`[UPLOAD] Početak upload-a slike za člana ${memberId}`);
       if (isDev) console.log(`[UPLOAD] Datoteka: ${req.file.originalname}, veličina: ${req.file.size} bytes`);
       
+      // TRAJNO RJEŠENJE: Cleanup nevažećih profilnih slika prije uploada
+      await cleanupInvalidProfileImages(memberIdNum);
+
       // Prvo obriši staru sliku ako postoji
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
       
@@ -550,13 +606,37 @@ router.post(
         }
         
         const fileName = `profile-images/${memberId}-${Date.now()}-${req.file.originalname}`;
-        const blob = await put(fileName, req.file.buffer, {
-          access: 'public',
-          contentType: req.file.mimetype,
-        });
         
-        imagePath = blob.url;
-        if (isDev) console.log(`[UPLOAD] Slika uspješno upload-ana na Vercel Blob: ${imagePath}`);
+        // Debug logging za Vercel Blob
+        console.log(`[UPLOAD] BLOB_READ_WRITE_TOKEN exists: ${!!process.env.BLOB_READ_WRITE_TOKEN}`);
+        console.log(`[UPLOAD] Uploading profile image to Vercel Blob: ${fileName}`);
+        
+        try {
+          const blob = await put(fileName, req.file.buffer, {
+            access: 'public',
+            contentType: req.file.mimetype,
+            token: process.env.BLOB_READ_WRITE_TOKEN, // Eksplicitno proslijedi token
+          });
+          
+          imagePath = blob.url;
+          if (isDev) console.log(`[UPLOAD] Slika uspješno upload-ana na Vercel Blob: ${imagePath}`);
+        } catch (blobError) {
+          console.error(`[UPLOAD] Vercel Blob upload failed:`, blobError);
+          console.log(`[UPLOAD] Falling back to /tmp/uploads storage`);
+          
+          // Fallback na /tmp/uploads ako Vercel Blob ne radi
+          const tmpUploadsDir = '/tmp/uploads/profile_images';
+          await fs.mkdir(tmpUploadsDir, { recursive: true });
+          
+          const fileExtension = path.extname(req.file.originalname);
+          const fallbackFileName = `member-${memberId}-${Date.now()}${fileExtension}`;
+          const fallbackFilePath = path.join(tmpUploadsDir, fallbackFileName);
+          
+          await fs.writeFile(fallbackFilePath, req.file.buffer);
+          imagePath = `/uploads/profile_images/${fallbackFileName}`;
+          
+          console.log(`[UPLOAD] Profile image saved to fallback storage: ${imagePath}`);
+        }
       } else {
         if (isDev) console.log(`[UPLOAD] Korištenje lokalnog uploads foldera...`);
         
@@ -588,6 +668,13 @@ router.post(
         if (isDev) console.log(`[UPLOAD] Relativna putanja: ${imagePath}`);
       }
 
+      // TRAJNO RJEŠENJE: Validiraj da li datoteka postoji prije spremanja u bazu
+      const isValidLocalImage = await validateProfileImageExists(imagePath, uploadsDir);
+      
+      if (!isValidLocalImage && !imagePath.startsWith('https://')) {
+        throw new Error(`Profile image validation failed: ${imagePath} does not exist on disk`);
+      }
+
       const updatedMember = await prisma.member.update({
         where: { member_id: memberIdNum },
         data: {
@@ -596,7 +683,24 @@ router.post(
         },
       });
       
-      if (isDev) console.log(`[UPLOAD] Baza podataka ažurirana za člana ${memberId}`);
+      // TRAJNO RJEŠENJE: Finalna provjera da li je sve ispravno spremljeno
+      if (updatedMember.profile_image_path) {
+        const finalValidation = await validateProfileImageExists(updatedMember.profile_image_path, uploadsDir);
+        if (!finalValidation && !updatedMember.profile_image_path.startsWith('https://')) {
+          console.error(`[UPLOAD] CRITICAL: Profile image path saved but file does not exist: ${updatedMember.profile_image_path}`);
+          // Rollback na sigurne default vrijednosti
+          await prisma.member.update({
+            where: { member_id: memberIdNum },
+            data: {
+              profile_image_path: null,
+              profile_image_updated_at: new Date()
+            }
+          });
+          throw new Error('Profile image upload failed - file could not be validated after save');
+        }
+      }
+      
+      if (isDev) console.log(`[UPLOAD] Baza podataka ažurirana i validirana za člana ${memberId}`);
 
       res.json(updatedMember);
     } catch (error) {

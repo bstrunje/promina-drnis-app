@@ -30,9 +30,9 @@ export function getUploadsDir(): string {
     return '/tmp/uploads';
   }
 
-  // Razvoj (lokalno/Docker): koristi dist-relative uploads kao u app.ts
-  // __dirname u buildu pokazuje na dist/src, pa '..' => dist/
-  return path.resolve(__dirname, '..', 'uploads');
+  // Razvoj (lokalno/Docker): koristi root backend/uploads folder
+  // Koristimo apsolutnu putanju do backend/uploads direktorija
+  return path.resolve(process.cwd(), 'uploads');
 }
 
 // Kreiraj bazne direktorije za uploade ako ne postoje
