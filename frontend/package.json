@@ -8,6 +8,7 @@
   },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "dev": "vite",
     "dev:local": "vite",
     "dev:docker": "cross-env VITE_BACKEND_PORT=3001 vite",
     "prebuild": "node scripts/update-sw-version.js",

@@ -5,6 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { localeMiddleware } from './middleware/locale.js';
+import { mockDateMiddleware } from './middleware/mockDateMiddleware.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { getUploadsDir, ensureBaseUploadDirs } from './utils/uploads.js';
@@ -95,6 +96,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Dodano za podršku refresh tokena
 
+// Mock Date Middleware - za Time Traveler funkcionalnost (samo u dev modu)
+app.use(mockDateMiddleware);
+
 // Set up static file serving (centralizirano)
 const uploadsDir = getUploadsDir();
 void ensureBaseUploadDirs(); // kreiraj potrebne direktorije ako ne postoje
@@ -171,6 +175,7 @@ const corsOptions = {
     'Pragma',           
     'Expires',          
     'X-Test-Mode',      // Dodano za podršku testnog načina rada
+    'x-mock-date',      // Time Traveler funkcionalnost (dev mode)
     'Cookie'            // Eksplicitno dozvoljavamo Cookie zaglavlje
   ],
   exposedHeaders: ['Set-Cookie'] // Eksplicitno izlažemo Set-Cookie zaglavlje

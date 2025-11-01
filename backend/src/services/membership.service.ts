@@ -44,44 +44,46 @@ const membershipService = {
       });
 
       const renewalStartDay = settings?.renewalStartDay || 31;
+      const renewalStartMonth = settings?.renewalStartMonth || 10; // Oktober (0-based = 9)
 
       // Koristimo direktno Date objekt umjesto parsiranja, jer već imamo Date
       const validPaymentDate = new Date(paymentDate);
-      validPaymentDate.setHours(12, 0, 0, 0); // Standardize time // Standardize time
+      validPaymentDate.setHours(12, 0, 0, 0); // Standardize time
+      
       const member = await memberRepository.findById(organizationId, memberId);
       if (!member) {
         throw new Error("Member not found");
       }
 
-      // Ako je renewal payment, koristimo sljedeću godinu, inače godinu iz datuma
-      const paymentYear = isRenewalPayment ? paymentDate.getFullYear() + 1 : paymentDate.getFullYear();
-
-
-      // Create cutoff date (October 31st of current year)
-      const cutoffDate = new Date(paymentYear, 9, renewalStartDay); // Month 9 is October
-
-
+      // VAŽNO: Koristimo getCurrentDate() (Time Traveler aware) za određivanje trenutne godine
+      const currentDate = getCurrentDate();
+      const currentYear = currentDate.getFullYear();
+      
+      // Create cutoff date za renewal period (31. listopad tekuće godine prema Time Traveleru)
+      const cutoffDate = new Date(currentYear, renewalStartMonth - 1, renewalStartDay);
+      
       // Provjeri je li ovo novi član (koji nikad nije platio članarinu)
-      // ili postojeći član koji obnavlja članstvo
       const isNewMember = !member.membership_details?.fee_payment_date;
-
-      // Ispiši važne informacije za dijagnostiku
-      console.log(`Processing payment for member ${memberId}:`, {
-        isNewMember,
-        paymentDate: validPaymentDate,
-        cutoffDate,
-        isAfterCutoff: validPaymentDate > cutoffDate,
-      });
-
-      // Samo za postojeće članove koji produljuju članstvo:
-      // Ako je plaćanje nakon cutoff datuma, članstvo počinje sljedeće godine
-      if (validPaymentDate > cutoffDate && !isNewMember) {
-        console.log(`Payment after cutoff date for EXISTING member - counting for next year`);
-
-      } else if (validPaymentDate > cutoffDate && isNewMember) {
-        console.log(`Payment after cutoff date for NEW member - still counting for current year`);
-        // Za nove članove ne mijenjamo godinu, čak i ako je kasno u godini
+      
+      // Određivanje godine plaćanja:
+      // - Novi član: uvijek plaća za tekuću godinu
+      // - Postojeći član: ako je isRenewalPayment=true ili uplata NAKON cutoff-a → sljedeća godina
+      let paymentYear = currentYear;
+      
+      if (isRenewalPayment || (!isNewMember && validPaymentDate > cutoffDate)) {
+        paymentYear = currentYear + 1;
       }
+
+      // Dijagnostički ispis
+      console.log(`[MEMBERSHIP] Processing payment for member ${memberId}:`, {
+        currentDate: formatDate(currentDate),
+        currentYear,
+        paymentDate: formatDate(validPaymentDate),
+        cutoffDate: formatDate(cutoffDate),
+        isNewMember,
+        isRenewalPayment,
+        calculatedPaymentYear: paymentYear
+      });
 
       await prisma.$transaction(async (tx) => {
         console.log(`[MEMBERSHIP] Počinje transakcija za uplatu članarine člana ${memberId}`);
@@ -246,32 +248,45 @@ const membershipService = {
       if (isDev) console.log('Current member status before transaction:', member);
 
       await prisma.$transaction(async (tx) => {
-        // Provjeri ima li član plaćenu članarinu
+        // Provjeri ima li član plaćenu članarinu, karticu i markicu
         const membershipDetails = await tx.membershipDetails.findUnique({
           where: { member_id: memberId },
           select: {
             fee_payment_date: true,
-            card_number: true
+            fee_payment_year: true,
+            card_number: true,
+            card_stamp_issued: true
+          }
+        });
+
+        // Provjeri ima li član aktivan period članstva (end_date: null)
+        const activePeriod = await tx.membershipPeriod.findFirst({
+          where: {
+            member_id: memberId,
+            end_date: null
           }
         });
 
         const hasPaidFee = !!membershipDetails?.fee_payment_date;
         const willHaveCard = cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "";
+        const hasStamp = stampIssued ?? membershipDetails?.card_stamp_issued ?? false;
+        const hasActivePeriod = !!activePeriod;
         
         // Za RANDOM_8 strategiju, dovoljna je samo uplata (lozinka ne ovisi o kartici)
         const isRandom8Strategy = passwordStrategy === 'RANDOM_8';
         
         // Odredi je li član spreman za registration_completed
+        // SVA 3 UVJETA MORAJU BITI ISPUNJENA: uplata, markica, aktivan period
         let shouldBeRegistered = false;
         
         if (isRandom8Strategy) {
-          // RANDOM_8: dovoljna je samo uplata
-          shouldBeRegistered = hasPaidFee;
-          if (isDev) console.log(`[RANDOM_8] Member ${memberId} - hasPaidFee: ${hasPaidFee}`);
+          // RANDOM_8: dovoljna je uplata + markica + aktivan period (kartica nije obavezna)
+          shouldBeRegistered = hasPaidFee && hasStamp && hasActivePeriod;
+          if (isDev) console.log(`[RANDOM_8] Member ${memberId} - hasPaidFee: ${hasPaidFee}, hasStamp: ${hasStamp}, hasActivePeriod: ${hasActivePeriod}`);
         } else {
-          // Ostale strategije: potrebna uplata I kartica
-          shouldBeRegistered = willHaveCard && hasPaidFee;
-          if (isDev) console.log(`[${passwordStrategy || 'DEFAULT'}] Member ${memberId} - willHaveCard: ${willHaveCard}, hasPaidFee: ${hasPaidFee}`);
+          // Ostale strategije: potrebna uplata + kartica + markica + aktivan period
+          shouldBeRegistered = willHaveCard && hasPaidFee && hasStamp && hasActivePeriod;
+          if (isDev) console.log(`[${passwordStrategy || 'DEFAULT'}] Member ${memberId} - willHaveCard: ${willHaveCard}, hasPaidFee: ${hasPaidFee}, hasStamp: ${hasStamp}, hasActivePeriod: ${hasActivePeriod}`);
         }
         
         if (shouldBeRegistered) {
@@ -613,27 +628,40 @@ const membershipService = {
       const terminationDay = settings?.membershipTerminationDay ?? 1;
       const terminationMonth = settings?.membershipTerminationMonth ?? 3;
 
-      // Definiramo rok za završetak članstva (konfigurabilan datum, default 1. ožujak)
-      // JavaScript Date: month je 0-based (0 = siječanj, 2 = ožujak)
-      const renewalDeadline = new Date(currentYear, terminationMonth - 1, terminationDay);
-
-      console.log(`🔧 [AUTO-TERMINATION] Postavke termination datuma:`);
-      console.log(`🔧 [AUTO-TERMINATION] - terminationDay: ${terminationDay}`);
-      console.log(`🔧 [AUTO-TERMINATION] - terminationMonth: ${terminationMonth}`);
-      console.log(`🔧 [AUTO-TERMINATION] Usporedba datuma:`);
-      console.log(`🔧 [AUTO-TERMINATION] - currentDate: ${formatDate(currentDate)} (${currentDate.getTime()})`);
-      console.log(`🔧 [AUTO-TERMINATION] - currentYear: ${currentYear}`);
-      console.log(`🔧 [AUTO-TERMINATION] - renewalDeadline: ${formatDate(renewalDeadline)} (${renewalDeadline.getTime()})`);
-      console.log(`🔧 [AUTO-TERMINATION] - currentDate > renewalDeadline: ${currentDate > renewalDeadline}`);
-
-      // Ako je trenutni datum nakon roka za obnovu, provjeri i završi sva članstva koja nisu obnovljena
-      if (currentDate > renewalDeadline) {
-        console.log(`🔧 [AUTO-TERMINATION] POZIVAM endExpiredMemberships za godinu ${currentYear}, org ${organizationId}`);
-        await membershipRepository.endExpiredMemberships(currentYear, organizationId);
-      } else {
-        console.log(`🔧 [AUTO-TERMINATION] PRESKAČEM provjeru - datum je prije roka`);
+      // RETROAKTIVNA AUTO-TERMINACIJA: Provjeri sve propuštene godine
+      // Pronađi najstariji membership period za ovu organizaciju
+      const oldestMember = await prisma.member.findFirst({
+        where: { 
+          organization_id: organizationId,
+          periods: { some: {} } // Ima barem jedan period
+        },
+        select: {
+          periods: {
+            orderBy: { start_date: 'asc' },
+            take: 1,
+            select: { start_date: true }
+          }
+        }
+      });
+      
+      const startYear = oldestMember?.periods[0]?.start_date
+        ? new Date(oldestMember.periods[0].start_date).getFullYear()
+        : currentYear - 5; // Fallback: 5 godina unazad
+      
+      console.log(`🔧 [AUTO-TERMINATION] Provjeravam godine od ${startYear} do ${currentYear}`);
+      
+      for (let year = startYear; year <= currentYear; year++) {
+        // Definiramo rok za završetak članstva za tu godinu
+        const renewalDeadline = new Date(year, terminationMonth - 1, terminationDay);
+        
+        // Provjeri je li prošao grace period za tu godinu
+        if (currentDate > renewalDeadline) {
+          console.log(`🔧 [AUTO-TERMINATION] Retroaktivna provjera za godinu ${year}, org ${organizationId}`);
+          await membershipRepository.endExpiredMemberships(year, organizationId);
+        }
       }
 
+      console.log(`🔧 [AUTO-TERMINATION] ✅ Završena provjera za organizaciju ${organizationId}`);
       return;
     } catch (error) {
       console.error("Greška prilikom automatske provjere članstava:", error);

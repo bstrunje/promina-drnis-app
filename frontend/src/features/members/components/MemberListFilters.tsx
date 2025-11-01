@@ -59,15 +59,26 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
 }) => {
   const { t } = useTranslation('members');
 
+  // Provjera je li ekran mali (mobile/tablet)
+  const isSmallScreen = () => {
+    return window.innerWidth < 768; // md breakpoint u Tailwind-u
+  };
+
   // Handler funkcije s boljim tipovima
   const handleActiveFilterChange = (value: string) => {
     onActiveFilterChange(value as ActiveFilter);
-    onCloseFilters?.();
+    // Zatvori filtere samo na malim ekranima
+    if (isSmallScreen()) {
+      onCloseFilters?.();
+    }
   };
 
   const handleSortCriteriaChange = (value: string) => {
     onSortCriteriaChange(value as SortCriteria);
-    onCloseFilters?.();
+    // Zatvori filtere samo na malim ekranima
+    if (isSmallScreen()) {
+      onCloseFilters?.();
+    }
   };
 
   const handleSortOrderToggle = () => {

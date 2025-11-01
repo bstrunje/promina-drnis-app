@@ -125,9 +125,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const checkAuth = async () => {
       setIsLoading(true);
       try {
+        // KRITIČNO: Ako je ovo SystemManager ruta, ne provjeravaj Member auth
+        const currentPath = window.location.pathname;
+        console.log('[AUTH] Checking auth for path:', currentPath);
+        
+        if (currentPath.includes('/system-manager')) {
+          console.log('[AUTH] SystemManager ruta detektirana, preskačem Member auth check');
+          setIsLoading(false);
+          return;
+        }
+        
         const savedUser = localStorage.getItem("user");
-        const savedToken = tokenStorage.getAccessToken();
+        const systemManager = localStorage.getItem("systemManager");
         const cachedTenant = localStorage.getItem("current_tenant");
+        
+        console.log('[AUTH] localStorage check:', {
+          hasUser: !!savedUser,
+          hasSystemManager: !!systemManager,
+          path: currentPath
+        });
+        
+        const savedToken = tokenStorage.getAccessToken();
         
         if (savedUser && savedToken) {
           // Postavljamo privremeno stanje korisnika i tokena

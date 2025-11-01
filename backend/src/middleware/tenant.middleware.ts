@@ -250,6 +250,15 @@ export async function tenantMiddleware(
       }
       return next();
     }
+
+    // 🔧 IZUZEĆE: Development rute (/dev) ne trebaju tenant context
+    // Koriste se za Time Traveler i ostale dev funkcionalnosti
+    if (path.startsWith('/dev')) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TENANT-MIDDLEWARE] Development ruta - preskačem tenant detekciju: ${path}`);
+      }
+      return next();
+    }
     
     // Organization SM API pozivi se identificiraju kroz path
     // Frontend šalje: /:orgSlug/api/system-manager/*

@@ -20,6 +20,8 @@ export interface MembershipDetails {
     fee_payment_date?: string;
     membership_status?: ActivityStatus; // Status aktivnosti člana baziran na satima (active/passive)
     active_until?: string; // Datum do kojeg je članarina aktivna
+    membership_valid?: boolean; // Kalkulirano na backendu: je li članstvo važeće (plaćanje + markica)
+    membership_valid_reason?: string; // Razlog statusa članstva
 }
 
 export interface MembershipHistory {

@@ -2,6 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// Čitaj backend port iz environment varijable ili koristi default (3000 za lokalni dev)
+const backendPort = process.env.VITE_BACKEND_PORT || '3000';
+const backendUrl = `http://localhost:${backendPort}`;
+
+console.log(`[Vite] Backend proxy target: ${backendUrl}`);
+
 export default defineConfig({
   // Uklonjen splitVendorChunkPlugin jer koristimo ručni manualChunks (inače prikazuje warning)
   plugins: [react()],
@@ -26,12 +32,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: backendUrl,
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:3000',
+        target: backendUrl,
         changeOrigin: true,
         secure: false,
       },

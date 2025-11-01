@@ -507,6 +507,27 @@ const systemManagerController = {
         }
     },
 
+    async getCurrentSystemManager(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user || !req.user.id) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+
+            const manager = await systemManagerRepository.findById(req.user.id);
+            if (!manager) {
+                res.status(404).json({ message: 'System Manager not found' });
+                return;
+            }
+
+            // Ukloni osjetljive podatke
+            const { password_hash: _password, two_factor_secret: _secret, two_factor_recovery_codes_hash: _codes, ...safeManager } = manager;
+            res.json(safeManager);
+        } catch (error) {
+            console.error('Error fetching current System Manager:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
 
 };
 

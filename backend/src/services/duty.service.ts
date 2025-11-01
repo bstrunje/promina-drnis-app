@@ -144,8 +144,8 @@ const generateSmartActivityName = async (dates: Date[]): Promise<string> => {
     const holiday = holidays[0];
     const formattedDate = format(firstDate, 'dd.MM.yyyy');
     return holiday 
-      ? `Dežurstvo - ${holiday.name} (${formattedDate})`
-      : `Dežurstvo ${formattedDate}`;
+      ? `${formattedDate} - Dežurstvo - ${holiday.name}`
+      : `${formattedDate} - Dežurstvo`;
   }
   
   // Više datuma - generiraj raspon
@@ -154,10 +154,10 @@ const generateSmartActivityName = async (dates: Date[]): Promise<string> => {
   
   if (hasHoliday) {
     const holidayNames = holidays.filter(h => h).map(h => h!.name).join(', ');
-    return `Dežurstvo - ${holidayNames} (${startFormatted}-${endFormatted})`;
+    return `${startFormatted}-${endFormatted} - Dežurstvo (${holidayNames})`;
   }
   
-  return `Dežurstvo ${startFormatted}-${endFormatted}`;
+  return `${startFormatted}-${endFormatted} - Dežurstvo`;
 };
 
 /**

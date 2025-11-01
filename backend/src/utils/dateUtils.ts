@@ -33,12 +33,39 @@ export function getCurrentDate(): Date {
 }
 
 /**
+ * Vraća stvarni trenutni datum (ignorirajući mock datum)
+ * Koristi se za JWT tokene i druge sigurnosne operacije koje moraju koristiti pravo vrijeme
+ * @returns Stvarni trenutni datum
+ */
+export function getRealDate(): Date {
+  return new Date();
+}
+
+/**
  * Vraća trenutni datum i vrijeme u UTC formatu
  * Ovo treba koristiti za sve operacije vezane za tokene i bazu podataka
  * @returns Trenutni UTC datum
  */
 export function getCurrentUTCDate(): Date {
   const now = getCurrentDate();
+  return new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds(),
+    now.getUTCMilliseconds()
+  ));
+}
+
+/**
+ * Vraća stvarni trenutni datum u UTC formatu (ignorirajući mock datum)
+ * Koristi se za JWT token expiry i druge sigurnosne operacije
+ * @returns Stvarni trenutni UTC datum
+ */
+export function getRealUTCDate(): Date {
+  const now = getRealDate();
   return new Date(Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),
@@ -74,12 +101,15 @@ export function addSeconds(date: Date, seconds: number): Date {
 
 /**
  * Generira datum isteka tokena u UTC formatu
+ * VAŽNO: Koristi stvarno vrijeme (ignorirajući Time Traveler) za JWT token sigurnost
  * @param durationDays Trajanje tokena u danima
  * @returns Datum isteka tokena u UTC formatu
  */
 export function getTokenExpiryDate(durationDays: number): Date {
-  // Koristimo UTC format za dosljednost
-  const now = getCurrentUTCDate();
+  // KRITIČNO: Koristimo STVARNO vrijeme (getRealUTCDate), ne mock datum!
+  // JWT tokeni moraju koristiti pravo vrijeme, inače Time Traveler uzrokuje
+  // "AUTH_REFRESH_TOKEN_EXPIRED" grešku odmah nakon prijave
+  const now = getRealUTCDate();
   return addDays(now, durationDays);
 }
 
@@ -249,6 +279,8 @@ export function cleanISODateString(dateStr: string): string {
 export default {
   getCurrentDate,
   getCurrentUTCDate,
+  getRealDate,
+  getRealUTCDate,
   setSystemTimeZone,
   cleanISODateString,
   getSystemTimeZone,

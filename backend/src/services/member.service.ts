@@ -131,7 +131,7 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
 export const updateMemberActivityHours = async (memberId: number, prismaClient: TransactionClient = prisma): Promise<void> => {
   try {
     // Računamo sate samo za prošlu i tekuću godinu
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentDate().getFullYear();
     const previousYear = currentYear - 1;
     
     // Datumi za ograničavanje na prošlu i tekuću godinu
@@ -702,7 +702,7 @@ const memberService = {
                 activity_id: p.activity_id,
                 participation_org_id: p.organization_id,
                 activity_org_id: p.activity.organization_id,
-                year: new Date(p.activity.start_date).getFullYear()
+                year: new Date(p.activity.start_date).getFullYear() // OK - samo za logging
             })));
             
             const participations = await prisma.activityParticipation.findMany({
@@ -728,13 +728,14 @@ const memberService = {
                 name: p.activity.name, 
                 status: p.activity.status,
                 start_date: p.activity.start_date,
-                year: new Date(p.activity.start_date).getFullYear(),
+                year: new Date(p.activity.start_date).getFullYear(), // OK - samo za logging
                 manual_hours: p.manual_hours 
             })));
             
             // 3. Grupiraj participacije po godinama
             const yearlyParticipations = new Map<number, typeof participations>();
             participations.forEach(p => {
+                // Koristi stvarni datum iz baze (ne mock) jer je start_date već zapisan
                 const year = new Date(p.activity.start_date).getFullYear();
                 console.log(`[ANNUAL-STATS] Processing participation: activity_id=${p.activity.activity_id}, year=${year}`);
                 if (!yearlyParticipations.has(year)) {

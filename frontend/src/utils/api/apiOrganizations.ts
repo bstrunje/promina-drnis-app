@@ -20,6 +20,8 @@ export interface Organization {
   ethics_code_url: string | null;
   privacy_policy_url: string | null;
   membership_rules_url: string | null;
+  member_limit: number | null;
+  is_donor: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -87,6 +89,8 @@ export interface UpdateOrganizationData {
   ethics_code_url?: string;
   privacy_policy_url?: string;
   membership_rules_url?: string;
+  member_limit?: number | null;
+  is_donor?: boolean;
   is_active?: boolean;
   // System Manager data (optional)
   sm_username?: string;

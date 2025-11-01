@@ -37,6 +37,10 @@ services:
       # Izlažemo backend na portu 3001
       - "3001:3001"
 
+    volumes:
+      # Perzistencija uploads foldera između restarta
+      - ./backend/uploads:/app/uploads
+
     environment:
       # KRITIČNA ISPRAVKA: Dodaj DATABASE_URL za Prisma klijent
       DATABASE_URL: "postgresql://testuser:testpassword@db:5432/testdb?schema=public"
@@ -45,6 +49,7 @@ services:
       # Postavljamo port na kojem backend sluša
       PORT: 3001
       NODE_ENV: development
+      ENABLE_DEV_ROUTES: "true"
       # Dodajemo varijable za inicijalnog system managera
       INITIAL_SYSTEM_MANAGER_USERNAME: "System Manager"
       INITIAL_SYSTEM_MANAGER_PASSWORD: "manager123"

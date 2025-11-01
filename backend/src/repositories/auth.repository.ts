@@ -2,11 +2,14 @@ import prisma from '../utils/prisma.js';
 import { Member, MemberSearchResult } from '../shared/types/member.js';
 
 const authRepository = {
-    async findUserByFullName(full_name: string): Promise<Member | null> {
-        console.log(`[AUTH-REPO] Tražim korisnika po imenu: ${full_name}`);
+    async findUserByFullName(full_name: string, organizationId?: number): Promise<Member | null> {
+        console.log(`[AUTH-REPO] Tražim korisnika po imenu: ${full_name}${organizationId ? ` u organizaciji ${organizationId}` : ''}`);
         try {
             const member = await prisma.member.findFirst({
-                where: { full_name }
+                where: { 
+                    full_name,
+                    ...(organizationId && { organization_id: organizationId })
+                }
             });
             return member as unknown as Member | null;
         } catch (error) {

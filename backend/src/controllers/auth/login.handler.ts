@@ -4,7 +4,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import prisma from "../../utils/prisma.js";
 import { MemberLoginData } from '@/shared/types/member.js';
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '../../config/jwt.config.js';
-import { getTokenExpiryDate } from '../../utils/dateUtils.js';
+import { getTokenExpiryDate, getCurrentDate } from '../../utils/dateUtils.js';
 import {
   MAX_FAILED_LOGIN_ATTEMPTS,
   ACCOUNT_LOCKOUT_DURATION_MINUTES,
@@ -75,7 +75,7 @@ export async function loginHandler(
 
     // Provjera statusa članstva i plaćene članarine
     const isAdmin = member.role === 'member_administrator' || member.role === 'member_superuser';
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentDate().getFullYear();
     const lastPeriod = member.periods[0];
 
     let isMembershipValid = false;

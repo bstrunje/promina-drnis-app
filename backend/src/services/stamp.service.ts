@@ -156,6 +156,11 @@ const stampService = {
         throw new Error(tOrDefault('stamp.errors.MEMBER_NOT_FOUND', 'hr', 'Member not found'));
       }
 
+      // KRITIČNO: Član mora imati dodijeljenu člansku iskaznicu prije izdavanja markice
+      if (!member.membership_details?.card_number) {
+        throw new Error(tOrDefault('stamp.errors.CARD_NUMBER_REQUIRED', 'hr', 'Member must have a card number assigned before issuing a stamp'));
+      }
+
       const stampType = stampService.getStampTypeFromLifeStatus(member.life_status);
 
       // Poziv postojeće metode za ažuriranje inventara

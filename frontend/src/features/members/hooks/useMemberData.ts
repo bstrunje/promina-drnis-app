@@ -4,10 +4,9 @@ import { Member } from '@shared/member';
 import { 
   adaptMembershipPeriods, 
   determineMemberActivityStatus, 
-  determineDetailedMembershipStatus,
   determineFeeStatus
 } from '@shared/memberStatus.types';
-import { getCurrentDate } from '../../../utils/dateUtils';
+import { getCurrentDate, getYearForPaymentCheck } from '../../../utils/dateUtils';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { useToast } from "@components/ui/use-toast";
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
@@ -152,15 +151,26 @@ export const useMemberData = () => {
                 }
 
                 const adaptedPeriods = adaptMembershipPeriods(periods);
-                // Izračunaj detaljan status članstva
-                const detailedStatus = determineDetailedMembershipStatus(
-                  member, 
-                  adaptedPeriods
-                );
+                
+                // BACKEND-KALKULIRANI STATUS: Koristi membership_valid i member.status iz backend-a
+                const membershipValid = member.membership_details?.membership_valid ?? false;
+                const backendStatus = member.status ?? 'pending';
+                
+                // Ako je članstvo važeće (backend kaže da je valid), status je 'registered'
+                // Inače koristi status iz baze (pending/inactive)
+                const detailedStatus = {
+                  status: membershipValid ? ('registered' as const) : backendStatus,
+                  reason: member.membership_details?.membership_valid_reason ?? '',
+                  date: null,
+                  endReason: null
+                };
+                
                 // Izračunaj status plaćanja članarine
+                // Koristi getYearForPaymentCheck() koja vraća mock godinu ako je postavljena, inače stvarnu
+                const yearForCheck = getYearForPaymentCheck();
                 const feeStatus = determineFeeStatus({
                   membership_details: member.membership_details ?? {}
-                });
+                }, yearForCheck);
                 return {
                   ...member,
                   membership_details: member.membership_details,

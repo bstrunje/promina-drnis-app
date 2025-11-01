@@ -349,6 +349,8 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
       privacy_policy_url,
       membership_rules_url,
       is_active,
+      member_limit,
+      is_donor,
       // System Manager data (optional)
       sm_username,
       sm_email,
@@ -386,6 +388,8 @@ export const updateOrganization = async (req: Request, res: Response): Promise<v
         privacy_policy_url: privacy_policy_url !== undefined ? privacy_policy_url : existing.privacy_policy_url,
         membership_rules_url: membership_rules_url !== undefined ? membership_rules_url : existing.membership_rules_url,
         is_active: is_active !== undefined ? is_active : existing.is_active,
+        member_limit: member_limit !== undefined ? member_limit : existing.member_limit,
+        is_donor: is_donor !== undefined ? is_donor : existing.is_donor,
         updated_at: new Date()
       }
     });

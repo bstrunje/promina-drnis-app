@@ -2,6 +2,7 @@ import { Member, MemberRole, Gender, LifeStatus, MembershipTypeEnum, ClothingSiz
 import { MembershipEndReason } from '../shared/types/membership.js';
 import { formatDate } from './dateUtils.js';
 import { determineActivityStatus } from './activityStatusHelpers.js';
+import { calculateMembershipStatus } from './membershipStatusCalculator.js';
 
 /**
  * Mapira raw objekt iz Prisma na naš Member interfejs
@@ -62,6 +63,16 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
   const full_name = raw.nickname && raw.nickname !== ''
     ? `${raw.first_name} ${raw.last_name} - ${raw.nickname}`
     : `${raw.first_name} ${raw.last_name}`;
+  
+  // Kalkuliraj status članstva (uključujući provjeru markice)
+  const hasMembershipPeriod = raw.periods ? raw.periods.some(p => !p.end_date) : false;
+  const membershipStatusResult = calculateMembershipStatus(
+    raw.membership_details?.fee_payment_year,
+    raw.membership_details?.fee_payment_date,
+    raw.membership_details?.card_stamp_issued,
+    hasMembershipPeriod
+  );
+  
   return {
     member_id: raw.member_id,
     first_name: raw.first_name,
@@ -83,13 +94,10 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
       ? formatDate(toDate(raw.profile_image_updated_at), 'yyyy-MM-dd')
       : undefined,
     role: raw.role as MemberRole,
-    registration_completed: raw.registration_completed ?? undefined,
+    registration_completed: raw.registration_completed ?? false, // UVIJEK vraća boolean, ne undefined
     password_hash: raw.password_hash ?? undefined,
     last_login: raw.last_login ? toDate(raw.last_login) : undefined,
-    status: ((): 'registered' | 'inactive' | 'pending' => {
-      const s = raw.status ?? undefined;
-      return s === 'registered' || s === 'inactive' || s === 'pending' ? s : 'pending';
-    })(),
+    status: membershipStatusResult.status, // Koristi kalkulirani status umjesto raw.status
     total_hours,
     activity_hours,
     activity_status: determineActivityStatus(activity_hours, activityHoursThreshold),
@@ -132,7 +140,9 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
       })(),
       active_until: raw.membership_details?.active_until
         ? formatDate(toDate(raw.membership_details.active_until), 'yyyy-MM-dd')
-        : undefined
+        : undefined,
+      membership_valid: membershipStatusResult.isValid, // Kalkulirano
+      membership_valid_reason: membershipStatusResult.reason // Razlog statusa
     },
     membership_history: {
       periods: (raw.periods || []).map((p) => ({

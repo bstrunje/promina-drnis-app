@@ -111,7 +111,7 @@ export const updateActivity = async (id: number, activityData: ActivityUpdateDat
  * @returns Promise koji razrješava u objekt kreirane aktivnosti.
  */
 export const createActivity = async (activityData: {
-  name: string;
+  name?: string; // Opcionalno - backend će generirati iz datuma i opisa ako nije proslijeđeno
   description: string;
   start_date: Date;
   actual_start_time: Date | null;

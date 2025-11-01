@@ -82,8 +82,13 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
           )}
         </div>
         
-        {/* Provjera je li članarina plaćena za tekuću godinu */}
-        {((member?.membership_details?.fee_payment_year === getCurrentYear()) || (member?.membership_details?.card_stamp_issued ?? false)) ? (
+        {/* Provjera ima li član dodijeljenu člansku iskaznicu */}
+        {!member?.membership_details?.card_number ? (
+          <div className="text-sm text-amber-600 italic">
+            {t('feeSection.cardNumberRequired')}
+          </div>
+        ) : /* Provjera je li članarina plaćena za tekuću godinu */
+        ((member?.membership_details?.fee_payment_year === getCurrentYear()) || (member?.membership_details?.card_stamp_issued ?? false)) ? (
           <div className="flex items-center space-x-3">
             {/* Ako korisnik može uređivati i nije obični član, prikaži checkbox */}
             {canEdit ? (
@@ -146,8 +151,13 @@ const StampManagementSection: React.FC<StampManagementSectionProps> = ({
             )}
           </div>
           
-          {/* Provjera je li članarina plaćena za sljedeću godinu */}
-          {((member?.membership_details?.fee_payment_year === getCurrentYear() + 1) ||
+          {/* Provjera ima li član dodijeljenu člansku iskaznicu */}
+          {!member?.membership_details?.card_number ? (
+            <div className="text-sm text-amber-600 italic">
+              {t('feeSection.cardNumberRequired')}
+            </div>
+          ) : /* Provjera je li članarina plaćena za sljedeću godinu */
+          ((member?.membership_details?.fee_payment_year === getCurrentYear() + 1) ||
             (member?.membership_details?.next_year_stamp_issued ?? false)) ? (
             <div className="flex items-center space-x-3">
               {/* Ako korisnik može uređivati i nije obični član, prikaži checkbox */}

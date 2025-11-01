@@ -141,8 +141,10 @@
         "paymentStatus": "Payment Status",
         "statusCurrent": "Paid",
         "statusPaymentRequired": "Payment Required",
+        "stampNotIssued": "Stamp not issued",
         "statusPaid": "Paid",
         "paidForYear": "Paid for year",
+        "expired": "expired",
         "processPayment": "Process Payment",
         "processPaymentTitle": "Membership Fee Payment",
         "paymentDatePlaceholder": "Enter payment date (YYYY-MM-DD)",
@@ -188,6 +190,7 @@
         "pending": "Pending",
         "membershipCardManagement": "Membership Card Management",
         "membershipCardManagementInfo": "Membership card management will be available after paying the annual membership fee.",
+        "cardNumberRequired": "Stamp management will be available after a membership card number is assigned.",
         "paymentDate": "Payment Date",
         "membershipPeriods": "Membership Periods",
         "selectReason": "Select a reason",
@@ -197,6 +200,13 @@
             "non_payment": "Non-payment of membership fee",
             "expulsion": "Expulsion",
             "death": "Death"
+        },
+        "reasons": {
+            "stampNotIssued": "Card stamp not issued for current year",
+            "paymentNotRecorded": "Payment not recorded",
+            "paymentYearMismatch": "Payment year does not match current year",
+            "noActivePeriod": "No active membership period",
+            "allConditionsMet": "All conditions met"
         },
         "addPeriod": "Add Period",
         "noMembershipHistory": "No membership history available",

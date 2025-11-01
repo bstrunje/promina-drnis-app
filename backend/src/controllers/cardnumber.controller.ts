@@ -362,13 +362,8 @@ const cardNumberController = {
         });
       }
 
-      // Provjeri je li član već registriran (status 'registered' znači da već ima i karticu i uplatu)
-      if (member.status === 'registered') {
-        return res.status(400).json({ 
-          code: 'CARDNUM_ONLY_PENDING', 
-          message: tBackend('cardnumbers.member_not_pending', locale) 
-        });
-      }
+      // Dozvoljeno je dodijeliti karticu i 'pending' i 'registered' članovima
+      // (npr. zamjena izgubljene/oštećene kartice)
 
       // Dohvati postavke sustava za generiranje lozinke (ako još nisu dohvaćene)
       const passwordStrategy = settings?.passwordGenerationStrategy;
@@ -404,16 +399,14 @@ const cardNumberController = {
           req.user?.id
         );
 
-        // Ažuriraj lozinku člana i registration_completed
-        // Status će biti postavljen u updateCardDetails() ovisno o tome ima li član plaćenu članarinu
+        // Ažuriraj samo lozinku člana
+        // Status i registration_completed su već postavljeni u updateCardDetails() prema svim uvjetima
         await tx.member.update({
           where: {
             member_id: parseInt(memberId)
           },
           data: {
-            password_hash: hashedPassword,
-            registration_completed: true
-            // status se NE postavlja ovdje - to radi updateCardDetails()
+            password_hash: hashedPassword
           }
         });
 

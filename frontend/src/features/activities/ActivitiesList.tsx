@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './activities.css';
 import { TenantLink } from '../../components/TenantLink';
-import { Card, CardHeader, CardTitle, CardFooter } from '@components/ui/card';
+import { Card, CardHeader, CardTitle } from '@components/ui/card';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { getActivityTypes, getAllActivitiesWithParticipants } from '@/utils/api/apiActivities';
 import { ActivityType, Activity, ActivityStatus } from '@shared/activity.types';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
-import { Activity as ActivityIcon, Clock, Calendar, PlusCircle } from 'lucide-react';
+import { Calendar, PlusCircle } from 'lucide-react';
 import { calculateGrandTotalHours, formatHoursToHHMM } from '@/utils/activityHours';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
@@ -161,7 +161,7 @@ const ActivitiesList: React.FC = () => {
           </Card>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="space-y-4">
         {activityYears.length > 0 ? (
           activityYears.map((year) => {
             // Računamo ukupne sate za aktivnosti ove godine (samo COMPLETED aktivnosti računamo u sate)
@@ -212,47 +212,41 @@ const ActivitiesList: React.FC = () => {
             // Trenutno vodimo na istu stranicu, ali ovo bi se trebalo kasnije prilagoditi
             return (
               <TenantLink to={`/activities/year/${year}`} key={year}>
-                <Card className="hover:bg-muted/50 transition-colors activity-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 sm:h-6 sm:w-6" />
-                        <span className="text-lg sm:text-xl">{year}</span>
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardHeader className="flex flex-row items-center justify-between py-4 space-y-0">
+                    <div className="flex items-center gap-3 flex-1">
+                      <Calendar className="h-6 w-6 text-primary flex-shrink-0" />
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-1">{year}.</CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <span>{t('list.activities')}:</span>
+                            <span className="font-medium">{totalYearActivities.length}</span>
+                          </div>
+                          {yearHours > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span>{t('list.totalHoursLabel')}:</span>
+                              <span className="font-medium">{formatHoursToHHMM(yearHours)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title={t('list.tooltips.activeActivities')}></div>}
-                        {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title={t('list.tooltips.plannedActivities')}></div>}
-                        {hasCancelled && <div className="w-3 h-3 bg-red-600 rounded-full" title={t('list.tooltips.cancelledActivities')}></div>}
-                      </div>
-                    </CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasActive && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPrimaryColor() }} title={t('list.tooltips.activeActivities')}></div>}
+                      {hasPlanned && <div className="w-3 h-3 bg-green-600 rounded-full" title={t('list.tooltips.plannedActivities')}></div>}
+                      {hasCancelled && <div className="w-3 h-3 bg-red-600 rounded-full" title={t('list.tooltips.cancelledActivities')}></div>}
+                      <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </CardHeader>
-                  <CardFooter className="pt-0 pb-3 px-3 sm:px-6 sm:pb-6 flex flex-col gap-1 sm:gap-2">
-                     {/* Broj aktivnosti u godini */}
-                     <div className="flex justify-between text-muted-foreground w-full">
-                       <div className="flex items-center gap-1 sm:gap-1.5">
-                         <ActivityIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                         <span className="text-xs sm:text-sm">{t('list.activities')}</span>
-                       </div>
-                       <Badge variant="secondary" className="text-xs sm:text-sm">{totalYearActivities.length}</Badge>
-                     </div>
-                     
-                     {/* Ukupni sati - prikazuju se samo ako ima dovršenih aktivnosti */}
-                     {yearHours > 0 && (
-                       <div className="flex justify-between text-muted-foreground w-full">
-                         <div className="flex items-center gap-1 sm:gap-1.5">
-                           <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                           <span className="text-xs sm:text-sm">{t('list.totalHoursLabel')}</span>
-                         </div>
-                         <Badge variant="outline" className="text-xs sm:text-sm">{formatHoursToHHMM(yearHours)} h</Badge>
-                       </div>
-                     )}
-                   </CardFooter>
                 </Card>
               </TenantLink>
             );
           })
         ) : (
-          <div className="col-span-full flex items-center justify-center h-40 text-gray-500">
+          <div className="flex items-center justify-center h-40 text-gray-500">
             <div className="text-center">
               <Calendar className="h-12 w-12 mx-auto mb-2" />
               <p>{t('list.noActivities')}</p>

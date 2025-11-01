@@ -73,10 +73,11 @@ router.get('/dashboard/stats', async (req, res) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     // PARALELNI upiti s filtriranjem po organizaciji
+    // VAŽNO: Koristi activity_hours (tekuća + prošla godina) umjesto total_hours za aktivne članove
     const [totalMembers, registeredMembers, activeMembers, pendingRegistrations, recentActivities] = await Promise.allSettled([
       prisma.member.count({ where: { organization_id: organization.id } }),
       prisma.member.count({ where: { organization_id: organization.id, status: 'registered' } }),
-      prisma.member.count({ where: { organization_id: organization.id, status: 'registered', total_hours: { gte: 20 } } }),
+      prisma.member.count({ where: { organization_id: organization.id, status: 'registered', activity_hours: { gte: 20 } } }),
       prisma.member.count({ where: { organization_id: organization.id, registration_completed: false } }),
       prisma.activity.count({ where: { organization_id: organization.id, created_at: { gte: thirtyDaysAgo } } })
     ]);

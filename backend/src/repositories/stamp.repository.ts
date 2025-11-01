@@ -49,7 +49,7 @@ const stampRepository = {
             // Konvertiraj Prisma rezultat u StampInventory format
             const result: StampInventory[] = stampInventory.map(item => ({
                 stamp_type: item.stamp_type as 'employed' | 'student' | 'pensioner',
-                stamp_year: item.stamp_year || new Date().getFullYear(), // Fallback na trenutnu godinu
+                stamp_year: item.stamp_year || getCurrentDate().getFullYear(), // Fallback na trenutnu godinu
                 initial_count: item.initial_count,
                 issued_count: item.issued_count || 0 // Null check za issued_count
             }));

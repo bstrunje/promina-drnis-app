@@ -39,16 +39,9 @@ export interface ApiMembershipUpdateParams {
 
 /**
  * Rezultat ažuriranja članstva
+ * Backend vraća cijelog ažuriranog člana
  */
-export interface ApiMembershipUpdateResult {
-  success: boolean;
-  message: string;
-  membership?: {
-    status: string;
-    start_date: string;
-    end_date?: string;
-  };
-}
+export type ApiMembershipUpdateResult = Record<string, unknown>;
 
 /**
  * Rezultat prekida članstva

@@ -54,6 +54,9 @@ const OrganizationEdit: React.FC = () => {
     ethics_code_url: '',
     privacy_policy_url: '',
     membership_rules_url: '',
+    // Member Limit & Donor Status
+    member_limit: null,
+    is_donor: false,
     // Aktivnost organizacije
     is_active: undefined,
     sm_username: '',
@@ -90,6 +93,8 @@ const OrganizationEdit: React.FC = () => {
         ethics_code_url: data.organization.ethics_code_url ?? '',
         privacy_policy_url: data.organization.privacy_policy_url ?? '',
         membership_rules_url: data.organization.membership_rules_url ?? '',
+        member_limit: data.organization.member_limit ?? null,
+        is_donor: data.organization.is_donor ?? false,
         is_active: data.organization.is_active,
         sm_username: data.organization.system_manager?.username ?? '',
         sm_email: data.organization.system_manager?.email ?? '',
@@ -175,7 +180,7 @@ const OrganizationEdit: React.FC = () => {
     }
   };
 
-  const handleChange = (field: keyof UpdateOrganizationData, value: string): void => {
+  const handleChange = (field: keyof UpdateOrganizationData, value: string | boolean | number | null): void => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -465,6 +470,66 @@ const OrganizationEdit: React.FC = () => {
               <p className="text-sm text-gray-500 mt-1">
                 This language will be used by default for all members of this organization. SystemManager will always use English.
               </p>
+            </div>
+
+            {/* Member Limit & Donor Status Section */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-lg font-semibold mb-4">Member Limit Settings</h3>
+              
+              <div className="space-y-4">
+                {/* Donor Status */}
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex-1">
+                    <Label htmlFor="is_donor" className="text-base font-medium">
+                      Donor Organization
+                    </Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Donors have unlimited members and access to premium features
+                    </p>
+                  </div>
+                  <Switch
+                    id="is_donor"
+                    checked={formData.is_donor ?? false}
+                    onCheckedChange={(checked) => handleChange('is_donor', checked)}
+                  />
+                </div>
+
+                {/* Member Limit */}
+                <div>
+                  <Label htmlFor="member_limit">Member Limit</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="member_limit"
+                      type="number"
+                      min="0"
+                      placeholder="Unlimited"
+                      value={formData.member_limit ?? ''}
+                      onChange={(e) => handleChange('member_limit', e.target.value ? parseInt(e.target.value) : null)}
+                      disabled={formData.is_donor}
+                      className={formData.is_donor ? 'bg-gray-100' : ''}
+                    />
+                    {formData.is_donor && (
+                      <span className="text-sm text-green-600 font-medium whitespace-nowrap">
+                        ∞ Unlimited
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formData.is_donor 
+                      ? 'Donors have unlimited member capacity'
+                      : 'Leave empty for unlimited. Set a number (e.g., 30) to limit members.'
+                    }
+                  </p>
+                  {organization?._count && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Current members: <span className="font-semibold">{organization._count.members}</span>
+                      {formData.member_limit && !formData.is_donor && (
+                        <span className="text-gray-500"> / {formData.member_limit}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

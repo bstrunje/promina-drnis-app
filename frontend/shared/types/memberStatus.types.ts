@@ -52,12 +52,10 @@ export interface MemberStatusData {
 
 /**
  * Funkcija za dobivanje trenutne godine
- * Izdvojena kao zasebna funkcija za lakše testiranje i mockanje
  * 
- * Napomena: U shared direktoriju koristimo direktno new Date() jer ne možemo
- * importati funkcije iz utils direktorija zbog TypeScript konfiguracije.
- * Kada se koristi na backendu, ova funkcija će koristiti sistemski datum,
- * a kada se koristi na frontendu, može se overridati s mock datumom.
+ * NAPOMENA: Ova funkcija koristi new Date() jer shared folder mora biti kompatibilan
+ * s backendom koji ne koristi Time Traveler. Frontend će koristiti vlastitu
+ * Time Traveler-aware verziju iz dateUtils.ts.
  */
 export function getCurrentYear(): number {
   return new Date().getFullYear();
@@ -95,6 +93,9 @@ export function isMembershipPeriodActive(period: MembershipPeriod): boolean {
  * @param member Podaci o članu
  * @param currentYear Opcionalno, trenutna godina (za testiranje)
  * @returns true ako je članarina plaćena, false inače
+ * 
+ * NAPOMENA: Prihvaća se i uplata za sljedeću godinu (renewal payment)
+ * jer članstvo ostaje aktivno do kraja trenutne godine
  */
 export function hasPaidMembershipFee(member: MemberStatusData, currentYear?: number): boolean {
   const year = currentYear ?? getCurrentYear();
@@ -102,7 +103,7 @@ export function hasPaidMembershipFee(member: MemberStatusData, currentYear?: num
   
   if (!paymentYear) return false;
   
-  // Pravilno: || za logičku provjeru više uvjeta, ne ??
+  // Uplata je validna za trenutnu ILI sljedeću godinu (renewal period)
   return paymentYear === year || paymentYear === year + 1;
 }
 
@@ -178,15 +179,13 @@ export function determineMembershipStatus(
 export function determineDetailedMembershipStatus(
   member: MemberStatusData,
   periods: MembershipPeriod[],
-  _currentYear?: number // _currentYear se više ne koristi direktno, ali ostaje radi kompatibilnosti
+  currentYear?: number // Godina za provjeru plaćanja (mock-aware)
 ): DetailedMembershipStatus {
-  // Referenca na _currentYear kako bi zadovoljili lint pravilo bez promjene ponašanja
-  void _currentYear;
-
   // 1. Provjera aktivnog perioda članstva - ovo je najvažniji pokazatelj
   if (hasActiveMembershipPeriod(periods)) {
     // Ako postoji aktivan period, provjeri i plaćanje članarine
-    if (hasPaidMembershipFee(member)) {
+    // Proslijeđujemo currentYear parametar za mock-aware provjeru
+    if (hasPaidMembershipFee(member, currentYear)) {
       return {
         status: 'registered',
         reason: 'Aktivno članstvo s plaćenom članarinom'

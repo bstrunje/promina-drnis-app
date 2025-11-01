@@ -9,7 +9,7 @@ import { MembershipPeriod } from "@shared/membership";
 import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
 // import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
-import { getCurrentDate, getCurrentYear, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
+import { getCurrentDate, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
 import { parse, parseISO, isValid, isBefore, format } from "date-fns";
 import { useTranslation } from "react-i18next";
 // Import components
@@ -66,15 +66,19 @@ const memberId = useMemo(() => {
   
   // Check if this is user's own profile
 
+  // Koristi backend-kalkulirani status (uključuje provjeru plaćanja I markice)
   const isFeeCurrent = useMemo(() => {
-    if (!member?.membership_details?.fee_payment_year) return false;
+    const membershipValid = member?.membership_details?.membership_valid ?? false;
     
-    const currentYear = getCurrentYear();
-    const paymentYear = member.membership_details.fee_payment_year;
+    // Debug logging
+    console.log('[isFeeCurrent] Using backend-calculated status:', {
+      membership_valid: membershipValid,
+      reason: member?.membership_details?.membership_valid_reason,
+      card_stamp_issued: member?.membership_details?.card_stamp_issued
+    });
     
-    // Check if payment is for current or next year
-    return paymentYear >= currentYear;
-  }, [member?.membership_details?.fee_payment_year]);
+    return membershipValid;
+  }, [member?.membership_details?.membership_valid, member?.membership_details?.membership_valid_reason, member?.membership_details?.card_stamp_issued]);
 
   // Helper function to calculate total duration
   // Funkcija za hrvatsku pluralizaciju

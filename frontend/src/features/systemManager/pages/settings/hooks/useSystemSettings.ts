@@ -191,7 +191,32 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
       const numValue = parseInt(value);
       setSettings(prev => ({ ...prev, [name]: numValue }));
     } else {
-      setSettings(prev => ({ ...prev, [name]: value }));
+      // Za select elemente i druge inpute, provjeri je li polje brojčano
+      const numberFields = [
+        'renewalStartMonth', 
+        'renewalStartDay', 
+        'membershipTerminationMonth', 
+        'membershipTerminationDay',
+        'cardNumberLength',
+        'registrationWindowMs',
+        'registrationMaxAttempts',
+        'twoFactorOtpExpirySeconds',
+        'twoFactorRememberDeviceDays',
+        'twoFactorTotpStepSeconds',
+        'twoFactorTotpWindow',
+        'twoFactorMaxAttemptsPerHour',
+        'passwordCardDigits',
+        'activityHoursThreshold',
+        'backupRetentionDays',
+        'dutyMaxParticipants'
+      ];
+      
+      if (numberFields.includes(name)) {
+        const numValue = parseInt(value);
+        setSettings(prev => ({ ...prev, [name]: numValue }));
+      } else {
+        setSettings(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 

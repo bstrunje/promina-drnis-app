@@ -4,7 +4,7 @@ import { Button } from '@components/ui/button';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
 import { cn } from '@/lib/utils';
-import { formatDate, formatDateToIsoDateString, cleanISODateString } from '../src/utils/dateUtils';
+import { formatDate, formatDateToIsoDateString, cleanISODateString, getCurrentYear } from '../src/utils/dateUtils';
 import { Input } from '@components/ui/input';
 import { format, parseISO, getMonth, isValid as isValidDate } from 'date-fns';
 import { getCurrentDate } from '../src/utils/dateUtils';
@@ -25,12 +25,12 @@ import MembershipCardManagerAdapter from '../src/features/membership/MembershipC
 // Ako koristiš MembershipCardManager u JSX-u, zamijeni ga s MembershipCardManagerAdapter
 import { updateMembership } from '../src/utils/api';
 import { 
-  getCurrentYear, 
   hasPaidMembershipFee,
   translateEndReason, 
   determineFeeStatus,
   adaptMembershipPeriods,
-  determineDetailedMembershipStatus} from '@shared/memberStatus.types';
+  determineDetailedMembershipStatus
+} from '@shared/memberStatus.types';
 import { MembershipPeriod, MembershipEndReason } from '@shared/membership';
 import { feeStatusColors } from "@shared/helpers/membershipDisplay"; // Centralizirane labele i boje
 
@@ -273,12 +273,11 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         }
       }
 
-      // Pozivamo API za ažuriranje članarine bez pohranjivanja odgovora
-      await updateMembership(member.member_id, {
+      // Pozivamo API za ažuriranje članarine i dohvaćamo ažuriranog člana iz response-a
+      const updatedMemberFromBackend = await updateMembership(member.member_id, {
         paymentDate: parsedDate.toISOString(),
         isRenewalPayment
       });
-
 
       toast({
         title: t('feeSection.success'),
@@ -290,17 +289,9 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       setShowPaymentConfirm(false);
       setPaymentError(null);
 
-      // ApiMembershipUpdateResult nema member property, pa ručno ažuriramo lokalnog člana
-      if (onUpdate) {
-        const updatedMember: Member = {
-          ...member,
-          membership_details: {
-            ...(member?.membership_details ?? {}),
-            fee_payment_date: formatDateToIsoDateString(parsedDate),
-            fee_payment_year: isRenewalPayment ? currentYear + 1 : currentYear
-          }
-        };
-        onUpdate(updatedMember);
+      // Backend vraća cijelog ažuriranog člana - koristimo te podatke umjesto ručnog računanja
+      if (onUpdate && updatedMemberFromBackend) {
+        onUpdate(updatedMemberFromBackend as unknown as Member);
       }
 
     } catch (error) {
@@ -321,7 +312,18 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
     setIsSubmittingHistory(true);
     try {
-      await onMembershipHistoryUpdate(editedPeriods);
+      // Očisti i validiraj periode prije slanja - pretvori prazne stringove u undefined
+      const cleanedPeriods = editedPeriods.map(period => ({
+        ...period,
+        end_date: period.end_date && period.end_date.toString().trim() !== '' 
+          ? period.end_date 
+          : undefined,
+        end_reason: period.end_reason && period.end_reason.toString().trim() !== ''
+          ? period.end_reason
+          : undefined
+      }));
+      
+      await onMembershipHistoryUpdate(cleanedPeriods);
       setIsEditingHistory(false);
       toast({
         title: t('common:success'),
@@ -397,25 +399,41 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               </div>
                             
               <div className="mb-3">
-                <span className="text-sm text-gray-500">{t('feeSection.paymentStatus')}:</span>
-                {(() => {
-                  const feeStatus = determineFeeStatus(member);
-                  return (
-                <span
-                  className={`ml-2 px-2 py-1 rounded-full text-sm font-medium ${
-                    feeStatusColors[isFeeCurrent ? 'current' : 'payment required']
-                  }`}
-                  data-fee-status={String(feeStatus)}
-                >
-                  {isFeeCurrent
-                    ? t('feeSection.statusCurrent')
-                    : t('feeSection.statusPaymentRequired')}
-                </span>
-                  );
-                })()}
-
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-gray-500">{t('feeSection.paymentStatus')}:</span>
+                  {(() => {
+                    const feeStatus = determineFeeStatus(member);
+                    const hasPayment = member.membership_details?.fee_payment_year && member.membership_details?.fee_payment_date;
+                    const hasStamp = member.membership_details?.card_stamp_issued;
+                    const currentYear = getCurrentYear();
+                    const paymentYear = member.membership_details?.fee_payment_year;
+                    const isPaymentForCurrentYear = paymentYear === currentYear;
+                    const isRenewalPayment = paymentYear === currentYear + 1;
+                    
+                    // Status je valjan ako je plaćanje ZA TEKUĆU godinu ILI za SLJEDEĆU godinu (renewal)
+                    const isValidPayment = hasPayment && (isPaymentForCurrentYear || isRenewalPayment);
+                    
+                    return (
+                      <span
+                        className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          isValidPayment && hasStamp 
+                            ? feeStatusColors['current']
+                            : isValidPayment && !hasStamp
+                            ? feeStatusColors['current']
+                            : feeStatusColors['payment required']
+                        }`}
+                        data-fee-status={String(feeStatus)}
+                      >
+                        {isValidPayment
+                          ? t('feeSection.statusCurrent')
+                          : t('feeSection.statusPaymentRequired')}
+                      </span>
+                    );
+                  })()}
+                </div>
+                {/* Prikaži godinu plaćanja ako postoji bilo kakva uplata */}
                 {member.membership_details?.fee_payment_year && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     {t('feeSection.paidForYear')}: {member.membership_details.fee_payment_year}
                   </p>
                 )}
@@ -428,46 +446,49 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                 const lastPeriod = membershipHistory?.periods?.at?.(-1);
 
                 if (lastPeriod?.end_date && lastPeriod?.end_reason) {
-                  const today = getCurrentDate();
-                  const currentMonth = today.getMonth(); // 0 = Siječanj, 1 = Veljača
-
-                  let statusInfo = {
-                    text: t('feeSection.membershipEnded'),
-                    className: 'bg-red-100 text-red-800',
-                  };
-
-                  if (lastPeriod.end_reason === 'non_payment' && (currentMonth === 0 || currentMonth === 1)) {
-                    statusInfo = {
-                      text: t('feeSection.membershipExpired'),
-                      className: 'bg-yellow-100 text-yellow-800',
-                    };
-                  }
-
+                  // Ako period ima end_date i end_reason, članstvo je završeno (CRVENO)
                   return (
                     <div className="flex items-center mb-4">
                       <span className="text-sm text-gray-500 mr-2">{t('feeSection.memberStatus')}:</span>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
-                        {statusInfo.text}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800`}>
+                        {t('feeSection.membershipEnded')}
                       </span>
                     </div>
                   );
                 }
 
                 // Fallback na postojeću logiku ako gornji uvjeti nisu zadovoljeni
-                const hasPaidFee = hasPaidMembershipFee(member);
+                // BACKEND-KALKULIRANI STATUS: Koristi membership_valid iz backend-a
+                const membershipValid = member.membership_details?.membership_valid ?? false;
                 const memberStatus = member.status as string;
-                const isRegisteredOrActive = memberStatus === 'registered' || memberStatus === 'active';
-
-                const detailedMembershipStatus = membershipHistory?.periods
-                  ? determineDetailedMembershipStatus(member, adaptMembershipPeriods(membershipHistory.periods))
-                  : {
-                      status: isRegisteredOrActive ? 'registered' : (hasPaidFee ? 'registered' : (member.status ?? 'pending')),
-                      reason: isRegisteredOrActive ? 'Registrirani član' : (hasPaidFee ? 'Aktivan član s plaćenom članarinom' : 'Status na čekanju'),
-                      date: null,
-                      endReason: null,
-                    };
-
-                const finalMembershipStatus = detailedMembershipStatus.status;
+                
+                // Ako je članstvo važeće (plaćanje + markica), status je 'registered'
+                // Inače koristi status iz baze (pending/inactive)
+                const finalMembershipStatus = membershipValid ? 'registered' : memberStatus;
+                
+                // Mapi backend engleski reason u lokalizirani ključ
+                const translateMembershipReason = (reason: string): string => {
+                  if (reason.includes('Card stamp not issued')) {
+                    return t('feeSection.reasons.stampNotIssued');
+                  } else if (reason.includes('Payment not recorded')) {
+                    return t('feeSection.reasons.paymentNotRecorded');
+                  } else if (reason.includes('does not match current year') || reason.includes('Grace period active')) {
+                    return t('feeSection.reasons.paymentYearMismatch');
+                  } else if (reason.includes('No active membership period')) {
+                    return t('feeSection.reasons.noActivePeriod');
+                  } else if (reason.includes('All conditions met')) {
+                    return t('feeSection.reasons.allConditionsMet');
+                  }
+                  return reason; // fallback na originalni reason
+                };
+                
+                // Za prikaz razloga (opciono)
+                const detailedMembershipStatus = {
+                  status: finalMembershipStatus,
+                  reason: member.membership_details?.membership_valid_reason ?? '',
+                  date: null,
+                  endReason: null,
+                };
 
                 const getMembershipDisplay = (status: string) => {
                   if (status === 'registered') {
@@ -493,7 +514,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                       finalMembershipStatus !== 'registered' &&
                       !(finalMembershipStatus === 'inactive' && [t('feeSection.endReasons.expulsion'), t('feeSection.endReasons.death'), t('feeSection.endReasons.withdrawal')].includes(detailedMembershipStatus.reason)) && (
                         <p className="text-sm text-gray-700 mt-1">
-                          {detailedMembershipStatus.reason}
+                          {translateMembershipReason(detailedMembershipStatus.reason)}
                         </p>
                       )}
                     {detailedMembershipStatus.date && detailedMembershipStatus.status === 'inactive' && (
@@ -513,52 +534,66 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               })()}
             </div>
 
-            {/* Membership Card Management - visible only if fee is current */}
-            {isEditing && isFeeCurrent && cardManagerProps && (
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">{t('feeSection.membershipCardManagement')}</h3>
-                <MembershipCardManagerAdapter {...cardManagerProps} />
-              </div>
-            )}
-            
-            {isEditing && !isFeeCurrent && cardManagerProps && (
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
-                <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
-                  {t('feeSection.membershipCardManagementInfo')}
+            {/* Membership Card Management - prikaži ako je plaćeno za tekuću ili sljedeću godinu */}
+            {isEditing && cardManagerProps && (() => {
+              const currentYear = getCurrentYear();
+              const paymentYear = member.membership_details?.fee_payment_year;
+              const hasPaymentForCurrentYear = paymentYear === currentYear;
+              const hasRenewalPayment = paymentYear === currentYear + 1;
+              const hasValidPayment = hasPaymentForCurrentYear || hasRenewalPayment;
+              
+              // Ako nema validnog plaćanja, prikaži upozorenje
+              if (!hasValidPayment) {
+                return (
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
+                    <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
+                      {t('feeSection.membershipCardManagementInfo')}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-3">{t('feeSection.membershipCardManagement')}</h3>
+                  
+                  {/* Sekcija uvijek vidljiva nakon plaćanja - ovdje se dodijeljuje kartica I markice */}
+                  <MembershipCardManagerAdapter {...cardManagerProps} />
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Debug button za testiranje auto-terminations - samo u development modu */}
-            {hasAdminPrivileges && import.meta.env.DEV && (
+            {(() => {
+              console.log('🔍 [DEBUG] hasAdminPrivileges:', hasAdminPrivileges);
+              console.log('🔍 [DEBUG] import.meta.env.DEV:', import.meta.env.DEV);
+              console.log('🔍 [DEBUG] isEditing:', isEditing);
+              return hasAdminPrivileges && import.meta.env.DEV;
+            })() && (
               <div className="border-t pt-4">
                 <Button
                   type="button"
                   onClick={async () => {
                     try {
+                      console.log('🔵 [FRONTEND] Kliknut button za provjeru isteklih članstava');
                       const mockDateString = localStorage.getItem('app_mock_date');
                       const requestBody = mockDateString ? { mockDate: mockDateString } : {};
+                      console.log('🔵 [FRONTEND] Request body:', requestBody);
                       
-                      const response = await fetch('/api/members/check-auto-terminations', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify(requestBody)
-                      });
+                      // Koristi api helper umjesto fetch za ispravno rutiranje kroz Vite proxy
+                      const { default: api } = await import('@/utils/api/apiConfig');
+                      const response = await api.post('/members/check-auto-terminations', requestBody);
                       
-                      const result = await response.json();
+                      console.log('🔵 [FRONTEND] Response:', response.data);
+                      
                       toast({
-                        title: response.ok ? 'Uspjeh' : 'Greška',
-                        description: result.message || 'Provjera završena',
-                        variant: response.ok ? 'default' : 'destructive'
+                        title: 'Uspjeh',
+                        description: response.data.message || 'Provjera završena',
+                        variant: 'default'
                       });
                       
-                      if (response.ok) {
-                        window.location.reload();
-                      }
+                      window.location.reload();
                     } catch (error) {
                       console.error('Greška:', error);
                     }

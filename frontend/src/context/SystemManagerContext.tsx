@@ -137,19 +137,9 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       
       const systemManagerToken = localStorage.getItem('systemManagerToken');
       const storedManager = localStorage.getItem('systemManager');
-      const regularToken = localStorage.getItem('token');
       
-      // Provjera konflikta tokena - ako postoje obje vrste tokena, ukloni regularne tokene
-      if (systemManagerToken && regularToken) {
-        console.warn('Otkriven konflikt tokena: postoje i System Manager i korisnički token!');
-        // Uklanjaanje regularnih tokena korisnika
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('refreshToken');
-        // console.log('Uklonjeni regularni tokeni za korisnika koji uzrokuju konflikt');
-      }
-
+      // NE BRIŠEMO Member tokene - oni mogu koegzistirati za druge tabove
+      
       if (systemManagerToken && storedManager) {
         try {
           // Eksplicitno definiramo tip parsiranog objekta
@@ -243,18 +233,8 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
     
     const systemManagerToken = localStorage.getItem('systemManagerToken');
     const storedManager = localStorage.getItem('systemManager');
-    const regularToken = localStorage.getItem('token');
     
-    // Provjera konflikta tokena
-    if (systemManagerToken && regularToken) {
-      console.warn('Otkriven konflikt tokena tijekom osvježavanja!');
-      // Uklanjanje regularnih tokena korisnika u korist System Managera
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('refreshToken');
-      // console.log('Uklonjeni regularni tokeni zbog konflikta tijekom osvježavanja');
-    }
+    // NE BRIŠEMO Member tokene - oni mogu koegzistirati za druge tabove
     
     // Provjera postoji li System Manager token
     if (!systemManagerToken) {

@@ -17,7 +17,7 @@ import memberMessageController from '../controllers/member.message.controller.js
 import { getPinStatus, setPin, removePin } from '../controllers/members/pinController.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
 import prisma from '../utils/prisma.js';
-import memberService from '../services/member.service.js';
+import memberService, { updateMemberActivityHours } from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
 import equipmentService from '../services/equipment.service.js';
 
@@ -677,19 +677,84 @@ router.post('/check-auto-terminations', roles.requireAdmin, async (req, res) => 
       setMockDate(new Date(mockDate));
     }
     
-    // Import membershipService
+    // Import membershipService i memberService
     const { default: membershipService } = await import('../services/membership.service.js');
+    const { updateAllMembersTotalHours } = await import('../services/member.service.js');
+    
+    // Provjeri istekla članstva
     await membershipService.checkAutoTerminations();
+    
+    // Ažuriraj activity_hours i total_hours za sve članove
+    await updateAllMembersTotalHours();
     
     res.status(200).json({ 
       success: true, 
-      message: 'Provjera isteklih članstava uspješno pokrenuta' 
+      message: 'Provjera isteklih članstava i ažuriranje sati uspješno pokrenuto' 
     });
   } catch (error) {
     console.error('Greška prilikom provjere isteklih članstava:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Greška prilikom provjere isteklih članstava',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/members/recalculate-activity-hours
+ * Ponovno izračunava activity_hours za sve članove
+ * Koristi se nakon postavljanja mock datuma ili za bulk refresh
+ */
+router.post('/recalculate-activity-hours', authenticateToken, roles.requireSuperUser, async (req: Request, res: Response) => {
+  try {
+    const organizationId = (req as Request & { organizationId?: number }).organizationId;
+    
+    console.log('🔄 Pokrenuto ponovno računanje activity_hours za sve članove...');
+    
+    // Dohvati sve članove
+    const members = await prisma.member.findMany({
+      where: organizationId ? { organization_id: organizationId } : {},
+      select: { member_id: true }
+    });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Batch update u grupama od 10 članova
+    const batchSize = 10;
+    for (let i = 0; i < members.length; i += batchSize) {
+      const batch = members.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (member) => {
+          try {
+            await updateMemberActivityHours(member.member_id);
+            successCount++;
+          } catch (error) {
+            console.error(`Greška pri ažuriranju člana ${member.member_id}:`, error);
+            errorCount++;
+          }
+        })
+      );
+      
+      console.log(`✅ Obrađeno ${Math.min(i + batchSize, members.length)}/${members.length} članova`);
+    }
+
+    console.log(`✅ Završeno: ${successCount} uspješno, ${errorCount} grešaka`);
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Ponovno izračunavanje activity_hours završeno`,
+      processed: members.length,
+      successful: successCount,
+      errors: errorCount
+    });
+  } catch (error) {
+    console.error('Greška prilikom ponovnog računanja activity_hours:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Greška prilikom ponovnog računanja activity_hours',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

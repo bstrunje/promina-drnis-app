@@ -1,6 +1,5 @@
 import { MembershipDetails, MembershipPeriod, MembershipEndReason } from '../shared/types/membership.js';
 import { Request } from 'express';
-import { getCurrentDate } from '../utils/dateUtils.js';
 import prisma from '../utils/prisma.js';
 import { Prisma } from '@prisma/client';
 
@@ -132,14 +131,33 @@ const membershipRepository = {
 
       // Insert new periods using Prisma createMany
       if (periods.length > 0) {
+        console.log('[MEMBERSHIP] 🔍 DEBUG - Periodi prije spremanja:', JSON.stringify(periods, null, 2));
+        
         await tx.membershipPeriod.createMany({
-          data: periods.map(period => ({
-            member_id: memberId,
-            start_date: period.start_date,
-            end_date: period.end_date || null,
-            end_reason: period.end_reason || null,
-            is_test_data: isTestMode
-          }))
+          data: periods.map(period => {
+            // Validacija end_date - mora biti null ili validan ISO datum
+            let validEndDate: Date | null = null;
+            if (period.end_date) {
+              // new Date() radi sa string I Date objektom
+              const parsedDate = new Date(period.end_date);
+              // Provjeri je li validan datum (ne dopusti "1-01-01" ili slične krive formate)
+              if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900) {
+                validEndDate = parsedDate;
+              } else {
+                console.log(`[MEMBERSHIP] ⚠️ Nevažeći end_date format: "${period.end_date}" - postavljam na null`);
+              }
+            }
+            
+            const mappedPeriod = {
+              member_id: memberId,
+              start_date: period.start_date,
+              end_date: validEndDate,
+              end_reason: period.end_reason || null,
+              is_test_data: isTestMode
+            };
+            console.log('[MEMBERSHIP] 🔍 DEBUG - Mapirani period:', JSON.stringify(mappedPeriod, null, 2));
+            return mappedPeriod;
+          })
         });
         console.log(`[MEMBERSHIP] Kreirano ${periods.length} novih perioda za člana ${memberId}`);
       }
@@ -317,13 +335,16 @@ const membershipRepository = {
 
     await prisma.$transaction(async (tx) => {
       // 1. Dohvati ID-eve svih članova kojima ističe članarina (nisu platili za `year`)
-      //    i koji su trenutno 'registered' - optimizirano s Prisma relacijama
+      //    Uključuje sve statuse osim 'inactive' (jer već imaju završen period)
+      //    IZUZETAK: Samo superuser je izuzet jer mora uvijek imati pristup
       const expiredMembers = await tx.member.findMany({
         where: {
           organization_id: organizationId,
-          status: 'registered',
+          status: {
+            not: 'inactive' // Uhvati 'registered' i 'pending' (grace period)
+          },
           role: {
-            notIn: ['member_superuser', 'member_administrator']
+            not: 'member_superuser' // Samo superuser je izuzet, administratori plaćaju
           },
           OR: [
             {
@@ -370,13 +391,15 @@ const membershipRepository = {
       console.log(`[MEMBERSHIP] Ažuriran status na 'inactive' za ${memberIdsToExpire.length} članova`);
 
       // 3. Završi njihova aktivna razdoblja članstva u `membership_periods` - Prisma updateMany
+      // end_date je 31.12. prethodne godine (godine za koju NIJE plaćeno)
+      const membershipEndDate = new Date(year - 1, 11, 31); // 31.12. prethodne godine
       await tx.membershipPeriod.updateMany({
         where: {
           end_date: null,
           member_id: { in: memberIdsToExpire }
         },
         data: {
-          end_date: getCurrentDate(),
+          end_date: membershipEndDate,
           end_reason: 'non_payment'
         }
       });
@@ -384,17 +407,17 @@ const membershipRepository = {
 
       console.log(`[MEMBERSHIP] Uspješno ažurirano ${memberIdsToExpire.length} članova. Status postavljen na 'inactive'.`);
 
-      // 4. Osiguraj da su svi administratori i superuseri aktivni
+      // 4. Osiguraj da je superuser uvijek aktivan (sigurnosna mreža)
       await tx.member.updateMany({
         where: {
-          role: { in: ['member_superuser', 'member_administrator'] },
+          role: 'member_superuser',
           status: 'inactive'
         },
         data: {
           status: 'registered'
         }
       });
-      console.log(`[MEMBERSHIP] Osigurani aktivni statusi za sve administratore i superusere.`);
+      console.log(`[MEMBERSHIP] Osiguran aktivan status za superusera.`);
     });
   }
 };

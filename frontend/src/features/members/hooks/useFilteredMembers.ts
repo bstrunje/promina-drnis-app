@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MemberWithDetails } from '@shared/memberDetails.types';
 import { hasActiveMembershipPeriod } from '@shared/memberStatus.types';
-import { getCurrentDate, getCurrentYear, getMonth, getDate } from '../../../utils/dateUtils';
+import { getCurrentDate, getCurrentYear, getMonth, getDate, getYearForPaymentCheck } from '../../../utils/dateUtils';
 import { parseISO } from 'date-fns';
 import { getMembershipDisplayStatusExternal } from '../components/memberTableUtils';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
@@ -97,19 +97,23 @@ export const useFilteredMembers = ({
         });
       } 
       else if (activeFilter === "paid") {
-        // Filtriraj članove koji su platili članarinu (feeStatus je 'current' ili fee_payment_year odgovara trenutnoj godini)
-        const currentYear = getCurrentYear();
+        // Filtriraj članove koji su platili članarinu
+        // getYearForPaymentCheck() vraća mock godinu ako je mock postavljen (za testiranje),
+        // inače vraća stvarnu godinu (za produkciju)
+        const yearToCheck = getYearForPaymentCheck();
         result = result.filter(member => 
           member.feeStatus === 'current' || 
-          (member.membership_details?.fee_payment_year === currentYear)
+          (member.membership_details?.fee_payment_year === yearToCheck)
         );
       } 
       else if (activeFilter === "unpaid") {
         // Filtriraj članove koji nisu platili članarinu
-        const currentYear = getCurrentYear();
+        // getYearForPaymentCheck() vraća mock godinu ako je mock postavljen (za testiranje),
+        // inače vraća stvarnu godinu (za produkciju)
+        const yearToCheck = getYearForPaymentCheck();
         result = result.filter(member => 
           member.feeStatus === 'payment required' || 
-          (!member.membership_details?.fee_payment_year || member.membership_details.fee_payment_year < currentYear)
+          (!member.membership_details?.fee_payment_year || member.membership_details.fee_payment_year < yearToCheck)
         );
       }
       else if (activeFilter === "pending") {

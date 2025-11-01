@@ -99,7 +99,7 @@ router.post('/assign-password', systemManagerController.assignPasswordToMember);
 router.post('/assign-role', systemManagerController.assignRoleToMember);
 
 // Ruta za dohvat profila trenutnog managera
-// router.get('/me', systemManagerController.getCurrentSystemManager);
+router.get('/me', systemManagerController.getCurrentSystemManager);
 
 // Rute za upravljanje sistemskim zdravljem
 // router.get('/system-health', systemManagerController.getSystemHealth);

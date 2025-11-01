@@ -139,6 +139,28 @@ export function getCurrentYear(): number {
 }
 
 /**
+ * Vraća STVARNU trenutnu godinu (ignorira mock datum)
+ * Koristi se za provjere koje se odnose na stvarnu godinu (npr. plaćanje članarine)
+ */
+export function getRealCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/**
+ * Vraća godinu za provjeru plaćanja članarine
+ * U produkciji vraća stvarnu godinu, u testu s mock datumom vraća mock godinu
+ * Omogućava testiranje s mock datumom dok u produkciji koristi stvarnu godinu
+ */
+export function getYearForPaymentCheck(): number {
+  // Ako je mock datum postavljen, koristi mock godinu za testiranje
+  if (mockDate) {
+    return getCurrentYear();
+  }
+  // Inače koristi stvarnu godinu
+  return getRealCurrentYear();
+}
+
+/**
  * Pretvara ISO string ili Date objekt u željeni format prikaza
  * @param date Datum za formatiranje (ISO string, timestamp ili Date objekt)
  * @param pattern Obrazac formatiranja (npr. 'dd.MM.yyyy HH:mm:ss')

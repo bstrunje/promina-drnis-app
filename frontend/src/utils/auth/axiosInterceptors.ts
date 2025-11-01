@@ -33,10 +33,29 @@ export function setupAxiosInterceptors(
   // Interceptor za dodavanje tokena u zahtjeve
   const requestInterceptor = axios.interceptors.request.use(
     (config) => {
-      // UVIJEK dohvaćaj svježi token iz localStorage!
-      const latestToken = localStorage.getItem("token");
-      if (latestToken) {
-        config.headers.Authorization = `Bearer ${latestToken}`;
+      // KRITIČNO: Odredi koji token koristiti ovisno o URL-u
+      const url = config.url ?? '';
+      
+      // Ako je SystemManager API poziv, koristi systemManagerToken
+      if (url.includes('/system-manager')) {
+        const systemManagerToken = localStorage.getItem("systemManagerToken");
+        if (systemManagerToken) {
+          config.headers.Authorization = `Bearer ${systemManagerToken}`;
+        }
+      } else {
+        // Inače koristi obični Member token
+        const latestToken = localStorage.getItem("token");
+        if (latestToken) {
+          config.headers.Authorization = `Bearer ${latestToken}`;
+        }
+      }
+
+      // Time Traveler: Dodaj mock date u header ako postoji (samo u dev modu)
+      if (import.meta.env.DEV) {
+        const mockDate = localStorage.getItem('app_mock_date');
+        if (mockDate) {
+          config.headers['x-mock-date'] = mockDate;
+        }
       }
       
       // Osiguraj da se kolačići šalju sa svim zahtjevima

@@ -33,7 +33,8 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
   generatedPassword,
   setGeneratedPassword,
   handleRegeneratePassword,
-  isRegeneratingPassword
+  isRegeneratingPassword,
+  passwordStrategy
 }) => {
   const { t } = useTranslation('profile');
   const { toast } = useToast();
@@ -141,8 +142,8 @@ const CardNumberSection: React.FC<CardNumberSectionProps> = ({
             })()}
           </div>
           
-          {/* Regenerate Password gumb - samo za RANDOM_8 i ako ima karticu */}
-          {canEdit && member.membership_details?.card_number && (
+          {/* Regenerate Password gumb - samo za RANDOM_8 strategiju */}
+          {canEdit && passwordStrategy === 'RANDOM_8' && member.membership_details?.card_number && (
             <div className="mt-2">
               <Button
                 variant="outline"

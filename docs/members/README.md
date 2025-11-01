@@ -29,4 +29,5 @@ Dokumentacija za članove organizacije u Promina Drniš aplikaciji.
 - **[Member Guide](./member-guide.md)** - Vodič za osnovne članove
 - **[Administrator Guide](./administrator-guide.md)** - Vodič za administratore  
 - **[Superuser Guide](./superuser-guide.md)** - Vodič za superusere
+- **[Membership Workflow](./membership-workflow.md)** - Radni tijek upravljanja članarinom, karticama i markicama
 - **[API Reference](./api-reference.md)** - API dokumentacija

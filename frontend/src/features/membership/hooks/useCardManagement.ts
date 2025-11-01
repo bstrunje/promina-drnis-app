@@ -5,6 +5,7 @@ import { Member } from "@shared/member";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import { getAvailableCardNumbers, getAllCardNumbers, assignCardNumber, regeneratePassword } from '../../../utils/api/apiCards';
 import { useCardNumberLength } from "../../../hooks/useCardNumberLength";
+import { useSystemSettings } from "../../../hooks/useSystemSettings";
 import { CardStats } from "../types/membershipTypes";
 
 // Tip za pojedinačnu karticu iz API responsa
@@ -38,6 +39,10 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
 
   // Dohvati dinamičku duljinu broja kartice
   const { length: cardNumberLength, isLoading: isLoadingCardLength } = useCardNumberLength();
+  
+  // Dohvati system settings za password strategiju
+  const { systemSettings } = useSystemSettings();
+  const passwordStrategy = systemSettings?.passwordGenerationStrategy ?? 'FULLNAME_ISK_CARD';
 
   // Kada se podaci o članu promijene, ažuriraj iz ispravnog izvora
   useEffect(() => {
@@ -219,5 +224,6 @@ export const useCardManagement = (member: Member, onUpdate: (member: Member) => 
     setGeneratedPassword,
     handleRegeneratePassword,
     isRegeneratingPassword,
+    passwordStrategy,
   };
 };

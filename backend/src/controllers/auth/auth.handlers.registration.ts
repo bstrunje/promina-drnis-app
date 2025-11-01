@@ -122,6 +122,7 @@ export async function registerMemberHandler(
       life_status,
       tshirt_size,
       shell_jacket_size,
+      hat_size,
       skills,
       other_skills
     } = req.body;
@@ -133,6 +134,30 @@ export async function registerMemberHandler(
         message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_DUP_OIB', locale, 'Member with this OIB already exists'),
       });
       return;
+    }
+
+    // Provjera limita članova za organizaciju
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { is_donor: true, member_limit: true }
+    });
+
+    if (organization && !organization.is_donor && organization.member_limit !== null) {
+      // Organizacija ima limit i nije donor - provjeri broj članova
+      const memberCount = await prisma.member.count({
+        where: { 
+          organization_id: organizationId,
+          status: { not: 'former' } // Ne računaj bivše članove
+        }
+      });
+
+      if (memberCount >= organization.member_limit) {
+        res.status(403).json({
+          code: 'MEMBER_LIMIT_REACHED',
+          message: tOrDefault('auth.errorsByCode.MEMBER_LIMIT_REACHED', locale, `Member limit reached (${organization.member_limit}). Contact support to increase limit or become a donor.`),
+        });
+        return;
+      }
     }
 
     let formattedDateOfBirth = date_of_birth;
@@ -164,6 +189,7 @@ export async function registerMemberHandler(
           life_status,
           tshirt_size,
           shell_jacket_size,
+          hat_size,
           other_skills,
           organization_id: organizationId, // multi-tenant: veži člana uz organizaciju
           status: 'pending',

@@ -55,6 +55,10 @@ model Organization {
   postal_code           String?   @db.VarChar(10)
   country               String?   @default("Hrvatska") @db.VarChar(50)
   
+  // Member Limit & Donor Status
+  member_limit          Int?                      // null = neograničeno
+  is_donor              Boolean   @default(false) // Donatori imaju neograničen pristup
+  
   // Status
   is_active             Boolean   @default(true)
   created_at            DateTime  @default(now()) @db.Timestamptz(6)

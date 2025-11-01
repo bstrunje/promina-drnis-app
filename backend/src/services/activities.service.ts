@@ -3,7 +3,7 @@ import * as activityRepository from '../repositories/activities.repository.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
 import prisma from '../utils/prisma.js';
 import { updateMemberTotalHours, updateMemberActivityHours } from './member.service.js';
-import { differenceInMinutes } from 'date-fns';
+import { differenceInMinutes, format } from 'date-fns';
 import { updateAnnualStatistics, cleanupEmptyAnnualStatistics } from './statistics.service.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
@@ -11,6 +11,31 @@ import { getRoleRecognitionSettings, getRoleRecognitionPercentage } from '../uti
 
 // Tip za Prisma transakcijski klijent
 type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+/**
+ * Generira naslov aktivnosti iz datuma i opisa
+ * Format: [DATUM] - [PRVIH 20 ZNAKOVA OPISA]...
+ * @param startDate Datum početka aktivnosti
+ * @param description Opis aktivnosti
+ * @returns Generirani naslov
+ */
+export const generateActivityName = (startDate: Date | string, description: string): string => {
+  const date = typeof startDate === 'string' ? new Date(startDate) : startDate;
+  const formattedDate = format(date, 'dd.MM.yyyy');
+  
+  // Ako nema opisa, vrati samo datum
+  if (!description || description.trim() === '') {
+    return formattedDate;
+  }
+  
+  // Skrati opis na prvih 20 znakova
+  const trimmedDescription = description.trim();
+  const shortDescription = trimmedDescription.length > 20 
+    ? `${trimmedDescription.substring(0, 20)}...` 
+    : trimmedDescription;
+  
+  return `${formattedDate} - ${shortDescription}`;
+};
 
 // DTO tipovi za ulazne podatke (precizno umjesto any)
 // Napomena: Isključivo tipizacijska poboljšanja, bez promjene ponašanja
@@ -101,12 +126,16 @@ export const createActivityService = async (req: Request, data: CreateActivityDT
     manual_hours, 
     name,
     start_date,
+    description,
     ...rest 
   } = data;
 
   if (!activity_type_id) {
     throw new Error('Activity type ID is required.');
   }
+
+  // Generiraj naslov iz datuma i opisa ako naslov nije proslijeđen
+  const activityName = name || generateActivityName(start_date, description || '');
 
   // Određivanje statusa na temelju datuma
   const status = determineActivityStatus(rest.actual_start_time, rest.actual_end_time);
@@ -152,8 +181,9 @@ export const createActivityService = async (req: Request, data: CreateActivityDT
 
   const activityData: Prisma.ActivityUncheckedCreateInput = {
     ...rest,
-    name,
+    name: activityName, // Koristi generirani ili proslijeđeni naslov
     start_date,
+    description, // Dodaj opis u activityData
     organization_id: organizationId,
     organizer_id,
     type_id: activity_type_id,
@@ -169,9 +199,11 @@ export const createActivityService = async (req: Request, data: CreateActivityDT
     
     // Ažuriranje ukupnih sati za sve sudionike koji su dodani unutar iste transakcije
     if (memberIdsForUpdate.length > 0) {
+      const year = new Date(activityData.start_date).getFullYear();
       for (const memberId of memberIdsForUpdate) {
         await updateMemberTotalHours(memberId, tx);
         await updateMemberActivityHours(memberId, tx);
+        await updateAnnualStatistics(memberId, year, tx);
       }
     }
 

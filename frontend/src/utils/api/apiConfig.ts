@@ -16,13 +16,29 @@ const apiInstance = axios.create({
 // Interceptor za dodavanje tokena u zaglavlje
 apiInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Provjeri GSM/Org SM token prvo, zatim obični member/admin token
-    const systemManagerToken = localStorage.getItem('systemManagerToken');
-    const regularToken = localStorage.getItem('token');
+    // KRITIČNO: Odredi koji token koristiti ovisno o URL-u
+    const url = config.url ?? '';
     
-    const token = systemManagerToken ?? regularToken;
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Ako je SystemManager API poziv, koristi systemManagerToken
+    if (url.includes('/system-manager')) {
+      const systemManagerToken = localStorage.getItem('systemManagerToken');
+      if (systemManagerToken && config.headers) {
+        config.headers.Authorization = `Bearer ${systemManagerToken}`;
+      }
+    } else {
+      // Inače koristi obični Member token
+      const regularToken = localStorage.getItem('token');
+      if (regularToken && config.headers) {
+        config.headers.Authorization = `Bearer ${regularToken}`;
+      }
+    }
+
+    // Time Traveler: Dodaj mock date u header ako postoji (samo u dev modu)
+    if (import.meta.env.DEV) {
+      const mockDate = localStorage.getItem('app_mock_date');
+      if (mockDate && config.headers) {
+        config.headers['x-mock-date'] = mockDate;
+      }
     }
 
     // Globalno dodaj tenant parametar za sve member/admin API pozive

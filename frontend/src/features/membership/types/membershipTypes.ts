@@ -43,6 +43,7 @@ export interface CardNumberSectionProps extends MembershipComponentProps {
   setGeneratedPassword: (value: string | null) => void;
   handleRegeneratePassword: () => Promise<void>;
   isRegeneratingPassword: boolean;
+  passwordStrategy: 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREFIX_CARD_SUFFIX';
 }
 
 export interface StampManagementSectionProps extends MembershipComponentProps {

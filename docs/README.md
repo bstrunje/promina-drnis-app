@@ -1,6 +1,6 @@
 # Dokumentacija
 
-**Verzija:** 2025-10-25  
+**Verzija:** 2025-10-31  
 **Status:** ✅ Multi-tenant aplikacija s potpunim branding sustavom  
 **Okruženje:** Produkcija na Vercel, lokalni razvoj s Docker podrškom
 
@@ -16,6 +16,7 @@ Dokumentacija je organizirana prema ulogama korisnika u sustavu. Svaka uloga ima
 - **[Member Guide](./members/member-guide.md)** - Vodič za osnovne članove
 - **[Administrator Guide](./members/administrator-guide.md)** - Vodič za administratore
 - **[Superuser Guide](./members/superuser-guide.md)** - Vodič za superusere
+- **[Membership Workflow](./members/membership-workflow.md)** - Radni tijek upravljanja članarinom, karticama i markicama
 - **[API Reference](./members/api-reference.md)** - API dokumentacija za članove
 
 #### 🏢 Organization System Manager (OSM)
@@ -100,6 +101,7 @@ Dokumentacija za članove organizacije (sve razine)
 - **[Member Guide](./members/member-guide.md)** - Vodič za osnovne članove
 - **[Administrator Guide](./members/administrator-guide.md)** - Vodič za administratore
 - **[Superuser Guide](./members/superuser-guide.md)** - Vodič za superusere
+- **[Membership Workflow](./members/membership-workflow.md)** - Radni tijek upravljanja članarinom
 - **[Member API Reference](./members/api-reference.md)** - API dokumentacija za member funkcionalnosti
 
 ### 🏢 [ORGANIZATION SYSTEM MANAGER](./organization-manager/)
@@ -151,6 +153,7 @@ Dokumentacija za Global System Manager (GSM)
 - ✅ **Equipment Management** - Sustav za opremu (majice, jakne, kape)
 - ✅ **Activity Management** - Poboljšan sustav aktivnosti s ulogama
 - ✅ **Lokalizacija** - HR/EN podrška kroz i18next
+- ✅ **Membership Workflow dokumentacija** - Detaljni vodič za članarine, kartice i markice
 
 ### Rujan 2025
 - ✅ **Prisma ORM migracija** - Potpuna migracija s legacy SQL-a
@@ -188,4 +191,4 @@ Za tehnička pitanja ili podršku:
 
 ---
 
-*Dokumentacija se redovito ažurira. Zadnje ažuriranje: 25. listopad 2025.*
+*Dokumentacija se redovito ažurira. Zadnje ažuriranje: 31. listopad 2025.*

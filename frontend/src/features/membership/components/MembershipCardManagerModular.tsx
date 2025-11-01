@@ -43,6 +43,7 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
     setGeneratedPassword,
     handleRegeneratePassword,
     isRegeneratingPassword,
+    passwordStrategy,
   } = useCardManagement(member, onUpdate);
 
   const {
@@ -89,6 +90,7 @@ const MembershipCardManagerModular: React.FC<MembershipCardManagerModularProps> 
             setGeneratedPassword={setGeneratedPassword}
             handleRegeneratePassword={handleRegeneratePassword}
             isRegeneratingPassword={isRegeneratingPassword}
+            passwordStrategy={passwordStrategy}
           />
 
           {/* Sekcija za upravljanje markicama */}
