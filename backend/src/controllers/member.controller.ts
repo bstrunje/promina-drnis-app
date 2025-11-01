@@ -119,7 +119,11 @@ export const memberController = {
     
     try {
       const organizationId = getOrganizationId(req);
-      const members = await memberRepository.findAll(organizationId);
+      // Poštuj query parametar status=active (alias: status=registered) kako bi se vratili samo članovi s aktivnim periodom
+      const statusParam = typeof req.query.status === 'string' ? req.query.status.toLowerCase() : undefined;
+      const activeOnly = statusParam === 'active' || statusParam === 'registered';
+
+      const members = await memberRepository.findAll(organizationId, activeOnly);
       res.json(members);
     } catch (error) {
       console.error('Error in getAllMembers:', error);

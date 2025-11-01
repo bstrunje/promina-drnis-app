@@ -130,6 +130,24 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
  */
 export const updateMemberActivityHours = async (memberId: number, prismaClient: TransactionClient = prisma): Promise<void> => {
   try {
+    // Ako član NEMA nijedan aktivan period članstva, poništavamo activity_hours na 0.
+    // Ovo direktno prati logiku da je član neaktivan kada nema aktivnih perioda.
+    const activePeriodsCount = await prismaClient.membershipPeriod.count({
+      where: {
+        member_id: memberId,
+        end_date: null
+      }
+    });
+
+    if (activePeriodsCount === 0) {
+      await prismaClient.member.update({
+        where: { member_id: memberId },
+        data: { activity_hours: 0 }
+      });
+      console.log(`Poništeni activity_hours za člana ${memberId} (nema aktivnih perioda)`);
+      return;
+    }
+
     // Računamo sate samo za prošlu i tekuću godinu
     const currentYear = getCurrentDate().getFullYear();
     const previousYear = currentYear - 1;
