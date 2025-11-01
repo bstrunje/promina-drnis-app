@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Member } from '@shared/member';
 import { getAllMembersForSystemManager, deleteMemberForSystemManager } from '../../utils/systemManagerApi';
 import { Button } from '@components/ui/button';
@@ -71,20 +71,31 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
     }
   };
 
-  // Dohvat članova samo kad je komponenta aktivna
+  // Ref za praćenje da li je inicijalno učitavanje obavljeno
+  const hasInitiallyLoaded = useRef(false);
+  
+  // Dohvat članova samo kad je komponenta aktivna i prvi put
   useEffect(() => {
     const isActive = activeTab === 'members';
-    if (isActive && members.length === 0) {
+    if (isActive && !hasInitiallyLoaded.current) {
+      hasInitiallyLoaded.current = true;
       handleFilterChange();
     }
-  }, [activeTab, handleFilterChange, members.length]);
+  }, [activeTab, handleFilterChange]);
   
-  // Reset kad se mijenja filter
+  // Reset kad se mijenja filter (samo ako već ima učitanih podataka)
   useEffect(() => {
-    if (members.length > 0) {
+    if (hasInitiallyLoaded.current && members.length > 0) {
       handleFilterChange();
     }
-  }, [selectedOrganization, handleFilterChange, members.length]);
+  }, [selectedOrganization, handleFilterChange]);
+  
+  // Reset ref kad se mijenja activeTab izvan members
+  useEffect(() => {
+    if (activeTab !== 'members') {
+      hasInitiallyLoaded.current = false;
+    }
+  }, [activeTab]);
 
   // Get unique organizations for filter dropdown
   const uniqueOrganizations = useMemo(() => {
