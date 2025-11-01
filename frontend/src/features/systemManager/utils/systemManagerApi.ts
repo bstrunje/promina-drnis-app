@@ -703,12 +703,27 @@ export const updateSystemSettings = async (settings: SystemSettings): Promise<Sy
   }
 };
 
+// Pagination response interface
+interface MembersPaginationResponse {
+  members: Member[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 /**
- * Dohvat svih članova (System Manager)
+ * Dohvat svih članova (System Manager) s pagination
  */
-export const getAllMembersForSystemManager = async (): Promise<Member[]> => {
+export const getAllMembersForSystemManager = async (page = 1, limit = 50): Promise<MembersPaginationResponse> => {
   try {
-    const response = await systemManagerApi.get<Member[]>('/system-manager/members');
+    const response = await systemManagerApi.get<MembersPaginationResponse>('/system-manager/members', {
+      params: { page, limit }
+    });
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {

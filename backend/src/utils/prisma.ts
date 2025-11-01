@@ -72,11 +72,32 @@ export const warmUpPrisma = async () => {
       const connected = await testDatabaseConnection();
       if (connected) {
         if (isDev) console.log('[PRISMA] Warm-up uspješan');
+        // Dodatni query warmup za najčešće korištene operacije
+        await warmUpCommonQueries();
       } else {
         console.error('[PRISMA] Warm-up neuspješan - nema konekcije');
       }
     } catch (error) {
       console.error('[PRISMA] Warm-up neuspješan:', error);
+    }
+  }
+};
+
+// Query warmup za najčešće korištene operacije
+export const warmUpCommonQueries = async () => {
+  if (process.env.VERCEL) {
+    try {
+      // Pripremi najčešće korištene querije za System Manager
+      await Promise.all([
+        prisma.member.count(), // Warmup za member tablice
+        prisma.organization.findMany({ take: 5 }), // Warmup za organization lookup
+        prisma.systemManager.findMany({ take: 1 }), // Warmup za auth operacije
+        prisma.auditLog.findMany({ take: 1 }) // Warmup za audit logove
+      ]);
+      if (isDev) console.log('[PRISMA] Query warmup uspješan');
+    } catch (error) {
+      console.warn('[PRISMA] Query warmup failed:', error);
+      // Ne bacamo error jer warmup failure ne smije spriječiti aplikaciju
     }
   }
 };

@@ -475,8 +475,21 @@ const systemManagerController = {
     async getAllMembers(req: Request, res: Response): Promise<void> {
         try {
             const organizationId = req.user?.organization_id;
-            const members = await systemManagerService.getAllMembers(organizationId);
-            res.json(members);
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 50;
+            
+            // Validate pagination parameters
+            if (page < 1) {
+                res.status(400).json({ message: 'Page must be greater than 0' });
+                return;
+            }
+            if (limit < 1 || limit > 100) {
+                res.status(400).json({ message: 'Limit must be between 1 and 100' });
+                return;
+            }
+            
+            const result = await systemManagerService.getAllMembers(organizationId, page, limit);
+            res.json(result);
         } catch (error) {
             console.error('Error fetching all members:', error);
             res.status(500).json({ message: 'Internal server error' });

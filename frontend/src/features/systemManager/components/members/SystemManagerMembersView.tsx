@@ -1,38 +1,90 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Member } from '@shared/member';
 import { getAllMembersForSystemManager, deleteMemberForSystemManager } from '../../utils/systemManagerApi';
 import { Button } from '@components/ui/button';
 import { Trash2, Filter, ArrowLeft } from 'lucide-react';
+import { useSystemManager } from '../../../../../src/context/SystemManagerContext';
 
 // Jednostavan prikaz članova za System Manager, bez korištenja postojećeg MemberTable (Option B)
 // Namjena: upravljanje članovima (brisanje) unutar System Manager dashboarda bez otvaranja nove kartice
 interface SystemManagerMembersViewProps {
   setActiveTab: (tab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations') => void;
+  activeTab: 'dashboard' | 'members' | 'settings' | 'register-members' | 'audit-logs' | 'organizations';
 }
 
-const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ setActiveTab }) => {
+const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ setActiveTab, activeTab }) => {
+  const { manager } = useSystemManager();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  }>({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+  
+  // Check if current user is Global System Manager (organization_id === null)
+  const isGlobalManager = manager?.organization_id === null;
 
-  // Dohvat svih članova
-  const fetchMembers = async () => {
+  // Dohvat članova s pagination
+  const fetchMembers = useCallback(async (page = 1, reset = false) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllMembersForSystemManager();
-      setMembers(data);
+      const data = await getAllMembersForSystemManager(page, pagination.limit);
+      
+      if (reset) {
+        setMembers(data.members);
+        setPagination(data.pagination);
+      } else {
+        setMembers(prev => [...prev, ...data.members]);
+        setPagination(data.pagination);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Greška prilikom dohvata članova');
+      setError(e instanceof Error ? e.message : 'Greška prilikom dohvata članova.');
     } finally {
       setLoading(false);
     }
+  }, [pagination.limit]);
+  
+  // Reset pagination when filter changes
+  const handleFilterChange = useCallback(() => {
+    setMembers([]);
+    void fetchMembers(1, true);
+  }, [fetchMembers]);
+  
+  // Load more pages
+  const loadMore = () => {
+    if (pagination.hasNext && !loading) {
+      void fetchMembers(pagination.page + 1, false);
+    }
   };
 
+  // Dohvat članova samo kad je komponenta aktivna
   useEffect(() => {
-    void fetchMembers();
-  }, []);
+    const isActive = activeTab === 'members';
+    if (isActive && members.length === 0) {
+      handleFilterChange();
+    }
+  }, [activeTab, handleFilterChange, members.length]);
+  
+  // Reset kad se mijenja filter
+  useEffect(() => {
+    if (members.length > 0) {
+      handleFilterChange();
+    }
+  }, [selectedOrganization, handleFilterChange, members.length]);
 
   // Get unique organizations for filter dropdown
   const uniqueOrganizations = useMemo(() => {
@@ -49,7 +101,7 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
     return orgs.sort((a, b) => a.short_name.localeCompare(b.short_name));
   }, [members]);
 
-  // Filter members by selected organization
+  // Filter members by selected organization (client-side filtering for pagination)
   const filteredMembers = useMemo(() => {
     if (selectedOrganization === 'all') {
       return members;
@@ -61,6 +113,18 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
       m.organization && m.organization.id.toString() === selectedOrganization
     );
   }, [members, selectedOrganization]);
+  
+  // Recalculate filtered pagination info
+  const filteredPagination = useMemo(() => {
+    if (selectedOrganization === 'all') {
+      return pagination;
+    }
+    // For filtered results, we show actual count but pagination info from backend
+    return {
+      ...pagination,
+      total: filteredMembers.length
+    };
+  }, [pagination, filteredMembers, selectedOrganization]);
 
   // Brisanje člana uz potvrdu
   const handleDelete = async (member: Member) => {
@@ -93,25 +157,27 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
           Back to Overview
         </Button>
         <div className="flex items-center gap-4">
-          {/* Organization filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <select
-              value={selectedOrganization}
-              onChange={(e) => setSelectedOrganization(e.target.value)}
-              className="text-sm border border-gray-300 rounded px-2 py-1"
-            >
-              <option value="all">All Organizations</option>
-              <option value="no-org">No Organization</option>
-              {uniqueOrganizations.map(org => (
-                <option key={org.id} value={org.id.toString()}>
-                  {org.short_name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Organization filter - only for Global System Manager */}
+          {isGlobalManager && (
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <select
+                value={selectedOrganization}
+                onChange={(e) => setSelectedOrganization(e.target.value)}
+                className="text-sm border border-gray-300 rounded px-2 py-1"
+              >
+                <option value="all">All Organizations</option>
+                <option value="no-org">No Organization</option>
+                {uniqueOrganizations.map(org => (
+                  <option key={org.id} value={org.id.toString()}>
+                    {org.short_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="text-sm text-gray-500">
-            Showing: {filteredMembers.length} / {members.length}
+            Showing: {filteredMembers.length} {filteredPagination.total > 0 ? `/ ${filteredPagination.total}` : ''}
           </div>
         </div>
       </div>
@@ -187,12 +253,34 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
                   </td>
                 </tr>
               ))}
-              {filteredMembers.length === 0 && (
+              {filteredMembers.length === 0 && !loading && (
                 <tr>
                   <td colSpan={6} className="px-3 py-8 text-center text-gray-600">
                     {selectedOrganization === 'all' 
                       ? 'No members to display' 
                       : 'No members found for selected organization'}
+                  </td>
+                </tr>
+              )}
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-4 text-center text-gray-600">
+                    Loading more members...
+                  </td>
+                </tr>
+              )}
+              {!loading && pagination.hasNext && filteredMembers.length > 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-4 text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadMore}
+                      disabled={loading}
+                      className="min-w-[120px]"
+                    >
+                      Load More ({pagination.total - filteredMembers.length} remaining)
+                    </Button>
                   </td>
                 </tr>
               )}

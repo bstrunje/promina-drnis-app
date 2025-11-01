@@ -73,7 +73,7 @@ const SystemManagerDashboard: React.FC = () => {
   };
   
   // Koristimo hook za dohvat statistika dashboarda
-  const { stats, statsLoading, statsError, refreshDashboardStats } = useDashboardStats(activeTab);
+  const { stats, statsLoading, statsError, refreshStats: refreshDashboardStats } = useDashboardStats(activeTab);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -114,7 +114,7 @@ const SystemManagerDashboard: React.FC = () => {
 
         {/* Tab sadržaj - Članovi (System Manager) */}
         {activeTab === 'members' && (
-          <SystemManagerMembersView setActiveTab={setActiveTab} />
+          <SystemManagerMembersView setActiveTab={setActiveTab} activeTab={activeTab} />
         )}
         
         {/* Tab sadržaj - Postavke sustava */}

@@ -596,25 +596,44 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
         });
     },
 
-    async getAllMembers(organizationId: number | null | undefined) {
+    async getAllMembers(organizationId: number | null | undefined, page: number = 1, limit: number = 50) {
+        const offset = (page - 1) * limit;
         const whereClause = organizationId ? { organization_id: organizationId } : {};
-        return prisma.member.findMany({ 
-            where: whereClause,
-            include: {
-                organization: {
-                    select: {
-                        id: true,
-                        name: true,
-                        short_name: true
+        
+        const [members, total] = await Promise.all([
+            prisma.member.findMany({ 
+                where: whereClause,
+                include: {
+                    organization: {
+                        select: {
+                            id: true,
+                            name: true,
+                            short_name: true
+                        }
                     }
-                }
-            },
-            orderBy: [
-                { status: 'asc' }, // pending first, then registered
-                { last_name: 'asc' },
-                { first_name: 'asc' }
-            ]
-        });
+                },
+                orderBy: [
+                    { status: 'asc' }, // pending first, then registered
+                    { last_name: 'asc' },
+                    { first_name: 'asc' }
+                ],
+                skip: offset,
+                take: limit
+            }),
+            prisma.member.count({ where: whereClause })
+        ]);
+        
+        return {
+            members,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasNext: page < Math.ceil(total / limit),
+                hasPrev: page > 1
+            }
+        };
     },
 
     async assignPasswordToMember(memberId: number, password: string, cardNumber: string | null, organizationId: number | null | undefined) {

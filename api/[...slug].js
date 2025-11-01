@@ -6,16 +6,18 @@ let appInitialized = false;
 
 module.exports = async function handler(req, res) {
   try {
-    // Timeout za cjelokupni zahtjev (8 sekundi, ostavljamo 2s buffer za Vercel)
+    // Timeout za cjelokupni zahtjev (10 sekundi, ostavljamo buffer za Vercel)
     const timeoutId = setTimeout(() => {
       if (!res.headersSent) {
-        console.error(`[TIMEOUT] Zahtjev ${req.method} ${req.url} timeout nakon 8 sekundi`);
+        console.error(`[TIMEOUT] Zahtjev ${req.method} ${req.url} timeout nakon 10 sekundi`);
         res.status(504).json({ 
           error: 'Request timeout', 
-          message: 'Zahtjev je prekoračio vremensko ograničenje' 
+          message: 'Zahtjev je trajao predugo. Molimo pokušajte ponovo.',
+          suggestion: 'Pokušajte smanjiti količinu podataka ili osvježite stranicu.',
+          timeout: '10s'
         });
       }
-    }, 8000);
+    }, 10000);
 
     // Inicijalizacija Express app-a samo jednom
     if (!appInitialized) {
