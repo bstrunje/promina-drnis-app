@@ -27,6 +27,62 @@
       "source": "/health", 
       "destination": "/api/[...slug]" 
     },
+    {
+      "source": "/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/:orgSlug/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/pwa/:path*",
+      "destination": "/pwa/:path*"
+    },
+    {
+      "source": "/:orgSlug/pwa/:path*",
+      "destination": "/pwa/:path*"
+    },
+    {
+      "source": "/service-worker.js",
+      "destination": "/service-worker.js"
+    },
+    {
+      "source": "/:orgSlug/service-worker.js",
+      "destination": "/service-worker.js"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/:orgSlug/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "/logo.png"
+    },
+    {
+      "source": "/:orgSlug/logo.png",
+      "destination": "/logo.png"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/:orgSlug/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/:orgSlug/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
     { 
       "source": "/system-manager/:path*", 
       "destination": "/index.html" 

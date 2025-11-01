@@ -60,6 +60,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-only for JS/CSS and versioned build assets to avoid serving HTML fallbacks
+  const dest = event.request.destination;
+  if (dest === 'script' || dest === 'style' || event.request.url.includes('/assets/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // KRITIČNO: NE CACHE-IRAJ API POZIVE!
   // API pozivi moraju uvijek biti fresh s servera
   if (event.request.url.includes('/api/')) {
