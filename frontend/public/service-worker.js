@@ -67,6 +67,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Always fetch organization uploads from network to avoid stale logos/documents
+  if (event.request.url.includes('/uploads/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // KRITIČNO: NE CACHE-IRAJ API POZIVE!
   // API pozivi moraju uvijek biti fresh s servera
   if (event.request.url.includes('/api/')) {

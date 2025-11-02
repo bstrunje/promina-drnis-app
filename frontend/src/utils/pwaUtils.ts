@@ -43,7 +43,9 @@ export const updateManifestLink = (): void => {
     // Kreiraj novi manifest link
     const manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
-    manifestLink.href = `${API_BASE_URL}/manifest?tenant=${orgSlug}`;
+    // Dodaj cache-buster parametar da forsira osvježavanje manifesta/ikona kad se promijeni branding
+    const cacheBust = Date.now();
+    manifestLink.href = `${API_BASE_URL}/manifest?tenant=${orgSlug}&v=${cacheBust}`;
     
     // Dodaj u <head>
     document.head.appendChild(manifestLink);
