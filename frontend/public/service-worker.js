@@ -6,7 +6,7 @@
  */
 
 // NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
-const CACHE_VERSION = 'v2025-11-02';
+const CACHE_VERSION = 'v2025-11-02-v2';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
@@ -60,7 +60,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-only for JS/CSS and versioned build assets to avoid serving HTML fallbacks
+  // KRITIČNO: NE CACHE-IRAJ API POZIVE!
+  // API pozivi moraju uvijek biti fresh s servera
+  if (event.request.url.includes('/api/')) {
+    return; // Pusti da ide direktno na network
+  }
+
+  // Network-only for JS/CSS and versioned build assets to avoid serving stale cached modules
   const dest = event.request.destination;
   if (dest === 'script' || dest === 'style' || event.request.url.includes('/assets/')) {
     event.respondWith(fetch(event.request));
@@ -73,12 +79,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // KRITIČNO: NE CACHE-IRAJ API POZIVE!
-  // API pozivi moraju uvijek biti fresh s servera
-  if (event.request.url.includes('/api/')) {
-    return; // Pusti da ide direktno na network
-  }
-
+  // Cache-first strategy for everything else (HTML, images, fonts, PWA icons)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
