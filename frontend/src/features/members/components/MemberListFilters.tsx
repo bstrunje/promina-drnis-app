@@ -36,7 +36,9 @@ export interface MemberListFiltersProps {
   onSortOrderChange: (value: SortOrder) => void;
   groupType: string;
   onGroupTypeChange: (value: string) => void;
+  onAdvancedFiltersClick: () => void;
   onCloseFilters?: () => void;
+  advancedOpen: boolean;
 }
 
 /**
@@ -55,7 +57,9 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onSortOrderChange,
   groupType,
   onGroupTypeChange,
-  onCloseFilters
+  onAdvancedFiltersClick,
+  onCloseFilters,
+  advancedOpen
 }) => {
   const { t } = useTranslation('members');
 
@@ -93,6 +97,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
     onGroupTypeChange(groupType ? "" : "true");
   };
 
+  
   return (
     <div className="flex flex-col md:flex-row gap-4">
       <div className="flex flex-wrap md:flex-row flex-col gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 w-full">
@@ -191,7 +196,7 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
           </div>
         </div>
 
-        {/* Grupiranje i boje */}
+        {/* Grupiranje i dodatni filteri */}
         <div className="flex flex-col">
           <div className="flex gap-2">
             <Button
@@ -206,7 +211,15 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
               <span className="whitespace-nowrap">{t('memberListFilters.buttons.group')}</span>
             </Button>
 
-
+            {/* Napredni filteri */}
+            <Button
+              variant={advancedOpen ? "default" : "outline"}
+              size="sm"
+              onClick={onAdvancedFiltersClick}
+              className="flex-1 md:flex-none min-w-[50px] md:min-w-[130px]"
+            >
+              <span className="whitespace-nowrap">{t('memberListFilters.buttons.more')}</span>
+            </Button>
           </div>
         </div>
       </div>

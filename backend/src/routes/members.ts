@@ -102,6 +102,19 @@ router.get('/sent', authenticateToken, memberMessageController.getSentMessages);
 // Lista svih članova - sanitizacija automatski skriva osjetljive podatke u Network tab-u
 router.get('/', authenticateToken, memberController.getAllMembers);
 
+// Napredni filteri rute (MORAJU BITI PRIJE '/:memberId' DA IH NE PREGLUSI DINAMICKA RUTA)
+router.get(
+  '/functions',
+  authenticateToken,
+  (req, _res, next) => {
+    const orgId = (req as Request & { organizationId?: number }).organizationId;
+    console.log(`[ROUTE] /members/functions hit, organizationId: ${orgId ?? 'undefined'}`);
+    next();
+  },
+  memberController.getMembersWithFunctions
+);
+router.get('/skills/:skillName', authenticateToken, memberController.getMembersBySkill);
+
 // Pojedinačni profil - sanitizacija automatski skriva osjetljive podatke osim za vlastiti profil
 router.get('/:memberId', authenticateToken, memberController.getMemberById);
 router.get('/:memberId/stats', authenticateToken, memberStatsController.getMemberStats);
@@ -864,9 +877,21 @@ router.post('/recalculate-activity-hours', authenticateToken, roles.requireSuper
   }
 });
 
-// PIN 2FA rute
+// Napredni filteri rute
+router.get(
+  '/functions',
+  authenticateToken,
+  (req, _res, next) => {
+    const orgId = (req as Request & { organizationId?: number }).organizationId;
+    console.log(`[ROUTE] /members/functions hit, organizationId: ${orgId ?? 'undefined'}`);
+    next();
+  },
+  memberController.getMembersWithFunctions
+);
+router.get('/skills/:skillName', authenticateToken, memberController.getMembersBySkill);
+
 router.get('/:memberId/pin-status', authenticateToken, getPinStatus);
 router.post('/:memberId/set-pin', authenticateToken, setPin);
 router.delete('/:memberId/remove-pin', authenticateToken, removePin);
-  
+
 export default router;

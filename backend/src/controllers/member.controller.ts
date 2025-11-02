@@ -4,8 +4,8 @@ import { format as formatDate } from 'date-fns';
 import prisma from '../utils/prisma.js';
 import memberService from "../services/member.service.js";
 import memberRepository from '../repositories/member.repository.js';
-import { getOrganizationId } from '../utils/tenant.helper.js';
 import { tBackend } from '../utils/i18n.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
@@ -192,4 +192,90 @@ export const memberController = {
       handleControllerError(error, req, res);
     }
   },
+
+  /**
+   * Dohvaća članove s funkcijama u društvu
+   * Sortirano po funkcijama, zativ po imenu
+   */
+  getMembersWithFunctions: async (req: Request, res: Response): Promise<void> => {
+    const _locale = req.locale || 'en';
+    
+    try {
+      const organizationId = getOrganizationId(req);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[ADV-FILTERS] getMembersWithFunctions - organizationId: ${organizationId}`);
+      }
+      
+      const members = await prisma.member.findMany({
+        where: {
+          organization_id: organizationId,
+          status: 'registered',
+          registration_completed: true,
+          functions_in_society: {
+            not: null
+          }
+        },
+        select: {
+          member_id: true,
+          full_name: true,
+          functions_in_society: true
+        },
+        orderBy: [
+          {
+            functions_in_society: 'asc'
+          },
+          {
+            full_name: 'asc'
+          }
+        ]
+      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[ADV-FILTERS] getMembersWithFunctions - result count: ${members.length}`);
+      }
+      
+      res.json(members);
+    } catch (error) {
+      handleControllerError(error, req, res);
+    }
+  },
+
+  /**
+   * Dohvaća članove po određenoj vještini
+   */
+  getMembersBySkill: async (req: Request, res: Response): Promise<void> => {
+    const _locale = req.locale || 'en';
+    const { skillName } = req.params;
+    
+    try {
+      const organizationId = getOrganizationId(req);
+      
+      const members = await prisma.member.findMany({
+        where: {
+          organization_id: organizationId,
+          status: 'registered',
+          registration_completed: true,
+          skills: {
+            some: {
+              skill: {
+                name: skillName
+              }
+            }
+          }
+        },
+        select: {
+          member_id: true,
+          full_name: true
+        },
+        orderBy: {
+          full_name: 'asc'
+        }
+      });
+      
+      res.json(members);
+    } catch (error) {
+      handleControllerError(error, req, res);
+    }
+  }
 };
+
+export default memberController;

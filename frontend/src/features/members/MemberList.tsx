@@ -36,6 +36,7 @@ import { StatisticsView } from "./components/StatisticsView";
 // Import custom hook for filtering and sorting
 import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
+import AdvancedFiltersModal from "./components/AdvancedFiltersModal";
 
 export default function MemberList(): JSX.Element {
   const { t } = useTranslation('members');
@@ -56,6 +57,14 @@ export default function MemberList(): JSX.Element {
   const { user } = useAuth();
   const { navigateTo } = useTenantNavigation();
   const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = () => { setSearchTerm(""); setAdvancedFilterApplied(false); };
+    window.addEventListener('advancedFilters:explicitClose', handler as EventListener);
+    return () => window.removeEventListener('advancedFilters:explicitClose', handler as EventListener);
+  }, []);
+
+  
 
   // Style for printing directly in the component
   useEffect(() => {
@@ -128,11 +137,37 @@ export default function MemberList(): JSX.Element {
   const [groupByType, setGroupByType] = useState<boolean>(false);
 
   const [showFilters, setShowFilters] = useState<boolean>(false); // State for showing/hiding filters
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false); // State for advanced filters modal
+  const [advancedFilterApplied, setAdvancedFilterApplied] = useState<boolean>(false); // Aktiviran filter iz modala
   const [showNavTabs, setShowNavTabs] = useState<boolean>(true); // State for showing/hiding navigation tabs - visible on desktop, but not on mobile
   const [refreshing, setRefreshing] = useState(false); // State for pull-to-refresh
   const [touchStartY, setTouchStartY] = useState(0); // For tracking swipe gesture
   // This variable is used in the useEffect function to check the screen size
   const [, setIsMobile] = useState(false);
+
+  // Ako se tražilica ručno očisti, smatraj da napredni filter nije aktivan
+  useEffect(() => {
+    if (searchTerm === "") {
+      setAdvancedFilterApplied(false);
+    }
+  }, [searchTerm]);
+
+  // Handler functions for advanced filters
+  const handleSkillSelect = (skillName: string, memberNames: string[]) => {
+    // Filtriraj članove po vještini - postavi searchTerm na imena članova
+    // ili dodaj novi filter state za vještine
+    console.log('Selected skill:', skillName, 'Members:', memberNames);
+    // Za sada ćemo koristiti searchTerm kao privremeno rješenje
+    setSearchTerm(memberNames.join(' '));
+    setAdvancedFilterApplied(true);
+  };
+
+  const handleFunctionSelect = (member: { member_id: number; full_name: string; functions_in_society: string }) => {
+    // Filtriraj po članu iz funkcije - tražilica dobiva puno ime člana
+    console.log('Selected function:', member);
+    setSearchTerm(member.full_name);
+    setAdvancedFilterApplied(true);
+  };
 
   // Sync filters with URL
   useEffect(() => {
@@ -415,7 +450,9 @@ export default function MemberList(): JSX.Element {
                     onSortOrderChange={setSortOrder}
                     groupType={groupByType ? "true" : ""}
                     onGroupTypeChange={(value) => setGroupByType(!!value)}
+                    onAdvancedFiltersClick={() => setShowAdvancedFilters(true)}
                     onCloseFilters={() => setShowFilters(false)}
+                    advancedOpen={showAdvancedFilters || advancedFilterApplied}
                   />
                 )}
 
@@ -484,6 +521,13 @@ export default function MemberList(): JSX.Element {
           onAssign={() => refreshMembers()}
         />
       )}
+
+      <AdvancedFiltersModal
+        isOpen={showAdvancedFilters}
+        onClose={() => setShowAdvancedFilters(false)}
+        onSkillSelect={handleSkillSelect}
+        onFunctionSelect={handleFunctionSelect}
+      />
     </div>
   );
 }

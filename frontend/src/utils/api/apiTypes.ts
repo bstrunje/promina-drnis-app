@@ -18,6 +18,18 @@ export interface ApiLoginResponse {
 }
 
 /**
+ * Korištena vještina s brojem članova
+ */
+export interface ApiUsedSkill {
+  id: number;
+  name: string;
+  key?: string;
+  _count: {
+    member_skills: number;
+  };
+}
+
+/**
  * Odgovor API-ja za registraciju korisnika
  */
 export interface ApiRegisterResponse {

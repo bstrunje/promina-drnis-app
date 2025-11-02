@@ -1,4 +1,4 @@
-import { Member } from './member.js';
+import { Member, MemberSkill } from './member.js';
 import { MembershipDetails } from './membership.js';
 import { DetailedMembershipStatus, MembershipPeriod } from './memberStatus.types.js';
 
@@ -29,4 +29,8 @@ export interface MemberWithDetails extends Member {
    * Višestruke vrijednosti odvojene zarezom, npr. "Predsjednik, Tajnik"
    */
   functions_in_society?: string;
+  /**
+   * Vještine i osposobljenosti člana
+   */
+  skills?: MemberSkill[];
 }

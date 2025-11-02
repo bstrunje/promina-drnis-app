@@ -3,6 +3,17 @@ import { Member } from '../../../shared/types/member.js';
 import { ApiMemberActivity, ApiUploadProfileImageResult, ApiMemberWithEquipment } from './apiTypes';
 import { AxiosResponse } from 'axios';
 
+interface MemberWithFunction {
+  member_id: number;
+  full_name: string;
+  functions_in_society: string;
+}
+
+interface MemberWithSkill {
+  member_id: number;
+  full_name: string;
+}
+
 /**
  * Dohvaćanje svih članova
  * @returns Lista svih članova
@@ -89,5 +100,35 @@ export const getMembersWithEquipment = async (equipmentType: string, size: strin
       throw error;
     }
     throw new Error(`Failed to fetch members with ${equipmentType} equipment`);
+  }
+};
+
+/**
+ * Dohvaća članove s funkcijama u društvu
+ */
+export const getMembersWithFunctions = async (): Promise<MemberWithFunction[]> => {
+  try {
+    const response: AxiosResponse<MemberWithFunction[]> = await api.get('/members/functions');
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Nije moguće dohvatiti članove s funkcijama');
+  }
+};
+
+/**
+ * Dohvaća članove po određenoj vještini
+ */
+export const getMembersBySkill = async (skillName: string): Promise<MemberWithSkill[]> => {
+  try {
+    const response: AxiosResponse<MemberWithSkill[]> = await api.get(`/members/skills/${encodeURIComponent(skillName)}`);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Nije moguće dohvatiti članove po vještini');
   }
 };

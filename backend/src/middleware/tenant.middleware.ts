@@ -12,6 +12,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma.js';
+import jwt from 'jsonwebtoken';
 
 // Proširujemo Express Request interface koristeći module augmentation
 declare module 'express-serve-static-core' {
@@ -47,6 +48,17 @@ declare module 'express-serve-static-core' {
       membership_rules_url: string | null;
     };
   }
+
+}
+
+// Tip za JWT payload koji očekujemo u Authorization headeru
+interface JwtPayload {
+  organizationId?: number;
+  organization?: {
+    id: number;
+    name: string;
+    subdomain?: string;
+  };
 }
 
 interface TenantContext {
@@ -259,7 +271,67 @@ export async function tenantMiddleware(
       }
       return next();
     }
+
+    // 🔧 IZUZEĆE: Members napredni filteri (/members/functions, /members/skills)
+    // Prioritet: 1) query param (?tenant=org) 2) auth token fallback
+    if (path.startsWith('/members/functions') || path.startsWith('/members/skills')) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TENANT-MIDDLEWARE] Members filter ruta - detekcija tenanta (query→token): ${path}`);
+      }
+
+      // 1) Pokušaj preko query parametra (u skladu s ostatkom aplikacije)
+      const tenantFromQuery = (req.query.tenant as string | undefined) ?? (req.query.branding as string | undefined);
+      if (tenantFromQuery) {
+        const tenantContext = await getOrganizationBySubdomain(tenantFromQuery);
+        if (tenantContext) {
+          req.organizationId = tenantContext.organizationId;
+          req.organization = tenantContext.organization;
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[TENANT-MIDDLEWARE] Members filter: tenant set from query: ${tenantFromQuery} -> ID: ${tenantContext.organizationId}`);
+          }
+          return next();
+        }
+        // Ako query param postoji, ali organizacija nije pronađena → 404
+        console.error(`[TENANT-MIDDLEWARE] Tenant nije pronađen za query parametar: ${tenantFromQuery}`);
+        res.status(404).json({
+          code: 'ORGANIZATION_NOT_FOUND',
+          message: 'Organizacija nije pronađena ili nije aktivna'
+        });
+        return;
+      }
+
+      // 2) Fallback: tenant iz auth tokena
+      try {
+        const authHeader = req.get('authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as JwtPayload;
+
+          if (decoded.organizationId) {
+            req.organizationId = decoded.organizationId;
+            // Ne postavljamo req.organization jer JWT payload nema sve potrebne atribute
+            return next();
+          }
+        }
+        throw new Error('Nema valjanog auth tokena s organizationId');
+      } catch (error) {
+        console.error(`[TENANT-MIDDLEWARE] Greška pri dohvaćanju tenant iz auth tokena:`, error);
+        res.status(401).json({
+          code: 'UNAUTHORIZED',
+          message: 'Potreban je valjani auth token za pristup ovim rutama'
+        });
+        return;
+      }
+    }
     
+    // SIGURNOSNI GUARD: ako smo već postavili tenant za napredne filtere, ne nastavljaj na globalnu detekciju
+    if ((path.startsWith('/members/functions') || path.startsWith('/members/skills')) && req.organizationId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TENANT-MIDDLEWARE] Guard: tenant već postavljen (ID: ${req.organizationId}) za ${path} → skip global`);
+      }
+      return next();
+    }
+
     // Organization SM API pozivi se identificiraju kroz path
     // Frontend šalje: /:orgSlug/api/system-manager/*
     // Backend prima: /api/system-manager/* (nakon rewrite-a)

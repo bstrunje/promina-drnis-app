@@ -22,6 +22,7 @@ export * from './api/apiStamps';
 export * from './api/apiCards';
 export * from './api/apiMisc';
 export * from './api/apiActivities';
+export * from './api/apiSkills';
 
 // Izvoz handleApiError funkcije
 export { handleApiError };

@@ -153,7 +153,8 @@
         "buttons": {
             "adults": "Punoljetni",
             "group": "Grupiraj",
-            "colored": "Obojani"
+            "colored": "Obojani",
+            "more": "Više"
         },
         "tooltips": {
             "showAllMembers": "Prikaži sve članove",
@@ -187,5 +188,17 @@
         "honoraryMember": "Počasni član",
         "supportingMember": "Podržavajući član",
         "formerMember": "Bivši član"
+    },
+    "advancedFilters": {
+        "skillsTitle": "Vještine i osposobljenosti",
+        "showMembers": "Prikaži članove",
+        "hideMembers": "Sakrij članove",
+        "membersCount": "članova",
+        "functionsTitle": "Funkcije u društvu",
+        "loadingSkills": "Učitavanje vještina...",
+        "noSkills": "Nema upisanih vještina",
+        "loadingFunctions": "Učitavanje funkcija...",
+        "noFunctions": "Nema upisanih funkcija",
+        "close": "Zatvori"
     }
 }

@@ -51,6 +51,11 @@ export type ClothingSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL';
 export interface MemberSkill {
   skill_id: number;
   is_instructor: boolean;
+  skill?: {
+    id: number;
+    name: string;
+    key?: string;
+  };
 }
 
 
