@@ -12,14 +12,6 @@
       "destination": "/api/:path*"
     },
     { 
-      "source": "/api/system-manager/:path*", 
-      "destination": "/api/[...slug]" 
-    },
-    { 
-      "source": "/api/:path*", 
-      "destination": "/api/[...slug]" 
-    },
-    { 
       "source": "/uploads/:path*", 
       "destination": "/api/[...slug]" 
     },
@@ -42,6 +34,14 @@
     {
       "source": "/:orgSlug/pwa/:path*",
       "destination": "/pwa/:path*"
+    },
+    { 
+      "source": "/api/system-manager/:path*", 
+      "destination": "/api/[...slug]" 
+    },
+    { 
+      "source": "/api/:path*", 
+      "destination": "/api/[...slug]" 
     },
     {
       "source": "/service-worker.js",
