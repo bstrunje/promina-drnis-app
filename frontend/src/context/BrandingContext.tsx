@@ -78,8 +78,15 @@ const getTenantFromUrl = (): string => {
     return tenantParam;
   }
   
-  // 3. Subdomain (legacy/fallback)
+  // 3. Subdomain (legacy/fallback) - SKIP for Vercel project domains to allow root Tenant Selector
   if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+    // If running on Vercel project domain (e.g., managemembers.vercel.app),
+    // do NOT treat the first label as tenant on the root; let Tenant Selector handle it
+    if (hostname.endsWith('vercel.app')) {
+      console.log('[BRANDING] 🛑 Skipping subdomain detection on vercel.app host');
+      return 'missing';
+    }
+
     const parts = hostname.split('.');
     if (parts.length >= 3) {
       const subdomain = parts[0];
