@@ -104,8 +104,13 @@ self.addEventListener('fetch', (event) => {
         return response;
       }).catch((error) => {
         console.error('[SW] Fetch failed:', error);
-        // Return offline page or fallback
-        return caches.match('/index.html');
+        // Only return offline fallback for navigation requests (HTML pages)
+        // DO NOT return HTML for other resource types (images, fonts, etc.)
+        if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+          return caches.match('/index.html');
+        }
+        // For all other failed requests, throw the error (no fallback)
+        throw error;
       });
     })
   );

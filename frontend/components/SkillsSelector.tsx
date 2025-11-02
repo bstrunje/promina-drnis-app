@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import api from '../src/utils/api';
+import apiClient from '../src/utils/api/apiConfig';
 import { getCurrentTenant } from '../src/utils/tenantUtils';
 
 // Definicija tipova
@@ -44,7 +44,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
         setLoading(true);
         // Dodaj tenant parametar kako bi tenant middleware prošao u razvoju
         const tenant = getCurrentTenant();
-        const response = await api.get<Skill[]>('/skills', { params: { tenant } });
+        const response = await apiClient.get<Skill[]>('/skills', { params: { tenant } });
         setAllSkills(response.data);
         setError(null);
       } catch (err) {
@@ -140,7 +140,7 @@ const SkillsSelector: React.FC<SkillsSelectorProps> = ({ value, otherSkills, onC
           const isSelected = !!selection;
 
           return (
-            <div key={skill.id} className="flex items-center justify-between p-2 rounded-md transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-100'}">
+            <div key={skill.id} className={`flex items-center justify-between p-2 rounded-md transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-100'}`}>
               <div className="flex-1">
                 <label className="flex items-center cursor-pointer">
                   <input
