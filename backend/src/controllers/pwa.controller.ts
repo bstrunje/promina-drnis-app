@@ -73,9 +73,9 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
     const icon256 = logoUrl || `${frontendOrigin}/pwa/icons/icon-256x256.png`;
     const icon128 = logoUrl || `${frontendOrigin}/pwa/icons/icon-128x128.png`;
 
-    // Start URL i scope moraju koristiti frontend origin
+    // Start URL i scope - koristi root scope za jedan SW za sve organizacije
     const startUrl = `${frontendOrigin}/${organization.subdomain}/login`;
-    const scopeUrl = `${frontendOrigin}/${organization.subdomain}/`;
+    const scopeUrl = `${frontendOrigin}/`; // Root scope - jedan SW za cijelu aplikaciju
     const appId = `/${organization.subdomain}/login`;
 
     // Generiraj manifest s iOS podrškom

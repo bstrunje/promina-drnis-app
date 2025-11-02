@@ -112,17 +112,6 @@ export const updatePageMeta = (orgName: string): void => {
 };
 
 /**
- * Registrira Service Worker za org scope
+ * NAPOMENA: Service Worker se registrira u main.tsx na root scope (/)
+ * Ova funkcija je uklonjena jer koristimo jedan SW za sve organizacije
  */
-export const registerServiceWorker = async (orgSlug: string): Promise<void> => {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js', {
-        scope: `/${orgSlug}/`
-      });
-      console.log(`[PWA] Service Worker registered for /${orgSlug}/`, registration);
-    } catch (error) {
-      console.error('[PWA] Service Worker registration failed:', error);
-    }
-  }
-};
