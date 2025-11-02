@@ -6,7 +6,7 @@
  */
 
 // NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
-const CACHE_VERSION = 'v2025-11-02';
+const CACHE_VERSION = 'v2025-11-02-v4';
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
@@ -79,7 +79,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first strategy for everything else (HTML, images, fonts, PWA icons)
+  // Network-first for navigation (HTML) to avoid stale cached versions
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request).catch((error) => {
+        console.error('[SW] Navigation fetch failed:', error);
+        // Return cached index.html only if network fails completely
+        return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
+  // Cache-first for everything else (images, fonts, PWA icons)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -105,12 +117,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       }).catch((error) => {
         console.error('[SW] Fetch failed:', error);
-        // Only return offline fallback for navigation requests (HTML pages)
-        // DO NOT return HTML for other resource types (images, fonts, etc.)
-        if (event.request.mode === 'navigate' || event.request.destination === 'document') {
-          return caches.match('/index.html');
-        }
-        // For all other failed requests, throw the error (no fallback)
+        // For non-navigation requests, don't return HTML fallback
         throw error;
       });
     })
