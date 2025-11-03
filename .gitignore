@@ -32,10 +32,12 @@ backend/backups/
 # Test files
 backend/src/tests
 
-# Scripts folder - ignoriraj pomoćne datoteke, ali prati JS skripte
-scripts/*
-!scripts/*.js
-!scripts/*.md
+# Scripts folder - ignoriraj pomoćne datoteke u ROOT /scripts, ali prati ostalo
+/scripts/*
+!/scripts/*.js
+!/scripts/*.md
+# Eksplicitno uključi backend/src/scripts u repo
+!backend/src/scripts/**
 
 # windsurf rules
 .windsurfrules
