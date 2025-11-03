@@ -51,7 +51,7 @@ export const BackupSettingsSection: React.FC<BackupSettingsSectionProps> = ({
               <option value="monthly">Monthly</option>
             </select>
             <p className="text-sm text-gray-500 mt-1">
-              How often automatic backups should be created.
+              Informational. Backups are scheduled by CI (GitHub Actions) at 02:00 UTC.
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export const BackupSettingsSection: React.FC<BackupSettingsSectionProps> = ({
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Number of days to keep backup files before automatic deletion.
+              Applied to cloud storage (Vercel Blob) per-tenant after each successful backup.
             </p>
           </div>
 
@@ -91,7 +91,7 @@ export const BackupSettingsSection: React.FC<BackupSettingsSectionProps> = ({
               <option value="gcs" disabled>Google Cloud (soon)</option>
             </select>
             <p className="text-sm text-gray-500 mt-1">
-              Where backup files should be stored. Cloud storage options coming soon.
+              In production, when Blob is configured, this is saved as 'blob' and backups are stored in Vercel Blob.
             </p>
           </div>
         </div>

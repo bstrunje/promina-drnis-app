@@ -12,6 +12,7 @@ import systemManagerRepository from '../repositories/systemManager.repository.js
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
 import { generateDeviceHash, isTrustedDevice, addTrustedDevice } from '../utils/systemManagerTrustedDevices.js';
+import backupDatabaseToJson from '../scripts/backupDatabase.js';
 
 // Koristimo type assertion umjesto interface-a zbog kompatibilnosti s postojećim tipovima
 
@@ -543,6 +544,37 @@ const systemManagerController = {
     }
 
 };
+
+// Trigger system backup (for Vercel Cron via X-Cron-Secret or authenticated System Manager)
+export async function createSystemBackup(req: Request, res: Response): Promise<void> {
+  try {
+    const headerSecret = req.headers['x-cron-secret'];
+    const cronSecret = process.env.CRON_SECRET;
+    const querySecret = typeof req.query.cronSecret === 'string' ? (req.query.cronSecret as string) : undefined;
+
+    const isCronCallByHeader = typeof headerSecret === 'string' && cronSecret && headerSecret === cronSecret;
+    const isCronCallByQuery = !!querySecret && cronSecret === querySecret;
+    const isCronCall = isCronCallByHeader || isCronCallByQuery;
+    const isAuthenticatedSM = !!req.user; // already enforced when route is behind auth
+
+    if (!isCronCall && !isAuthenticatedSM) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    // Per-tenant context (if available via optionalTenantMiddleware)
+    const orgContext = req.organization ? { id: req.organization.id, slug: req.organization.subdomain } : undefined;
+    const result = await backupDatabaseToJson(orgContext);
+    if (result.success) {
+      res.json({ success: true, file: { name: result.fileName, path: result.filePath }, timestamp: result.timestamp });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('[SYSTEM-BACKUP] Error:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+}
 
 async function logoutHandler(req: Request, res: Response): Promise<void> {
     const refreshToken = req.cookies.systemManagerRefreshToken;

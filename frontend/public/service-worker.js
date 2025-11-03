@@ -7,6 +7,8 @@
 
 // NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
 const CACHE_VERSION = 'v2025-11-03';
+// Dev-only logging flag (service worker nije bundlan, pa koristimo hostname detekciju)
+const DEBUG = (self.location && self.location.hostname === 'localhost');
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;
 
 // Resursi za cache-iranje
@@ -20,10 +22,10 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  if (DEBUG) console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
+      if (DEBUG) console.log('[SW] Caching static assets');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -32,14 +34,14 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  if (DEBUG) console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
           .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
+            if (DEBUG) console.log('[SW] Deleting old cache:', name);
             return caches.delete(name);
           })
       );
@@ -83,7 +85,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request).catch((error) => {
-        console.error('[SW] Navigation fetch failed:', error);
+        if (DEBUG) console.error('[SW] Navigation fetch failed:', error);
         // Return cached index.html only if network fails completely
         return caches.match('/index.html');
       })
@@ -95,7 +97,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        console.log('[SW] Serving from cache:', event.request.url);
+        if (DEBUG) console.log('[SW] Serving from cache:', event.request.url);
         return cachedResponse;
       }
 
@@ -116,7 +118,7 @@ self.addEventListener('fetch', (event) => {
 
         return response;
       }).catch((error) => {
-        console.error('[SW] Fetch failed:', error);
+        if (DEBUG) console.error('[SW] Fetch failed:', error);
         // For non-navigation requests, don't return HTML fallback
         throw error;
       });

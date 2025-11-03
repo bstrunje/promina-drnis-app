@@ -3,6 +3,7 @@
 
 let app;
 let appInitialized = false;
+const isProd = process.env.NODE_ENV === 'production';
 
 module.exports = async function handler(req, res) {
   try {
@@ -21,33 +22,33 @@ module.exports = async function handler(req, res) {
 
     // Inicijalizacija Express app-a samo jednom
     if (!appInitialized) {
-      console.log('[HANDLER] Inicijalizacija Express app-a...');
+      if (!isProd) console.log('[HANDLER] Inicijalizacija Express app-a...');
       const startTime = Date.now();
       
       // Debug: Ispišemo strukturu direktorija
       const fs = require('fs');
       const path = require('path');
       
-      console.log('[DEBUG] Current working directory:', process.cwd());
-      console.log('[DEBUG] __dirname equivalent:', __dirname);
+      if (!isProd) console.log('[DEBUG] Current working directory:', process.cwd());
+      if (!isProd) console.log('[DEBUG] __dirname equivalent:', __dirname);
       
       try {
         const currentDir = process.cwd();
         const files = fs.readdirSync(currentDir);
-        console.log('[DEBUG] Files in current directory:', files);
+        if (!isProd) console.log('[DEBUG] Files in current directory:', files);
         
         // Provjeri postoji li backend direktorij
         if (files.includes('backend')) {
           const backendFiles = fs.readdirSync(path.join(currentDir, 'backend'));
-          console.log('[DEBUG] Files in backend directory:', backendFiles);
+          if (!isProd) console.log('[DEBUG] Files in backend directory:', backendFiles);
           
           if (backendFiles.includes('dist')) {
             const distFiles = fs.readdirSync(path.join(currentDir, 'backend', 'dist'));
-            console.log('[DEBUG] Files in backend/dist directory:', distFiles);
+            if (!isProd) console.log('[DEBUG] Files in backend/dist directory:', distFiles);
           }
         }
       } catch (debugError) {
-        console.log('[DEBUG] Error reading directory structure:', debugError.message);
+        if (!isProd) console.log('[DEBUG] Error reading directory structure:', debugError.message);
       }
       
       // Dynamic import za ES Module - ispravka putanje za Vercel
@@ -56,24 +57,24 @@ module.exports = async function handler(req, res) {
       try {
         // Prvo pokušaj s ispravnom putanjom (src poddirektorij)
         appModule = await import('./backend/dist/src/app.js');
-        console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/src/app.js');
+        if (!isProd) console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/src/app.js');
       } catch (error1) {
-        console.log('[HANDLER] Pokušavam alternativnu putanju ../backend/dist/src/app.js...');
+        if (!isProd) console.log('[HANDLER] Pokušavam alternativnu putanju ../backend/dist/src/app.js...');
         try {
           // Alternativna putanja s src
           appModule = await import('../backend/dist/src/app.js');
-          console.log('[HANDLER] Uspješno učitan app.js iz ../backend/dist/src/app.js');
+          if (!isProd) console.log('[HANDLER] Uspješno učitan app.js iz ../backend/dist/src/app.js');
         } catch (error2) {
-          console.log('[HANDLER] Pokušavam staru putanju ./backend/dist/app.js...');
+          if (!isProd) console.log('[HANDLER] Pokušavam staru putanju ./backend/dist/app.js...');
           try {
             // Stara putanja bez src
             appModule = await import('./backend/dist/app.js');
-            console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/app.js');
+            if (!isProd) console.log('[HANDLER] Uspješno učitan app.js iz ./backend/dist/app.js');
           } catch (error3) {
-            console.log('[HANDLER] Pokušavam direktnu putanju ./app.js...');
+            if (!isProd) console.log('[HANDLER] Pokušavam direktnu putanju ./app.js...');
             // Direktna putanja ako je app.js u root-u
             appModule = await import('./app.js');
-            console.log('[HANDLER] Uspješno učitan app.js iz ./app.js');
+            if (!isProd) console.log('[HANDLER] Uspješno učitan app.js iz ./app.js');
           }
         }
       }
@@ -81,7 +82,7 @@ module.exports = async function handler(req, res) {
       appInitialized = true;
       
       const duration = Date.now() - startTime;
-      console.log(`[HANDLER] Express app inicijaliziran u ${duration}ms`);
+      if (!isProd) console.log(`[HANDLER] Express app inicijaliziran u ${duration}ms`);
     }
 
     // Preusmjeri na Express app

@@ -23,6 +23,7 @@ import systemManagerController, {
   updateSystemManagerTrustedDevicesSettings,
   getOrganizationTrustedDevicesSettings,
   updateOrganizationTrustedDevicesSettings,
+  createSystemBackup,
 } from '../controllers/systemManager.controller.js';
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
@@ -38,6 +39,10 @@ router.post('/verify-2fa-pin', verifySystemManager2faPin);
 router.post('/force-change-password', forceChangePassword);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', logoutHandler);
+
+// Public cron hook: allow Vercel Cron via X-Cron-Secret header; controller enforces auth/secret
+router.post('/system-backup', optionalTenantMiddleware, createSystemBackup);
+router.get('/system-backup', optionalTenantMiddleware, createSystemBackup);
 
 // Provjera postoji li system manager u sustavu (potrebno za inicijalno postavljanje)
 router.get('/exists', systemManagerController.systemManagerExists);
@@ -101,10 +106,7 @@ router.post('/assign-role', systemManagerController.assignRoleToMember);
 // Ruta za dohvat profila trenutnog managera
 router.get('/me', systemManagerController.getCurrentSystemManager);
 
-// Rute za upravljanje sistemskim zdravljem
-// router.get('/system-health', systemManagerController.getSystemHealth);
-// router.post('/system-backup', systemManagerController.createSystemBackup);
-// router.post('/system-restore', systemManagerController.restoreSystemBackup);
+// Rute za upravljanje sistemskim zdravljem (ostalo neaktivno)
 
 // --- HOLIDAY MANAGEMENT (org-specific, trebaju tenant context) ---
 router.get('/holidays', tenantMiddleware, holidayController.getAllHolidays);

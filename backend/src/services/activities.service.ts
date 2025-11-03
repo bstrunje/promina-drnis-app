@@ -420,7 +420,6 @@ export const getParticipationsByMemberIdAndYearService = async (req: Request, me
 
 export const updateActivityService = async (req: Request, activity_id: number, data: UpdateActivityDTO) => {
   const organizationId = getOrganizationId(req);
-  console.log(`[DEBUG] updateActivityService pozvan za aktivnost ${activity_id} s podacima:`, JSON.stringify(data, null, 2));
   return prisma.$transaction(async (tx: TransactionClient) => {
     const existingActivity = await tx.activity.findUnique({
       where: { 
@@ -435,7 +434,6 @@ export const updateActivityService = async (req: Request, activity_id: number, d
     }
 
     const { participant_ids, manual_hours, participations, recognition_percentage, ...activityData } = data;
-    console.log(`[DEBUG] Ekstraktirani manual_hours:`, manual_hours, typeof manual_hours);
 
     const finalStartTime = activityData.actual_start_time ?? existingActivity.actual_start_time;
     const finalEndTime = activityData.actual_end_time ?? existingActivity.actual_end_time;

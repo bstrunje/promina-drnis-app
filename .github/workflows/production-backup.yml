@@ -1,0 +1,80 @@
+name: Production Daily Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Every day at 02:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  trigger-backup:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tenant: [pdpromina, sailorsfeast]
+    env:
+      BASE_URL: https://managemembers.vercel.app
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Validate configuration
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "ERROR: CRON_SECRET secret is not set." >&2
+            exit 1
+          fi
+
+      - name: Build endpoint URL for tenant
+        run: |
+          echo "ENDPOINT=${BASE_URL}/api/system-manager/system-backup?tenant=${{ matrix.tenant }}" >> $GITHUB_ENV
+          echo "Using endpoint: ${BASE_URL}/api/system-manager/system-backup?tenant=${{ matrix.tenant }}"
+
+      - name: Trigger backup via POST (with X-Cron-Secret)
+        id: post
+        run: |
+          set -e
+          echo "Calling $ENDPOINT (POST)"
+          HTTP_CODE=$(curl -s -o response_post.json -w "%{http_code}" \
+            -X POST "$ENDPOINT" \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --max-time 45)
+
+          echo "HTTP_CODE=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "Response (truncated):"
+          head -c 200 response_post.json || true
+          echo
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "POST succeeded"
+            exit 0
+          fi
+
+          echo "POST failed with HTTP $HTTP_CODE, will try GET fallback..."
+          exit 0
+
+      - name: Trigger backup via GET fallback (?cronSecret=)
+        if: steps.post.outputs.HTTP_CODE == '' || steps.post.outputs.HTTP_CODE >= 300
+        run: |
+          set -e
+          # Append cronSecret query param safely
+          if echo "$ENDPOINT" | grep -q "?"; then
+            URL_WITH_SECRET="${ENDPOINT}&cronSecret=${CRON_SECRET}"
+          else
+            URL_WITH_SECRET="${ENDPOINT}?cronSecret=${CRON_SECRET}"
+          fi
+
+          echo "Calling $URL_WITH_SECRET (GET)"
+          HTTP_CODE=$(curl -s -o response_get.json -w "%{http_code}" \
+            -X GET "$URL_WITH_SECRET" \
+            --max-time 45)
+
+          echo "Response (truncated):"
+          head -c 200 response_get.json || true
+          echo
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "ERROR: GET fallback failed with HTTP $HTTP_CODE" >&2
+            exit 1
+          fi
+
+      - name: Print success message
+        run: echo "✅ Backup trigger finished successfully for tenant ${{ matrix.tenant }}."

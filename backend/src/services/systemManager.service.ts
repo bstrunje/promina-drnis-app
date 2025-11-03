@@ -12,6 +12,7 @@ import { SystemManager, MemberPermissions, Prisma } from '@prisma/client';
 import { JWT_SECRET } from '../config/jwt.config.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
+import { list } from '@vercel/blob';
 
 type SystemSettingsExtended = {
     id: string;
@@ -400,6 +401,11 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             // Izbaci 'id' polje jer se ne koristi u update operaciji
             const { id: _id, ...validData } = data as SystemSettingsExtended & { id: string };
 
+            // Minimalna logika: u produkciji, ako je Blob konfiguriran, prisilno postavi storage na 'blob'
+            if (process.env.NODE_ENV === 'production' && process.env.BLOB_READ_WRITE_TOKEN) {
+                (validData as Partial<SystemSettingsExtended>).backupStorageLocation = 'blob';
+            }
+
             const updatedSettings = await prisma.systemSettings.update({
                 where: { organization_id: organizationId },
                 data: {
@@ -493,20 +499,54 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             // Pending registrations = članovi koji nisu završili registraciju (registration_completed = false)
             const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, registration_completed: false } });
 
-            // Mock data for system health and backup
-            const healthDetails = {
-                status: 'Healthy',
-                dbConnection: true,
-                diskSpace: { available: 100 * 1024 * 1024 * 1024, total: 256 * 1024 * 1024 * 1024, percentUsed: 60 },
-                memory: { available: 4 * 1024 * 1024 * 1024, total: 16 * 1024 * 1024 * 1024, percentUsed: 75 },
-                uptime: 1234567,
-                lastCheck: new Date(),
-            };
+            // Real health checks
+            let dbConnection = false;
+            let dbLatencyMs = 0;
+            try {
+                const start = Date.now();
+                await prisma.$queryRaw`SELECT 1`;
+                dbLatencyMs = Date.now() - start;
+                dbConnection = true;
+            } catch {
+                dbConnection = false;
+            }
 
-            // Global SystemManager (organization_id = null) ili Organization-specific SystemManager
+            const token = process.env.BLOB_READ_WRITE_TOKEN;
+            let blobAccessible = true; // ako nema tokena, ne tretiramo kao kvar
+            if (token) {
+                try {
+                    // lagani read-only poziv
+                    await list({ prefix: 'backups/', token });
+                    blobAccessible = true;
+                } catch {
+                    blobAccessible = false;
+                }
+            }
+
+            // System settings for last backup
             const systemSettings = organizationId !== undefined
                 ? await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } })
                 : await prisma.systemSettings.findFirst({ where: { organization_id: null } });
+
+            const lastBackupAt = systemSettings?.lastBackupAt ?? null;
+            const now = Date.now();
+            const ageHours = lastBackupAt ? (now - lastBackupAt.getTime()) / (1000 * 60 * 60) : Infinity;
+
+            // Compute overall health
+            let status: 'Healthy' | 'Warning' | 'Error' = 'Healthy';
+            if (!dbConnection) status = 'Error';
+            if (token && !blobAccessible) status = 'Error';
+            if (ageHours === Infinity) status = status === 'Error' ? 'Error' : 'Warning';
+            else if (ageHours > 72) status = 'Error';
+            else if (ageHours > 48) status = status === 'Error' ? 'Error' : 'Warning';
+
+            const healthDetails = {
+                status,
+                dbConnection,
+                dbLatencyMs,
+                blobAccessible,
+                lastCheck: new Date(),
+            } as const;
 
             return {
                 totalMembers,
@@ -516,8 +556,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                 recentActivitiesList,
                 totalAuditLogs,
                 pendingRegistrations,
-                systemHealth: healthDetails.status,
-                lastBackup: systemSettings?.lastBackupAt?.toISOString() ?? 'Never',
+                systemHealth: status,
+                lastBackup: lastBackupAt ? lastBackupAt.toISOString() : 'Never',
                 healthDetails,
                 systemSettings,
             };

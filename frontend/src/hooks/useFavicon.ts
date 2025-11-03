@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+const isDev = import.meta.env.DEV;
 
 /**
  * Hook za dinamičko postavljanje favicon-a
@@ -22,6 +23,6 @@ export const useFavicon = (faviconUrl: string | null) => {
     link.type = 'image/png';
     link.href = faviconUrl;
 
-    console.log('[FAVICON] Postavljen novi favicon:', faviconUrl);
+    if (isDev) console.log('[FAVICON] Postavljen novi favicon:', faviconUrl);
   }, [faviconUrl]);
 };

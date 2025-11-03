@@ -566,26 +566,21 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
             {/* Debug button za testiranje auto-terminations - samo u development modu */}
             {(() => {
-              console.log('🔍 [DEBUG] hasAdminPrivileges:', hasAdminPrivileges);
-              console.log('🔍 [DEBUG] import.meta.env.DEV:', import.meta.env.DEV);
-              console.log('🔍 [DEBUG] isEditing:', isEditing);
-              return hasAdminPrivileges && import.meta.env.DEV;
+              const showDebug = import.meta.env.DEV && hasAdminPrivileges;
+              return showDebug;
             })() && (
               <div className="border-t pt-4">
                 <Button
                   type="button"
                   onClick={async () => {
                     try {
-                      console.log('🔵 [FRONTEND] Kliknut button za provjeru isteklih članstava');
                       const mockDateString = localStorage.getItem('app_mock_date');
                       const requestBody = mockDateString ? { mockDate: mockDateString } : {};
-                      console.log('🔵 [FRONTEND] Request body:', requestBody);
                       
                       // Koristi api helper umjesto fetch za ispravno rutiranje kroz Vite proxy
                       const { default: api } = await import('@/utils/api/apiConfig');
                       const response = await api.post('/members/check-auto-terminations', requestBody);
                       
-                      console.log('🔵 [FRONTEND] Response:', response.data);
                       
                       toast({
                         title: 'Uspjeh',
