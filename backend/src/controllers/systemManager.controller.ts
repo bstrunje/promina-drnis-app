@@ -12,7 +12,7 @@ import systemManagerRepository from '../repositories/systemManager.repository.js
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
 import { generateDeviceHash, isTrustedDevice, addTrustedDevice } from '../utils/systemManagerTrustedDevices.js';
-import backupDatabaseToJson from '../scripts/backupDatabase.js';
+import backupDatabaseToJson from '../scripts/backupDatabase';
 
 // Koristimo type assertion umjesto interface-a zbog kompatibilnosti s postojećim tipovima
 

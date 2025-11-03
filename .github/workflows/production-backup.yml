@@ -22,10 +22,10 @@ jobs:
             exit 1
           fi
 
-      - name: Build endpoint URL for tenant
+      - name: Build endpoint URL for tenant (path-based)
         run: |
-          echo "ENDPOINT=${BASE_URL}/api/system-manager/system-backup?tenant=${{ matrix.tenant }}" >> $GITHUB_ENV
-          echo "Using endpoint: ${BASE_URL}/api/system-manager/system-backup?tenant=${{ matrix.tenant }}"
+          echo "ENDPOINT=${BASE_URL}/${{ matrix.tenant }}/api/system-manager/system-backup" >> $GITHUB_ENV
+          echo "Using endpoint: ${BASE_URL}/${{ matrix.tenant }}/api/system-manager/system-backup"
 
       - name: Trigger backup via POST (with X-Cron-Secret)
         id: post
