@@ -18,13 +18,13 @@ export const IMAGE_BASE_URL = isLocalDevelopment
   ? `http://localhost:${backendPort}/uploads`  // Dinamički port
   : '/uploads';                                 // Produkcija - relativna putanja
 
-// Debug logging za lakše praćenje konfiguracije
-if (isLocalDevelopment) {
-  console.log('[CONFIG] Lokalni razvoj detektiran:');
-  console.log('[CONFIG] API_BASE_URL:', API_BASE_URL);
-  console.log('[CONFIG] IMAGE_BASE_URL:', IMAGE_BASE_URL);
-} else {
-  console.log('[CONFIG] Produkcija/Vercel konfiguracija:');
+// Debug logging za lakše praćenje konfiguracije (samo u developmentu)
+if (import.meta.env.DEV) {
+  if (isLocalDevelopment) {
+    console.log('[CONFIG] Lokalni razvoj detektiran:');
+  } else {
+    console.log('[CONFIG] Produkcija/Vercel konfiguracija:');
+  }
   console.log('[CONFIG] API_BASE_URL:', API_BASE_URL);
   console.log('[CONFIG] IMAGE_BASE_URL:', IMAGE_BASE_URL);
 }

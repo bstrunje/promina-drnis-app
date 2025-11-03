@@ -82,24 +82,24 @@ export function setupAxiosInterceptors(
       }
 
       originalRequest._retry = true;
-      console.log('Access token istekao, pokušavam ga osvježiti...');
+      if (import.meta.env.DEV) console.log('Access token istekao, pokušavam ga osvježiti...');
 
       try {
         const newToken = await refreshTokenFn();
         if (newToken) {
-          console.log('Token uspješno osvježen, ponavljam originalni zahtjev.');
+          if (import.meta.env.DEV) console.log('Token uspješno osvježen, ponavljam originalni zahtjev.');
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
           }
           return axios(originalRequest);
         } else {
           // Ako refreshTokenFn vrati null, to znači da je i refresh token nevažeći.
-          console.log('Refresh token nije valjan, odjavljujem korisnika.');
+          if (import.meta.env.DEV) console.log('Refresh token nije valjan, odjavljujem korisnika.');
           await logoutFn();
           return Promise.reject(error instanceof Error ? error : new Error(String(error)));
         }
       } catch (refreshError) {
-        console.error('Greška pri osvježavanju tokena, odjavljujem korisnika:', refreshError);
+        if (import.meta.env.DEV) console.error('Greška pri osvježavanju tokena, odjavljujem korisnika:', refreshError);
         await logoutFn();
         return Promise.reject(refreshError instanceof Error ? refreshError : new Error(String(refreshError)));
       }

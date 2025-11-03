@@ -12,8 +12,7 @@ interface LogEventParams {
     user_id: number | null;
     user_type: string | null;
     ip_address: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    details: Record<string, any>;
+    details: Record<string, unknown>;
     performer_type?: PerformerType;
 }
 
@@ -104,7 +103,9 @@ const auditService = {
                 detailsStr,
                 ip_address,
                 'success', // Pretpostavljeni status
-                details.affected_member || null,
+                (typeof details === 'object' && details !== null && 'affected_member' in details
+                    ? ((details as { affected_member?: number | null }).affected_member ?? undefined)
+                    : undefined),
                 params.performer_type || null
             );
         } catch (error) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+const isDev = import.meta.env.DEV;
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Checkbox } from "../../../components/ui/checkbox";
@@ -45,7 +46,7 @@ export default function MembershipCardForm({
         const token = localStorage.getItem('token');
         
         if (!token) {
-          console.error("No authentication token available");
+          if (isDev) console.error("No authentication token available");
           setErrorMessage("No authentication token available");
           return;
         }
@@ -67,11 +68,11 @@ export default function MembershipCardForm({
         if (Array.isArray(data) && data.every((item) => typeof item === 'string')) {
           setAvailableCardNumbers(data);
         } else {
-          console.error("Expected array of strings but got:", data);
+          if (isDev) console.error("Expected array of strings but got:", data);
           setAvailableCardNumbers([]);
         }
       } catch (error) {
-        console.error("Card number fetch error:", error);
+        if (isDev) console.error("Card number fetch error:", error);
         const errorMsg = error instanceof Error ? error.message : String(error);
         setErrorMessage(`Error loading card numbers: ${errorMsg}`);
         toast({
@@ -121,7 +122,7 @@ export default function MembershipCardForm({
       
       onSuccess();
     } catch (error) {
-      console.error('Card update error:', error);
+      if (isDev) console.error('Card update error:', error);
       toast({
         title: t('membershipCard.messages.error'),
         description: t('membershipCard.messages.failedToUpdate'),

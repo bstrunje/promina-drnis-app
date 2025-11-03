@@ -3,6 +3,7 @@
  */
 import { format, parseISO, isValid, parse } from 'date-fns';
 import { hr, enUS } from 'date-fns/locale';
+const isDev = import.meta.env.DEV;
 import { TIME_ZONE_CACHE_KEY } from '@/context/timeZone-core';
 
 // Funkcija za dohvat trenutno konfigurirane vremenske zone
@@ -20,10 +21,10 @@ if (typeof window !== 'undefined') {
     const storedMockDate = localStorage.getItem(MOCK_DATE_KEY);
     if (storedMockDate) {
       mockDate = new Date(storedMockDate);
-      console.log('🔄 Mock datum učitan iz localStorage:', mockDate.toISOString());
+      if (isDev) console.log('🔄 Mock datum učitan iz localStorage:', mockDate.toISOString());
     }
   } catch (error) {
-    console.warn('Greška pri učitavanju mock datuma iz localStorage:', error);
+    if (isDev) console.warn('Greška pri učitavanju mock datuma iz localStorage:', error);
   }
   
   // Slušaj promjene u localStorage između tabova
@@ -32,13 +33,13 @@ if (typeof window !== 'undefined') {
       try {
         if (event.newValue) {
           mockDate = new Date(event.newValue);
-          console.log('🔄 Mock datum ažuriran iz drugog taba:', mockDate.toISOString());
+          if (isDev) console.log('🔄 Mock datum ažuriran iz drugog taba:', mockDate.toISOString());
         } else {
           mockDate = null;
-          console.log('🔄 Mock datum resetiran iz drugog taba');
+          if (isDev) console.log('🔄 Mock datum resetiran iz drugog taba');
         }
       } catch (error) {
-        console.warn('Greška pri ažuriranju mock datuma iz drugog taba:', error);
+        if (isDev) console.warn('Greška pri ažuriranju mock datuma iz drugog taba:', error);
       }
     }
   });
@@ -99,11 +100,11 @@ export function setMockDate(date: Date | null): void {
         localStorage.removeItem(MOCK_DATE_KEY);
       }
     } catch (error) {
-      console.warn('Greška pri spremanju mock datuma u localStorage:', error);
+      if (isDev) console.warn('Greška pri spremanju mock datuma u localStorage:', error);
     }
   }
   
-  console.log('🔧 Frontend mock datum postavljen na:', date ? date.toISOString() : 'null');
+  if (isDev) console.log('🔧 Frontend mock datum postavljen na:', date ? date.toISOString() : 'null');
 }
 
 /**
@@ -117,11 +118,11 @@ export function resetMockDate(): void {
     try {
       localStorage.removeItem(MOCK_DATE_KEY);
     } catch (error) {
-      console.warn('Greška pri uklanjanju mock datuma iz localStorage:', error);
+      if (isDev) console.warn('Greška pri uklanjanju mock datuma iz localStorage:', error);
     }
   }
   
-  console.log('🔧 Frontend mock datum resetiran');
+  if (isDev) console.log('🔧 Frontend mock datum resetiran');
 }
 
 /**
@@ -233,7 +234,7 @@ export function formatDate(
   
     return formattedDate;
   } catch (error) {
-    console.error('Greška prilikom formatiranja datuma:', error);
+    if (isDev) console.error('Greška prilikom formatiranja datuma:', error);
     return '';
   }
   return '';
@@ -273,7 +274,7 @@ export function hrToIsoFormat(hrDate: string): string {
     // Format to ISO date format (YYYY-MM-DD)
     return format(date, 'yyyy-MM-dd');
   } catch (error) {
-    console.error('Error converting HR to ISO format:', error);
+    if (isDev) console.error('Error converting HR to ISO format:', error);
     return '';
   }
 }
@@ -294,7 +295,7 @@ export function formatInputDate(date: Date | string | null = null): string {
     }
     date = date.replace(/[^0-9\-T:.Z]/g, '');
     if (date.toUpperCase() === 'INVALID DATE') {
-      console.warn('formatInputDate: Primljen je string "Invalid Date". Vraćam prazan string.');
+      if (isDev) console.warn('formatInputDate: Primljen je string "Invalid Date". Vraćam prazan string.');
       return '';
     }
     // Ako je već u formatu yyyy-MM-dd, vrati ga takvog
@@ -305,18 +306,18 @@ export function formatInputDate(date: Date | string | null = null): string {
     if (!isValid(dateObj)) {
       dateObj = parseDate(date);
       if (!dateObj || !isValid(dateObj)) {
-        console.warn(`formatInputDate: Neuspješno parsiranje stringa '${date}'. Vraćam prazan string.`);
+        if (isDev) console.warn(`formatInputDate: Neuspješno parsiranje stringa '${date}'. Vraćam prazan string.`);
         return '';
       }
     }
   } else if (date instanceof Date) {
     dateObj = date;
   } else {
-    console.warn('formatInputDate: Primljen nepoznat tip podatka za datum. Vraćam prazan string.');
+    if (isDev) console.warn('formatInputDate: Primljen nepoznat tip podatka za datum. Vraćam prazan string.');
     return '';
   }
   if (!dateObj || !isValid(dateObj)) {
-    console.warn('formatInputDate: Kreirani Date objekt nije valjan. Vraćam prazan string.');
+    if (isDev) console.warn('formatInputDate: Kreirani Date objekt nije valjan. Vraćam prazan string.');
     return '';
   }
   // Vrati uvijek yyyy-MM-dd, bez vremena i vremenske zone
@@ -362,10 +363,10 @@ export function parseDate(
         if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
           parsedDateInstance = utcDate;
         } else {
-          console.warn(`parseDate (dd.MM.yyyy): Nevažeći datum ${dateString}`);
+          if (isDev) console.warn(`parseDate (dd.MM.yyyy): Nevažeći datum ${dateString}`);
         }
       } else {
-        console.warn(`parseDate (dd.MM.yyyy): String '${dateString}' ne odgovara formatu.`);
+        if (isDev) console.warn(`parseDate (dd.MM.yyyy): String '${dateString}' ne odgovara formatu.`);
       }
     } else if (dateFormat === 'yyyy-MM-dd') {
       // Ovdje želimo striktno YYYY-MM-DD bez vremena
@@ -379,7 +380,7 @@ export function parseDate(
         if (utcDate.getUTCFullYear() === year && utcDate.getUTCMonth() === month && utcDate.getUTCDate() === day) {
           parsedDateInstance = utcDate;
         } else {
-          console.warn(`parseDate (yyyy-MM-dd): Nevažeći datum ${dateString}`);
+          if (isDev) console.warn(`parseDate (yyyy-MM-dd): Nevažeći datum ${dateString}`);
         }
       } else {
         // Ako ne odgovara YYYY-MM-DD, ali je možda puni ISO, pokušaj s parseISO
@@ -387,7 +388,7 @@ export function parseDate(
         if (isValid(isoDate)) {
           return isoDate; // Vrati kao UTC ako je puni ISO
         }
-        console.warn(`parseDate (yyyy-MM-dd): String '${dateString}' ne odgovara formatu yyyy-MM-dd.`);
+        if (isDev) console.warn(`parseDate (yyyy-MM-dd): String '${dateString}' ne odgovara formatu yyyy-MM-dd.`);
       }
     } else {
       // Za sve ostale formate, koristi date-fns/parse
@@ -399,7 +400,7 @@ export function parseDate(
       }
     }
   } catch (error) {
-    console.error('Greška prilikom parsiranja datuma:', dateString, dateFormat, error);
+    if (isDev) console.error('Greška prilikom parsiranja datuma:', dateString, dateFormat, error);
   }
 
   return parsedDateInstance && isValid(parsedDateInstance) ? parsedDateInstance : null;
@@ -417,7 +418,7 @@ export function areDatesEqual(date1: Date | string | null, date2: Date | string 
     
     return format(d1, 'yyyy-MM-dd') === format(d2, 'yyyy-MM-dd');
   } catch (error) {
-    console.error('Error comparing dates:', error);
+    if (isDev) console.error('Error comparing dates:', error);
     return false;
   }
 }
@@ -513,7 +514,7 @@ export function validateDate(
     // Fallback kao u validateBirthDate
     const parsedFallback = parseDate(dateString, 'dd.MM.yyyy');
     if (parsedFallback && isValid(parsedFallback)) {
-      console.warn(`validateDate: Primljen dateString '${dateString}' koji nije validan ISO, ali je parsiran kao dd.MM.yyyy.`);
+      if (isDev) console.warn(`validateDate: Primljen dateString '${dateString}' koji nije validan ISO, ali je parsiran kao dd.MM.yyyy.`);
       return { isValid: false, errorMessage: 'Neispravan format datuma. Očekuje se ISO format.' };
     }
     return { isValid: false, errorMessage: 'Neispravan format datuma.' };

@@ -1,4 +1,5 @@
 import React from "react";
+const isDev = import.meta.env.DEV;
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from "react-router-dom";
@@ -30,9 +31,7 @@ import { useBranding } from "../../hooks/useBranding";
 import { useMemberData } from "./hooks/useMemberData";
 // Import filter component
 import MemberListFilters from "./components/MemberListFilters";
-// Import table display component
-// Import statistics component
-import { StatisticsView } from "./components/StatisticsView";
+// Import statistics component (moved to separate page)
 // Import custom hook for filtering and sorting
 import { useFilteredMembers } from "./hooks/useFilteredMembers";
 import MemberTable from "./components/MemberTable";
@@ -156,7 +155,7 @@ export default function MemberList(): JSX.Element {
   const handleSkillSelect = (skillName: string, memberNames: string[]) => {
     // Filtriraj članove po vještini - postavi searchTerm na imena članova
     // ili dodaj novi filter state za vještine
-    console.log('Selected skill:', skillName, 'Members:', memberNames);
+    if (isDev) console.log('Selected skill:', skillName, 'Members:', memberNames);
     // Za sada ćemo koristiti searchTerm kao privremeno rješenje
     setSearchTerm(memberNames.join(' '));
     setAdvancedFilterApplied(true);
@@ -164,7 +163,7 @@ export default function MemberList(): JSX.Element {
 
   const handleFunctionSelect = (member: { member_id: number; full_name: string; functions_in_society: string }) => {
     // Filtriraj po članu iz funkcije - tražilica dobiva puno ime člana
-    console.log('Selected function:', member);
+    if (isDev) console.log('Selected function:', member);
     setSearchTerm(member.full_name);
     setAdvancedFilterApplied(true);
   };
@@ -345,7 +344,7 @@ export default function MemberList(): JSX.Element {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 border-b border-gray-200" onTouchStart={handleTouchStart} onTouchMove={(e) => {
+    <div className="container mx-auto px-4 py-2 border-b border-gray-200" onTouchStart={handleTouchStart} onTouchMove={(e) => {
       handleTouchMove(e);
       handleSwipeForNav(e);
     }}>
@@ -367,7 +366,11 @@ export default function MemberList(): JSX.Element {
 
       {!loading && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 h-[calc(100vh-100px)]">
-          <Tabs defaultValue="list" className="w-full h-full flex flex-col">
+          <Tabs defaultValue="list" className="w-full h-full flex flex-col" onValueChange={(val) => {
+            if (val === 'statistics') {
+              navigateTo('/members/statistics');
+            }
+          }}>
             {/* Fiksno zaglavlje - ostaje na mjestu prilikom skrolanja */}
             <div className={`sticky top-0 z-10 bg-gray-50 flex-shrink-0 ${!showNavTabs ? 'border-b border-gray-200' : ''} print:hidden`}>
               {/* Svi gumbi u jednom redu */}
@@ -489,9 +492,7 @@ export default function MemberList(): JSX.Element {
               </div>
             </TabsContent>
 
-            <TabsContent value="statistics" className="flex-grow overflow-auto">
-              <StatisticsView members={members} />
-            </TabsContent>
+            <TabsContent value="statistics" className="flex-grow overflow-auto mt-0"></TabsContent>
           </Tabs>
         </div>
       )}

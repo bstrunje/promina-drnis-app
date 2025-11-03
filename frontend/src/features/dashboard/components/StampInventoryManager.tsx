@@ -203,7 +203,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       // Duboke kopije editValues za sigurnost
       const valuesToSave = JSON.parse(JSON.stringify(editValues)) as YearlyInventory;
       
-      console.log("Spremam inventar za godinu:", selectedYear, valuesToSave);
+      if (import.meta.env.DEV) console.log("Spremam inventar za godinu:", selectedYear, valuesToSave);
       
       // Prikaži povratnu informaciju da je spremanje u tijeku
       toast({
@@ -220,11 +220,11 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
         pensioner: Number(valuesToSave.pensionerStamps.initial),
       };
       
-      console.log("Šaljem podatke:", payload);
+      if (import.meta.env.DEV) console.log("Šaljem podatke:", payload);
       
       const response = await apiInstance.put("/stamps/inventory", payload);
 
-      console.log("Odgovor sa servera:", response.data);
+      if (import.meta.env.DEV) console.log("Odgovor sa servera:", response.data);
 
       if (!response.data) throw new Error(t("stampInventory.updateInventoryError"));
 
@@ -242,7 +242,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       // Ponovno dohvati inventar da osiguramo sinkronizaciju s bazom
       await fetchInventory();
     } catch (error) {
-      console.error("Greška pri spremanju:", error);
+      if (import.meta.env.DEV) console.error("Greška pri spremanju:", error);
       
       // Prikaži detaljnu povratnu informaciju o grešci
       toast({
@@ -256,7 +256,7 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
   };
 
   const handleInputChange = (type: keyof YearlyInventory, value: number) => {
-    console.log(`Changing ${type} to:`, value);
+    if (import.meta.env.DEV) console.log(`Changing ${type} to:`, value);
     if (isNaN(value)) return;
     
     // Zapamti vrijednost u ref
@@ -270,18 +270,18 @@ export const StampInventoryManager: React.FC<StampInventoryManagerProps> = ({
       newState[type].initial = value;
       newState[type].remaining = value - newState[type].issued;
       
-      console.log("New state:", newState);
+      if (import.meta.env.DEV) console.log("New state:", newState);
       return newState;
     });
   };
   
   // Funkcija za fokus/blur hendlanje
   const handleInputFocus = (type: keyof YearlyInventory) => {
-    console.log(`Focus on ${type}`);
+    if (import.meta.env.DEV) console.log(`Focus on ${type}`);
   };
   
   const handleInputBlur = (type: keyof YearlyInventory, value: number) => {
-    console.log(`Blur on ${type}, value: ${value}`);
+    if (import.meta.env.DEV) console.log(`Blur on ${type}, value: ${value}`);
     // Osiguraj da vrijednost ostane ista i nakon blur eventa
     if (value !== lastInputValue.current[type]) {
       handleInputChange(type, lastInputValue.current[type]);

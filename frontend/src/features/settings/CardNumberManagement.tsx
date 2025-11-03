@@ -14,6 +14,7 @@ export default function CardNumberManagement() {
   const { t } = useTranslation('settings');
   const { getPrimaryColor } = useBranding();
   const { toast } = useToast(); 
+  const isDev = import.meta.env.DEV;
   
   // Dohvati duljinu broja kartice iz postavki
   const { length: cardNumberLength } = useCardNumberLength();
@@ -75,7 +76,7 @@ export default function CardNumberManagement() {
         
         // Kompatibilnost s originalnim kodom je sada osigurana kroz cardStats
       } catch (error) {
-        console.error('Error fetching card numbers:', error);
+        if (isDev) console.error('Error fetching card numbers:', error);
         toast({
           title: "Error",
           description: "Failed to load card numbers",
@@ -87,7 +88,7 @@ export default function CardNumberManagement() {
     }
   
     void fetchCardNumbers();
-  }, [toast]);
+  }, [toast, isDev]);
 
   const handleAddSingle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +120,7 @@ export default function CardNumberManagement() {
       // Refresh data
       void refreshCardNumbers();
     } catch (error) {
-      console.error('Error adding card number:', error);
+      if (isDev) console.error('Error adding card number:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to add card number",
@@ -167,7 +168,7 @@ export default function CardNumberManagement() {
       // Refresh data
       void refreshCardNumbers();
     } catch (error) {
-      console.error('Error adding card number range:', error);
+      if (isDev) console.error('Error adding card number range:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to add card number range",
@@ -198,7 +199,7 @@ export default function CardNumberManagement() {
         variant: "success",
       });
     } catch (error) {
-      console.error('Error deleting card number:', error);
+      if (isDev) console.error('Error deleting card number:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete card number",
@@ -255,7 +256,7 @@ export default function CardNumberManagement() {
       setAllCardNumbers(data.cards);
       // Kompatibilnost s originalnim kodom je sada osigurana kroz cardStats
     } catch (error) {
-      console.error('Error fetching card numbers:', error);
+      if (isDev) console.error('Error fetching card numbers:', error);
       toast({
         title: "Error",
         description: "Failed to load card numbers",
@@ -267,14 +268,14 @@ export default function CardNumberManagement() {
   };
 
   // Dohvati potrošene kartice
-  const fetchConsumedCardNumbers = async (search?: string) => {
+  const fetchConsumedCardNumbers = React.useCallback(async (search?: string) => {
     setIsLoadingConsumed(true);
     try {
       const data = await getConsumedCardNumbers(search);
       setConsumedCardNumbers(data);
       setHasLoadedConsumed(true);
     } catch (error) {
-      console.error('Error fetching consumed card numbers:', error);
+      if (isDev) console.error('Error fetching consumed card numbers:', error);
       toast({
         title: "Error",
         description: "Failed to load consumed card numbers",
@@ -283,15 +284,14 @@ export default function CardNumberManagement() {
     } finally {
       setIsLoadingConsumed(false);
     }
-  };
+  }, [toast, isDev]);
 
   // Automatski dohvat potrošenih kad se prebaci na taj filter
   useEffect(() => {
     if (statusFilter === 'consumed') {
       void fetchConsumedCardNumbers(consumedSearch);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, consumedSearch]);
+  }, [statusFilter, consumedSearch, fetchConsumedCardNumbers]);
 
   // Prefetch potrošenih kartica pri mountu komponente
   // Kako bismo izbjegli početni prikaz "(...)" na gumbu i prikazali točan broj odmah
@@ -299,8 +299,7 @@ export default function CardNumberManagement() {
     if (!hasLoadedConsumed) {
       void fetchConsumedCardNumbers();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasLoadedConsumed, fetchConsumedCardNumbers]);
 
   return (
     <Card className="my-6">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+const isDev = import.meta.env.DEV;
 import { useTranslation } from 'react-i18next';
 import type { TFunction, i18n as I18n } from 'i18next';
 import './activities.css';
@@ -89,7 +90,7 @@ const ActivityDetailPage: React.FC = () => {
       setActivity(data);
     } catch (err) {
       setError(t('activityDetail.errorFetching'));
-      console.error(err);
+      if (isDev) console.error(err);
     } finally {
       setLoading(false);
     }
@@ -114,7 +115,7 @@ const ActivityDetailPage: React.FC = () => {
       void fetchActivity(); // Ponovno dohvati podatke da se osvježi status
     } catch (error: unknown) {
       toast.error(t('activityDetail.cancelError'));
-      console.error(error);
+      if (isDev) console.error(error);
     }
   };
 
@@ -131,7 +132,7 @@ const ActivityDetailPage: React.FC = () => {
         errorMessage = resp?.data?.message ?? errorMessage;
       }
       toast.error(errorMessage);
-      console.error(error);
+      if (isDev) console.error(error);
     }
   };
 
@@ -148,7 +149,7 @@ const ActivityDetailPage: React.FC = () => {
         errorMessage = resp?.data?.message ?? errorMessage;
       }
       toast.error(errorMessage);
-      console.error(error);
+      if (isDev) console.error(error);
     }
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+const isDev = import.meta.env.DEV;
 import api from '../../../utils/api/apiConfig';
 import { Member } from '@shared/member';
 import { 
@@ -44,7 +45,7 @@ export const useMemberData = () => {
       refreshMembers();
       return true;
     } catch (error) {
-      console.error('Error adding member:', error);
+      if (isDev) console.error('Error adding member:', error);
       toast({
         title: "Error",
         description: "Failed to add member",
@@ -65,7 +66,7 @@ export const useMemberData = () => {
       refreshMembers();
       return true;
     } catch (error) {
-      console.error('Error updating member:', error);
+      if (isDev) console.error('Error updating member:', error);
       toast({
         title: "Error",
         description: "Failed to update member",
@@ -180,7 +181,7 @@ export const useMemberData = () => {
                   membershipStatus: detailedStatus.status
                 };
               } catch (error: unknown) {
-                console.error(`Failed to fetch details for member ${member.member_id}:`, error);
+                if (isDev) console.error(`Failed to fetch details for member ${member.member_id}:`, error);
                 return member;
               }
             });
@@ -189,7 +190,7 @@ export const useMemberData = () => {
             setMembers(updatedMembers);
             setFilteredMembers(updatedMembers);
           } catch (error: unknown) {
-            console.error("Error fetching member details:", error);
+            if (isDev) console.error("Error fetching member details:", error);
           } finally {
             setLoading(false);
           }
@@ -197,7 +198,7 @@ export const useMemberData = () => {
         
         void fetchMembershipDetails();
       } catch (error: unknown) {
-        console.error("Error fetching members:", error);
+        if (isDev) console.error("Error fetching members:", error);
         setError(typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message ?? "Failed to load members" : "Failed to load members");
         setLoading(false);
       }

@@ -41,6 +41,7 @@ const MemberDashboard: React.FC = () => {
   const { navigateTo } = useTenantNavigation();
   const { t } = useTranslation('dashboards');
   const { getPrimaryColor, branding } = useBranding();
+  const isDev = import.meta.env.DEV;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<MemberStats>({
@@ -82,7 +83,7 @@ const MemberDashboard: React.FC = () => {
           memberCount: statsResponse.data.memberCount ?? 0,
         });
       } catch (apiErr) {
-        console.error("API error:", apiErr);
+        if (isDev) console.error("API error:", apiErr);
         
         // PRIVREMENO: Postavi mock vrijednost za memberCount da korisnik vidi primjer
         // Ovo se može ukloniti kad backend API bude funkcionalan
@@ -92,7 +93,7 @@ const MemberDashboard: React.FC = () => {
         }));
       }
     } catch (err) {
-      console.error("Error fetching dashboard stats:", err);
+      if (isDev) console.error("Error fetching dashboard stats:", err);
       setError("Neuspješno učitavanje podataka dashboarda. Molimo pokušajte ponovno kasnije.");
     } finally {
       setLoading(false);
@@ -114,7 +115,7 @@ const MemberDashboard: React.FC = () => {
 
       setUpcomingActivities(upcoming);
     } catch (err) {
-      console.error('Failed to fetch upcoming activities:', err);
+      if (isDev) console.error('Failed to fetch upcoming activities:', err);
     }
   };
 
@@ -122,7 +123,7 @@ const MemberDashboard: React.FC = () => {
   useEffect(() => {
     if (!branding) return; // Čekaj da se branding učita
     
-    console.log('[MEMBER-DASHBOARD] Učitavam podatke za tenant:', branding.subdomain, '(ID:', branding.id, ')');
+    if (isDev) console.log('[MEMBER-DASHBOARD] Učitavam podatke za tenant:', branding.subdomain, '(ID:', branding.id, ')');
     void fetchDashboardStats();
     void refreshUnreadCount(); // Inicijalno učitavanje broja nepročitanih poruka
 
@@ -135,14 +136,14 @@ const MemberDashboard: React.FC = () => {
         // Ažuriraj user objekt u AuthContext-u s najnovijim podacima
         updateUser(response.data);
       } catch (error) {
-        console.error('Failed to fetch full member data:', error);
+        if (isDev) console.error('Failed to fetch full member data:', error);
       }
     };
 
     void fetchMemberData();
     void fetchUpcomingActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branding]); // SAMO branding dependency - ne ovisimo o member prop-u!
+  }, [branding, isDev]); // SAMO branding dependency - ne ovisimo o member prop-u!
 
   // Dohvati annual stats NAKON što se fullMember postavi
   useEffect(() => {
@@ -150,12 +151,14 @@ const MemberDashboard: React.FC = () => {
 
     const fetchAnnualStats = async () => {
       try {
-        console.log('Fetching annual stats for member ID:', fullMember.member_id);
+        if (isDev) console.log('Fetching annual stats for member ID:', fullMember.member_id);
         const response = await api.get<AnnualStat[]>(`/members/${fullMember.member_id}/annual-stats`);
         
-        console.log('Received annual stats data:', response.data);
-        console.log('Number of years in stats:', response.data.length);
-        console.log('Years:', response.data.map(s => s.year));
+        if (isDev) {
+          console.log('Received annual stats data:', response.data);
+          console.log('Number of years in stats:', response.data.length);
+          console.log('Years:', response.data.map(s => s.year));
+        }
 
         const totals = response.data.reduce((acc, stat) => {
           acc.activities += stat.total_activities;
@@ -163,17 +166,17 @@ const MemberDashboard: React.FC = () => {
           return acc;
         }, { activities: 0, hours: 0 });
 
-        console.log('Calculated totals:', totals);
+        if (isDev) console.log('Calculated totals:', totals);
         setActivityTotals(totals);
       } catch (err) {
-        console.error("Error fetching annual stats:", err);
+        if (isDev) console.error("Error fetching annual stats:", err);
         // Postavi default vrijednosti u slučaju greške
         setActivityTotals({ activities: 0, hours: 0 });
       }
     };
 
     void fetchAnnualStats();
-  }, [fullMember?.member_id]); // Pokreni kad se fullMember postavi
+  }, [fullMember?.member_id, isDev]); // Pokreni kad se fullMember postavi
 
   // Zaštita: Ne prikazuj dashboard dok fullMember nije učitan
   if (!fullMember) {

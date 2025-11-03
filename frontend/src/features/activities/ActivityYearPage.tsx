@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+const isDev = import.meta.env.DEV;
 import { useParams } from 'react-router-dom';
 import { TenantLink } from '../../components/TenantLink';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
@@ -45,11 +46,11 @@ const ActivityYearPage: React.FC = () => {
       try {
         // api.get automatski dodaje tenant parameter i Authorization header
         const response = await api.get<MemberWithActivities>(`/members/${memberId}/activities?year=${year}`);
-        console.log('[ActivityYearPage] API response:', response.data);
-        console.log('[ActivityYearPage] First activity status:', response.data.activities[0]?.status, typeof response.data.activities[0]?.status);
+        if (isDev) console.log('[ActivityYearPage] API response:', response.data);
+        if (isDev) console.log('[ActivityYearPage] First activity status:', response.data.activities[0]?.status, typeof response.data.activities[0]?.status);
         setMemberWithActivities(response.data);
       } catch (err) {
-        console.error(`Error fetching activities for year ${year}:`, err);
+        if (isDev) console.error(`Error fetching activities for year ${year}:`, err);
         setError(t('activityYear.errorFetchingData'));
       } finally {
         setLoading(false);

@@ -64,10 +64,10 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
     setLoading(true);
     setError(null);
     try {
-      console.log('[SUPERUSER-DASHBOARD] Pozivam /admin/dashboard/stats...');
+      if (import.meta.env.DEV) console.log('[SUPERUSER-DASHBOARD] Pozivam /admin/dashboard/stats...');
       // apiClient automatski dodaje Authorization header i tenant parametar
       const memberResponse = await apiClient.get<DashboardStatsResponse>('/admin/dashboard/stats');
-      console.log('[SUPERUSER-DASHBOARD] Odgovor:', memberResponse.data);
+      if (import.meta.env.DEV) console.log('[SUPERUSER-DASHBOARD] Odgovor:', memberResponse.data);
       
       // Update with real data
       setStats({
@@ -80,7 +80,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
         lastBackup: memberResponse.data.lastBackup ?? "Never",
       });
     } catch (error) {
-      console.error("[SUPERUSER-DASHBOARD] Error fetching dashboard stats:", error);
+      if (import.meta.env.DEV) console.error("[SUPERUSER-DASHBOARD] Error fetching dashboard stats:", error);
       setError("Failed to load dashboard data. Please try again later.");
     } finally {
       setLoading(false);
@@ -93,7 +93,7 @@ const SuperUserDashboard: React.FC<Props> = ({ member }) => {
       const response = await api.get<Member>(`/members/me`);
       updateUser(response.data);
     } catch (error) {
-      console.error('Failed to update user data:', error);
+      if (import.meta.env.DEV) console.error('Failed to update user data:', error);
     }
   }, [updateUser]);
 

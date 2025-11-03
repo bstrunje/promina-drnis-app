@@ -67,7 +67,7 @@ apiInstance.interceptors.request.use(
       }
     } catch (error) {
       // Ako tenant nije dostupan, preusmjeri na login
-      console.error('[API-CONFIG] Tenant nije dostupan:', error);
+      if (import.meta.env.DEV) console.error('[API-CONFIG] Tenant nije dostupan:', error);
       // Očisti localStorage i preusmjeri
       localStorage.removeItem('current_tenant');
       localStorage.removeItem('organization_branding');
@@ -119,7 +119,7 @@ apiInstance.interceptors.response.use(
     // Ako je greška 401 ali NIJE login zahtjev (dakle izgubljena sesija negdje drugdje)
     // Napomena: Ne pokušavamo osvježiti token ovdje jer to radi axiosInterceptors.ts
     if (error.response?.status === 401 && !isLoginRequest) {
-      console.log('401 greška detektirana u apiConfig interceptoru');
+      if (import.meta.env.DEV) console.log('401 greška detektirana u apiConfig interceptoru');
       // Ne radimo ništa posebno ovdje, samo prosljeđujemo grešku
       // axiosInterceptors.ts će se pobrinuti za osvježavanje tokena
     }

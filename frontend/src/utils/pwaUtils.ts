@@ -6,6 +6,7 @@
 
 import { extractOrgSlugFromPath } from './tenantUtils';
 import { API_BASE_URL } from './config';
+const isDev = import.meta.env.DEV;
 
 /**
  * Dodaje ili ažurira <link rel="manifest"> tag u <head>
@@ -16,12 +17,12 @@ export const updateManifestLink = (): void => {
     // PRVO provjeri je li System Manager stranica - prije bilo čega drugog
     const currentPath = window.location.pathname;
     if (currentPath.includes('/system-manager/')) {
-      console.log('[PWA] System Manager detected - removing any existing manifest link');
+      if (isDev) console.log('[PWA] System Manager detected - removing any existing manifest link');
       // Ukloni postojeći manifest link ako postoji
       const existingLink = document.querySelector('link[rel="manifest"]');
       if (existingLink) {
         existingLink.remove();
-        console.log('[PWA] Manifest link removed for System Manager');
+        if (isDev) console.log('[PWA] Manifest link removed for System Manager');
       }
       return;
     }
@@ -30,7 +31,7 @@ export const updateManifestLink = (): void => {
     
     // Samo ako je unutar org context-a
     if (!orgSlug) {
-      console.log('[PWA] No org slug detected - skipping manifest update');
+      if (isDev) console.log('[PWA] No org slug detected - skipping manifest update');
       return;
     }
 
@@ -50,9 +51,9 @@ export const updateManifestLink = (): void => {
     // Dodaj u <head>
     document.head.appendChild(manifestLink);
     
-    console.log(`[PWA] Manifest updated for org: ${orgSlug}`);
+    if (isDev) console.log(`[PWA] Manifest updated for org: ${orgSlug}`);
   } catch (error) {
-    console.error('[PWA] Error updating manifest link:', error);
+    if (isDev) console.error('[PWA] Error updating manifest link:', error);
   }
 };
 
@@ -64,7 +65,7 @@ export const updateThemeColor = (color: string): void => {
     // Preskači PWA za System Manager stranice
     const currentPath = window.location.pathname;
     if (currentPath.includes('/system-manager/')) {
-      console.log('[PWA] System Manager detected - skipping theme color update');
+      if (isDev) console.log('[PWA] System Manager detected - skipping theme color update');
       return;
     }
     let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
@@ -76,9 +77,9 @@ export const updateThemeColor = (color: string): void => {
     }
     
     themeColorMeta.content = color;
-    console.log(`[PWA] Theme color updated: ${color}`);
+    if (isDev) console.log(`[PWA] Theme color updated: ${color}`);
   } catch (error) {
-    console.error('[PWA] Error updating theme color:', error);
+    if (isDev) console.error('[PWA] Error updating theme color:', error);
   }
 };
 
@@ -90,7 +91,7 @@ export const updatePageMeta = (orgName: string): void => {
     // Preskači PWA za System Manager stranice
     const currentPath = window.location.pathname;
     if (currentPath.includes('/system-manager/')) {
-      console.log('[PWA] System Manager detected - skipping page meta update');
+      if (isDev) console.log('[PWA] System Manager detected - skipping page meta update');
       return;
     }
     // Title
@@ -105,9 +106,9 @@ export const updatePageMeta = (orgName: string): void => {
     }
     descriptionMeta.content = `Aplikacija za članove ${orgName}`;
     
-    console.log(`[PWA] Page meta updated for: ${orgName}`);
+    if (isDev) console.log(`[PWA] Page meta updated for: ${orgName}`);
   } catch (error) {
-    console.error('[PWA] Error updating page meta:', error);
+    if (isDev) console.error('[PWA] Error updating page meta:', error);
   }
 };
 

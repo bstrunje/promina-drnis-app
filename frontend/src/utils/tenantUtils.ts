@@ -92,7 +92,7 @@ export const getCurrentTenant = (): string => {
   }
   
   // NEMA fallback-a - korisnik mora odabrati tenant
-  console.warn('[TENANT] Tenant nije specificiran - potrebna prijava');
+  if (import.meta.env.DEV) console.warn('[TENANT] Tenant nije specificiran - potrebna prijava');
   throw new Error('Tenant is required. Please login again.');
 };
 
@@ -187,7 +187,7 @@ export const setCachedTenant = (tenant: string): void => {
   try {
     localStorage.setItem('current_tenant', tenant);
   } catch (error) {
-    console.warn('Ne mogu spremiti tenant u localStorage:', error);
+    if (import.meta.env.DEV) console.warn('Ne mogu spremiti tenant u localStorage:', error);
   }
 };
 
@@ -198,7 +198,7 @@ export const clearCachedTenant = (): void => {
   try {
     localStorage.removeItem('current_tenant');
   } catch (error) {
-    console.warn('Ne mogu ukloniti tenant iz localStorage:', error);
+    if (import.meta.env.DEV) console.warn('Ne mogu ukloniti tenant iz localStorage:', error);
   }
 };
 

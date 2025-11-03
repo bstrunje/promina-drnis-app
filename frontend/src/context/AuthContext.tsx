@@ -127,10 +127,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       try {
         // KRITIČNO: Ako je ovo SystemManager ruta, ne provjeravaj Member auth
         const currentPath = window.location.pathname;
-        console.log('[AUTH] Checking auth for path:', currentPath);
+        if (import.meta.env.DEV) console.log('[AUTH] Checking auth for path:', currentPath);
         
         if (currentPath.includes('/system-manager')) {
-          console.log('[AUTH] SystemManager ruta detektirana, preskačem Member auth check');
+          if (import.meta.env.DEV) console.log('[AUTH] SystemManager ruta detektirana, preskačem Member auth check');
           setIsLoading(false);
           return;
         }
@@ -139,11 +139,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         const systemManager = localStorage.getItem("systemManager");
         const cachedTenant = localStorage.getItem("current_tenant");
         
-        console.log('[AUTH] localStorage check:', {
-          hasUser: !!savedUser,
-          hasSystemManager: !!systemManager,
-          path: currentPath
-        });
+        if (import.meta.env.DEV) {
+          console.log('[AUTH] localStorage check:', {
+            hasUser: !!savedUser,
+            hasSystemManager: !!systemManager,
+            path: currentPath
+          });
+        }
         
         const savedToken = tokenStorage.getAccessToken();
         
@@ -166,7 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             // MULTI-TENANCY VALIDACIJA: Provjeri da li tenant odgovara
             // (ne možemo garantirati da će uvijek imati organization podatke, pa samo upozoravamo)
             if (cachedTenant) {
-              console.log('[AUTH] Cached tenant:', cachedTenant, '| User loaded from localStorage');
+              if (import.meta.env.DEV) console.log('[AUTH] Cached tenant:', cachedTenant, '| User loaded from localStorage');
             }
             
             setUser({

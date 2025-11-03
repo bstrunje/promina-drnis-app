@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+const isDev = import.meta.env.DEV;
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
@@ -35,7 +36,7 @@ export const GlobalSupportManagementPage: React.FC = () => {
       const response = await supportTicketApi.getTickets({}, 1, 50);
       setTickets(response.tickets);
     } catch (error) {
-      console.error('Error loading tickets:', error);
+      if (isDev) console.error('Error loading tickets:', error);
       toast({
         title: 'Error',
         description: 'Failed to load support tickets',
@@ -51,14 +52,14 @@ export const GlobalSupportManagementPage: React.FC = () => {
       const response = await supportTicketApi.getTicketStats();
       setStats(response.stats);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      if (isDev) console.error('Error loading stats:', error);
     }
   };
 
   useEffect(() => {
     // Provjeri da je stvarno GSM (organization_id = null)
     if (manager?.organization_id !== null) {
-      console.warn('GlobalSupportManagementPage: Not a Global System Manager');
+      if (isDev) console.warn('GlobalSupportManagementPage: Not a Global System Manager');
       navigateTo('/system-manager/dashboard');
       return;
     }

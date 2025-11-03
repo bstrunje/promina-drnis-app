@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+const isDev = import.meta.env.DEV;
 import { Member, MembershipTypeEnum } from '@shared/member';
 import { formatInputDate } from '../../utils/dateUtils';
 import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
@@ -88,7 +89,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
         const formattedDate = formatInputDate(value);
         setMember(prev => ({ ...prev, [name]: formattedDate }));
       } catch {
-        console.error("Invalid date format:", value);
+        if (isDev) console.error("Invalid date format:", value);
         setMember(prev => ({ ...prev, [name]: value }));
       }
     } else {
@@ -103,7 +104,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
     // Dodaj organization_id iz branding contexta
     const organizationId = branding?.id;
     if (!organizationId) {
-      console.error('Cannot add member: organization_id is missing');
+      if (isDev) console.error('Cannot add member: organization_id is missing');
       return;
     }
     onAdd({ ...member, member_id: Date.now(), organization_id: organizationId } as Member);

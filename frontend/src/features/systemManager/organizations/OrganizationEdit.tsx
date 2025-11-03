@@ -1,5 +1,6 @@
 // frontend/src/features/systemManager/organizations/OrganizationEdit.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+const isDev = import.meta.env.DEV;
 import { useParams } from 'react-router-dom';
 import { useSystemManagerNavigation } from '../hooks/useSystemManagerNavigation';
 import { ArrowLeft, Save, Upload, X, Eye, EyeOff, Shield } from 'lucide-react';
@@ -102,7 +103,7 @@ const OrganizationEdit: React.FC = () => {
         sm_password: '', // Ne učitavaj lozinku
       });
     } catch (err) {
-      console.error('Error loading organization:', err);
+      if (isDev) console.error('Error loading organization:', err);
       setError('Failed to load organization');
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const OrganizationEdit: React.FC = () => {
       const data = response.data as { enabled?: boolean };
       setTrustedDevicesEnabled(Boolean(data.enabled));
     } catch (err) {
-      console.error('Error loading trusted devices settings:', err);
+      if (isDev) console.error('Error loading trusted devices settings:', err);
     }
   }, [id]);
 
@@ -138,7 +139,7 @@ const OrganizationEdit: React.FC = () => {
       await systemManagerApi.put(`/system-manager/organizations/${id}/trusted-devices-settings`, { enabled });
       setTrustedDevicesEnabled(enabled);
     } catch (err) {
-      console.error('Error updating trusted devices settings:', err);
+      if (isDev) console.error('Error updating trusted devices settings:', err);
       setError('Failed to update trusted devices settings');
     }
   };
@@ -173,7 +174,7 @@ const OrganizationEdit: React.FC = () => {
       await updateOrganization(parseInt(id), formData);
       navigateTo('/system-manager/organizations');
     } catch (err) {
-      console.error('Error updating organization:', err);
+      if (isDev) console.error('Error updating organization:', err);
       setError('Failed to update organization');
     } finally {
       setSaving(false);
@@ -234,7 +235,7 @@ const OrganizationEdit: React.FC = () => {
       const response = await resetOrganizationManagerCredentials(parseInt(id));
       alert(response.message); // Prikazujemo poruku u alertu
     } catch (err) {
-      console.error('Error resetting credentials:', err);
+      if (isDev) console.error('Error resetting credentials:', err);
       setError('Failed to reset credentials.');
     }
   };
@@ -263,7 +264,7 @@ const OrganizationEdit: React.FC = () => {
       
       alert(`2FA ${twoFactorAction === 'enable' ? 'enabled' : 'disabled'} successfully!`);
     } catch (err) {
-      console.error('Error updating 2FA:', err);
+      if (isDev) console.error('Error updating 2FA:', err);
       setError(err instanceof Error ? err.message : 'Failed to update 2FA');
     } finally {
       setSaving(false);

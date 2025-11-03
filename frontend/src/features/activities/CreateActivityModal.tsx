@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+const isDev = import.meta.env.DEV;
 import { useTranslation } from 'react-i18next';
 import './activities.css';
 import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
@@ -65,7 +66,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           const types = await getActivityTypes();
           setActivityTypes(types);
         } catch (err) {
-          console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
+          if (isDev) console.error('Greška prilikom dohvaćanja tipova aktivnosti:', err);
           setError(t('creation.errors.fetchTypes'));
         } finally {
           setLoadingTypes(false);
@@ -181,7 +182,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       setParticipantIds([]);
       onClose();
     } catch (err) {
-      console.error('Greška prilikom kreiranja aktivnosti:', err);
+      if (isDev) console.error('Greška prilikom kreiranja aktivnosti:', err);
       setError(t('error', { ns: 'common' }));
     } finally {
       setIsLoading(false);

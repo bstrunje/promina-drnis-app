@@ -2,15 +2,17 @@
  * Utility za upravljanje spremanjem tokena u localStorage
  */
 
+const isDev = import.meta.env.DEV;
+
 /**
  * Funkcija za spremanje refresh tokena u localStorage
  */
 export function storeRefreshToken(token: string): void {
   try {
     localStorage.setItem("refreshToken", token);
-    console.log('Refresh token spremljen u localStorage kao backup');
+    if (isDev) console.log('Refresh token spremljen u localStorage kao backup');
   } catch (error) {
-    console.error("Greška pri spremanju refresh tokena u lokalno spremište:", error);
+    if (isDev) console.error("Greška pri spremanju refresh tokena u lokalno spremište:", error);
   }
 }
 
@@ -21,7 +23,7 @@ export function getStoredRefreshToken(): string | null {
   try {
     return localStorage.getItem("refreshToken");
   } catch (error) {
-    console.error("Greška pri dohvatu refresh tokena iz lokalnog spremišta:", error);
+    if (isDev) console.error("Greška pri dohvatu refresh tokena iz lokalnog spremišta:", error);
     return null;
   }
 }
@@ -33,7 +35,7 @@ export function clearStoredRefreshToken(): void {
   try {
     localStorage.removeItem("refreshToken");
   } catch (error) {
-    console.error("Greška pri brisanju refresh tokena iz lokalnog spremišta:", error);
+    if (isDev) console.error("Greška pri brisanju refresh tokena iz lokalnog spremišta:", error);
   }
 }
 

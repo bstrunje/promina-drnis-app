@@ -32,10 +32,10 @@ if (import.meta.env.PROD) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          if (import.meta.env.DEV) console.log('SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          if (import.meta.env.DEV) console.log('SW registration failed: ', registrationError);
         });
     }
   });

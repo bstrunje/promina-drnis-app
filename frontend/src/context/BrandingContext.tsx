@@ -16,6 +16,8 @@ import { BrandingContext, type OrganizationBranding, type BrandingContextType } 
 const BRANDING_CACHE_KEY = 'organization_branding';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minuta
 
+const isDev = import.meta.env.DEV;
+
 interface CachedBranding {
   data: OrganizationBranding;
   timestamp: number;
@@ -36,12 +38,12 @@ const getTenantFromUrl = (): string => {
 
   // System Manager rute ne koriste branding – preskačemo u potpunosti
   if (pathname.startsWith('/system-manager')) {
-    console.log('[BRANDING] System Manager route - skipping tenant detection');
+    if (isDev) console.log('[BRANDING] System Manager route - skipping tenant detection');
     return 'skip';
   }
   
-  console.log('[BRANDING] 🔍 Detecting tenant from URL');
-  console.log('[BRANDING] 🔍 Hostname:', hostname, 'Pathname:', pathname);
+  if (isDev) console.log('[BRANDING] 🔍 Detecting tenant from URL');
+  if (isDev) console.log('[BRANDING] 🔍 Hostname:', hostname, 'Pathname:', pathname);
   
   // 1. Pokušaj iz URL path-a (PRIORITET!)
   if (pathname && pathname !== '/') {
@@ -62,7 +64,7 @@ const getTenantFromUrl = (): string => {
       const validSlugRegex = /^[a-z0-9-]+$/;
       
       if (!excludedPrefixes.includes(pathSlug) && validSlugRegex.test(pathSlug)) {
-        console.log('[BRANDING] ✅ Detected tenant from path:', pathSlug);
+        if (isDev) console.log('[BRANDING] ✅ Detected tenant from path:', pathSlug);
         localStorage.setItem('current_tenant', pathSlug);
         return pathSlug;
       }
@@ -73,7 +75,7 @@ const getTenantFromUrl = (): string => {
   const urlParams = new URLSearchParams(window.location.search);
   const tenantParam = urlParams.get('tenant') ?? urlParams.get('branding');
   if (tenantParam) {
-    console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
+    if (isDev) console.log('[BRANDING] ✅ Detected tenant from query:', tenantParam);
     localStorage.setItem('current_tenant', tenantParam);
     return tenantParam;
   }
@@ -83,14 +85,14 @@ const getTenantFromUrl = (): string => {
     // If running on Vercel project domain (e.g., managemembers.vercel.app),
     // do NOT treat the first label as tenant on the root; let Tenant Selector handle it
     if (hostname.endsWith('vercel.app')) {
-      console.log('[BRANDING] 🛑 Skipping subdomain detection on vercel.app host');
+      if (isDev) console.log('[BRANDING] 🛑 Skipping subdomain detection on vercel.app host');
       return 'missing';
     }
 
     const parts = hostname.split('.');
     if (parts.length >= 3) {
       const subdomain = parts[0];
-      console.log('[BRANDING] ✅ Detected tenant from subdomain:', subdomain);
+      if (isDev) console.log('[BRANDING] ✅ Detected tenant from subdomain:', subdomain);
       localStorage.setItem('current_tenant', subdomain);
       return subdomain;
     }
@@ -99,11 +101,11 @@ const getTenantFromUrl = (): string => {
   // 4. localStorage cache
   const cached = localStorage.getItem('current_tenant');
   if (cached) {
-    console.log('[BRANDING] ✅ Using cached tenant:', cached);
+    if (isDev) console.log('[BRANDING] ✅ Using cached tenant:', cached);
     return cached;
   }
   
-  console.log('[BRANDING] ⚠️  No tenant detected');
+  if (isDev) console.log('[BRANDING] ⚠️  No tenant detected');
   return 'missing';
 };
 
@@ -130,7 +132,7 @@ const getCachedBranding = (tenant: string): OrganizationBranding | null => {
     localStorage.removeItem(BRANDING_CACHE_KEY);
     return null;
   } catch (error) {
-    console.warn('Greška pri čitanju branding cache-a:', error);
+    if (isDev) console.warn('Greška pri čitanju branding cache-a:', error);
     localStorage.removeItem(BRANDING_CACHE_KEY);
     return null;
   }
@@ -148,7 +150,7 @@ const setCachedBranding = (branding: OrganizationBranding, tenant: string): void
     };
     localStorage.setItem(BRANDING_CACHE_KEY, JSON.stringify(cacheData));
   } catch (error) {
-    console.warn('Greška pri spremanju branding cache-a:', error);
+    if (isDev) console.warn('Greška pri spremanju branding cache-a:', error);
   }
 };
 
@@ -190,6 +192,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tenant, setTenant] = useState(getTenantFromUrl());
+  const isDev = import.meta.env.DEV;
   
   // Očisti stari cache pri mount-u ako je tenant različit
   useEffect(() => {
@@ -201,25 +204,25 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (cachedStr) {
           const cachedData = JSON.parse(cachedStr) as CachedBranding;
           if (cachedData.tenant !== currentTenant || (cachedTenantStr && cachedTenantStr !== currentTenant)) {
-            console.log('[BRANDING] 🗑️  Brišem stari cache pri inicijalizaciji - stari tenant:', cachedData.tenant, '/', cachedTenantStr, 'novi:', currentTenant);
+            if (isDev) console.log('[BRANDING] 🗑️  Brišem stari cache pri inicijalizaciji - stari tenant:', cachedData.tenant, '/', cachedTenantStr, 'novi:', currentTenant);
             localStorage.removeItem(BRANDING_CACHE_KEY);
             setBranding(null); // Force reload
           }
         }
       } catch (e) {
-        console.warn('[BRANDING] Greška pri inicijalnoj provjeri cache-a:', e);
+        if (isDev) console.warn('[BRANDING] Greška pri inicijalnoj provjeri cache-a:', e);
         localStorage.removeItem(BRANDING_CACHE_KEY);
       }
     }
     // Izvršava se samo jednom pri mount-u
-  }, []);
+  }, [isDev]);
 
   /**
    * Učitava branding podatke s API-ja
    */
   const loadBranding = async (): Promise<void> => {
     try {
-      console.log('[BRANDING] 🚀 Pokretanje loadBranding za tenant:', tenant);
+      if (isDev) console.log('[BRANDING] 🚀 Pokretanje loadBranding za tenant:', tenant);
       setIsLoading(true);
       setError(null);
       
@@ -244,20 +247,20 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (cachedStr) {
           const cachedData = JSON.parse(cachedStr) as CachedBranding;
           if (cachedData.tenant !== tenant) {
-            console.log('[BRANDING] 🗑️  Brišem stari cache za tenant:', cachedData.tenant);
+            if (isDev) console.log('[BRANDING] 🗑️  Brišem stari cache za tenant:', cachedData.tenant);
             localStorage.removeItem(BRANDING_CACHE_KEY);
           }
         }
       } catch (e) {
-        console.warn('[BRANDING] Greška pri provjeri cache-a:', e);
+        if (isDev) console.warn('[BRANDING] Greška pri provjeri cache-a:', e);
         localStorage.removeItem(BRANDING_CACHE_KEY);
       }
       
       // Provjeri cache
       const cached = getCachedBranding(tenant);
-      console.log('[BRANDING] 💾 Cache provjera:', cached ? 'HIT' : 'MISS');
+      if (isDev) console.log('[BRANDING] 💾 Cache provjera:', cached ? 'HIT' : 'MISS');
       if (cached) {
-        console.log('[BRANDING] ✅ Koristi cached podatke:', cached);
+        if (isDev) console.log('[BRANDING] ✅ Koristi cached podatke:', cached);
         setBranding(cached);
         
         // Ažuriraj PWA manifest i meta tagove i za cached branding
@@ -272,13 +275,13 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
       
       // Učitaj s API-ja (koristi puni org-config kako bismo dobili i dokumente)
-      console.log('[BRANDING] 🌐 Pozivam API:', '/org-config', 'tenant:', tenant);
+      if (isDev) console.log('[BRANDING] 🌐 Pozivam API:', '/org-config', 'tenant:', tenant);
       const response = await apiClient.get<ApiSuccessWrapper | RawBranding>(
         '/org-config',
         { params: { tenant } }
       );
       const payload = response.data;
-      console.log('[BRANDING] 📥 API response:', payload);
+      if (isDev) console.log('[BRANDING] 📥 API response:', payload);
 
       // Podržavamo oba formata: { success, data } ili direktni objekt
       const maybeWrapped = payload as ApiSuccessWrapper;
@@ -321,7 +324,7 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
       updatePageMeta(brandingData.name);
       
     } catch (err) {
-      console.error('Greška pri učitavanju branding podataka:', err);
+      if (isDev) console.error('Greška pri učitavanju branding podataka:', err);
       setError('Nije moguće učitati podatke organizacije');
       
       // U multi-tenant konfiguraciji ne postavljamo fallback branding
@@ -341,21 +344,22 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
     await loadBranding();
   };
 
+  // Stabiliziraj referencu funkcije kako bi useEffect dependencije bile ispravne
+  const loadBrandingCb = React.useCallback(loadBranding, [tenant, isDev]);
+
   // Prati promjene URL-a kroz React Router location i ažuriraj tenant
   useEffect(() => {
     const newTenant = getTenantFromUrl();
     if (newTenant !== tenant) {
-      console.log('[BRANDING] 🔄 URL promjena detektirana, novi tenant:', newTenant);
+      if (isDev) console.log('[BRANDING] 🔄 URL promjena detektirana, novi tenant:', newTenant);
       setTenant(newTenant);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, tenant, isDev]);
 
   // Učitaj branding pri mount-u i promjeni tenant-a
   useEffect(() => {
-    void loadBranding();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenant]);
+    void loadBrandingCb();
+  }, [tenant, loadBrandingCb]);
 
   // Postavi CSS varijable i jezik kad se branding učita
   useEffect(() => {
@@ -378,11 +382,11 @@ export const BrandingProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       // Automatski postavi jezik prema organizaciji
       if (branding.default_language && i18n.language !== branding.default_language) {
-        console.log(`[BRANDING] Postavljam jezik na: ${branding.default_language}`);
+        if (isDev) console.log(`[BRANDING] Postavljam jezik na: ${branding.default_language}`);
         void i18n.changeLanguage(branding.default_language);
       }
     }
-  }, [branding, i18n]);
+  }, [branding, i18n, isDev]);
 
   const contextValue: BrandingContextType = {
     branding,

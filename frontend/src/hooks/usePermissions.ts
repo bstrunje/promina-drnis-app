@@ -1,5 +1,6 @@
 // hooks/usePermissions.ts
 import { useState, useEffect } from 'react';
+const isDev = import.meta.env.DEV;
 import { useAuth } from '../context/useAuth';
 import { AdminPermissionsModel } from '@shared/systemManager';
 import api from '../utils/api/apiConfig';
@@ -49,7 +50,7 @@ export const usePermissions = () => {
       try {
         // Provjeri da li user ima member_id (može biti undefined za neke tipove korisnika)
         if (!user.member_id) {
-          console.warn('User object missing member_id:', user);
+          if (isDev) console.warn('User object missing member_id:', user);
           setPermissions(null);
           setLoading(false);
           return;
@@ -81,7 +82,7 @@ export const usePermissions = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching permissions:', error);
+        if (isDev) console.error('Error fetching permissions:', error);
         setPermissions(null);
       } finally {
         setLoading(false);

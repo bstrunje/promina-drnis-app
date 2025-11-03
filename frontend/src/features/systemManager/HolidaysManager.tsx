@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+const isDev = import.meta.env.DEV;
 import { useSystemManagerNavigation } from './hooks/useSystemManagerNavigation';
 import { ArrowLeft } from 'lucide-react';
 import { 
@@ -43,7 +44,7 @@ const HolidaysManager: React.FC = () => {
       const data = await getHolidaysForYear(selectedYear);
       setHolidays(data);
     } catch (error) {
-      console.error('Error fetching holidays:', error);
+      if (isDev) console.error('Error fetching holidays:', error);
       alert('Failed to load holidays');
     } finally {
       setLoading(false);
@@ -80,7 +81,7 @@ const HolidaysManager: React.FC = () => {
       await fetchHolidays();
       alert(`Holiday deleted successfully for ${selectedYear}`);
     } catch (error) {
-      console.error('Error deleting holiday:', error);
+      if (isDev) console.error('Error deleting holiday:', error);
       alert(`Failed to delete holiday for ${selectedYear}`);
     }
   };
@@ -100,7 +101,7 @@ const HolidaysManager: React.FC = () => {
       setIsAddModalOpen(false);
       await fetchHolidays();
     } catch (error) {
-      console.error('Error saving holiday:', error);
+      if (isDev) console.error('Error saving holiday:', error);
       const errorMsg = error instanceof Error ? error.message : 'Failed to save holiday';
       alert(errorMsg);
     }
@@ -114,7 +115,7 @@ const HolidaysManager: React.FC = () => {
       alert(`Seeded ${result.created} holidays, skipped ${result.skipped} (already exist) for ${selectedYear}`);
       await fetchHolidays();
     } catch (error) {
-      console.error('Error seeding holidays:', error);
+      if (isDev) console.error('Error seeding holidays:', error);
       alert(`Failed to seed holidays for ${selectedYear}`);
     }
   };
@@ -127,7 +128,7 @@ const HolidaysManager: React.FC = () => {
       alert(`Deleted ${result.count} holidays for ${selectedYear}`);
       await fetchHolidays();
     } catch (error) {
-      console.error('Error deleting holidays:', error);
+      if (isDev) console.error('Error deleting holidays:', error);
       alert(`Failed to delete holidays for ${selectedYear}`);
     }
   };
@@ -139,7 +140,7 @@ const HolidaysManager: React.FC = () => {
       setSyncYear(selectedYear); // Inicijaliziraj s trenutno odabranom godinom
       setIsSyncModalOpen(true);
     } catch (error) {
-      console.error('Error fetching countries:', error);
+      if (isDev) console.error('Error fetching countries:', error);
       alert('Failed to load countries list');
     }
   };
@@ -157,7 +158,7 @@ const HolidaysManager: React.FC = () => {
       setIsSyncModalOpen(false);
       await fetchHolidays();
     } catch (error) {
-      console.error('Error syncing holidays:', error);
+      if (isDev) console.error('Error syncing holidays:', error);
       const errorMsg = error instanceof Error ? error.message : 'Failed to sync holidays';
       alert(errorMsg);
     } finally {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+const isDev = import.meta.env.DEV;
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -45,7 +46,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
       const response = await supportTicketApi.getTicketById(initialTicket.id);
       setTicket(response.ticket);
     } catch (error) {
-      console.error('Error refreshing ticket:', error);
+      if (isDev) console.error('Error refreshing ticket:', error);
     }
   }, [initialTicket.id]);
 
@@ -127,7 +128,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         description: 'Response added successfully'
       });
     } catch (error) {
-      console.error('Error adding response:', error);
+      if (isDev) console.error('Error adding response:', error);
       toast({
         title: 'Error',
         description: 'Failed to add response',
@@ -147,7 +148,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         description: `Ticket status updated to ${TICKET_STATUS_LABELS[newStatus]}`
       });
     } catch (error) {
-      console.error('Error updating ticket status:', error);
+      if (isDev) console.error('Error updating ticket status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update ticket status',
@@ -169,7 +170,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         description: 'Ticket closed successfully'
       });
     } catch (error) {
-      console.error('Error closing ticket:', error);
+      if (isDev) console.error('Error closing ticket:', error);
       toast({
         title: 'Error',
         description: 'Failed to close ticket',

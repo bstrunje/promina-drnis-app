@@ -14,7 +14,18 @@
         "feePaid": "Plaćena članarina",
         "feeRequired": "Potrebno platiti",
         "ageDistribution": "Statistika po dobnim skupinama",
-        "years": "{{range}} godina"
+        "years": "{{range}} godina",
+        "activities": {
+            "title": "Aktivnosti",
+            "byCategory": "po kategorijama",
+            "loading": "Učitavanje aktivnosti...",
+            "error": "Greška pri učitavanju aktivnosti.",
+            "activitiesCount": "Aktivnosti",
+            "participantsCount": "Sudionici",
+            "totalSummary": "Ukupno",
+            "totalActivities": "Ukupno aktivnosti",
+            "totalParticipants": "Ukupno različitih sudionika"
+        }
     },
     "permissions": {
         "addMemberPermissions": "Dodaj administratorske ovlasti članu",

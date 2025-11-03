@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+const isDev = import.meta.env.DEV;
 import { useTranslation } from 'react-i18next';
 import './activities.css'; // Dodajemo CSS za custom stilove
 import { useParams, useLocation, useSearchParams } from 'react-router-dom';
@@ -125,7 +126,7 @@ const ActivityCategoryPage: React.FC = () => {
       
       setError(null);
     } catch (err) {
-      console.error('Greška prilikom dohvaćanja podataka:', err);
+      if (isDev) console.error('Greška prilikom dohvaćanja podataka:', err);
       setError(t('activityOverview.errorFetchingData'));
     } finally {
       setLoading(false);
@@ -157,7 +158,7 @@ const ActivityCategoryPage: React.FC = () => {
       toast.success(t('activitiesAdmin.deleteSuccess'));
       void fetchData(); // Ponovno učitaj aktivnosti
     } catch (error) {
-      console.error('Greška prilikom brisanja aktivnosti:', error);
+      if (isDev) console.error('Greška prilikom brisanja aktivnosti:', error);
       toast.error(t('activitiesAdmin.deleteError'));
     } finally {
       setIsDeleting(false);

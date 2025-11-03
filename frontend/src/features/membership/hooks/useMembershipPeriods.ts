@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+const isDev = import.meta.env.DEV;
 import { useToast } from "@components/ui/use-toast";
 // Uklonjeno: import { Member } from "@shared/member"; // nije korišteno
 import { MembershipPeriod, MembershipEndReason } from "@shared/membership";
@@ -100,7 +101,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
               : { can_manage_end_reasons: false }
           );
         } catch (error) {
-          console.error('Failed to fetch member permissions:', error);
+          if (isDev) console.error('Failed to fetch member permissions:', error);
         }
       }
     };
@@ -139,7 +140,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
       });
 
     } catch (error) {
-      console.error(error);
+      if (isDev) console.error(error);
       toast({
         title: "Greška",
         description: "Failed to update end reason",
@@ -173,7 +174,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
       await onUpdate(normalized);
       setIsEditing(false);
     } catch (error) {
-      console.error("Failed to update periods:", error);
+      if (isDev) console.error("Failed to update periods:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -194,7 +195,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
     );
 
     if (!periodToUpdate) {
-      console.error('Period not found');
+      if (isDev) console.error('Period not found');
       return;
     }
 
@@ -219,7 +220,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
       const date = parse(value, "dd.MM.yyyy", getCurrentDate());
       
       if (!isValid(date)) {
-        console.error('Invalid date format. Please use DD.MM.YYYY');
+        if (isDev) console.error('Invalid date format. Please use DD.MM.YYYY');
         return;
       }
 
@@ -427,7 +428,7 @@ const [memberPermissions, setMemberPermissions] = useState<MemberPermissions | n
       setEditedPeriods(updatedPeriods);
       setNewPeriod(null);
     } catch (error) {
-      console.error("Error saving new period:", error);
+      if (isDev) console.error("Error saving new period:", error);
       toast({
         title: "Greška",
         description: "Došlo je do greške prilikom dodavanja perioda",

@@ -19,6 +19,7 @@ import TenantSelector from './components/TenantSelector';
 // Lazy učitavanje većih stranica radi smanjenja početnog bundle-a
 const ActivitiesList = lazy(() => import('./features/activities/ActivitiesList'));
 const MemberList = lazy(() => import('./features/members/MemberList'));
+const MembersStatisticsPage = lazy(() => import('./features/members/MembersStatisticsPage'));
 const MemberDetailsPageLazy = lazy(() => import('./features/members/MemberDetailsPage'));
 const ActivityCategoryPageLazy = lazy(() => import('./features/activities/ActivityCategoryPage'));
 const ActivityDetailPageLazy = lazy(() => import('./features/activities/ActivityDetailPage'));
@@ -54,20 +55,20 @@ function OrgRoutes() {
   useFavicon(branding?.logo_path ?? '/pwa/icons/icon-192x192.png');
   
   // Debug: provjeri je li orgSlug uspješno izvučen
-  console.log('[APP] OrgRoutes - orgSlug:', orgSlug);
+  if (import.meta.env.DEV) console.log('[APP] OrgRoutes - orgSlug:', orgSlug);
 
   const handleLogout = async () => {
     try {
-      console.log('Započinjem odjavu korisnika iz App komponente...');
+      if (import.meta.env.DEV) console.log('Započinjem odjavu korisnika iz App komponente...');
       
       await logout();
       
       // Preusmjeri na login unutar iste organizacije
       navigate(`/${orgSlug}/login`, { replace: true });
       
-      console.log('Korisnik uspješno preusmjeren na login stranicu');
+      if (import.meta.env.DEV) console.log('Korisnik uspješno preusmjeren na login stranicu');
     } catch (error) {
-      console.error('Greška prilikom odjave korisnika:', error);
+      if (import.meta.env.DEV) console.error('Greška prilikom odjave korisnika:', error);
       navigate(`/${orgSlug}/login`, { replace: true });
     }
   };
@@ -119,6 +120,7 @@ function OrgRoutes() {
 
             <Route path="/messages" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MessageList /></Suspense>} />
             <Route path="/members" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberList /></Suspense>} />
+            <Route path="/members/statistics" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MembersStatisticsPage /></Suspense>} />
             <Route path="/members/:id" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
             
             <Route path="/duty-calendar" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><DutyCalendar /></Suspense>} />

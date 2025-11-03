@@ -14,7 +14,18 @@
         "feePaid": "Fee paid",
         "feeRequired": "Payment required",
         "ageDistribution": "Age group statistics",
-        "years": "{{range}} years"
+        "years": "{{range}} years",
+        "activities": {
+            "title": "Activities",
+            "byCategory": "by category",
+            "loading": "Loading activities...",
+            "error": "Failed to load activities.",
+            "activitiesCount": "Activities",
+            "participantsCount": "Participants",
+            "totalSummary": "Total",
+            "totalActivities": "Total activities",
+            "totalParticipants": "Total distinct participants"
+        }
     },
     "permissions": {
         "addMemberPermissions": "Add administrative permissions to member",

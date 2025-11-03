@@ -37,6 +37,7 @@ const hatSizeOptions: SizeOptions[] = [
 // Ove opcije će biti generirane dinamički koristeći useTranslation hook
 
 const LoginPage = () => {
+  const isDev = import.meta.env.DEV;
   const { t } = useTranslation('auth');
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
@@ -362,19 +363,19 @@ const LoginPage = () => {
       
       // Provjeri postoji li putanja za preusmjeravanje
       if (redirectPath) {
-        console.log(`Preusmjeravam na spremljenu putanju: ${redirectPath}`);
+        if (isDev) console.log(`Preusmjeravam na spremljenu putanju: ${redirectPath}`);
         navigateWithTenant(redirectPath);
       } else {
         // Dohvati spremljenu putanju iz sessionStorage ako postoji
         const savedPath = sessionStorage.getItem('lastPath');
         if (savedPath) {
-          console.log(`Preusmjeravam na spremljenu putanju iz sessionStorage: ${savedPath}`);
+          if (isDev) console.log(`Preusmjeravam na spremljenu putanju iz sessionStorage: ${savedPath}`);
           // Očisti spremljenu putanju
           sessionStorage.removeItem('lastPath');
           navigateWithTenant(savedPath);
         } else {
           // Ako nema spremljene putanje, preusmjeri prema ulozi
-          console.log('Nema spremljene putanje, preusmjeravam prema ulozi');
+          if (isDev) console.log('Nema spremljene putanje, preusmjeravam prema ulozi');
           // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
           switch(member.role) {
             case 'member_administrator':
@@ -392,7 +393,7 @@ const LoginPage = () => {
         }
       }
     } catch (error) {
-      console.error("Login error:", error);
+      if (isDev) console.error("Login error:", error);
       // Lokalizirani prikaz greške na temelju code polja iz backenda (Opcija C)
       if (axios.isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as { code?: string; message?: string };
@@ -428,7 +429,7 @@ const LoginPage = () => {
 
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Registration form submitted');
+    if (isDev) console.log('Registration form submitted');
     
     if (!acceptedTerms) {
       setMessage({
@@ -466,12 +467,12 @@ const LoginPage = () => {
         }
       };
 
-      console.log('Sending registration data to API:', memberData);
+      if (isDev) console.log('Sending registration data to API:', memberData);
       const response = await register(memberData);
-      console.log('Registration API response:', response);
+      if (isDev) console.log('Registration API response:', response);
       
       if (response.message) {
-        console.log('Setting success message:');
+        if (isDev) console.log('Setting success message:');
         
         // Postavljamo poruku u formi za registraciju
         setMessage({ type: "success", content: t('login.registrationSuccess') });

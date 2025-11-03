@@ -41,6 +41,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onUpdate }) => {
   const { t } = useTranslation('profile');
   const { systemSettings } = useSystemSettings();
   const { permissions } = usePermissions();
+  const isDev = import.meta.env.DEV;
   // Ako id nije definiran, koristi user.member_id ili fallback na "0" (default)
 const memberId = useMemo(() => {
   if (id) return parseInt(id, 10);
@@ -71,14 +72,14 @@ const memberId = useMemo(() => {
     const membershipValid = member?.membership_details?.membership_valid ?? false;
     
     // Debug logging
-    console.log('[isFeeCurrent] Using backend-calculated status:', {
+    if (isDev) console.log('[isFeeCurrent] Using backend-calculated status:', {
       membership_valid: membershipValid,
       reason: member?.membership_details?.membership_valid_reason,
       card_stamp_issued: member?.membership_details?.card_stamp_issued
     });
     
     return membershipValid;
-  }, [member?.membership_details?.membership_valid, member?.membership_details?.membership_valid_reason, member?.membership_details?.card_stamp_issued]);
+  }, [member?.membership_details?.membership_valid, member?.membership_details?.membership_valid_reason, member?.membership_details?.card_stamp_issued, isDev]);
 
   // Helper function to calculate total duration
   // Funkcija za hrvatsku pluralizaciju
@@ -187,7 +188,7 @@ const response = await api.get<Member>(`/members/${memberId}?t=${timestamp}`, {
       setMember(memberData);
 setEditedMember(memberData);
     } catch (error) {
-      console.error("Error fetching member details:", error);
+      if (isDev) console.error("Error fetching member details:", error);
       setError(
         error instanceof Error
           ? error.message
@@ -201,14 +202,13 @@ setEditedMember(memberData);
         }, 100);
       }
     }
-  }, [memberId, savedScrollPosition, t]);
+  }, [memberId, savedScrollPosition, t, isDev]);
   
     useEffect(() => {
   if (memberId) {
     void fetchMemberDetails(false); // Označi kao floating promise
   }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [memberId]);
+}, [memberId, fetchMemberDetails]);
 
   useEffect(() => {
     if (member?.membership_history) {
@@ -252,7 +252,7 @@ setEditedMember(memberData);
             : null
         );
       } catch {
-      console.error("Invalid date format:", value);
+      if (isDev) console.error("Invalid date format:", value);
       setValidationErrors(prev => ({
         ...prev,
         [name]: t('invalidDateFormat')
@@ -319,7 +319,7 @@ setEditedMember(memberData);
         description: t('membershipHistoryUpdated'),
       });
     } catch (error) {
-      console.error("Failed to update membership history:", error);
+      if (isDev) console.error("Failed to update membership history:", error);
       toast({
         title: t('updateErrorTitle'),
         description: t('membershipHistoryUpdateError'),
@@ -356,7 +356,7 @@ setEditedMember(memberData);
         });
       }
     } catch (error) {
-      console.error("Failed to update member:", error);
+      if (isDev) console.error("Failed to update member:", error);
       setError(t('updateErrorDescription'));
       toast({
         title: t('updateErrorTitle'),

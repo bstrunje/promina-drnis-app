@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config';
 import { jwtDecode } from 'jwt-decode';
 import { navigateToLogin } from './navigationHelper';
 import { getCurrentTenant, extractOrgSlugFromPath } from '../tenantUtils';
+const isDev = import.meta.env.DEV;
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -66,7 +67,7 @@ export class AuthTokenService {
 
         // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
         if (response.status === 401 || response.status === 403) {
-          console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+          if (isDev) console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
           return null;
         }
 
@@ -122,7 +123,7 @@ export class AuthTokenService {
       // exp je u sekundama, pretvaramo u milisekunde
       return decoded.exp * 1000;
     } catch (error) {
-      console.error('Greška pri dekodiranju tokena:', error);
+      if (isDev) console.error('Greška pri dekodiranju tokena:', error);
       return null;
     }
   }
@@ -172,7 +173,7 @@ export class AuthTokenService {
             }
           }
         } catch (error) {
-          console.error('Greška pri automatskom osvježavanju tokena:', error);
+          if (isDev) console.error('Greška pri automatskom osvježavanju tokena:', error);
         }
       })();
     }, 30000);
@@ -190,7 +191,7 @@ export class AuthTokenService {
               }
             }
           } catch (error) {
-            console.error('Greška pri provjeri tokena nakon reaktiviranja taba:', error);
+            if (isDev) console.error('Greška pri provjeri tokena nakon reaktiviranja taba:', error);
           }
         })();
       }
@@ -240,7 +241,7 @@ export class AuthTokenService {
       if (response.ok) {
         // console.log("Korisnik uspješno odjavljen na backendu");
       } else {
-        console.error(`Greška pri odjavi na backendu: HTTP ${response.status}`);
+        if (isDev) console.error(`Greška pri odjavi na backendu: HTTP ${response.status}`);
       }
 
       // Dodatno čišćenje kolačića na klijentskoj strani kao sigurnosna mjera
@@ -263,7 +264,7 @@ export class AuthTokenService {
 
       // console.log("Kolačići i zastarjeli tokeni očišćeni na klijentskoj strani");
     } catch (error) {
-      console.error("Greška pri odjavi na backendu:", error);
+      if (isDev) console.error("Greška pri odjavi na backendu:", error);
     } finally {
       // Čistimo sve tokene
       tokenStorage.clearAllTokens();
