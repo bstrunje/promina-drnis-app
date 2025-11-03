@@ -116,20 +116,26 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                     <HardDrive className="w-4 h-4 mr-1" /> Disk:
                   </div>
                   <div>
-                    Used: {stats.healthDetails.diskSpace.percentUsed}%
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className={`h-2.5 rounded-full ${
-                          stats.healthDetails.diskSpace.percentUsed > 90 ? 'bg-red-500' :
-                          stats.healthDetails.diskSpace.percentUsed > 70 ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`} 
-                        style={{ width: `${stats.healthDetails.diskSpace.percentUsed}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      Free: {formatBytes(stats.healthDetails.diskSpace.available)} of {formatBytes(stats.healthDetails.diskSpace.total)}
-                    </div>
+                    {typeof stats.healthDetails.diskSpace?.percentUsed === 'number' ? (
+                      <>
+                        Used: {stats.healthDetails.diskSpace.percentUsed}%
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full ${
+                              stats.healthDetails.diskSpace.percentUsed > 90 ? 'bg-red-500' :
+                              stats.healthDetails.diskSpace.percentUsed > 70 ? 'bg-yellow-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${stats.healthDetails.diskSpace.percentUsed}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Free: {formatBytes(stats.healthDetails.diskSpace.available ?? 0)} of {formatBytes(stats.healthDetails.diskSpace.total ?? 0)}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-gray-600">N/A</span>
+                    )}
                   </div>
                 </div>
                 
@@ -139,29 +145,35 @@ const SystemStatus: React.FC<SystemStatusProps> = ({ stats, statsLoading }) => {
                     <Cpu className="w-4 h-4 mr-1" /> Memory:
                   </div>
                   <div>
-                    Used: {stats.healthDetails.memory.percentUsed}%
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className={`h-2.5 rounded-full ${
-                          stats.healthDetails.memory.percentUsed > 90 ? 'bg-red-500' :
-                          stats.healthDetails.memory.percentUsed > 70 ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`} 
-                        style={{ width: `${stats.healthDetails.memory.percentUsed}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      Free: {formatBytes(stats.healthDetails.memory.available)} of {formatBytes(stats.healthDetails.memory.total)}
-                    </div>
+                    {typeof stats.healthDetails.memory?.percentUsed === 'number' ? (
+                      <>
+                        Used: {stats.healthDetails.memory.percentUsed}%
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full ${
+                              stats.healthDetails.memory.percentUsed > 90 ? 'bg-red-500' :
+                              stats.healthDetails.memory.percentUsed > 70 ? 'bg-yellow-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${stats.healthDetails.memory.percentUsed}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Free: {formatBytes(stats.healthDetails.memory.available ?? 0)} of {formatBytes(stats.healthDetails.memory.total ?? 0)}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-gray-600">N/A</span>
+                    )}
                   </div>
                 </div>
                 
                 {/* Uptime */}
                 <div className="space-y-1">
                   <div className="font-medium text-gray-700">Uptime:</div>
-                  <div>{formatUptime(stats.healthDetails.uptime)}</div>
+                  <div>{typeof stats.healthDetails.uptime === 'number' ? formatUptime(stats.healthDetails.uptime) : 'N/A'}</div>
                   <div className="text-xs text-gray-600">
-                    Last check: {formatDate(stats.healthDetails.lastCheck, 'dd.MM.yyyy HH:mm')}
+                    Last check: {stats.healthDetails.lastCheck ? formatDate(stats.healthDetails.lastCheck, 'dd.MM.yyyy HH:mm') : 'N/A'}
                   </div>
                 </div>
               </div>

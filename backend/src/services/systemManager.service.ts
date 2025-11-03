@@ -13,6 +13,7 @@ import { JWT_SECRET } from '../config/jwt.config.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
 import { list } from '@vercel/blob';
+import os from 'os';
 
 type SystemSettingsExtended = {
     id: string;
@@ -540,12 +541,24 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             else if (ageHours > 72) status = 'Error';
             else if (ageHours > 48) status = status === 'Error' ? 'Error' : 'Warning';
 
+            // Populate memory and basic uptime; disk space is not available in Node stdlib → provide safe defaults
+            const totalMem = os.totalmem?.() ?? 0;
+            const freeMem = os.freemem?.() ?? 0;
+            const usedMem = Math.max(totalMem - freeMem, 0);
+            const memPercent = totalMem > 0 ? Math.round((usedMem / totalMem) * 100) : 0;
+
             const healthDetails = {
                 status,
                 dbConnection,
                 dbLatencyMs,
                 blobAccessible,
                 lastCheck: new Date(),
+                memory: {
+                    available: freeMem,
+                    total: totalMem,
+                    percentUsed: memPercent,
+                },
+                uptime: Math.round(process.uptime()),
             } as const;
 
             return {
