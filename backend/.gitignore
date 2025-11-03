@@ -35,8 +35,11 @@ dist/
 uploads/
 .vercel
 
-scripts/
+/scripts/
 .vercel
+
+# Do NOT ignore source scripts used at runtime
+!src/scripts/**
 
 # Testni alati koji nisu potrebni u produkciji
 src/middleware/test-mode.middleware.ts
