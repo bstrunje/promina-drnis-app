@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Navigation from '../components/Navigation';
 import AuthProvider from './context/AuthContext';
@@ -48,7 +48,6 @@ const DutyCalendar = lazy(() => import('./features/duty/DutyCalendar'));
 function OrgRoutes() {
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const { branding } = useBrandingContext();
   
   // Dinamički postavi favicon na tenant logo ili fallback

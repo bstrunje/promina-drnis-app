@@ -296,6 +296,8 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    setPinRequired(false);
+    setTwoFaRequired(false);
 
     try {
       // Uklonjen loginPayload, šaljemo loginData direktno s PIN-om i rememberDevice ako je potreban
