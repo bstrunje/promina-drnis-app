@@ -296,8 +296,11 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setPinRequired(false);
-    setTwoFaRequired(false);
+    // Reset flagove samo ako nismo u PIN ili 2FA koraku
+    if (!pinRequired && !twoFaRequired) {
+      setPinRequired(false);
+      setTwoFaRequired(false);
+    }
 
     try {
       // Uklonjen loginPayload, šaljemo loginData direktno s PIN-om i rememberDevice ako je potreban
@@ -1153,11 +1156,12 @@ const LoginPage = () => {
                           className="mt-2 p-2 w-full border rounded"
                           value={pin}
                           maxLength={6}
+                          minLength={6}
                           onChange={(e) => {
                             const newPin = e.target.value;
                             setPin(newPin);
-                            // Automatski submit kada se unese PIN od 4-6 znamenki
-                            if (newPin.length >= 4 && newPin.length <= 6 && /^\d+$/.test(newPin)) {
+                            // Automatski submit samo kada se unese točno 6 znamenki
+                            if (newPin.length === 6 && /^\d+$/.test(newPin)) {
                               // Kratka pauza da korisnik vidi unos, zatim automatski submit
                               setTimeout(() => {
                                 const form = e.target.closest('form');

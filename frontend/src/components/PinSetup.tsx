@@ -60,15 +60,15 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
 
   const validatePin = (pinValue: string): string | null => {
     if (!pinValue) return t('pinSetup.validation.required');
-    if (pinValue.length < 4) return t('pinSetup.validation.tooShort');
+    if (pinValue.length < 6) return t('pinSetup.validation.tooShort');
     if (pinValue.length > 6) return t('pinSetup.validation.tooLong');
     if (!/^\d+$/.test(pinValue)) return t('pinSetup.validation.numbersOnly');
     if (/^(\d)\1+$/.test(pinValue)) return t('pinSetup.validation.noRepeating');
     
-    // Provjeri jednostavne sekvence
-    const sequences = ['0123', '1234', '2345', '3456', '4567', '5678', '6789'];
-    const reverseSequences = sequences.map(seq => seq.split('').reverse().join(''));
-    if (sequences.includes(pinValue) || reverseSequences.includes(pinValue)) {
+    // Provjeri jednostavne 6-znamenkaste sekvence (uzlazne/silazne)
+    const sequences6 = ['012345','123456','234567','345678','456789'];
+    const reverseSequences6 = sequences6.map(seq => seq.split('').reverse().join(''));
+    if (sequences6.includes(pinValue) || reverseSequences6.includes(pinValue)) {
       return t('pinSetup.validation.noSequence');
     }
     
@@ -237,6 +237,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                     value={currentPin}
                     onChange={(e) => setCurrentPin(e.target.value)}
                     placeholder={t('pinSetup.form.currentPinPlaceholder')}
+                    minLength={6}
                     maxLength={6}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -261,6 +262,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder={t('pinSetup.form.pinPlaceholder')}
+                minLength={6}
                 maxLength={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -275,6 +277,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value)}
                 placeholder={t('pinSetup.form.confirmPinPlaceholder')}
+                minLength={6}
                 maxLength={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -300,7 +303,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
               >
                 {isLoading ? t('pinSetup.buttons.saving') : (pinStatus.hasPin ? t('pinSetup.buttons.changePin') : t('pinSetup.buttons.setPin'))}
               </Button>
-              
+
               {pinStatus.hasPin && (
                 <Button
                   onClick={() => { void handleRemovePin(); }}
@@ -311,7 +314,7 @@ const PinSetup: React.FC<PinSetupProps> = ({ memberId }) => {
                   {isLoading ? t('pinSetup.buttons.removing') : t('pinSetup.buttons.removePin')}
                 </Button>
               )}
-              
+
               <Button
                 onClick={() => {
                   setIsChanging(false);

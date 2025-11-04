@@ -383,15 +383,15 @@
         "currentPinPlaceholder": "Unesite trenutni PIN",
         "newPinLabel": "Novi PIN",
         "pinLabel": "PIN",
-        "pinLengthHint": "(4-6 znamenki)",
+        "pinLengthHint": "(6 znamenki)",
         "pinPlaceholder": "Unesite PIN",
         "confirmPinLabel": "Potvrdite PIN",
         "confirmPinPlaceholder": "Ponovite PIN"
       },
       "validation": {
         "required": "PIN je obavezan",
-        "tooShort": "PIN mora imati najmanje 4 znamenke",
-        "tooLong": "PIN može imati najviše 6 znamenki",
+        "tooShort": "PIN mora imati točno 6 znamenki",
+        "tooLong": "PIN mora imati točno 6 znamenki",
         "numbersOnly": "PIN može sadržavati samo brojeve",
         "noRepeating": "PIN ne može biti isti broj (npr. 1111)",
         "noSequence": "PIN ne može biti jednostavna sekvenca (npr. 1234)",

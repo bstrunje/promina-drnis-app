@@ -22,7 +22,7 @@ import { useSystemSettings } from "../../hooks/useSystemSettings";
 import { isPinEligible } from "../../utils/pinEligibility";
 import { usePermissions } from "../../hooks/usePermissions";
 import ActivityHistory from "../../../components/ActivityHistory";
-import PinSetup from "@components/PinSetup";
+import PinSetup from "../../components/PinSetup";
 
 
 interface Props {
