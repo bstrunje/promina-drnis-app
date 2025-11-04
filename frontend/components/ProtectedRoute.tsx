@@ -22,7 +22,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
       
       // Spremamo putanju samo ako nije login stranica i korisnik je prijavljen
       if (location.pathname !== loginPath) {
-        sessionStorage.setItem('lastPath', location.pathname);
+        sessionStorage.setItem('lastPath', location.pathname + location.search);
       }
     }
   }, [location.pathname, user]);
@@ -68,7 +68,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
       
       // Provjeri da već nismo na login stranici
       if (location.pathname !== loginPath) {
-        const redirectParam = location.pathname ? encodeURIComponent(location.pathname) : '';
+        const redirectParam = encodeURIComponent(location.pathname + location.search);
         navigate(`${loginPath}?redirect=${redirectParam}`, { replace: true });
       }
     }

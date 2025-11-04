@@ -62,14 +62,11 @@ function OrgRoutes() {
       if (import.meta.env.DEV) console.log('Započinjem odjavu korisnika iz App komponente...');
       
       await logout();
-      
-      // Preusmjeri na login unutar iste organizacije
-      navigate(`/${orgSlug}/login`, { replace: true });
-      
-      if (import.meta.env.DEV) console.log('Korisnik uspješno preusmjeren na login stranicu');
+      // Preusmjeravanje prepustiti ProtectedRoute-u kako bi izbjegli dvostruke navigacije
+      if (import.meta.env.DEV) console.log('Odjava dovršena; preusmjeravanje će odraditi ProtectedRoute.');
     } catch (error) {
       if (import.meta.env.DEV) console.error('Greška prilikom odjave korisnika:', error);
-      navigate(`/${orgSlug}/login`, { replace: true });
+      // U slučaju greške, i dalje ne forsiramo navigaciju ovdje
     }
   };
 
