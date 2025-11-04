@@ -202,7 +202,8 @@ export default function MemberList(): JSX.Element {
     ageFilter,
     sortCriteria,
     sortOrder,
-    groupByType
+    groupByType,
+    enableSensitiveSearch: isAdmin || isSuperuser
   });
 
   // Memoized function for grouping members by status

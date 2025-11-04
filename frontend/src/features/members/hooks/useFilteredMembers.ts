@@ -15,6 +15,8 @@ interface UseFilteredMembersProps {
   sortCriteria: "name" | "hours";
   sortOrder: "asc" | "desc";
   groupByType: boolean;
+  /** Omogući pretragu po osjetljivim poljima (OIB, telefon, email) za ovlaštene uloge */
+  enableSensitiveSearch?: boolean;
 }
 
 /**
@@ -27,7 +29,8 @@ export const useFilteredMembers = ({
   ageFilter,
   sortCriteria,
   sortOrder,
-  groupByType
+  groupByType,
+  enableSensitiveSearch = false
 }: UseFilteredMembersProps) => {
   const [filteredMembers, setFilteredMembers] = useState<MemberWithDetails[]>(members);
   const { systemSettings } = useSystemSettings();
@@ -41,11 +44,23 @@ export const useFilteredMembers = ({
     
     // Apply search filter
     if (searchTerm) {
-      result = result.filter(member => 
-        member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ??
-        `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ??
-        member.oib?.includes(searchTerm)
-      );
+      const termLower = searchTerm.toLowerCase();
+      result = result.filter(member => {
+        const nameMatch = (member.full_name ?? `${member.first_name} ${member.last_name}`)
+          .toLowerCase()
+          .includes(termLower);
+
+        if (nameMatch) return true;
+
+        if (enableSensitiveSearch) {
+          const oibMatch = member.oib?.includes(searchTerm) ?? false;
+          const phoneMatch = member.cell_phone?.includes(searchTerm) ?? false;
+          const emailMatch = member.email?.toLowerCase().includes(termLower) ?? false;
+          return oibMatch || phoneMatch || emailMatch;
+        }
+
+        return false;
+      });
     }
     
     
@@ -164,7 +179,7 @@ export const useFilteredMembers = ({
     }
     
     setFilteredMembers(result);
-  }, [members, searchTerm, activeFilter, ageFilter, sortCriteria, sortOrder, activityHoursThreshold]);
+  }, [members, searchTerm, activeFilter, ageFilter, sortCriteria, sortOrder, activityHoursThreshold, enableSensitiveSearch]);
 
   const groupMembersByType = groupByType ? 
     filteredMembers.reduce((groups, member) => {
