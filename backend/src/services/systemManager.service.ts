@@ -497,8 +497,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             const recentActivitiesCount = recentActivitiesList.length;
 
             const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
-            // Pending registrations = članovi koji nisu završili registraciju (registration_completed = false)
-            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, registration_completed: false } });
+            // Pending registrations = članovi koji čekaju dodjelu lozinke (isti kriterij kao lista): password_hash IS NULL
+            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, password_hash: null } });
 
             // Real health checks
             let dbConnection = false;
