@@ -114,9 +114,10 @@ export const useFilteredMembers = ({
       else if (activeFilter === "inactive") {
         // Bivši članovi: status inactive ili nema aktivnog perioda
         result = result.filter(member => {
-          const isFormerMember = member.detailedStatus?.status === 'inactive' || 
-                                 (member.periods && !hasActiveMembershipPeriod(member.periods));
-          return isFormerMember;
+          const status = member.detailedStatus?.status;
+          const noActivePeriod = member.periods && !hasActiveMembershipPeriod(member.periods);
+          // Uključi samo eksplicitno inactive ili one bez aktivnog perioda koji NISU pending
+          return status === 'inactive' || (noActivePeriod && status !== 'pending');
         });
       }
       else if (activeFilter === "pending") {
