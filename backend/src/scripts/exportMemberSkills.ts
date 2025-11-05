@@ -18,23 +18,17 @@ async function main() {
       process.exit(1);
     }
 
-    // Dohvati članove po tenant-u (organization_id)
+    // Dohvati samo full_name po tenant-u (organization_id)
     const members = await prisma.member.findMany({
       where: { organization_id },
       select: {
-        member_id: true,
-        first_name: true,
-        last_name: true,
-        // Ako postoji full_name polje u bazi, moglo bi se dodati ovdje.
-        other_skills: true,
+        full_name: true,
       },
-      orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
+      orderBy: [{ full_name: 'asc' }],
     });
 
     const data = members.map((m) => ({
-      member_id: m.member_id,
-      full_name: `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim(),
-      other_skills: m.other_skills ?? ''
+      full_name: m.full_name ?? '',
     }));
 
     const outDir = path.join(process.cwd(), 'exports');
@@ -42,7 +36,7 @@ async function main() {
 
     const outPath = path.join(outDir, `member-skills-org-${organization_id}.csv`);
 
-    const headers = ['member_id', 'full_name', 'other_skills'];
+    const headers = ['full_name'];
     const escapeCsv = (value: unknown): string => {
       const s = String(value ?? '');
       if (/[",\n\r]/.test(s)) {
@@ -52,7 +46,7 @@ async function main() {
     };
     const lines = [
       headers.join(','),
-      ...data.map((row) => [row.member_id, row.full_name, row.other_skills].map(escapeCsv).join(','))
+      ...data.map((row) => [row.full_name].map(escapeCsv).join(','))
     ];
     fs.writeFileSync(outPath, lines.join('\n') + '\n', { encoding: 'utf8' });
 

@@ -55,23 +55,27 @@ const membershipService = {
         throw new Error("Member not found");
       }
 
-      // VAŽNO: Koristimo getCurrentDate() (Time Traveler aware) za određivanje trenutne godine
+      // VAŽNO: Koristimo getCurrentDate() (Time Traveler aware) samo za dijagnostiku i ostalu logiku,
+      // ali izračun godine plaćanja temeljimo na stvarnom datumu uplate
       const currentDate = getCurrentDate();
       const currentYear = currentDate.getFullYear();
-      
-      // Create cutoff date za renewal period (31. listopad tekuće godine prema Time Traveleru)
-      const cutoffDate = new Date(currentYear, renewalStartMonth - 1, renewalStartDay);
+
+      // Bazna godina je godina iz stvarnog datuma uplate
+      const paymentBaseYear = validPaymentDate.getFullYear();
+
+      // Create cutoff date za renewal period u kontekstu godine uplate
+      const cutoffDate = new Date(paymentBaseYear, renewalStartMonth - 1, renewalStartDay);
       
       // Provjeri je li ovo novi član (koji nikad nije platio članarinu)
       const isNewMember = !member.membership_details?.fee_payment_date;
       
       // Određivanje godine plaćanja:
-      // - Novi član: uvijek plaća za tekuću godinu
+      // - Novi član: uvijek plaća za godinu uplate
       // - Postojeći član: ako je isRenewalPayment=true ili uplata NAKON cutoff-a → sljedeća godina
-      let paymentYear = currentYear;
+      let paymentYear = paymentBaseYear;
       
       if (isRenewalPayment || (!isNewMember && validPaymentDate > cutoffDate)) {
-        paymentYear = currentYear + 1;
+        paymentYear = paymentBaseYear + 1;
       }
 
       // Dijagnostički ispis
@@ -79,6 +83,7 @@ const membershipService = {
         currentDate: formatDate(currentDate),
         currentYear,
         paymentDate: formatDate(validPaymentDate),
+        paymentBaseYear,
         cutoffDate: formatDate(cutoffDate),
         isNewMember,
         isRenewalPayment,
