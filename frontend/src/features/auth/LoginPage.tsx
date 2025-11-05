@@ -1,6 +1,6 @@
 // frontend/src/features/auth/LoginPage.tsx
 // Uklonjen useCallback iz import-a
-import React, { FormEvent, useState, useEffect, useRef } from "react"; 
+import React, { FormEvent, useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, LogIn, FileText, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/useAuth";
@@ -43,11 +43,11 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Uklonjen systemSettings state jer se ne koristi
-  const { 
-    getLogoUrl, 
-    getFullName, 
-    getEthicsCodeUrl, 
-    getPrivacyPolicyUrl, 
+  const {
+    getLogoUrl,
+    getFullName,
+    getEthicsCodeUrl,
+    getPrivacyPolicyUrl,
     getMembershipRulesUrl,
     getPrimaryColor,
     // Dodano: koristimo branding i grešku iz konteksta kako bismo prikazali neutralnu poruku
@@ -87,22 +87,22 @@ const LoginPage = () => {
   const [twoFaCode, setTwoFaCode] = useState('');
   const [twoFaChannel, setTwoFaChannel] = useState<'totp' | 'email'>('totp');
   const [sendEmailLoading, setSendEmailLoading] = useState(false);
-  
+
   // PIN 2FA state
   const [pinRequired, setPinRequired] = useState(false);
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
-  
+
   // Ref za PIN input polje
   const pinInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Auto-focus na PIN input kada se prikaže
   useEffect(() => {
     if (pinRequired && pinInputRef.current) {
       pinInputRef.current.focus();
     }
   }, [pinRequired]);
-  
+
   // Dohvati parametre iz URL-a za preusmjeravanje nakon uspješne prijave
   const redirectPath = searchParams.get('redirect');
   // isSoftLogout se ne koristi, uklonjeno radi lint čistoće
@@ -160,7 +160,7 @@ const LoginPage = () => {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    
+
     setLoginData(prevData => ({ ...prevData, [name]: value }));
   };
 
@@ -236,7 +236,7 @@ const LoginPage = () => {
           sessionStorage.removeItem('lastPath');
           navigateWithTenant(savedPath);
         } else {
-          switch(member.role) {
+          switch (member.role) {
             case 'member_administrator':
               navigateWithTenant('/admin/dashboard');
               break;
@@ -283,7 +283,7 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
           <div className="p-6 bg-blue-600 text-white text-center relative">
-          <div className="text-sm text-white bg-blue-700/60 border border-blue-500 rounded px-3 py-2">
+            <div className="text-sm text-white bg-blue-700/60 border border-blue-500 rounded px-3 py-2">
               {t('login.addressInvalid', 'Adresa nije ispravno upisana')}
             </div>
           </div>
@@ -308,7 +308,7 @@ const LoginPage = () => {
       if (pinRequired && pin) {
         loginPayload.pin = pin;
       }
-      
+
       const data = await login(loginPayload);
 
       // PIN 2FA: backend može vratiti { status: 'REQUIRES_PIN' }
@@ -365,7 +365,7 @@ const LoginPage = () => {
       };
       // Proslijeđujemo i refresh token ako je dostupan (u razvojnom okruženju)
       authLogin(member, data.token, data.refreshToken);
-      
+
       // Provjeri postoji li putanja za preusmjeravanje
       if (redirectPath) {
         if (isDev) console.log(`Preusmjeravam na spremljenu putanju: ${redirectPath}`);
@@ -382,7 +382,7 @@ const LoginPage = () => {
           // Ako nema spremljene putanje, preusmjeri prema ulozi
           if (isDev) console.log('Nema spremljene putanje, preusmjeravam prema ulozi');
           // Preusmjeri člana na odgovarajući dashboard prema ulozi (role)
-          switch(member.role) {
+          switch (member.role) {
             case 'member_administrator':
               navigateWithTenant("/admin/dashboard");
               break;
@@ -435,7 +435,7 @@ const LoginPage = () => {
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isDev) console.log('Registration form submitted');
-    
+
     if (!acceptedTerms) {
       setMessage({
         type: "error",
@@ -475,16 +475,16 @@ const LoginPage = () => {
       if (isDev) console.log('Sending registration data to API:', memberData);
       const response = await register(memberData);
       if (isDev) console.log('Registration API response:', response);
-      
+
       if (response.message) {
         if (isDev) console.log('Setting success message:');
-        
+
         // Postavljamo poruku u formi za registraciju
         setMessage({ type: "success", content: t('login.registrationSuccess') });
-        
+
         // Postavljamo poruku koja će biti vidljiva na početnom ekranu
         setLoginPageMessage({ type: "success", content: t('login.registrationSuccess') });
-        
+
         // Zatvaramo formu za registraciju nakon kratke pauze da korisnik može vidjeti poruku
         setTimeout(() => {
           setIsRegistering(false);
@@ -496,7 +496,7 @@ const LoginPage = () => {
         // Ne radimo ništa - ne prikazujemo poruku i ne logiramo grešku
         return;
       }
-      
+
       // Za ostale greške možemo logirati i prikazati generičku poruku
       if (error instanceof Error) {
         setMessage({
@@ -527,14 +527,14 @@ const LoginPage = () => {
             )}
             {/* Logo - dinamički iz branding-a */}
             {getLogoUrl() ? (
-              <img 
-                src={getLogoUrl() ?? undefined} 
+              <img
+                src={getLogoUrl() ?? undefined}
                 alt={getFullName() ?? undefined}
                 className="w-28 h-28 mx-auto rounded-full object-cover"
               />
             ) : (
-              <img 
-                src="/pwa/icons/icon-192x192.png" 
+              <img
+                src="/pwa/icons/icon-192x192.png"
                 alt={getFullName() ?? 'Organization'}
                 className="w-28 h-28 mx-auto rounded-full object-cover"
               />
@@ -651,7 +651,7 @@ const LoginPage = () => {
           {isRegistering ? (
             <form onSubmit={(e) => { void handleRegister(e); }} className="space-y-4">
               <h2 className="text-2xl font-bold mb-4">{t('login.registerTitle', 'Postani novi član')}</h2>
-              
+
               {/* Prikaz poruke o grešci ili uspjehu */}
               {message && (
                 <div className={`p-3 rounded-md mb-4 ${message.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
@@ -671,24 +671,6 @@ const LoginPage = () => {
                   </span>
                 </label>
               </div>
-
-              {/* PRIVREMENO: Broj iskaznice za postojeće članove - SAMO za pdpromina tenant */}
-              {branding?.subdomain === 'pdpromina' && (
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    className="mt-2 p-2 w-full border rounded bg-yellow-50"
-                    placeholder="Unesi broj iskaznice (samo za postojeće članove)"
-                    value={registerData.other_skills ?? ''}
-                    onChange={(e) =>
-                      setRegisterData({
-                        ...registerData,
-                        other_skills: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
 
               {/* Name */}
               <div>
@@ -976,14 +958,14 @@ const LoginPage = () => {
                 </select>
               </div>
 
-                            {/* Skills Selector */}
+              {/* Skills Selector */}
               <div className="mt-4">
                 <button
                   type="button"
                   onClick={() => setShowSkills(!showSkills)}
                   className="mt-1 w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 >
-                  <span>{t('skills.title', { ns: 'profile'})}</span>
+                  <span>{t('skills.title', { ns: 'profile' })}</span>
                   {showSkills ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
                 {showSkills && (
@@ -997,7 +979,7 @@ const LoginPage = () => {
                       isEditing={true}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                    {t('skills.description', { ns: 'profile'})}
+                      {t('skills.description', { ns: 'profile' })}
                     </p>
                   </div>
                 )}
@@ -1017,10 +999,9 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading || !acceptedTerms}
-                  className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                    (loading || !acceptedTerms) &&
+                  className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${(loading || !acceptedTerms) &&
                     "opacity-50 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {loading ? (
                     <span>{t('login.registering', 'Registering...')}</span>
@@ -1043,7 +1024,7 @@ const LoginPage = () => {
                       {loginPageMessage.content}
                     </div>
                   )}
-                  
+
                   <button
                     onClick={() => setStep(1)}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -1201,9 +1182,8 @@ const LoginPage = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                        loading && "opacity-50 cursor-not-allowed"
-                      }`}
+                      className={`w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading && "opacity-50 cursor-not-allowed"
+                        }`}
                     >
                       {loading ? (
                         <span>{t('login.loggingIn', 'Prijava...')}</span>
