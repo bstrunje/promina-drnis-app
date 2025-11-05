@@ -153,8 +153,8 @@
             "allMembers": "All members",
             "active": "Active",
             "passive": "Passive",
-            "paid": "Paid",
-            "unpaid": "Unpaid",
+            "pending": "Pending",
+            "inactive": "Former members",
             "sortByName": "Sort by name",
             "sortByHours": "Sort by hours"
         },

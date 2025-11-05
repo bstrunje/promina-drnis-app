@@ -156,8 +156,8 @@
             "allMembers": "Svi članovi",
             "active": "Aktivni",
             "passive": "Pasivni",
-            "paid": "Plaćeno",
-            "unpaid": "Nije plaćeno",
+            "pending": "Na čekanju",
+            "inactive": "Bivši članovi",
             "sortByName": "Sortiraj po imenu",
             "sortByHours": "Sortiraj po satima"
         },

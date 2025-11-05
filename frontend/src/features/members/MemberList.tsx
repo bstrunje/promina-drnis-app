@@ -129,7 +129,7 @@ export default function MemberList(): JSX.Element {
 
   // States for filtering and sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "paid" | "unpaid" | "pending">("regular");
+  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "inactive" | "pending">("regular");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -177,8 +177,7 @@ export default function MemberList(): JSX.Element {
       filterFromUrl === 'all' ||
       filterFromUrl === 'active' ||
       filterFromUrl === 'passive' ||
-      filterFromUrl === 'paid' ||
-      filterFromUrl === 'unpaid'
+      filterFromUrl === 'inactive'
     ) {
       setActiveFilter(filterFromUrl);
     } else {
