@@ -108,6 +108,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
   const hasAdminPrivileges = user?.role === "member_administrator" || user?.role === "member_superuser";
   const canEdit = hasAdminPrivileges;
+  const isSuperuser = user?.role === "member_superuser";
 
   // Debug log za admin privilegije (uklonjen jer se previše ponavlja)
   // console.log('🔧 [DEBUG] User role:', user?.role, 'hasAdminPrivileges:', hasAdminPrivileges);
@@ -543,7 +544,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               const hasValidPayment = hasPaymentForCurrentYear || hasRenewalPayment;
               
               // Ako nema validnog plaćanja, prikaži upozorenje
-              if (!hasValidPayment) {
+              if (!hasValidPayment && !isSuperuser) {
                 return (
                   <div className="border-t pt-4">
                     <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
@@ -559,7 +560,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
                   <h3 className="text-lg font-medium mb-3">{t('feeSection.membershipCardManagement')}</h3>
                   
                   {/* Sekcija uvijek vidljiva nakon plaćanja - ovdje se dodijeljuje kartica I markice */}
-                  <MembershipCardManagerAdapter {...cardManagerProps} />
+                  <MembershipCardManagerAdapter {...cardManagerProps} isFeeCurrent={hasValidPayment || isSuperuser} />
                 </div>
               );
             })()}

@@ -73,6 +73,11 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     [members]
   );
 
+  const genderEligibleMembers = useMemo(
+    () => members.filter(m => m.registration_completed === true || m.membershipStatus === 'registered'),
+    [members]
+  );
+
   const activeMembersCount = useMemo(
     () => registeredMembers.filter(member => isActiveMember(member.activity_hours, activityHoursThreshold)).length,
     [registeredMembers, activityHoursThreshold]
@@ -126,11 +131,11 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t('statistics.male')}</span>
-                    <span>{members.filter(m => m.gender === 'male').length}</span>
+                    <span>{genderEligibleMembers.filter(m => m.gender === 'male').length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('statistics.female')}</span>
-                    <span>{members.filter(m => m.gender === 'female').length}</span>
+                    <span>{genderEligibleMembers.filter(m => m.gender === 'female').length}</span>
                   </div>
                 </div>
               </div>
@@ -162,7 +167,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>{t('statistics.feeRequired')}:</span>
-                    <span>{members.filter(m => m.feeStatus === 'payment required').length}</span>
+                    <span>{members.filter(m => m.feeStatus === 'payment required' && m.membershipStatus === 'pending').length}</span>
                   </div>
                 </div>
               </div>
