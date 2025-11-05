@@ -448,17 +448,19 @@ GROUP BY m.member_id
 
 ## 🎯 Filteri u MemberList
 
-### Filter "Plaćeno" / "Nije plaćeno"
+### Filter "Na čekanju"
 
 **Logika:**
-- **Plaćeno:** `fee_payment_year === trenutna_godina`
-- **Nije plaćeno:** `fee_payment_year < trenutna_godina` ILI `fee_payment_year === null`
+- Status: `pending`
 
-**Mock Datum Aware:**
-- Ako je mock datum postavljen → koristi mock godinu
-- Ako nije → koristi stvarnu godinu (produkcija)
+**Svrha:** Prikazuje članove koji još nisu u potpunosti registrirani (npr. nedostaje uvjet plaćanja/markice/perioda).
 
-**Funkcija:** `getYearForPaymentCheck()` - `frontend/src/utils/dateUtils.ts`
+### Filter "Bivši članovi"
+
+**Logika:**
+- Status: `inactive`
+
+**Svrha:** Prikazuje članove s dovršenim periodom članstva (npr. neplaćanje, istupanje i sl.).
 
 ### Filter "Aktivni" / "Pasivni"
 
