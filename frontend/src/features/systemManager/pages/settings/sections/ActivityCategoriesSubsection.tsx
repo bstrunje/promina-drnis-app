@@ -8,7 +8,8 @@ import { CollapsibleSection } from '../components/CollapsibleSection';
 import { useToast } from '@components/ui/use-toast';
 import { useTranslation } from 'react-i18next';
 import { ActivityType } from '@shared/activity.types';
-import api from '../../../../../utils/api/apiConfig';
+import systemManagerApi from '../../../utils/systemManagerApi';
+import { getCurrentTenant } from '../../../../../utils/tenantUtils';
 
 // Koristimo ActivityType iz shared/types/activity.types.ts
 
@@ -66,7 +67,9 @@ export const ActivityCategoriesSubsection: React.FC<ActivityCategoriesSubsection
       try {
         setLoading(true);
         setError(null);
-        const response = await api.get<ActivityType[]>('/activities/types');
+        const response = await systemManagerApi.get<ActivityType[]>('/activities/types', {
+          params: { tenant: getCurrentTenant() },
+        });
         setActivityTypes(response.data);
       } catch (err) {
         console.error('Error fetching activity types:', err);
