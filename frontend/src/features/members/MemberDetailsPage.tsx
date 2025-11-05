@@ -377,6 +377,7 @@ setEditedMember(memberData);
       const updateData = {
         first_name: editedMember.first_name,
         last_name: editedMember.last_name,
+        nickname: editedMember.nickname,
         oib: editedMember.oib,
         email: editedMember.email,
         cell_phone: editedMember.cell_phone,
