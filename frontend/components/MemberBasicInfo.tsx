@@ -222,13 +222,15 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               name="oib"
               value={editedMember?.oib ?? ""}
               onChange={handleChange}
-              pattern="[0-9]{11}"
-              title={t('editMemberForm.oibTitle')}
+              maxLength={11}
               className="w-full p-2 border rounded"
             />
             {validationErrors?.oib && (
               <p className="text-sm text-red-500">{validationErrors.oib}</p>
             )}
+            <p className="text-xs text-gray-500 mt-1">
+              {t('personalInfo.oibHint')}
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{t('personalInfo.email')}</label>

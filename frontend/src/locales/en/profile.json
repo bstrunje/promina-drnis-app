@@ -63,6 +63,7 @@
         "dateOfBirth": "Date of Birth",
         "gender": "Gender",
         "oib": "OIB",
+        "oibHint": "Only here you can enter an alphanumeric OIB (up to 11 characters).",
         "email": "Email",
         "phone": "Phone",
         "address": "Address",

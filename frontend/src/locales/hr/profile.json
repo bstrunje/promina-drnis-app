@@ -63,6 +63,7 @@
         "dateOfBirth": "Datum rođenja",
         "gender": "Spol",
         "oib": "OIB",
+        "oibHint": "Samo na ovom mjestu se može upisati alfanumerički OIB (do 11 znakova).",
         "email": "Email",
         "phone": "Telefon",
         "address": "Adresa",
