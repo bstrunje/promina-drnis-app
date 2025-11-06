@@ -26,6 +26,7 @@ import {
   isTrustedDevice, 
   addTrustedDevice 
 } from "../../utils/trustedDevices.js";
+import { getOrganizationId } from "../../utils/tenant.helper.js";
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -50,9 +51,13 @@ export async function loginHandler(
     if (isDev) console.log(`Login attempt for email: ${email} from IP: ${userIP}`);
 
     const member = await prisma.member.findFirst({
-      where: { email },
+      where: { 
+        email,
+        organization_id: getOrganizationId(req)
+      },
       include: {
         permissions: true,
+        membership_details: true,
         periods: {
           orderBy: {
             start_date: 'desc'
@@ -73,24 +78,11 @@ export async function loginHandler(
 
     if (isDev) console.log(`Member found: ${member.member_id}, status: ${member.status}, role: ${member.role}`);
 
-    // Provjera statusa članstva i plaćene članarine
+    // Provjera statusa članstva i plaćene članarine (bez provjere markice)
     const isAdmin = member.role === 'member_administrator' || member.role === 'member_superuser';
     const currentYear = getCurrentDate().getFullYear();
-    const lastPeriod = member.periods[0];
-
-    let isMembershipValid = false;
-    if (lastPeriod) {
-      if (lastPeriod.end_date && new Date(lastPeriod.end_date) < new Date()) {
-        // Članstvo je eksplicitno završilo u prošlosti
-        isMembershipValid = false;
-      } else {
-        // Članstvo nema krajnji datum, provjeri godinu početka
-        const membershipYear = new Date(lastPeriod.start_date).getFullYear();
-        if (membershipYear >= currentYear) {
-          isMembershipValid = true;
-        }
-      }
-    }
+    const feeYear = member.membership_details?.fee_payment_year ?? null;
+    const isMembershipValid = feeYear !== null && feeYear >= currentYear;
 
     if (!isAdmin && !isMembershipValid) {
       if (isDev) console.log(`Login denied for member: ${member.member_id}. Membership for ${currentYear} is not valid.`);
