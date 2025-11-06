@@ -78,7 +78,8 @@ router.get('/dashboard/stats', async (req, res) => {
       prisma.member.count({ where: { organization_id: organization.id } }),
       prisma.member.count({ where: { organization_id: organization.id, status: 'registered' } }),
       prisma.member.count({ where: { organization_id: organization.id, status: 'registered', activity_hours: { gte: 20 } } }),
-      prisma.member.count({ where: { organization_id: organization.id, registration_completed: false } }),
+      // Pending registracije: članovi bez dodijeljene lozinke (usklađeno s listom i SM dashboardom)
+      prisma.member.count({ where: { organization_id: organization.id, password_hash: null } }),
       prisma.activity.count({ where: { organization_id: organization.id, created_at: { gte: thirtyDaysAgo } } })
     ]);
     

@@ -451,7 +451,7 @@ setEditedMember(memberData);
   }
 
   return (
-    <div className="p-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
