@@ -81,8 +81,12 @@ export async function loginHandler(
     // Provjera statusa članstva i plaćene članarine (bez provjere markice)
     const isAdmin = member.role === 'member_administrator' || member.role === 'member_superuser';
     const currentYear = getCurrentDate().getFullYear();
-    const feeYear = member.membership_details?.fee_payment_year ?? null;
-    const isMembershipValid = feeYear !== null && feeYear >= currentYear;
+    const feeYearFromYear = member.membership_details?.fee_payment_year ?? null;
+    const feeYearFromDate = member.membership_details?.fee_payment_date
+      ? new Date(member.membership_details.fee_payment_date).getFullYear()
+      : null;
+    const effectiveFeeYear = feeYearFromYear ?? feeYearFromDate;
+    const isMembershipValid = effectiveFeeYear !== null && effectiveFeeYear >= currentYear;
 
     if (!isAdmin && !isMembershipValid) {
       if (isDev) console.log(`Login denied for member: ${member.member_id}. Membership for ${currentYear} is not valid.`);
