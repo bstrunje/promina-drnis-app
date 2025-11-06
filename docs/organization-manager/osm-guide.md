@@ -21,6 +21,7 @@ The OSM dashboard provides:
 - **Active Members** - Members with current membership
 - **Recent Activities** - Activities in the last 30 days
 - **Pending Registrations** - Members awaiting password assignment
+  - Note: This counts members without an assigned password (password_hash is null) in your organization.
 - **Audit Logs Count** - Total audit entries for your organization
 
 ### 🔗 Quick Navigation

@@ -328,10 +328,12 @@ const LoginPage = () => {
       }
 
       // Ispravljeno kreiranje member objekta:
-      // Koristimo samo garantirana polja iz data.member (id, full_name, role)
-      // Za ostala polja Member tipa postavljamo zadane/prazne vrijednosti.
+      // Podržavamo i backend polje member_id i staro id bez korištenja any
+      const resolvedMemberId = ('member_id' in data.member
+        ? (data.member as { member_id: number }).member_id
+        : (data.member as { id: number }).id);
       const member: Member = {
-        member_id: data.member.id,
+        member_id: resolvedMemberId,
         first_name: data.member.full_name.split(" ")[0] || "",
         last_name: data.member.full_name.split(" ").slice(1).join(" ") || "",
         full_name: data.member.full_name, // API vraća full_name, koristimo ga
