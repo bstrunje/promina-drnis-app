@@ -75,22 +75,26 @@ const MemberDashboard: React.FC = () => {
       // Pokušaj dohvatiti statistike sa servera
       try {
         const statsResponse = await api.get<DashboardStatsResponse>(`/members/dashboard/stats`);
-        
-        // Ažuriraj podacima sa servera
+
+        // Frontend-only usklađivanje: izračunaj broj aktivnih članova po kalkuliranom statusu
+        // Dohvati listu i prebroji status === 'registered'
+        let calculatedActiveCount = 0;
+        try {
+          const membersResp = await api.get<Member[]>(`/members`);
+          calculatedActiveCount = (membersResp.data || []).filter(m => m.status === 'registered').length;
+        } catch (listErr) {
+          if (isDev) console.error('Greška pri dohvaćanju liste članova za brojanje:', listErr);
+        }
+
+        // Ažuriraj podacima sa servera, ali memberCount prepiši kalkuliranim brojem ako je > 0
         setStats({
           unreadMessages: statsResponse.data.unreadMessages ?? 0,
           recentActivities: statsResponse.data.recentActivities ?? 0,
-          memberCount: statsResponse.data.memberCount ?? 0,
+          memberCount: calculatedActiveCount > 0 ? calculatedActiveCount : (statsResponse.data.memberCount ?? 0),
         });
       } catch (apiErr) {
         if (isDev) console.error("API error:", apiErr);
-        
-        // PRIVREMENO: Postavi mock vrijednost za memberCount da korisnik vidi primjer
-        // Ovo se može ukloniti kad backend API bude funkcionalan
-        setStats(prevStats => ({
-          ...prevStats,
-          memberCount: 5 // Privremena mock vrijednost
-        }));
+        // Bez fallback-a: ostavi postojeće stanje kako bi UI odražavao stvarni backend odgovor
       }
     } catch (err) {
       if (isDev) console.error("Error fetching dashboard stats:", err);
