@@ -89,11 +89,12 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
         }
       }),
       
-      // Optimizirani upit za broj članova (filtrirano po tenant-u)
+      // Optimizirani upit za broj redovnih AKTIVNIH članova (role = 'member' i status = 'registered', filtrirano po tenant-u)
       prisma.member.count({
-        where: { 
+        where: {
           organization_id: organizationId, // MULTI-TENANCY filter
-          status: 'registered' 
+          role: 'member',
+          status: 'registered'
         }
       })
     ]);
