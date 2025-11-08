@@ -138,6 +138,11 @@ export const OrgSupportPage: React.FC = () => {
         activeTab="support" 
         setActiveTab={(tab) => {
           if (tab === 'dashboard') navigateTo('/system-manager/dashboard');
+          else if (tab === 'settings') navigateTo('/system-manager/settings');
+          else if (tab === 'members') navigateTo('/system-manager/members');
+          else if (tab === 'register-members') navigateTo('/system-manager/register-members');
+          else if (tab === 'organizations') navigateTo('/system-manager/organizations');
+          else if (tab === 'support') navigateTo('/system-manager/support');
           else if (tab === 'audit-logs') navigateTo('/system-manager/audit-logs');
         }}
         isMenuOpen={isMenuOpen}

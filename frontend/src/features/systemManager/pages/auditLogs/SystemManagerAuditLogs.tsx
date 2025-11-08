@@ -13,7 +13,11 @@ import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigati
 import ManagerHeader from '../../components/common/ManagerHeader';
 import ManagerTabNav from '../../components/common/ManagerTabNav';
 
-const SystemManagerAuditLogs: React.FC = () => {
+interface SystemManagerAuditLogsProps {
+  standalone?: boolean;
+}
+
+const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standalone = true }) => {
   const { manager } = useSystemManager();
   const { toast } = useToast();
   const { timeZone } = useTimeZone();
@@ -202,26 +206,35 @@ const SystemManagerAuditLogs: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <ManagerHeader 
-        manager={manager} 
-        onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
-        isMenuOpen={isMenuOpen}
-      />
+    <div className={standalone ? "min-h-screen bg-gray-50" : ""}>
+      {/* Header - samo ako je standalone */}
+      {standalone && (
+        <>
+          <ManagerHeader 
+            manager={manager} 
+            onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+            isMenuOpen={isMenuOpen}
+          />
 
-      {/* Navigation */}
-      <ManagerTabNav 
-        activeTab="audit-logs" 
-        setActiveTab={(tab) => {
-          if (tab === 'dashboard') navigateTo('/system-manager/dashboard');
-          else if (tab === 'support') navigateTo('/system-manager/support');
-        }}
-        isMenuOpen={isMenuOpen}
-        onMenuClose={() => setIsMenuOpen(false)}
-      />
+          {/* Navigation */}
+          <ManagerTabNav 
+            activeTab="audit-logs" 
+            setActiveTab={(tab) => {
+              if (tab === 'dashboard') navigateTo('/system-manager/dashboard');
+              else if (tab === 'settings') navigateTo('/system-manager/settings');
+              else if (tab === 'members') navigateTo('/system-manager/members');
+              else if (tab === 'register-members') navigateTo('/system-manager/register-members');
+              else if (tab === 'organizations') navigateTo('/system-manager/organizations');
+              else if (tab === 'support') navigateTo('/system-manager/support');
+              else if (tab === 'audit-logs') navigateTo('/system-manager/audit-logs');
+            }}
+            isMenuOpen={isMenuOpen}
+            onMenuClose={() => setIsMenuOpen(false)}
+          />
+        </>
+      )}
 
-      <div className="p-4 sm:p-6">
+      <div className={standalone ? "p-4 sm:p-6" : ""}>
         {/* Filter Card */}
         <Card className="mb-6">
           <CardHeader>

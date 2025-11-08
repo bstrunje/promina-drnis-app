@@ -477,8 +477,11 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             const whereClause = organizationId ? { organization_id: organizationId } : {};
 
             const totalMembers = await prisma.member.count({ where: whereClause });
+            const registeredMembers = await prisma.member.count({
+                where: { ...whereClause, status: 'registered' }
+            });
             const activeMembers = await prisma.member.count({
-                where: { ...whereClause, status: 'active' }
+                where: { ...whereClause, status: 'registered', activity_hours: { gte: 20 } }
             });
             const totalActivities = await prisma.activity.count({ where: whereClause });
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -497,8 +500,8 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             const recentActivitiesCount = recentActivitiesList.length;
 
             const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
-            // Pending registrations = članovi koji čekaju dodjelu lozinke (isti kriterij kao lista): password_hash IS NULL
-            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, password_hash: null } });
+            // Pending registrations = članovi bez broja članske iskaznice (lozinka se dodjeljuje automatski s brojem iskaznice)
+            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, membership_details: { card_number: null } } });
 
             // Real health checks
             let dbConnection = false;
@@ -563,6 +566,7 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
 
             return {
                 totalMembers,
+                registeredMembers,
                 activeMembers,
                 totalActivities,
                 recentActivities: recentActivitiesCount,
@@ -639,7 +643,9 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
     },
 
     async getPendingMembers(organizationId: number | null | undefined) {
-        const whereClause = organizationId ? { organization_id: organizationId, password_hash: null } : { password_hash: null };
+        const whereClause = organizationId 
+            ? { organization_id: organizationId, membership_details: { card_number: null } } 
+            : { membership_details: { card_number: null } };
         return prisma.member.findMany({
             where: whereClause,
             select: {

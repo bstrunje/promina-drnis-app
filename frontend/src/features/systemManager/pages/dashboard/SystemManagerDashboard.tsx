@@ -14,6 +14,7 @@ import TimeTravel from '../../../../../components/admin/TimeTravel';
 import OrganizationList from '../../organizations/OrganizationList';
 import SystemManagerMembersView from '../../components/members/SystemManagerMembersView';
 import { SupportPageRouter } from '../../SupportPageRouter';
+import SystemManagerAuditLogs from '../auditLogs/SystemManagerAuditLogs';
 
 /**
  * Glavna komponenta System Manager dashboarda
@@ -139,6 +140,11 @@ const SystemManagerDashboard: React.FC = () => {
         {/* Tab sadržaj - Organizations (samo za GSM) */}
         {activeTab === 'organizations' && (
           <OrganizationList standalone={false} />
+        )}
+
+        {/* Tab sadržaj - Audit Logs */}
+        {activeTab === 'audit-logs' && (
+          <SystemManagerAuditLogs standalone={false} />
         )}
 
         {/* Tab sadržaj - Support & Feedback */}
