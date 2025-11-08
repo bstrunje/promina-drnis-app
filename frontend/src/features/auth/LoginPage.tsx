@@ -8,6 +8,7 @@ import { useAuth } from "../../context/useAuth";
 import { login, register, initOtp, verify2FA, getAuthHealth } from '../../utils/api/apiAuth';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Member, MemberLoginData, MembershipTypeEnum, MemberRole, MemberSkill } from "@shared/member"; // Sada koristi ažurirani tip
+import { checkEmailAvailability } from '../../utils/api/apiMembers';
 import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
@@ -475,6 +476,11 @@ const LoginPage = () => {
       };
 
       if (isDev) console.log('Sending registration data to API:', memberData);
+      const emailCheck = await checkEmailAvailability(memberData.email);
+      if (!emailCheck.available) {
+        setMessage({ type: 'error', content: t('login.emailAlreadyInUse') });
+        return;
+      }
       const response = await register(memberData);
       if (isDev) console.log('Registration API response:', response);
 

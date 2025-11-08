@@ -6,6 +6,7 @@ import auditService from '../services/audit.service.js';
 import memberRepository, { MemberCreateData, MemberUpdateData } from '../repositories/member.repository.js';
 import { handleControllerError } from '../utils/controllerUtils.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import prisma from '../utils/prisma.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
@@ -16,6 +17,18 @@ const memberProfileController = {
   ): Promise<void> {
     try {
       const { skills, other_skills, ...rest } = req.body;
+      // Provjera jedinstvenosti email-a po tenant-u
+      const organizationId = getOrganizationId(req);
+      if (rest.email) {
+        const emailExists = await prisma.member.findFirst({
+          where: { email: rest.email, organization_id: organizationId },
+          select: { member_id: true }
+        });
+        if (emailExists) {
+          res.status(400).json({ code: 'EMAIL_ALREADY_IN_USE', message: 'Email je već zauzet u ovoj organizaciji.' });
+          return;
+        }
+      }
       const newMember = await memberService.createMember({ skills, other_skills, ...rest });
       if (req.user?.id) {
         await auditService.logAction(
@@ -39,6 +52,22 @@ const memberProfileController = {
   ): Promise<void> {
     try {
       const memberId = parseInt(req.params.memberId, 10);
+      const organizationId = getOrganizationId(req);
+      // Provjera jedinstvenosti email-a po tenant-u pri ažuriranju (ako se šalje email)
+      if (req.body?.email) {
+        const exists = await prisma.member.findFirst({
+          where: {
+            email: req.body.email,
+            organization_id: organizationId,
+            member_id: { not: memberId }
+          },
+          select: { member_id: true }
+        });
+        if (exists) {
+          res.status(400).json({ code: 'EMAIL_ALREADY_IN_USE', message: 'Email je već zauzet u ovoj organizaciji.' });
+          return;
+        }
+      }
       const updatedMember = await memberService.updateMember(
         memberId,
         req.body

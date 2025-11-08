@@ -1,0 +1,225 @@
+﻿{
+  "member": {
+    "organization_id": 4,
+    "status": "registered",
+    "date_of_birth": "1966-04-07T00:00:00.000Z",
+    "oib": "07078517257",
+    "cell_phone": "0989467456",
+    "city": "Drni┼í",
+    "street_address": "Vukovarska 2",
+    "email": "elza.strunje@gmail.com",
+    "first_name": "Elizabet",
+    "last_name": "Strunje",
+    "member_id": 3,
+    "password_hash": "$2b$10$HaSBizDOQRnKA5gaimwKa.8r/iIm2Ci60KTejasrXkyCzcpK1.Ogu",
+    "role": "member",
+    "last_login": "2025-11-06T10:54:46.528Z",
+    "full_name": "Elizabet Strunje",
+    "life_status": "employed/unemployed",
+    "tshirt_size": "L",
+    "shell_jacket_size": "L",
+    "total_hours": "0",
+    "gender": "female",
+    "registration_completed": true,
+    "profile_image_path": null,
+    "profile_image_updated_at": null,
+    "membership_type": "regular",
+    "created_at": "2025-10-28T20:12:13.124Z",
+    "updated_at": "2025-10-28T20:12:13.124Z",
+    "nickname": null,
+    "failed_login_attempts": 0,
+    "last_failed_login": null,
+    "locked_until": null,
+    "other_skills": "O54545",
+    "functions_in_society": null,
+    "shell_jacket_delivered": false,
+    "tshirt_delivered": false,
+    "hat_delivered": false,
+    "hat_size": null,
+    "activity_hours": "0",
+    "two_factor_enabled": false,
+    "two_factor_confirmed_at": null,
+    "two_factor_secret": null,
+    "pin_hash": null,
+    "pin_attempts": 0,
+    "pin_locked_until": null,
+    "pin_set_at": null,
+    "two_factor_recovery_codes_hash": null,
+    "two_factor_preferred_channel": null,
+    "membership_details": {
+      "member_id": 3,
+      "card_number": "054545",
+      "fee_payment_year": 2025,
+      "card_stamp_issued": true,
+      "fee_payment_date": "2025-01-01T12:00:00.000Z",
+      "next_year_stamp_issued": false,
+      "status": "active",
+      "active_until": null
+    },
+    "periods": [
+      {
+        "period_id": 10,
+        "organization_id": null,
+        "member_id": 3,
+        "start_date": "2023-01-01T00:00:00.000Z",
+        "end_date": null,
+        "end_reason": null,
+        "created_at": "2025-11-04T22:44:31.103Z",
+        "is_test_data": false
+      }
+    ],
+    "permissions": null,
+    "refresh_tokens": [
+      {
+        "id": 1937,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6Im1lbWJlciIsImZpbmdlcnByaW50IjoiVFc5NmFXeHNZUzgxTGpBZ0tGZHBibVJ2ZDNNZ1RsUWciLCJpYXQiOjE3NjI0MjExMDAsImV4cCI6MTc2MzAyNTkwMH0.uTO2onkDNW9VENPt083q5PoouPbr9sy5PtPh2eGPFa4",
+        "member_id": 3,
+        "expires_at": "2025-11-13T09:25:00.617Z",
+        "created_at": "2025-11-06T09:25:00.631Z"
+      },
+      {
+        "id": 1045,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6Im1lbWJlciIsImZpbmdlcnByaW50IjoiVFc5NmFXeHNZUzgxTGpBZ0tFeHBiblY0T3lCQmJtUnkiLCJpYXQiOjE3NjIwODYzMDksImV4cCI6MTc2MjY5MTEwOX0.DC1Cqy_AYweSC8z6rzuw8ElzJ4K1USYCOBIX193ET9k",
+        "member_id": 3,
+        "expires_at": "2025-11-09T12:25:09.458Z",
+        "created_at": "2025-11-02T12:25:09.471Z"
+      }
+    ],
+    "trusted_devices": [
+      {
+        "id": 6,
+        "organization_id": 4,
+        "member_id": 3,
+        "device_hash": "38f8e8964a3ecac51112fb04454e966852a90a8ba12581348519e5e10f303ea6",
+        "device_name": "Chrome Browser",
+        "expires_at": "2025-11-27T20:23:47.624Z",
+        "created_at": "2025-10-28T20:23:47.625Z",
+        "last_used_at": "2025-10-28T20:23:47.624Z"
+      },
+      {
+        "id": 43,
+        "organization_id": 4,
+        "member_id": 3,
+        "device_hash": "9f05239b10e78a0a5c58f1a9ad9acee69680835c108f6ab07e62cb503129c49a",
+        "device_name": "Chrome Browser",
+        "expires_at": "2025-12-06T09:07:30.048Z",
+        "created_at": "2025-11-06T09:07:30.049Z",
+        "last_used_at": "2025-11-06T09:07:30.048Z"
+      },
+      {
+        "id": 33,
+        "organization_id": 4,
+        "member_id": 3,
+        "device_hash": "ebf1d7639d54d4e7a712032e3019837373c3c785d6543bcfca1f73c9a4e54154",
+        "device_name": "Firefox Browser",
+        "expires_at": "2025-12-04T20:12:45.707Z",
+        "created_at": "2025-11-04T20:12:45.709Z",
+        "last_used_at": "2025-11-04T20:12:45.708Z"
+      },
+      {
+        "id": 46,
+        "organization_id": 4,
+        "member_id": 3,
+        "device_hash": "4b4d224dab64ba648e0da746e2440b69f5c1e7d14bd96460a2b059e4936874e8",
+        "device_name": "Firefox Browser",
+        "expires_at": "2025-12-06T10:54:46.588Z",
+        "created_at": "2025-11-06T10:54:46.589Z",
+        "last_used_at": "2025-11-06T10:54:46.588Z"
+      }
+    ]
+  },
+  "card_numbers": [],
+  "consumed_card_numbers": [],
+  "audit_logs": [
+    {
+      "log_id": 272,
+      "action_type": "LOGIN_SUCCESS",
+      "status": "success",
+      "created_at": "2025-11-06T10:54:46.589Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 267,
+      "action_type": "LOGIN_FAILURE",
+      "status": "failure",
+      "created_at": "2025-11-06T09:46:42.776Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 266,
+      "action_type": "LOGIN_SUCCESS",
+      "status": "success",
+      "created_at": "2025-11-06T09:07:30.049Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 265,
+      "action_type": "LOGIN_FAILED_MEMBERSHIP_EXPIRED",
+      "status": "failure",
+      "created_at": "2025-11-06T08:58:15.079Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 178,
+      "action_type": "LOGIN_SUCCESS",
+      "status": "success",
+      "created_at": "2025-11-04T20:12:45.708Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 177,
+      "action_type": "LOGIN_FAILURE",
+      "status": "failure",
+      "created_at": "2025-11-04T20:11:29.296Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 64,
+      "action_type": "LOGIN_SUCCESS",
+      "status": "success",
+      "created_at": "2025-10-28T20:23:47.625Z",
+      "performed_by": 3,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 63,
+      "action_type": "UPDATE_MEMBER",
+      "status": "success",
+      "created_at": "2025-10-28T20:15:17.990Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 62,
+      "action_type": "ASSIGN_CARD_NUMBER",
+      "status": "success",
+      "created_at": "2025-10-28T20:15:06.202Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    },
+    {
+      "log_id": 61,
+      "action_type": "MEMBERSHIP_FEE_PAYMENT",
+      "status": "success",
+      "created_at": "2025-10-28T20:14:57.047Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 3
+    }
+  ]
+}

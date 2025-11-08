@@ -476,8 +476,8 @@ const memberMessageRepository = {
         });
     },
 
-    async markAsRead(messageId: number, memberId: number): Promise<void> {
-        await prisma.messageRecipientStatus.updateMany({
+    async markAsRead(messageId: number, memberId: number): Promise<number> {
+        const result = await prisma.messageRecipientStatus.updateMany({
             where: {
                 message_id: messageId,
                 recipient_member_id: memberId,
@@ -487,6 +487,7 @@ const memberMessageRepository = {
                 read_at: getCurrentDate(),
             },
         });
+        return result.count;
     },
 
     async archiveMessage(messageId: number, memberId: number): Promise<void> {

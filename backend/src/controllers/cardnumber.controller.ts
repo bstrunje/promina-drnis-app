@@ -277,7 +277,7 @@ const cardNumberController = {
     try {
       // Provjeri administratorska prava
       const user = req.user;
-      if (!user || !['member_admin', 'member_superuser'].includes(user.role)) {
+      if (!user || !['member_administrator', 'member_superuser'].includes(user.role)) {
         return res.status(403).json({
           code: 'INSUFFICIENT_PERMISSIONS',
           message: tBackend('cardnumbers.insufficient_permissions', locale),

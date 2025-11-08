@@ -1,0 +1,143 @@
+﻿{
+  "member": {
+    "organization_id": 4,
+    "status": "registered",
+    "date_of_birth": "1969-10-04T00:00:00.000Z",
+    "oib": "59686107303",
+    "cell_phone": "098848706",
+    "city": "Drni┼í ",
+    "street_address": "Kod ┼íkole-Kulu┼íi─çi 12",
+    "email": "darijakul@gmail.com",
+    "first_name": "Darija ",
+    "last_name": "Kulu┼íi─ç ",
+    "member_id": 29,
+    "password_hash": "$2b$10$LvRQkB4EX4WWL10e.krP1.OHiwrIIWl/jmAe6J6lIiqfe7Sa3.kau",
+    "role": "member",
+    "last_login": null,
+    "full_name": "Darija  Kulu┼íi─ç ",
+    "life_status": "employed/unemployed",
+    "tshirt_size": "L",
+    "shell_jacket_size": "L",
+    "total_hours": "0",
+    "gender": "female",
+    "registration_completed": true,
+    "profile_image_path": null,
+    "profile_image_updated_at": null,
+    "membership_type": "regular",
+    "created_at": "2025-10-31T12:44:27.975Z",
+    "updated_at": "2025-10-31T12:44:27.975Z",
+    "nickname": null,
+    "failed_login_attempts": 0,
+    "last_failed_login": null,
+    "locked_until": null,
+    "other_skills": "",
+    "functions_in_society": null,
+    "shell_jacket_delivered": false,
+    "tshirt_delivered": false,
+    "hat_delivered": false,
+    "hat_size": null,
+    "activity_hours": "0",
+    "two_factor_enabled": false,
+    "two_factor_confirmed_at": null,
+    "two_factor_secret": null,
+    "pin_hash": null,
+    "pin_attempts": 0,
+    "pin_locked_until": null,
+    "pin_set_at": null,
+    "two_factor_recovery_codes_hash": null,
+    "two_factor_preferred_channel": null,
+    "membership_details": {
+      "member_id": 29,
+      "card_number": "054585",
+      "fee_payment_year": 2025,
+      "card_stamp_issued": true,
+      "fee_payment_date": "2025-01-01T12:00:00.000Z",
+      "next_year_stamp_issued": false,
+      "status": "active",
+      "active_until": null
+    },
+    "periods": [
+      {
+        "period_id": 25,
+        "organization_id": null,
+        "member_id": 29,
+        "start_date": "2023-01-01T12:00:00.000Z",
+        "end_date": null,
+        "end_reason": null,
+        "created_at": "2025-11-05T23:23:13.686Z",
+        "is_test_data": false
+      }
+    ],
+    "permissions": null,
+    "refresh_tokens": [],
+    "trusted_devices": []
+  },
+  "card_numbers": [
+    {
+      "id": 142,
+      "organization_id": 4,
+      "card_number": "054585",
+      "status": "assigned",
+      "created_at": "2025-11-05T20:40:10.678Z",
+      "assigned_at": null,
+      "member_id": 29
+    }
+  ],
+  "consumed_card_numbers": [],
+  "audit_logs": [
+    {
+      "log_id": 252,
+      "action_type": "UPDATE_MEMBER",
+      "status": "success",
+      "created_at": "2025-11-05T23:24:19.828Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    },
+    {
+      "log_id": 251,
+      "action_type": "MEMBERSHIP_FEE_PAYMENT",
+      "status": "success",
+      "created_at": "2025-11-05T23:24:10.118Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    },
+    {
+      "log_id": 250,
+      "action_type": "UPDATE_MEMBER",
+      "status": "success",
+      "created_at": "2025-11-05T23:23:52.362Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    },
+    {
+      "log_id": 249,
+      "action_type": "ASSIGN_CARD_NUMBER",
+      "status": "success",
+      "created_at": "2025-11-05T23:23:39.061Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    },
+    {
+      "log_id": 248,
+      "action_type": "MEMBERSHIP_FEE_PAYMENT",
+      "status": "success",
+      "created_at": "2025-11-05T23:23:13.698Z",
+      "performed_by": 2,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    },
+    {
+      "log_id": 105,
+      "action_type": "LOGIN_FAILED_MEMBERSHIP_EXPIRED",
+      "status": "failure",
+      "created_at": "2025-10-31T13:46:14.850Z",
+      "performed_by": 29,
+      "performer_type": "MEMBER",
+      "affected_member": 29
+    }
+  ]
+}

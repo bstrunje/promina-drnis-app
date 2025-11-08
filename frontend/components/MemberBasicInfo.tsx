@@ -6,6 +6,7 @@ import { Member, MemberSkill } from "@shared/member";
 import SkillsSelector from './SkillsSelector';
 import EquipmentDeliverySection from './EquipmentDeliverySection';
 import { formatDate, formatInputDate } from "../src/utils/dateUtils";
+import { checkEmailAvailability } from "../src/utils/api/apiMembers";
 import { useAuth } from "../src/context/useAuth";
 
 
@@ -34,6 +35,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   const { t } = useTranslation('profile');
   const [showDetails, setShowDetails] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailChecking, setEmailChecking] = useState(false);
 
   // Determine if the user can view details
   // Admins, superusers, and the member viewing their own profile should always see details
@@ -239,23 +242,26 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               name="email"
               value={editedMember?.email ?? ""}
               onChange={handleChange}
+              onBlur={async () => {
+                const val = editedMember?.email ?? "";
+                if (!val) { setEmailError(null); return; }
+                try {
+                  setEmailChecking(true);
+                  const res = await checkEmailAvailability(val, member.member_id);
+                  setEmailError(res.available ? null : t('auth:emailAlreadyInUse'));
+                } catch {
+                  setEmailError(null);
+                } finally {
+                  setEmailChecking(false);
+                }
+              }}
               className="w-full p-2 border rounded"
             />
+            {emailError && (
+              <p className="text-sm text-red-500">{emailError}</p>
+            )}
             {validationErrors?.email && (
               <p className="text-sm text-red-500">{validationErrors.email}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('personalInfo.phone')}</label>
-            <input
-              type="tel"
-              name="cell_phone"
-              value={editedMember?.cell_phone ?? ""}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-            {validationErrors?.cell_phone && (
-              <p className="text-sm text-red-500">{validationErrors.cell_phone}</p>
             )}
           </div>
           <div>

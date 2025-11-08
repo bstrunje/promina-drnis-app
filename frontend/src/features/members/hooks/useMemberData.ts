@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 const isDev = import.meta.env.DEV;
 import api from '../../../utils/api/apiConfig';
 import { Member } from '@shared/member';
@@ -19,6 +20,7 @@ import { useSystemSettings } from '../../../hooks/useSystemSettings';
 export const useMemberData = () => {
   const { toast } = useToast();
   const { systemSettings } = useSystemSettings();
+  const { t } = useTranslation('members');
   
   // Dohvati activity hours threshold iz system settings (default 20)
   const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
@@ -39,16 +41,16 @@ export const useMemberData = () => {
     try {
       await api.post('/members', newMember);
       toast({
-        title: "Success",
-        description: "Member added successfully",
+        title: t('toasts.successTitle'),
+        description: t('toasts.addSuccess'),
       });
       refreshMembers();
       return true;
     } catch (error) {
       if (isDev) console.error('Error adding member:', error);
       toast({
-        title: "Error",
-        description: "Failed to add member",
+        title: t('toasts.errorTitle'),
+        description: t('toasts.addError'),
         variant: "destructive",
       });
       return false;
@@ -60,16 +62,16 @@ export const useMemberData = () => {
     try {
       await api.put(`/members/${memberId}`, updatedMember);
       toast({
-        title: "Success",
-        description: "Member updated successfully",
+        title: t('toasts.successTitle'),
+        description: t('toasts.updateSuccess'),
       });
       refreshMembers();
       return true;
     } catch (error) {
       if (isDev) console.error('Error updating member:', error);
       toast({
-        title: "Error",
-        description: "Failed to update member",
+        title: t('toasts.errorTitle'),
+        description: t('toasts.updateError'),
         variant: "destructive",
       });
       return false;
@@ -190,7 +192,7 @@ export const useMemberData = () => {
             setMembers(updatedMembers);
             setFilteredMembers(updatedMembers);
           } catch (error: unknown) {
-            if (isDev) console.error("Error fetching member details:", error);
+            if (isDev) console.error(t('errors.fetchMemberDetailsLog'), error);
           } finally {
             setLoading(false);
           }
@@ -198,14 +200,15 @@ export const useMemberData = () => {
         
         void fetchMembershipDetails();
       } catch (error: unknown) {
-        if (isDev) console.error("Error fetching members:", error);
-        setError(typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message ?? "Failed to load members" : "Failed to load members");
+        if (isDev) console.error(t('errors.fetchMembersLog'), error);
+        const fallback = t('errors.loadMembers');
+        setError(typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message ?? fallback : fallback);
         setLoading(false);
       }
     };
 
     void fetchMembers();
-  }, [refreshTrigger, activityHoursThreshold]);
+  }, [refreshTrigger, activityHoursThreshold, t]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

@@ -40,14 +40,15 @@ interface MembershipFeeSectionProps {
   member: Member;
   isEditing: boolean;
   isFeeCurrent: boolean;
-  onUpdate: (member: Member) => void;
-  membershipHistory?: {
+  onUpdate?: (member: Member) => void;
+  membershipHistory: {
     periods: MembershipPeriod[];
     totalDuration?: string;
     currentPeriod?: MembershipPeriod;
   };
   memberId?: number;
   onMembershipHistoryUpdate?: (periods: MembershipPeriod[]) => Promise<void>;
+  onQueuedExitEdit?: () => void;
   cardManagerProps?: {
     member: Member;
     onUpdate: (member: Member) => Promise<void>;
@@ -77,6 +78,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   membershipHistory,
   memberId,
   onMembershipHistoryUpdate,
+  onQueuedExitEdit,
   cardManagerProps
 }) => {
   const { toast } = useToast();
@@ -274,7 +276,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
         }
       }
 
-      // Pozivamo API za ažuriranje članarine i dohvaćamo ažuriranog člana iz response-a
+      // Inače, pozovi API odmah
       const updatedMemberFromBackend = await updateMembership(member.member_id, {
         paymentDate: parsedDate.toISOString(),
         isRenewalPayment
@@ -282,7 +284,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
 
       toast({
         title: t('feeSection.success'),
-        description: t('feeSection.paymentProcessed'),
+        description: t('feeSection.paymentProcessedNextSteps'),
         variant: "success"
       });
 
@@ -293,6 +295,9 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
       // Backend vraća cijelog ažuriranog člana - koristimo te podatke umjesto ručnog računanja
       if (onUpdate && updatedMemberFromBackend) {
         onUpdate(updatedMemberFromBackend as unknown as Member);
+      }
+      if (onQueuedExitEdit) {
+        onQueuedExitEdit();
       }
 
     } catch (error) {

@@ -151,22 +151,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       { expiresIn: '7d' }
     );
     
-    if (isDev) console.log(`Zamjenjujem refresh token u bazi (brišem stari ID: ${storedToken.id}, kreiram novi)`);
+    if (isDev) console.log(`[REFRESH-TOKEN] Rotiram refresh token s grace periodom (čuvam stari kratko vrijeme)`);
     
     try {
       const expiresAt = getTokenExpiryDate(7);
       
-      // KRITIČNA ISPRAVKA: Umjesto UPDATE koji uzrokuje duplicate key constraint,
-      // koristimo DELETE + CREATE operaciju za potpuno izbjegavanje konflikata
-      if (isDev) console.log(`[REFRESH-TOKEN] Brišem stari token ID: ${storedToken.id}`);
-      
-      // Koristimo deleteMany umjesto delete da izbjegnemo P2025 grešku ako token ne postoji
-      const deleteResult = await prisma.refresh_tokens.deleteMany({
-        where: { id: storedToken.id }
-      });
-      
-      if (isDev) console.log(`[REFRESH-TOKEN] Obrisano ${deleteResult.count} starih tokena`);
-      
+      // GRACE PERIOD PRISTUP: Ne brišemo stari token odmah.
+      // Kreiramo novi token i kratko zadržavamo stari (npr. 90 sekundi)
       if (isDev) console.log(`[REFRESH-TOKEN] Kreiram novi token za člana ${member.member_id}`);
       
       const newTokenRecord = await prisma.refresh_tokens.create({
@@ -177,44 +168,38 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         }
       });
       
-      if (isDev) console.log(`[REFRESH-TOKEN] Novi token uspješno kreiran s ID: ${newTokenRecord.id}, datum isteka: ${formatUTCDate(expiresAt)}`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Novi token kreiran s ID: ${newTokenRecord.id}, isteka: ${formatUTCDate(expiresAt)}`);
       
       // Ažuriramo storedToken referencu za daljnju upotrebu
       storedToken = newTokenRecord;
+      
+      // ČIŠĆENJE STARIH TOKENA: zadrži prethodne najviše GRACE trajanje
+      const GRACE_MS = 90 * 1000; // 90 sekundi grace
+      const graceCutoff = new Date(Date.now() - GRACE_MS);
+      
+      // Obriši sve starije tokene za korisnika koji su izvan grace prozora
+      const cleanup = await prisma.refresh_tokens.deleteMany({
+        where: {
+          member_id: member.member_id,
+          token: { not: newRefreshToken },
+          created_at: { lt: graceCutoff }
+        }
+      });
+      
+      if (isDev) console.log(`[REFRESH-TOKEN] Čišćenje: obrisano ${cleanup.count} starih tokena izvan grace prozora`);
       
       const verifyToken = await prisma.refresh_tokens.findFirst({
         where: { token: newRefreshToken }
       });
       
       if (verifyToken) {
-        if (isDev) console.log(`[REFRESH-TOKEN] Potvrda: novi token je uspješno kreiran u bazi s ID: ${verifyToken.id}`);
+        if (isDev) console.log(`[REFRESH-TOKEN] Potvrda: novi token je u bazi (ID: ${verifyToken.id})`);
       } else {
         if (isDev) console.error('[REFRESH-TOKEN] KRITIČNA GREŠKA: novi token nije pronađen u bazi nakon kreiranja!');
       }
     } catch (error) {
-      if (isDev) console.error('[REFRESH-TOKEN] Greška pri zamjeni refresh tokena:', error);
-      
-      // Dodatna provjera za duplicate key grešku
-      if (error instanceof Error && error.message.includes('duplicate key')) {
-        if (isDev) console.log('[REFRESH-TOKEN] Duplicate key greška - pokušavam pronaći postojeći token...');
-        
-        const existingToken = await prisma.refresh_tokens.findFirst({
-          where: { 
-            token: newRefreshToken,
-            member_id: member.member_id
-          }
-        });
-        
-        if (existingToken) {
-          if (isDev) console.log('[REFRESH-TOKEN] Postojeći token pronađen, koristim ga...');
-          storedToken = existingToken;
-        } else {
-          if (isDev) console.error('[REFRESH-TOKEN] Duplicate key greška, ali token nije pronađen!');
-          throw error;
-        }
-      } else {
-        throw error;
-      }
+      if (isDev) console.error('[REFRESH-TOKEN] Greška pri rotaciji refresh tokena s grace periodom:', error);
+      throw error;
     }
     
     const isProduction = process.env.NODE_ENV === 'production';

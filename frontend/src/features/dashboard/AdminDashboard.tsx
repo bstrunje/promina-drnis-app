@@ -89,8 +89,7 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
   }, [checkUnreadMessages, updateUserData]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <DashboardHeader member={member} />
       
       {/* Navigation Cards - First Row */}
@@ -110,7 +109,6 @@ const AdminDashboard: React.FC<Props> = ({ member }) => {
         />
         
         <EquipmentInventoryManager member={member} />
-      </div>
       </div>
     </div>
   );

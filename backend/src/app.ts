@@ -18,7 +18,7 @@ import permissionsRouter from './routes/permissions.js';
 import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
-import memberRoutes from './routes/members.js';
+import memberRoutes, { publicMembersRouter } from './routes/members.js';
 import membershipRoutes from './routes/membership.routes.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
@@ -300,6 +300,8 @@ app.use(sanitizationMiddleware);
 // Public routes (bez authMiddleware)
 app.use('/api', orgConfigRoutes); // Public org config endpoints
 app.use('/api', pwaRoutes); // PWA dynamic manifest (needs tenant context)
+// Public members subroutes (must be before protected members routes)
+app.use('/api/members', publicMembersRouter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);

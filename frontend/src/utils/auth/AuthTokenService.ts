@@ -28,6 +28,83 @@ const REFRESH_THRESHOLD_MS = 2 * 60 * 1000;
 // Globalni lock za sprječavanje paralelnih refresh zahtjeva (single-flight)
 let inFlightRefresh: Promise<string | null> | null = null;
 
+// Cross-tab koordinacija: BroadcastChannel + storage fallback
+const BC_NAME = 'auth_refresh_channel';
+const STORAGE_KEY = 'auth_refresh_status';
+interface CrossTabStatus { status: 'in_progress' | 'done' | 'failed'; ts: number; token?: string | null }
+
+// Helper: Dohvati status iz localStorage
+function getCrossTabStatus(): CrossTabStatus | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as CrossTabStatus) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper: Postavi status u localStorage (triggers storage event u drugim tabovima)
+function setCrossTabStatus(status: CrossTabStatus) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(status)); } catch { /* ignore */ }
+}
+
+// Helper: Pričekaj rezultat refresh-a iz drugog taba (BroadcastChannel ili storage)
+function waitForCrossTabRefresh(timeoutMs = 20000): Promise<string | null> {
+  return new Promise((resolve) => {
+    let finished = false;
+    const done = (token: string | null) => { if (!finished) { finished = true; cleanup(); resolve(token); } };
+
+    const cleanupFns: (() => void)[] = [];
+
+    // BroadcastChannel listener
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel(BC_NAME);
+        const bcHandler = (ev: MessageEvent) => {
+          const data = ev.data as { type: string; token?: string | null } | undefined;
+          if (!data || data.type !== 'auth_refresh_result') return;
+          done(data.token ?? null);
+        };
+        bc.addEventListener('message', bcHandler);
+        cleanupFns.push(() => bc?.removeEventListener('message', bcHandler));
+        cleanupFns.push(() => bc?.close());
+      }
+    } catch { /* ignore */ }
+
+    // storage event fallback
+    const storageHandler = (ev: StorageEvent) => {
+      if (ev.key !== STORAGE_KEY || !ev.newValue) return;
+      try {
+        const parsed = JSON.parse(ev.newValue) as CrossTabStatus;
+        if (parsed.status === 'done') done(parsed.token ?? null);
+        if (parsed.status === 'failed') done(null);
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('storage', storageHandler);
+    cleanupFns.push(() => window.removeEventListener('storage', storageHandler));
+
+    // Timeout
+    const t = window.setTimeout(() => done(null), timeoutMs);
+    cleanupFns.push(() => window.clearTimeout(t));
+
+    const cleanup = () => { cleanupFns.forEach((fn) => { try { fn(); } catch { /* ignore */ } }); };
+  });
+}
+
+// Helper: Pošalji rezultat preko BC i storage-a
+function broadcastRefreshResult(token: string | null) {
+  try {
+    const msg = { type: 'auth_refresh_result', token };
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const bc = new BroadcastChannel(BC_NAME);
+      bc.postMessage(msg);
+      bc.close();
+    }
+  } catch { /* ignore */ }
+  setCrossTabStatus({ status: token ? 'done' : 'failed', ts: Date.now(), token });
+}
+
 export class AuthTokenService {
   /**
    * Dohvaća API URL ovisno o okruženju
@@ -42,14 +119,21 @@ export class AuthTokenService {
    * Osvježava token i vraća novi access token
    */
   static async refreshToken(): Promise<string | null> {
-    // Ako je refresh već u tijeku, pričekaj isti rezultat umjesto slanja novog zahtjeva
-    if (inFlightRefresh) {
-      return inFlightRefresh;
+    // Ako drugi tab već radi refresh (u zadnjih 20s), pričekaj njegov rezultat
+    const status = getCrossTabStatus();
+    if (status && status.status === 'in_progress' && Date.now() - status.ts < 20000) {
+      if (isDev) console.log('[Auth] Čekam rezultat refresh-a iz drugog taba...');
+      return waitForCrossTabRefresh();
     }
+
+    // Ako je refresh već u tijeku u ovom tabu, pričekaj isti rezultat
+    if (inFlightRefresh) return inFlightRefresh;
 
     // Napomena (HR): Koalesciramo paralelne refresh pozive kako bismo izbjegli race condition
     // (npr. jedan refresh rotira token u bazi, drugi u međuvremenu koristi stari token -> 401/403).
     inFlightRefresh = (async () => {
+      // Označi cross-tab status kao in_progress
+      setCrossTabStatus({ status: 'in_progress', ts: Date.now() });
       return withRetry(async () => {
 
         // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
@@ -68,6 +152,7 @@ export class AuthTokenService {
         // Ako je status 401 ili 403, token je nevažeći - nema smisla ponovno pokušavati
         if (response.status === 401 || response.status === 403) {
           if (isDev) console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
+          broadcastRefreshResult(null);
           return null;
         }
 
@@ -91,9 +176,11 @@ export class AuthTokenService {
           // Dodano logiranje za debugiranje
           // console.log("Novi access token spremljen u localStorage:", data.accessToken);
           // console.log("Token uspješno obnovljen");
+          broadcastRefreshResult(data.accessToken);
           return data.accessToken;
         }
 
+        broadcastRefreshResult(null);
         return null;
       });
     })();
@@ -103,6 +190,13 @@ export class AuthTokenService {
     } finally {
       // Oslobodi lock nakon što je refresh završen (uspješno ili neuspješno)
       inFlightRefresh = null;
+      // Vrati cross-tab status u idle (čistimo nakon kratke odgode)
+      setTimeout(() => {
+        try {
+          const s = getCrossTabStatus();
+          if (s && s.status !== 'in_progress') localStorage.removeItem(STORAGE_KEY);
+        } catch { /* ignore */ }
+      }, 2000);
     }
   }
 

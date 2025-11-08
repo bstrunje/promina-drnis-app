@@ -253,7 +253,58 @@ const membershipService = {
       if (isDev) console.log('Current member status before transaction:', member);
 
       await prisma.$transaction(async (tx) => {
-        // Provjeri ima li član plaćenu članarinu, karticu i markicu
+        // 1) Ažuriraj membershipDetails (kartica/markica) prije izračuna statusa
+        const membershipDetailsBefore = await tx.membershipDetails.findUnique({
+          where: { member_id: memberId },
+          select: {
+            fee_payment_date: true,
+            fee_payment_year: true,
+            card_number: true,
+            card_stamp_issued: true
+          }
+        });
+
+        const memberExists = !!membershipDetailsBefore;
+        if (isDev) {
+          console.log('Membership details exist:', memberExists);
+          if (memberExists) {
+            console.log('Current card number:', membershipDetailsBefore?.card_number);
+          }
+        }
+
+        if (!memberExists) {
+          if (isDev) console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
+          await tx.membershipDetails.create({
+            data: {
+              member_id: memberId,
+              card_number: (cardNumber ?? "").trim(),
+              card_stamp_issued: false
+            }
+          });
+        } else {
+          const updateData: Prisma.MembershipDetailsUpdateInput = {};
+          const trimmedCard = (cardNumber ?? "").trim();
+          if (trimmedCard !== "") {
+            if (isDev) console.log(`Updating card number for member ${memberId} to: ${trimmedCard}`);
+            updateData.card_number = trimmedCard;
+          } else {
+            if (isDev) console.log(`Card number is empty or undefined, not updating card number`);
+          }
+
+          if (stampIssued !== null && stampIssued !== undefined) {
+            if (isDev) console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
+            updateData.card_stamp_issued = stampIssued;
+          }
+
+          if (Object.keys(updateData).length > 0) {
+            await tx.membershipDetails.update({
+              where: { member_id: memberId },
+              data: updateData
+            });
+          }
+        }
+
+        // 2) Nakon ažuriranja, dohvatimo SVJEŽE membershipDetails i period, pa izračunamo status
         const membershipDetails = await tx.membershipDetails.findUnique({
           where: { member_id: memberId },
           select: {
@@ -264,7 +315,6 @@ const membershipService = {
           }
         });
 
-        // Provjeri ima li član aktivan period članstva (end_date: null)
         const activePeriod = await tx.membershipPeriod.findFirst({
           where: {
             member_id: memberId,
@@ -273,30 +323,24 @@ const membershipService = {
         });
 
         const hasPaidFee = !!membershipDetails?.fee_payment_date;
-        const willHaveCard = cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "";
-        const hasStamp = stampIssued ?? membershipDetails?.card_stamp_issued ?? false;
+        const afterCard = (membershipDetails?.card_number ?? "").trim();
+        const willHaveCard = afterCard !== "";
+        const hasStamp = membershipDetails?.card_stamp_issued ?? false;
         const hasActivePeriod = !!activePeriod;
-        
-        // Za RANDOM_8 strategiju, dovoljna je samo uplata (lozinka ne ovisi o kartici)
+
         const isRandom8Strategy = passwordStrategy === 'RANDOM_8';
-        
-        // Odredi je li član spreman za registration_completed
-        // SVA 3 UVJETA MORAJU BITI ISPUNJENA: uplata, markica, aktivan period
         let shouldBeRegistered = false;
-        
+
         if (isRandom8Strategy) {
-          // RANDOM_8: dovoljna je uplata + markica + aktivan period (kartica nije obavezna)
           shouldBeRegistered = hasPaidFee && hasStamp && hasActivePeriod;
           if (isDev) console.log(`[RANDOM_8] Member ${memberId} - hasPaidFee: ${hasPaidFee}, hasStamp: ${hasStamp}, hasActivePeriod: ${hasActivePeriod}`);
         } else {
-          // Ostale strategije: potrebna uplata + kartica + markica + aktivan period
           shouldBeRegistered = willHaveCard && hasPaidFee && hasStamp && hasActivePeriod;
           if (isDev) console.log(`[${passwordStrategy || 'DEFAULT'}] Member ${memberId} - willHaveCard: ${willHaveCard}, hasPaidFee: ${hasPaidFee}, hasStamp: ${hasStamp}, hasActivePeriod: ${hasActivePeriod}`);
         }
-        
+
         if (shouldBeRegistered) {
           if (isDev) console.log(`Updating member ${memberId} to: registered, registration_completed = true`);
-          
           await tx.member.update({
             where: { member_id: memberId },
             data: {
@@ -310,9 +354,7 @@ const membershipService = {
             }
           });
         } else {
-          // Status ostaje 'pending' i registration_completed = false
           if (isDev) console.log(`Member ${memberId} not ready - setting status 'pending', registration_completed = false`);
-          
           await tx.member.update({
             where: { member_id: memberId },
             data: {
@@ -321,62 +363,7 @@ const membershipService = {
             }
           });
         }
-        
-        // OPTIMIZACIJA: Prisma findUnique umjesto client.query
-        const existingMembershipDetails = await tx.membershipDetails.findUnique({
-          where: { member_id: memberId },
-          select: {
-            member_id: true,
-            card_number: true
-          }
-        });
 
-        const memberExists = !!existingMembershipDetails;
-        if (isDev) {
-          console.log('Membership details exist:', memberExists);
-          if (memberExists) {
-            console.log('Current card number:', existingMembershipDetails.card_number);
-          }
-        }
-        
-        // Zatim ažuriramo broj članske iskaznice
-        if (!memberExists) {
-          // OPTIMIZACIJA: Prisma create umjesto INSERT
-          if (isDev) console.log(`Creating new membership details for member ${memberId}, card_number: ${cardNumber}, stamp_issued: FALSE (forced)`);
-          await tx.membershipDetails.create({
-            data: {
-              member_id: memberId,
-              card_number: cardNumber || "",
-              card_stamp_issued: false
-            }
-          });
-        } else {
-          // Pripremi podatke za update
-          const updateData: Prisma.MembershipDetailsUpdateInput = {};
-          
-          // Ako je proslijeden broj kartice, ažuriramo ga
-          if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
-            if (isDev) console.log(`Updating card number for member ${memberId} to: ${cardNumber}`);
-            updateData.card_number = cardNumber.trim();
-          } else {
-            if (isDev) console.log(`Card number is empty or undefined, not updating card number`);
-          }
-
-          // Ako je proslijeden status markice, ažuriramo ga
-          if (stampIssued !== null && stampIssued !== undefined) {
-            if (isDev) console.log(`Explicitly updating stamp status for member ${memberId} to: ${stampIssued}`);
-            updateData.card_stamp_issued = stampIssued;
-          }
-          
-          // OPTIMIZACIJA: Prisma update umjesto UPDATE query
-          if (Object.keys(updateData).length > 0) {
-            await tx.membershipDetails.update({
-              where: { member_id: memberId },
-              data: updateData
-            });
-          }
-        }
-        
         // OPTIMIZACIJA: Prisma deleteMany umjesto DELETE query
         if (cardNumber !== undefined && cardNumber !== null && cardNumber.trim() !== "") {
           await tx.password_update_queue.deleteMany({

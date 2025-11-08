@@ -175,6 +175,7 @@
         "validationError": "Failed to validate payment date",
         "success": "Success",
         "paymentProcessed": "Membership fee payment processed successfully",
+        "paymentProcessedNextSteps": "Payment recorded. To assign card and stamp, reopen profile editing.",
         "error": "Error",
         "paymentError": "Failed to process membership fee payment",
         "historyUpdated": "Membership history updated successfully",

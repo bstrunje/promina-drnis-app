@@ -3,6 +3,7 @@ import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import api from '../../../utils/api/apiConfig';
+import { updateMembership } from '../../../utils/api/apiMembership';
 import { InventoryStatus } from "../types/membershipTypes";
 import { getCurrentYear } from "../../../utils/dateUtils";
 
@@ -139,31 +140,15 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
       let apiSuccess = false;
       let updatedMember: Member | null = null; // Sigurnosna promjena: ispravan tip za ažuriranog člana
   
-      if (newState) {
-        // Poziv API-ja za izdavanje markice
-        await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp`, { forNextYear: false }); // Sigurnosna promjena: uklonjen unused var response
-        apiSuccess = true;
-  
-        // Ažuriraj prikaz zalihe
-        setInventoryStatus((prev) =>
-          prev ? { ...prev, remaining: prev.remaining - 1 } : null
-        );
-      } else {
-        // Poziv API-ja za vraćanje markice
-        const response = await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp/return`, { forNextYear: false }); // Sigurnosna promjena: tipiziran response
-        
-        // Pokušaj dobiti ažuriranog člana iz odgovora
-        if (response.data?.member) {
-          updatedMember = response.data.member; // Sigurnosna promjena: eksplicitni cast na Member
-        }
-        
-        apiSuccess = true;
-  
-        // Ažuriraj prikaz zalihe
-        setInventoryStatus((prev) =>
-          prev ? { ...prev, remaining: prev.remaining + 1 } : null
-        );
-      }
+      // Koristi objedinjeni updateMembership poziv umjesto posebnih /stamp endpointa
+      const result = await updateMembership(member.member_id, { stampIssued: newState });
+      updatedMember = result as unknown as Member;
+      apiSuccess = true;
+
+      // Ažuriraj prikaz zalihe
+      setInventoryStatus((prev) =>
+        prev ? { ...prev, remaining: prev.remaining + (newState ? -1 : 1) } : null
+      );
   
       if (apiSuccess) {      
         // Stvori objekt za djelomično ažuriranje da bi se izbjeglo potpuno osvježavanje stranice

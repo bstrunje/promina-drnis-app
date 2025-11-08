@@ -53,7 +53,7 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
     if (userRole === 'member') return;
     const interval = setInterval(() => {
       void fetchSentMessages();
-    }, 30000); // 30 sekundi
+    }, 5000); // 5 sekundi - brže osvježavanje za prikaz pročitanih poruka
     return () => clearInterval(interval);
   }, [userRole, fetchSentMessages]);
 

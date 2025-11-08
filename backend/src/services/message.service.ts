@@ -67,8 +67,8 @@ const messageService = {
         return await memberMessageRepository.findById(organizationId, messageId);
     },
 
-    async markMessageAsRead(messageId: number, memberId: number): Promise<void> {
-        await memberMessageRepository.markAsRead(messageId, memberId);
+    async markMessageAsRead(messageId: number, memberId: number): Promise<number> {
+        return await memberMessageRepository.markAsRead(messageId, memberId);
     },
 
     async archiveMessage(messageId: number, memberId: number): Promise<void> {

@@ -74,7 +74,7 @@ const ActivityYearPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <button onClick={() => navigateTo(`/members/${memberId}/activities-overview`)} className="flex items-center hover:underline mb-4" style={{ color: getPrimaryColor() }}>
           <ArrowLeft className="h-4 w-4 mr-2" />

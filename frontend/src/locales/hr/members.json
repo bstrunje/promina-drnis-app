@@ -183,6 +183,19 @@
         "member": "Član"
     },
     "noEmail": "Nema email adrese",
+    "toasts": {
+        "successTitle": "Uspjeh",
+        "errorTitle": "Greška",
+        "addSuccess": "Član je uspješno dodan",
+        "addError": "Neuspješno dodavanje člana",
+        "updateSuccess": "Član je uspješno ažuriran",
+        "updateError": "Neuspješno ažuriranje člana"
+    },
+    "errors": {
+        "fetchMemberDetailsLog": "Greška pri dohvaćanju detalja članova",
+        "fetchMembersLog": "Greška pri dohvaćanju članova",
+        "loadMembers": "Neuspjelo učitavanje članova"
+    },
     "memberRole": {
         "title": "Rola člana",
         "changeRole": "Promijeni rolu",

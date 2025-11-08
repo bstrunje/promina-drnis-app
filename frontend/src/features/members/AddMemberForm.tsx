@@ -6,6 +6,7 @@ import SkillsSelector from '@components/SkillsSelector'; // Pretpostavka putanje
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useBranding } from '../../hooks/useBranding';
+import { checkEmailAvailability } from '../../utils/api/apiMembers';
 
 interface AddMemberFormProps {
   onClose: () => void;
@@ -79,6 +80,8 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
   });
 
   const [showSkills, setShowSkills] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailChecking, setEmailChecking] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -94,6 +97,28 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
       }
     } else {
       setMember(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    if (!member.email) {
+      setEmailError(null);
+      return;
+    }
+    try {
+      setEmailChecking(true);
+      const res = await checkEmailAvailability(member.email);
+      if (!res.available) {
+        setEmailError(t('auth:emailAlreadyInUse'));
+      } else {
+        setEmailError(null);
+      }
+    } catch {
+      // U slučaju greške API-ja, ne blokirati, samo logirati u DEV
+      if (isDev) console.error('Email availability check failed');
+      setEmailError(null);
+    } finally {
+      setEmailChecking(false);
     }
   };
 
@@ -198,10 +223,14 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
             name="email"
             value={member.email}
             onChange={handleChange}
+            onBlur={() => { void handleEmailBlur(); }}
             placeholder={t('addMemberForm.email')}
             className="mt-2 p-2 w-full border rounded"
             required
           />
+          {emailError && (
+            <p className="text-sm text-red-500 mt-1">{emailError}</p>
+          )}
           <select
             name="life_status"
             value={member.life_status}
@@ -299,6 +328,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
               type="submit" 
               className="px-4 py-2 text-white rounded hover:opacity-90"
               style={{ backgroundColor: getPrimaryColor() }}
+              disabled={Boolean(emailError) || emailChecking}
             >
               {t('addMemberForm.addButton')}
             </button>

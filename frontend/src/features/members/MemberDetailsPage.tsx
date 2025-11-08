@@ -19,6 +19,8 @@ import MemberMessagesSection from "../../../components/MemberMessagesSection";
 import MemberProfileImage from "../../../components/MemberProfileImage";
 import MembershipDetailsCard from "../../../components/MembershipDetailsCard";
 import { useSystemSettings } from "../../hooks/useSystemSettings";
+import { updateMembership } from "../../utils/api/apiMembership";
+import { ApiMembershipUpdateParams } from "../../utils/api/apiTypes";
 import { isPinEligible } from "../../utils/pinEligibility";
 import { usePermissions } from "../../hooks/usePermissions";
 import ActivityHistory from "../../../components/ActivityHistory";
@@ -57,6 +59,8 @@ const memberId = useMemo(() => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [savedScrollPosition, setSavedScrollPosition] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // Batch spremanje članstva (uplata/kartica/markica)
+  const [queuedMembershipPatch, setQueuedMembershipPatch] = useState<ApiMembershipUpdateParams | null>(null);
 
   const handleSkillsChange = useCallback(({ skills, other_skills }: { skills: MemberSkill[], other_skills: string }) => {
     setEditedMember(prev => prev ? { ...prev, skills, other_skills } : null);
@@ -401,6 +405,16 @@ setEditedMember(memberData);
 
       if (response.data) {
         setMember(response.data as Member);
+        // Ako postoji batch za članstvo, odradi ga odmah nakon uspješnog spremanja profila
+        if (queuedMembershipPatch && memberId) {
+          try {
+            await updateMembership(memberId, queuedMembershipPatch);
+            // Nakon batch updatea povuci svježe podatke
+            await fetchMemberDetails();
+          } finally {
+            setQueuedMembershipPatch(null);
+          }
+        }
         setIsEditing(false);
         toast({
           title: t('updateSuccessTitle'),
@@ -410,7 +424,9 @@ setEditedMember(memberData);
         if (onUpdate) {
           onUpdate(response.data as Member);
         }
-        void fetchMemberDetails(); // Fetch member details after saving
+        if (!queuedMembershipPatch) {
+          void fetchMemberDetails(); // Fetch member details after saving
+        }
       }
     } catch (error) {
       setError(t('updateErrorDescription'));
@@ -451,7 +467,7 @@ setEditedMember(memberData);
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg text-white p-6 mb-6">
         <div className="flex justify-between items-center">
@@ -518,6 +534,10 @@ setEditedMember(memberData);
           membershipHistory={membershipHistoryForChild} // Koristi novi objekt s totalDuration
           memberId={memberId}
           onMembershipHistoryUpdate={handleMembershipHistoryUpdate}
+          onQueuedExitEdit={() => {
+            setIsEditing(false);
+            // Nakon izlaska iz edit moda, korisnik može ponovno otvoriti editiranje za karticu/markicu
+          }}
           cardManagerProps={canEdit ? {
             member,
             onUpdate: async (updatedMember: Member) => { await handleMemberUpdate(updatedMember); },

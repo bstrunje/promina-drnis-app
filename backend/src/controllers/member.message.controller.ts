@@ -291,17 +291,22 @@ const messageController = {
                 return;
             }
 
-            // Opcionalno: provjeriti postoji li poruka prije pokušaja označavanja
-            // const message = await messageService.getMessageById(messageId);
-            // if (!message) {
-            //     res.status(404).json({ message: 'Message not found' });
-            //     return;
-            // }
-            // Gornja provjera se može izostaviti ako smatramo da je dovoljno
-            // da repozitorij jednostavno ne napravi ništa ako MessageRecipientStatus ne postoji.
+            const updated = await messageService.markMessageAsRead(messageId, memberId);
 
-            await messageService.markMessageAsRead(messageId, memberId);
-            
+            if (updated === 0) {
+                await auditService.logAction(
+                    'MARK_MESSAGE_AS_READ_NOOP',
+                    memberId,
+                    `No recipient status updated for message ${messageId} and user ${memberId}`,
+                    req,
+                    'failure',
+                    memberId,
+                    req.user?.performer_type
+                );
+                res.status(404).json({ code: 'MSG_STATUS_NOT_FOUND', message: 'Recipient status not found for this user and message' });
+                return;
+            }
+
             await auditService.logAction(
                 'MARK_MESSAGE_AS_READ',
                 memberId,
@@ -444,8 +449,24 @@ async markMemberMessageAsRead(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        await messageService.markMessageAsRead(messageId, memberId);
-        
+        const updated = await messageService.markMessageAsRead(messageId, memberId);
+
+        if (updated === 0) {
+            if (req.user?.id) {
+                await auditService.logAction(
+                    'MARK_MESSAGE_READ_NOOP',
+                    req.user.id,
+                    `No recipient status updated for message ${messageId} and member ${memberId}`,
+                    req,
+                    'failure',
+                    memberId,
+                    req.user.performer_type
+                );
+            }
+            res.status(404).json({ code: 'MSG_STATUS_NOT_FOUND', message: 'Recipient status not found for this member and message' });
+            return;
+        }
+
         if (req.user?.id) {
             await auditService.logAction(
                 'MARK_MESSAGE_READ',

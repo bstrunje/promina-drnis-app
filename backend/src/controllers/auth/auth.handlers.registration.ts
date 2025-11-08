@@ -34,16 +34,16 @@ export async function registerInitialHandler(
     }
     const { first_name, last_name, email } = req.body;
 
-    // Check if member with email already exists
+    // Check if member with email already exists (per-tenant)
     const memberExists = await prisma.member.findFirst({
-      where: { email },
+      where: { email, organization_id: organizationId },
       select: { member_id: true }
     });
 
     if (memberExists) {
       res
         .status(400)
-        .json({ code: 'AUTH_REGISTRATION_DUP_EMAIL', message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_DUP_EMAIL', locale, 'Member with this email already exists') });
+        .json({ code: 'EMAIL_ALREADY_IN_USE', message: tOrDefault('auth.errorsByCode.EMAIL_ALREADY_IN_USE', locale, 'Email is already in use in this organization') });
       return;
     }
 
@@ -132,6 +132,19 @@ export async function registerMemberHandler(
       res.status(400).json({
         code: 'AUTH_REGISTRATION_DUP_OIB',
         message: tOrDefault('auth.errorsByCode.AUTH_REGISTRATION_DUP_OIB', locale, 'Member with this OIB already exists'),
+      });
+      return;
+    }
+
+    // Per-tenant email uniqueness check
+    const emailExists = await prisma.member.findFirst({
+      where: { email, organization_id: organizationId },
+      select: { member_id: true }
+    });
+    if (emailExists) {
+      res.status(400).json({
+        code: 'EMAIL_ALREADY_IN_USE',
+        message: tOrDefault('auth.errorsByCode.EMAIL_ALREADY_IN_USE', locale, 'Email is already in use in this organization'),
       });
       return;
     }

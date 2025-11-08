@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white mt-auto border-t border-gray-200 dark:border-gray-700">
-      <div className="container mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Tenant-specific sadržaj */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4 text-center sm:text-left">
           {/* Kontakt informacije */}

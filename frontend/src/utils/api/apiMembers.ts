@@ -103,6 +103,27 @@ export const getMembersWithEquipment = async (equipmentType: string, size: strin
   }
 };
 
+export interface EmailAvailabilityResult {
+  available: boolean;
+  existingMemberId?: number;
+}
+
+export const checkEmailAvailability = async (email: string, excludeMemberId?: number): Promise<EmailAvailabilityResult> => {
+  try {
+    const params: Record<string, string> = { email };
+    if (typeof excludeMemberId === 'number') {
+      params.excludeMemberId = String(excludeMemberId);
+    }
+    const response: AxiosResponse<EmailAvailabilityResult> = await api.get('/members/email-availability', { params });
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to check email availability');
+  }
+};
+
 /**
  * Dohvaća članove s funkcijama u društvu
  */

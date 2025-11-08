@@ -32,7 +32,7 @@ const Navigation: React.FC<NavigationProps> = React.memo(({ user, onLogout }) =>
   
   return (
     <nav className="bg-white shadow-md p-4 mb-4 sticky top-0 z-50">
-      <div className="container mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex w-full sm:w-auto items-center justify-between mb-4 sm:mb-0">
             <TenantLink to="/profile" className="flex items-center gap-3 flex-shrink-0" onClick={closeMenu}>

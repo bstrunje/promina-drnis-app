@@ -41,6 +41,7 @@ export default function MemberList(): JSX.Element {
   const { t } = useTranslation('members');
   const { getPrimaryColor } = useBranding();
   const [searchParams] = useSearchParams();
+  const quick = searchParams.get('quick') as 'pending' | 'without-card' | 'without-stamp' | null;
 
   // Dobavi članove pomoću custom hooka
   const {
@@ -52,6 +53,19 @@ export default function MemberList(): JSX.Element {
 
     refreshMembers
   } = useMemberData();
+
+  // Prefiltriraj listu prema quick parametru (dolazak s Admin Dashboarda)
+  const membersForView = React.useMemo(() => {
+    if (!members) return [] as MemberWithDetails[];
+    if (quick === 'without-card') {
+      return members.filter(m => !m.membership_details?.card_number);
+    }
+    if (quick === 'without-stamp') {
+      return members.filter(m => m.membership_details?.card_stamp_issued !== true);
+    }
+    // Za 'pending' koristimo postojeći filter kroz activeFilter, pa ovdje ne prefiltriramo
+    return members;
+  }, [members, quick]);
 
   const { user } = useAuth();
   const { navigateTo } = useTenantNavigation();
@@ -185,6 +199,17 @@ export default function MemberList(): JSX.Element {
     }
   }, [searchParams]);
 
+  // Ako je quick parametar prisutan, uskladi osnovni filter
+  // - 'pending' -> aktiviraj postojeći pending filter
+  // - 'without-card' ili 'without-stamp' -> postavi 'all' kako bi ostao samo prefilter iz membersForView
+  useEffect(() => {
+    if (quick === 'pending') {
+      setActiveFilter('pending');
+    } else if (quick === 'without-card' || quick === 'without-stamp') {
+      setActiveFilter('all');
+    }
+  }, [quick]);
+
   // Automatski postavi sortiranje po satima silazno kada je aktivan regular filter
   useEffect(() => {
     if (activeFilter === 'regular') {
@@ -195,7 +220,7 @@ export default function MemberList(): JSX.Element {
 
   // We use a custom hook for filtering and sorting
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
-    members,
+    members: membersForView,
     searchTerm,
     activeFilter,
     ageFilter,

@@ -85,22 +85,23 @@ function OrgRoutes() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
       <main className="flex-1">
-        <Routes>
-          {/* Organization System Manager rute - odvojene od member auth-a */}
-          <Route 
-            path="/system-manager/*" 
-            element={
-              <Suspense fallback={<div className="p-6">Učitavanje...</div>}>
-                <SystemManagerRoutes />
-              </Suspense>
-            } 
-          />
-          
-          <Route path="/" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
-          <Route path="/login" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
+        <div className="max-w-7xl mx-auto">
+          <Routes>
+            {/* Organization System Manager rute - odvojene od member auth-a */}
+            <Route 
+              path="/system-manager/*" 
+              element={
+                <Suspense fallback={<div className="p-6">Učitavanje...</div>}>
+                  <SystemManagerRoutes />
+                </Suspense>
+              } 
+            />
+            
+            <Route path="/" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
+            <Route path="/login" element={!user ? <Suspense fallback={<div className="p-6">Učitavanje...</div>}><LoginPage /></Suspense> : <Navigate to={getDashboardRoute()} replace />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Suspense fallback={<div className="p-6">Učitavanje...</div>}><MemberDetailsPageLazy /></Suspense>} />
@@ -140,6 +141,7 @@ function OrgRoutes() {
             )}
           </Route>
         </Routes>
+        </div>
       </main>
       {user && <Footer />}
     </div>

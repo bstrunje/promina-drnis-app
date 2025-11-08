@@ -185,7 +185,7 @@ const MemberDashboard: React.FC = () => {
   // Zaštita: Ne prikazuj dashboard dok fullMember nije učitan
   if (!fullMember) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="flex items-center justify-center p-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Učitavanje profila...</p>
@@ -195,8 +195,7 @@ const MemberDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-6 mb-6">
         <h1 className="text-xl md:text-2xl font-bold">
           {t('welcome', { name: fullMember.full_name, context: fullMember.gender === 'male' ? 'male' : 'female' })}
@@ -395,7 +394,6 @@ const MemberDashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
       </div>
     </div>
   );

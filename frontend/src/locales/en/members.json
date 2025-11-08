@@ -195,5 +195,18 @@
         "admin": "Admin",
         "member": "Member"
     },
-    "noEmail": "No email address"
+    "noEmail": "No email address",
+    "toasts": {
+        "successTitle": "Success",
+        "errorTitle": "Error",
+        "addSuccess": "Member added successfully",
+        "addError": "Failed to add member",
+        "updateSuccess": "Member updated successfully",
+        "updateError": "Failed to update member"
+    },
+    "errors": {
+        "fetchMemberDetailsLog": "Error fetching member details",
+        "fetchMembersLog": "Error fetching members",
+        "loadMembers": "Failed to load members"
+    }
 }

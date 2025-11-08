@@ -1,4 +1,5 @@
 {
+  "readMessageTitle": "Mark message as read?",
     "adminMessageSender": {
       "title": "Send Message to Members",
       "tabs": {

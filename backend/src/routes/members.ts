@@ -20,6 +20,7 @@ import prisma from '../utils/prisma.js';
 import memberService, { updateMemberActivityHours } from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
 import equipmentService from '../services/equipment.service.js';
+import { getOrganizationId } from '../middleware/tenant.middleware.js';
 
 const router = express.Router();
 
@@ -76,6 +77,51 @@ async function validateProfileImageExists(imagePath: string, uploadsDir: string)
 // Public routes
 // Dashboard statistike za običnog člana - stavljeno prije dinamičkih ruta da se ne poklopi s /:memberId
 router.get('/dashboard/stats', authenticateToken, getMemberDashboardStats);
+// Public router: izlaganje email-availability bez auth middleware-a
+export const publicMembersRouter = express.Router();
+
+// Izdvojeni handler kako bismo izbjegli dupliciranje logike
+async function emailAvailabilityHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const emailParam = req.query.email;
+    const excludeParam = req.query.excludeMemberId;
+
+    if (!emailParam || typeof emailParam !== 'string') {
+      res.status(400).json({ code: 'EMAIL_REQUIRED', message: 'Parametar email je obavezan.' });
+      return;
+    }
+
+    let organizationId: number;
+    try {
+      organizationId = getOrganizationId(req);
+    } catch (_e) {
+      res.status(400).json({ code: 'TENANT_REQUIRED', message: 'Organization context is required' });
+      return;
+    }
+
+    const excludeId = typeof excludeParam === 'string' ? parseInt(excludeParam, 10) : NaN;
+
+    const existing = await prisma.member.findFirst({
+      where: {
+        email: emailParam as string,
+        organization_id: organizationId,
+        ...(Number.isFinite(excludeId) ? { member_id: { not: excludeId } } : {})
+      },
+      select: { member_id: true }
+    });
+
+    const available = !existing;
+    const response: { available: boolean; existingMemberId?: number } = { available };
+    if (existing) response.existingMemberId = existing.member_id;
+    res.json(response);
+  } catch (error) {
+    console.error('Email availability check error:', error);
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Greška prilikom provjere email dostupnosti.' });
+  }
+}
+
+// GET /api/members/email-availability (PUBLIC)
+publicMembersRouter.get('/email-availability', emailAvailabilityHandler);
 
 // Dohvat trenutno prijavljenog člana (u sklopu tenanta)
 router.get('/me', authenticateToken, async (req, res) => {

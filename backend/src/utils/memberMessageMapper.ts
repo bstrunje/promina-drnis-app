@@ -26,14 +26,21 @@ export function mapToMemberMessage(raw: PrismaMemberMessage | TransformedMessage
             sender: null
         } as TransformedMessage;
     
+    // Konvertiraj read_by Date objekte u ISO stringove za JSON serijalizaciju
+    const serializedReadBy = (raw as TransformedMessage).read_by?.map(rb => ({
+        member_id: rb.member_id,
+        read_at: rb.read_at ? rb.read_at.toISOString() : null,
+        full_name: rb.full_name
+    }));
+    
     // Dodajemo status, read_at i read polja za kompatibilnost s frontendnom
     return {
         ...baseMessage,
-        ...(typeof (raw as TransformedMessage).read_by !== 'undefined' ? { read_by: (raw as TransformedMessage).read_by } : {}),
+        ...(serializedReadBy ? { read_by: serializedReadBy } : {}),
         status: baseMessage.currentUserStatus,
         read_at: baseMessage.currentUserReadAt,
         read: baseMessage.currentUserStatus === 'read' || !!baseMessage.currentUserReadAt
-    };
+    } as ApiCompatibleMessage;
 }
 
 // Mapa raw Prisma MemberMessage sa uključenim "sender" objektom na TransformedMessage
@@ -42,12 +49,20 @@ export function mapToMemberMessageWithSender(
 ): ApiCompatibleMessage {
     // Ako je raw već TransformedMessage s sender poljem, samo dodajemo status i read_at
     if ('currentUserStatus' in raw && raw.sender) {
+        // Konvertiraj read_by Date objekte u ISO stringove
+        const serializedReadBy = raw.read_by?.map(rb => ({
+            member_id: rb.member_id,
+            read_at: rb.read_at ? rb.read_at.toISOString() : null,
+            full_name: rb.full_name
+        }));
+        
         return {
             ...raw,
+            ...(serializedReadBy ? { read_by: serializedReadBy } : {}),
             status: raw.currentUserStatus,
             read_at: raw.currentUserReadAt,
             read: raw.currentUserStatus === 'read' || !!raw.currentUserReadAt
-        };
+        } as ApiCompatibleMessage;
     }
     
     // Inače, mapiramo kao prije
