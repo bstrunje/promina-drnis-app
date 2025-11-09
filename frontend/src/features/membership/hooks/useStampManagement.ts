@@ -3,7 +3,6 @@ import { useToast } from "@components/ui/use-toast";
 import { Member } from "@shared/member";
 // Zamijenjeno prema novoj modularnoj API strukturi
 import api from '../../../utils/api/apiConfig';
-import { updateMembership } from '../../../utils/api/apiMembership';
 import { InventoryStatus } from "../types/membershipTypes";
 import { getCurrentYear } from "../../../utils/dateUtils";
 
@@ -140,10 +139,17 @@ export const useStampManagement = (member: Member, onUpdate: (member: Member) =>
       let apiSuccess = false;
       let updatedMember: Member | null = null; // Sigurnosna promjena: ispravan tip za ažuriranog člana
   
-      // Koristi objedinjeni updateMembership poziv umjesto posebnih /stamp endpointa
-      const result = await updateMembership(member.member_id, { stampIssued: newState });
-      updatedMember = result as unknown as Member;
-      apiSuccess = true;
+      // Pozovi dedicated /stamp endpointe kako bi se odmah ažurirao inventar
+      if (newState) {
+        await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp`);
+        apiSuccess = true;
+      } else {
+        const response = await api.post<{ member?: Member }>(`/members/${member.member_id}/stamp/return`);
+        if (response.data?.member) {
+          updatedMember = response.data.member; // ako backend vrati člana, iskoristi ga
+        }
+        apiSuccess = true;
+      }
 
       // Ažuriraj prikaz zalihe
       setInventoryStatus((prev) =>
