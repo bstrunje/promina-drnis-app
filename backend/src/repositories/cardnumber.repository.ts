@@ -82,8 +82,8 @@ const cardNumberRepository = {
       const issued = issuedAt || new Date();
       const consumed = consumedAt || new Date();
 
-      // PARALELNE operacije za bolje performanse
-      await Promise.allSettled([
+      // ATOMIČNE operacije - obje moraju uspjeti ili obje failati
+      await Promise.all([
         // Unesi u consumed_card_numbers
         prisma.consumedCardNumber.create({
           data: {
@@ -327,17 +327,61 @@ const cardNumberRepository = {
           ])
       );
 
+      // Kreiraj Set potrošenih kartica za brzu provjeru
+      const consumedCardsSet = new Set(membershipCards.filter(mc => mc.card_number).map(mc => mc.card_number!));
+      
+      // Dohvati stvarno potrošene kartice iz consumed_card_numbers tablice
+      const actuallyConsumed = await prisma.consumedCardNumber.findMany({
+        where: { organization_id: organizationId },
+        select: { card_number: true }
+      });
+      const actuallyConsumedSet = new Set(actuallyConsumed.map(c => c.card_number));
+
       // Filtriraj potrošene kartice iz glavne liste inventara
-      // Napomena: "consumed" kartice imaju zaseban endpoint i tab, te ne pripadaju listi "Sve".
-      const nonConsumed = allCardNumbers.filter(cn => cn.status !== 'consumed');
+      // VAŽNO: Status 'consumed' mora odgovarati stvarnom zapisu u consumed_card_numbers tablici
+      // Ako status je 'consumed' ALI nema zapisa u consumed_card_numbers, resetiramo status na 'available'
+      const inconsistentCards: string[] = [];
+      const nonConsumed = allCardNumbers.filter(cn => {
+        const isMarkedConsumed = cn.status === 'consumed';
+        const hasConsumedRecord = actuallyConsumedSet.has(cn.card_number);
+        
+        // Detektiraj inconsistency
+        if (isMarkedConsumed && !hasConsumedRecord) {
+          inconsistentCards.push(cn.card_number);
+          console.warn(`[CARD-NUMBERS] Inconsistency detected: ${cn.card_number} marked as consumed but no record in consumed_card_numbers`);
+          // Ne filtriraj je - umjesto toga, tretirati kao available
+          return true;
+        }
+        
+        // Normalno filtriranje - filtriraj samo ako je stvarno consumed
+        return !hasConsumedRecord;
+      });
+
+      // Automatski resetiraj status nekonzistentnih kartica u bazi
+      if (inconsistentCards.length > 0) {
+        console.warn(`[CARD-NUMBERS] Auto-resetting ${inconsistentCards.length} inconsistent cards to 'available'`);
+        await prisma.cardNumber.updateMany({
+          where: {
+            organization_id: organizationId,
+            card_number: { in: inconsistentCards }
+          },
+          data: {
+            status: 'available',
+            member_id: null,
+            assigned_at: null
+          }
+        });
+      }
 
       // Kombiniraj podatke
       const result = nonConsumed.map(cn => {
         const assignedInfo = assignedCardsMap.get(cn.card_number);
+        const isInconsistent = inconsistentCards.includes(cn.card_number);
 
         return {
           card_number: cn.card_number,
-          status: (assignedInfo ? 'assigned' : cn.status) as 'available' | 'assigned',
+          // Ako je kartica bila inconsistent, prikaži je kao available
+          status: (assignedInfo ? 'assigned' : (isInconsistent ? 'available' : cn.status)) as 'available' | 'assigned',
           member_id: assignedInfo?.member_id || cn.member_id || undefined,
           member_name: assignedInfo?.member_name || undefined
         };

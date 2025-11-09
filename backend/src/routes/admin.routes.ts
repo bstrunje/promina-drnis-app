@@ -79,7 +79,7 @@ router.get('/dashboard/stats', async (req, res) => {
       prisma.member.count({ where: { organization_id: organization.id, status: 'registered' } }),
       prisma.member.count({ where: { organization_id: organization.id, status: 'registered', activity_hours: { gte: 20 } } }),
       // Pending registracije: članovi bez broja članske iskaznice (lozinka se dodjeljuje automatski s brojem iskaznice)
-      prisma.member.count({ where: { organization_id: organization.id, membership_details: { card_number: null } } }),
+      prisma.member.count({ where: { organization_id: organization.id, membership_details: { is: { card_number: null } } } }),
       prisma.activity.count({ where: { organization_id: organization.id, created_at: { gte: thirtyDaysAgo } } })
     ]);
     
