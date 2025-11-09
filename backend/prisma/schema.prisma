@@ -18,168 +18,168 @@ enum PasswordGenerationStrategy {
 // MULTI-TENANT: Organization Model
 // ============================================
 model Organization {
-  id                    Int       @id @default(autoincrement())
-  name                  String    @db.VarChar(200)
-  short_name            String?   @db.VarChar(50)
-  subdomain             String    @unique @db.VarChar(50)
-  logo_path             String?   @db.VarChar(255)
-  
+  id         Int     @id @default(autoincrement())
+  name       String  @db.VarChar(200)
+  short_name String? @db.VarChar(50)
+  subdomain  String  @unique @db.VarChar(50)
+  logo_path  String? @db.VarChar(255)
+
   // Branding
-  primary_color         String?   @default("#3b82f6") @db.VarChar(7)
-  secondary_color       String?   @default("#1e40af") @db.VarChar(7)
-  
+  primary_color   String? @default("#3b82f6") @db.VarChar(7)
+  secondary_color String? @default("#1e40af") @db.VarChar(7)
+
   // PWA (Progressive Web App) Configuration
-  pwa_name              String?   @db.VarChar(100)      // Puni naziv za PWA manifest
-  pwa_short_name        String?   @db.VarChar(20)       // Kratki naziv za ikonu (12 znakova max preporuka)
-  pwa_theme_color       String?   @default("#0066cc") @db.VarChar(7)  // Hex boja za status bar
-  pwa_background_color  String?   @default("#ffffff") @db.VarChar(7)  // Hex boja za splash screen
-  pwa_icon_192_url      String?   @db.Text              // URL ili base64 za 192x192 ikonu
-  pwa_icon_512_url      String?   @db.Text              // URL ili base64 za 512x512 ikonu
-  
+  pwa_name             String? @db.VarChar(100) // Puni naziv za PWA manifest
+  pwa_short_name       String? @db.VarChar(20) // Kratki naziv za ikonu (12 znakova max preporuka)
+  pwa_theme_color      String? @default("#0066cc") @db.VarChar(7) // Hex boja za status bar
+  pwa_background_color String? @default("#ffffff") @db.VarChar(7) // Hex boja za splash screen
+  pwa_icon_192_url     String? @db.Text // URL ili base64 za 192x192 ikonu
+  pwa_icon_512_url     String? @db.Text // URL ili base64 za 512x512 ikonu
+
   // Language
-  default_language      String    @default("hr") @db.VarChar(2)
-  
+  default_language String @default("hr") @db.VarChar(2)
+
   // Kontakt
-  email                 String    @db.VarChar(255)
-  phone                 String?   @db.VarChar(20)
-  website_url           String?   @db.VarChar(255)
-  
+  email       String  @db.VarChar(255)
+  phone       String? @db.VarChar(20)
+  website_url String? @db.VarChar(255)
+
   // Dokumenti URLs
-  ethics_code_url       String?   @db.VarChar(500)
-  privacy_policy_url    String?   @db.VarChar(500)
-  membership_rules_url  String?   @db.VarChar(500)
-  
+  ethics_code_url      String? @db.VarChar(500)
+  privacy_policy_url   String? @db.VarChar(500)
+  membership_rules_url String? @db.VarChar(500)
+
   // Adresa
-  street_address        String?   @db.VarChar(200)
-  city                  String?   @db.VarChar(100)
-  postal_code           String?   @db.VarChar(10)
-  country               String?   @default("Hrvatska") @db.VarChar(50)
-  
+  street_address String? @db.VarChar(200)
+  city           String? @db.VarChar(100)
+  postal_code    String? @db.VarChar(10)
+  country        String? @default("Hrvatska") @db.VarChar(50)
+
   // Member Limit & Donor Status
-  member_limit          Int?                      // null = neograničeno
-  is_donor              Boolean   @default(false) // Donatori imaju neograničen pristup
-  
+  member_limit Int? // null = neograničeno
+  is_donor     Boolean @default(false) // Donatori imaju neograničen pristup
+
   // Status
-  is_active             Boolean   @default(true)
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @updatedAt @db.Timestamptz(6)
-  
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
   // Relacije
-  members                  Member[]
-  system_managers          SystemManager[]
-  member_administrators    MemberAdministrator[]
-  settings                 SystemSettings?
-  activities               Activity[]
-  activity_types           ActivityType[]
-  activity_participations  ActivityParticipation[]
-  skills                   Skill[]
-  stamp_inventory          StampInventory[]
-  equipment_inventory      EquipmentInventory[]
-  card_numbers             CardNumber[]
-  consumed_card_numbers    ConsumedCardNumber[]
-  messages                 MemberMessage[]
-  audit_logs               AuditLog[]
-  holidays                 Holiday[]
-  membership_periods       MembershipPeriod[]
-  annual_statistics        AnnualStatistics[]
-  stamp_history            stamp_history[]
-  trusted_devices          TrustedDevice[]
-  support_tickets          SupportTicket[]
-  
+  members                 Member[]
+  system_managers         SystemManager[]
+  member_administrators   MemberAdministrator[]
+  settings                SystemSettings?
+  activities              Activity[]
+  activity_types          ActivityType[]
+  activity_participations ActivityParticipation[]
+  skills                  Skill[]
+  stamp_inventory         StampInventory[]
+  equipment_inventory     EquipmentInventory[]
+  card_numbers            CardNumber[]
+  consumed_card_numbers   ConsumedCardNumber[]
+  messages                MemberMessage[]
+  audit_logs              AuditLog[]
+  holidays                Holiday[]
+  membership_periods      MembershipPeriod[]
+  annual_statistics       AnnualStatistics[]
+  stamp_history           stamp_history[]
+  trusted_devices         TrustedDevice[]
+  support_tickets         SupportTicket[]
+
   @@index([subdomain])
   @@index([is_active])
   @@map("organizations")
 }
 
 model Member {
-  organization_id          Int?
-  status                   String?                  @default("pending") @db.VarChar(50)
-  date_of_birth            DateTime?                @db.Date
-  oib                      String                   @unique @db.VarChar(11)
-  cell_phone               String                   @db.VarChar(20)
-  city                     String                   @db.VarChar(100)
-  street_address           String                   @db.VarChar(200)
-  email                    String?                  @db.VarChar(255)
-  first_name               String                   @db.VarChar(100)
-  last_name                String                   @db.VarChar(100)
-  member_id                Int                      @id @default(autoincrement())
-  password_hash            String?                  @db.VarChar(255)
-  role                     String                   @default("member") @db.VarChar(20)
-  last_login               DateTime?                @db.Timestamp(6)
-  full_name                String                   @db.VarChar(100)
-  life_status              String?                  @db.VarChar(25)
-  tshirt_size              String?                  @db.VarChar(4)
-  shell_jacket_size        String?                  @db.VarChar(4)
-  total_hours              Decimal?                 @default(0) @db.Decimal(10, 2)
-  gender                   String?                  @db.VarChar(6)
-  registration_completed   Boolean?                 @default(false)
-  profile_image_path       String?                  @db.VarChar(255)
-  profile_image_updated_at DateTime?                @db.Timestamp(6)
-  membership_type          String?                  @default("regular") @db.VarChar(20)
-  created_at               DateTime?                @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime?                @default(now()) @db.Timestamptz(6)
-  nickname                 String?                  @db.VarChar(50)
-  failed_login_attempts    Int                      @default(0)
-  last_failed_login        DateTime?                @db.Timestamp(6)
-  locked_until             DateTime?                @db.Timestamp(6)
-  other_skills             String?                  @db.VarChar(500)
-  functions_in_society     String?                  @db.VarChar(250)
-  shell_jacket_delivered   Boolean                  @default(false)
-  tshirt_delivered         Boolean                  @default(false)
-  hat_delivered            Boolean                  @default(false)
-  hat_size                 String?                  @db.VarChar(4)
-  activity_hours           Decimal?                 @default(0) @db.Decimal(10, 2)
+  organization_id                Int?
+  status                         String?                  @default("pending") @db.VarChar(50)
+  date_of_birth                  DateTime?                @db.Date
+  oib                            String                   @unique @db.VarChar(11)
+  cell_phone                     String                   @db.VarChar(20)
+  city                           String                   @db.VarChar(100)
+  street_address                 String                   @db.VarChar(200)
+  email                          String?                  @db.VarChar(255)
+  first_name                     String                   @db.VarChar(100)
+  last_name                      String                   @db.VarChar(100)
+  member_id                      Int                      @id @default(autoincrement())
+  password_hash                  String?                  @db.VarChar(255)
+  role                           String                   @default("member") @db.VarChar(20)
+  last_login                     DateTime?                @db.Timestamp(6)
+  full_name                      String                   @db.VarChar(100)
+  life_status                    String?                  @db.VarChar(25)
+  tshirt_size                    String?                  @db.VarChar(4)
+  shell_jacket_size              String?                  @db.VarChar(4)
+  total_hours                    Decimal?                 @default(0) @db.Decimal(10, 2)
+  gender                         String?                  @db.VarChar(6)
+  registration_completed         Boolean?                 @default(false)
+  profile_image_path             String?                  @db.VarChar(255)
+  profile_image_updated_at       DateTime?                @db.Timestamp(6)
+  membership_type                String?                  @default("regular") @db.VarChar(20)
+  created_at                     DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime?                @default(now()) @db.Timestamptz(6)
+  nickname                       String?                  @db.VarChar(50)
+  failed_login_attempts          Int                      @default(0)
+  last_failed_login              DateTime?                @db.Timestamp(6)
+  locked_until                   DateTime?                @db.Timestamp(6)
+  other_skills                   String?                  @db.VarChar(500)
+  functions_in_society           String?                  @db.VarChar(250)
+  shell_jacket_delivered         Boolean                  @default(false)
+  tshirt_delivered               Boolean                  @default(false)
+  hat_delivered                  Boolean                  @default(false)
+  hat_size                       String?                  @db.VarChar(4)
+  activity_hours                 Decimal?                 @default(0) @db.Decimal(10, 2)
   // 2FA polja za članove
-  two_factor_enabled        Boolean?                @default(false)
-  two_factor_confirmed_at   DateTime?               @db.Timestamp(6)
-  two_factor_secret         String?                 @db.VarChar(255)
+  two_factor_enabled             Boolean?                 @default(false)
+  two_factor_confirmed_at        DateTime?                @db.Timestamp(6)
+  two_factor_secret              String?                  @db.VarChar(255)
   // PIN 2FA polja
-  pin_hash                  String?                 @db.VarChar(255)
-  pin_attempts              Int                     @default(0)
-  pin_locked_until          DateTime?               @db.Timestamp(6)
-  pin_set_at                DateTime?               @db.Timestamp(6)
+  pin_hash                       String?                  @db.VarChar(255)
+  pin_attempts                   Int                      @default(0)
+  pin_locked_until               DateTime?                @db.Timestamp(6)
+  pin_set_at                     DateTime?                @db.Timestamp(6)
   two_factor_recovery_codes_hash Json?
-  two_factor_preferred_channel String?              @db.VarChar(10)
-  organization             Organization?            @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  organized_activities     Activity[]               @relation("OrganizedActivities")
-  participations           ActivityParticipation[]
-  annual_statistics        AnnualStatistics[]
-  affected_audits          AuditLog[]               @relation("AuditAffected")
-  card_numbers             CardNumber[]
-  consumed_card_numbers    ConsumedCardNumber[]
-  messages                 MemberMessage[]
-  sent_messages            MemberMessage[]          @relation("MessageSender")
-  grantedPermissions       MemberPermissions[]      @relation("grantedByMemberPermissions")
-  permissions              MemberPermissions?       @relation("memberPermissionsRelation")
-  skills                   MemberSkill[]
-  membership_details       MembershipDetails?
-  periods                  MembershipPeriod[]
-  message_statuses         MessageRecipientStatus[] @relation("RecipientMemberStatus")
-  password_update_queue    password_update_queue[]
-  refresh_tokens           refresh_tokens[]
-  stamp_history            stamp_history[]
-  trusted_devices          TrustedDevice[]
+  two_factor_preferred_channel   String?                  @db.VarChar(10)
+  organization                   Organization?            @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organized_activities           Activity[]               @relation("OrganizedActivities")
+  participations                 ActivityParticipation[]
+  annual_statistics              AnnualStatistics[]
+  affected_audits                AuditLog[]               @relation("AuditAffected")
+  card_numbers                   CardNumber[]
+  consumed_card_numbers          ConsumedCardNumber[]
+  messages                       MemberMessage[]
+  sent_messages                  MemberMessage[]          @relation("MessageSender")
+  grantedPermissions             MemberPermissions[]      @relation("grantedByMemberPermissions")
+  permissions                    MemberPermissions?       @relation("memberPermissionsRelation")
+  skills                         MemberSkill[]
+  membership_details             MembershipDetails?
+  periods                        MembershipPeriod[]
+  message_statuses               MessageRecipientStatus[] @relation("RecipientMemberStatus")
+  password_update_queue          password_update_queue[]
+  refresh_tokens                 refresh_tokens[]
+  stamp_history                  stamp_history[]
+  trusted_devices                TrustedDevice[]
 
+  @@unique([organization_id, oib])
   @@index([organization_id])
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
   @@index([total_hours], map: "idx_members_total_hours")
-  @@unique([organization_id, oib])
   @@map("members")
 }
 
 model ActivityType {
-  type_id         Int           @id @default(autoincrement())
-  organization_id Int?
-  key             String       @db.VarChar(100)
-  name            String       @db.VarChar(50)
-  description     String?
-  custom_label    String?      @db.VarChar(255) // Custom naziv za tenant
-  custom_description String?   @db.Text         // Custom opis za tenant
-  is_visible      Boolean      @default(true) // Kontrola vidljivosti kategorije za tenant
-  created_at      DateTime?    @default(now()) @db.Timestamp(6)
-  organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  activities      Activity[]
+  type_id            Int           @id @default(autoincrement())
+  organization_id    Int?
+  key                String        @db.VarChar(100)
+  name               String        @db.VarChar(50)
+  description        String?
+  custom_label       String?       @db.VarChar(255) // Custom naziv za tenant
+  custom_description String?       @db.Text // Custom opis za tenant
+  is_visible         Boolean       @default(true) // Kontrola vidljivosti kategorije za tenant
+  created_at         DateTime?     @default(now()) @db.Timestamp(6)
+  organization       Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  activities         Activity[]
 
   @@unique([organization_id, key])
   @@index([organization_id])
@@ -199,7 +199,7 @@ model Activity {
   actual_end_time        DateTime?
   recognition_percentage Float                   @default(100)
   cancellation_reason    String?
-  manual_hours          Float?
+  manual_hours           Float?
   created_at             DateTime                @default(now())
   updated_at             DateTime                @updatedAt
   organization           Organization?           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -221,7 +221,7 @@ model ActivityParticipation {
   start_time           DateTime?
   end_time             DateTime?
   manual_hours         Float?
-  recognition_override      Float?
+  recognition_override Float?
   created_at           DateTime         @default(now())
   participant_role     ParticipantRole?
   organization         Organization?    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
@@ -262,62 +262,62 @@ model MemberSkill {
 }
 
 model SystemSettings {
-  id                        Int          @id @default(autoincrement())
-  organization_id           Int?         @unique
-  cardNumberLength          Int?         @default(5) @map("card_number_length")
-  updatedAt                 DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  renewalStartDay           Int?         @default(1) @map("renewal_start_day")
-  updatedBy                 Int?         @map("updated_by")
-  renewalStartMonth         Int?         @default(11) @map("renewal_start_month")
-  timeZone                  String?      @default("Europe/Zagreb") @map("time_zone")
-  membershipTerminationDay  Int?         @default(1) @map("membership_termination_day")
-  membershipTerminationMonth Int?        @default(3) @map("membership_termination_month")
-  dutyCalendarEnabled       Boolean?     @default(false) @map("duty_calendar_enabled")
-  dutyMaxParticipants       Int?         @default(2) @map("duty_max_participants")
-  dutyAutoCreateEnabled     Boolean?     @default(true) @map("duty_auto_create_enabled")
+  id                                 Int      @id @default(autoincrement())
+  organization_id                    Int?     @unique
+  cardNumberLength                   Int?     @default(5) @map("card_number_length")
+  updatedAt                          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  renewalStartDay                    Int?     @default(1) @map("renewal_start_day")
+  updatedBy                          Int?     @map("updated_by")
+  renewalStartMonth                  Int?     @default(11) @map("renewal_start_month")
+  timeZone                           String?  @default("Europe/Zagreb") @map("time_zone")
+  membershipTerminationDay           Int?     @default(1) @map("membership_termination_day")
+  membershipTerminationMonth         Int?     @default(3) @map("membership_termination_month")
+  dutyCalendarEnabled                Boolean? @default(false) @map("duty_calendar_enabled")
+  dutyMaxParticipants                Int?     @default(2) @map("duty_max_participants")
+  dutyAutoCreateEnabled              Boolean? @default(true) @map("duty_auto_create_enabled")
   // Registration rate limit (per-tenant)
-  registrationRateLimitEnabled Boolean?  @default(true)  @map("registration_rate_limit_enabled")
-  registrationWindowMs         Int?      @default(900000) @map("registration_window_ms")
-  registrationMaxAttempts      Int?      @default(5)      @map("registration_max_attempts")
+  registrationRateLimitEnabled       Boolean? @default(true) @map("registration_rate_limit_enabled")
+  registrationWindowMs               Int?     @default(900000) @map("registration_window_ms")
+  registrationMaxAttempts            Int?     @default(5) @map("registration_max_attempts")
   // 2FA postavke (globalno i granularno)
-  twoFactorGlobalEnabled           Boolean? @default(false) @map("two_factor_global_enabled")
-  twoFactorRequireForSystemManager Boolean? @default(true)  @map("two_factor_require_for_system_manager")
-  twoFactorMembersEnabled          Boolean? @default(false) @map("two_factor_members_enabled")
-  twoFactorRequiredMemberRoles     Json?                    @map("two_factor_required_member_roles")
-  twoFactorRequiredMemberPermissions Json?                  @map("two_factor_required_member_permissions")
+  twoFactorGlobalEnabled             Boolean? @default(false) @map("two_factor_global_enabled")
+  twoFactorRequireForSystemManager   Boolean? @default(true) @map("two_factor_require_for_system_manager")
+  twoFactorMembersEnabled            Boolean? @default(false) @map("two_factor_members_enabled")
+  twoFactorRequiredMemberRoles       Json?    @map("two_factor_required_member_roles")
+  twoFactorRequiredMemberPermissions Json?    @map("two_factor_required_member_permissions")
   // kanali
-  twoFactorChannelTotpEnabled      Boolean? @default(true)  @map("two_factor_channel_totp_enabled")
-  twoFactorChannelEmailEnabled     Boolean? @default(false) @map("two_factor_channel_email_enabled")
-  twoFactorChannelSmsEnabled       Boolean? @default(false) @map("two_factor_channel_sms_enabled")
-  twoFactorChannelPinEnabled       Boolean? @default(false) @map("two_factor_channel_pin_enabled")
+  twoFactorChannelTotpEnabled        Boolean? @default(true) @map("two_factor_channel_totp_enabled")
+  twoFactorChannelEmailEnabled       Boolean? @default(false) @map("two_factor_channel_email_enabled")
+  twoFactorChannelSmsEnabled         Boolean? @default(false) @map("two_factor_channel_sms_enabled")
+  twoFactorChannelPinEnabled         Boolean? @default(false) @map("two_factor_channel_pin_enabled")
   // trajanja i sigurnosne politike
-  twoFactorTotpStepSeconds         Int?     @default(30)    @map("two_factor_totp_step_seconds")
-  twoFactorTotpWindow              Int?     @default(1)     @map("two_factor_totp_window")
-  twoFactorOtpExpirySeconds        Int?     @default(300)   @map("two_factor_otp_expiry_seconds")
-  twoFactorMaxAttemptsPerHour      Int?     @default(10)    @map("two_factor_max_attempts_per_hour")
-  twoFactorRememberDeviceDays      Int?     @default(30)    @map("two_factor_remember_device_days")
-  twoFactorTrustedDevicesEnabled   Boolean? @default(false) @map("two_factor_trusted_devices_enabled")
+  twoFactorTotpStepSeconds           Int?     @default(30) @map("two_factor_totp_step_seconds")
+  twoFactorTotpWindow                Int?     @default(1) @map("two_factor_totp_window")
+  twoFactorOtpExpirySeconds          Int?     @default(300) @map("two_factor_otp_expiry_seconds")
+  twoFactorMaxAttemptsPerHour        Int?     @default(10) @map("two_factor_max_attempts_per_hour")
+  twoFactorRememberDeviceDays        Int?     @default(30) @map("two_factor_remember_device_days")
+  twoFactorTrustedDevicesEnabled     Boolean? @default(false) @map("two_factor_trusted_devices_enabled")
 
   // Backup settings
-  backupFrequency            String?      @default("daily") @map("backup_frequency") // e.g., 'daily', 'weekly', 'monthly'
-  backupRetentionDays        Int?         @default(7)      @map("backup_retention_days")
-  backupStorageLocation      String?      @default("local")   @map("backup_storage_location") // e.g., 'local', 's3', 'gcs'
-  lastBackupAt               DateTime?    @map("last_backup_at") @db.Timestamp(6)
-  nextBackupAt               DateTime?    @map("next_backup_at") @db.Timestamp(6)
+  backupFrequency       String?   @default("daily") @map("backup_frequency") // e.g., 'daily', 'weekly', 'monthly'
+  backupRetentionDays   Int?      @default(7) @map("backup_retention_days")
+  backupStorageLocation String?   @default("local") @map("backup_storage_location") // e.g., 'local', 's3', 'gcs'
+  lastBackupAt          DateTime? @map("last_backup_at") @db.Timestamp(6)
+  nextBackupAt          DateTime? @map("next_backup_at") @db.Timestamp(6)
 
   passwordGenerationStrategy PasswordGenerationStrategy? @default(FULLNAME_ISK_CARD) @map("password_generation_strategy")
   passwordSeparator          String?                     @default("-isk-") @map("password_separator")
   passwordCardDigits         Int?                        @default(4) @map("password_card_digits")
 
   // Activity settings
-  activityHoursThreshold     Int?                        @default(20) @map("activity_hours_threshold")
+  activityHoursThreshold  Int?  @default(20) @map("activity_hours_threshold")
   // Role recognition percentages: { "GUIDE": 100, "ASSISTANT_GUIDE": 50, "DRIVER": 100, "REGULAR": 10 }
-  activityRoleRecognition    Json?                       @map("activity_role_recognition")
+  activityRoleRecognition Json? @map("activity_role_recognition")
 
   // Activities selectors behavior
   allowFormerMembersInSelectors Boolean? @default(false) @map("allow_former_members_in_selectors")
 
-  organization              Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("system_settings")
 }
@@ -358,13 +358,13 @@ model MembershipPeriod {
 }
 
 model StampInventory {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
-  stamp_type      String       @db.VarChar(20)
-  initial_count   Int          @default(0)
-  issued_count    Int?         @default(0)
+  stamp_type      String        @db.VarChar(20)
+  initial_count   Int           @default(0)
+  issued_count    Int?          @default(0)
   remaining       Int?
-  last_updated    DateTime?    @default(now()) @db.Timestamp(6)
+  last_updated    DateTime?     @default(now()) @db.Timestamp(6)
   stamp_year      Int?
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -374,15 +374,15 @@ model StampInventory {
 }
 
 model EquipmentInventory {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
-  equipment_type  String       @db.VarChar(20)
-  size            String       @db.VarChar(4)
-  gender          String       @db.VarChar(6)
-  initial_count   Int          @default(0)
-  issued_count    Int          @default(0)
-  gift_count      Int          @default(0)
-  last_updated    DateTime     @default(now()) @db.Timestamp(6)
+  equipment_type  String        @db.VarChar(20)
+  size            String        @db.VarChar(4)
+  gender          String        @db.VarChar(6)
+  initial_count   Int           @default(0)
+  issued_count    Int           @default(0)
+  gift_count      Int           @default(0)
+  last_updated    DateTime      @default(now()) @db.Timestamp(6)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, equipment_type, size, gender], name: "equipment_unique")
@@ -391,14 +391,14 @@ model EquipmentInventory {
 }
 
 model ConsumedCardNumber {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
   card_number     String
   member_id       Int
-  consumed_at     DateTime     @default(now())
+  consumed_at     DateTime      @default(now())
   issued_at       DateTime
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  member          Member       @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  member          Member        @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
 
   @@unique([organization_id, card_number])
   @@index([organization_id])
@@ -473,21 +473,20 @@ model AuditLog {
   organization    Organization?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   affected        Member?        @relation("AuditAffected", fields: [affected_member], references: [member_id])
 
-
   @@index([organization_id])
   @@map("audit_logs")
 }
 
 model MemberAdministrator {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
-  username        String       @db.VarChar(100)
-  email           String       @db.VarChar(255)
-  display_name    String       @db.VarChar(100)
-  password_hash   String       @db.VarChar(255)
-  created_at      DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
-  last_login      DateTime?    @db.Timestamp(6)
+  username        String        @db.VarChar(100)
+  email           String        @db.VarChar(255)
+  display_name    String        @db.VarChar(100)
+  password_hash   String        @db.VarChar(255)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  last_login      DateTime?     @db.Timestamp(6)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, username])
@@ -527,17 +526,17 @@ model MemberPermissions {
 }
 
 model CardNumber {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
-  card_number     String       @db.VarChar(20)
-  status          String       @default("available") @db.VarChar(20)
-  created_at      DateTime?    @default(now()) @db.Timestamptz(6)
-  assigned_at     DateTime?    @db.Timestamptz(6)
+  card_number     String        @db.VarChar(20)
+  status          String        @default("available") @db.VarChar(20)
+  created_at      DateTime?     @default(now()) @db.Timestamptz(6)
+  assigned_at     DateTime?     @db.Timestamptz(6)
   member_id       Int?
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  members         Member?      @relation(fields: [member_id], references: [member_id], map: "member_fk")
+  members         Member?       @relation(fields: [member_id], references: [member_id], map: "member_fk")
 
-  @@unique([organization_id, card_number], map: "card_number_unique")
+  @@unique([organization_id, card_number])
   @@index([organization_id])
   @@index([member_id], map: "idx_card_numbers_member_id")
   @@index([status], map: "idx_card_numbers_status")
@@ -554,18 +553,18 @@ model password_update_queue {
 }
 
 model stamp_history {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
   year            Int
-  stamp_type      String       @db.VarChar(50)
+  stamp_type      String        @db.VarChar(50)
   initial_count   Int
   issued_count    Int
-  reset_date      DateTime     @default(now()) @db.Timestamp(6)
+  reset_date      DateTime      @default(now()) @db.Timestamp(6)
   reset_by        Int?
   notes           String?
   stamp_year      Int
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  members         Member?      @relation(fields: [reset_by], references: [member_id])
+  members         Member?       @relation(fields: [reset_by], references: [member_id])
 
   @@index([organization_id])
   @@index([organization_id, stamp_year])
@@ -583,30 +582,29 @@ model refresh_tokens {
 }
 
 model SystemManager {
-  id              Int          @id @default(autoincrement())
-  organization_id Int?
-  username        String       @db.VarChar(50)
-  email           String       @db.VarChar(100)
-  display_name    String       @db.VarChar(100)
-  password_hash   String       @db.VarChar(255)
-  created_at      DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at      DateTime?    @default(now()) @db.Timestamp(6)
-  last_login      DateTime?    @db.Timestamp(6)
+  id                             Int                          @id @default(autoincrement())
+  organization_id                Int?
+  username                       String                       @db.VarChar(50)
+  email                          String                       @db.VarChar(100)
+  display_name                   String                       @db.VarChar(100)
+  password_hash                  String                       @db.VarChar(255)
+  created_at                     DateTime?                    @default(now()) @db.Timestamp(6)
+  updated_at                     DateTime?                    @default(now()) @db.Timestamp(6)
+  last_login                     DateTime?                    @db.Timestamp(6)
   // 2FA polja za System Manager
-  two_factor_enabled        Boolean?     @default(false)
-  two_factor_confirmed_at   DateTime?    @db.Timestamp(6)
-  two_factor_secret         String?      @db.VarChar(255)
+  two_factor_enabled             Boolean?                     @default(false)
+  two_factor_confirmed_at        DateTime?                    @db.Timestamp(6)
+  two_factor_secret              String?                      @db.VarChar(255)
   two_factor_recovery_codes_hash Json?
-  two_factor_preferred_channel String?   @db.VarChar(10)
-  password_reset_required      Boolean      @default(false)
-  organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  trusted_devices SystemManagerTrustedDevice[]
-  
-  // Support ticket relations
-  created_tickets SupportTicket[] @relation("TicketCreator")
-  assigned_tickets SupportTicket[] @relation("TicketAssignee")
-  ticket_responses TicketResponse[] @relation("ResponseCreator")
+  two_factor_preferred_channel   String?                      @db.VarChar(10)
+  password_reset_required        Boolean                      @default(false)
+  organization                   Organization?                @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  trusted_devices                SystemManagerTrustedDevice[]
 
+  // Support ticket relations
+  created_tickets  SupportTicket[]  @relation("TicketCreator")
+  assigned_tickets SupportTicket[]  @relation("TicketAssignee")
+  ticket_responses TicketResponse[] @relation("ResponseCreator")
 
   @@unique([organization_id, username])
   @@unique([organization_id, email])
@@ -642,13 +640,13 @@ enum ActivityStatus {
 }
 
 model Holiday {
-  id              Int          @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   organization_id Int?
-  date            DateTime     @db.Date
-  name            String       @db.VarChar(100)
-  is_recurring    Boolean      @default(false)
+  date            DateTime      @db.Date
+  name            String        @db.VarChar(100)
+  is_recurring    Boolean       @default(false)
   created_by      Int?
-  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  created_at      DateTime      @default(now()) @db.Timestamp(6)
   organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, date])
@@ -660,19 +658,19 @@ model Holiday {
 // TRUSTED DEVICES - Remember Device funkcionalnost
 // ============================================
 model TrustedDevice {
-  id              Int          @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   organization_id Int
   member_id       Int
-  device_hash     String       @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
-  device_name     String?      @db.VarChar(100) // Opcionalno ime uređaja (browser info)
-  expires_at      DateTime     @db.Timestamp(6)
-  created_at      DateTime     @default(now()) @db.Timestamp(6)
-  last_used_at    DateTime?    @db.Timestamp(6)
-  
+  device_hash     String    @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
+  device_name     String?   @db.VarChar(100) // Opcionalno ime uređaja (browser info)
+  expires_at      DateTime  @db.Timestamp(6)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  last_used_at    DateTime? @db.Timestamp(6)
+
   // Relations
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  member          Member       @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
-  
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+
   @@unique([organization_id, member_id, device_hash])
   @@index([organization_id, member_id])
   @@index([expires_at])
@@ -683,17 +681,17 @@ model TrustedDevice {
 // SYSTEM MANAGER TRUSTED DEVICES
 // ============================================
 model SystemManagerTrustedDevice {
-  id                    Int           @id @default(autoincrement())
-  system_manager_id     Int
-  device_hash           String        @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
-  device_name           String?       @db.VarChar(100) // Opcionalno ime uređaja (browser info)
-  expires_at            DateTime      @db.Timestamp(6)
-  created_at            DateTime      @default(now()) @db.Timestamp(6)
-  last_used_at          DateTime?     @db.Timestamp(6)
-  
+  id                Int       @id @default(autoincrement())
+  system_manager_id Int
+  device_hash       String    @db.VarChar(255) // Hash od User-Agent + IP ili device fingerprint
+  device_name       String?   @db.VarChar(100) // Opcionalno ime uređaja (browser info)
+  expires_at        DateTime  @db.Timestamp(6)
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  last_used_at      DateTime? @db.Timestamp(6)
+
   // Relations
-  system_manager        SystemManager @relation(fields: [system_manager_id], references: [id], onDelete: Cascade)
-  
+  system_manager SystemManager @relation(fields: [system_manager_id], references: [id], onDelete: Cascade)
+
   @@unique([system_manager_id, device_hash])
   @@index([system_manager_id])
   @@index([expires_at])
@@ -704,29 +702,29 @@ model SystemManagerTrustedDevice {
 // SUPPORT & FEEDBACK SYSTEM
 // ============================================
 model SupportTicket {
-  id              Int                @id @default(autoincrement())
-  title           String             @db.VarChar(200)
-  description     String             @db.Text
-  category        TicketCategory
-  priority        TicketPriority     @default(MEDIUM)
-  status          TicketStatus       @default(OPEN)
-  
+  id          Int            @id @default(autoincrement())
+  title       String         @db.VarChar(200)
+  description String         @db.Text
+  category    TicketCategory
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(OPEN)
+
   // Relacije
   organization_id Int
-  organization    Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  created_by      Int               // System Manager ID
-  creator         SystemManager      @relation("TicketCreator", fields: [created_by], references: [id])
-  assigned_to     Int?              // GSM ID (nullable)
-  assignee        SystemManager?     @relation("TicketAssignee", fields: [assigned_to], references: [id])
-  
+  organization    Organization   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  created_by      Int // System Manager ID
+  creator         SystemManager  @relation("TicketCreator", fields: [created_by], references: [id])
+  assigned_to     Int? // GSM ID (nullable)
+  assignee        SystemManager? @relation("TicketAssignee", fields: [assigned_to], references: [id])
+
   // Timestamps
-  created_at      DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime          @updatedAt @db.Timestamptz(6)
-  resolved_at     DateTime?         @db.Timestamptz(6)
-  
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+  resolved_at DateTime? @db.Timestamptz(6)
+
   // Responses/Comments
-  responses       TicketResponse[]
-  
+  responses TicketResponse[]
+
   @@index([organization_id])
   @@index([status])
   @@index([category])
@@ -736,17 +734,17 @@ model SupportTicket {
 }
 
 model TicketResponse {
-  id              Int           @id @default(autoincrement())
-  ticket_id       Int
-  response_text   String        @db.Text
-  created_by      Int          // SM ID koji je odgovorio
-  is_internal     Boolean       @default(false) // Internal note ili public response
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  
+  id            Int      @id @default(autoincrement())
+  ticket_id     Int
+  response_text String   @db.Text
+  created_by    Int // SM ID koji je odgovorio
+  is_internal   Boolean  @default(false) // Internal note ili public response
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
   // Relations
-  ticket          SupportTicket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
-  creator         SystemManager @relation("ResponseCreator", fields: [created_by], references: [id])
-  
+  ticket  SupportTicket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  creator SystemManager @relation("ResponseCreator", fields: [created_by], references: [id])
+
   @@index([ticket_id])
   @@index([created_by])
   @@map("ticket_responses")
