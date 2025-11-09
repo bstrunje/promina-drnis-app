@@ -202,8 +202,8 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
       member.life_status === "child/pupil/student" ? "student" :
       member.life_status === "pensioner" ? "pensioner" : "employed";
     
-    // Return stamp to inventory with the new parameter
-    await stampService.returnStamp(stampType, memberId, forNextYear);
+    // Return stamp to inventory with the new parameter (tenant-aware)
+    await stampService.returnStamp(req, stampType, memberId, forNextYear);
     
     // Update only for current year stamps (prisma limitation)
     if (!forNextYear) {

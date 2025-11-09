@@ -85,8 +85,21 @@ const scheduledService = {
       // Koristi system manager ID 1 za automatsko arhiviranje
       const systemManagerId = 1; 
       const notes = `Automatsko arhiviranje na kraju godine ${currentYear}`;
-      
-      await stampRepository.archiveStampInventory(currentYear, systemManagerId, notes);
+
+      // Multi-tenant: arhiviraj za sve organizacije koje imaju inventar za tu godinu (ili općenito)
+      const orgIds = await prisma.stampInventory.findMany({
+        where: {},
+        select: { organization_id: true },
+        distinct: ['organization_id']
+      });
+
+      for (const row of orgIds) {
+        const organizationId = row.organization_id;
+        if (organizationId == null) {
+          continue;
+        }
+        await stampRepository.archiveStampInventory(organizationId, currentYear, systemManagerId, notes);
+      }
       
       if (isDev) console.log(`✅ Uspješno arhivirano stanje markica za godinu ${currentYear}`);
     } catch (error) {

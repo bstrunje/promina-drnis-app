@@ -18,8 +18,11 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
   const [sentMessages, setSentMessages] = useState<MessageType[]>([]);
   const [loadingSent, setLoadingSent] = useState(true);
 
-  const fetchSentMessages = useCallback(async (): Promise<void> => {
-    setLoadingSent(true);
+  const fetchSentMessages = useCallback(async (silent?: boolean): Promise<void> => {
+    // Ako je silent refresh, preskoči prikaz loadera
+    if (!silent) {
+      setLoadingSent(true);
+    }
     try {
       let convertedData: MessageType[];
 
@@ -41,7 +44,9 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
         variant: "destructive"
       });
     } finally {
-      setLoadingSent(false);
+      if (!silent) {
+        setLoadingSent(false);
+      }
     }
   }, [userRole, toast, t]);
 
@@ -52,8 +57,9 @@ export default function SentMessages({ userRole }: SentMessagesProps) {
   useEffect(() => {
     if (userRole === 'member') return;
     const interval = setInterval(() => {
-      void fetchSentMessages();
-    }, 5000); // 5 sekundi - brže osvježavanje za prikaz pročitanih poruka
+      // Tihi refresh bez treperenja UI-a
+      void fetchSentMessages(true);
+    }, 60000); // 60 sekundi - osvježavanje za prikaz pročitanih poruka
     return () => clearInterval(interval);
   }, [userRole, fetchSentMessages]);
 

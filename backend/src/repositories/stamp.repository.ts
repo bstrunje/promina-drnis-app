@@ -171,12 +171,13 @@ const stampRepository = {
         }
     },
 
-    async decrementIssuedCount(stamp_type: string, stamp_year: number): Promise<void> {
+    async decrementIssuedCount(organizationId: number, stamp_type: string, stamp_year: number): Promise<void> {
         try {
             if (isDev) console.log(`[STAMP-DECREMENT] Smanjujem broj izdanih markica: ${stamp_type}, godina ${stamp_year}`);
             
              const updatedInventory = await prisma.stampInventory.updateMany({
                 where: {
+                    organization_id: organizationId,
                     stamp_type: stamp_type,
                     stamp_year: stamp_year
                 },
@@ -199,11 +200,14 @@ const stampRepository = {
         }
     },
 
-    async getStampHistory(): Promise<StampHistoryRow[]> {
+    async getStampHistory(organizationId: number): Promise<StampHistoryRow[]> {
         try {
             if (isDev) console.log('[STAMP-HISTORY] Dohvaćam povijest markica s Prisma...');
             
             const stampHistory = await prisma.stamp_history.findMany({
+                where: {
+                    organization_id: organizationId
+                },
                 include: {
                     members: {
                         select: {
@@ -242,12 +246,13 @@ const stampRepository = {
         }
     },
 
-    async getStampHistoryByYear(year: number): Promise<StampHistoryRow[]> {
+    async getStampHistoryByYear(organizationId: number, year: number): Promise<StampHistoryRow[]> {
         try {
             if (isDev) console.log(`[STAMP-HISTORY-YEAR] Dohvaćam povijest markica za godinu ${year} s Prisma...`);
             
             const stampHistory = await prisma.stamp_history.findMany({
                 where: {
+                    organization_id: organizationId,
                     year: year
                 },
                 include: {
@@ -293,7 +298,7 @@ const stampRepository = {
      * @param memberId ID člana koji vrši arhiviranje
      * @param notes Bilješke o arhiviranju
      */
-    async archiveStampInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
+    async archiveStampInventory(organizationId: number, year: number, memberId: number, notes: string = ''): Promise<void> {
         try {
             if (isDev) console.log(`[STAMP-ARCHIVE] Arhiviram inventar markica za godinu ${year}, član ID: ${memberId}`);
             
@@ -305,6 +310,7 @@ const stampRepository = {
                 // Dohvaćamo inventar za zadanu godinu s Prisma
                 const currentInventory = await tx.stampInventory.findMany({
                     where: {
+                        organization_id: organizationId,
                         stamp_year: year
                     },
                     select: {
@@ -323,6 +329,7 @@ const stampRepository = {
 
                 // Kreiramo batch insert za stamp_history s Prisma
                 const historyRecords = currentInventory.map(item => ({
+                    organization_id: organizationId,
                     year: year,
                     stamp_type: item.stamp_type,
                     stamp_year: item.stamp_year || year,
@@ -351,9 +358,9 @@ const stampRepository = {
     /**
      * @deprecated Ova metoda je zastarjela, koristite archiveStampInventory umjesto nje
      */
-    async archiveAndResetInventory(year: number, memberId: number, notes: string = ''): Promise<void> {
+    async archiveAndResetInventory(organizationId: number, year: number, memberId: number, notes: string = ''): Promise<void> {
         if (isDev) console.warn('archiveAndResetInventory je zastarjela metoda, koristite archiveStampInventory umjesto nje');
-        return this.archiveStampInventory(year, memberId, notes);
+        return this.archiveStampInventory(organizationId, year, memberId, notes);
     }
 };
 

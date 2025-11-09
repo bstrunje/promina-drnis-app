@@ -125,14 +125,15 @@ const stampService = {
     }
   },
 
-  async returnStamp(type: string, memberId?: number, forNextYear: boolean = false) {
+  async returnStamp(req: Request, type: string, memberId?: number, forNextYear: boolean = false) {
     try {
       // Determine which year stamp to return
       const currentYear = getCurrentDate().getFullYear();
       const stampYear = forNextYear ? currentYear + 1 : currentYear;
+      const organizationId = getOrganizationId(req);
       
       // Update inventory (decrement issued count)
-      await stampRepository.decrementIssuedCount(type, stampYear);
+      await stampRepository.decrementIssuedCount(organizationId, type, stampYear);
       
       // We'll handle the membership details update in the controller
       if (memberId) {
@@ -194,9 +195,10 @@ const stampService = {
     }
   },
 
-  async getStampHistory() {
+  async getStampHistory(req: Request) {
     try {
-      return await stampRepository.getStampHistory();
+      const organizationId = getOrganizationId(req);
+      return await stampRepository.getStampHistory(organizationId);
     } catch (error) {
       console.error(tOrDefault('stamp.errors.FETCH_HISTORY', 'hr', 'Error fetching stamp history'), error);
       throw new DatabaseError(
@@ -206,9 +208,10 @@ const stampService = {
     }
   },
 
-  async getStampHistoryByYear(year: number) {
+  async getStampHistoryByYear(req: Request, year: number) {
     try {
-      return await stampRepository.getStampHistoryByYear(year);
+      const organizationId = getOrganizationId(req);
+      return await stampRepository.getStampHistoryByYear(organizationId, year);
     } catch (error) {
       console.error(tOrDefault('stamp.errors.FETCH_HISTORY_YEAR', 'hr', 'Error fetching stamp history for year {{year}}', { year: year.toString() }), error);
       throw new DatabaseError(
@@ -222,17 +225,18 @@ const stampService = {
    * Nova metoda koja samo arhivira stanje markica za određenu godinu bez resetiranja.
    * Ovo omogućuje arhiviranje stanja markica na kraju godine bez njihovog resetiranja.
    */
-  async archiveStampInventory(year: number, memberId: number, notes: string = '', force: boolean = false) {
+  async archiveStampInventory(req: Request, year: number, memberId: number, notes: string = '', force: boolean = false) {
     try {
+      const organizationId = getOrganizationId(req);
       // Provjera je li godina već arhivirana - preskačemo ovu provjeru ako je force=true
       if (!force) {
-        const existingHistory = await stampRepository.getStampHistoryByYear(year);
+        const existingHistory = await stampRepository.getStampHistoryByYear(organizationId, year);
         if (existingHistory.length > 0) {
           throw new Error(tOrDefault('stamp.errors.ALREADY_ARCHIVED', 'hr', 'Stamp inventory for year {{year}} has already been archived', { year: year.toString() }));
         }
       }
 
-      await stampRepository.archiveStampInventory(year, memberId, notes);
+      await stampRepository.archiveStampInventory(organizationId, year, memberId, notes);
       return { 
         success: true, 
         message: tOrDefault('stamp.success.INVENTORY_ARCHIVED', 'hr', 'Successfully archived stamp inventory for year {{year}}', { year: year.toString() })
@@ -246,11 +250,11 @@ const stampService = {
     }
   },
 
-  async archiveAndResetInventory(year: number, memberId: number, notes: string = '') {
+  async archiveAndResetInventory(req: Request, year: number, memberId: number, notes: string = '') {
     try {
       // Ova metoda je zastarjela, samo poziva novu metodu za arhiviranje bez resetiranja
       if (isDev) console.warn("archiveAndResetInventory is deprecated, use archiveStampInventory instead");
-      return await this.archiveStampInventory(year, memberId, notes);
+      return await this.archiveStampInventory(req, year, memberId, notes);
     } catch (error) {
       console.error(tOrDefault('stamp.errors.RESET_INVENTORY', 'hr', 'Error resetting stamp inventory'), error);
       throw new DatabaseError(
@@ -260,7 +264,7 @@ const stampService = {
     }
   },
 
-  async getMembersWithStamp(stampType: string, year: number) {
+  async getMembersWithStamp(req: Request, stampType: string, year: number) {
     try {
       // Mapiranje stamp tipova na life_status vrijednosti
       const lifeStatusMap: { [key: string]: string } = {
@@ -278,8 +282,10 @@ const stampService = {
       const currentYear = getCurrentDate().getFullYear();
       const isCurrentYear = year === currentYear;
       
+      const organizationId = getOrganizationId(req);
       const members = await prisma.member.findMany({
         where: {
+          organization_id: organizationId,
           life_status: targetLifeStatus,
           membership_details: {
             // Za trenutnu godinu provjeri card_stamp_issued, za sljedeću next_year_stamp_issued

@@ -93,7 +93,7 @@ router.get('/history',
     roles.requireAdmin, 
     async (req, res) => {
         try {
-            const history = await stampService.getStampHistory();
+            const history = await stampService.getStampHistory(req);
             res.json(history);
         } catch (_error) {
             res.status(500).json({ 
@@ -114,7 +114,7 @@ router.get('/history/:year',
                 return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
             }
             
-            const history = await stampService.getStampHistoryByYear(year);
+            const history = await stampService.getStampHistoryByYear(req, year);
             res.json(history);
         } catch (_error) {
             res.status(500).json({ 
@@ -140,6 +140,7 @@ router.post('/archive-year',
             const memberId = req.user!.id;
             
             const result = await stampService.archiveStampInventory(
+                req,
                 parseInt(year), 
                 memberId, 
                 notes || '',
@@ -173,6 +174,7 @@ router.post('/reset-year',
             
             // Koristimo novu funkciju za arhiviranje bez resetiranja
             const result = await stampService.archiveStampInventory(
+                req,
                 parseInt(year), 
                 memberId, 
                 notes || ''
@@ -203,7 +205,7 @@ router.get('/members/:stampType/:year',
                 return res.status(400).json({ message: tOrDefault('stamp.errors.INVALID_YEAR', 'hr', 'Invalid year parameter') });
             }
 
-            const members = await stampService.getMembersWithStamp(stampType, yearNumber);
+            const members = await stampService.getMembersWithStamp(req, stampType, yearNumber);
             res.json(members);
         } catch (error) {
             console.error('Error fetching members with stamps:', error);

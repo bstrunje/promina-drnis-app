@@ -41,11 +41,13 @@ const MemberMessageList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
 
   // Dohvaćanje poruka za člana
-  const fetchMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async (silent?: boolean) => {
     if (!user?.member_id) return;
 
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const apiData = await getMemberMessages(user.member_id);
       const convertedData = convertApiMessagesToMessages(apiData);
       setMessages(convertedData);
@@ -56,14 +58,18 @@ const MemberMessageList: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [user?.member_id, toast, t]);
 
   // Dohvaćanje poslanih poruka člana
-  const fetchSentMessages = useCallback(async () => {
+  const fetchSentMessages = useCallback(async (silent?: boolean) => {
     if (!user) return;
-    setLoadingSent(true);
+    if (!silent) {
+      setLoadingSent(true);
+    }
     try {
       const apiData = await getMemberSentMessages();
       const convertedData = apiData.map(convertMemberApiMessageToMessage);
@@ -74,8 +80,11 @@ const MemberMessageList: React.FC = () => {
         description: t('fetchSentMessagesError'),
         variant: "destructive",
       });
+    } finally {
+      if (!silent) {
+        setLoadingSent(false);
+      }
     }
-    setLoadingSent(false);
   }, [user, toast, t]);
 
   // Označavanje poruke kao pročitane
@@ -135,11 +144,12 @@ const MemberMessageList: React.FC = () => {
     // Postavljanje intervala za periodično dohvaćanje
     const interval = setInterval(() => {
       if (user) {
-        void fetchMessages();
-        void fetchSentMessages();
+        // Tihi refresh bez treperenja UI-a
+        void fetchMessages(true);
+        void fetchSentMessages(true);
         // fetchGenericMessages(); // Uklonjeno jer uzrokuje greške
       }
-    }, 30000); // 30 sekundi
+    }, 60000); // 60 sekundi
 
     return () => clearInterval(interval);
   }, [activeTab, fetchMessages, fetchSentMessages, user]); // Ovisimo o user i funkcijama za dohvat poruka
