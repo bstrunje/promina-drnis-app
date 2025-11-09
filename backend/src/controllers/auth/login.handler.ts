@@ -350,16 +350,48 @@ export async function loginHandler(
 
     const expiresAt = getTokenExpiryDate(7); 
 
-    // Multi-device support: Ne brišemo sve tokene, samo istekle
+    // Multi-device support: Ne brišemo sve tokene, samo istekle i vrlo stare
     // Ovo omogućava korisniku da bude prijavljen na više uređaja istovremeno
+    // PRODUKCIJSKA SIGURNOST: Zadržavamo tokene kreirane u zadnjih 10 minuta
+    const GRACE_MS = 10 * 60 * 1000; // 10 minuta grace period
+    const graceCutoff = new Date(Date.now() - GRACE_MS);
+    
     await prisma.refresh_tokens.deleteMany({
       where: { 
         member_id: member.member_id,
-        expires_at: {
-          lt: new Date() // Briši samo istekle tokene
-        }
+        OR: [
+          // Briši istekle tokene
+          { expires_at: { lt: new Date() } },
+          // Briši stare tokene izvan grace period-a (ali samo ako nisu novi)
+          { 
+            created_at: { lt: graceCutoff },
+            expires_at: { gte: new Date() } // Samo ako nisu istekli (dvostruka zaštita)
+          }
+        ]
       }
     });
+    
+    // DODATNA ZAŠTITA: Limitiraj broj aktivnih tokena po korisniku (max 5 uređaja)
+    const tokenCount = await prisma.refresh_tokens.count({
+      where: { member_id: member.member_id }
+    });
+    
+    if (tokenCount >= 5) {
+      // Obriši najstarije tokene ako ih ima više od 5
+      const oldestTokens = await prisma.refresh_tokens.findMany({
+        where: { member_id: member.member_id },
+        orderBy: { created_at: 'asc' },
+        take: tokenCount - 4 // Ostavi mjesta za novi token (total će biti 5)
+      });
+      
+      await prisma.refresh_tokens.deleteMany({
+        where: {
+          id: { in: oldestTokens.map(t => t.id) }
+        }
+      });
+      
+      if (isDev) console.log(`[LOGIN] Obrisano ${oldestTokens.length} najstarijih tokena (limit: 5 uređaja)`);
+    }
     
     await prisma.refresh_tokens.create({
       data: {

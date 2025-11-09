@@ -157,9 +157,25 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       const expiresAt = getTokenExpiryDate(7);
       
       // GRACE PERIOD PRISTUP: Ne brišemo stari token odmah.
-      // Kreiramo novi token i kratko zadržavamo stari (npr. 90 sekundi)
+      // U serverless okruženju moramo imati duži grace period zbog race conditions
       if (isDev) console.log(`[REFRESH-TOKEN] Kreiram novi token za člana ${member.member_id}`);
       
+      // PRODUKCIJSKA SIGURNOST: 10 minuta grace period za serverless
+      const GRACE_MS = 10 * 60 * 1000; // 10 minuta grace period
+      const graceCutoff = new Date(Date.now() - GRACE_MS);
+      
+      // PRVO: Obriši stare tokene PRIJE kreiranja novog (smanjuje šansu za race condition)
+      const cleanupBefore = await prisma.refresh_tokens.deleteMany({
+        where: {
+          member_id: member.member_id,
+          token: { not: refreshToken }, // Zadrži trenutni token
+          created_at: { lt: graceCutoff } // Obriši samo tokene starije od grace period-a
+        }
+      });
+      
+      if (isDev) console.log(`[REFRESH-TOKEN] Pre-cleanup: obrisano ${cleanupBefore.count} starih tokena`);
+      
+      // DRUGO: Kreiraj novi token
       const newTokenRecord = await prisma.refresh_tokens.create({
         data: {
           token: newRefreshToken,
@@ -173,20 +189,44 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
       // Ažuriramo storedToken referencu za daljnju upotrebu
       storedToken = newTokenRecord;
       
-      // ČIŠĆENJE STARIH TOKENA: zadrži prethodne najviše GRACE trajanje
-      const GRACE_MS = 90 * 1000; // 90 sekundi grace
-      const graceCutoff = new Date(Date.now() - GRACE_MS);
-      
-      // Obriši sve starije tokene za korisnika koji su izvan grace prozora
-      const cleanup = await prisma.refresh_tokens.deleteMany({
+      // TREĆE: Obriši stari token koji je upravo korišten (nakon što je novi kreiran)
+      // Ovo radi NAKON kreiranja novog tokena, tako da uvijek imamo valjan token u bazi
+      const cleanupOld = await prisma.refresh_tokens.deleteMany({
         where: {
           member_id: member.member_id,
-          token: { not: newRefreshToken },
-          created_at: { lt: graceCutoff }
+          token: refreshToken, // Samo token koji je upravo korišten
+          id: { not: newTokenRecord.id } // Ne briši novi token
         }
       });
       
-      if (isDev) console.log(`[REFRESH-TOKEN] Čišćenje: obrisano ${cleanup.count} starih tokena izvan grace prozora`);
+      if (isDev) console.log(`[REFRESH-TOKEN] Post-cleanup: obrisan stari token (${cleanupOld.count} tokena)`);
+      
+      // DODATNA ZAŠTITA: Limitiraj broj aktivnih tokena po korisniku (max 5 uređaja)
+      const tokenCount = await prisma.refresh_tokens.count({
+        where: { member_id: member.member_id }
+      });
+      
+      if (tokenCount > 5) {
+        // Obriši najstarije tokene ako ih ima više od 5
+        const oldestTokens = await prisma.refresh_tokens.findMany({
+          where: { 
+            member_id: member.member_id,
+            id: { not: newTokenRecord.id } // Ne briši upravo kreirani token
+          },
+          orderBy: { created_at: 'asc' },
+          take: tokenCount - 5 // Smanji na 5 tokena
+        });
+        
+        if (oldestTokens.length > 0) {
+          await prisma.refresh_tokens.deleteMany({
+            where: {
+              id: { in: oldestTokens.map(t => t.id) }
+            }
+          });
+          
+          if (isDev) console.log(`[REFRESH-TOKEN] Obrisano ${oldestTokens.length} najstarijih tokena (limit: 5 uređaja)`);
+        }
+      }
       
       const verifyToken = await prisma.refresh_tokens.findFirst({
         where: { token: newRefreshToken }
