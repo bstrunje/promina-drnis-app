@@ -146,7 +146,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
                       <ul className="list-disc list-inside space-y-1">
                         {member.skills.map((skill) => (
                           <li key={skill.skill_id}>
-                            {t(`skills.names.${skill.name}`, { ns: 'profile' })}
+                            {skill.skill?.name ? t(`skills.names.${skill.skill.name}`, { ns: 'profile' }) : ''}
                             {skill.is_instructor && (
                               <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
                                 {t('skills.instructor', { ns: 'profile' })}

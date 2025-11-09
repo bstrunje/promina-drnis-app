@@ -155,8 +155,11 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
     },
     skills: (raw.skills || []).map((ms) => ({
       skill_id: ms.skill.id,
-      name: ms.skill.name,
-      is_instructor: !!ms.is_instructor
+      is_instructor: !!ms.is_instructor,
+      skill: {
+        id: ms.skill.id,
+        name: ms.skill.name
+      }
     })),
     other_skills: raw.other_skills ?? undefined,
     /**

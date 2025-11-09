@@ -410,7 +410,8 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
 };
 
 /**
- * Dohvaća sve dužurstva za određeni mjesec
+ * Dohvaća sve dežurstva za određeni mjesec
+ * Uključuje i ručno kreirane duty aktivnosti kroz Activities stranicu
  */
 export const getDutiesForMonth = async (organizationId: number, year: number, month: number) => {
   // Pravilno filtriranje po godini i mjesecu
@@ -422,7 +423,7 @@ export const getDutiesForMonth = async (organizationId: number, year: number, mo
   const duties = await prisma.activity.findMany({
     where: {
       organization_id: organizationId, // MULTI-TENANCY: Filter by organization
-      type_id: dutyTypeId,
+      type_id: dutyTypeId, // Filter samo duty aktivnosti
       start_date: {
         gte: monthStart,
         lt: monthEnd // Koristimo lt umjesto lte za točno filtriranje

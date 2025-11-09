@@ -61,7 +61,10 @@ const PUBLIC_FIELDS = [
   'total_hours',           // Ukupno sati
   'activity_hours',        // Sati aktivnosti
   'membership_details',    // Detalji članstva (card_number maskirano!)
-  'membership_history'     // Povijest članstva (periods) - potrebno za prikaz statusa
+  'membership_history',    // Povijest članstva (periods) - potrebno za prikaz statusa
+  'skills',                // Vještine i osposobljenosti - javni podaci
+  'other_skills',          // Ostale vještine (custom text)
+  'functions_in_society'   // Funkcije u društvu (Predsjednik, Tajnik...)
 ];
 
 /**

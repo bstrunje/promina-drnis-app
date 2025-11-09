@@ -164,6 +164,15 @@ const DutyCalendar: React.FC = () => {
       return true;
     }
     
+    // NOVA FUNKCIONALNOST: Ako postoji duty s prijavljenim članovima, UVIJEK prikaži
+    // (bez obzira je li vikend/praznik)
+    if ((duty?.participants?.length ?? 0) > 0) {
+      // Provjeri status popunjenosti - respektiraj filtere za popunjenost
+      if (status === 'partial' && !filters.partial) return false;
+      if (status === 'full' && !filters.full) return false;
+      return true;
+    }
+    
     // Inače, prikaži samo dane koji zadovoljavaju kriterije (vikend/praznik)
     // Ako dan nije vikend NI praznik, ne prikazuj ga
     if (!isWeekend && !holiday) {
