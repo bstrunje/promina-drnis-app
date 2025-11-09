@@ -501,7 +501,16 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
 
             const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
             // Pending registrations = članovi bez broja članske iskaznice (lozinka se dodjeljuje automatski s brojem iskaznice)
-            const pendingRegistrations = await prisma.member.count({ where: { ...whereClause, membership_details: { is: { card_number: null } } } });
+            // Uključuje: 1) članove bez membership_details zapisa, 2) članove s membership_details ali bez card_number
+            const pendingRegistrations = await prisma.member.count({ 
+                where: { 
+                    ...whereClause,
+                    OR: [
+                        { membership_details: { is: null } },
+                        { membership_details: { is: { card_number: null } } }
+                    ]
+                } 
+            });
 
             // Real health checks
             let dbConnection = false;
@@ -643,9 +652,21 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
     },
 
     async getPendingMembers(organizationId: number | null | undefined) {
+        // Pending = članovi bez membership_details zapisa ILI s zapisom ali bez card_number
         const whereClause = organizationId 
-            ? { organization_id: organizationId, membership_details: { is: { card_number: null } } } 
-            : { membership_details: { is: { card_number: null } } };
+            ? { 
+                organization_id: organizationId,
+                OR: [
+                    { membership_details: { is: null } },
+                    { membership_details: { is: { card_number: null } } }
+                ]
+              }
+            : {
+                OR: [
+                    { membership_details: { is: null } },
+                    { membership_details: { is: { card_number: null } } }
+                ]
+              };
         return prisma.member.findMany({
             where: whereClause,
             select: {
