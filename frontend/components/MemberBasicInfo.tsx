@@ -128,6 +128,43 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
                   <span className="ml-2 text-green-500 font-bold">✓</span>
                 )}
               </div>
+
+              {/* Funkcije u društvu */}
+              {member?.functions_in_society && (
+                <div>
+                  <label className="text-sm text-gray-500">{t('personalInfo.functionsInSocietyLabel')}</label>
+                  <p>{member.functions_in_society}</p>
+                </div>
+              )}
+
+              {/* Vještine i osposobljenosti */}
+              {((member?.skills && member.skills.length > 0) || member?.other_skills) && (
+                <div>
+                  <label className="text-sm text-gray-500">{t('skills.title')}</label>
+                  <div className="mt-2">
+                    {member.skills && member.skills.length > 0 && (
+                      <ul className="list-disc list-inside space-y-1">
+                        {member.skills.map((skill) => (
+                          <li key={skill.skill_id}>
+                            {t(`skills.names.${skill.name}`, { ns: 'profile' })}
+                            {skill.is_instructor && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                {t('skills.instructor', { ns: 'profile' })}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {member.other_skills && (
+                      <div className="mt-2">
+                        <span className="text-xs text-gray-500">{t('skills.other', { ns: 'profile' })}: </span>
+                        <span>{member.other_skills}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : canViewDetails ? (
             <p className="text-sm text-gray-500 italic">{t('personalInfo.viewPrompt')}</p>
