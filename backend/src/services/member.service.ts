@@ -310,17 +310,30 @@ const memberService = {
     async updateMember(memberId: number, memberData: MemberUpdateData): Promise<Member | null> {
         const { skills, ...basicMemberData } = memberData;
 
+        // Trim whitespace iz text polja prije spremanja u bazu
+        const cleanedData = {
+            ...basicMemberData,
+            first_name: basicMemberData.first_name?.trim(),
+            last_name: basicMemberData.last_name?.trim(),
+            email: basicMemberData.email?.trim(),
+            street_address: basicMemberData.street_address?.trim(),
+            city: basicMemberData.city?.trim(),
+            cell_phone: basicMemberData.cell_phone?.trim(),
+            oib: basicMemberData.oib?.trim(),
+            nickname: basicMemberData.nickname?.trim()
+        };
+
         try {
             const updatedMember = await prisma.$transaction(async (tx) => {
                 // 1. Ažuriranje osnovnih podataka o članu
-                const memberToUpdate: Partial<MemberUpdateData> = { ...basicMemberData };
+                const memberToUpdate: Partial<MemberUpdateData> = { ...cleanedData };
 
-                if (basicMemberData.first_name || basicMemberData.last_name) {
+                if (cleanedData.first_name || cleanedData.last_name) {
                     const currentMember = await tx.member.findUnique({ where: { member_id: memberId } });
                     if (!currentMember) throw new Error("Member not found for update");
 
-                    const firstName = basicMemberData.first_name ?? currentMember.first_name;
-                    const lastName = basicMemberData.last_name ?? currentMember.last_name;
+                    const firstName = cleanedData.first_name ?? currentMember.first_name;
+                    const lastName = cleanedData.last_name ?? currentMember.last_name;
                     memberToUpdate.full_name = `${firstName} ${lastName}`;
 
                     const membershipDetails = await tx.membershipDetails.findUnique({ where: { member_id: memberId } });
@@ -434,47 +447,59 @@ const memberService = {
     async createMember(memberData: MemberCreateData & { skills?: { skill_id: number; is_instructor?: boolean }[], other_skills?: string }): Promise<Member> {
         const { skills, other_skills, ...basicMemberData } = memberData;
 
+        // Trim whitespace iz text polja prije spremanja u bazu
+        const cleanedData = {
+            ...basicMemberData,
+            first_name: basicMemberData.first_name?.trim(),
+            last_name: basicMemberData.last_name?.trim(),
+            email: basicMemberData.email?.trim(),
+            street_address: basicMemberData.street_address?.trim(),
+            city: basicMemberData.city?.trim(),
+            cell_phone: basicMemberData.cell_phone?.trim(),
+            oib: basicMemberData.oib?.trim()
+        };
+
         try {
             const newMember = await prisma.$transaction(async (tx) => {
                 const registration_completed = !!(
-                    basicMemberData.first_name &&
-                    basicMemberData.last_name &&
-                    basicMemberData.date_of_birth &&
-                    basicMemberData.gender &&
-                    basicMemberData.street_address &&
-                    basicMemberData.city &&
-                    basicMemberData.oib &&
-                    basicMemberData.cell_phone &&
-                    basicMemberData.email &&
-                    basicMemberData.life_status &&
-                    basicMemberData.tshirt_size &&
-                    basicMemberData.shell_jacket_size &&
-                    basicMemberData.membership_type
+                    cleanedData.first_name &&
+                    cleanedData.last_name &&
+                    cleanedData.date_of_birth &&
+                    cleanedData.gender &&
+                    cleanedData.street_address &&
+                    cleanedData.city &&
+                    cleanedData.oib &&
+                    cleanedData.cell_phone &&
+                    cleanedData.email &&
+                    cleanedData.life_status &&
+                    cleanedData.tshirt_size &&
+                    cleanedData.shell_jacket_size &&
+                    cleanedData.membership_type
                 );
 
                 const createdCoreMember = await tx.member.create({
                     data: {
-                        first_name: basicMemberData.first_name,
-                        last_name: basicMemberData.last_name,
-                        full_name: `${basicMemberData.first_name} ${basicMemberData.last_name}`,
-                        date_of_birth: new Date(basicMemberData.date_of_birth),
-                        gender: basicMemberData.gender,
-                        street_address: basicMemberData.street_address,
-                        city: basicMemberData.city,
-                        oib: basicMemberData.oib,
-                        cell_phone: basicMemberData.cell_phone,
-                        email: basicMemberData.email,
-                        life_status: basicMemberData.life_status,
-                        tshirt_size: basicMemberData.tshirt_size,
-                        shell_jacket_size: basicMemberData.shell_jacket_size,
-                        hat_size: basicMemberData.hat_size,
-                        membership_type: mapMembershipTypeToEnum(basicMemberData.membership_type),
-                        nickname: basicMemberData.nickname,
+                        first_name: cleanedData.first_name,
+                        last_name: cleanedData.last_name,
+                        full_name: `${cleanedData.first_name} ${cleanedData.last_name}`,
+                        date_of_birth: new Date(cleanedData.date_of_birth),
+                        gender: cleanedData.gender,
+                        street_address: cleanedData.street_address,
+                        city: cleanedData.city,
+                        oib: cleanedData.oib,
+                        cell_phone: cleanedData.cell_phone,
+                        email: cleanedData.email,
+                        life_status: cleanedData.life_status,
+                        tshirt_size: cleanedData.tshirt_size,
+                        shell_jacket_size: cleanedData.shell_jacket_size,
+                        hat_size: cleanedData.hat_size,
+                        membership_type: mapMembershipTypeToEnum(cleanedData.membership_type),
+                        nickname: cleanedData.nickname,
                         other_skills: other_skills,
                         status: 'pending',
                         role: 'member',
                         registration_completed: registration_completed,
-                        organization_id: basicMemberData.organization_id, // Dodano: koristi organization_id iz requesta
+                        organization_id: cleanedData.organization_id, // Dodano: koristi organization_id iz requesta
                     },
                 });
 

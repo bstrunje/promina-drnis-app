@@ -96,7 +96,11 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onClose, onAdd }) => {
         setMember(prev => ({ ...prev, [name]: value }));
       }
     } else {
-      setMember(prev => ({ ...prev, [name]: value }));
+      // Trim() za text polja (ime, prezime, email, adresa, grad, telefon)
+      const trimmedValue = ['first_name', 'last_name', 'email', 'street_address', 'city', 'cell_phone'].includes(name)
+        ? value.trim()
+        : value;
+      setMember(prev => ({ ...prev, [name]: trimmedValue }));
     }
   };
 
