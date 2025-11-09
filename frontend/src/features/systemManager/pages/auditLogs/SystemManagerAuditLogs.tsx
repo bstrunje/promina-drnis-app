@@ -12,6 +12,7 @@ import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigation';
 import ManagerHeader from '../../components/common/ManagerHeader';
 import ManagerTabNav from '../../components/common/ManagerTabNav';
+import { getAuditLogs, type PaginatedAuditLogsResponse } from '../../../../utils/api/apiMisc';
 
 interface SystemManagerAuditLogsProps {
   standalone?: boolean;
@@ -29,6 +30,10 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<keyof AuditLog>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState<number>(1);
+  const [limit] = useState<number>(50);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -103,30 +108,41 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
   const fetchAuditLogs = React.useCallback(async () => {
     try {
       setLoading(true);
-      // Dohvat tokena iz localStorage-a
-      const token = localStorage.getItem('systemManagerToken');
-      if (!token) {
-        toast({
-          title: "Error",
-          description: "You are not logged in as System Manager.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-      const response = await axios.get<{ logs: AuditLog[] }>(`${API_BASE_URL}/system-manager/audit-logs`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const isGlobalManager = manager?.organization_id === null;
+      if (isGlobalManager) {
+        // Global SM: koristi SM endpoint s paginacijom
+        const token = localStorage.getItem('systemManagerToken');
+        if (!token) {
+          toast({
+            title: "Error",
+            description: "You are not logged in as System Manager.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
         }
-      });
-      // Provjeri da response.data ima logs polje
-      if (response.data && Array.isArray(response.data.logs)) {
-        setAuditLogs(response.data.logs);
-        setFilteredLogs(response.data.logs);
+        const response = await axios.get<PaginatedAuditLogsResponse>(`${API_BASE_URL}/system-manager/audit-logs`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          params: { page, limit }
+        });
+        const data = response.data;
+        const logs = Array.isArray(data?.logs) ? data.logs : [];
+        setAuditLogs(logs);
+        setFilteredLogs(logs);
+        const p = data?.pagination;
+        setTotal(p?.total ?? logs.length);
+        setTotalPages(p?.totalPages ?? Math.max(1, Math.ceil((p?.total ?? logs.length) / limit)));
       } else {
-        setAuditLogs([]);
-        setFilteredLogs([]);
+        // Org SM: koristi zajednički paginirani helper
+        const data = await getAuditLogs(page, limit);
+        const logs = Array.isArray(data?.logs) ? data.logs : [];
+        setAuditLogs(logs);
+        setFilteredLogs(logs);
+        setTotal(data.pagination?.total ?? logs.length);
+        setTotalPages(data.pagination?.totalPages ?? Math.max(1, Math.ceil((data.pagination?.total ?? logs.length) / limit)));
       }
     } catch (err) {
       console.error('Error fetching audit logs:', err);
@@ -138,7 +154,7 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, manager?.organization_id, page, limit]);
 
   useEffect(() => {
     void fetchAuditLogs(); // void zbog lint pravila
@@ -147,6 +163,15 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
   useEffect(() => {
     applyFilters();
   }, [auditLogs, filters, applyFilters]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  // Refetch on page change
+  useEffect(() => {
+    void fetchAuditLogs();
+  }, [page, fetchAuditLogs]);
 
   const handleSort = (field: keyof AuditLog) => {
     setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
@@ -430,8 +455,29 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
             </tbody>
           </table>
         </div>
-        <div className="px-3 sm:px-6 py-3 sm:py-4 bg-gray-50 text-xs sm:text-sm text-gray-500">
-          Total records: {filteredLogs.length} (of {auditLogs.length})
+        <div className="px-3 sm:px-6 py-3 sm:py-4 bg-gray-50 text-xs sm:text-sm text-gray-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            Total records: {total}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="px-2 py-1 border rounded disabled:opacity-50"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </button>
+            <span>
+              Page {page} of {Math.max(1, totalPages)}
+            </span>
+            <button
+              className="px-2 py-1 border rounded disabled:opacity-50"
+              onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
+              disabled={page >= totalPages}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
       </div>
