@@ -327,9 +327,6 @@ const cardNumberRepository = {
           ])
       );
 
-      // Kreiraj Set potrošenih kartica za brzu provjeru
-      const consumedCardsSet = new Set(membershipCards.filter(mc => mc.card_number).map(mc => mc.card_number!));
-      
       // Dohvati stvarno potrošene kartice iz consumed_card_numbers tablice
       const actuallyConsumed = await prisma.consumedCardNumber.findMany({
         where: { organization_id: organizationId },
