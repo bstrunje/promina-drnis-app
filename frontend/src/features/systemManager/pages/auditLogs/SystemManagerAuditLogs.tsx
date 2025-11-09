@@ -12,7 +12,7 @@ import { useSystemManager } from '../../../../context/SystemManagerContext';
 import { useSystemManagerNavigation } from '../../hooks/useSystemManagerNavigation';
 import ManagerHeader from '../../components/common/ManagerHeader';
 import ManagerTabNav from '../../components/common/ManagerTabNav';
-import { getAuditLogs, type PaginatedAuditLogsResponse } from '../../../../utils/api/apiMisc';
+import { type PaginatedAuditLogsResponse } from '../../../../utils/api/apiMisc';
 
 interface SystemManagerAuditLogsProps {
   standalone?: boolean;
@@ -108,7 +108,6 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
   const fetchAuditLogs = React.useCallback(async () => {
     try {
       setLoading(true);
-      const isGlobalManager = manager?.organization_id === null;
       // Global i Org SM: oboje koriste SM endpoint s paginacijom i SM token
       const token = localStorage.getItem('systemManagerToken');
       if (!token) {
