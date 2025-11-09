@@ -478,7 +478,10 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
 
             const totalMembers = await prisma.member.count({ where: whereClause });
             const registeredMembers = await prisma.member.count({
-                where: { ...whereClause, status: 'registered' }
+                where: { 
+                    ...whereClause,
+                    registration_completed: true
+                }
             });
             const activeMembers = await prisma.member.count({
                 where: { ...whereClause, status: 'registered', activity_hours: { gte: 20 } }

@@ -143,7 +143,7 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
     } finally {
       setLoading(false);
     }
-  }, [toast, manager?.organization_id, page, limit]);
+  }, [toast, page, limit]);
 
   useEffect(() => {
     void fetchAuditLogs(); // void zbog lint pravila
