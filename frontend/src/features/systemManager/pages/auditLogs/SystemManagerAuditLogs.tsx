@@ -109,41 +109,31 @@ const SystemManagerAuditLogs: React.FC<SystemManagerAuditLogsProps> = ({ standal
     try {
       setLoading(true);
       const isGlobalManager = manager?.organization_id === null;
-      if (isGlobalManager) {
-        // Global SM: koristi SM endpoint s paginacijom
-        const token = localStorage.getItem('systemManagerToken');
-        if (!token) {
-          toast({
-            title: "Error",
-            description: "You are not logged in as System Manager.",
-            variant: "destructive"
-          });
-          setLoading(false);
-          return;
-        }
-        const response = await axios.get<PaginatedAuditLogsResponse>(`${API_BASE_URL}/system-manager/audit-logs`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          params: { page, limit }
+      // Global i Org SM: oboje koriste SM endpoint s paginacijom i SM token
+      const token = localStorage.getItem('systemManagerToken');
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "You are not logged in as System Manager.",
+          variant: "destructive"
         });
-        const data = response.data;
-        const logs = Array.isArray(data?.logs) ? data.logs : [];
-        setAuditLogs(logs);
-        setFilteredLogs(logs);
-        const p = data?.pagination;
-        setTotal(p?.total ?? logs.length);
-        setTotalPages(p?.totalPages ?? Math.max(1, Math.ceil((p?.total ?? logs.length) / limit)));
-      } else {
-        // Org SM: koristi zajednički paginirani helper
-        const data = await getAuditLogs(page, limit);
-        const logs = Array.isArray(data?.logs) ? data.logs : [];
-        setAuditLogs(logs);
-        setFilteredLogs(logs);
-        setTotal(data.pagination?.total ?? logs.length);
-        setTotalPages(data.pagination?.totalPages ?? Math.max(1, Math.ceil((data.pagination?.total ?? logs.length) / limit)));
+        setLoading(false);
+        return;
       }
+      const response = await axios.get<PaginatedAuditLogsResponse>(`${API_BASE_URL}/system-manager/audit-logs`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        params: { page, limit }
+      });
+      const data = response.data;
+      const logs = Array.isArray(data?.logs) ? data.logs : [];
+      setAuditLogs(logs);
+      setFilteredLogs(logs);
+      const p = data?.pagination;
+      setTotal(p?.total ?? logs.length);
+      setTotalPages(p?.totalPages ?? Math.max(1, Math.ceil((p?.total ?? logs.length) / limit)));
     } catch (err) {
       console.error('Error fetching audit logs:', err);
       toast({
