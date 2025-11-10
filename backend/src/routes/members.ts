@@ -19,8 +19,10 @@ import { authMiddleware as authenticateToken, roles } from '../middleware/authMi
 import prisma from '../utils/prisma.js';
 import memberService, { updateMemberActivityHours } from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
+import membershipService from '../services/membership.service.js';
 import equipmentService from '../services/equipment.service.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { PerformerType } from '@prisma/client';
 
 const router = express.Router();
 
@@ -212,6 +214,20 @@ router.post("/:memberId/stamp/return", authenticateToken, roles.requireSuperUser
         where: { member_id: memberId },
         data: { card_stamp_issued: false }
       });
+
+      // Re-kalkuliraj registration_completed za tekuću godinu nakon povrata markice
+      const details = await prisma.membershipDetails.findUnique({
+        where: { member_id: memberId },
+        select: { card_number: true }
+      });
+      const performerId = req.user?.member_id;
+      await membershipService.updateCardDetails(
+        req,
+        memberId,
+        details?.card_number || undefined,
+        false,
+        performerId
+      );
     } else {
       // Za markice za sljedeću godinu, ažuriraj membership_details tablicu
       await prisma.membershipDetails.update({
@@ -242,30 +258,14 @@ router.post("/:memberId/stamp", authenticateToken, roles.requireAdmin, async (re
     const memberId = parseInt(req.params.memberId);
     const { forNextYear = false } = req.body; // optional flag from client
 
-    // Fetch member to determine stamp type
-    const member = await memberService.getMemberById(req, memberId);
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
+    // Centralizirani tok: servis odrađuje inventar, membership_details i re-kalkulaciju za tekuću godinu
+    const performerId = req.user?.member_id;
+    const performerType: PerformerType = 'MEMBER';
+    if (!performerId) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Determine stamp type from life_status (shared helper in service)
-    const stampType = stampService.getStampTypeFromLifeStatus(member.life_status);
-
-    // Issue the stamp
-    await stampService.issueStamp(req, memberId, stampType, Boolean(forNextYear));
-
-    // Update membership details flags
-    if (!forNextYear) {
-      await prisma.membershipDetails.update({
-        where: { member_id: memberId },
-        data: { card_stamp_issued: true }
-      });
-    } else {
-      await prisma.membershipDetails.update({
-        where: { member_id: memberId },
-        data: { next_year_stamp_issued: true }
-      });
-    }
+    await stampService.issueStampToMember(req, memberId, performerId, Boolean(forNextYear), performerType);
 
     // Return updated member to client
     const updatedMember = await memberService.getMemberById(req, memberId);

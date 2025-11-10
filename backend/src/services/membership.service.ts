@@ -435,6 +435,16 @@ const membershipService = {
           }
         }
       }
+
+      // Nakon promjene perioda, re-kalkuliraj registration_completed preko updateCardDetails
+      const details = await membershipRepository.getMembershipDetails(memberId);
+      await this.updateCardDetails(
+        req,
+        memberId,
+        details?.card_number,
+        details?.card_stamp_issued,
+        performerId
+      );
     } catch (error) {
       console.error("Error updating membership history:", error);
       throw error;

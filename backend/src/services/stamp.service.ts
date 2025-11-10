@@ -1,6 +1,7 @@
 import stampRepository from "../repositories/stamp.repository.js";
 import membershipRepository from "../repositories/membership.repository.js";
 import memberRepository from "../repositories/member.repository.js";
+import membershipService from "./membership.service.js";
 import auditService from "./audit.service.js";
 import { DatabaseError } from '../utils/errors.js';
 import { tOrDefault } from '../utils/i18n.js';
@@ -175,6 +176,18 @@ const stampService = {
       await membershipRepository.updateMembershipDetails(memberId, { 
         [fieldToUpdate]: true 
       });
+
+      // Re-kalkuliraj registration_completed za tekuću godinu
+      if (!forNextYear) {
+        const currentCard = member.membership_details?.card_number ?? null;
+        await membershipService.updateCardDetails(
+          req,
+          memberId,
+          currentCard || undefined,
+          true,
+          performerId
+        );
+      }
 
       // Logiranje akcije
       const stampYear = forNextYear ? getCurrentDate().getFullYear() + 1 : getCurrentDate().getFullYear();
