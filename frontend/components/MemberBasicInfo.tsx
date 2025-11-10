@@ -138,7 +138,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               )}
 
               {/* Vještine i osposobljenosti */}
-              {((member?.skills && member.skills.length > 0) || member?.other_skills) && (
+              {isEditing && ((member?.skills && member.skills.length > 0) || member?.other_skills) && (
                 <div>
                   <label className="text-sm text-gray-500">{t('skills.title')}</label>
                   <div className="mt-2">
