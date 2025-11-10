@@ -69,7 +69,7 @@ export const StampTypeCard: React.FC<StampTypeCardProps> = ({
       {/* Uvijek koristi grid s 3 stupca */}
       <div className="grid grid-cols-3 gap-4 mt-2">
         <div>
-          <label className={`text-xs ${textColor.replace("800", "700")}`}>Initial</label>
+          <label className={`text-xs ${textColor.replace("800", "700")}`}>{t('stampInventory.labels.initial')}</label>
           {isEditing ? (
             <input
               type="number"
@@ -87,13 +87,13 @@ export const StampTypeCard: React.FC<StampTypeCardProps> = ({
           )}
         </div>
         <div>
-          <label className={`text-xs ${textColor.replace("800", "700")}`}>Issued</label>
+          <label className={`text-xs ${textColor.replace("800", "700")}`}>{t('stampInventory.labels.issued')}</label>
           <p className={`font-bold ${textColor} text-lg`}>
             {data.issued}
           </p>
         </div>
         <div>
-          <label className={`text-xs ${textColor.replace("800", "700")}`}>Remaining</label>
+          <label className={`text-xs ${textColor.replace("800", "700")}`}>{t('stampInventory.labels.remaining')}</label>
           <p className={`font-bold ${textColor} text-lg`}>
             {data.remaining}
           </p>

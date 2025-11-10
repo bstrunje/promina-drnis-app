@@ -5,11 +5,15 @@
  * Dinamički učitava podatke iz branding context-a
  */
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBranding } from '../hooks/useBranding';
-import { Mail, Phone, Globe, MapPin } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, ChevronDown } from 'lucide-react';
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation('common');
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const {
     getFullName,
     getContactEmail,
@@ -23,16 +27,24 @@ const Footer: React.FC = () => {
   } = useBranding();
 
   return (
-    <footer className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white mt-auto border-t border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <footer className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white mt-auto border-t border-gray-200 dark:border-gray-700 w-full">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Tenant-specific sadržaj */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4 text-center sm:text-left">
           {/* Kontakt informacije */}
           <div>
-            <h3 className="text-base font-bold mb-3" style={{ color: getPrimaryColor() }}>
-              {getFullName()}
-            </h3>
-            <div className="space-y-2 text-sm">
+            <button
+              onClick={() => setIsContactOpen(!isContactOpen)}
+              className="flex items-center justify-between w-full text-base font-bold mb-3 sm:cursor-default"
+              style={{ color: getPrimaryColor() }}
+            >
+              <span>{getFullName()}</span>
+              <ChevronDown 
+                className={`sm:hidden transition-transform ${isContactOpen ? 'rotate-180' : ''}`} 
+                size={20} 
+              />
+            </button>
+            <div className={`space-y-2 text-sm ${isContactOpen ? 'block' : 'hidden'} sm:block`}>
               {getFullAddress() && (
                 <div className="flex items-start gap-2 justify-center sm:justify-start">
                   <MapPin size={14} className="mt-1 flex-shrink-0" />
@@ -81,8 +93,17 @@ const Footer: React.FC = () => {
 
           {/* Dokumenti */}
           <div>
-            <h3 className="text-base font-bold mb-3">Dokumenti</h3>
-            <div className="space-y-2 text-sm">
+            <button
+              onClick={() => setIsDocumentsOpen(!isDocumentsOpen)}
+              className="flex items-center justify-between w-full text-base font-bold mb-3 sm:cursor-default"
+            >
+              <span>{t('footer.documents')}</span>
+              <ChevronDown 
+                className={`sm:hidden transition-transform ${isDocumentsOpen ? 'rotate-180' : ''}`} 
+                size={20} 
+              />
+            </button>
+            <div className={`space-y-2 text-sm ${isDocumentsOpen ? 'block' : 'hidden'} sm:block`}>
               {getEthicsCodeUrl() && (
                 <div>
                   <a 
@@ -92,7 +113,7 @@ const Footer: React.FC = () => {
                     className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
-                    Etički kodeks
+                    {t('footer.ethicsCode')}
                   </a>
                 </div>
               )}
@@ -105,7 +126,7 @@ const Footer: React.FC = () => {
                     className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
-                    Pravila privatnosti
+                    {t('footer.privacyPolicy')}
                   </a>
                 </div>
               )}
@@ -118,7 +139,7 @@ const Footer: React.FC = () => {
                     className="hover:underline text-gray-600 dark:text-gray-300"
                     style={{ color: getPrimaryColor() }}
                   >
-                    Pravila članstva
+                    {t('footer.membershipRules')}
                   </a>
                 </div>
               )}
@@ -127,9 +148,9 @@ const Footer: React.FC = () => {
 
           {/* O aplikaciji */}
           <div>
-            <h3 className="text-base font-bold mb-3">O aplikaciji</h3>
+            <h3 className="text-base font-bold mb-3">{t('footer.aboutApp')}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Sustav za upravljanje članstvom i aktivnostima.
+              {t('footer.appDescription')}
             </p>
           </div>
         </div>
@@ -137,8 +158,8 @@ const Footer: React.FC = () => {
         {/* Hardkodirani copyright - developer */}
         <div className="border-t border-gray-300 dark:border-gray-700 pt-3 mt-2">
           <p className="text-xs text-gray-500 dark:text-gray-500 text-center leading-relaxed">
-            © 2025 Božo Strunje. Sva prava pridržana.<br className="sm:hidden" />
-            <span className="hidden sm:inline"> </span>Aplikacija dostupna besplatno za ograničenu upotrebu.
+            {t('footer.copyright', { year: new Date().getFullYear() })}<br className="sm:hidden" />
+            <span className="hidden sm:inline"> </span>{t('footer.freeUsage')}
           </p>
         </div>
       </div>

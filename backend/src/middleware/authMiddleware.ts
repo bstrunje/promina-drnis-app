@@ -259,7 +259,8 @@ const checkPermission = (permission: string) => {
     };
 };
 
-// Middleware koji provjerava da li je korisnik superuser ili organizator aktivnosti
+// Middleware koji provjerava da li je korisnik superuser, administrator ili organizator aktivnosti
+// Obični članovi ne mogu uređivati DEŽURSTVO aktivnosti čak ni ako su organizatori
 export const canEditActivity = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { activityId } = req.params;
@@ -269,22 +270,36 @@ export const canEditActivity = async (req: Request, res: Response, next: NextFun
             return res.status(401).json({ message: 'Authentication required.' });
         }
 
-        // Superuser can always edit
-        if (user.role === 'member_superuser') {
+        // Superuser i Administrator mogu uvijek uređivati
+        if (user.role === 'member_superuser' || user.role === 'member_administrator') {
             return next();
         }
 
-        // Check if the user is the organizer of the activity
+        // Dohvati aktivnost s tipom
         const activity = await prisma.activity.findUnique({
             where: { activity_id: parseInt(activityId, 10) },
-            select: { organizer_id: true },
+            select: { 
+                organizer_id: true,
+                activity_type: {
+                    select: {
+                        key: true
+                    }
+                }
+            },
         });
 
         if (!activity) {
             return res.status(404).json({ message: 'Activity not found.' });
         }
 
+        // Provjeri je li korisnik organizator
         if (activity.organizer_id === user.member_id) {
+            // Obični član ne može uređivati DEŽURSTVO aktivnosti
+            if (user.role === 'member' && activity.activity_type?.key === 'dezurstva') {
+                return res.status(403).json({ 
+                    message: 'Access denied. Regular members cannot edit duty activities.' 
+                });
+            }
             return next();
         }
 

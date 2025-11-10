@@ -85,10 +85,10 @@ function OrgRoutes() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
       {user && <Navigation user={user} onLogout={() => { void handleLogout(); }} />}
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 w-full">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Routes>
             {/* Organization System Manager rute - odvojene od member auth-a */}
             <Route 

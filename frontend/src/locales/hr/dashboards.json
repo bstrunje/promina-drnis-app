@@ -101,6 +101,11 @@
             "studentPupil": "Markice za djecu/učenike/studente",
             "pensioner": "Markice za umirovljenike"
         },
+        "labels": {
+            "initial": "Početno",
+            "issued": "Isporučeno",
+            "remaining": "Preostalo"
+        },
         "fetchInventoryError": "Neuspjelo dohvaćanje inventara",
         "fetchHistoryError": "Neuspjelo dohvaćanje povijesti markica",
         "archiveSuccess": "Inventar uspješno arhiviran",

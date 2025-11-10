@@ -157,7 +157,15 @@ const ActivityDetailPage: React.FC = () => {
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">{t('activityDetail.notFound')}</div>;
 
-  const canEdit = user?.role === 'member_superuser' || user?.member_id === activity.organizer?.member_id;
+  // Provjera je li aktivnost tipa DEŽURSTVA
+  const isDutyType = activity.activity_type?.key === 'dezurstva';
+  
+  // Obični član ne može editirati DEŽURSTVO aktivnost, čak ni ako je organizator
+  // Superuser i administrator mogu uvijek editirati
+  const canEdit = user?.role === 'member_superuser' 
+    || user?.role === 'member_administrator'
+    || (user?.member_id === activity.organizer?.member_id && !(user?.role === 'member' && isDutyType));
+  
   const isParticipant = activity.participants?.some(p => p.member_id === user?.member_id);
   const canJoin = activity.status === ActivityStatus.PLANNED && !isParticipant && Boolean(user);
   const isCancelled = activity.status === ActivityStatus.CANCELLED;
@@ -170,7 +178,11 @@ const ActivityDetailPage: React.FC = () => {
     switch (status) {
       case 'PLANNED':
         return (
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge
+            variant="outline"
+            className="flex items-center gap-1"
+            style={{ color: getPrimaryColor(), borderColor: getPrimaryColor() }}
+          >
             <Calendar className="h-3.5 w-3.5" />
             {t('activityDetail.statuses.planned')}
           </Badge>
@@ -202,7 +214,7 @@ const ActivityDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-3 sm:p-4">
+    <div>
       {activity && (
         <Button 
           asChild 
@@ -226,10 +238,10 @@ const ActivityDetailPage: React.FC = () => {
           )}
         </Button>
       )}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="mb-4 text-2xl font-bold tracking-tight sm:text-3xl">{activity.name}</CardTitle>
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
             <div>
 
               
@@ -243,58 +255,71 @@ const ActivityDetailPage: React.FC = () => {
               </div>
             </div>
             {(canJoin || (canEdit && !isCancelled)) && (
-              <div className="flex flex-wrap items-start gap-2 mt-2 sm:mt-0">
-                {isParticipant && !isCompleted && !isCancelled && (
-                  <Button onClick={() => { void handleLeaveActivity(); }} variant="outline" className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
-                    <Ban className="mr-2 h-4 w-4" />
-                    {t('activityDetail.leaveActivity')}
-                  </Button>
-                )}
+              <div className="flex flex-col gap-1.5 mt-3 w-full sm:flex-row sm:flex-wrap sm:items-start sm:gap-2 sm:mt-0 sm:w-auto">
                 {canJoin && (
-                  <Button onClick={() => { void handleJoinActivity(); }} className="bg-primary hover:bg-primary/90 text-white">
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    {t('activityDetail.joinActivity')}
+                  <Button
+                    onClick={() => { void handleJoinActivity(); }}
+                    variant="default"
+                    className="w-full sm:w-auto h-auto py-2 px-1 sm:h-9 sm:py-2 sm:px-3 rounded-md leading-none text-xs sm:text-sm"
+                  >
+                    <CheckCircle2 className="mr-0.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:hidden">{t('activityDetail.join')}</span>
+                    <span className="hidden sm:inline text-sm">{t('activityDetail.joinActivity')}</span>
                   </Button>
                 )}
                 {canEdit && !isCancelled && (
-                  <div className="flex flex-wrap items-start gap-2">
+                  <div className="flex flex-col gap-1.5 w-full sm:flex-row sm:gap-2 sm:w-auto">
                     <TenantLink to={`/activities/${activity.activity_id}/edit`}>
-                      <Button variant="outline" size="sm" className="sm:size-md w-full sm:w-auto">
-                        <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                      <Button
+                        variant="secondary"
+                        className="w-full sm:w-auto h-auto py-2 px-1 sm:h-9 sm:py-2 sm:px-3 rounded-md leading-none text-xs sm:text-sm bg-black text-white hover:bg-gray-800"
+                      >
+                        <Edit className="mr-0.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
                         <span className="text-xs sm:text-sm">{t('edit', { ns: 'common' })}</span>
                       </Button>
                     </TenantLink>
                     {!isCompleted && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        className="sm:size-md w-full sm:w-auto"
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-auto h-auto py-2 px-1 sm:h-9 sm:py-2 sm:px-3 rounded-md leading-none text-xs sm:text-sm"
                         onClick={() => setIsCancelModalOpen(true)}
                       >
-                        <Ban className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                        <span className="text-xs sm:text-sm">{t('activityDetail.cancelActivity')}</span>
+                        <Ban className="mr-0.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+                        <span className="text-xs sm:hidden">{t('activityDetail.cancel')}</span>
+                        <span className="hidden sm:inline text-sm">{t('activityDetail.cancelActivity')}</span>
                       </Button>
                     )}
                   </div>
+                )}
+                {isParticipant && !isCompleted && !isCancelled && (
+                  <Button
+                    onClick={() => { void handleLeaveActivity(); }}
+                    variant="outline"
+                    className="w-full sm:w-auto h-auto py-0.5 px-1 sm:h-9 sm:py-2 sm:px-3 rounded-md border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 leading-none text-xs sm:text-sm"
+                  >
+                    <Ban className="mr-0.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:hidden">{t('activityDetail.leave')}</span>
+                    <span className="hidden sm:inline text-sm">{t('activityDetail.leaveActivity')}</span>
+                  </Button>
                 )}
               </div>
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-hidden">
           {isCancelled && activity.cancellation_reason && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
               <h3 className="font-semibold text-red-800">{t('activityDetail.reason')}</h3>
               <p className="text-red-700">{activity.cancellation_reason}</p>
             </div>
           )}
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-6 lg:gap-12">
             <div className="space-y-4">
               <div className="flex items-start">
                 <Info className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.description')}</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">{activity.description ?? t('activityDetail.noDescription')}</p>
+                  <p className="text-gray-600 text-sm sm:text-base break-all">{activity.description ?? t('activityDetail.noDescription')}</p>
                 </div>
               </div>
 
@@ -328,10 +353,10 @@ const ActivityDetailPage: React.FC = () => {
                   )}
                   
                   {/* Prikaz postotka priznavanja sati samo ako nije tip SASTANCI ili ako je postotak različit od 100% */}
-                  {(!isMeetingType || (activity.recognition_percentage && activity.recognition_percentage < 100)) && (
+                  {(typeof activity.recognition_percentage === 'number' && activity.recognition_percentage !== 100) && (
                     <div className="mt-2 border-t border-gray-100 pt-2">
                       <p className="text-gray-600 text-sm sm:text-base">
-                        <span className="font-medium">{t('activityDetail.recognitionPercentage')}</span> {activity.recognition_percentage ?? 100}%
+                        <span className="font-medium">{t('activityDetail.recognitionPercentage')}</span> {activity.recognition_percentage}%
                       </p>
                     </div>
                   )}
@@ -346,7 +371,7 @@ const ActivityDetailPage: React.FC = () => {
                   <User className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                   <div>
                     <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.organizer')}</h3>
-                    <p className="text-gray-600 text-sm sm:text-base">{activity.organizer?.full_name ?? t('activityDetail.notAvailable')}</p>
+                    <p className="text-gray-900 text-sm sm:text-base">{activity.organizer?.full_name}</p>
                   </div>
                 </div>
               )}
@@ -356,10 +381,10 @@ const ActivityDetailPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base">{t('activityDetail.participants', { count: activity.participants?.length ?? 0 })}</h3>
                   {activity.participants && activity.participants.length > 0 ? (
-                    <ul className="list-disc list-outside ml-5 text-gray-600 text-xs sm:text-sm space-y-1">
+                    <ul className="list-disc list-outside ml-5 text-gray-900 text-sm sm:text-base space-y-1">
                       {activity.participants.map((p) => (
                         <li key={p.member.member_id}>
-                          {p.member.full_name}
+                          <span className="text-gray-900">{p.member.full_name}</span>
                           {/* Prikaz uloge samo za izlete */}
                                             {activity?.activity_type?.key === 'izleti' && p.participant_role && p.participant_role !== ParticipantRole.REGULAR && (() => {
                             const roleName = getRoleNameByEnum(p.participant_role, t, i18n);

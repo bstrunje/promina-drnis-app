@@ -51,6 +51,7 @@ const PUBLIC_FIELDS = [
   'member_id',
   'first_name',
   'last_name',
+  'full_name',
   'profile_image_path',
   'nickname',
   'gender',

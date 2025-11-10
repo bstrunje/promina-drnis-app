@@ -43,5 +43,15 @@
     "superuser": "Superuser",
     "dashboard": "Pregled",
     "logout": "Odjava"
-  } 
+  },
+  "footer": {
+    "documents": "Dokumenti",
+    "ethicsCode": "Etički kodeks",
+    "privacyPolicy": "Pravila privatnosti",
+    "membershipRules": "Pravila članstva",
+    "aboutApp": "O aplikaciji",
+    "appDescription": "Sustav za upravljanje članstvom i aktivnostima.",
+    "copyright": "© {{year}} Božo Strunje. Sva prava pridržana.",
+    "freeUsage": "Aplikacija dostupna besplatno za ograničenu upotrebu."
+  }
 }
