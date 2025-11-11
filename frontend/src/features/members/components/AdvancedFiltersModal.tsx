@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Users, Award } from 'lucide-react';
+import { X, Users, Award, Archive, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { useUsedSkills } from '../../../hooks/useUsedSkills';
 import { ApiUsedSkill } from '../../../utils/api/apiTypes';
@@ -22,13 +22,15 @@ interface AdvancedFiltersModalProps {
   onClose: () => void;
   onSkillSelect: (skillName: string, members: string[]) => void;
   onFunctionSelect: (member: MemberWithFunction) => void;
+  onArchiveSelect: (filterValue: 'all' | 'inactive', year?: number) => void;
 }
 
 const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   isOpen,
   onClose,
   onSkillSelect,
-  onFunctionSelect
+  onFunctionSelect,
+  onArchiveSelect
 }) => {
   const { t } = useTranslation('members');
   const { t: tProfile } = useTranslation('profile');
@@ -37,6 +39,11 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [loadingFunctions, setLoadingFunctions] = useState(false);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [skillMembers, setSkillMembers] = useState<Record<string, MemberWithSkill[]>>({});
+  
+  // State za kolapsibilne sekcije
+  const [skillsCollapsed, setSkillsCollapsed] = useState(true);
+  const [functionsCollapsed, setFunctionsCollapsed] = useState(true);
+  const [archiveCollapsed, setArchiveCollapsed] = useState(true);
 
   // Dohvati članove s funkcijama
   useEffect(() => {
@@ -109,86 +116,138 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {/* Vještine i osposobljenosti */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Award className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold">{t('advancedFilters.skillsTitle')}</h3>
-            </div>
+          <div className="mb-4 border rounded-lg">
+            <button
+              onClick={() => setSkillsCollapsed(!skillsCollapsed)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">{t('advancedFilters.skillsTitle')}</h3>
+              </div>
+              {skillsCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+            </button>
             
-            {skillsLoading ? (
-              <div className="text-center py-8 text-gray-500">{t('advancedFilters.loadingSkills')}</div>
-            ) : skills.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">{t('advancedFilters.noSkills')}</div>
-            ) : (
-              <div className="space-y-3">
-                {skills.map((skill: ApiUsedSkill) => (
-                  <div key={skill.id} className="border rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => void fetchMembersBySkill(skill.name)}
-                      className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="font-medium">{tProfile(`skills.${skill.name}`)}</span>
-                        <span className="text-sm text-gray-500">({skillMembers[skill.name]?.length ?? skill._count.member_skills} {t('advancedFilters.membersCount')})</span>
+            {!skillsCollapsed && (
+              <div className="p-4 border-t">
+                {skillsLoading ? (
+                  <div className="text-center py-8 text-gray-500">{t('advancedFilters.loadingSkills')}</div>
+                ) : skills.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">{t('advancedFilters.noSkills')}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {skills.map((skill: ApiUsedSkill) => (
+                      <div key={skill.id} className="border rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => void fetchMembersBySkill(skill.name)}
+                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="font-medium">{tProfile(`skills.${skill.name}`)}</span>
+                            <span className="text-sm text-gray-500">({skillMembers[skill.name]?.length ?? skill._count.member_skills} {t('advancedFilters.membersCount')})</span>
+                          </div>
+                          <div className="text-sm text-blue-600">
+                            {expandedSkill === skill.name ? t('advancedFilters.hideMembers') : t('advancedFilters.showMembers')}
+                          </div>
+                        </button>
+                        
+                        {expandedSkill === skill.name && skillMembers[skill.name] && (
+                          <div className="px-4 py-3 bg-white border-t">
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {skillMembers[skill.name]?.map(member => (
+                                <button
+                                  key={member.member_id}
+                                  onClick={() => { onSkillSelect(skill.name, [member.full_name]); onClose(); }}
+                                  className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm transition-colors"
+                                >
+                                  • {member.full_name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-blue-600">
-                        {expandedSkill === skill.name ? t('advancedFilters.hideMembers') : t('advancedFilters.showMembers')}
-                      </div>
-                    </button>
-                    
-                    {expandedSkill === skill.name && skillMembers[skill.name] && (
-                      <div className="px-4 py-3 bg-white border-t">
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {skillMembers[skill.name]?.map(member => (
-                            <button
-                              key={member.member_id}
-                              onClick={() => { onSkillSelect(skill.name, [member.full_name]); onClose(); }}
-                              className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm transition-colors"
-                            >
-                              • {member.full_name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
 
           {/* Funkcije u društvu */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-semibold">{t('advancedFilters.functionsTitle')}</h3>
-            </div>
+          <div className="mb-4 border rounded-lg">
+            <button
+              onClick={() => setFunctionsCollapsed(!functionsCollapsed)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
+                <h3 className="text-lg font-semibold">{t('advancedFilters.functionsTitle')}</h3>
+              </div>
+              {functionsCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+            </button>
             
-            {loadingFunctions ? (
-              <div className="text-center py-8 text-gray-500">{t('advancedFilters.loadingFunctions')}</div>
-            ) : !Array.isArray(functions) || functions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">{t('advancedFilters.noFunctions')}</div>
-            ) : (
-              <div className="space-y-2">
-                {functions.map(member => (
-                  <button
-                    key={member.member_id}
-                    onClick={() => handleFunctionClick(member)}
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-green-50 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-medium text-green-700">
-                          {member.functions_in_society}
-                        </span>
-                        <span className="text-gray-500"> - </span>
-                        <span className="text-gray-700">{member.full_name}</span>
-                      </div>
-                      {/* Uklonjen tekst desno; cijeli red je klikabilan */}
-                    </div>
-                  </button>
-                ))}
+            {!functionsCollapsed && (
+              <div className="p-4 border-t">
+                {loadingFunctions ? (
+                  <div className="text-center py-8 text-gray-500">{t('advancedFilters.loadingFunctions')}</div>
+                ) : !Array.isArray(functions) || functions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">{t('advancedFilters.noFunctions')}</div>
+                ) : (
+                  <div className="space-y-2">
+                    {functions.map(member => (
+                      <button
+                        key={member.member_id}
+                        onClick={() => handleFunctionClick(member)}
+                        className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-green-50 rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-green-700">
+                              {member.functions_in_society}
+                            </span>
+                            <span className="text-gray-500"> - </span>
+                            <span className="text-gray-700">{member.full_name}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Arhiva */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => setArchiveCollapsed(!archiveCollapsed)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Archive className="h-5 w-5 text-orange-600" />
+                <h3 className="text-lg font-semibold">{t('advancedFilters.archiveTitle')}</h3>
+              </div>
+              {archiveCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+            </button>
+            
+            {!archiveCollapsed && (
+              <div className="p-4 border-t space-y-2">
+                <p className="text-sm text-gray-500 mb-2">{t('advancedFilters.byPeriod')}</p>
+                {/* Petogodišnja razdoblja - generirat će se dinamički */}
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - i - 1;
+                  return (
+                    <button
+                      key={year}
+                      onClick={() => { onArchiveSelect('inactive', year); onClose(); }}
+                      className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded text-sm transition-colors mb-1"
+                    >
+                      {t('advancedFilters.year', { year })}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

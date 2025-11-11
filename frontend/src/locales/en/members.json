@@ -150,13 +150,14 @@
         },
         "options": {
             "regular": "Regular Members",
+            "newMembers": "New Members",
             "allMembers": "All members",
             "active": "Active",
             "passive": "Passive",
             "pending": "Pending",
-            "inactive": "Former members",
-            "sortByName": "Sort by name",
-            "sortByHours": "Sort by hours"
+            "inactive": "Former Members",
+            "sortByName": "Sort by Name",
+            "sortByHours": "Sort by Hours"
         },
         "buttons": {
             "adults": "Adults",
@@ -208,5 +209,20 @@
         "fetchMemberDetailsLog": "Error fetching member details",
         "fetchMembersLog": "Error fetching members",
         "loadMembers": "Failed to load members"
+    },
+    "advancedFilters": {
+        "skillsTitle": "Skills and Qualifications",
+        "showMembers": "Show Members",
+        "hideMembers": "Hide Members",
+        "membersCount": "members",
+        "functionsTitle": "Functions in Society",
+        "archiveTitle": "Archive",
+        "byPeriod": "By end year:",
+        "year": "Year {{year}}",
+        "loadingSkills": "Loading skills...",
+        "noSkills": "No skills entered",
+        "loadingFunctions": "Loading functions...",
+        "noFunctions": "No functions entered",
+        "close": "Close"
     }
 }

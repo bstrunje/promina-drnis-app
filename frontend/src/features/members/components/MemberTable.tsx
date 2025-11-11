@@ -183,7 +183,7 @@ export const MemberTable: React.FC<MemberTableProps> = ({
       </div>
 
       <div
-        className="overflow-x-auto overflow-y-auto"
+        className="overflow-x-auto overflow-y-auto print:overflow-visible"
         style={{
           WebkitOverflowScrolling: "touch",
           msOverflowStyle: "none",

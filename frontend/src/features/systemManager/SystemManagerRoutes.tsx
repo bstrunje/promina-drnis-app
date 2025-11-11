@@ -5,6 +5,7 @@ import { SystemManagerProvider, useSystemManager } from '../../context/SystemMan
 import SystemManagerLoginPage from './pages/login/SystemManagerLoginPage';
 import TwoFactorEntryPage from './pages/login/TwoFactorEntryPage';
 import ForcePasswordChangePage from './pages/login/ForcePasswordChangePage';
+import SystemManagerChangePinPage from './pages/changePinPage/SystemManagerChangePinPage';
 import SystemManagerDashboard from './pages/dashboard/SystemManagerDashboard';
 import SystemManagerAuditLogs from './pages/auditLogs/SystemManagerAuditLogs';
 import HolidaysManager from './HolidaysManager';
@@ -78,6 +79,10 @@ const SystemManagerRoutesContent: React.FC = () => {
       <Route 
         path="/force-change-password" 
         element={<ForcePasswordChangePage />} 
+      />
+      <Route 
+        path="/change-pin" 
+        element={<SystemManagerChangePinPage />} 
       />
       <Route 
         path="/dashboard" 

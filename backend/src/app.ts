@@ -19,7 +19,7 @@ import genericMessagesRouter from './routes/generic.messages.js';
 
 // Import routes
 import memberRoutes, { publicMembersRouter } from './routes/members.js';
-import membershipRoutes from './routes/membership.routes.js';
+import _membershipRoutes from './routes/membership.routes.js';
 import authRoutes from './routes/auth.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
@@ -312,7 +312,8 @@ app.use('/api/audit', authMiddleware, auditRoutes);
 // ISPRAVAK REDOSLIJEDA: Specifične rute moraju ići prije općenitih
 app.use('/api/members/permissions', permissionsRouter);
 app.use('/api/members', authMiddleware, memberRoutes);
-app.use('/api/members/:memberId', authMiddleware, membershipRoutes);
+// Membership routes are now included within memberRoutes to avoid route conflicts
+// app.use('/api/members/:memberId', authMiddleware, membershipRoutes); // COMMENTED OUT - causing 404 for PIN reset
 app.use('/api/stamps', stampRoutes);
 app.use('/api/settings', authMiddleware, settingsRouter);
 app.use('/api/admin', adminRoutes);

@@ -25,21 +25,39 @@ interface LocationState {
 
 interface Verify2faResponse {
   resetRequired?: boolean;
+  pinResetRequired?: boolean;
   tempToken?: string;
   token?: string;
   manager?: SystemManager;
+  managerId?: number;
+  managerName?: string;
 }
 
 const TwoFactorEntryPage: React.FC = () => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState;
-
+  
+  
   // Ref za timeout da možemo ga cancelirati ako je potrebno
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+        
+    if (!state?.tempToken) {
+            // Redirektaj na login ako nema tempToken
+      const orgSlug = getOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/system-manager/login` : '/system-manager/login';
+      navigate(loginPath);
+      return;
+    }
+    
+  }, [state, navigate]);
+
   // Ref za input polje
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,10 +77,58 @@ const TwoFactorEntryPage: React.FC = () => {
     }
   }, []);
 
-  const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
+  // Token expiry check
+  useEffect(() => {
+    if (!state?.tempToken) return;
+
+    try {
+      // Decode JWT da dobijemo expiry
+      const payload: { exp: number } = JSON.parse(atob(state.tempToken.split('.')[1])) as { exp: number };
+      const expiryTime = payload.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      
+      // Check if token is expired
+      if (currentTime > expiryTime) {
+        setTokenExpired(true);
+        setError('Your session has expired. Please log in again.');
+        return;
+      }
+
+      // Set warning 2 minutes before expiry
+      const warningTime = expiryTime - (2 * 60 * 1000);
+      const timeUntilWarning = warningTime - currentTime;
+      
+      if (timeUntilWarning > 0) {
+        const warningTimeout = setTimeout(() => {
+          setError('Session expiring soon. Please complete 2FA quickly.');
+        }, timeUntilWarning);
+        
+        return () => clearTimeout(warningTimeout);
+      }
+    } catch (e) {
+      console.error('Error parsing token:', e);
+    }
+  }, [state?.tempToken]);
+
+  const handleSubmit = async (e?: React.FormEvent, submittedCode?: string): Promise<void> => {
     if (e) e.preventDefault();
     if (!state?.tempToken) {
       setError('Invalid session. Please try logging in again.');
+      return;
+    }
+
+    // Provjera da li je token istekao
+    if (tokenExpired) {
+      setError('Your session has expired. Please log in again.');
+      return;
+    }
+
+    // Koristi proslijeđeni kod ili trenutni state
+    const codeToVerify = submittedCode ?? code;
+
+    // Validacija: mora biti točno 6 znamenki
+    if (codeToVerify.length !== 6 || !/^\d{6}$/.test(codeToVerify)) {
+      setError('Please enter a valid 6-digit code');
       return;
     }
 
@@ -70,7 +136,7 @@ const TwoFactorEntryPage: React.FC = () => {
     setError('');
 
     try {
-      const response = await verify2faAndProceed(state.tempToken, code, false) as Verify2faResponse;
+      const response = await verify2faAndProceed(state.tempToken, codeToVerify, false) as Verify2faResponse;
 
       if (response.resetRequired) {
         const orgSlug = getOrgSlugFromPath();
@@ -78,6 +144,19 @@ const TwoFactorEntryPage: React.FC = () => {
           ? `/${orgSlug}/system-manager/force-change-password`
           : '/system-manager/force-change-password';
         navigate(forceChangePath, { state: { tempToken: response.tempToken } });
+      } else if (response.pinResetRequired) {
+        // PIN resetovan od strane admina - idi na promjenu PIN-a
+        const orgSlug = getOrgSlugFromPath();
+        const changePinPath = orgSlug 
+          ? `/${orgSlug}/system-manager/change-pin`
+          : '/system-manager/change-pin';
+        navigate(changePinPath, { 
+          state: { 
+            tempToken: response.tempToken, 
+            managerId: response.managerId, 
+            managerName: response.managerName 
+          } 
+        });
       } else if (response.token && response.manager) {
         localStorage.setItem('systemManagerToken', response.token);
         localStorage.setItem('systemManager', JSON.stringify(response.manager));
@@ -110,6 +189,7 @@ const TwoFactorEntryPage: React.FC = () => {
               type="text"
               value={code}
               autoFocus
+              autoComplete="off"
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, ''); // Samo brojevi
                 if (value.length <= 6) { // Maksimalno 6 znamenki
@@ -123,7 +203,7 @@ const TwoFactorEntryPage: React.FC = () => {
                     }
                     // Kratka pauza da korisnik vidi unos, zatim automatski submit
                     timeoutRef.current = setTimeout(() => {
-                      void handleSubmit();
+                      void handleSubmit(undefined, value);
                     }, 300);
                   }
                 }

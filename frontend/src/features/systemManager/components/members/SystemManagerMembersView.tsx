@@ -2,8 +2,9 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Member } from '@shared/member';
 import { getAllMembersForSystemManager, deleteMemberForSystemManager } from '../../utils/systemManagerApi';
 import { Button } from '@components/ui/button';
-import { Trash2, Filter, ArrowLeft } from 'lucide-react';
+import { Trash2, Filter, ArrowLeft, Shield } from 'lucide-react';
 import { useSystemManager } from '../../../../../src/context/SystemManagerContext';
+import ResetPinModal from '../modals/ResetPinModal';
 
 // Jednostavan prikaz članova za System Manager, bez korištenja postojećeg MemberTable (Option B)
 // Namjena: upravljanje članovima (brisanje) unutar System Manager dashboarda bez otvaranja nove kartice
@@ -18,6 +19,8 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
+  const [resetPinModalOpen, setResetPinModalOpen] = useState(false);
+  const [selectedMemberForReset, setSelectedMemberForReset] = useState<Member | null>(null);
   const [pagination, setPagination] = useState<{
     page: number;
     limit: number;
@@ -36,6 +39,15 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
   
   // Check if current user is Global System Manager (organization_id === null)
   const isGlobalManager = manager?.organization_id === null;
+
+  // Multi-tenancy: provjeri može li trenutni manager resetirati PIN ovom članu
+  const canResetPin = (member: Member): boolean => {
+    // GSM može resetirati PIN svima
+    if (isGlobalManager) return true;
+    
+    // OSM može resetirati PIN samo članovima iz svoje organizacije
+    return member.organization?.id === manager?.organization_id;
+  };
 
   // Dohvat članova s pagination
   const fetchMembers = useCallback(async (page = 1, reset = false) => {
@@ -139,20 +151,32 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
 
   // Brisanje člana uz potvrdu
   const handleDelete = async (member: Member) => {
-    const fullName = member.full_name ?? `${member.first_name} ${member.last_name}`;
-    const confirmed = window.confirm(`Jeste li sigurni da želite trajno obrisati člana: \n${fullName} (ID: ${member.member_id})?`);
-    if (!confirmed) return;
-
+    if (!window.confirm(`Are you sure you want to delete member ${member.first_name} ${member.last_name}?`)) {
+      return;
+    }
+    
+    setLoading(true);
     try {
-      setLoading(true);
-      await deleteMemberForSystemManager(Number(member.member_id));
-      // Nakon uspješnog brisanja osvježi listu
+      await deleteMemberForSystemManager(member.member_id);
       await fetchMembers();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Greška prilikom brisanja člana');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Otvaranje Reset PIN modala
+  const handleResetPin = (member: Member) => {
+    setSelectedMemberForReset(member);
+    setResetPinModalOpen(true);
+  };
+
+  // Zatvori modal i refresh članove
+  const handleResetPinSuccess = () => {
+    setResetPinModalOpen(false);
+    setSelectedMemberForReset(null);
+    void fetchMembers(1, true); // Refresh member list
   };
 
   return (
@@ -253,14 +277,26 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
                     </span>
                   </td>
                   <td className="px-3 py-2 align-middle text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Delete Member"
-                      onClick={() => { void handleDelete(m); }}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-1">
+                      {canResetPin(m) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Reset PIN"
+                          onClick={() => handleResetPin(m)}
+                        >
+                          <Shield className="w-4 h-4 text-blue-600" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Delete Member"
+                        onClick={() => { void handleDelete(m); }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -298,6 +334,22 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Reset PIN Modal */}
+      {selectedMemberForReset && (
+        <ResetPinModal
+          isOpen={resetPinModalOpen}
+          onClose={() => {
+            setResetPinModalOpen(false);
+            setSelectedMemberForReset(null);
+          }}
+          targetId={selectedMemberForReset.member_id}
+          targetName={`${selectedMemberForReset.first_name} ${selectedMemberForReset.last_name}`}
+          targetType="member"
+          isGlobalManager={isGlobalManager}
+          onSuccess={handleResetPinSuccess}
+        />
       )}
     </div>
   );

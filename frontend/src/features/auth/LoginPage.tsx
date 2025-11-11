@@ -13,6 +13,7 @@ import { formatInputDate } from "@/utils/dateUtils";
 import SkillsSelector from '@components/SkillsSelector';
 import { useTranslation } from 'react-i18next';
 import { useBranding } from '../../hooks/useBranding';
+import ForcePinChangeModal from '../../components/ForcePinChangeModal';
 // useSystemSettings uklonjen jer se ne koristi
 
 interface SizeOptions {
@@ -36,6 +37,22 @@ const hatSizeOptions: SizeOptions[] = [
 ];
 
 // Ove opcije će biti generirane dinamički koristeći useTranslation hook
+
+/**
+ * Helper za detekciju org slug-a iz URL-a
+ */
+const getOrgSlugFromPath = (): string | null => {
+  const pathname = window.location.pathname;
+  const pathParts = pathname.split('/').filter(Boolean);
+  
+  // /login → null (bez org)
+  if (pathParts[0] === 'login') return null;
+  
+  // /promina/login → 'promina' (s org slug-om)
+  if (pathParts[1] === 'login') return pathParts[0];
+  
+  return null;
+};
 
 const LoginPage = () => {
   const isDev = import.meta.env.DEV;
@@ -93,6 +110,11 @@ const LoginPage = () => {
   const [pinRequired, setPinRequired] = useState(false);
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
+
+  // PIN Reset Required state
+  const [pinResetRequired, setPinResetRequired] = useState(false);
+  const [pinResetMemberId, setPinResetMemberId] = useState<number | null>(null);
+  const [pinResetMemberName, setPinResetMemberName] = useState<string>('');
 
   // Ref za PIN input polje
   const pinInputRef = useRef<HTMLInputElement>(null);
@@ -278,6 +300,104 @@ const LoginPage = () => {
     }
   };
 
+  // Handler za uspješnu promjenu PIN-a
+  const handlePinChangeSuccess = () => {
+    // Token i member su već spremljeni u ForcePinChangeModal
+    const token = localStorage.getItem('token');
+    const memberData = localStorage.getItem('member');
+    
+    if (token && memberData) {
+      try {
+        const memberFromStorage = JSON.parse(memberData) as {
+          member_id: number;
+          first_name: string;
+          last_name: string;
+          email: string;
+          role: MemberRole;
+          organization_id?: number;
+        };
+        
+        // Kreiraj puni Member objekt za AuthContext
+        const member: Member = {
+          member_id: memberFromStorage.member_id,
+          first_name: memberFromStorage.first_name,
+          last_name: memberFromStorage.last_name,
+          full_name: `${memberFromStorage.first_name} ${memberFromStorage.last_name}`,
+          email: memberFromStorage.email,
+          role: memberFromStorage.role,
+          date_of_birth: "",
+          gender: "male",
+          street_address: "",
+          city: "",
+          oib: "",
+          cell_phone: "",
+          registration_completed: true,
+          membership_type: MembershipTypeEnum.Regular,
+          life_status: "employed/unemployed",
+          tshirt_size: "M",
+          shell_jacket_size: "M",
+          hat_size: "L",
+          membership_details: {
+            card_stamp_issued: false,
+            card_number: ""
+          },
+          profile_image_path: undefined,
+          profile_image_updated_at: undefined,
+          last_login: undefined,
+          status: 'registered',
+          total_hours: 0,
+          activity_status: 'passive',
+          membership_history: undefined,
+        };
+        
+        // Registriraj korisnika u AuthContext-u
+        authLogin(member, token, undefined);
+        
+        const orgSlug = getOrgSlugFromPath();
+        
+        // Automatski redirect na dashboard prema ulozi
+        let dashboardPath = '';
+        switch (member.role) {
+          case 'member_administrator':
+            dashboardPath = orgSlug ? `/${orgSlug}/admin/dashboard` : '/admin/dashboard';
+            break;
+          case 'member_superuser':
+            dashboardPath = orgSlug ? `/${orgSlug}/superuser/dashboard` : '/superuser/dashboard';
+            break;
+          case 'member':
+            dashboardPath = orgSlug ? `/${orgSlug}/member/dashboard` : '/member/dashboard';
+            break;
+          default:
+            dashboardPath = orgSlug ? `/${orgSlug}/profile` : '/profile';
+        }
+        
+        navigate(dashboardPath);
+      } catch {
+        // Fallback ako parsing ne uspije
+        const orgSlug = getOrgSlugFromPath();
+        const dashboardPath = orgSlug ? `/${orgSlug}/member/dashboard` : '/member/dashboard';
+        navigate(dashboardPath);
+      }
+    } else {
+      // Fallback ako token/member nisu spremljeni
+      setPinResetRequired(false);
+      setPinResetMemberId(null);
+      setPinResetMemberName('');
+      setMessage({ type: 'success', content: 'PIN successfully changed. Please login again.' });
+      setStep(1);
+      setPin('');
+      setPinRequired(false);
+    }
+  };
+
+  // Handler za cancel PIN promjene
+  const handlePinChangeCancel = () => {
+    setPinResetRequired(false);
+    setPinResetMemberId(null);
+    setPinResetMemberName('');
+    setMessage({ type: 'error', content: 'PIN change is required to continue. Please contact an administrator.' });
+  };
+
   // Ako tenant nije specificiran, prikaži samo neutralnu poruku bez ostalog sadržaja
   if (!branding && brandingError) {
     return (
@@ -315,6 +435,17 @@ const LoginPage = () => {
       // PIN 2FA: backend može vratiti { status: 'REQUIRES_PIN' }
       if (data && (data as unknown as { status?: string }).status === 'REQUIRES_PIN') {
         setPinRequired(true);
+        setMessage(null);
+        setError('');
+        return;
+      }
+
+      // PIN Reset Required: backend zahtijeva promjenu PIN-a (za članove)
+      if (data && (data as unknown as { status?: string; memberId?: number; memberName?: string }).status === 'PIN_RESET_REQUIRED') {
+        const resetData = data as unknown as { memberId?: number; memberName?: string };
+        setPinResetRequired(true);
+        setPinResetMemberId(resetData.memberId ?? null);
+        setPinResetMemberName(resetData.memberName ?? loginData.email);
         setMessage(null);
         setError('');
         return;
@@ -1225,6 +1356,17 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Force PIN Change Modal */}
+      {pinResetRequired && pinResetMemberId && (
+        <ForcePinChangeModal
+          isOpen={pinResetRequired}
+          memberId={pinResetMemberId}
+          memberName={pinResetMemberName}
+          onSuccess={handlePinChangeSuccess}
+          onCancel={handlePinChangeCancel}
+        />
+      )}
     </div>
   );
 };

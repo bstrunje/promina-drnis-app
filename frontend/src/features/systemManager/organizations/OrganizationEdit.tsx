@@ -21,6 +21,7 @@ import { IMAGE_BASE_URL } from '../../../utils/config';
 import { useSystemManager } from '../../../context/SystemManagerContext';
 import { getApiBaseUrl } from '../../../utils/tenantUtils';
 import systemManagerApi from '../utils/systemManagerApi';
+import ResetPinModal from '../components/modals/ResetPinModal';
 
 const OrganizationEdit: React.FC = () => {
   const { navigateTo } = useSystemManagerNavigation();
@@ -34,6 +35,7 @@ const OrganizationEdit: React.FC = () => {
   const [twoFactorPin, setTwoFactorPin] = useState('');
   const [twoFactorAction, setTwoFactorAction] = useState<'enable' | 'disable'>('enable');
   const [trustedDevicesEnabled, setTrustedDevicesEnabled] = useState(false);
+  const [resetPinModalOpen, setResetPinModalOpen] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -269,6 +271,12 @@ const OrganizationEdit: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResetPinSuccess = async (): Promise<void> => {
+    setResetPinModalOpen(false);
+    // Refresh organization data
+    await loadOrganization();
   };
 
   const openEnable2faModal = (): void => {
@@ -721,6 +729,29 @@ const OrganizationEdit: React.FC = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* Reset PIN Section */}
+                    {organization.system_manager.two_factor_enabled && 
+                     organization.system_manager.two_factor_preferred_channel === 'pin' && (
+                      <div className="flex items-center justify-between pt-4 border-t border-blue-300">
+                        <div>
+                          <h4 className="font-semibold">PIN 2FA</h4>
+                          <p className="text-sm text-gray-600">
+                            Reset PIN for this System Manager
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setResetPinModalOpen(true)}
+                          disabled={saving}
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          Reset PIN
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -852,6 +883,19 @@ const OrganizationEdit: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Reset PIN Modal */}
+      {organization?.system_manager && (
+        <ResetPinModal
+          isOpen={resetPinModalOpen}
+          onClose={() => setResetPinModalOpen(false)}
+          targetId={organization.system_manager.id}
+          targetName={organization.system_manager.display_name}
+          targetType="osm"
+          isGlobalManager={true} // Uvijek je GSM u Organization Edit
+          onSuccess={() => { void handleResetPinSuccess(); }}
+        />
       )}
     </div>
   );

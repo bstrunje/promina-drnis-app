@@ -84,16 +84,30 @@ export default function MemberList(): JSX.Element {
     const printStyle = document.createElement('style');
     printStyle.innerHTML = `
       @media print {
+        /* A4 format postavke */
+        @page {
+          size: A4;
+          margin: 15mm 10mm;
+        }
+        
         /* Sakrivanje svih nepotrebnih elemenata za print */
         [class~="print:hidden"],
         .filter-section,
         nav,
         header,
+        footer,
         button,
         [role="tab"],
         [role="tablist"],
         .tabs-list,
-        .tab-trigger {
+        .tab-trigger,
+        .logo-container,
+        .navigation-menu,
+        .primary-navigation,
+        #global-header,
+        .items-center.gap-2,
+        .amber-50,
+        .flex.items-center.bg-amber-50 {
           display: none !important;
         }
         
@@ -102,12 +116,32 @@ export default function MemberList(): JSX.Element {
         [class~="print:table"],
         [class~="print:!table"] {
           display: table !important;
+          width: 100% !important;
         }
 
         /* Osiguravanje da je header za printanje vidljiv */
         [class~="print:block"],
         #print-header {
           display: block !important;
+        }
+        
+        /* Uklanjanje overflow-a za tablicu pri printanju */
+        .overflow-x-auto,
+        .overflow-y-auto,
+        div[class*="overflow"] {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
+        }
+        
+        /* Uklanjanje scrollbar-a */
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+        
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
         }
         
         /* Čišćenje margina i paddinga */
@@ -119,6 +153,31 @@ export default function MemberList(): JSX.Element {
         /* Kontroliranje preloma stranice */
         #print-header {
           page-break-after: avoid;
+          page-break-inside: avoid;
+        }
+        
+        /* Sprječavanje lomljenja redova tablice */
+        table {
+          page-break-inside: auto;
+        }
+        
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+        
+        thead {
+          display: table-header-group;
+        }
+        
+        tfoot {
+          display: table-footer-group;
+        }
+        
+        /* Optimizacija za A4 format */
+        html, body {
+          width: 210mm;
+          height: 297mm;
         }
       }
     `;
@@ -143,7 +202,7 @@ export default function MemberList(): JSX.Element {
 
   // States for filtering and sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "inactive" | "pending">("regular");
+  const [activeFilter, setActiveFilter] = useState<"regular" | "all" | "active" | "passive" | "inactive" | "pending" | "newMembers">("regular");
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -180,6 +239,25 @@ export default function MemberList(): JSX.Element {
     if (isDev) console.log('Selected function:', member);
     setSearchTerm(member.full_name);
     setAdvancedFilterApplied(true);
+  };
+
+  const handleArchiveSelect = (filterValue: 'all' | 'inactive', year?: number) => {
+    // Postavi odgovarajući filter
+    if (isDev) console.log('Archive selected:', filterValue, year);
+    
+    if (filterValue === 'all') {
+      setActiveFilter('all');
+    } else if (filterValue === 'inactive') {
+      setActiveFilter('inactive');
+      // Ako je godina specificirana, filtriraj po godini
+      // TODO: Implementirati filtriranje po godini
+      if (year) {
+        console.log('Filter by year:', year);
+      }
+    }
+    
+    setAdvancedFilterApplied(true);
+    setShowAdvancedFilters(false);
   };
 
   // Sync filters with URL
@@ -306,26 +384,6 @@ export default function MemberList(): JSX.Element {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, [showNavTabs]);
 
-  useEffect(() => {
-    // Add style for printing
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @media print {
-        /* Hide everything that should not be printed */
-        header, nav, .logo-container, button, .navigation-menu, .primary-navigation,
-        [class~="print:hidden"], #global-header, .items-center.gap-2, .amber-50, 
-        [aria-label="${t('memberList.buttons.filters')}"], [class*="${t('memberList.found')}"], .flex.items-center.bg-amber-50 {
-          display: none !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Cleanup on unmount
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, [t]);
 
 
 
@@ -553,6 +611,7 @@ export default function MemberList(): JSX.Element {
         onClose={() => setShowAdvancedFilters(false)}
         onSkillSelect={handleSkillSelect}
         onFunctionSelect={handleFunctionSelect}
+        onArchiveSelect={handleArchiveSelect}
       />
     </div>
   );

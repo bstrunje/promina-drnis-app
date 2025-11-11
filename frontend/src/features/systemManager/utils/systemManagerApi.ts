@@ -1,6 +1,7 @@
 // features/systemManager/systemManagerApi.ts
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../../../utils/config';
+import { getCurrentTenant } from '../../../utils/tenantUtils';
 import { SystemManager, SystemManagerLoginData, AdminPermissionsModel, MemberWithPermissions, UpdateMemberPermissionsDto, SystemManagerLoginResponse } from '@shared/systemManager';
 import { SystemSettings } from '@shared/settings';
 
@@ -154,13 +155,25 @@ systemManagerApi.interceptors.request.use(
         }
         
         if (orgSlug) {
-          // Organization-specific System Manager - dodaj tenant parametar
-          const [path, queryStr] = config.url.split('?');
-          const params = new URLSearchParams(queryStr ?? '');
-          params.set('tenant', orgSlug); // Dodaj tenant param
-          config.url = `${path}?${params.toString()}`;
-          if (import.meta.env.DEV) {
-            console.log(`[SM-API] Org SM - Adding tenant param: ${url} → ${config.baseURL}${config.url}`);
+          // Organization-specific System Manager
+          // IZUZETAK: verify-2fa i change-pin-after-reset rute trebaju raditi globalno
+          // login ruta MORA imati tenant parametar za Org SM
+          const globalRoutes = ['/verify-2fa', '/change-pin-after-reset'];
+          const isGlobalRoute = globalRoutes.some(route => url.includes(route));
+          
+          if (!isGlobalRoute) {
+            const [path, queryStr] = config.url.split('?');
+            const params = new URLSearchParams(queryStr ?? '');
+            params.set('tenant', orgSlug); // Dodaj tenant param
+            config.url = `${path}?${params.toString()}`;
+            if (import.meta.env.DEV) {
+              console.log(`[SM-API] Org SM - Adding tenant param: ${url} → ${config.baseURL}${config.url}`);
+            }
+          } else {
+            // Global route - ne dodavaj tenant parametar
+            if (import.meta.env.DEV) {
+              console.log(`[SM-API] Global route - No tenant param: ${config.baseURL}${config.url}`);
+            }
           }
         } else {
           // Global System Manager - ne dodavaj tenant parametar
@@ -988,6 +1001,51 @@ export const verify2faAndProceed = async (tempToken: string, code: string, remem
 
 export const forceChangePassword = async (tempToken: string, newPassword: string): Promise<ChangePasswordResponse> => {
   const response = await systemManagerApi.post<ChangePasswordResponse>('/system-manager/force-change-password', { tempToken, newPassword });
+  return response.data;
+};
+
+/**
+ * Reset PIN for a member (OSM/GSM/Superuser only)
+ */
+export interface ResetMemberPinResponse {
+  message: string;
+  memberName: string;
+  newPin?: string; // Returned only if PIN was auto-generated
+  mustChangePin: boolean;
+}
+
+export const resetMemberPin = async (
+  memberId: number, 
+  newPin?: string,
+  isGlobalManager = false
+): Promise<ResetMemberPinResponse> => {
+  // Get current tenant for multi-tenancy compliance
+  // GSM (Global System Manager) ne treba tenant parametar jer upravlja svim organizacijama
+  // OSM (Organization System Manager) treba tenant parametar jer upravlja samo svojom organizacijom
+  const tenant = isGlobalManager ? '' : getCurrentTenant();
+  const url = isGlobalManager 
+    ? `/members/${memberId}/reset-pin`
+    : `/members/${memberId}/reset-pin?tenant=${tenant}`;
+  
+  const response = await systemManagerApi.post<ResetMemberPinResponse>(url, { newPin });
+  return response.data;
+};
+
+/**
+ * Reset PIN for another System Manager (GSM only)
+ */
+export interface ResetOsmPinResponse {
+  message: string;
+  managerName: string;
+  newPin?: string; // Returned only if PIN was auto-generated
+  mustChangePin: boolean;
+}
+
+export const resetOsmPin = async (systemManagerId: number, newPin?: string): Promise<ResetOsmPinResponse> => {
+  const response = await systemManagerApi.post<ResetOsmPinResponse>('/system-manager/reset-osm-pin', {
+    systemManagerId,
+    newPin
+  });
   return response.data;
 };
 

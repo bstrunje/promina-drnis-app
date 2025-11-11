@@ -14,8 +14,10 @@ import memberProfileController from '../controllers/memberProfile.controller.js'
 import cardNumberController from '../controllers/cardnumber.controller.js';
 import memberStatsController from '../controllers/memberStats.controller.js';
 import memberMessageController from '../controllers/member.message.controller.js';
-import { getPinStatus, setPin, removePin } from '../controllers/members/pinController.js';
+import { getPinStatus, setPin, removePin, resetMemberPin } from '../controllers/members/pinController.js';
 import { authMiddleware as authenticateToken, roles } from '../middleware/authMiddleware.js';
+import { pinResetRateLimit } from '../middleware/pinResetRateLimit.js';
+import membershipController from '../controllers/membership.controller.js';
 import prisma from '../utils/prisma.js';
 import memberService, { updateMemberActivityHours } from '../services/member.service.js';
 import stampService from '../services/stamp.service.js';
@@ -939,5 +941,13 @@ router.get('/skills/:skillName', authenticateToken, memberController.getMembersB
 router.get('/:memberId/pin-status', authenticateToken, getPinStatus);
 router.post('/:memberId/set-pin', authenticateToken, setPin);
 router.delete('/:memberId/remove-pin', authenticateToken, removePin);
+router.post('/:memberId/reset-pin', authenticateToken, pinResetRateLimit, resetMemberPin); // OSM, GSM ili Superuser može resetirati PIN (with rate limiting)
+
+// Membership routes (previously in separate router, now integrated to avoid route conflicts)
+router.post('/:memberId/membership', authenticateToken, roles.requireAdmin, membershipController.updateMembership);
+router.post('/:memberId/membership/terminate', authenticateToken, roles.requireAdmin, membershipController.terminateMembership);
+router.put('/:memberId/membership-history', authenticateToken, roles.requireAdmin, membershipController.updateMembershipHistory);
+router.put('/:memberId/membership-periods/:periodId/end-reason', authenticateToken, roles.requireAdmin, membershipController.updateEndReason);
+router.get('/:memberId/history', authenticateToken, membershipController.getMembershipHistory);
 
 export default router;

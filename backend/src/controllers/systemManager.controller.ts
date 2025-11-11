@@ -13,10 +13,10 @@ import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { PerformerType } from '@prisma/client';
 import { generateDeviceHash, isTrustedDevice, addTrustedDevice } from '../utils/systemManagerTrustedDevices.js';
 import backupDatabaseToJson from '../scripts/backupDatabase.js';
+import { changeSystemManagerPinAfterReset } from './systemManager/changePinAfterReset.handler.js';
+import { JWT_SECRET } from '../config/jwt.config.js';
 
 // Koristimo type assertion umjesto interface-a zbog kompatibilnosti s postojećim tipovima
-
-const JWT_SECRET = process.env.JWT_SECRET || '';
 
 interface SystemManagerLoginData {
     username: string;
@@ -207,18 +207,37 @@ const systemManagerController = {
             const ipAddress = req.ip || req.connection.remoteAddress || '';
             const deviceHash = generateDeviceHash(userAgent, ipAddress);
             
+            console.log('[2FA-DEBUG] SystemManager:', {
+                id: manager.id,
+                username: manager.username,
+                two_factor_enabled: manager.two_factor_enabled,
+                deviceHash: deviceHash.substring(0, 20) + '...'
+            });
+            
             const isDeviceTrusted = await isTrustedDevice(manager.id, deviceHash);
             
-            // Ako je 2FA uključen i uređaj nije trusted
-            if (manager.two_factor_enabled && !isDeviceTrusted) {
-                const tempToken = jwt.sign({ id: manager.id, scope: '2fa', deviceHash }, JWT_SECRET, { expiresIn: '5m' });
-                res.status(200).json({ twoFactorRequired: true, tempToken });
+            console.log('[2FA-DEBUG] Trusted device check:', {
+                isDeviceTrusted,
+                shouldRequire2FA: manager.two_factor_enabled && !isDeviceTrusted
+            });
+            
+            // Prvo provjeri je li potrebna promjena PIN-a (prioritet nad 2FA)
+            if (manager.pin_reset_required) {
+                const tempToken = jwt.sign({ id: manager.id, scope: 'pin-reset' }, JWT_SECRET, { expiresIn: '15m' });
+                res.status(200).json({ pinResetRequired: true, tempToken, managerId: manager.id, managerName: manager.display_name });
                 return;
             }
 
             if (manager.password_reset_required) {
                 const tempToken = jwt.sign({ id: manager.id, scope: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' });
                 res.status(200).json({ resetRequired: true, tempToken });
+                return;
+            }
+
+            // Ako je 2FA uključen i uređaj nije trusted
+            if (manager.two_factor_enabled && !isDeviceTrusted) {
+                const tempToken = jwt.sign({ id: manager.id, scope: '2fa', deviceHash }, JWT_SECRET, { expiresIn: '15m' });
+                res.status(200).json({ twoFactorRequired: true, tempToken });
                 return;
             }
 
@@ -741,8 +760,10 @@ async function resetOrganizationManagerCredentials(req: Request, res: Response):
 
 async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
     try {
-        const { tempToken, _code } = req.body;
+        
+        const { tempToken, code } = req.body;
         const decoded = jwt.verify(tempToken, JWT_SECRET) as { id: number; scope: string; deviceHash?: string };
+
 
         if (decoded.scope !== '2fa') {
             res.status(403).json({ message: 'Invalid token scope' });
@@ -755,18 +776,29 @@ async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        // Ovdje treba dodati logiku za provjeru 2FA koda (npr. koristeći otplib)
-        // const isValid = otplib.totp.check(code, manager.two_factor_secret);
-        // if (!isValid) {
-        //     res.status(401).json({ message: 'Invalid 2FA code' });
-        //     return;
-        // }
+        // Provjera 2FA koda za System Manager
+        // Za PIN 2FA, uspoređujemo direktno s hash-anim PIN-om
+        const isValid = await bcrypt.compare(code, manager.two_factor_secret);
+        
+        if (!isValid) {
+            res.status(401).json({ message: 'Invalid 2FA code' });
+            return;
+        }
 
         if (manager.password_reset_required) {
             const newTempToken = jwt.sign({ id: manager.id, scope: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' });
             res.status(200).json({ resetRequired: true, tempToken: newTempToken });
-        } else {
-            // Provjeri System Settings za trusted devices
+            return;
+        }
+
+        // Provjera je li potrebna promjena PIN-a nakon 2FA
+        if (manager.pin_reset_required) {
+            const newTempToken = jwt.sign({ id: manager.id, scope: 'pin-reset' }, JWT_SECRET, { expiresIn: '15m' });
+            res.status(200).json({ pinResetRequired: true, tempToken: newTempToken, managerId: manager.id, managerName: manager.display_name });
+            return;
+        }
+
+        // Provjeri System Settings za trusted devices
             const systemSettings = await prisma.systemSettings.findFirst({
                 where: { organization_id: manager.organization_id },
                 select: {
@@ -794,7 +826,6 @@ async function verify2faAndProceed(req: Request, res: Response): Promise<void> {
             
             // Postavljanje cookie-a i vraćanje odgovora kao u login funkciji
             res.json({ token, manager: { id: manager.id, username: manager.username, email: manager.email, display_name: manager.display_name, role: 'SystemManager', organization_id: manager.organization_id, is_global: manager.organization_id === null, last_login: manager.last_login } });
-        }
     } catch (_error) {
         res.status(403).json({ message: 'Invalid or expired token' });
     }
@@ -904,6 +935,21 @@ const verifySystemManager2faPin = async (req: Request, res: Response): Promise<v
             return;
         }
 
+        // Provjeri je li potreban reset PIN-a
+        const managerWithPinStatus = await prisma.systemManager.findUnique({
+            where: { id: manager.id },
+            select: { pin_reset_required: true }
+        });
+
+        if (managerWithPinStatus?.pin_reset_required) {
+            res.status(200).json({
+                status: 'PIN_RESET_REQUIRED',
+                message: 'PIN reset required. Please change your PIN.',
+                managerId: manager.id
+            });
+            return;
+        }
+
         // Provjeri System Settings za trusted devices
         const systemSettings = await prisma.systemSettings.findFirst({
             select: {
@@ -951,6 +997,63 @@ const verifySystemManager2faPin = async (req: Request, res: Response): Promise<v
         });
     } catch (error) {
         console.error('Error verifying PIN 2FA:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+/**
+ * Change System Manager PIN
+ */
+const changeSystemManagerPin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { currentPin, newPin } = req.body;
+        const managerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!managerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        if (!currentPin || !newPin) {
+            res.status(400).json({ message: 'Current PIN and new PIN are required' });
+            return;
+        }
+
+        if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
+            res.status(400).json({ message: 'New PIN must be exactly 6 digits' });
+            return;
+        }
+
+        // Get current manager data
+        const manager = await systemManagerRepository.findById(managerId);
+        if (!manager || !manager.two_factor_secret) {
+            res.status(404).json({ message: 'Manager not found or PIN not set' });
+            return;
+        }
+
+        // Verify current PIN
+        const isValidPin = await bcrypt.compare(currentPin, manager.two_factor_secret);
+        if (!isValidPin) {
+            res.status(401).json({ message: 'Invalid current PIN' });
+            return;
+        }
+
+        // Hash new PIN
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(newPin, salt);
+
+        // Update System Manager with new PIN and reset pin_reset_required
+        await systemManagerRepository.update(managerId, {
+            two_factor_secret: hashedPin,
+            pin_set_at: new Date(),
+            pin_attempts: 0,
+            pin_locked_until: null,
+            pin_reset_required: false, // Reset prisilne promjene
+        });
+
+        res.json({ message: 'PIN successfully changed' });
+    } catch (error) {
+        console.error('Error changing PIN:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -1190,6 +1293,9 @@ const getSystemManagerTrustedDevicesSettings = async (req: Request, res: Respons
 // Update trusted devices settings for SystemManager
 const updateSystemManagerTrustedDevicesSettings = async (req: Request, res: Response): Promise<void> => {
     try {
+        console.log('[TRUSTED-DEVICES-DEBUG] Pozvan updateSystemManagerTrustedDevicesSettings');
+        console.log('[TRUSTED-DEVICES-DEBUG] Request body:', req.body);
+        
         const managerId = (req as Request & { user?: { id: number } }).user?.id;
         if (!managerId) {
             res.status(401).json({ message: 'Unauthorized' });
@@ -1206,9 +1312,24 @@ const updateSystemManagerTrustedDevicesSettings = async (req: Request, res: Resp
         }
 
         const { enabled } = req.body;
+        console.log('[TRUSTED-DEVICES-DEBUG] Enabled value:', enabled, 'Type:', typeof enabled);
+        
         if (typeof enabled !== 'boolean') {
             res.status(400).json({ message: 'Invalid enabled value' });
             return;
+        }
+
+        console.log('[TRUSTED-DEVICES-DEBUG] Manager:', {
+            id: manager.id,
+            username: manager.username,
+            organization_id: manager.organization_id,
+            isGSM: manager.organization_id === null
+        });
+
+        if (manager.organization_id === null) {
+            console.log('[TRUSTED-DEVICES-DEBUG] Korisnik je GLOBAL SYSTEM MANAGER');
+        } else {
+            console.log(`[TRUSTED-DEVICES-DEBUG] Korisnik je ORGANIZATION SYSTEM MANAGER za org ID: ${manager.organization_id}`);
         }
 
         // Za GSM (organization_id = null) ažuriramo globalne settings
@@ -1232,6 +1353,32 @@ const updateSystemManagerTrustedDevicesSettings = async (req: Request, res: Resp
                     }
                 });
             }
+
+            // Ako se isključuje trusted devices, obriši sve postojeće trusted device zapise
+            if (!enabled) {
+                console.log('[TRUSTED-DEVICES-DEBUG] Trusted devices se isključuju - brišem zapise...');
+                
+                // Prvo dohvatimo sve GSM manager ID-eve
+                const gsmManagers = await prisma.systemManager.findMany({
+                    where: { organization_id: null },
+                    select: { id: true }
+                });
+                
+                const gsmIds = gsmManagers.map(m => m.id);
+                console.log('[TRUSTED-DEVICES-DEBUG] GSM manager IDs:', gsmIds);
+                
+                const deletedDevices = await prisma.systemManagerTrustedDevice.deleteMany({
+                    where: {
+                        system_manager_id: {
+                            in: gsmIds
+                        }
+                    }
+                });
+                
+                console.log(`[TRUSTED-DEVICES] Obrisano ${deletedDevices.count} GSM trusted devices jer je opcija isključena`);
+            } else {
+                console.log('[TRUSTED-DEVICES-DEBUG] Trusted devices se uključuju - ne brišem zapise');
+            }
         } else {
             // Org SM - organizacijske settings
             await prisma.systemSettings.upsert({
@@ -1244,6 +1391,32 @@ const updateSystemManagerTrustedDevicesSettings = async (req: Request, res: Resp
                     twoFactorTrustedDevicesEnabled: enabled
                 }
             });
+
+            // Ako se isključuje trusted devices, obriši sve postojeće trusted device zapise za ovu organizaciju
+            if (!enabled) {
+                console.log('[TRUSTED-DEVICES-DEBUG] Trusted devices se isključuju za Org SM - brišem zapise...');
+                
+                // Prvo dohvatimo sve Org SM manager ID-eve za ovu organizaciju
+                const orgManagers = await prisma.systemManager.findMany({
+                    where: { organization_id: manager.organization_id },
+                    select: { id: true }
+                });
+                
+                const orgIds = orgManagers.map(m => m.id);
+                console.log('[TRUSTED-DEVICES-DEBUG] Org SM manager IDs:', orgIds);
+                
+                const deletedDevices = await prisma.systemManagerTrustedDevice.deleteMany({
+                    where: {
+                        system_manager_id: {
+                            in: orgIds
+                        }
+                    }
+                });
+                
+                console.log(`[TRUSTED-DEVICES] Obrisano ${deletedDevices.count} Org SM trusted devices jer je opcija isključena`);
+            } else {
+                console.log('[TRUSTED-DEVICES-DEBUG] Trusted devices se uključuju za Org SM - ne brišem zapise');
+            }
         }
 
         res.json({ message: 'Trusted devices settings updated successfully' });
@@ -1337,6 +1510,32 @@ const updateOrganizationTrustedDevicesSettings = async (req: Request, res: Respo
             }
         });
 
+        // Ako se isključuje trusted devices, obriši sve postojeće trusted device zapise za ovu organizaciju
+        if (!enabled) {
+            console.log(`[TRUSTED-DEVICES-ORG] GSM isključuje trusted devices za organizaciju ${organizationId} - brišem zapise...`);
+            
+            // Prvo dohvatimo sve Org SM manager ID-eve za ovu organizaciju
+            const orgManagers = await prisma.systemManager.findMany({
+                where: { organization_id: organizationId },
+                select: { id: true }
+            });
+            
+            const orgIds = orgManagers.map(m => m.id);
+            console.log(`[TRUSTED-DEVICES-ORG] Org SM manager IDs za organizaciju ${organizationId}:`, orgIds);
+            
+            const deletedDevices = await prisma.systemManagerTrustedDevice.deleteMany({
+                where: {
+                    system_manager_id: {
+                        in: orgIds
+                    }
+                }
+            });
+            
+            console.log(`[TRUSTED-DEVICES-ORG] Obrisano ${deletedDevices.count} trusted devices za organizaciju ${organizationId} jer je opcija isključena`);
+        } else {
+            console.log(`[TRUSTED-DEVICES-ORG] GSM uključuje trusted devices za organizaciju ${organizationId} - ne brišem zapise`);
+        }
+
         res.json({ message: 'Organization trusted devices settings updated successfully' });
     } catch (error) {
         console.error('Error updating organization trusted devices settings:', error);
@@ -1344,6 +1543,117 @@ const updateOrganizationTrustedDevicesSettings = async (req: Request, res: Respo
     }
 };
 
-export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword, setupSystemManager2faPin, verifySystemManager2faPin, disableSystemManager2fa, getSystemManager2faStatus, enableSystemManager2faForUser, disableSystemManager2faForUser, getSystemManagerTrustedDevices, removeSystemManagerTrustedDevice, getSystemManagerTrustedDevicesSettings, updateSystemManagerTrustedDevicesSettings, getOrganizationTrustedDevicesSettings, updateOrganizationTrustedDevicesSettings };
+/**
+ * Generiranje random 6-znamenkastog PIN-a koji zadovoljava validacijska pravila
+ */
+function generateRandomSystemManagerPin(): string {
+  let pin: string;
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  do {
+    // Generiraj 6 random znamenki
+    pin = Math.floor(100000 + Math.random() * 900000).toString();
+    attempts++;
+    
+    if (attempts >= maxAttempts) {
+      // Fallback na siguran PIN
+      pin = '123890'; // Ne sekvenca, ne ponavljanje
+      break;
+    }
+    
+    // Provjeri da nije sekvenca ili ponavljanje
+    if (/^(\d)\1+$/.test(pin)) continue; // Ponavljanje
+    const sequences = ['012345', '123456', '234567', '345678', '456789'];
+    const reverseSequences = sequences.map(seq => seq.split('').reverse().join(''));
+    if (sequences.includes(pin) || reverseSequences.includes(pin)) continue; // Sekvenca
+    
+    break;
+  } while (attempts < maxAttempts);
+
+  return pin;
+}
+
+/**
+ * Reset PIN-a za System Manager-a (samo Global SM može)
+ */
+const resetSystemManagerPin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { systemManagerId, newPin, _notifyManager } = req.body;
+        const currentManagerId = (req as { user?: { id: number } }).user?.id;
+
+        if (!currentManagerId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        // Provjeri je li trenutni manager Global SM
+        const currentManager = await systemManagerRepository.findById(currentManagerId);
+        
+        console.log('[OSM-PIN-RESET] Authorization check:', {
+            currentManagerId,
+            currentManagerOrgId: currentManager?.organization_id,
+            isGSM: currentManager?.organization_id === null
+        });
+        
+        if (!currentManager || currentManager.organization_id !== null) {
+            console.log('[OSM-PIN-RESET] BLOCKED: Only GSM can reset OSM PIN');
+            res.status(403).json({ message: 'Only Global System Manager can reset PINs for other managers' });
+            return;
+        }
+
+        if (!systemManagerId) {
+            res.status(400).json({ message: 'System Manager ID is required' });
+            return;
+        }
+
+        // Dohvati target System Manager-a
+        const targetManager = await systemManagerRepository.findById(systemManagerId);
+        if (!targetManager) {
+            res.status(404).json({ message: 'System Manager not found' });
+            return;
+        }
+
+        // Generiraj ili koristi zadani PIN
+        const pinToSet = newPin || generateRandomSystemManagerPin();
+
+        // Validacija PIN-a
+        if (!pinToSet || pinToSet.length !== 6 || !/^\d{6}$/.test(pinToSet)) {
+            res.status(400).json({ message: 'PIN must be exactly 6 digits' });
+            return;
+        }
+
+        // Hash PIN
+        const salt = await bcrypt.genSalt(10);
+        const hashedPin = await bcrypt.hash(pinToSet, salt);
+
+        // Update System Manager s novim PIN-om i oznakom za reset
+        await systemManagerRepository.update(systemManagerId, {
+            pin_hash: hashedPin,
+            pin_set_at: new Date(),
+            pin_attempts: 0,
+            pin_locked_until: null,
+            pin_reset_required: true, // Prisilna promjena pri sljedećoj prijavi
+            two_factor_enabled: true,
+            two_factor_preferred_channel: 'pin',
+            two_factor_confirmed_at: new Date()
+        });
+
+        // TODO: Ako je notifyManager true, pošalji email manageru s novim PIN-om
+        // Ovo će biti implementirano kasnije kada bude email sustav
+
+        res.json({
+            message: 'PIN successfully reset for System Manager',
+            managerName: targetManager.display_name,
+            newPin: newPin ? undefined : pinToSet, // Vrati PIN samo ako je generiran
+            mustChangePin: true,
+        });
+    } catch (error) {
+        console.error('Error resetting System Manager PIN:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export { logoutHandler, getDutySettings, updateDutySettings, getSystemSettings, updateSystemSettings, resetOrganizationManagerCredentials, verify2faAndProceed, forceChangePassword, setupSystemManager2faPin, verifySystemManager2faPin, changeSystemManagerPin, disableSystemManager2fa, getSystemManager2faStatus, enableSystemManager2faForUser, disableSystemManager2faForUser, getSystemManagerTrustedDevices, removeSystemManagerTrustedDevice, getSystemManagerTrustedDevicesSettings, updateSystemManagerTrustedDevicesSettings, getOrganizationTrustedDevicesSettings, updateOrganizationTrustedDevicesSettings, resetSystemManagerPin, changeSystemManagerPinAfterReset };
 
 export default systemManagerController;

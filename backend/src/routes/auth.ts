@@ -26,6 +26,7 @@ const registerRateLimit = createTenantAwareRegistrationRateLimit();
 // Public routes with rate limiting
 router.post('/register', registerRateLimit, validateRegistration, authController.registerMember);
 router.post('/login', loginRateLimit, validateLogin, authController.login);
+router.post('/change-pin-after-reset', loginRateLimit, authController.changePinAfterReset); // Public endpoint - ne zahtijeva token
 
 // Protected search - zahtijeva autentikaciju (koristi se za slanje poruka)
 router.get('/search-members', authMiddleware, searchRateLimit, authController.searchMembers);

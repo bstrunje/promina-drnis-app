@@ -17,3 +17,4 @@ export {
   twoFaDisable,
   twoFaInitOtp,
 } from './twofa.handlers.js';
+export { changePinAfterResetHandler } from './changePinAfterReset.handler.js';

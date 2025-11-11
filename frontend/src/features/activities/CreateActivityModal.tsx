@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 const isDev = import.meta.env.DEV;
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/useAuth';
 import './activities.css';
 import { createActivity, getActivityTypes } from '@/utils/api/apiActivities';
 import { Dialog, DialogPortal, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@components/ui/dialog';
@@ -32,7 +33,9 @@ interface CreateActivityModalProps {
 
 const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClose, onActivityCreated, activityTypeId }) => {
   const { t } = useTranslation('activities');
+  const { user } = useAuth();
   const [description, setDescription] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [startTime, setStartTime] = useState('');
   const [actualStartDate, setActualStartDate] = useState('');
@@ -129,6 +132,9 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
     // Provjeri je li odabrani tip aktivnosti "izleti"
     const isExcursionActivity = activityTypes.find(type => type.type_id === Number(selectedTypeId))?.key === 'izleti';
     
+    // Provjera ima li korisnik prava za admin_notes
+    const canEditAdminNotes = user?.role === 'member_administrator' || user?.role === 'member_superuser';
+    
     try {
       if (isExcursionActivity && participantsWithRoles.length > 0) {
         // Za izlete koristimo participations s ulogama
@@ -142,6 +148,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           activity_type_id: Number(selectedTypeId),
           recognition_percentage: Number(recognitionPercentage), // Dodano radi usklađivanja s tipom
           manual_hours: manualHours ? Number(manualHours) : null,
+          admin_notes: canEditAdminNotes ? adminNotes : null,
           participations: participantsWithRoles.map(p => ({
             member_id: Number(p.memberId),
             participant_role: p.role,
@@ -164,6 +171,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
           activity_type_id: Number(selectedTypeId),
           recognition_percentage: Number(recognitionPercentage),
           manual_hours: manualHours ? Number(manualHours) : null,
+          admin_notes: canEditAdminNotes ? adminNotes : null,
           participant_ids: participantIds.map(id => Number(id)),
         });
       }
@@ -171,6 +179,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
       onActivityCreated();
       // Reset form
       setDescription('');
+      setAdminNotes('');
       setStartDate(format(new Date(), 'yyyy-MM-dd'));
       setStartTime('');
       setActualStartDate('');
@@ -447,6 +456,24 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({ isOpen, onClo
                   type="number"
                   value={recognitionPercentage}
                   onChange={(e) => setRecognitionPercentage(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Admin bilješke - vidljivo samo za administratore i superusere */}
+          {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+            <div className="grid sm:grid-cols-4 items-start sm:items-center gap-1 sm:gap-4">
+              <Label htmlFor="admin_notes" className="sm:text-right text-sm sm:text-base mb-1 sm:mb-0">
+                Admin bilješke
+              </Label>
+              <div className="sm:col-span-3">
+                <Input
+                  id="admin_notes"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Bilješke vidljive samo administratorima..."
                   className="w-full"
                 />
               </div>

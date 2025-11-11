@@ -21,7 +21,10 @@ interface LoginResponse {
   manager?: SystemManager;
   twoFactorRequired?: boolean;
   resetRequired?: boolean;
+  pinResetRequired?: boolean;
   tempToken?: string;
+  managerId?: number;
+  managerName?: string;
 }
 
 // Definicija tipa za kontekst
@@ -140,17 +143,28 @@ export const SystemManagerProvider: React.FC<{ children: ReactNode }> = ({ child
       const systemManagerToken = localStorage.getItem('systemManagerToken');
       const storedManager = localStorage.getItem('systemManager');
       
+      if (isDev) {
+        console.log('[SM-CONTEXT] Token exists:', !!systemManagerToken);
+        console.log('[SM-CONTEXT] Manager data exists:', !!storedManager);
+        console.log('[SM-CONTEXT] Manager data type:', typeof storedManager);
+        console.log('[SM-CONTEXT] Manager data value:', storedManager);
+      }
+      
       // NE BRIŠEMO Member tokene - oni mogu koegzistirati za druge tabove
       
-      if (systemManagerToken && storedManager) {
+      if (systemManagerToken && storedManager && storedManager !== 'null' && storedManager !== 'undefined') {
         try {
+          if (isDev) console.log('[SM-CONTEXT] Stored manager data:', storedManager.substring(0, 100));
           const parsedUnknown = JSON.parse(storedManager) as unknown;
           const parsedManager: SystemManager = parsedUnknown as SystemManager;
           setManager(parsedManager);
           setIsAuthenticated(true);
           if (isDev) console.log('System Manager autentikacija uspješna');
         } catch (e) {
-          if (isDev) console.error('Greška pri parsiranju podataka system managera:', e);
+          if (isDev) {
+            console.error('Greška pri parsiranju podataka system managera:', e);
+            console.error('[SM-CONTEXT] Invalid data:', storedManager);
+          }
           localStorage.removeItem('systemManagerToken');
           localStorage.removeItem('systemManager');
           // KRITIČNO: Resetiraj state na null!

@@ -153,6 +153,7 @@
         },
         "options": {
             "regular": "Redovni članovi",
+            "newMembers": "Novi članovi",
             "allMembers": "Svi članovi",
             "active": "Aktivni",
             "passive": "Pasivni",
@@ -219,6 +220,9 @@
         "hideMembers": "Sakrij članove",
         "membersCount": "članova",
         "functionsTitle": "Funkcije u društvu",
+        "archiveTitle": "Arhiva",
+        "byPeriod": "Po godini završetka:",
+        "year": "{{year}}. godina",
         "loadingSkills": "Učitavanje vještina...",
         "noSkills": "Nema upisanih vještina",
         "loadingFunctions": "Učitavanje funkcija...",

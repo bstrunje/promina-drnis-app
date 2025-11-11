@@ -48,7 +48,7 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
     twoFactorChannelSmsEnabled: false,
     twoFactorChannelTotpEnabled: false,
     twoFactorChannelPinEnabled: false,
-    twoFactorTrustedDevicesEnabled: false,
+    twoFactorTrustedDevicesEnabled: true,
     passwordGenerationStrategy: 'FULLNAME_ISK_CARD',
     passwordSeparator: '-isk-',
     passwordCardDigits: 4,
@@ -82,7 +82,7 @@ export const useSystemSettings = (): UseSystemSettingsReturn => {
         data.twoFactorChannelSmsEnabled ??= false;
         data.twoFactorChannelTotpEnabled ??= true;
         data.twoFactorChannelPinEnabled ??= false;
-        data.twoFactorTrustedDevicesEnabled ??= false;
+        data.twoFactorTrustedDevicesEnabled ??= true;
         data.passwordGenerationStrategy ??= 'FULLNAME_ISK_CARD';
         data.passwordSeparator ??= '-isk-';
         data.passwordCardDigits ??= 4;

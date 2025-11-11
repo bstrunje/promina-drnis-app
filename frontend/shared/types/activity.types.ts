@@ -59,6 +59,7 @@ export interface Activity {
   updated_at: Date | string;
   cancellation_reason: string | null;
   manual_hours?: number | null;
+  admin_notes?: string | null;
 
   // Relational fields for detailed views
   activity_type?: ActivityType;

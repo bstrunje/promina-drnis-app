@@ -10,7 +10,7 @@ import { isActiveMember } from '../../../utils/activityStatusHelpers';
 interface UseFilteredMembersProps {
   members: MemberWithDetails[];
   searchTerm: string;
-  activeFilter: "regular" | "active" | "passive" | "inactive" | "all"| "pending";
+  activeFilter: "regular" | "active" | "passive" | "inactive" | "all" | "pending" | "newMembers";
   ageFilter: "all" | "adults";
   sortCriteria: "name" | "hours";
   sortOrder: "asc" | "desc";
@@ -122,6 +122,27 @@ export const useFilteredMembers = ({
       }
       else if (activeFilter === "pending") {
         result = result.filter(member => member.detailedStatus?.status === 'pending');
+      }
+      else if (activeFilter === "newMembers") {
+        // Novi članovi: oni kojima je aktivni period započeo u tekućoj godini
+        const currentYear = getCurrentYear();
+        result = result.filter(member => {
+          if (!member.periods || member.periods.length === 0) return false;
+          
+          // Pronađi aktivni period (period bez end_date ili s end_date u budućnosti)
+          const activePeriod = member.periods.find(period => {
+            if (!period.start_date) return false;
+            const hasNoEnd = !period.end_date;
+            const endInFuture = period.end_date ? parseISO(period.end_date) > getCurrentDate() : false;
+            return hasNoEnd || endInFuture;
+          });
+
+          if (!activePeriod?.start_date) return false;
+          
+          // Provjeri je li aktivni period započeo u tekućoj godini
+          const startDate = parseISO(activePeriod.start_date);
+          return startDate.getFullYear() === currentYear;
+        });
       }
     }
     

@@ -13,10 +13,13 @@ import systemManagerController, {
   forceChangePassword,
   setupSystemManager2faPin,
   verifySystemManager2faPin,
+  changeSystemManagerPin,
   disableSystemManager2fa,
   getSystemManager2faStatus,
   enableSystemManager2faForUser,
   disableSystemManager2faForUser,
+  resetSystemManagerPin,
+  changeSystemManagerPinAfterReset,
   getSystemManagerTrustedDevices,
   removeSystemManagerTrustedDevice,
   getSystemManagerTrustedDevicesSettings,
@@ -28,6 +31,7 @@ import systemManagerController, {
 import * as holidayController from '../controllers/holiday.controller.js';
 import { authMiddleware, roles } from '../middleware/authMiddleware.js';
 import { tenantMiddleware, optionalTenantMiddleware } from '../middleware/tenant.middleware.js';
+import { pinResetRateLimit } from '../middleware/pinResetRateLimit.js';
 import organizationRoutes from './organization.routes.js';
 
 const router = express.Router();
@@ -39,6 +43,7 @@ router.post('/verify-2fa-pin', verifySystemManager2faPin);
 router.post('/force-change-password', forceChangePassword);
 router.post('/refresh-token', refreshToken);
 router.post('/logout', logoutHandler);
+router.post('/change-pin-after-reset', changeSystemManagerPinAfterReset); // Public endpoint za promjenu PIN-a nakon admin reset-a
 
 // Public cron hook: allow Vercel Cron via X-Cron-Secret header; controller enforces auth/secret
 router.post('/system-backup', optionalTenantMiddleware, createSystemBackup);
@@ -59,12 +64,14 @@ router.patch('/change-username', changeUsername);
 
 // 2FA rute za System Manager
 router.post('/setup-2fa-pin', setupSystemManager2faPin);
+router.post('/change-pin', changeSystemManagerPin);
 router.post('/disable-2fa', disableSystemManager2fa);
 router.get('/2fa-status', getSystemManager2faStatus);
 
 // 2FA upravljanje za druge System Manager-e (samo Global SM)
 router.post('/enable-2fa-for-user', enableSystemManager2faForUser);
 router.post('/disable-2fa-for-user', disableSystemManager2faForUser);
+router.post('/reset-osm-pin', pinResetRateLimit, resetSystemManagerPin); // GSM može resetirati PIN drugom OSM-u (with rate limiting)
 
 // Trusted devices rute
 router.get('/trusted-devices', getSystemManagerTrustedDevices);

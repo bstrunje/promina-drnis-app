@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 // Definirani tipovi za bolju type safety
 type SortOrder = 'asc' | 'desc';
 type SortCriteria = 'name' | 'hours';
-type ActiveFilter = 'regular' | 'active' | 'passive' | 'inactive' | 'all' | 'pending';
+type ActiveFilter = 'regular' | 'active' | 'passive' | 'inactive' | 'all' | 'pending' | 'newMembers';
 type AgeFilter = 'all' | 'adults';
 
 export interface MemberListFiltersProps {
@@ -138,11 +138,10 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="regular">{t('memberListFilters.options.regular')}</SelectItem>
-                <SelectItem value="all">{t('memberListFilters.options.allMembers')}</SelectItem>
+                <SelectItem value="newMembers">{t('memberListFilters.options.newMembers')}</SelectItem>
                 <SelectItem value="active">{t('memberListFilters.options.active')}</SelectItem>
                 <SelectItem value="passive">{t('memberListFilters.options.passive')}</SelectItem>
                 <SelectItem value="pending">{t('memberListFilters.options.pending')}</SelectItem>
-                <SelectItem value="inactive">{t('memberListFilters.options.inactive')}</SelectItem>
               </SelectContent>
             </Select>
 

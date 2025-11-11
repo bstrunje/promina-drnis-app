@@ -255,6 +255,21 @@ export async function loginHandler(
     // PIN 2FA PROVJERA - prije ostalih 2FA metoda (ali samo ako nije trusted device)
     const pinEnabled = settings?.twoFactorChannelPinEnabled === true;
     if (!skipTwoFA && pinEnabled && member.pin_hash) {
+      // PRVO provjeri je li potreban reset PIN-a (prije nego zatražimo PIN)
+      const memberPinStatus = await prisma.member.findUnique({
+        where: { member_id: member.member_id },
+        select: { pin_reset_required: true }
+      });
+      
+      if (memberPinStatus?.pin_reset_required) {
+        return res.status(200).json({
+          status: 'PIN_RESET_REQUIRED',
+          message: 'PIN reset required. Please change your PIN.',
+          memberId: member.member_id,
+          memberName: member.full_name
+        });
+      }
+      
       if (!pin) {
         // PIN je potreban, ali nije poslan
         return res.status(200).json({ 
@@ -271,6 +286,7 @@ export async function loginHandler(
             message: tOrDefault('auth.errorsByCode.AUTH_INVALID_PIN', locale, 'Invalid PIN')
           });
         }
+        
         // PIN je valjan, nastavi s login procesom
       } catch (error) {
         // PIN lockout ili druga greška

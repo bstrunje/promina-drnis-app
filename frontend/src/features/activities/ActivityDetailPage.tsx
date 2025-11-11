@@ -323,6 +323,17 @@ const ActivityDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Admin bilješke - vidljivo samo za administratore i superusere */}
+              {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && activity.admin_notes && (
+                <div className="flex items-start">
+                  <Info className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-amber-500" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-base text-amber-700">Admin bilješke</h3>
+                    <p className="text-gray-600 text-sm sm:text-base break-all bg-amber-50 p-2 rounded">{activity.admin_notes}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-start">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-1 text-gray-500" />
                 <div>

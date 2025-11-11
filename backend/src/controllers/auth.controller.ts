@@ -1,6 +1,7 @@
 import {
   assignCardNumberHandler,
   assignPasswordHandler,
+  changePinAfterResetHandler,
   debugMemberHandler,
   loginHandler,
   logoutHandler,
@@ -39,6 +40,9 @@ const authController = {
   twoFaVerify,
   twoFaDisable,
   twoFaInitOtp,
+
+  // PIN Handlers
+  changePinAfterReset: changePinAfterResetHandler,
 };
 
 export default authController;

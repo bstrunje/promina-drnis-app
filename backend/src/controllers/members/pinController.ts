@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../../utils/prisma.js';
+import auditService from '../../services/audit.service.js';
+import { PerformerType } from '@prisma/client';
 
 const SALT_ROUNDS = 12;
 const MAX_PIN_ATTEMPTS = 3;
@@ -138,6 +140,7 @@ export const setPin = async (req: Request, res: Response): Promise<void> => {
         pin_set_at: new Date(),
         pin_attempts: 0, // Reset pokušaja
         pin_locked_until: null, // Ukloni lockout
+        pin_reset_required: false, // Ukloni oznaku prisilne promjene
       },
     });
 
@@ -330,3 +333,158 @@ function validatePin(pin: string): { error?: string } {
   
   return {};
 }
+
+/**
+ * Generiranje random 6-znamenkastog PIN-a koji zadovoljava validacijska pravila
+ */
+function generateRandomPin(): string {
+  let pin: string;
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  do {
+    // Generiraj 6 random znamenki
+    pin = Math.floor(100000 + Math.random() * 900000).toString();
+    attempts++;
+    
+    if (attempts >= maxAttempts) {
+      // Fallback na siguran PIN
+      pin = '123890'; // Ne sekvenca, ne ponavljanje
+      break;
+    }
+  } while (validatePin(pin).error);
+
+  return pin;
+}
+
+/**
+ * Reset PIN-a za člana (samo OSM, GSM ili Superuser)
+ * Ova funkcija postavlja novi PIN i oznaka da korisnik mora promijeniti PIN pri sljedećoj prijavi
+ */
+export const resetMemberPin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const memberId = parseInt(req.params.memberId, 10);
+    const { newPin, _notifyMember } = req.body;
+
+    if (isNaN(memberId)) {
+      res.status(400).json({ message: 'Invalid member ID' });
+      return;
+    }
+
+    // Provjeri autorizaciju - samo OSM, GSM ili Superuser
+    const user = (req as { user?: { role?: string; type?: string; user_type?: string; id?: number } }).user;
+    
+    console.log('[PIN-RESET] User object:', {
+      id: user?.id,
+      role: user?.role,
+      type: user?.type,
+      user_type: user?.user_type
+    });
+    
+    const isSystemManager = user?.type === 'SystemManager' || user?.user_type === 'SystemManager';
+    const isSuperuser = user?.role === 'member_superuser';
+
+    if (!isSystemManager && !isSuperuser) {
+      console.log('[PIN-RESET] Authorization FAILED - not SM or Superuser');
+      res.status(403).json({ message: 'Only System Managers and Superusers can reset member PINs' });
+      return;
+    }
+    
+    console.log('[PIN-RESET] Authorization OK:', { isSystemManager, isSuperuser });
+
+    const member = await prisma.member.findUnique({
+      where: { member_id: memberId },
+      select: {
+        member_id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        pin_hash: true,
+        organization_id: true, // Potrebno za multi-tenancy check
+      },
+    });
+
+    if (!member) {
+      res.status(404).json({ message: 'Member not found' });
+      return;
+    }
+
+    // Multi-tenancy check: OSM može resetirati PIN samo članovima iz svoje organizacije
+    if (isSystemManager) {
+      const systemManager = await prisma.systemManager.findUnique({
+        where: { id: user?.id },
+        select: { organization_id: true }
+      });
+
+      console.log('[PIN-RESET] Multi-tenancy check:', {
+        systemManagerId: user?.id,
+        systemManagerOrgId: systemManager?.organization_id,
+        memberOrgId: member.organization_id,
+        isGSM: systemManager?.organization_id === null
+      });
+
+      // Ako je OSM (organization_id !== null), može samo članove iz svoje organizacije
+      if (systemManager?.organization_id !== null && systemManager?.organization_id !== member.organization_id) {
+        console.log('[PIN-RESET] BLOCKED: OSM cannot reset PIN for members outside their organization');
+        res.status(403).json({ message: 'You can only reset PINs for members in your organization' });
+        return;
+      }
+    }
+
+    // Generiraj ili koristi zadani PIN
+    const pinToSet = newPin || generateRandomPin();
+
+    // Validacija PIN-a
+    const pinValidation = validatePin(pinToSet);
+    if (pinValidation.error) {
+      res.status(400).json({ message: pinValidation.error });
+      return;
+    }
+
+    // Hash novi PIN
+    const pinHash = await bcrypt.hash(pinToSet, SALT_ROUNDS);
+
+    // Postavi PIN s oznakom da treba promijeniti
+    await prisma.member.update({
+      where: { member_id: memberId },
+      data: {
+        pin_hash: pinHash,
+        pin_set_at: new Date(),
+        pin_attempts: 0,
+        pin_locked_until: null,
+        pin_reset_required: true, // Prisilna promjena pri sljedećoj prijavi
+      },
+    });
+
+    // Audit logging
+    const performerType = isSystemManager ? PerformerType.SYSTEM_MANAGER : PerformerType.MEMBER;
+    const performerId = user?.id || 0;
+    
+    await auditService.logAction(
+      'RESET_MEMBER_PIN',
+      performerId,
+      JSON.stringify({
+        memberName: `${member.first_name} ${member.last_name}`,
+        resetBy: isSystemManager ? 'System Manager' : 'Superuser',
+        mustChangePin: true
+      }),
+      req,
+      'success',
+      memberId,
+      performerType
+    );
+
+    // TODO: Ako je notifyMember true, pošalji email članu s novim PIN-om
+    // Ovo će biti implementirano kasnije kada bude email sustav
+
+    res.json({
+      message: 'PIN successfully reset',
+      memberName: `${member.first_name} ${member.last_name}`,
+      newPin: newPin ? undefined : pinToSet, // Vrati PIN samo ako je generiran
+      mustChangePin: true,
+    });
+  } catch (error) {
+    console.error('Error resetting member PIN:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

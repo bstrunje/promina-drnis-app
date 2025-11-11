@@ -10,6 +10,12 @@ const isLocalDevelopment = import.meta.env.DEV && window.location.hostname === '
 const envPort = (import.meta as { env: Record<string, unknown> }).env.VITE_BACKEND_PORT;
 const backendPort = typeof envPort === 'string' && envPort.length > 0 ? envPort : '3000';
 
+// Debug logging za environment variable
+if (import.meta.env.DEV) {
+  console.log('[CONFIG] VITE_BACKEND_PORT:', envPort);
+  console.log('[CONFIG] Final backendPort:', backendPort);
+}
+
 export const API_BASE_URL = isLocalDevelopment 
   ? `http://localhost:${backendPort}/api`  // Dinamički port (3001=Docker, 3000=lokalni)
   : '/api';                                // Produkcija - relativna putanja

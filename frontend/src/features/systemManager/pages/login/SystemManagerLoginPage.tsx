@@ -75,6 +75,7 @@ const SystemManagerLoginPage: React.FC = () => {
       const response = await login({ username, password });
       const orgSlug = getOrgSlugFromPath();
 
+
       if (response.twoFactorRequired) {
         const verify2faPath = orgSlug 
           ? `/${orgSlug}/system-manager/verify-2fa`
@@ -85,6 +86,17 @@ const SystemManagerLoginPage: React.FC = () => {
           ? `/${orgSlug}/system-manager/force-change-password`
           : '/system-manager/force-change-password';
         navigate(forceChangePath, { state: { tempToken: response.tempToken } });
+      } else if (response.pinResetRequired) {
+        const changePinPath = orgSlug 
+          ? `/${orgSlug}/system-manager/change-pin`
+          : '/system-manager/change-pin';
+        navigate(changePinPath, { 
+          state: { 
+            tempToken: response.tempToken,
+            managerId: response.managerId,
+            managerName: response.managerName 
+          } 
+        });
       }
       // Uspješan login bez dodatnih koraka se rješava unutar useSystemManager hooka
 

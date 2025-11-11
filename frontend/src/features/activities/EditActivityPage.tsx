@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
 import { useTenantNavigation } from '../../hooks/useTenantNavigation';
 import { getActivityById, updateActivity, updateParticipationAdmin } from '../../utils/api/apiActivities';
 import { ActivityStatus, ActivityParticipation } from '@shared/activity.types';
@@ -19,6 +20,7 @@ import { formatHoursToHHMM } from '../../utils/activityHours';
 
 const EditActivityPage: React.FC = () => {
   const { t } = useTranslation('activities');
+  const { user } = useAuth();
   const { activityId } = useParams<{ activityId: string }>();
   const { navigateTo } = useTenantNavigation();
   const { toast } = useToast();
@@ -27,6 +29,7 @@ const EditActivityPage: React.FC = () => {
   // Stanja za formu
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [actualStartDate, setActualStartDate] = useState('');
@@ -92,6 +95,7 @@ const EditActivityPage: React.FC = () => {
         // Popunjavanje stanja forme s postojećim podacima
         setName(data.name ?? '');
         setDescription(data.description ?? '');
+        setAdminNotes(data.admin_notes ?? '');
         setStatus(data.status);
 
         const formatDate = (dateInput: Date | string | null | undefined) => {
@@ -218,6 +222,12 @@ const EditActivityPage: React.FC = () => {
     // Obavezna tekstualna polja
     dataToUpdate.name = name;
     dataToUpdate.description = description;
+    
+    // Admin bilješke - samo ako korisnik ima prava
+    const canEditAdminNotes = user?.role === 'member_administrator' || user?.role === 'member_superuser';
+    if (canEditAdminNotes) {
+      dataToUpdate.admin_notes = adminNotes;
+    }
 
     // Datumi/vremena: samo postavi ako postoje vrijednosti (ili eksplicitni null kada imamo ručne sate)
     const startISO = combineDateTime(startDate, startTime);
@@ -509,6 +519,24 @@ const EditActivityPage: React.FC = () => {
                       type="number"
                       value={recognitionPercentage}
                       onChange={(e) => setRecognitionPercentage(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Admin bilješke - vidljivo samo za administratore i superusere */}
+              {(user?.role === 'member_administrator' || user?.role === 'member_superuser') && (
+                <div className="grid grid-cols-1 md:grid-cols-4 items-center gap-2 md:gap-4">
+                  <Label htmlFor="admin_notes" className="md:text-right">
+                    Admin bilješke
+                  </Label>
+                  <div className="md:col-span-3">
+                    <Input
+                      id="admin_notes"
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="Bilješke vidljive samo administratorima..."
                       className="w-full"
                     />
                   </div>
