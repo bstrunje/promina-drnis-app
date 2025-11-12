@@ -60,9 +60,14 @@ type MemberRaw = {
 export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_hours: number = 0, activityHoursThreshold: number = 20): Member {
   // Pomoćna funkcija za konverziju string | Date u Date
   const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
+  
+  // full_name za prikaz (uključuje nadimak ako postoji)
   const full_name = raw.nickname && raw.nickname !== ''
     ? `${raw.first_name} ${raw.last_name} - ${raw.nickname}`
     : `${raw.first_name} ${raw.last_name}`;
+  
+  // full_name_for_password - SAMO ime i prezime, BEZ nadimka (za generiranje lozinke)
+  const full_name_for_password = `${raw.first_name} ${raw.last_name}`;
   
   // Kalkuliraj status članstva (uključujući provjeru markice)
   const hasMembershipPeriod = raw.periods ? raw.periods.some(p => !p.end_date) : false;
@@ -78,6 +83,7 @@ export function mapToMember(raw: MemberRaw, total_hours: number = 0, activity_ho
     first_name: raw.first_name,
     last_name: raw.last_name,
     full_name,
+    full_name_for_password, // Dodano: ime i prezime BEZ nadimka za generiranje lozinke
     nickname: raw.nickname ?? undefined,
     date_of_birth: raw.date_of_birth
       ? formatDate(toDate(raw.date_of_birth), 'yyyy-MM-dd')

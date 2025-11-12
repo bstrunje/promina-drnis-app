@@ -5,9 +5,25 @@ const authRepository = {
     async findUserByFullName(full_name: string, organizationId?: number): Promise<Member | null> {
         console.log(`[AUTH-REPO] Tražim korisnika po imenu: ${full_name}${organizationId ? ` u organizaciji ${organizationId}` : ''}`);
         try {
+            // Razdvoji full_name na first_name i last_name (ignoriraj nadimak ako postoji)
+            // Format može biti: "Ime Prezime" ili "Ime Prezime - Nadimak"
+            const nameParts = full_name.split(' - ')[0].trim().split(' ');
+            
+            if (nameParts.length < 2) {
+                console.log('[AUTH-REPO] Neispravan format imena');
+                return null;
+            }
+            
+            // Zadnje riječ je prezime, sve ostalo je ime
+            const last_name = nameParts[nameParts.length - 1];
+            const first_name = nameParts.slice(0, -1).join(' ');
+            
+            console.log(`[AUTH-REPO] Tražim: first_name="${first_name}", last_name="${last_name}"`);
+            
             const member = await prisma.member.findFirst({
                 where: { 
-                    full_name,
+                    first_name,
+                    last_name,
                     ...(organizationId && { organization_id: organizationId })
                 }
             });

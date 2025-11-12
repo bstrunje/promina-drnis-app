@@ -5,7 +5,7 @@ type PasswordGenerationStrategy = 'FULLNAME_ISK_CARD' | 'RANDOM_8' | 'EMAIL_PREF
 
 // Minimalni tip koji sadrži samo potrebna polja za generiranje lozinke
 interface MemberPasswordData {
-  full_name?: string | null;
+  full_name_for_password?: string | null; // Ime + prezime BEZ nadimka
   email?: string | null;
 }
 
@@ -40,8 +40,8 @@ const generatePassword = (
   cardNumber: string,
   options?: PasswordGenerationOptions
 ): string => {
-  // Osiguravamo da imamo fallback vrijednost ako je full_name null ili undefined
-  const fullName = member.full_name ?? 'user';
+  // Osiguravamo da imamo fallback vrijednost ako je full_name_for_password null ili undefined
+  const fullName = member.full_name_for_password ?? 'user';
   
   // Dohvati separator i broj znamenki iz opcija ili koristi defaultne vrijednosti
   const separator = options?.separator ?? '-isk-';
