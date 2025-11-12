@@ -104,9 +104,10 @@ const memberId = useMemo(() => {
         return total;
       }
 
+      // Dodajemo +1 da uključimo i zadnji dan perioda (npr. 01.01-31.12 = 365 dana, ne 364)
       return (
         total +
-        Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
       );
     }, 0);
 
