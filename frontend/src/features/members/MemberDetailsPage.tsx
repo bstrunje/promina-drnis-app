@@ -10,7 +10,7 @@ import { useToast } from "@components/ui/use-toast";
 import api from "../../utils/api/apiConfig";
 // import { debounce } from "lodash"; // Uklonjeno jer se ne koristi
 import { getCurrentDate, formatInputDate, validateBirthDate } from "../../utils/dateUtils";
-import { parse, parseISO, isValid, isBefore, format } from "date-fns";
+import { parse, parseISO, isValid, isBefore, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { useTranslation } from "react-i18next";
 // Import components
 import MemberBasicInfo from "../../../components/MemberBasicInfo";
@@ -96,43 +96,60 @@ const memberId = useMemo(() => {
   const calculateTotalDuration = useCallback((periods: MembershipPeriod[]): string => {
     if (!Array.isArray(periods) || periods.length === 0) return "";
 
-    const totalDays = periods.reduce((total, period) => {
+    // Zbrajamo sve periode koristeći date-fns za točan izračun
+    let totalYears = 0;
+    let totalMonths = 0;
+    let totalDays = 0;
+
+    periods.forEach(period => {
       const start = parseISO(period.start_date.toString());
       const end = period.end_date ? parseISO(period.end_date.toString()) : getCurrentDate();
       
       if (!isValid(start) || !isValid(end) || isBefore(end, start)) {
-        return total;
+        return;
       }
 
-      // Dodajemo +1 da uključimo i zadnji dan perioda (npr. 01.01-31.12 = 365 dana, ne 364)
-      return (
-        total +
-        Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      );
-    }, 0);
+      // Točan izračun koristeći date-fns
+      const years = differenceInYears(end, start);
+      const afterYears = addYears(start, years);
+      
+      const months = differenceInMonths(end, afterYears);
+      const afterMonths = addMonths(afterYears, months);
+      
+      const days = differenceInDays(end, afterMonths) + 1; // +1 da uključimo zadnji dan
 
-    if (totalDays < 0) return "";
+      totalYears += years;
+      totalMonths += months;
+      totalDays += days;
+    });
 
-    const years = Math.floor(totalDays / 365);
-    const months = Math.floor((totalDays % 365) / 30);
-    const days = (totalDays % 365) % 30;
+    // Normalizacija: pretvaramo dane u mjesece, mjesece u godine
+    if (totalDays >= 30) {
+      totalMonths += Math.floor(totalDays / 30);
+      totalDays = totalDays % 30;
+    }
+    
+    if (totalMonths >= 12) {
+      totalYears += Math.floor(totalMonths / 12);
+      totalMonths = totalMonths % 12;
+    }
 
     const parts: string[] = [];
 
-    if (years > 0) {
-      const yearKey = getHrPluralKey(years, 'duration.years');
-      parts.push(t(yearKey, { count: years }));
+    if (totalYears > 0) {
+      const yearKey = getHrPluralKey(totalYears, 'duration.years');
+      parts.push(t(yearKey, { count: totalYears }));
     }
-    if (months > 0) {
-      const monthKey = getHrPluralKey(months, 'duration.months');
-      parts.push(t(monthKey, { count: months }));
+    if (totalMonths > 0) {
+      const monthKey = getHrPluralKey(totalMonths, 'duration.months');
+      parts.push(t(monthKey, { count: totalMonths }));
     }
-    if (days > 0) {
-      const dayKey = getHrPluralKey(days, 'duration.days');
-      parts.push(t(dayKey, { count: days }));
+    if (totalDays > 0) {
+      const dayKey = getHrPluralKey(totalDays, 'duration.days');
+      parts.push(t(dayKey, { count: totalDays }));
     }
 
-    if (parts.length === 0 && totalDays >= 0) {
+    if (parts.length === 0) {
       return t('duration.days', { count: 0 });
     }
 
