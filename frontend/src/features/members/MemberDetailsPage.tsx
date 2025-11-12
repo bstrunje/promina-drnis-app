@@ -116,7 +116,8 @@ const memberId = useMemo(() => {
       const months = differenceInMonths(end, afterYears);
       const afterMonths = addMonths(afterYears, months);
       
-      const days = differenceInDays(end, afterMonths) + 1; // +1 da uključimo zadnji dan
+      // differenceInDays već vraća točan broj dana (uključuje oba datuma)
+      const days = differenceInDays(end, afterMonths);
 
       totalYears += years;
       totalMonths += months;

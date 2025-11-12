@@ -5,6 +5,7 @@ import { Button } from '@components/ui/button';
 import { useUsedSkills } from '../../../hooks/useUsedSkills';
 import { ApiUsedSkill } from '../../../utils/api/apiTypes';
 import { getMembersWithFunctions, getMembersBySkill } from '../../../utils/api/apiMembers';
+import { MemberWithDetails } from '@shared/memberDetails.types';
 
 interface MemberWithFunction {
   member_id: number;
@@ -23,6 +24,7 @@ interface AdvancedFiltersModalProps {
   onSkillSelect: (skillName: string, members: string[]) => void;
   onFunctionSelect: (member: MemberWithFunction) => void;
   onArchiveSelect: (filterValue: 'all' | 'inactive', year?: number) => void;
+  members: MemberWithDetails[];
 }
 
 const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
@@ -30,7 +32,8 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   onClose,
   onSkillSelect,
   onFunctionSelect,
-  onArchiveSelect
+  onArchiveSelect,
+  members
 }) => {
   const { t } = useTranslation('members');
   const { t: tProfile } = useTranslation('profile');
@@ -235,10 +238,28 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
             {!archiveCollapsed && (
               <div className="p-4 border-t space-y-2">
                 <p className="text-sm text-gray-500 mb-2">{t('advancedFilters.byPeriod')}</p>
-                {/* Petogodišnja razdoblja - generirat će se dinamički */}
-                {Array.from({ length: 5 }, (_, i) => {
-                  const year = new Date().getFullYear() - i - 1;
-                  return (
+                {/* Dinamički generirane godine - samo one koje imaju članove s završenim članstvom */}
+                {(() => {
+                  // Izvuci sve godine završetka članstva
+                  const endYears = new Set<number>();
+                  members.forEach(member => {
+                    const periods = member.membership_history?.periods ?? [];
+                    periods.forEach(period => {
+                      if (period.end_date) {
+                        const year = new Date(period.end_date).getFullYear();
+                        endYears.add(year);
+                      }
+                    });
+                  });
+                  
+                  // Sortiraj godine silazno
+                  const sortedYears = Array.from(endYears).sort((a, b) => b - a);
+                  
+                  if (sortedYears.length === 0) {
+                    return <p className="text-sm text-gray-400 px-4 py-2">{t('advancedFilters.noArchive', 'Nema arhiviranih članova')}</p>;
+                  }
+                  
+                  return sortedYears.map(year => (
                     <button
                       key={year}
                       onClick={() => { onArchiveSelect('inactive', year); onClose(); }}
@@ -246,8 +267,8 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
                     >
                       {t('advancedFilters.year', { year })}
                     </button>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             )}
           </div>

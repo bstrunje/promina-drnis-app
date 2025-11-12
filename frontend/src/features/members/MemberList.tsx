@@ -206,6 +206,7 @@ export default function MemberList(): JSX.Element {
   const [ageFilter, setAgeFilter] = useState<"all" | "adults">("all");
   const [sortCriteria, setSortCriteria] = useState<"name" | "hours">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [archiveYear, setArchiveYear] = useState<number | null>(null); // Godina za arhivu filter
   const [groupByType, setGroupByType] = useState<boolean>(false);
 
   const [showFilters, setShowFilters] = useState<boolean>(false); // State for showing/hiding filters
@@ -247,12 +248,15 @@ export default function MemberList(): JSX.Element {
     
     if (filterValue === 'all') {
       setActiveFilter('all');
+      setArchiveYear(null); // Resetiraj godinu
     } else if (filterValue === 'inactive') {
       setActiveFilter('inactive');
-      // Ako je godina specificirana, filtriraj po godini
-      // TODO: Implementirati filtriranje po godini
+      // Postavi godinu za filtriranje
       if (year) {
-        console.log('Filter by year:', year);
+        setArchiveYear(year);
+        if (isDev) console.log('Filter by year:', year);
+      } else {
+        setArchiveYear(null); // Svi neaktivni bez obzira na godinu
       }
     }
     
@@ -308,6 +312,26 @@ export default function MemberList(): JSX.Element {
     enableSensitiveSearch: isAdmin || isSuperuser
   });
 
+  // Dodatno filtriranje po godini arhive (ako je postavljena)
+  const filteredMembersWithArchive = React.useMemo(() => {
+    if (!archiveYear || activeFilter !== 'inactive') {
+      return filteredMembersRaw;
+    }
+
+    // Filtriraj članove koji su završili članstvo u odabranoj godini
+    return filteredMembersRaw.filter(member => {
+      const periods = member.membership_history?.periods ?? [];
+      // Provjeri ima li period koji je završio u odabranoj godini
+      return periods.some(period => {
+        if (period.end_date) {
+          const endYear = new Date(period.end_date).getFullYear();
+          return endYear === archiveYear;
+        }
+        return false;
+      });
+    });
+  }, [filteredMembersRaw, archiveYear, activeFilter]);
+
   // Memoized function for grouping members by status
   const groupMembers = React.useCallback((memberList: MemberWithDetails[]): { key: string; title: string; members: MemberWithDetails[]; }[] => {
     if (groupByType) {
@@ -352,13 +376,13 @@ export default function MemberList(): JSX.Element {
   }[]>([]);
 
   useEffect(() => {
-    setFilteredMembers(groupMembers(filteredMembersRaw));
-  }, [filteredMembersRaw, groupByType, groupMembers]);
+    setFilteredMembers(groupMembers(filteredMembersWithArchive));
+  }, [filteredMembersWithArchive, groupByType, groupMembers]);
 
   // Postavi filtrirane članove na temelju grupiranih podataka
   useEffect(() => {
-    setFilteredMembers(groupMembers(filteredMembersRaw));
-  }, [filteredMembersRaw, groupByType, groupMembers]);
+    setFilteredMembers(groupMembers(filteredMembersWithArchive));
+  }, [filteredMembersWithArchive, groupByType, groupMembers]);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -612,6 +636,7 @@ export default function MemberList(): JSX.Element {
         onSkillSelect={handleSkillSelect}
         onFunctionSelect={handleFunctionSelect}
         onArchiveSelect={handleArchiveSelect}
+        members={members}
       />
     </div>
   );
