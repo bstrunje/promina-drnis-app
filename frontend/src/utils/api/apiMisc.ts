@@ -40,7 +40,6 @@ export const getAuditLogs = async (page = 1, limit = 50): Promise<PaginatedAudit
 export const cleanupTestData = async (): Promise<ApiCleanupTestDataResult> => {
   try {
     const response: AxiosResponse<ApiCleanupTestDataResult> = await api.post('debug/cleanup-test-data');
-    console.log('🧹 Testni podaci uspješno očišćeni:', response.data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {

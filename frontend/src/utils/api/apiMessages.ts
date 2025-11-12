@@ -69,7 +69,6 @@ export const getAdminMessages = async (forceLoad = false): Promise<ApiAdminMessa
     // Ako je superuser i forceLoad nije postavljen, vrati prazno polje
     // (member_superuser ne treba vidjeti member_administrator poruke dok ne uđe na member_administrator tab)
     if (userRole === 'member_superuser' && !forceLoad) {
-      console.log('Superuser nije na Administrator tabu - preskačem dohvaćanje member_administrator poruka');
       return [];
     }
     

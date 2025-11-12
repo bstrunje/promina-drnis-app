@@ -125,6 +125,7 @@ const membershipService = {
         if (!currentPeriod) {
           await tx.membershipPeriod.create({
             data: {
+              organization_id: organizationId,
               member_id: memberId,
               start_date: validPaymentDate
             }
@@ -142,6 +143,7 @@ const membershipService = {
           // Create new period
           await tx.membershipPeriod.create({
             data: {
+              organization_id: organizationId,
               member_id: memberId,
               start_date: validPaymentDate
             }

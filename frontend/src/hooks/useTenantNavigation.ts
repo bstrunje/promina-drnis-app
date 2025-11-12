@@ -31,7 +31,6 @@ export const useTenantNavigation = () => {
     
     // Dodaj org prefix
     const prefixedPath = `/${orgSlug}${path}`;
-    console.log(`[TENANT-NAVIGATION] Adding org prefix: ${path} → ${prefixedPath}`);
     navigate(prefixedPath, options);
   }, [navigate]);
 

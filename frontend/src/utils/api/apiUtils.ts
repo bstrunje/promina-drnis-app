@@ -26,9 +26,6 @@ export const handleApiError = (error: unknown, defaultMessage: string): never =>
     // Sigurno pretvaranje u AxiosError tip
     const axiosError = error as AxiosError<ApiErrorResponse>;
     
-    // Detaljnije logiranje odgovora servera za debugging
-    console.log("Server response:", axiosError.response?.data);
-    
     // Izdvajamo poruku iz odgovora servera, ako postoji
     const serverMessage = axiosError.response?.data?.message;
     

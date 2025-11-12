@@ -479,6 +479,7 @@ export const updateActivityService = async (req: Request, activity_id: number, d
       if (!areSame) {
         await tx.activityParticipation.deleteMany({ where: { activity_id: activity_id } });
         const createData = participant_ids.map((id: number) => ({
+          organization_id: organizationId, // KRITIČNO: Multi-tenancy podrška
           activity_id,
           member_id: id,
           recognition_override: null,

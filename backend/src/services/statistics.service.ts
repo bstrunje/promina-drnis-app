@@ -17,6 +17,17 @@ type TransactionClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' 
  * @param tx Opcionalni Prisma transakcijski klijent.
  */
 export const updateAnnualStatistics = async (memberId: number, year: number, tx: TransactionClient = prisma) => {
+  // 0. Dohvati člana da bi dobili organization_id
+  const member = await tx.member.findUnique({
+    where: { member_id: memberId },
+    select: { organization_id: true }
+  });
+  
+  if (!member) {
+    if (isDev) console.warn(`Član ${memberId} nije pronađen - preskačem ažuriranje statistike`);
+    return;
+  }
+  
   // 1. Dohvati sve završene aktivnosti za člana u toj godini
   const participations = await tx.activityParticipation.findMany({
     where: {
@@ -95,6 +106,7 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
         calculated_at: new Date(),
       },
       create: {
+        organization_id: member.organization_id,
         member_id: memberId,
         year: year,
         total_hours: totalHours,

@@ -261,6 +261,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
   if (validation.existingDuty) {
     await prisma.activityParticipation.create({
       data: {
+        organization_id: organizationId,
         activity_id: validation.existingDuty.activity_id,
         member_id: memberId,
         start_time: validation.existingDuty.actual_start_time || null,
@@ -307,6 +308,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
       // Dodaj člana u postojeću aktivnost
       await prisma.activityParticipation.create({
         data: {
+          organization_id: organizationId,
           activity_id: targetDuty.activity_id,
           member_id: memberId,
           start_time: targetDuty.actual_start_time || null,
@@ -360,6 +362,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
     if (!alreadyParticipating) {
       await prisma.activityParticipation.create({
         data: {
+          organization_id: organizationId,
           activity_id: targetDuty.activity_id,
           member_id: memberId,
           start_time: targetDuty.actual_start_time || null,
