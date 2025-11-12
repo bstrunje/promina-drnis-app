@@ -6,7 +6,7 @@
  */
 
 // NAPOMENA: Promijeni datum kada deploy-aš novu verziju s promjenama u JS/CSS
-const CACHE_VERSION = 'v2025-11-11';
+const CACHE_VERSION = 'v2025-11-12';
 // Dev-only logging flag (service worker nije bundlan, pa koristimo hostname detekciju)
 const DEBUG = (self.location && self.location.hostname === 'localhost');
 const CACHE_NAME = `pwa-cache-${CACHE_VERSION}`;

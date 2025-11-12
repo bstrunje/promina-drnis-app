@@ -57,6 +57,7 @@
     "personalInfo": {
         "title": "Personal Information",
         "editTitle": "Edit Personal Information",
+        "generalInfoTitle": "General Information",
         "viewPrompt": "Click the header to view personal information",
         "privatePrompt": "Personal information is private",
         "fullName": "Full Name",

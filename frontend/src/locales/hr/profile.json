@@ -57,6 +57,7 @@
     "personalInfo": {
         "title": "Osobni podaci",
         "editTitle": "Uredi osobne podatke",
+        "generalInfoTitle": "Generalije",
         "viewPrompt": "Kliknite na zaglavlje za prikaz osobnih podataka",
         "privatePrompt": "Osobni podaci su privatni",
         "fullName": "Puno ime",

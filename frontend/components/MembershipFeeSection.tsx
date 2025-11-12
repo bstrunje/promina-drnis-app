@@ -11,7 +11,8 @@ import { getCurrentDate } from '../src/utils/dateUtils';
 import { useTranslation } from 'react-i18next';											   
 import { 
   ChevronRight, 
-  ChevronDown, 
+  ChevronDown,
+  ChevronUp, 
   Receipt, 
   Clock, 
   Edit, 
@@ -92,6 +93,7 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
   const [isNovemberDecemberPayment, setIsNovemberDecemberPayment] = useState(false);
   const [isNewMemberPayment, setIsNewMemberPayment] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showCardManagement, setShowCardManagement] = useState(false); // Kolapsibilna sekcija za upravljanje karticom - default collapsed
 
   // Provjerava je li članarina plaćena za tekuću godinu
   // Ako je plaćena za sljedeću godinu, također se smatra aktivnom
@@ -552,20 +554,40 @@ const MembershipFeeSection: React.FC<MembershipFeeSectionProps> = ({
               if (!hasValidPayment && !isSuperuser) {
                 return (
                   <div className="border-t pt-4">
-                    <h3 className="text-lg font-medium mb-3 text-amber-700">{t('feeSection.membershipCardManagement')}</h3>
-                    <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
-                      {t('feeSection.membershipCardManagementInfo')}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCardManagement(!showCardManagement)}
+                      className="w-full flex justify-between items-center px-3 py-2 text-left border border-amber-300 bg-amber-50 rounded-md shadow-sm hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm font-medium text-amber-700"
+                    >
+                      <span>{t('feeSection.membershipCardManagement')}</span>
+                      {showCardManagement ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </button>
+                    {showCardManagement && (
+                      <div className="text-amber-600 p-3 bg-amber-50 rounded-md mt-2">
+                        {t('feeSection.membershipCardManagementInfo')}
+                      </div>
+                    )}
                   </div>
                 );
               }
               
               return (
                 <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-3">{t('feeSection.membershipCardManagement')}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowCardManagement(!showCardManagement)}
+                    className="w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-gray-50 rounded-md shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-medium"
+                  >
+                    <span>{t('feeSection.membershipCardManagement')}</span>
+                    {showCardManagement ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
                   
-                  {/* Sekcija uvijek vidljiva nakon plaćanja - ovdje se dodijeljuje kartica I markice */}
-                  <MembershipCardManagerAdapter {...cardManagerProps} isFeeCurrent={hasValidPayment || isSuperuser} />
+                  {showCardManagement && (
+                    <div className="mt-2">
+                      {/* Sekcija uvijek vidljiva nakon plaćanja - ovdje se dodijeljuje kartica I markice */}
+                      <MembershipCardManagerAdapter {...cardManagerProps} isFeeCurrent={hasValidPayment || isSuperuser} />
+                    </div>
+                  )}
                 </div>
               );
             })()}

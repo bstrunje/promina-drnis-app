@@ -35,6 +35,7 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
   const { t } = useTranslation('profile');
   const [showDetails, setShowDetails] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [showGeneralInfo, setShowGeneralInfo] = useState(false); // Kolapsibilna sekcija za generalije - default collapsed
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailChecking, setEmailChecking] = useState(false);
 
@@ -186,8 +187,22 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Kolapsibilna sekcija za generalije */}
           <div>
-            <label className="block text-sm font-medium mb-1">{t('personalInfo.firstName')}</label>
+            <button
+              type="button"
+              onClick={() => setShowGeneralInfo(!showGeneralInfo)}
+              className="w-full flex justify-between items-center px-3 py-2 text-left border border-gray-300 bg-gray-50 rounded-md shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-medium"
+            >
+              <span>{t('personalInfo.generalInfoTitle', 'Generalije')}</span>
+              {showGeneralInfo ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {showGeneralInfo && (
+            <div className="space-y-4 pl-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('personalInfo.firstName')}</label>
             <input
               type="text"
               name="first_name"
@@ -347,6 +362,8 @@ const MemberBasicInfo: React.FC<MemberBasicInfoProps> = ({
               <p className="text-sm text-red-500">{validationErrors.life_status}</p>
             )}
           </div>
+            </div>
+          )}
 
           {/* Add membership type dropdown */}
           <div>
