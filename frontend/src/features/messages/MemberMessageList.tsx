@@ -92,16 +92,7 @@ const MemberMessageList: React.FC = () => {
     try {
       // Poziv API-ja za označavanje poruke kao pročitane
       await markMessageAsRead(messageId);
-
-      // Ažuriranje lokalne liste poruka
-      setMessages(prevMessages =>
-        prevMessages.map(msg =>
-          msg.message_id === messageId
-            ? { ...msg, status: 'read' }
-            : msg
-        )
-      );
-
+      
       // Emitiraj događaj za osvježavanje brojača u navigaciji
       const event = new CustomEvent(MESSAGE_EVENTS.UNREAD_UPDATED);
       window.dispatchEvent(event);
@@ -281,9 +272,7 @@ const MemberMessageList: React.FC = () => {
                   })
                   .map((message) => {
                     // Uzmi prvih 50 znakova poruke za pregled
-                    const previewText = message.message_text.length > 50
-                      ? `${message.message_text.substring(0, 50)}...`
-                      : message.message_text;
+                    const previewText = '';
 
                     return (
                       <div
@@ -295,11 +284,18 @@ const MemberMessageList: React.FC = () => {
                         } : { borderColor: '#e5e7eb' }}
                         onClick={() => {
                           const messageElement = document.getElementById(`message-content-${message.message_id}`);
-                          messageElement?.classList.toggle('hidden');
+                          if (!messageElement) return;
 
-                          // Ako je poruka nepročitana i upravo je otvorena, dodaj njen ID u ref
-                          if (message.status === 'unread' && !messageElement?.classList.contains('hidden')) {
-                            openedMessageIdsRef.current.add(message.message_id);
+                          const isHidden = messageElement.classList.contains('hidden');
+
+                          // Dozvoli samo otvaranje (prvi klik), ali ne i ponovno zatvaranje na drugi klik
+                          if (isHidden) {
+                            messageElement.classList.remove('hidden');
+
+                            // Ako je poruka nepročitana i upravo je otvorena, odmah je označi kao pročitanu
+                            if (message.status === 'unread') {
+                              void handleMarkAsRead(message.message_id);
+                            }
                           }
                         }}
                       >

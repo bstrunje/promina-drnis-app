@@ -7,7 +7,9 @@ import {
   format, 
   isSameDay,
   addMonths,
-  subMonths
+  subMonths,
+  isBefore,
+  startOfDay
 } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { dutyApi, DutyCalendarData, DutyActivity, Holiday } from '../../utils/api/apiDuty';
@@ -15,7 +17,16 @@ import DutyCalendarDay from './DutyCalendarDay';
 import DutyScheduleInfo from './DutyScheduleInfo';
 import { useAuth } from '../../context/useAuth';
 import { useBranding } from '../../hooks/useBranding';
+import { Button } from '@components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@components/ui/dialog';
 import './DutyCalendar.css';
+
+interface DutyOption {
+  type: 'join_existing' | 'extend_own' | 'join_group' | 'create_new';
+  activity?: DutyActivity;
+  newName?: string;
+  message: string;
+}
 
 const DutyCalendar: React.FC = () => {
   const { t, i18n } = useTranslation('duty');
@@ -40,6 +51,12 @@ const DutyCalendar: React.FC = () => {
   
   // Mobilni filter toggle
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // State za Smart Grouping modal
+  const [smartDialogOpen, setSmartDialogOpen] = useState(false);
+  const [smartDialogDate, setSmartDialogDate] = useState<Date | null>(null);
+  const [smartDialogOptions, setSmartDialogOptions] = useState<DutyOption[]>([]);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
 
   const locale = i18n.language === 'hr' ? hr : undefined;
 
@@ -205,6 +222,39 @@ const DutyCalendar: React.FC = () => {
     setCurrentDate(new Date());
   };
 
+  // Helper za stvaranje dežurstva i refresh kalendara
+  const createDutyForDate = async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+
+    // Kreiraj dežurstvo (backend će automatski primijeniti Smart Grouping)
+    await dutyApi.createDutyShift(dateStr);
+
+    // Osvježi podatke
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const data = await dutyApi.getCalendarMonth(year, month);
+    setCalendarData(data);
+
+    alert(t('successJoined'));
+  };
+
+  // Handler za potvrdu izbora u Smart Grouping modalu
+  const handleConfirmSmartOption = async () => {
+    if (!smartDialogDate) {
+      setSmartDialogOpen(false);
+      return;
+    }
+    try {
+      await createDutyForDate(smartDialogDate);
+    } catch (err) {
+      console.error('Error joining duty:', err);
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('errorJoining');
+      alert(errorMsg);
+    } finally {
+      setSmartDialogOpen(false);
+    }
+  };
+
   // Handler za pridruživanje dežurstvu s Smart Grouping
   const handleJoinDuty = async (date: Date) => {
     try {
@@ -217,48 +267,43 @@ const DutyCalendar: React.FC = () => {
         alert(options.error ?? t('errorJoining'));
         return;
       }
-      
-      // Ako ima više opcija, prikaži dijalog
-      if (options.options.length > 1) {
-        const optionTexts = options.options.map((opt, index) => {
-          let message = '';
-          switch (opt.type) {
-            case 'extend_own':
-              message = t('smartGrouping.extendOwn', { date: format(date, 'dd.MM.yyyy') });
-              break;
-            case 'join_group':
-              message = t('smartGrouping.joinGroup', { activityName: opt.activity?.name ?? '' });
-              break;
-            case 'create_new':
-              message = t('smartGrouping.createNew', { activityName: opt.newName ?? '' });
-              break;
-            case 'join_existing':
-              message = t('smartGrouping.joinExisting', { date: format(date, 'dd.MM.yyyy') });
-              break;
-          }
-          return `${index + 1}. ${message}`;
-        }).join('\n');
-        
-        const choice = window.prompt(
-          `${t('smartGrouping.optionsTitle')}:\n\n${optionTexts}\n\n${t('smartGrouping.confirm')} (1-${options.options.length}):`
-        );
-        
-        const choiceIndex = parseInt(choice ?? '1', 10) - 1;
-        if (choiceIndex < 0 || choiceIndex >= options.options.length) {
-          return; // Korisnik je odustao ili unio nevaljan broj
+
+      // Lokaliziraj poruke za opcije umjesto da koristiš opt.message s backend-a
+      const localizedOptions: DutyOption[] = options.options.map((opt) => {
+        let message = opt.message;
+        switch (opt.type) {
+          case 'extend_own':
+            message = t('smartGrouping.extendOwn', { date: format(date, 'dd.MM.yyyy') });
+            break;
+          case 'join_group':
+            message = t('smartGrouping.joinGroup', { activityName: opt.activity?.name ?? '' });
+            break;
+          case 'create_new':
+            message = t('smartGrouping.createNew', { activityName: opt.newName ?? '' });
+            break;
+          case 'join_existing':
+            message = t('smartGrouping.joinExisting', { date: format(date, 'dd.MM.yyyy') });
+            break;
         }
+        return {
+          type: opt.type,
+          activity: opt.activity,
+          newName: opt.newName,
+          message
+        };
+      });
+
+      // Ako nema ili ima samo jednu opciju, nema potrebe za dijalogom
+      if (localizedOptions.length <= 1) {
+        await createDutyForDate(date);
+        return;
       }
-      
-      // Kreiraj dežurstvo (backend će automatski primijeniti Smart Grouping)
-      await dutyApi.createDutyShift(dateStr);
-      
-      // Osvježi podatke
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1;
-      const data = await dutyApi.getCalendarMonth(year, month);
-      setCalendarData(data);
-      
-      alert(t('successJoined'));
+
+      // Inače otvori modal s popisom lokaliziranih opcija (konkretnu odluku i dalje obrađuje backend)
+      setSmartDialogDate(date);
+      setSmartDialogOptions(localizedOptions);
+      setSelectedOptionIndex(0);
+      setSmartDialogOpen(true);
     } catch (err) {
       console.error('Error joining duty:', err);
       const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? t('errorJoining');
@@ -436,6 +481,7 @@ const DutyCalendar: React.FC = () => {
           const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
           const maxParticipants = calendarData.settings.dutyMaxParticipants ?? 2;
           const status = getDutyStatus(duty, maxParticipants);
+          const isPastDate = isBefore(startOfDay(date), startOfDay(new Date()));
 
           // Provjeri treba li prikazati ovaj dan prema filterima
           if (!shouldShowDay(date, duty, holiday, isWeekend)) {
@@ -502,12 +548,22 @@ const DutyCalendar: React.FC = () => {
                         {t('fullLabel')}
                       </button>
                     ) : (
-                      <button 
-                        className="join"
-                        onClick={() => void handleJoinDuty(date)}
-                      >
-                        ✓ {t('join')}
-                      </button>
+                      !isPastDate && (
+                        <button 
+                          className="join"
+                          onClick={() => {
+                            const confirmMsg = holiday
+                              ? t('confirmJoinHoliday', { holiday: holiday.name, date: format(date, 'dd.MM.yyyy') })
+                              : t('confirmJoin', { date: format(date, 'dd.MM.yyyy') });
+
+                            if (window.confirm(confirmMsg)) {
+                              void handleJoinDuty(date);
+                            }
+                          }}
+                        >
+                          ✓ {t('join')}
+                        </button>
+                      )
                     )}
                   </div>
                 </>
@@ -521,6 +577,47 @@ const DutyCalendar: React.FC = () => {
       {branding?.subdomain === 'promina' && (
         <DutyScheduleInfo scheduleInfo={calendarData.scheduleInfo} />
       )}
+
+      {/* Smart Grouping modal za odabir opcije dežurstva */}
+      <Dialog open={smartDialogOpen} onOpenChange={setSmartDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('smartGrouping.optionsTitle')}</DialogTitle>
+            {smartDialogDate && (
+              <DialogDescription>
+                {format(smartDialogDate, 'dd.MM.yyyy')}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-2 mt-2">
+            {smartDialogOptions.map((opt, index) => (
+              <label key={index} className="flex items-start space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="duty-option"
+                  className="mt-1"
+                  checked={selectedOptionIndex === index}
+                  onChange={() => setSelectedOptionIndex(index)}
+                />
+                <span>{opt.message}</span>
+              </label>
+            ))}
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setSmartDialogOpen(false)}
+            >
+              {t('smartGrouping.cancel')}
+            </Button>
+            <Button onClick={() => { void handleConfirmSmartOption(); }}>
+              {t('smartGrouping.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

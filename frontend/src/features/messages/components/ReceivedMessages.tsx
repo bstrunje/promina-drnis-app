@@ -263,9 +263,7 @@ export default function ReceivedMessages({ userRole, onUnreadCountChange }: Rece
 
             {filteredMessages.map((message) => {
               // Uzmi prvih 50 znakova poruke za pregled
-              const previewText = message.message_text.length > 50
-                ? `${message.message_text.substring(0, 50)}...`
-                : message.message_text;
+              const previewText = '';
 
               return (
                 <Card

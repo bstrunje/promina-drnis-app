@@ -8,7 +8,7 @@
         "passiveMembers": "Passive members",
         "categoryDistribution": "Category distribution",
         "validMembership": "Valid membership",
-        "inactive": "Inactive",
+        "inactive": "Former Members",
         "pending": "Pending",
         "feeDistribution": "Membership fee distribution",
         "feePaid": "Fee paid",
@@ -24,7 +24,9 @@
             "participantsCount": "Participants",
             "totalSummary": "Total",
             "totalActivities": "Total activities",
-            "totalParticipants": "Total distinct participants"
+            "totalActivitiesShort": "Total",
+            "totalParticipants": "Total distinct participants",
+            "totalParticipantsShort": "Participants"
         }
     },
     "permissions": {

@@ -167,10 +167,14 @@ export const ActivitiesStatsCard: React.FC = () => {
                         </div>
                         <div className="flex gap-6 text-sm">
                           <span>
-                            {t('statistics.activities.totalActivities')}: <span className="font-semibold">{totalActivities}</span>
+                            <span className="hidden sm:inline">{t('statistics.activities.totalActivities')}:</span>
+                            <span className="sm:hidden">{t('statistics.activities.totalActivitiesShort')}:</span>
+                            <span className="font-semibold ml-1">{totalActivities}</span>
                           </span>
                           <span>
-                            {t('statistics.activities.totalParticipants')}: <span className="font-semibold">{totalParticipants}</span>
+                            <span className="hidden sm:inline">{t('statistics.activities.totalParticipants')}:</span>
+                            <span className="sm:hidden">{t('statistics.activities.totalParticipantsShort')}:</span>
+                            <span className="font-semibold ml-1">{totalParticipants}</span>
                           </span>
                         </div>
                       </button>

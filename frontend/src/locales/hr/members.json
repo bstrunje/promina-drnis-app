@@ -8,7 +8,7 @@
         "passiveMembers": "Pasivni članovi",
         "categoryDistribution": "Podjela po kategoriji",
         "validMembership": "Članstvo važeće",
-        "inactive": "Neaktivni",
+        "inactive": "Bivši članovi",
         "pending": "Na čekanju",
         "feeDistribution": "Podjela po plaćanju članarine",
         "feePaid": "Plaćena članarina",
@@ -24,7 +24,9 @@
             "participantsCount": "Sudionici",
             "totalSummary": "Ukupno",
             "totalActivities": "Ukupno aktivnosti",
-            "totalParticipants": "Ukupno različitih sudionika"
+            "totalActivitiesShort": "Ukupno",
+            "totalParticipants": "Ukupno različitih sudionika",
+            "totalParticipantsShort": "Sudionici"
         }
     },
     "permissions": {

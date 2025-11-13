@@ -113,13 +113,13 @@ const DutyCalendarDay: React.FC<DutyCalendarDayProps> = ({
       )}
       
       {/* Button za pridruživanje */}
-      {canJoin && !duty && (
+      {!isPastDate && canJoin && !duty && (
         <button className="join-button" onClick={(e) => { e.stopPropagation(); handleClick(); }}>
           {t('join')}
         </button>
       )}
       
-      {canJoin && duty && participantCount < maxParticipants && (
+      {!isPastDate && canJoin && duty && participantCount < maxParticipants && (
         <button className="join-button" onClick={(e) => { e.stopPropagation(); handleClick(); }}>
           +
         </button>

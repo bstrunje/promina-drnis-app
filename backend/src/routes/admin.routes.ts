@@ -83,10 +83,7 @@ router.get('/dashboard/stats', async (req, res) => {
       prisma.member.count({ 
         where: { 
           organization_id: organization.id,
-          OR: [
-            { membership_details: { is: null } },  // Nema membership_details zapis
-            { membership_details: { is: { card_number: null } } }  // Ima zapis ali bez card_number
-          ]
+          status: 'pending'
         } 
       }),
       prisma.activity.count({ where: { organization_id: organization.id, created_at: { gte: thirtyDaysAgo } } })

@@ -503,15 +503,11 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             const recentActivitiesCount = recentActivitiesList.length;
 
             const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
-            // Pending registrations = članovi bez broja članske iskaznice (lozinka se dodjeljuje automatski s brojem iskaznice)
-            // Uključuje: 1) članove bez membership_details zapisa, 2) članove s membership_details ali bez card_number
+            // Pending registrations = članovi sa statusom 'pending' za danu organizaciju (tenant)
             const pendingRegistrations = await prisma.member.count({ 
                 where: { 
                     ...whereClause,
-                    OR: [
-                        { membership_details: { is: null } },
-                        { membership_details: { is: { card_number: null } } }
-                    ]
+                    status: 'pending'
                 } 
             });
 
