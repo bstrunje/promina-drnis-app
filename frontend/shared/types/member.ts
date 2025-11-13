@@ -66,7 +66,8 @@ export interface Member {
     member_id: number;
     first_name: string;
     last_name: string;
-    full_name?: string;  // Computed from first_name + last_name
+    full_name?: string;  // Computed from first_name + last_name (uključuje nadimak ako postoji)
+    full_name_for_password?: string;  // Ime + prezime BEZ nadimka (za generiranje lozinke)
     nickname?: string;  // Opcionalni nadimak člana za lakšu identifikaciju
     
     // Personal Information

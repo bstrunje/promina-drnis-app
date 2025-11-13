@@ -3,26 +3,26 @@ import bcrypt from 'bcrypt';
 
 export async function checkPasswordUpdateQueue(): Promise<void> {
   try {
-    // Get all unprocessed queue entries using Prisma raw SQL
-    const queueResult = await prisma.$queryRaw<Array<{
-      queue_id: number;
-      member_id: number;
-      card_number: string;
-      first_name: string;
-      last_name: string;
-    }>>`
-      SELECT q.queue_id, q.member_id, q.card_number, m.first_name, m.last_name
-      FROM password_update_queue q
-      JOIN members m ON q.member_id = m.member_id
-      WHERE q.processed = false
-      ORDER BY q.created_at ASC
-      LIMIT 10
-    `;
+    // Get all unprocessed queue entries using Prisma ORM
+    const queueEntries = await prisma.password_update_queue.findMany({
+      where: { processed: false },
+      include: {
+        members: {
+          select: {
+            member_id: true,
+            first_name: true,
+            last_name: true
+          }
+        }
+      },
+      orderBy: { created_at: 'asc' },
+      take: 10
+    });
 
-    for (const item of queueResult) {
+    for (const item of queueEntries) {
       try {
         // Generate the password using the same format as in the app
-        const password = `${item.first_name} ${item.last_name}-isk-${item.card_number}`;
+        const password = `${item.members.first_name} ${item.members.last_name}-isk-${item.card_number}`;
         const hashedPassword = await bcrypt.hash(password, 10);
         
         // Update the user's password using Prisma
@@ -31,12 +31,11 @@ export async function checkPasswordUpdateQueue(): Promise<void> {
           data: { password_hash: hashedPassword }
         });
         
-        // Mark as processed using Prisma raw SQL
-        await prisma.$executeRaw`
-          UPDATE password_update_queue
-          SET processed = true
-          WHERE queue_id = ${item.queue_id}
-        `;
+        // Mark as processed using Prisma ORM
+        await prisma.password_update_queue.update({
+          where: { queue_id: item.queue_id },
+          data: { processed: true }
+        });
         
         console.log(`Updated password for member ${item.member_id} based on new card number`);
       } catch (itemError) {

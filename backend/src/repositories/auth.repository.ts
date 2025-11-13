@@ -191,41 +191,16 @@ const authRepository = {
         })) as MemberSearchResult[];
     },
 
-    async checkExistingOib(oib: string): Promise<boolean> {
+    async existsByOib(oib: string): Promise<boolean> {
         const count = await prisma.member.count({
             where: { oib }
         });
         return count > 0;
-    },
-
-    async verifyEmail(email: string): Promise<void> {
-        // Using raw SQL since email_verified field doesn't exist in current schema
-        await prisma.$executeRaw`
-            UPDATE members SET email_verified = true WHERE email = ${email}
-        `;
-    },
-
-    async setResetToken(email: string, token: string, expiry: Date): Promise<void> {
-        // Using raw SQL since reset_token fields don't exist in current schema
-        await prisma.$executeRaw`
-            UPDATE members SET reset_token = ${token}, reset_token_expires = ${expiry} WHERE email = ${email}
-        `;
-    },
-
-    async findByResetToken(token: string): Promise<Member | null> {
-        // Using raw SQL since reset_token fields don't exist in current schema
-        const result = await prisma.$queryRaw<Member[]>`
-            SELECT * FROM members WHERE reset_token = ${token} AND reset_token_expires > NOW()
-        `;
-        return result[0] || null;
-    },
-
-    async clearResetToken(id: number): Promise<void> {
-        // Using raw SQL since reset_token fields don't exist in current schema
-        await prisma.$executeRaw`
-            UPDATE members SET reset_token = NULL, reset_token_expires = NULL WHERE member_id = ${id}
-        `;
     }
+
+    // NAPOMENA: Funkcije za email verification i password reset token su uklonjene
+    // jer koriste polja (email_verified, reset_token, reset_token_expires) koja ne postoje u Prisma shemi.
+    // Ako su potrebne, prvo dodaj polja u schema.prisma i pokreni migraciju.
 };
 
 export default authRepository;
