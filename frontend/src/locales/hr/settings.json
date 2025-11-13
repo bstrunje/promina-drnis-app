@@ -12,6 +12,21 @@
             "refreshing": "osvježavam...",
             "refreshTitle": "Osvježi statistike kartica"
         },
+        "toast": {
+            "validationError": "Greška validacije",
+            "cardNumberLength": "Broj iskaznice mora imati točno {{length}} znamenki",
+            "success": "Uspjeh",
+            "cardAdded": "Broj iskaznice uspješno dodan",
+            "error": "Greška",
+            "failedToAdd": "Nije uspjelo dodavanje broja iskaznice",
+            "rangeRequired": "Početni i završni broj su obavezni",
+            "rangeAdded": "Brojevi iskaznica uspješno dodani",
+            "failedToAddRange": "Nije uspjelo dodavanje raspona brojeva iskaznica",
+            "cardDeleted": "Broj iskaznice {{cardNumber}} uspješno obrisan",
+            "failedToDelete": "Nije uspjelo brisanje broja iskaznice",
+            "failedToLoad": "Nije uspjelo učitavanje brojeva iskaznica",
+            "failedToLoadConsumed": "Nije uspjelo učitavanje potrošenih brojeva iskaznica"
+        },
         "actions": {
             "addSingle": {
                 "title": "Dodaj pojedinačni broj",

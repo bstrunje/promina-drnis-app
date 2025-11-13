@@ -9,6 +9,7 @@ import { Trash2, RefreshCw, ArrowLeft } from "lucide-react";
 import { deleteCardNumber, addCardNumber, addCardNumberRange, getAllCardNumbers, getConsumedCardNumbers } from '../../utils/api/apiCards';
 import { useCardNumberLength } from "../../hooks/useCardNumberLength";
 import { useBranding } from '../../hooks/useBranding';
+import { formatDate } from '../../utils/dateUtils';
 
 export default function CardNumberManagement() {
   const { t } = useTranslation('settings');
@@ -78,8 +79,8 @@ export default function CardNumberManagement() {
       } catch (error) {
         if (isDev) console.error('Error fetching card numbers:', error);
         toast({
-          title: "Error",
-          description: "Failed to load card numbers",
+          title: t('cardNumberManagement.toast.error'),
+          description: t('cardNumberManagement.toast.failedToLoad'),
           variant: "destructive",
         });
       } finally {
@@ -88,7 +89,7 @@ export default function CardNumberManagement() {
     }
   
     void fetchCardNumbers();
-  }, [toast, isDev]);
+  }, [toast, isDev, t]);
 
   const handleAddSingle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,8 +98,8 @@ export default function CardNumberManagement() {
     const cardNumberRegex = new RegExp(`^\\d{${cardNumberLength}}$`);
     if (!cardNumberRegex.test(singleCardNumber)) {
       toast({
-        title: "Validation Error",
-        description: `Card number must be exactly ${cardNumberLength} digits`,
+        title: t('cardNumberManagement.toast.validationError'),
+        description: t('cardNumberManagement.toast.cardNumberLength', { length: cardNumberLength }),
         variant: "destructive",
       });
       return;
@@ -110,8 +111,8 @@ export default function CardNumberManagement() {
       await addCardNumber(singleCardNumber);
       
       toast({
-        title: "Success",
-        description: "Card number added successfully",
+        title: t('cardNumberManagement.toast.success'),
+        description: t('cardNumberManagement.toast.cardAdded'),
         variant: "success",
       });
       
@@ -122,8 +123,8 @@ export default function CardNumberManagement() {
     } catch (error) {
       if (isDev) console.error('Error adding card number:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add card number",
+        title: t('cardNumberManagement.toast.error'),
+        description: error instanceof Error ? error.message : t('cardNumberManagement.toast.failedToAdd'),
         variant: "destructive",
       });
     } finally {
@@ -144,8 +145,8 @@ export default function CardNumberManagement() {
     
     if (rangeStart === null || rangeEnd === null) {
       toast({
-        title: "Error",
-        description: "Both start and end numbers are required",
+        title: t('cardNumberManagement.toast.error'),
+        description: t('cardNumberManagement.toast.rangeRequired'),
         variant: "destructive",
       });
       return;
@@ -157,8 +158,8 @@ export default function CardNumberManagement() {
       await addCardNumberRange(rangeStart, rangeEnd);
       
       toast({
-        title: "Success",
-        description: "Card numbers added successfully",
+        title: t('cardNumberManagement.toast.success'),
+        description: t('cardNumberManagement.toast.rangeAdded'),
         variant: "success",
       });
       
@@ -170,8 +171,8 @@ export default function CardNumberManagement() {
     } catch (error) {
       if (isDev) console.error('Error adding card number range:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add card number range",
+        title: t('cardNumberManagement.toast.error'),
+        description: error instanceof Error ? error.message : t('cardNumberManagement.toast.failedToAddRange'),
         variant: "destructive",
       });
     } finally {
@@ -194,15 +195,15 @@ export default function CardNumberManagement() {
       }));
       
       toast({
-        title: "Success",
-        description: `Card number ${cardNumber} deleted successfully`,
+        title: t('cardNumberManagement.toast.success'),
+        description: t('cardNumberManagement.toast.cardDeleted', { cardNumber }),
         variant: "success",
       });
     } catch (error) {
       if (isDev) console.error('Error deleting card number:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete card number",
+        title: t('cardNumberManagement.toast.error'),
+        description: error instanceof Error ? error.message : t('cardNumberManagement.toast.failedToDelete'),
         variant: "destructive",
       });
     } finally {
@@ -258,8 +259,8 @@ export default function CardNumberManagement() {
     } catch (error) {
       if (isDev) console.error('Error fetching card numbers:', error);
       toast({
-        title: "Error",
-        description: "Failed to load card numbers",
+        title: t('cardNumberManagement.toast.error'),
+        description: t('cardNumberManagement.toast.failedToLoad'),
         variant: "destructive",
       });
     } finally {
@@ -277,14 +278,14 @@ export default function CardNumberManagement() {
     } catch (error) {
       if (isDev) console.error('Error fetching consumed card numbers:', error);
       toast({
-        title: "Error",
-        description: "Failed to load consumed card numbers",
+        title: t('cardNumberManagement.toast.error'),
+        description: t('cardNumberManagement.toast.failedToLoadConsumed'),
         variant: "destructive",
       });
     } finally {
       setIsLoadingConsumed(false);
     }
-  }, [toast, isDev]);
+  }, [toast, isDev, t]);
 
   // Automatski dohvat potrošenih kad se prebaci na taj filter
   useEffect(() => {
@@ -576,7 +577,7 @@ export default function CardNumberManagement() {
                                 {card.card_number}
                               </span>
                               <span className="text-xs text-gray-500">{t('cardNumberManagement.forms.manage.consumed.member', { member: card.member_name ?? 'N/A' })}</span>
-                              <span className="text-xs text-gray-400">{t('cardNumberManagement.forms.manage.consumed.issued', { date: card.consumed_at ? new Date(card.consumed_at).toLocaleDateString() : (card.issued_at ? new Date(card.issued_at).toLocaleDateString() : '-') })}</span>
+                              <span className="text-xs text-gray-400">{t('cardNumberManagement.forms.manage.consumed.issued', { date: card.consumed_at ? formatDate(card.consumed_at, 'dd.MM.yyyy') : (card.issued_at ? formatDate(card.issued_at, 'dd.MM.yyyy') : '-') })}</span>
                             </div>
                           </div>
                         ))}

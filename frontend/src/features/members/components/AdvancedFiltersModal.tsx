@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Users, Award, Archive, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Users, Award, Archive, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Button } from '@components/ui/button';
+import { Input } from '@components/ui/input';
 import { useUsedSkills } from '../../../hooks/useUsedSkills';
 import { ApiUsedSkill } from '../../../utils/api/apiTypes';
 import { getMembersWithFunctions, getMembersBySkill } from '../../../utils/api/apiMembers';
@@ -47,6 +48,19 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [skillsCollapsed, setSkillsCollapsed] = useState(true);
   const [functionsCollapsed, setFunctionsCollapsed] = useState(true);
   const [archiveCollapsed, setArchiveCollapsed] = useState(true);
+  const [archiveSearch, setArchiveSearch] = useState('');
+  
+  // Handler za primjenu pretrage arhive
+  const handleArchiveSearch = () => {
+    if (archiveSearch.trim()) {
+      // Ako postoji pretraga, primijeni je kao searchTerm i postavi filter na inactive
+      window.dispatchEvent(new CustomEvent('advancedFilters:archiveSearch', { 
+        detail: { searchTerm: archiveSearch.trim() } 
+      }));
+    }
+    onArchiveSelect('inactive');
+    onClose();
+  };
 
   // Dohvati članove s funkcijama
   useEffect(() => {
@@ -237,6 +251,34 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
             
             {!archiveCollapsed && (
               <div className="p-4 border-t space-y-2">
+                {/* Tražilica za arhivu */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder={t('advancedFilters.searchArchivePlaceholder')}
+                      value={archiveSearch}
+                      onChange={(e) => setArchiveSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {archiveSearch && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('advancedFilters.searchArchive')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Gumb za sve bivše članove */}
+                <button
+                  onClick={handleArchiveSearch}
+                  className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded text-sm transition-colors mb-3 font-medium text-orange-600 border border-orange-200"
+                >
+                  {t('advancedFilters.allInactive')}
+                  {archiveSearch && <span className="ml-2 text-xs text-gray-500">({archiveSearch})</span>}
+                </button>
+
                 <p className="text-sm text-gray-500 mb-2">{t('advancedFilters.byPeriod')}</p>
                 {/* Dinamički generirane godine - samo one koje imaju članove s završenim članstvom */}
                 {(() => {
@@ -255,11 +297,20 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
                   // Sortiraj godine silazno
                   const sortedYears = Array.from(endYears).sort((a, b) => b - a);
                   
+                  // Filtriraj godine prema pretrazi
+                  const filteredYears = archiveSearch
+                    ? sortedYears.filter(year => year.toString().includes(archiveSearch))
+                    : sortedYears;
+                  
+                  if (filteredYears.length === 0 && archiveSearch) {
+                    return <p className="text-sm text-gray-400 px-4 py-2">{t('advancedFilters.noResults', { search: archiveSearch })}</p>;
+                  }
+                  
                   if (sortedYears.length === 0) {
                     return <p className="text-sm text-gray-400 px-4 py-2">{t('advancedFilters.noArchive', 'Nema arhiviranih članova')}</p>;
                   }
                   
-                  return sortedYears.map(year => (
+                  return filteredYears.map(year => (
                     <button
                       key={year}
                       onClick={() => { onArchiveSelect('inactive', year); onClose(); }}

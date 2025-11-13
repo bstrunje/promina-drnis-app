@@ -223,6 +223,10 @@
         "noSkills": "No skills entered",
         "loadingFunctions": "Loading functions...",
         "noFunctions": "No functions entered",
-        "close": "Close"
+        "close": "Close",
+        "searchArchive": "Search Archive",
+        "searchArchivePlaceholder": "Search former members...",
+        "allInactive": "All Former Members",
+        "noResults": "No results for \"{{search}}\""
     }
 }

@@ -73,26 +73,36 @@ export function isDutyDateAllowed(date: Date): boolean {
 
 /**
  * Kreira DateTime objekt za početak dežurstva
+ * Koristi lokalno vrijeme (ne UTC) da se osigura točno vrijeme u Hrvatskoj
  */
 export function createDutyStartTime(date: Date): Date {
   const schedule = getScheduleForDate(date);
   const [hours, minutes] = schedule.startTime.split(':').map(Number);
   
-  const startTime = new Date(date);
-  startTime.setHours(hours, minutes, 0, 0);
+  // Kreiraj novi Date objekt s točnim datumom i vremenom u lokalnoj vremenskoj zoni
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  
+  const startTime = new Date(year, month, day, hours, minutes, 0, 0);
   
   return startTime;
 }
 
 /**
  * Kreira DateTime objekt za kraj dežurstva
+ * Koristi lokalno vrijeme (ne UTC) da se osigura točno vrijeme u Hrvatskoj
  */
 export function createDutyEndTime(date: Date): Date {
   const schedule = getScheduleForDate(date);
   const [hours, minutes] = schedule.endTime.split(':').map(Number);
   
-  const endTime = new Date(date);
-  endTime.setHours(hours, minutes, 0, 0);
+  // Kreiraj novi Date objekt s točnim datumom i vremenom u lokalnoj vremenskoj zoni
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  
+  const endTime = new Date(year, month, day, hours, minutes, 0, 0);
   
   return endTime;
 }

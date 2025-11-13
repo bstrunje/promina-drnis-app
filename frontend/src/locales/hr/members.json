@@ -227,6 +227,10 @@
         "noSkills": "Nema upisanih vještina",
         "loadingFunctions": "Učitavanje funkcija...",
         "noFunctions": "Nema upisanih funkcija",
-        "close": "Zatvori"
+        "close": "Zatvori",
+        "searchArchive": "Pretraži arhivu",
+        "searchArchivePlaceholder": "Pretraži bivše članove...",
+        "allInactive": "Svi bivši članovi",
+        "noResults": "Nema rezultata za \"{{search}}\""
     }
 }

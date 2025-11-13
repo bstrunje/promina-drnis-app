@@ -18,6 +18,21 @@
             "refreshing": "refreshing...",
             "refreshTitle": "Refresh card statistics"
         },
+        "toast": {
+            "validationError": "Validation Error",
+            "cardNumberLength": "Card number must be exactly {{length}} digits",
+            "success": "Success",
+            "cardAdded": "Card number added successfully",
+            "error": "Error",
+            "failedToAdd": "Failed to add card number",
+            "rangeRequired": "Both start and end numbers are required",
+            "rangeAdded": "Card numbers added successfully",
+            "failedToAddRange": "Failed to add card number range",
+            "cardDeleted": "Card number {{cardNumber}} deleted successfully",
+            "failedToDelete": "Failed to delete card number",
+            "failedToLoad": "Failed to load card numbers",
+            "failedToLoadConsumed": "Failed to load consumed card numbers"
+        },
         "actions": {
             "addSingle": {
                 "title": "Add Single Number",

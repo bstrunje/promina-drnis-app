@@ -300,6 +300,22 @@ export default function MemberList(): JSX.Element {
     }
   }, [activeFilter]);
 
+  // Listener za arhivsku pretragu iz AdvancedFiltersModal
+  useEffect(() => {
+    const handleArchiveSearch = (event: Event) => {
+      const customEvent = event as CustomEvent<{ searchTerm: string }>;
+      if (customEvent.detail?.searchTerm) {
+        setSearchTerm(customEvent.detail.searchTerm);
+        setAdvancedFilterApplied(true);
+      }
+    };
+
+    window.addEventListener('advancedFilters:archiveSearch', handleArchiveSearch);
+    return () => {
+      window.removeEventListener('advancedFilters:archiveSearch', handleArchiveSearch);
+    };
+  }, []);
+
   // We use a custom hook for filtering and sorting
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
     members: membersForView,
