@@ -227,6 +227,8 @@
         "searchArchive": "Search Archive",
         "searchArchivePlaceholder": "Search former members...",
         "allInactive": "All Former Members",
-        "noResults": "No results for \"{{search}}\""
+        "noResults": "No results for \"{{search}}\"",
+        "foundMembers_one": "Found {{count}} member",
+        "foundMembers_other": "Found {{count}} members"
     }
 }

@@ -231,6 +231,9 @@
         "searchArchive": "Pretraži arhivu",
         "searchArchivePlaceholder": "Pretraži bivše članove...",
         "allInactive": "Svi bivši članovi",
-        "noResults": "Nema rezultata za \"{{search}}\""
+        "noResults": "Nema rezultata za \"{{search}}\"",
+        "foundMembers_one": "Pronađen {{count}} član",
+        "foundMembers_few": "Pronađena {{count}} člana",
+        "foundMembers_other": "Pronađeno {{count}} članova"
     }
 }

@@ -24,7 +24,7 @@ interface AdvancedFiltersModalProps {
   onClose: () => void;
   onSkillSelect: (skillName: string, members: string[]) => void;
   onFunctionSelect: (member: MemberWithFunction) => void;
-  onArchiveSelect: (filterValue: 'all' | 'inactive', year?: number) => void;
+  onArchiveSelect: (filterValue: 'all' | 'inactive', year?: number, searchTerm?: string) => void;
   members: MemberWithDetails[];
 }
 
@@ -43,6 +43,13 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [loadingFunctions, setLoadingFunctions] = useState(false);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [skillMembers, setSkillMembers] = useState<Record<string, MemberWithSkill[]>>({});
+
+  // Helper funkcija za hrvatsku pluralizaciju
+  const getHrPluralKey = (count: number, baseKey: string): string => {
+    if (count === 1) return `${baseKey}_one`;
+    if (count >= 2 && count <= 4) return `${baseKey}_few`;
+    return `${baseKey}_other`;
+  };
   
   // State za kolapsibilne sekcije
   const [skillsCollapsed, setSkillsCollapsed] = useState(true);
@@ -50,15 +57,43 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
   const [archiveCollapsed, setArchiveCollapsed] = useState(true);
   const [archiveSearch, setArchiveSearch] = useState('');
   
-  // Handler za primjenu pretrage arhive
-  const handleArchiveSearch = () => {
+  // State za pronađene članove u arhivi
+  const [archiveResults, setArchiveResults] = useState<MemberWithDetails[]>([]);
+
+  // Real-time pretraga arhive - filtrira članove lokalno bez zatvaranja modala
+  useEffect(() => {
     if (archiveSearch.trim()) {
-      // Ako postoji pretraga, primijeni je kao searchTerm i postavi filter na inactive
-      window.dispatchEvent(new CustomEvent('advancedFilters:archiveSearch', { 
-        detail: { searchTerm: archiveSearch.trim() } 
-      }));
+      const searchLower = archiveSearch.toLowerCase();
+      const inactiveMembers = members.filter(member => {
+        // Filtriraj samo neaktivne članove
+        const periods = member.membership_history?.periods ?? [];
+        const hasEndedMembership = periods.some(period => period.end_date);
+        return hasEndedMembership;
+      });
+
+      // Pretraži po imenu
+      const results = inactiveMembers.filter(member => {
+        const fullName = member.full_name ?? `${member.first_name} ${member.last_name}`;
+        return fullName.toLowerCase().includes(searchLower);
+      });
+
+      setArchiveResults(results);
+    } else {
+      setArchiveResults([]);
     }
-    onArchiveSelect('inactive');
+  }, [archiveSearch, members]);
+
+  // Handler za odabir člana iz rezultata pretrage
+  const handleSelectArchiveMember = (memberName: string) => {
+    console.log('[AdvancedFiltersModal] Selected archive member:', memberName);
+    onArchiveSelect('inactive', undefined, memberName);
+    onClose();
+  };
+
+  // Handler za prikaz svih bivših članova
+  const handleShowAllInactive = () => {
+    console.log('[AdvancedFiltersModal] Show all inactive members');
+    onArchiveSelect('inactive', undefined, archiveSearch.trim() || undefined);
     onClose();
   };
 
@@ -263,25 +298,50 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
                       className="pl-10"
                     />
                   </div>
-                  {archiveSearch && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('advancedFilters.searchArchive')}
-                    </p>
+
+                  {/* Rezultati pretrage */}
+                  {archiveSearch && archiveResults.length > 0 && (
+                    <div className="mt-2 border rounded-lg max-h-60 overflow-y-auto bg-white">
+                      <p className="text-xs text-gray-500 px-3 py-2 bg-gray-50 border-b">
+                        {t(getHrPluralKey(archiveResults.length, 'advancedFilters.foundMembers'), { count: archiveResults.length })}
+                      </p>
+                      {archiveResults.map(member => (
+                        <button
+                          key={member.member_id}
+                          onClick={() => handleSelectArchiveMember(member.full_name ?? `${member.first_name} ${member.last_name}`)}
+                          className="w-full text-left px-3 py-2 hover:bg-orange-50 text-sm transition-colors border-b last:border-b-0"
+                        >
+                          {member.full_name ?? `${member.first_name} ${member.last_name}`}
+                        </button>
+                      ))}
+                    </div>
                   )}
+
                 </div>
 
-                {/* Gumb za sve bivše članove */}
-                <button
-                  onClick={handleArchiveSearch}
-                  className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded text-sm transition-colors mb-3 font-medium text-orange-600 border border-orange-200"
-                >
-                  {t('advancedFilters.allInactive')}
-                  {archiveSearch && <span className="ml-2 text-xs text-gray-500">({archiveSearch})</span>}
-                </button>
+                {/* Gumb za sve bivše članove - prikaži samo ako nema rezultata pretrage */}
+                {!archiveSearch && (
+                  <button
+                    onClick={handleShowAllInactive}
+                    className="w-full text-left px-4 py-2 hover:bg-orange-50 rounded text-sm transition-colors mb-3 font-medium text-orange-600 border border-orange-200"
+                  >
+                    {t('advancedFilters.allInactive')}
+                  </button>
+                )}
 
-                <p className="text-sm text-gray-500 mb-2">{t('advancedFilters.byPeriod')}</p>
-                {/* Dinamički generirane godine - samo one koje imaju članove s završenim članstvom */}
-                {(() => {
+                {/* Prikaži godine samo ako nema rezultata pretrage članova */}
+                {!archiveSearch && (
+                  <p className="text-sm text-gray-500 mb-2">{t('advancedFilters.byPeriod')}</p>
+                )}
+                
+                {/* Nema rezultata - prikaži samo ako nema pronađenih članova */}
+                {archiveSearch && archiveResults.length === 0 && (
+                  <p className="text-sm text-gray-400 px-4 py-2 mb-2">
+                    {t('advancedFilters.noResults', { search: archiveSearch })}
+                  </p>
+                )}
+                {/* Dinamički generirane godine - prikaži samo kada nema pretrage članova */}
+                {!archiveSearch && (() => {
                   // Izvuci sve godine završetka članstva
                   const endYears = new Set<number>();
                   members.forEach(member => {
@@ -297,20 +357,11 @@ const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
                   // Sortiraj godine silazno
                   const sortedYears = Array.from(endYears).sort((a, b) => b - a);
                   
-                  // Filtriraj godine prema pretrazi
-                  const filteredYears = archiveSearch
-                    ? sortedYears.filter(year => year.toString().includes(archiveSearch))
-                    : sortedYears;
-                  
-                  if (filteredYears.length === 0 && archiveSearch) {
-                    return <p className="text-sm text-gray-400 px-4 py-2">{t('advancedFilters.noResults', { search: archiveSearch })}</p>;
-                  }
-                  
                   if (sortedYears.length === 0) {
                     return <p className="text-sm text-gray-400 px-4 py-2">{t('advancedFilters.noArchive', 'Nema arhiviranih članova')}</p>;
                   }
                   
-                  return filteredYears.map(year => (
+                  return sortedYears.map(year => (
                     <button
                       key={year}
                       onClick={() => { onArchiveSelect('inactive', year); onClose(); }}

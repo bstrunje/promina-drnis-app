@@ -387,15 +387,22 @@ const cardNumberController = {
       );
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Dohvati trenutni status markice prije promjene
+      const currentDetails = await prisma.membershipDetails.findUnique({
+        where: { member_id: parseInt(memberId) },
+        select: { card_stamp_issued: true }
+      });
+      const currentStampStatus = currentDetails?.card_stamp_issued ?? false;
+
       // Pokreni transakciju za ažuriranje člana
       await prisma.$transaction(async (tx) => {
         // Ažuriraj podatke o članu - dodaj broj iskaznice
-        // NAPOMENA: updateCardDetails će postaviti status 'registered' samo ako član ima I uplatu I karticu
+        // NAPOMENA: Zadržavamo postojeći status markice, ne resetiramo ga
         await membershipService.updateCardDetails(
           req,
           parseInt(memberId),
           cardNumber,
-          false, // Markica se NE izdaje automatski
+          currentStampStatus, // Zadrži trenutni status markice
           req.user?.id
         );
 

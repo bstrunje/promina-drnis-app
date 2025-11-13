@@ -341,6 +341,10 @@ const membershipService = {
           if (isDev) console.log(`[${passwordStrategy || 'DEFAULT'}] Member ${memberId} - willHaveCard: ${willHaveCard}, hasPaidFee: ${hasPaidFee}, hasStamp: ${hasStamp}, hasActivePeriod: ${hasActivePeriod}`);
         }
 
+        // KRITIČNO: Provjeri je li član već bio registered prije promjene
+        // Ako je član već registered, NE mijenjaj status na pending samo zato što se mijenja broj kartice
+        const wasAlreadyRegistered = member.status === 'registered' && member.registration_completed === true;
+        
         if (shouldBeRegistered) {
           if (isDev) console.log(`Updating member ${memberId} to: registered, registration_completed = true`);
           await tx.member.update({
@@ -355,7 +359,8 @@ const membershipService = {
               registration_completed: true
             }
           });
-        } else {
+        } else if (!wasAlreadyRegistered) {
+          // Samo postavi na pending ako član NIJE bio registered prije
           if (isDev) console.log(`Member ${memberId} not ready - setting status 'pending', registration_completed = false`);
           await tx.member.update({
             where: { member_id: memberId },
@@ -364,6 +369,9 @@ const membershipService = {
               registration_completed: false
             }
           });
+        } else {
+          // Član je bio registered i ostaje registered - samo ažuriramo karticu
+          if (isDev) console.log(`Member ${memberId} was already registered - keeping status unchanged during card update`);
         }
 
         // OPTIMIZACIJA: Prisma deleteMany umjesto DELETE query

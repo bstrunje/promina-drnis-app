@@ -585,8 +585,8 @@ const cardNumberRepository = {
     card_number: string;
     member_id: number | null;
     member_name: string | null;
-    issued_at: Date;
-    consumed_at: Date;
+    issued_at: string;
+    consumed_at: string;
   }[]> {
     try {
       const whereClause: Prisma.ConsumedCardNumberWhereInput = {
@@ -631,8 +631,8 @@ const cardNumberRepository = {
         card_number: card.card_number,
         member_id: card.member_id,
         member_name: card.member?.full_name || null,
-        issued_at: card.issued_at,
-        consumed_at: card.consumed_at
+        issued_at: card.issued_at.toISOString(),
+        consumed_at: card.consumed_at.toISOString()
       }));
     } catch (error) {
       console.error('Greška u getConsumedCardNumbers:', error);

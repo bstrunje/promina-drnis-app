@@ -242,13 +242,16 @@ export default function MemberList(): JSX.Element {
     setAdvancedFilterApplied(true);
   };
 
-  const handleArchiveSelect = (filterValue: 'all' | 'inactive', year?: number) => {
+  const handleArchiveSelect = (filterValue: 'all' | 'inactive', year?: number, searchTermParam?: string) => {
     // Postavi odgovarajući filter
-    if (isDev) console.log('Archive selected:', filterValue, year);
+    if (isDev) console.log('Archive selected:', filterValue, year, 'searchTerm:', searchTermParam);
     
     if (filterValue === 'all') {
       setActiveFilter('all');
       setArchiveYear(null); // Resetiraj godinu
+      if (searchTermParam) {
+        setSearchTerm(searchTermParam);
+      }
     } else if (filterValue === 'inactive') {
       setActiveFilter('inactive');
       // Postavi godinu za filtriranje
@@ -257,6 +260,11 @@ export default function MemberList(): JSX.Element {
         if (isDev) console.log('Filter by year:', year);
       } else {
         setArchiveYear(null); // Svi neaktivni bez obzira na godinu
+      }
+      // Postavi searchTerm ako je proslijeđen
+      if (searchTermParam) {
+        if (isDev) console.log('Setting searchTerm:', searchTermParam);
+        setSearchTerm(searchTermParam);
       }
     }
     
@@ -299,22 +307,6 @@ export default function MemberList(): JSX.Element {
       setSortOrder('desc');
     }
   }, [activeFilter]);
-
-  // Listener za arhivsku pretragu iz AdvancedFiltersModal
-  useEffect(() => {
-    const handleArchiveSearch = (event: Event) => {
-      const customEvent = event as CustomEvent<{ searchTerm: string }>;
-      if (customEvent.detail?.searchTerm) {
-        setSearchTerm(customEvent.detail.searchTerm);
-        setAdvancedFilterApplied(true);
-      }
-    };
-
-    window.addEventListener('advancedFilters:archiveSearch', handleArchiveSearch);
-    return () => {
-      window.removeEventListener('advancedFilters:archiveSearch', handleArchiveSearch);
-    };
-  }, []);
 
   // We use a custom hook for filtering and sorting
   const { filteredMembers: filteredMembersRaw } = useFilteredMembers({
