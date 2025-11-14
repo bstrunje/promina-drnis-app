@@ -97,10 +97,10 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     [currentYearMembers]
   );
 
-  // Članovi koji ulaze u statistiku po spolu u tekućoj godini
+  // Članovi koji ulaze u statistiku po spolu u tekućoj godini - samo registrirani
   const genderEligibleMembers = useMemo(
-    () => currentYearMembers.filter(m => m.registration_completed === true || m.membershipStatus === 'registered'),
-    [currentYearMembers]
+    () => registeredMembers,
+    [registeredMembers]
   );
 
   const activeMembersCount = useMemo(
