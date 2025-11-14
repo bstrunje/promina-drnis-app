@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MemberWithDetails } from '@shared/memberDetails.types';
-import { parseDate } from '../../../utils/dateUtils';
-import { getCurrentDate } from '../../../utils/dateUtils';
+import { parseDate, getCurrentDate } from '../../../utils/dateUtils';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
 import { isActiveMember } from '../../../utils/activityStatusHelpers';
 import { ActivitiesStatsCard } from './ActivitiesStatsCard';
+import { isFeePaidForYear } from '@shared/memberStatus.types';
 
 interface StatisticsViewProps {
   members: MemberWithDetails[];
@@ -68,14 +68,39 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     return groups;
   }, [members]);
 
+  // Statistika se računa samo za članove koji imaju aktivni ili završeni period
+  // koji se preklapa s tekućom godinom
+  const currentYear = getCurrentDate().getFullYear();
+  const currentYearMembers = useMemo(() => {
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+
+    const overlapsCurrentYear = (member: MemberWithDetails): boolean => {
+      const periods = member.periods ?? [];
+      return periods.some(period => {
+        const start = parseDate(period.start_date);
+        if (!start) return false;
+        const end = period.end_date ? parseDate(period.end_date) : undefined;
+
+        // Period se računa ako se ijednim dijelom preklapa s tekućom godinom
+        const overlaps = start <= yearEnd && (!end || end >= yearStart);
+        return overlaps;
+      });
+    };
+
+    return members.filter(overlapsCurrentYear);
+  }, [members, currentYear]);
+
+  // Registrirani članovi u tekućoj godini
   const registeredMembers = useMemo(
-    () => members.filter(m => m.membershipStatus === 'registered'),
-    [members]
+    () => currentYearMembers.filter(m => m.membershipStatus === 'registered'),
+    [currentYearMembers]
   );
 
+  // Članovi koji ulaze u statistiku po spolu u tekućoj godini
   const genderEligibleMembers = useMemo(
-    () => members.filter(m => m.registration_completed === true || m.membershipStatus === 'registered'),
-    [members]
+    () => currentYearMembers.filter(m => m.registration_completed === true || m.membershipStatus === 'registered'),
+    [currentYearMembers]
   );
 
   const activeMembersCount = useMemo(
@@ -145,15 +170,15 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t('statistics.validMembership')}:</span>
-                    <span>{members.filter(m => m.membershipStatus === 'registered').length}</span>
+                    <span>{currentYearMembers.filter(m => m.membershipStatus === 'registered').length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('statistics.inactive')}:</span>
-                    <span>{members.filter(m => m.membershipStatus === 'inactive').length}</span>
+                    <span>{currentYearMembers.filter(m => m.membershipStatus === 'inactive').length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('statistics.pending')}:</span>
-                    <span>{members.filter(m => m.membershipStatus === 'pending').length}</span>
+                    <span>{currentYearMembers.filter(m => m.membershipStatus === 'pending').length}</span>
                   </div>
                 </div>
               </div>
@@ -163,11 +188,11 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t('statistics.feePaid')}:</span>
-                    <span>{members.filter(m => m.feeStatus === 'current').length}</span>
+                    <span>{currentYearMembers.filter(m => isFeePaidForYear({ membership_details: m.membership_details }, currentYear)).length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('statistics.feeRequired')}:</span>
-                    <span>{members.filter(m => m.feeStatus === 'payment required' && m.membershipStatus === 'pending').length}</span>
+                    <span>{currentYearMembers.filter(m => !isFeePaidForYear({ membership_details: m.membership_details }, currentYear)).length}</span>
                   </div>
                 </div>
               </div>
