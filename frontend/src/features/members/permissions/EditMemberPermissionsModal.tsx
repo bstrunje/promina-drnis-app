@@ -71,14 +71,6 @@ function categorizePermissions(permissions: AdminPermissionsModel, t: TFunction)
       permissions: [
         { key: 'can_view_activities', label: t('permissions.labels.can_view_activities'), value: permissions.can_view_activities },
         { key: 'can_create_activities', label: t('permissions.labels.can_create_activities'), value: permissions.can_create_activities },
-        { key: 'can_approve_activities', label: t('permissions.labels.can_approve_activities'), value: permissions.can_approve_activities },
-      ]
-    },
-    {
-      name: t('permissions.categories.finances'),
-      permissions: [
-        { key: 'can_view_financials', label: t('permissions.labels.can_view_financials'), value: permissions.can_view_financials },
-        { key: 'can_manage_financials', label: t('permissions.labels.can_manage_financials'), value: permissions.can_manage_financials },
       ]
     },
     {
@@ -87,90 +79,12 @@ function categorizePermissions(permissions: AdminPermissionsModel, t: TFunction)
         { key: 'can_send_group_messages', label: t('permissions.labels.can_send_group_messages'), value: permissions.can_send_group_messages },
         { key: 'can_manage_all_messages', label: t('permissions.labels.can_manage_all_messages'), value: permissions.can_manage_all_messages },
       ]
-    },
-    {
-      name: t('permissions.categories.other'),
-      permissions: [
-        { key: 'can_view_statistics', label: t('permissions.labels.can_view_statistics'), value: permissions.can_view_statistics },
-        { key: 'can_export_data', label: t('permissions.labels.can_export_data'), value: permissions.can_export_data },
-        { key: 'can_manage_end_reasons', label: t('permissions.labels.can_manage_end_reasons'), value: permissions.can_manage_end_reasons },
-        { key: 'can_manage_card_numbers', label: t('permissions.labels.can_manage_card_numbers'), value: permissions.can_manage_card_numbers },
-        { key: 'can_assign_passwords', label: t('permissions.labels.can_assign_passwords'), value: permissions.can_assign_passwords },
-      ]
     }
   ];
 }
 
 // Kategorije za prikaz u UI-u (dinamički)
 const permissionCategories = categorizePermissions(permissions, t);
-
-// --- OVDJE NASTAVLJA OSTATak KODA (predlošci, useEffect, itd.) ---
-
-  const permissionTemplates = [
-    {
-      name: t('permissions.templates.fullAdmin'),
-      template: {
-        can_view_members: true,
-        can_edit_members: true,
-        can_add_members: true,
-        can_manage_membership: true,
-        can_view_activities: true,
-        can_create_activities: true,
-        can_approve_activities: true,
-        can_view_financials: true,
-        can_manage_financials: true,
-        can_send_group_messages: true,
-        can_manage_all_messages: true,
-        can_view_statistics: true,
-        can_export_data: true,
-        can_manage_end_reasons: true,
-        can_manage_card_numbers: true,
-        can_assign_passwords: true
-      }
-    },
-    {
-      name: t('permissions.templates.operational'),
-      template: {
-        can_view_members: true,
-        can_edit_members: true,
-        can_add_members: false,
-        can_manage_membership: false,
-        can_view_activities: true,
-        can_create_activities: true,
-        can_approve_activities: false,
-        can_view_financials: false,
-        can_manage_financials: false,
-        can_send_group_messages: true,
-        can_manage_all_messages: false,
-        can_view_statistics: true,
-        can_export_data: false,
-        can_manage_end_reasons: false,
-        can_manage_card_numbers: false,
-        can_assign_passwords: false
-      }
-    },
-    {
-      name: 'Samo pregled',
-      template: {
-        can_view_members: true,
-        can_edit_members: false,
-        can_add_members: false,
-        can_manage_membership: false,
-        can_view_activities: true,
-        can_create_activities: false,
-        can_approve_activities: false,
-        can_view_financials: true,
-        can_manage_financials: false,
-        can_send_group_messages: false,
-        can_manage_all_messages: false,
-        can_view_statistics: true,
-        can_export_data: false,
-        can_manage_end_reasons: false,
-        can_manage_card_numbers: false,
-        can_assign_passwords: false
-      }
-    }
-  ];
 
   // Učitavanje postojećih ovlasti
   useEffect(() => {
@@ -206,14 +120,6 @@ const permissionCategories = categorizePermissions(permissions, t);
     setPermissions(prev => ({
       ...prev,
       [key]: !prev[key]
-    }));
-  };
-
-  // Handler za primjenu predloška
-  const applyTemplate = (template: Partial<AdminPermissionsModel>) => {
-    setPermissions(prev => ({
-      ...prev,
-      ...template
     }));
   };
 
@@ -326,19 +232,10 @@ const permissionCategories = categorizePermissions(permissions, t);
                 <p className="text-sm text-gray-600">{member.email ?? t('members:noEmail')}</p>
               </div>
 
-              {/* Predlošci ovlasti */}
+              {/* Predlošci ovlasti - u UI-u ostaje samo gumb za uklanjanje svih ovlasti */}
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">{t('permissions.templatesTitle')}</h4>
                 <div className="flex flex-wrap gap-2">
-                  {permissionTemplates.map((template, index) => (
-                    <button
-                      key={index}
-                      onClick={() => applyTemplate(template.template)}
-                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-sm rounded-md text-gray-700"
-                    >
-                      {template.name}
-                    </button>
-                  ))}
                   <button
                     onClick={clearAllPermissions}
                     className="px-3 py-1 bg-red-100 hover:bg-red-200 text-sm rounded-md text-red-700"

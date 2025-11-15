@@ -39,6 +39,7 @@ export interface MemberListFiltersProps {
   onAdvancedFiltersClick: () => void;
   onCloseFilters?: () => void;
   advancedOpen: boolean;
+  showAgeFilter: boolean;
 }
 
 /**
@@ -59,7 +60,8 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
   onGroupTypeChange,
   onAdvancedFiltersClick,
   onCloseFilters,
-  advancedOpen
+  advancedOpen,
+  showAgeFilter
 }) => {
   const { t } = useTranslation('members');
 
@@ -144,18 +146,19 @@ const MemberListFilters: React.FC<MemberListFiltersProps> = ({
                 <SelectItem value="pending">{t('memberListFilters.options.pending')}</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button
-              variant={ageFilter === "adults" ? "default" : "outline"}
-              size="sm"
-              onClick={handleAgeFilterToggle}
-              title={ageFilter === "adults"
-                ? t('memberListFilters.tooltips.showAllMembers')
-                : t('memberListFilters.tooltips.showOnlyAdults')}
-              className="min-w-[50px] md:min-w-[130px]"
-            >
-              <span>{t('memberListFilters.buttons.adults')}</span>
-            </Button>
+            {showAgeFilter && (
+              <Button
+                variant={ageFilter === "adults" ? "default" : "outline"}
+                size="sm"
+                onClick={handleAgeFilterToggle}
+                title={ageFilter === "adults"
+                  ? t('memberListFilters.tooltips.showAllMembers')
+                  : t('memberListFilters.tooltips.showOnlyAdults')}
+                className="min-w-[50px] md:min-w-[130px]"
+              >
+                <span>{t('memberListFilters.buttons.adults')}</span>
+              </Button>
+            )}
           </div>
         </div>
 

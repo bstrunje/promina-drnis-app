@@ -571,6 +571,7 @@ export default function MemberList(): JSX.Element {
                     onAdvancedFiltersClick={() => setShowAdvancedFilters(true)}
                     onCloseFilters={() => setShowFilters(false)}
                     advancedOpen={showAdvancedFilters || advancedFilterApplied}
+                    showAgeFilter={isAdmin || isSuperuser}
                   />
                 )}
 
