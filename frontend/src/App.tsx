@@ -52,9 +52,6 @@ function OrgRoutes() {
   
   // Dinamički postavi favicon na tenant logo ili fallback
   useFavicon(branding?.logo_path ?? '/pwa/icons/icon-192x192.png');
-  
-  // Debug: provjeri je li orgSlug uspješno izvučen
-  if (import.meta.env.DEV) console.log('[APP] OrgRoutes - orgSlug:', orgSlug);
 
   const handleLogout = async () => {
     try {

@@ -135,20 +135,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           return;
         }
         
-        const savedUser = localStorage.getItem("user");
-        const systemManager = localStorage.getItem("systemManager");
+        // PRIMARY KEY: "user"; FALLBACK: legacy ključ "member"
+        const primaryUser = localStorage.getItem("user");
+        const legacyMember = !primaryUser ? localStorage.getItem("member") : null;
+        const savedUser = primaryUser ?? legacyMember;
         const cachedTenant = localStorage.getItem("current_tenant");
-        
-        if (import.meta.env.DEV) {
-          console.log('[AUTH] localStorage check:', {
-            hasUser: !!savedUser,
-            hasSystemManager: !!systemManager,
-            path: currentPath
-          });
-        }
         
         const savedToken = tokenStorage.getAccessToken();
         
+        // Ako postoji korisnik u localStorage-u, ali NEMA access tokena,
+        // tretiramo to kao istek/nekonzistentnu sesiju i radimo puni logout.
+        if (savedUser && !savedToken) {
+          try {
+            await AuthTokenService.logout();
+          } catch {
+            // Tihi fallback: i ako backend logout padne, nastavljamo s lokalnim čišćenjem
+          }
+          setUser(null);
+          setToken(null);
+          return;
+        }
+
         if (savedUser && savedToken) {
           // Postavljamo privremeno stanje korisnika i tokena
           let parsedUser: unknown;
@@ -171,6 +178,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               if (import.meta.env.DEV) console.log('[AUTH] Cached tenant:', cachedTenant, '| User loaded from localStorage');
             }
             
+            // NORMALIZACIJA: ako je korisnik učitan iz legacy "member" ključa, spremi ga i pod "user"
+            try {
+              if (!primaryUser) {
+                localStorage.setItem("user", savedUser);
+              }
+            } catch {
+              // Tihi fallback: ako localStorage set zakaže, nastavljamo s in-memory stanjem
+            }
+
             setUser({
               ...parsedUser,
               registration_completed: !!(parsedUser).registration_completed,
@@ -180,23 +196,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           }
           setToken(savedToken);
           
-          // Pokušaj osvježiti token kako bi provjerili je li još valjan
-          try {
-            const newToken = await refreshToken();
-            
-            if (!newToken) {
-              // VAŽNA PROMJENA: Ne čistimo odmah stanje korisnika, postavljamo timer
-              // koji će pokušati ponovno osvježiti token kasnije
-              setTimeout(() => {
-                void refreshToken();
-              }, 5000);  // Pokušaj ponovno nakon 5 sekundi
-            } else {
-              // Pokreni automatsko osvježavanje tokena
-              AuthTokenService.startAutoRefresh();
-            }
-          } catch {
-            // VAŽNA PROMJENA: Ne čistimo odmah stanje, postavljamo flag da je token možda nevažeći
-          }
+          // Pokreni automatsko osvježavanje tokena
+          AuthTokenService.startAutoRefresh();
+          
+          // Ne blokiramo inicijalni render čekanjem na refresh;
+          // eventualno osvježavanje radimo u pozadini.
+          void refreshToken();
         }
       } catch {
         // Tihi fallback: ne prekidamo inicijalizaciju ako localStorage/dohvat korisnika padne

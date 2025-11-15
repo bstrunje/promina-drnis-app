@@ -134,7 +134,8 @@ export class AuthTokenService {
     inFlightRefresh = (async () => {
       // Označi cross-tab status kao in_progress
       setCrossTabStatus({ status: 'in_progress', ts: Date.now() });
-      return withRetry(async () => {
+
+      const doRefresh = async (): Promise<string | null> => {
 
         // console.log('Slanje zahtjeva za osvježavanje tokena (koristi se HTTP-only cookie)');
         const tenant = getCurrentTenant();
@@ -153,6 +154,8 @@ export class AuthTokenService {
         if (response.status === 401 || response.status === 403) {
           if (isDev) console.warn(`Osvježavanje tokena nije uspjelo (${response.status}), token više nije važeći`);
           broadcastRefreshResult(null);
+          // Centralizirani logout za sve tabove
+          void this.logout();
           return null;
         }
 
@@ -182,7 +185,10 @@ export class AuthTokenService {
 
         broadcastRefreshResult(null);
         return null;
-      });
+      };
+
+      // Za 5xx/mrežne greške koristimo withRetry, dok 401/403 slučaj rješavamo unutar doRefresh
+      return withRetry(doRefresh);
     })();
 
     try {

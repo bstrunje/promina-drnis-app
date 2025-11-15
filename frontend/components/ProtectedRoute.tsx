@@ -1,8 +1,7 @@
 // frontend/components/ProtectedRoute.tsx
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../src/context/useAuth';
-import { AuthTokenService } from '../src/utils/auth/AuthTokenService';
 import { extractOrgSlugFromPath } from '../src/utils/tenantUtils';
 
 interface ProtectedRouteProps {
@@ -26,38 +25,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
       }
     }
   }, [location.pathname, user]);
-  
-  // Periodička provjera valjanosti tokena
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Funkcija za provjeru valjanosti tokena
-  const checkTokenValidity = useCallback(async () => {
-    try {
-      // Umjesto direktnog axios poziva koristimo centralizirani servis s single-flight zaštitom
-      await AuthTokenService.refreshToken();
-    } catch (error: unknown) {
-      // Greška se logira unutar AuthTokenService, nema potrebe za dodatnim logiranjem
-    }
-  }, []);
-
-  // Postavi periodičku provjeru tokena
-  useEffect(() => {
-    if (user && !isLoading) {
-      // Provjeri odmah pri učitavanju
-      void checkTokenValidity();
-      
-      // Postavi intervalnu provjeru svakih 5 minuta
-      intervalRef.current = setInterval(() => {
-        void checkTokenValidity();
-      }, 5 * 60 * 1000); // 5 minuta
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [user, isLoading, checkTokenValidity]);
 
   // Ovaj effect rješava problem "No routes matched" warning-a
   // Kada se korisnik odjavi, odmah ga preusmjeravamo na login stranicu

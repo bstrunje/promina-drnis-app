@@ -127,6 +127,32 @@ Verify if a subdomain is available before creating an organization.
 
 ---
 
+## 📊 System Overview dashboard
+
+As a Global System Manager you also have access to a System Overview dashboard that aggregates key statistics across **all organizations**.
+
+### Members card
+
+- The **Members** card on the dashboard shows the **total number of active members** across all tenants.
+- The number is calculated using the centralized membership status logic (current membership periods and activity), and **does not count inactive members**.
+- The card no longer shows a textual breakdown below the number; it only displays the total.
+- Clicking the Members card navigates you to the global members list.
+
+### Global members list status filter
+
+When you open the global members list as GSM:
+
+- A **status filter** is available in the toolbar.
+- Default setting hides inactive members (shows only non-inactive entries).
+- You can switch between:
+  - *All statuses* – shows all members regardless of status
+  - *Active (non-inactive)* – shows only non-inactive members (default view)
+  - *Inactive only* – shows only members that are currently inactive
+
+This ensures that the dashboard Members card and the default global members list view both focus on currently active members, while still allowing you to inspect inactive records when needed.
+
+---
+
 ## ❓ Frequently Asked Questions
 
 ### What is the difference between GSM and OSM?
