@@ -21,60 +21,16 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
   // Dohvati activity hours threshold iz system settings (default 20)
   const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
   
-  // Računanje dobnih skupina u rasponima od 5 godina
-  const ageGroups = useMemo(() => {
-    const groups: Record<string, number> = {};
-    
-    // Inicijalizacija grupa po 5 godina
-    for (let i = 0; i <= 15; i++) {
-      const start = i * 5;
-      const end = start + 4;
-      if (i === 15) {
-        groups['75+'] = 0;
-      } else if (i === 14) {
-        groups['70-74'] = 0;
-      } else {
-        groups[`${start}-${end}`] = 0;
-      }
-    }
-    
-    members.forEach(member => {
-      if (!member.date_of_birth) return;
-      const birthDate = parseDate(member.date_of_birth);
-      if (!birthDate) return;
-      const today = getCurrentDate();
-      
-      // Računanje godina
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      // Svrstavanje u dobnu skupinu
-      if (age >= 75) {
-        groups['75+']++;
-      } else if (age >= 70) {
-        groups['70-74']++;
-      } else {
-        const groupStart = Math.floor(age / 5) * 5;
-        const groupKey = `${groupStart}-${groupStart + 4}`;
-        groups[groupKey] ??= 0;
-        groups[groupKey]++;
-      }
-    });
-    
-    return groups;
-  }, [members]);
-
   // Statistika se računa samo za članove koji imaju aktivni ili završeni period
   // koji se preklapa s tekućom godinom
   const currentYear = getCurrentDate().getFullYear();
-  const currentYearMembers = useMemo(() => {
-    const yearStart = new Date(currentYear, 0, 1);
-    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+  const { yearStart, yearEnd } = useMemo(() => {
+    const start = new Date(currentYear, 0, 1);
+    const end = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+    return { yearStart: start, yearEnd: end };
+  }, [currentYear]);
 
+  const currentYearMembers = useMemo(() => {
     const overlapsCurrentYear = (member: MemberWithDetails): boolean => {
       const periods = member.periods ?? [];
       return periods.some(period => {
@@ -89,7 +45,69 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({ members }) => {
     };
 
     return members.filter(overlapsCurrentYear);
-  }, [members, currentYear]);
+  }, [members, yearStart, yearEnd]);
+
+  // Računanje dobnih skupina u rasponima od 5 godina za članove tekuće godine
+  const ageGroups = useMemo(() => {
+    const groups: Record<string, number> = {};
+
+    // Inicijalizacija grupa po 5 godina
+    for (let i = 0; i <= 15; i++) {
+      const start = i * 5;
+      const end = start + 4;
+      if (i === 15) {
+        groups['75+'] = 0;
+      } else if (i === 14) {
+        groups['70-74'] = 0;
+      } else {
+        groups[`${start}-${end}`] = 0;
+      }
+    }
+
+    currentYearMembers.forEach(member => {
+      // U dobne skupine ulaze samo članovi s barem jednim otvorenim periodom (bez end_date)
+      // koji se preklapa s tekućom godinom
+      const periods = member.periods ?? [];
+      const hasOpenPeriodInCurrentYear = periods.some(period => {
+        const start = parseDate(period.start_date);
+        if (!start) return false;
+        const end = period.end_date ? parseDate(period.end_date) : undefined;
+
+        const overlaps = start <= yearEnd && (!end || end >= yearStart);
+        const isOpen = !end;
+        return overlaps && isOpen;
+      });
+
+      if (!hasOpenPeriodInCurrentYear) return;
+
+      if (!member.date_of_birth) return;
+      const birthDate = parseDate(member.date_of_birth);
+      if (!birthDate) return;
+      const today = getCurrentDate();
+
+      // Računanje godina
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      // Svrstavanje u dobnu skupinu
+      if (age >= 75) {
+        groups['75+']++;
+      } else if (age >= 70) {
+        groups['70-74']++;
+      } else {
+        const groupStart = Math.floor(age / 5) * 5;
+        const groupKey = `${groupStart}-${groupStart + 4}`;
+        groups[groupKey] ??= 0;
+        groups[groupKey]++;
+      }
+    });
+
+    return groups;
+  }, [currentYearMembers, yearStart, yearEnd]);
 
   // Registrirani članovi u tekućoj godini
   const registeredMembers = useMemo(

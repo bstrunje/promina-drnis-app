@@ -19,6 +19,7 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'non-inactive' | 'inactive'>('non-inactive');
   const [resetPinModalOpen, setResetPinModalOpen] = useState(false);
   const [selectedMemberForReset, setSelectedMemberForReset] = useState<Member | null>(null);
   const [pagination, setPagination] = useState<{
@@ -100,7 +101,7 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
     if (hasInitiallyLoaded.current) {
       handleFilterChange();
     }
-  }, [selectedOrganization, handleFilterChange]);
+  }, [selectedOrganization, selectedStatus, handleFilterChange]);
   
   // Reset ref kad se mijenja activeTab izvan members
   useEffect(() => {
@@ -126,16 +127,25 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
 
   // Filter members by selected organization (client-side filtering for pagination)
   const filteredMembers = useMemo(() => {
+    let byOrganization: Member[];
     if (selectedOrganization === 'all') {
-      return members;
+      byOrganization = members;
+    } else if (selectedOrganization === 'no-org') {
+      byOrganization = members.filter(m => !m.organization);
+    } else {
+      byOrganization = members.filter(m => 
+        m.organization && m.organization.id.toString() === selectedOrganization
+      );
     }
-    if (selectedOrganization === 'no-org') {
-      return members.filter(m => !m.organization);
+
+    if (selectedStatus === 'all') {
+      return byOrganization;
     }
-    return members.filter(m => 
-      m.organization && m.organization.id.toString() === selectedOrganization
-    );
-  }, [members, selectedOrganization]);
+    if (selectedStatus === 'non-inactive') {
+      return byOrganization.filter(m => m.status !== 'inactive');
+    }
+    return byOrganization.filter(m => m.status === 'inactive');
+  }, [members, selectedOrganization, selectedStatus]);
   
   // Recalculate filtered pagination info
   const filteredPagination = useMemo(() => {
@@ -194,20 +204,31 @@ const SystemManagerMembersView: React.FC<SystemManagerMembersViewProps> = ({ set
         <div className="flex items-center gap-4">
           {/* Organization filter - only for Global System Manager */}
           {isGlobalManager && (
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <select
+                  value={selectedOrganization}
+                  onChange={(e) => setSelectedOrganization(e.target.value)}
+                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                >
+                  <option value="all">All Organizations</option>
+                  <option value="no-org">No Organization</option>
+                  {uniqueOrganizations.map(org => (
+                    <option key={org.id} value={org.id.toString()}>
+                      {org.short_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <select
-                value={selectedOrganization}
-                onChange={(e) => setSelectedOrganization(e.target.value)}
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as 'all' | 'non-inactive' | 'inactive')}
                 className="text-sm border border-gray-300 rounded px-2 py-1"
               >
-                <option value="all">All Organizations</option>
-                <option value="no-org">No Organization</option>
-                {uniqueOrganizations.map(org => (
-                  <option key={org.id} value={org.id.toString()}>
-                    {org.short_name}
-                  </option>
-                ))}
+                <option value="all">All Statuses</option>
+                <option value="non-inactive">Active (non-inactive)</option>
+                <option value="inactive">Inactive only</option>
               </select>
             </div>
           )}

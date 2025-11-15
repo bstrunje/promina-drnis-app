@@ -24,12 +24,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, statsLoading, se
         title="Members"
         icon={<Users className="h-6 w-6 text-blue-600" />}
         value={stats?.totalMembers ?? 0}
-        subtitle={
-          `${stats?.registeredMembers ?? 0} registered, ${stats?.activeMembers ?? 0} active 
-          ${(stats?.registeredMembers ?? 0) > 0 ? 
-            ` (${(((stats?.activeMembers ?? 0) / (stats?.registeredMembers ?? 1)) * 100).toFixed(1)}% active)` : 
-            ''}`
-        }
+        subtitle=""
         loading={statsLoading}
         onClick={() => { void setActiveTab('members'); }}
       />

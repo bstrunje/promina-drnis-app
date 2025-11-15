@@ -6,7 +6,9 @@ import { Member } from '@shared/member';
 import { 
   adaptMembershipPeriods, 
   determineMemberActivityStatus, 
-  determineFeeStatus
+  determineFeeStatus,
+  determineDetailedMembershipStatus,
+  type MemberStatusData
 } from '@shared/memberStatus.types';
 import { getCurrentDate, getYearForPaymentCheck } from '../../../utils/dateUtils';
 import { MemberWithDetails } from '@shared/memberDetails.types';
@@ -108,13 +110,6 @@ export const useMemberData = () => {
           // Koristi centraliziranu funkciju za određivanje aktivnosti člana
           const isActive = determineMemberActivityStatus(member, activityHoursThreshold) === 'active';
           
-          // Koristi centraliziranu funkciju za određivanje statusa članstva
-          // Napomena: Ne možemo ovdje koristiti determineMembershipStatus jer nemamo periods podatke
-          // To će se ažurirati kasnije kad dohvatimo detalje članova
-          const rawStatus = member.status as string;
-          // Prepoznaj "active" status iz baze podataka kao "registered" za konzistentnost prikaza
-          const membershipStatus = rawStatus === 'active' ? 'registered' : (member.status ?? 'pending');
-          
           return {
             ...member,
             cardDetails: {
@@ -124,7 +119,8 @@ export const useMemberData = () => {
               fee_payment_year: member.membership_details?.fee_payment_year ?? member.membership_details?.fee_payment_year
             },
             isActive,
-            membershipStatus: membershipStatus
+            // membershipStatus ćemo uskladiti kasnije kada dohvatimo detaljne podatke (periodi + članarina)
+            membershipStatus: member.status ?? 'pending'
           };
         });
 
@@ -154,23 +150,26 @@ export const useMemberData = () => {
                 }
 
                 const adaptedPeriods = adaptMembershipPeriods(periods);
-                
-                // BACKEND-KALKULIRANI STATUS: Koristi membership_valid i member.status iz backend-a
-                const membershipValid = member.membership_details?.membership_valid ?? false;
-                const backendStatus = member.status ?? 'pending';
-                
-                // Ako je članstvo važeće (backend kaže da je valid), status je 'registered'
-                // Inače koristi status iz baze (pending/inactive)
-                const detailedStatus = {
-                  status: membershipValid ? ('registered' as const) : backendStatus,
-                  reason: member.membership_details?.membership_valid_reason ?? '',
-                  date: null,
-                  endReason: null
+
+                // CENTRALIZIRANI STATUS: koristimo determineDetailedMembershipStatus kao i na backendu
+                const statusData: MemberStatusData = {
+                  status: member.status as MemberStatusData['status'],
+                  activity_hours: member.activity_hours,
+                  membership_details: member.membership_details
+                    ? {
+                        fee_payment_year: member.membership_details.fee_payment_year,
+                        // fee_payment_date dolazi kao string iz API-ja, helper očekuje string
+                        fee_payment_date: member.membership_details.fee_payment_date as unknown as string,
+                        card_number: member.membership_details.card_number
+                      }
+                    : undefined
                 };
+
+                // Koristi istu godinu za provjeru kao i ostatak frontenda (Time Traveler aware)
+                const yearForCheck = getYearForPaymentCheck();
+                const detailedStatus = determineDetailedMembershipStatus(statusData, adaptedPeriods, yearForCheck);
                 
                 // Izračunaj status plaćanja članarine
-                // Koristi getYearForPaymentCheck() koja vraća mock godinu ako je postavljena, inače stvarnu
-                const yearForCheck = getYearForPaymentCheck();
                 const feeStatus = determineFeeStatus({
                   membership_details: member.membership_details ?? {}
                 }, yearForCheck);

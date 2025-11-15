@@ -199,33 +199,12 @@ export function determineDetailedMembershipStatus(
     }
   }
 
-  // 2. Ako nema aktivnog perioda, provjeravamo specifične statuse
-
-  // Ako je status 'pending', član je vjerojatno novi i čeka prvu uplatu
-  if (member.status === 'pending') {
-    return {
-      status: 'pending',
-      reason: 'Registracija u tijeku'
-    };
-  }
-
-  // Ako je status eksplicitno 'inactive' u bazi
-  if (member.status === 'inactive') {
-    const lastEndedPeriod = findLastEndedPeriod(periods);
-    return {
-      status: 'inactive',
-      reason: 'Članstvo isteklo',
-      date: lastEndedPeriod?.end_date,
-      endReason: lastEndedPeriod?.end_reason ?? 'inactivity'
-    };
-  }
-
-  // 3. Ako status nije ni aktivan, ni pending, ni inactive - mora biti neaktivan
-  // Ovo hvata sve ostale slučajeve (npr. 'registered' status u bazi, ali bez aktivnog perioda)
+  // 2. Ako nema aktivnog perioda → član je uvijek bivši (inactive)
+  // U skladu s pravilom: "inactive / former = nema aktivnog perioda (bez obzira na ostale uvjete)"
   const lastEndedPeriod = findLastEndedPeriod(periods);
   const reason = lastEndedPeriod 
     ? 'Članstvo završeno' 
-    : 'Članarina nije plaćena ili članstvo nije aktivirano';
+    : 'Nema aktivnog perioda članstva';
 
   return {
     status: 'inactive',

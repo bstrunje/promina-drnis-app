@@ -14,6 +14,12 @@ import { getOrganizationId } from '../middleware/tenant.middleware.js';
 import { Request } from 'express';
 import { list } from '@vercel/blob';
 import os from 'os';
+import { 
+    determineDetailedMembershipStatus, 
+    getCurrentYear, 
+    type MemberStatusData, 
+    type MembershipPeriod as StatusMembershipPeriod 
+} from '../shared/types/memberStatus.types.js';
 
 type SystemSettingsExtended = {
     id: string;
@@ -473,19 +479,17 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
 
     async getDashboardStats(req: Request) {
         try {
-            const organizationId = req.user?.organization_id;
-            const whereClause = organizationId ? { organization_id: organizationId } : {};
+            // Uvijek iz baze dohvaćamo organization_id za trenutno prijavljenog System Manager-a
+            // kako bismo izbjegli nekonzistentnosti u req.user.
+            const currentManager = await prisma.systemManager.findUnique({
+                where: { id: req.user?.id },
+                select: { organization_id: true }
+            });
 
-            const totalMembers = await prisma.member.count({ where: whereClause });
-            const registeredMembers = await prisma.member.count({
-                where: { 
-                    ...whereClause,
-                    registration_completed: true
-                }
-            });
-            const activeMembers = await prisma.member.count({
-                where: { ...whereClause, status: 'registered', activity_hours: { gte: 20 } }
-            });
+            const organizationId = currentManager?.organization_id ?? null;
+            const isGlobalManager = organizationId === null;
+            const whereClause = isGlobalManager ? {} : { organization_id: organizationId };
+
             const totalActivities = await prisma.activity.count({ where: whereClause });
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
             const recentActivitiesList = await prisma.activity.findMany({
@@ -503,13 +507,129 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
             const recentActivitiesCount = recentActivitiesList.length;
 
             const totalAuditLogs = await prisma.auditLog.count({ where: whereClause });
-            // Pending registrations = članovi sa statusom 'pending' za danu organizaciju (tenant)
-            const pendingRegistrations = await prisma.member.count({ 
-                where: { 
-                    ...whereClause,
-                    status: 'pending'
-                } 
+            // Pending registracije i members sekcija računaju se centraliziranom logikom kao i na frontendu
+            const membersForStatus = await prisma.member.findMany({
+                where: whereClause,
+                include: {
+                    membership_details: true,
+                    periods: true
+                }
             });
+
+            const currentYear = getCurrentYear();
+            const yearStart = new Date(currentYear, 0, 1);
+            const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+
+            // System settings za activityHoursThreshold (isti prag kao na frontendu)
+            const systemSettings = organizationId === null
+                ? await prisma.systemSettings.findFirst({ where: { organization_id: null } })
+                : await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } });
+
+            const activityHoursThreshold = systemSettings?.activityHoursThreshold ?? 20;
+
+            let pendingRegistrations = 0;
+            let totalMembers = 0;
+            let registeredMembers = 0;
+            let activeMembers = 0;
+
+            for (const member of membersForStatus) {
+                const activityHours = member.activity_hours != null
+                    ? Number(member.activity_hours as unknown as number)
+                    : undefined;
+
+                const statusData: MemberStatusData = {
+                    status: member.status as MemberStatusData['status'],
+                    activity_hours: activityHours,
+                    membership_details: member.membership_details
+                        ? {
+                            fee_payment_year: member.membership_details.fee_payment_year ?? undefined,
+                            fee_payment_date: member.membership_details.fee_payment_date
+                                ? member.membership_details.fee_payment_date.toISOString()
+                                : undefined,
+                            card_number: member.membership_details.card_number ?? undefined
+                        }
+                        : undefined
+                };
+
+                const periodsForStatus: StatusMembershipPeriod[] = member.periods.map((period) => ({
+                    period_id: period.period_id,
+                    start_date: period.start_date.toISOString(),
+                    end_date: period.end_date ? period.end_date.toISOString() : null,
+                    end_reason: (period.end_reason ?? null) as StatusMembershipPeriod['end_reason']
+                }));
+
+                const detailedStatus = determineDetailedMembershipStatus(statusData, periodsForStatus, currentYear);
+
+                // Pending registracije brojimo preko centralnog helpera za SVE članove
+                if (detailedStatus.status === 'pending') {
+                    pendingRegistrations++;
+                }
+
+                // Members sekcija u dashboardu računa samo članove s otvorenim periodom u tekućoj godini
+                const periods = member.periods ?? [];
+                const hasOpenPeriodInCurrentYear = periods.some((period) => {
+                    const start = period.start_date;
+                    const end = period.end_date ?? null;
+
+                    const overlaps = start <= yearEnd && (!end || end >= yearStart);
+                    const isOpen = !end;
+                    return overlaps && isOpen;
+                });
+
+                // Za Organization System Manager-e zadržavamo postojeću logiku:
+                // računaju se samo članovi s otvorenim periodom u tekućoj godini.
+                if (!hasOpenPeriodInCurrentYear && !isGlobalManager) {
+                    continue;
+                }
+
+                if (isGlobalManager) {
+                    // Global System Manager: totalMembers = svi članovi koji nisu 'inactive' prema raw statusu člana
+                    if (member.status !== 'inactive') {
+                        totalMembers++;
+                    }
+
+                    // registeredMembers/activeMembers: zadržavamo stroži kriterij
+                    // (otvoreni period u tekućoj godini), kako ne bismo mijenjali
+                    // postojeću semantiku za ostale dijelove sustava.
+                    if (hasOpenPeriodInCurrentYear && detailedStatus.status === 'registered') {
+                        registeredMembers++;
+
+                        if (activityHours !== undefined) {
+                            const activityHoursInHours = activityHours / 60;
+                            if (activityHoursInHours >= activityHoursThreshold) {
+                                activeMembers++;
+                            }
+                        }
+                    }
+                } else {
+                    // Org-specific System Manager: postojeće ponašanje
+                    totalMembers++;
+
+                    if (detailedStatus.status === 'registered') {
+                        registeredMembers++;
+
+                        if (activityHours !== undefined) {
+                            const activityHoursInHours = activityHours / 60;
+                            if (activityHoursInHours >= activityHoursThreshold) {
+                                activeMembers++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[DASHBOARD-STATS] Izračun statusa članova za pending registracije i members sekciju:', {
+                    organizationId,
+                    isGlobalManager,
+                    ukupnoClanova: membersForStatus.length,
+                    totalMembers,
+                    registeredMembers,
+                    activeMembers,
+                    activityHoursThreshold,
+                    pendingRegistrations
+                });
+            }
 
             // Real health checks
             let dbConnection = false;
@@ -534,11 +654,6 @@ async getSystemSettings(req: Request): Promise<SystemSettingsExtended> {
                     blobAccessible = false;
                 }
             }
-
-            // System settings for last backup
-            const systemSettings = organizationId !== undefined
-                ? await prisma.systemSettings.findUnique({ where: { organization_id: organizationId } })
-                : await prisma.systemSettings.findFirst({ where: { organization_id: null } });
 
             const lastBackupAt = systemSettings?.lastBackupAt ?? null;
             const now = Date.now();

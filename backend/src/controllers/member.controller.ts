@@ -6,6 +6,7 @@ import memberService from "../services/member.service.js";
 import memberRepository from '../repositories/member.repository.js';
 import { tBackend } from '../utils/i18n.js';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { determineDetailedMembershipStatus, type MemberStatusData, type MembershipPeriod, getCurrentYear } from '../shared/types/memberStatus.types.js';
 
 // Tip proširenja `req.user` je centraliziran u `backend/src/global.d.ts`.
 
@@ -65,7 +66,7 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
       return;
     }
 
-    const [unreadMessages, recentActivities, memberCount] = await Promise.allSettled([
+    const [unreadMessages, recentActivities] = await Promise.allSettled([
       // Optimizirani upit za nepročitane poruke (filtrirano po tenant-u)
       prisma.memberMessage.count({
         where: {
@@ -87,21 +88,76 @@ export const getMemberDashboardStats = async (req: Request, res: Response): Prom
             gte: thirtyDaysAgo
           }
         }
-      }),
-      
-      // Optimizirani upit za broj članova (filtrirano po tenant-u)
-      prisma.member.count({
-        where: { 
-          organization_id: organizationId, // MULTI-TENANCY filter
-          status: 'registered' 
-        }
       })
     ]);
+
+    // Members sekcija za članski dashboard računa registrirane članove tekuće godine
+    // koristeći centralizirani helper i periode članstva (isti kriterij kao u dashboardima)
+    const membersForStatus = await prisma.member.findMany({
+      where: { organization_id: organizationId },
+      include: {
+        membership_details: true,
+        periods: true
+      }
+    });
+
+    const currentYear = getCurrentYear();
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+
+    let memberCount = 0;
+
+    for (const member of membersForStatus) {
+      const activityHours = member.activity_hours != null
+        ? Number(member.activity_hours as unknown as number)
+        : undefined;
+
+      const statusData: MemberStatusData = {
+        status: member.status as MemberStatusData['status'],
+        activity_hours: activityHours,
+        membership_details: member.membership_details
+          ? {
+              fee_payment_year: member.membership_details.fee_payment_year ?? undefined,
+              fee_payment_date: member.membership_details.fee_payment_date
+                ? member.membership_details.fee_payment_date.toISOString()
+                : undefined,
+              card_number: member.membership_details.card_number ?? undefined
+            }
+          : undefined
+      };
+
+      const periodsForStatus: MembershipPeriod[] = member.periods.map(period => ({
+        period_id: period.period_id,
+        start_date: period.start_date.toISOString(),
+        end_date: period.end_date ? period.end_date.toISOString() : null,
+        end_reason: (period.end_reason ?? null) as MembershipPeriod['end_reason']
+      }));
+
+      const detailedStatus = determineDetailedMembershipStatus(statusData, periodsForStatus, currentYear);
+
+      // Brojimo samo članove s barem jednim otvorenim periodom u tekućoj godini
+      const hasOpenPeriodInCurrentYear = member.periods.some(period => {
+        const start = period.start_date;
+        const end = period.end_date ?? null;
+
+        const overlaps = start <= yearEnd && (!end || end >= yearStart);
+        const isOpen = !end;
+        return overlaps && isOpen;
+      });
+
+      if (!hasOpenPeriodInCurrentYear) {
+        continue;
+      }
+
+      if (detailedStatus.status === 'registered') {
+        memberCount++;
+      }
+    }
 
     const response = {
       unreadMessages: unreadMessages.status === 'fulfilled' ? unreadMessages.value : 0,
       recentActivities: recentActivities.status === 'fulfilled' ? recentActivities.value : 0,
-      memberCount: memberCount.status === 'fulfilled' ? memberCount.value : 0
+      memberCount
     };
 
     // Dodaj cache headers za bolje performanse

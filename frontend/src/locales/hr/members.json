@@ -13,7 +13,7 @@
         "feeDistribution": "Podjela po plaćanju članarine",
         "feePaid": "Plaćena članarina",
         "feeRequired": "Potrebno platiti",
-        "ageDistribution": "Statistika po dobnim skupinama",
+        "ageDistribution": "Dobna struktura članova tekuće godine",
         "years": "{{range}} godina",
         "activities": {
             "title": "Aktivnosti",
@@ -32,7 +32,7 @@
     "permissions": {
         "addMemberPermissions": "Dodaj administratorske ovlasti članu",
         "categories": {
-            "membership": "Članstvo",
+            "membership": "Članstvo tekuće godine",
             "activities": "Aktivnosti",
             "finances": "Financije",
             "messages": "Poruke",

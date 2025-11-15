@@ -426,8 +426,11 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       await fsPromises.readFile(backupPath, 'utf8')
     );
     
-    // Provjera strukture
-    if (!backupData.members || !backupData.membership_details) {
+    // Podrška za oba formata: novi (data.*) i stari (root.*)
+    const root = backupData.data ?? backupData;
+    
+    // Provjera strukture prema novom backup formatu (backupDatabaseToJson)
+    if (!root.members || !root.membershipDetails) {
       return res.status(400).json({ 
         error: 'Nevažeća struktura backup datoteke' 
       });
@@ -452,22 +455,28 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       // Brisanje postojećih podataka iz membership_details (foreign key constraint)
       await tx.membershipDetails.deleteMany({});
 
+      // Brisanje postojećih podataka iz membership_periods (foreign key na member)
+      await tx.membershipPeriod.deleteMany({});
+
       // Brisanje postojećih podataka iz members
       await tx.member.deleteMany({});
       
       // Inserti za members tablicu
-      for (const member of backupData.members) {
-        const { member_id: _member_id, ...memberData } = member;
+      for (const member of root.members) {
+        const { organization_id: _org_id, ...memberData } = member;
         
         await tx.member.create({
           data: {
-            ...memberData
+            // Zadržavamo originalni member_id iz backup-a kako bi svi FK-ovi (membershipDetails, participations, itd.) ostali konzistentni
+            ...memberData,
+            // Organizaciju uvijek vezujemo na aktivni tenant iz request konteksta
+            organization_id: req.organizationId!
           }
         });
       }
       
       // Inserti za membership_details tablicu
-      for (const detail of backupData.membership_details) {
+      for (const detail of root.membershipDetails) {
         const { detail_id: _detail_id, ...detailData } = detail;
         
         await tx.membershipDetails.create({
@@ -475,6 +484,21 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
             ...detailData
           }
         });
+      }
+
+      // Inserti za membership_periods tablicu
+      if (Array.isArray(root.membershipPeriods)) {
+        for (const period of root.membershipPeriods) {
+          const { period_id: _period_id, organization_id: _org_id, ...periodData } = period;
+
+          await tx.membershipPeriod.create({
+            data: {
+              ...periodData,
+              // Ujednači organizaciju s aktivnim tenantom
+              organization_id: req.organizationId!
+            }
+          });
+        }
       }
       
       // Slično za ostale tablice...
@@ -490,7 +514,7 @@ router.post('/restore-from-backup/:filename', async (req, res) => {
       backupInfo: {
         filename,
         timestamp: backupData.timestamp,
-        tables: Object.keys(backupData)
+        tables: Object.keys(root)
       },
       timestamp: getCurrentDate()
     });

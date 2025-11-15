@@ -13,7 +13,7 @@
         "feeDistribution": "Membership fee distribution",
         "feePaid": "Fee paid",
         "feeRequired": "Payment required",
-        "ageDistribution": "Age group statistics",
+        "ageDistribution": "Age distribution of current year members",
         "years": "{{range}} years",
         "activities": {
             "title": "Activities",

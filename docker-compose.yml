@@ -40,6 +40,9 @@ services:
     volumes:
       # Perzistencija uploads foldera između restarta
       - ./backend/uploads:/app/uploads
+      # Mapiranje backup direktorija kako bi restore-from-backup ruta vidjela JSON datoteke
+      # Runtime kod traži datoteke u /usr/src/app/dist/backups, pa mapiramo točno tamo
+      - ./backend/backups:/usr/src/app/dist/backups
 
     environment:
       # KRITIČNA ISPRAVKA: Dodaj DATABASE_URL za Prisma klijent
