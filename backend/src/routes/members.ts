@@ -656,12 +656,12 @@ router.get(
         },
       });
 
-      if (!member || !member.profile_image_path) {
+      const imagePath = member?.profile_image_path ?? null;
+
+      if (!member || !imagePath) {
         res.status(404).json({ message: 'Profile image not found' });
         return;
       }
-
-      const imagePath = member.profile_image_path;
 
       // Ako je lokalna /uploads putanja, prepusti poslu statičkom serveru
       if (imagePath.startsWith('/uploads')) {
