@@ -1,6 +1,6 @@
 // backend/src/routes/members.ts
 import express, { Request, Response } from 'express';
-import { put, del } from '@vercel/blob';
+import { put, del, list } from '@vercel/blob';
 import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
@@ -732,14 +732,25 @@ router.post(
       if (useVercelBlob) {
         if (isDev) console.log(`[UPLOAD] Korištenje Vercel Blob za upload...`);
         
-        // Obriši staru sliku s Vercel Blob-a
-        if (member?.profile_image_path && member.profile_image_path.includes('vercel-storage.com')) {
-          try {
-            await del(member.profile_image_path);
-            if (isDev) console.log(`[UPLOAD] Stara slika obrisana s Vercel Blob-a`);
-          } catch (delError) {
-            if (isDev) console.warn(`[UPLOAD] Upozorenje: Nije moguće obrisati staru sliku s Vercel Blob-a:`, delError);
+        // Obriši SVE stare slike za ovog člana s Vercel Blob-a
+        try {
+          const prefix = `profile-images/${memberId}-`;
+          const { blobs } = await list({
+            prefix,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          });
+          
+          if (blobs.length > 0) {
+            console.log(`[UPLOAD] Pronađeno ${blobs.length} starih slika za brisanje`);
+            for (const blob of blobs) {
+              await del(blob.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+              console.log(`[UPLOAD] Obrisana stara slika: ${blob.url}`);
+            }
+          } else {
+            if (isDev) console.log(`[UPLOAD] Nema starih slika za brisanje`);
           }
+        } catch (delError) {
+          console.warn(`[UPLOAD] Upozorenje: Greška pri brisanju starih slika s Vercel Blob-a:`, delError);
         }
         
         const fileName = `profile-images/${memberId}-${Date.now()}-${req.file.originalname}`;
@@ -860,27 +871,40 @@ router.delete(
       
       const member = await prisma.member.findUnique({ where: { member_id: memberIdNum } });
       
-      if (member?.profile_image_path) {
-        if (useVercelBlob && member.profile_image_path.includes('vercel-storage.com')) {
-          if (isDev) console.log(`[DELETE] Brisanje slike s Vercel Blob-a...`);
-          try {
-            await del(member.profile_image_path);
-            if (isDev) console.log(`[DELETE] Slika uspješno obrisana s Vercel Blob-a`);
-          } catch (delError) {
-            if (isDev) console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s Vercel Blob-a:`, delError);
+      // Obriši SVE slike za ovog člana (i iz Blob-a i s lokalnog diska)
+      if (useVercelBlob) {
+        // Obriši sve slike iz Vercel Blob-a za ovog člana
+        try {
+          const prefix = `profile-images/${memberIdNum}-`;
+          const { blobs } = await list({
+            prefix,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          });
+          
+          if (blobs.length > 0) {
+            console.log(`[DELETE] Pronađeno ${blobs.length} slika u Blob-u za brisanje`);
+            for (const blob of blobs) {
+              await del(blob.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+              console.log(`[DELETE] Obrisana slika iz Blob-a: ${blob.url}`);
+            }
+          } else {
+            if (isDev) console.log(`[DELETE] Nema slika u Blob-u za brisanje`);
           }
-        } else if (member.profile_image_path.startsWith('/uploads')) {
-          if (isDev) console.log(`[DELETE] Brisanje slike s lokalnog diska...`);
-          try {
-            const filePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
-            await fs.unlink(filePath);
-            if (isDev) console.log(`[DELETE] Slika uspješno obrisana s lokalnog diska: ${filePath}`);
-          } catch (delError) {
-            if (isDev) console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s lokalnog diska:`, delError);
-          }
+        } catch (delError) {
+          console.warn(`[DELETE] Upozorenje: Greška pri brisanju slika iz Blob-a:`, delError);
         }
-      } else {
-        if (isDev) console.log(`[DELETE] Član ${memberId} nema profilnu sliku za brisanje`);
+      }
+      
+      // Obriši lokalnu sliku ako postoji
+      if (member?.profile_image_path?.startsWith('/uploads')) {
+        if (isDev) console.log(`[DELETE] Brisanje slike s lokalnog diska...`);
+        try {
+          const filePath = path.join(uploadsDir, member.profile_image_path.replace('/uploads', ''));
+          await fs.unlink(filePath);
+          if (isDev) console.log(`[DELETE] Slika uspješno obrisana s lokalnog diska: ${filePath}`);
+        } catch (delError) {
+          if (isDev) console.warn(`[DELETE] Upozorenje: Nije moguće obrisati sliku s lokalnog diska:`, delError);
+        }
       }
 
       const updatedMember = await prisma.member.update({
