@@ -633,7 +633,6 @@ async function cleanupInvalidProfileImages(memberId: number): Promise<void> {
 // GET: vraća sliku preko API-ja (proxy za Blob URL-ove, tenant-aware)
 router.get(
   '/:memberId/profile-image',
-  authenticateToken,
   async (req: Request, res: Response) => {
     try {
       const memberId = parseInt(req.params.memberId, 10);

@@ -1,94 +1,71 @@
 
-Nov 16 09:11:15.60
+Nov 16 09:30:22.51
 GET
 304
 managemembers.vercel.app
 /api/members/2/pin-status
-9
-[0mGET /api/members/2/pin-status?tenant=pdpromina&path=members%2F2%2Fpin-status [32m200[0m 34.973 ms - 64[0m
-Nov 16 09:11:15.60
+12
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+Nov 16 09:30:22.51
 GET
 200
 managemembers.vercel.app
 /api/members/2/annual-stats
-20
-[0mGET /api/members/2/annual-stats?tenant=pdpromina&path=members%2F2%2Fannual-stats [32m200[0m 72.614 ms - 177[0m
-Nov 16 09:11:15.59
+23
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+Nov 16 09:30:22.51
 GET
 304
 managemembers.vercel.app
 /api/settings
 5
-[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 26.669 ms - -[0m
-Nov 16 09:11:15.58
+[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 24.142 ms - -[0m
+Nov 16 09:30:22.51
 GET
 304
 managemembers.vercel.app
 /api/skills
-[0mGET /api/skills?tenant=pdpromina&path=skills [32m200[0m 11.685 ms - -[0m
-Nov 16 09:11:15.58
+4
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+Nov 16 09:30:22.51
 GET
-404
+401
 managemembers.vercel.app
 /api/members/2/profile-image
-[0mGET /api/members/2/profile-image?t=1763280675182&path=members%2F2%2Fprofile-image [33m404[0m 9.858 ms - 56[0m
-Nov 16 09:11:15.54
+3
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763281822200&path=members%2F2%2Fprofile-image [33m401[0m 1.043 ms - 44[0m
+Nov 16 09:30:22.48
 GET
-404
+401
 managemembers.vercel.app
 /api/members/2/profile-image
-[0mGET /api/members/2/profile-image?t=1763280675129&path=members%2F2%2Fprofile-image [33m404[0m 20.115 ms - 56[0m
-Nov 16 09:11:15.02
+3
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763281822173&path=members%2F2%2Fprofile-image [33m401[0m 1.262 ms - 44[0m
+Nov 16 09:30:22.19
 GET
 200
 managemembers.vercel.app
 /api/members/2
 9
-[0mGET /api/members/2?t=1763280674534&tenant=pdpromina&path=members%2F2 [32m200[0m 105.968 ms - -[0m
-Nov 16 09:11:14.99
+[0mGET /api/members/2?t=1763281821863&tenant=pdpromina&path=members%2F2 [32m200[0m 208.271 ms - -[0m
+Nov 16 09:30:22.19
 GET
 304
 managemembers.vercel.app
 /api/settings
 5
-[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 22.885 ms - -[0m
-Nov 16 09:11:14.70
-GET
-200
-managemembers.vercel.app
-/api/manifest
-4
-[0mGET /api/manifest?tenant=pdpromina&v=1763280674210&path=manifest [32m200[0m 1.100 ms - -[0m
-Nov 16 09:11:14.69
+[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 134.264 ms - -[0m
+Nov 16 09:30:13.20
 GET
 200
 managemembers.vercel.app
 /api/members/unread-count
 9
-[0mGET /api/members/unread-count?t=1763280674063&tenant=pdpromina&path=members%2Funread-count [32m200[0m 32.941 ms - 11[0m
-Nov 16 09:11:14.35
-GET
-304
-managemembers.vercel.app
-/api/org-config
-[0mGET /api/org-config?tenant=pdpromina&path=org-config [32m200[0m 1.135 ms - 826[0m
-Nov 16 09:11:14.32
-POST
-200
-managemembers.vercel.app
-/api/auth/refresh
-[0mPOST /api/auth/refresh?tenant=pdpromina&path=auth%2Frefresh [32m200[0m 105.948 ms - 190[0m
-Nov 16 09:11:13.53
+[0mGET /api/members/unread-count?t=1763281812904&tenant=pdpromina&path=members%2Funread-count [32m200[0m 33.474 ms - 11[0m
+Nov 16 09:30:12.94
 GET
 200
 managemembers.vercel.app
-/api/members/unread-count
+/api/members/me
 9
-[0mGET /api/members/unread-count?t=1763280673139&tenant=pdpromina&path=members%2Funread-count [32m200[0m 35.810 ms - 11[0m
-Nov 16 09:11:11.14
-GET
-200
-managemembers.vercel.app
-/api/members/unread-count
-9
-[0mGET /api/members/unread-count?t=1763280670759&tenant=pdpromina&path=members%2Funread-count [32
+[0mGET /api/members/me?tenant=pdpromina&path=members%2Fme [32m200[0m 179.104 ms - -[0m
