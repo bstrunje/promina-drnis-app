@@ -201,9 +201,6 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
                 alt={t('profileImage.profileAlt')}
                 className="w-full h-full object-cover"
                 onError={handleImageError}
-                crossOrigin="anonymous"
-                loading="eager" // Prioritize loading
-                referrerPolicy="no-referrer" // Don't send referrer for security
               />
             ) : (
               // Empty container - no icon
