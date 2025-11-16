@@ -25,7 +25,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   React.useEffect(() => { setNavigateInstance(navigate); }, [navigate]);
 
   // Funkcija za odjavu korisnika - koristi AuthTokenService
-  // Ne radimo preusmjeravanje ovdje jer to radi App.tsx
   const logout = React.useCallback(async () => {
     try {
       // Provjeri da li je trenutna putanja login stranica
@@ -52,8 +51,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       localStorage.removeItem("organization_branding");
       // Napomena: current_tenant se NE briše jer označava na kojoj organizaciji/subdomeni se korisnik nalazi,
       // a ne autentifikacijske podatke. Potreban je za ispravan prikaz login forme.
+      
+      // KRITIČNO: Redirect na login nakon logout-a
+      // Ovo je potrebno jer axios interceptor poziva logout() kada refresh token faila
+      const orgSlug = extractOrgSlugFromPath();
+      const loginPath = orgSlug ? `/${orgSlug}/login` : '/login';
+      if (window.location.pathname !== loginPath) {
+        navigate(loginPath);
+      }
     }
-  }, []);
+  }, [navigate]);
   
   // Nova funkcija za soft-logout - ne briše token odmah
   const softLogout = React.useCallback(() => {
