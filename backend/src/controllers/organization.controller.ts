@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma.js';
 import bcrypt from 'bcrypt';
 import { tOrDefault } from '../utils/i18n.js';
-import { put, del } from '@vercel/blob';
+import { put, del, list } from '@vercel/blob';
 import path from 'path';
 import fs from 'fs/promises';
 import { getUploadsDir, isBlobConfigured } from '../utils/uploads.js';
@@ -486,22 +486,36 @@ export const deleteOrganization = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // Obriši logo ako postoji
-    if (existing.logo_path) {
+    // Obriši SVE logoe za ovu organizaciju
+    if (useVercelBlob) {
+      // Obriši sve logoe iz Vercel Blob-a
       try {
-        if (existing.logo_path.startsWith('https://')) {
-          // Vercel Blob - obriši s Blob storage-a
-          await del(existing.logo_path);
-          console.log(`[DELETE-ORG] Logo deleted from Vercel Blob: ${existing.logo_path}`);
-        } else if (existing.logo_path.startsWith('/uploads')) {
-          // Lokalni disk - obriši file
-          const filePath = path.join(uploadsDir, existing.logo_path.replace('/uploads', ''));
-          await fs.unlink(filePath);
-          console.log(`[DELETE-ORG] Logo deleted from local disk: ${filePath}`);
+        const prefix = `organization-logos/${organizationId}-`;
+        const { blobs } = await list({
+          prefix,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        
+        if (blobs.length > 0) {
+          console.log(`[DELETE-ORG] Pronađeno ${blobs.length} logoa u Blob-u za brisanje`);
+          for (const blob of blobs) {
+            await del(blob.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+            console.log(`[DELETE-ORG] Obrisan logo iz Blob-a: ${blob.url}`);
+          }
         }
       } catch (logoErr) {
-        console.warn(`[DELETE-ORG] Warning: Could not delete logo:`, logoErr);
-        // Nastavi s brisanjem organizacije čak i ako logo nije obrisan
+        console.warn(`[DELETE-ORG] Warning: Could not delete logos from Blob:`, logoErr);
+      }
+    }
+    
+    // Obriši lokalni logo ako postoji
+    if (existing.logo_path?.startsWith('/uploads')) {
+      try {
+        const filePath = path.join(uploadsDir, existing.logo_path.replace('/uploads', ''));
+        await fs.unlink(filePath);
+        console.log(`[DELETE-ORG] Logo deleted from local disk: ${filePath}`);
+      } catch (logoErr) {
+        console.warn(`[DELETE-ORG] Warning: Could not delete logo from local disk:`, logoErr);
       }
     }
 
@@ -639,14 +653,25 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
     if (useVercelBlob) {
       if (isDev) console.log(`[LOGO-UPLOAD] Using Vercel Blob...`);
 
-      // Obriši stari logo s Vercel Blob-a
-      if (organization.logo_path && organization.logo_path.includes('vercel-storage.com')) {
-        try {
-          await del(organization.logo_path);
-          if (isDev) console.log(`[LOGO-UPLOAD] Old logo deleted from Vercel Blob`);
-        } catch (delError) {
-          if (isDev) console.warn(`[LOGO-UPLOAD] Warning: Could not delete old logo from Vercel Blob:`, delError);
+      // Obriši SVE stare logoe za ovu organizaciju s Vercel Blob-a
+      try {
+        const prefix = `organization-logos/${organizationId}-`;
+        const { blobs } = await list({
+          prefix,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        
+        if (blobs.length > 0) {
+          console.log(`[LOGO-UPLOAD] Pronađeno ${blobs.length} starih logoa za brisanje`);
+          for (const blob of blobs) {
+            await del(blob.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+            console.log(`[LOGO-UPLOAD] Obrisan stari logo: ${blob.url}`);
+          }
+        } else {
+          if (isDev) console.log(`[LOGO-UPLOAD] Nema starih logoa za brisanje`);
         }
+      } catch (delError) {
+        console.warn(`[LOGO-UPLOAD] Upozorenje: Greška pri brisanju starih logoa s Vercel Blob-a:`, delError);
       }
 
       const fileName = `organization-logos/${organizationId}-${Date.now()}-${req.file.originalname}`;
@@ -796,15 +821,32 @@ export const deleteOrganizationLogo = async (req: Request, res: Response): Promi
       return;
     }
 
-    // Obriši logo s storage-a
-    if (organization.logo_path.includes('vercel-storage.com')) {
+    // Obriši SVE logoe za ovu organizaciju (i iz Blob-a i s lokalnog diska)
+    if (useVercelBlob) {
+      // Obriši sve logoe iz Vercel Blob-a za ovu organizaciju
       try {
-        await del(organization.logo_path);
-        if (isDev) console.log(`[LOGO-DELETE] Logo deleted from Vercel Blob`);
+        const prefix = `organization-logos/${organizationId}-`;
+        const { blobs } = await list({
+          prefix,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        
+        if (blobs.length > 0) {
+          console.log(`[LOGO-DELETE] Pronađeno ${blobs.length} logoa u Blob-u za brisanje`);
+          for (const blob of blobs) {
+            await del(blob.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+            console.log(`[LOGO-DELETE] Obrisan logo iz Blob-a: ${blob.url}`);
+          }
+        } else {
+          if (isDev) console.log(`[LOGO-DELETE] Nema logoa u Blob-u za brisanje`);
+        }
       } catch (delError) {
-        if (isDev) console.warn(`[LOGO-DELETE] Warning: Could not delete logo from Vercel Blob:`, delError);
+        console.warn(`[LOGO-DELETE] Upozorenje: Greška pri brisanju logoa iz Blob-a:`, delError);
       }
-    } else if (organization.logo_path.startsWith('/uploads')) {
+    }
+    
+    // Obriši lokalni logo ako postoji
+    if (organization.logo_path?.startsWith('/uploads')) {
       try {
         const filePath = path.join(uploadsDir, organization.logo_path.replace('/uploads', ''));
         await fs.unlink(filePath);
