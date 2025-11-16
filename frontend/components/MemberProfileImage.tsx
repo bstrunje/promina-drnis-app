@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/card';
 import { useToast } from '@components/ui/use-toast';
 import { Member } from '@shared/member';
@@ -22,9 +22,14 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [imgKey, setImgKey] = useState(Date.now());
   const [imageFailed, setImageFailed] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  // Determine which property to use from the Member type
+  const imagePath = member.profile_image_path ?? member.profile_image;
+
+  // Cache-busting key se generira samo kada se imagePath promijeni
+  const imgKey = useMemo(() => Date.now(), [imagePath]);
 
   // Provjera može li korisnik uređivati sliku
   const canEditImage = user?.role === 'member_administrator' || user?.role === 'member_superuser' || user?.member_id === member.member_id;
@@ -35,16 +40,13 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   // Puno ime člana
   const memberFullName = `${member.first_name} ${member.last_name}${member.nickname ? ` - ${member.nickname}` : ''}`;
 
-  // Determine which property to use from the Member type
-  const imagePath = member.profile_image_path ?? member.profile_image;
-
   // Reset image failure state when member or path changes
   useEffect(() => {
     if (imagePath) {
-
       setPreviewUrl(null);
       setImageFailed(false);
-      setImgKey(Date.now());
+      // Ne mijenjaj imgKey ovdje - to uzrokuje beskonačnu petlju
+      // imgKey se mijenja samo nakon uspješnog upload-a
     }
   }, [member, imagePath]);
 
@@ -118,7 +120,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
       if (onUpdate) await onUpdate();
 
       // Update UI state
-      setImgKey(Date.now());
+      // imgKey će se automatski ažurirati kada se imagePath promijeni u member objektu
       setPreviewUrl(null); // Očisti preview da se prikaže stvarna slika s servera
       setImageFailed(false); // Reset error state
 
