@@ -30,20 +30,30 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
     // PWA manifest mora koristiti frontend origin, ne backend origin
     // U lokalnom razvoju: frontend (5173) poziva backend (3000/3001) preko proxy-ja
     // U produkciji: sve je na istoj domeni
-    const referer = req.get('referer') || req.get('origin');
+    const host = req.get('host') || '';
     let frontendOrigin: string;
     
-    if (referer) {
-      // Izvuci origin iz referer-a (http://localhost:5173/promina/login -> http://localhost:5173)
-      const refererUrl = new URL(referer);
-      frontendOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+    // KRITIČNO: U produkciji, UVIJEK koristi produkcijski URL, ne preview deployment URL
+    // Ovo sprječava da browser cache-ira manifest s preview URL-ovima
+    if (host.includes('managemembers.vercel.app')) {
+      // Produkcijski Vercel deployment
+      frontendOrigin = 'https://managemembers.vercel.app';
+    } else if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      // Lokalni razvoj - koristi referer da dohvati frontend port
+      const referer = req.get('referer') || req.get('origin');
+      if (referer) {
+        const refererUrl = new URL(referer);
+        frontendOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+      } else {
+        frontendOrigin = 'http://localhost:5174'; // Default frontend port
+      }
     } else {
-      // Fallback na backend origin (produkcija)
-      frontendOrigin = `${req.protocol}://${req.get('host')}`;
+      // Vercel preview deployment ili nepoznat host - koristi backend origin
+      frontendOrigin = `${req.protocol}://${host}`;
     }
     
     console.log('[PWA] organization.logo_path:', organization.logo_path);
-    console.log('[PWA] referer:', referer);
+    console.log('[PWA] host:', host);
     console.log('[PWA] frontend origin:', frontendOrigin);
     
     // Logo URL-ovi trebaju koristiti backend origin za slike
