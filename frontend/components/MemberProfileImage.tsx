@@ -8,6 +8,7 @@ import { formatDate } from '../src/utils/dateUtils';
 import { useAuth } from '../src/context/useAuth';
 import { useTranslation } from 'react-i18next';
 import api from '../src/utils/api/apiConfig';
+import { getCurrentTenant } from '../src/utils/tenantUtils';
 
 interface Props {
   member: Member;
@@ -65,8 +66,9 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
     // Production: Vercel Blob ili bilo koji apsolutni URL se dohvaća preko backend proxy endpointa
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      // Koristi API_BASE_URL (s /api) za tenant-aware backend poziv
-      return `${API_BASE_URL}/members/${member.member_id}/profile-image?t=${imgKey}`;
+      const tenant = getCurrentTenant();
+      // Koristi API_BASE_URL (s /api) + tenant parametar za tenant-aware backend poziv
+      return `${API_BASE_URL}/members/${member.member_id}/profile-image?tenant=${encodeURIComponent(tenant)}&t=${imgKey}`;
     }
 
     return path;
