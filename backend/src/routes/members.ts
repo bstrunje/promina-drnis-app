@@ -638,12 +638,14 @@ router.get(
       const memberId = parseInt(req.params.memberId, 10);
 
       if (!Number.isFinite(memberId)) {
+        console.log(`[PROFILE-IMAGE-PROXY] Invalid member ID: ${req.params.memberId}`);
         res.status(400).json({ message: 'Invalid member ID' });
         return;
       }
 
       // Tenant-aware dohvat člana: osiguraj da pripada trenutnoj organizaciji
       const organizationId = getOrganizationId(req);
+      console.log(`[PROFILE-IMAGE-PROXY] Fetching image for member ${memberId}, org ${organizationId}`);
 
       const member = await prisma.member.findFirst({
         where: {
@@ -656,8 +658,10 @@ router.get(
       });
 
       const imagePath = member?.profile_image_path ?? null;
+      console.log(`[PROFILE-IMAGE-PROXY] Member found: ${!!member}, imagePath: ${imagePath}`);
 
       if (!member || !imagePath) {
+        console.log(`[PROFILE-IMAGE-PROXY] 404 - Member or image not found`);
         res.status(404).json({ message: 'Profile image not found' });
         return;
       }

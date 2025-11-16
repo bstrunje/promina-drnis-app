@@ -1,71 +1,248 @@
 
-Nov 16 09:30:22.51
+Nov 16 10:01:49.68
 GET
-304
+200
+managemembers.vercel.app
+/api/members/unread-count
+11
+[PRISMA] Query warmup failed: PrismaClientKnownRequestError: Invalid `prisma.organization.findMany()` invocation: Can't reach database server at `db.prisma.io:5432` Please make sure your database server is running at `db.prisma.io:5432`. at ei.handleRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:7268) at ei.handleAndLogRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:6593) at ei.request (/var/task/node_modules/@prisma/client/runtime/library.js:121:6300) at async a (/var/task/node_modules/@prisma/client/runtime/library.js:130:9551) at async Promise.all (index 1) at async warmUpCommonQueries (/var/task/backend/src/utils/prisma.ts:91:7) at async warmUpPrisma (/var/task/backend/src/utils/prisma.ts:76:9) { code: 'P1001', meta: { modelName: 'Organization', database_location: 'db.prisma.io:5432' }, clientVersion: '6.19.0' }
+Nov 16 10:01:23.52
+GET
+200
 managemembers.vercel.app
 /api/members/2/pin-status
 12
 prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
-Nov 16 09:30:22.51
+Nov 16 10:01:23.51
 GET
 200
 managemembers.vercel.app
 /api/members/2/annual-stats
 23
 prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
-Nov 16 09:30:22.51
+Nov 16 10:01:23.51
 GET
-304
+200
 managemembers.vercel.app
 /api/settings
 5
-[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 24.142 ms - -[0m
-Nov 16 09:30:22.51
+[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 51.337 ms - -[0m
+Nov 16 10:01:23.51
 GET
-304
+200
 managemembers.vercel.app
 /api/skills
-4
-prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
-Nov 16 09:30:22.51
+[0mGET /api/skills?tenant=pdpromina&path=skills [32m200[0m 10.870 ms - -[0m
+Nov 16 10:01:23.50
 GET
 401
 managemembers.vercel.app
 /api/members/2/profile-image
 3
-[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763281822200&path=members%2F2%2Fprofile-image [33m401[0m 1.043 ms - 44[0m
-Nov 16 09:30:22.48
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763283683217&path=members%2F2%2Fprofile-image [33m401[0m 1.333 ms - 44[0m
+Nov 16 10:01:23.43
 GET
 401
 managemembers.vercel.app
 /api/members/2/profile-image
 3
-[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763281822173&path=members%2F2%2Fprofile-image [33m401[0m 1.262 ms - 44[0m
-Nov 16 09:30:22.19
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763283683161&path=members%2F2%2Fprofile-image [33m401[0m 1.808 ms - 44[0m
+Nov 16 10:01:23.16
 GET
 200
 managemembers.vercel.app
 /api/members/2
 9
-[0mGET /api/members/2?t=1763281821863&tenant=pdpromina&path=members%2F2 [32m200[0m 208.271 ms - -[0m
-Nov 16 09:30:22.19
+[0mGET /api/members/2?t=1763283682907&tenant=pdpromina&path=members%2F2 [32m200[0m 147.165 ms - -[0m
+Nov 16 10:01:23.16
 GET
-304
+200
 managemembers.vercel.app
 /api/settings
 5
-[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 134.264 ms - -[0m
-Nov 16 09:30:13.20
+[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 29.130 ms - -[0m
+Nov 16 10:01:20.32
 GET
 200
 managemembers.vercel.app
 /api/members/unread-count
 9
-[0mGET /api/members/unread-count?t=1763281812904&tenant=pdpromina&path=members%2Funread-count [32m200[0m 33.474 ms - 11[0m
-Nov 16 09:30:12.94
+[0mGET /api/members/unread-count?t=1763283680020&tenant=pdpromina&path=members%2Funread-count [32m200[0m 35.909 ms - 11[0m
+Nov 16 10:01:13.69
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283673323&tenant=pdpromina&path=members%2Funread-count [32m200[0m 197.601 ms - 11[0m
+Nov 16 10:00:49.23
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283648973&tenant=pdpromina&path=members%2Funread-count [32m200[0m 38.198 ms - 11[0m
+Nov 16 10:00:48.90
 GET
 200
 managemembers.vercel.app
 /api/members/me
 9
-[0mGET /api/members/me?tenant=pdpromina&path=members%2Fme [32m200[0m 179.104 ms - -[0m
+[0mGET /api/members/me?tenant=pdpromina&path=members%2Fme [32m200[0m 90.058 ms - -[0m
+Nov 16 10:00:48.90
+GET
+200
+managemembers.vercel.app
+/api/admin/dashboard/stats
+7
+[0mGET /api/admin/dashboard/stats?tenant=pdpromina&path=admin%2Fdashboard%2Fstats [32m200[0m 142.391 ms - 166[0m
+Nov 16 10:00:48.69
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+10
+[0mGET /api/members/unread-count?t=1763283648401&tenant=pdpromina&path=members%2Funread-count [32m200[0m 32.347 ms - 11[0m
+Nov 16 10:00:48.09
+POST
+200
+managemembers.vercel.app
+/api/auth/login
+3
+[0mPOST /api/auth/login?tenant=pdpromina&path=auth%2Flogin [32m200[0m 370.447 ms - 693[0m
+Nov 16 10:00:37.83
+GET
+200
+managemembers.vercel.app
+/api/manifest
+4
+[0mGET /api/manifest?tenant=pdpromina&v=1763283637190&path=manifest [32m200[0m 1.569 ms - -[0m
+Nov 16 10:00:20.27
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283620014&tenant=pdpromina&path=members%2Funread-count [32m200[0m 140.129 ms - 11[0m
+Nov 16 10:00:19.75
+GET
+200
+managemembers.vercel.app
+/api/manifest
+4
+[0mGET /api/manifest?tenant=pdpromina&v=1763283619161&path=manifest [32m200[0m 1.375 ms - -[0m
+Nov 16 10:00:19.09
+GET
+200
+managemembers.vercel.app
+/api/org-config
+[0mGET /api/org-config?tenant=pdpromina&path=org-config [32m200[0m 0.956 ms - 826[0m
+Nov 16 10:00:14.30
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283613320&tenant=pdpromina&path=members%2Funread-count [32m200[0m 141.398 ms - 11[0m
+Nov 16 09:59:20.29
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283560008&tenant=pdpromina&path=members%2Funread-count [32m200[0m 145.087 ms - 11[0m
+Nov 16 09:59:13.77
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283553306&tenant=pdpromina&path=members%2Funread-count [32m200[0m 146.089 ms - 11[0m
+Nov 16 09:58:49.35
+POST
+200
+managemembers.vercel.app
+/api/auth/logout
+[0mPOST /api/auth/logout?tenant=pdpromina&path=auth%2Flogout [32m200[0m 148.999 ms - 31[0m
+Nov 16 09:58:38.77
+GET
+304
+managemembers.vercel.app
+/api/members/2/pin-status
+9
+[0mGET /api/members/2/pin-status?tenant=pdpromina&path=members%2F2%2Fpin-status [32m200[0m 42.502 ms - 64[0m
+Nov 16 09:58:38.76
+GET
+304
+managemembers.vercel.app
+/api/settings
+5
+[0mGET /api/settings?tenant=pdpromina&path=settings [32m200[0m 31.945 ms - -[0m
+Nov 16 09:58:38.52
+GET
+200
+managemembers.vercel.app
+/api/manifest
+4
+[0mGET /api/manifest?tenant=pdpromina&v=1763283518164&path=manifest [32m200[0m 2.124 ms - -[0m
+Nov 16 09:58:35.33
+GET
+200
+managemembers.vercel.app
+/api/members/2/annual-stats
+20
+[0mGET /api/members/2/annual-stats?tenant=pdpromina&path=members%2F2%2Fannual-stats [32m200[0m 82.682 ms - 177[0m
+Nov 16 09:58:35.32
+GET
+304
+managemembers.vercel.app
+/api/skills
+[0mGET /api/skills?tenant=pdpromina&path=skills [32m200[0m 13.751 ms - -[0m
+Nov 16 09:58:35.32
+GET
+401
+managemembers.vercel.app
+/api/members/2/profile-image
+3
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763283514989&path=members%2F2%2Fprofile-image [33m401[0m 0.982 ms - 44[0m
+Nov 16 09:58:35.28
+GET
+401
+managemembers.vercel.app
+/api/members/2/profile-image
+3
+[0mGET /api/members/2/profile-image?tenant=pdpromina&t=1763283514906&path=members%2F2%2Fprofile-image [33m401[0m 1.827 ms - 44[0m
+Nov 16 09:58:34.95
+GET
+200
+managemembers.vercel.app
+/api/members/2
+9
+[0mGET /api/members/2?t=1763283514653&tenant=pdpromina&path=members%2F2 [32m200[0m 100.862 ms - -[0m
+Nov 16 09:58:34.94
+GET
+304
+managemembers.vercel.app
+/api/settings
+8
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+Nov 16 09:58:34.50
+GET
+200
+managemembers.vercel.app
+/api/members/unread-count
+9
+[0mGET /api/members/unread-count?t=1763283514140&tenant=pdpromina&path=members%2Funread-count [32m200[0m 44.197 ms - 11[0m
+Nov 16 09:58:34.29
+GET
+304
+managemembers.vercel.app
+/api/org-config
+4
+prisma:warn In production, we recommend using `prisma generate --no-engine` (See: `prisma generate --help`)
+Nov 16 09:58:34.27
+POST
+200
+managemembers.vercel.app
+/api/auth/refresh
+[0mPOST /api/auth/refresh?tenant=pdpromina&path=auth%2Frefresh [32m200[0m 222.993 ms - 190[0m

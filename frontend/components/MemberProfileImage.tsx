@@ -114,7 +114,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
         },
       });
 
-      console.log('Upload successful, server response:', response.data);
+      console.log('Upload successful, server response:', JSON.stringify(response.data, null, 2));
 
       // Force refresh member data from server
       if (onUpdate) await onUpdate();
