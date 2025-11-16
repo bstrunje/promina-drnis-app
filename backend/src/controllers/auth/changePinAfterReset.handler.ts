@@ -88,11 +88,11 @@ export async function changePinAfterResetHandler(req: Request, res: Response): P
       { expiresIn: '24h' }
     );
 
-    // Kreiraj refresh token
+    // Kreiraj refresh token (30 dana da odgovara Trusted Device trajanju)
     const refreshToken = jwt.sign(
       { id: member.member_id, role: member.role },
       process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
 
     // Spremi refresh token u bazu
@@ -100,16 +100,13 @@ export async function changePinAfterResetHandler(req: Request, res: Response): P
       data: {
         token: refreshToken,
         member_id: member.member_id,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 dana
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dana
       }
     });
 
     // Postavi refresh token u cookie
     const cookieOptions = generateCookieOptions(req);
-    res.cookie('refreshToken', refreshToken, {
-      ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     res.json({
       message: 'PIN successfully changed',

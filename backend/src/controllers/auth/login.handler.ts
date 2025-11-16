@@ -353,37 +353,27 @@ export async function loginHandler(
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const deviceFingerprint = Buffer.from(`${userAgent}:${clientIp}`).toString('base64').substring(0, 32);
 
+    // Refresh token traje 30 dana da odgovara Trusted Device trajanju
     const refreshToken = jwt.sign(
       { 
         id: member.member_id, 
-        role: member.role,
-        fingerprint: deviceFingerprint,
+        role: member.role, 
+        fingerprint: deviceFingerprint, 
         iat: Math.floor(Date.now() / 1000) 
       },
       REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
-    const expiresAt = getTokenExpiryDate(7); 
+    const expiresAt = getTokenExpiryDate(30); 
 
-    // Multi-device support: Ne brišemo sve tokene, samo istekle i vrlo stare
+    // Multi-device support: Ne brišemo sve tokene, samo istekle
     // Ovo omogućava korisniku da bude prijavljen na više uređaja istovremeno
-    // PRODUKCIJSKA SIGURNOST: Zadržavamo tokene kreirane u zadnjih 10 minuta
-    const GRACE_MS = 10 * 60 * 1000; // 10 minuta grace period
-    const graceCutoff = new Date(Date.now() - GRACE_MS);
-    
+    // VAŽNO: Ne brišemo tokene samo zato što su stari - brišemo samo istekle
     await prisma.refresh_tokens.deleteMany({
       where: { 
         member_id: member.member_id,
-        OR: [
-          // Briši istekle tokene
-          { expires_at: { lt: new Date() } },
-          // Briši stare tokene izvan grace period-a (ali samo ako nisu novi)
-          { 
-            created_at: { lt: graceCutoff },
-            expires_at: { gte: new Date() } // Samo ako nisu istekli (dvostruka zaštita)
-          }
-        ]
+        expires_at: { lt: new Date() } // Briši samo istekle tokene
       }
     });
     

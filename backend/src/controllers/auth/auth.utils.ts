@@ -24,7 +24,7 @@ export const generateCookieOptions = (req: Request): CookieOptions => {
       httpOnly: true,
       secure: true, // Production must be Secure
       sameSite: isSecureFrontendInProd ? 'none' : 'lax', // 'none' if frontend is HTTPS, 'lax' otherwise. Consider 'strict'.
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days - odgovara Trusted Device trajanju
       path: '/',
       domain: process.env.COOKIE_DOMAIN || undefined, // Use COOKIE_DOMAIN if set, otherwise undefined
     };
@@ -34,7 +34,7 @@ export const generateCookieOptions = (req: Request): CookieOptions => {
       httpOnly: true,
       secure: false, // Explicitly false for HTTP
       sameSite: 'lax', // Lax is standard and usually works for HTTP localhost
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days - odgovara Trusted Device trajanju
       path: '/',
     };
   }
