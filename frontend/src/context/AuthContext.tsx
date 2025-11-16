@@ -24,8 +24,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Injektiraj navigate u globalni helper za SPA redirect izvan React konteksta
   React.useEffect(() => { setNavigateInstance(navigate); }, [navigate]);
 
+  // Flag-ovi za sprječavanje višestrukih poziva (race condition na mobitelu)
+  const isLoggingOut = React.useRef(false);
+  const isRefreshing = React.useRef(false);
+
   // Funkcija za odjavu korisnika - koristi AuthTokenService
   const logout = React.useCallback(async () => {
+    // Sprječava višestruke logout pozive (race condition na mobitelu)
+    if (isLoggingOut.current) {
+      if (import.meta.env.DEV) console.log('[AUTH] Logout već u tijeku, preskačem...');
+      return;
+    }
+    
+    isLoggingOut.current = true;
     try {
       // Provjeri da li je trenutna putanja login stranica
       const orgSlug = extractOrgSlugFromPath();
@@ -59,6 +70,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (window.location.pathname !== loginPath) {
         navigate(loginPath);
       }
+      
+      // Reset flag-a nakon redirect-a (setTimeout osigurava da se redirect izvrši prvo)
+      setTimeout(() => {
+        isLoggingOut.current = false;
+      }, 1000);
     }
   }, [navigate]);
   
@@ -91,6 +107,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   // Funkcija za obnavljanje tokena - koristi AuthTokenService s retry mehanizmom
   const refreshToken = React.useCallback(async (): Promise<string | null> => {
+    // Sprječava višestruke refresh pokušaje (race condition na mobitelu)
+    if (isRefreshing.current) {
+      if (import.meta.env.DEV) console.log('[AUTH] Refresh već u tijeku, preskačem...');
+      return null;
+    }
+    
+    isRefreshing.current = true;
     try {
       const newToken = await AuthTokenService.refreshToken();
       
@@ -104,6 +127,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       return null;
     } catch {
       return null;
+    } finally {
+      // Reset flag-a nakon što refresh završi
+      setTimeout(() => {
+        isRefreshing.current = false;
+      }, 500);
     }
   }, []);
 
