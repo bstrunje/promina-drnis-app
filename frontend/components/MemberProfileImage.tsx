@@ -51,6 +51,7 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
   const getImageUrl = (path: string | undefined): string | null => {
     if (!path) return null;
 
+    // Lokalni uploads (dev/Docker) - koristi postojeći statički handler
     if (path.startsWith('/uploads')) {
       // Get base URL without /api suffix if present
       let baseUrl = API_BASE_URL;
@@ -61,6 +62,13 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
       // Construct URL with cache busting
       return `${baseUrl}${path}?t=${imgKey}`;
     }
+
+    // Production: Vercel Blob ili bilo koji apsolutni URL se dohvaća preko backend proxy endpointa
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      // Koristi API_BASE_URL (s /api) za tenant-aware backend poziv
+      return `${API_BASE_URL}/members/${member.member_id}/profile-image?t=${imgKey}`;
+    }
+
     return path;
   };
 
