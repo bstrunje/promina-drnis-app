@@ -1,5 +1,6 @@
 // OPTIMIZIRANI Vercel serverless handler za sve API rute
 // CommonJS stil kompatibilan s Vercel build procesom
+// Version: 2.0.0 - Force cache invalidation
 
 let app;
 let appInitialized = false;
