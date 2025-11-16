@@ -128,6 +128,79 @@ async function emailAvailabilityHandler(req: Request, res: Response): Promise<vo
 // GET /api/members/email-availability (PUBLIC)
 publicMembersRouter.get('/email-availability', emailAvailabilityHandler);
 
+// GET /api/members/:memberId/profile-image-v2 (PUBLIC - <img> tagovi ne šalju Authorization header)
+publicMembersRouter.get('/:memberId/profile-image-v2', async (req: Request, res: Response) => {
+  try {
+    const memberId = parseInt(req.params.memberId, 10);
+
+    if (!Number.isFinite(memberId)) {
+      console.log(`[PROFILE-IMAGE-PROXY] Invalid member ID: ${req.params.memberId}`);
+      res.status(400).json({ message: 'Invalid member ID' });
+      return;
+    }
+
+    // Tenant-aware dohvat člana: osiguraj da pripada trenutnoj organizaciji
+    const organizationId = getOrganizationId(req);
+    console.log(`[PROFILE-IMAGE-PROXY] Fetching image for member ${memberId}, org ${organizationId}`);
+
+    const member = await prisma.member.findFirst({
+      where: {
+        member_id: memberId,
+        organization_id: organizationId,
+      },
+      select: {
+        profile_image_path: true,
+      },
+    });
+
+    const imagePath = member?.profile_image_path ?? null;
+    console.log(`[PROFILE-IMAGE-PROXY] Member found: ${!!member}, imagePath: ${imagePath}`);
+
+    if (!member || !imagePath) {
+      console.log(`[PROFILE-IMAGE-PROXY] 404 - Member or image not found`);
+      res.status(404).json({ message: 'Profile image not found' });
+      return;
+    }
+
+    // Ako je lokalna /uploads putanja, prepusti poslu statičkom serveru
+    if (imagePath.startsWith('/uploads')) {
+      res.redirect(imagePath);
+      return;
+    }
+
+    // Za HTTPS (npr. Vercel Blob) napravi proxy preko Node https modula
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      https
+        .get(imagePath, (blobRes) => {
+          const statusCode = blobRes.statusCode ?? 500;
+
+          if (statusCode >= 400) {
+            res.status(statusCode).end();
+            return;
+          }
+
+          const contentType = blobRes.headers['content-type'];
+          if (contentType) {
+            res.setHeader('Content-Type', contentType);
+          }
+
+          blobRes.pipe(res);
+        })
+        .on('error', (err) => {
+          console.error('[PROFILE-IMAGE-PROXY] Error fetching image:', err);
+          res.status(502).json({ message: 'Failed to fetch profile image' });
+        });
+
+      return;
+    }
+
+    res.status(400).json({ message: 'Unsupported profile image path format' });
+  } catch (error) {
+    console.error('[PROFILE-IMAGE-PROXY] Unexpected error:', error);
+    res.status(500).json({ message: 'Failed to load profile image' });
+  }
+});
+
 // Dohvat trenutno prijavljenog člana (u sklopu tenanta)
 router.get('/me', authenticateToken, async (req, res) => {
   try {
@@ -629,86 +702,8 @@ async function cleanupInvalidProfileImages(memberId: number): Promise<void> {
   }
 }
 
-// Rute za profilnu sliku (Uvjetno: Vercel Blob ili lokalni uploads)
-// GET: vraća sliku preko API-ja (proxy za Blob URL-ove, tenant-aware)
-// VAŽNO: Ova ruta NEMA authenticateToken middleware jer <img> tagovi ne šalju Authorization header
-// TEMP: Promijenio ime rute u v2 da zaobiđem Vercel cache
-router.get(
-  '/:memberId/profile-image-v2',
-  async (req: Request, res: Response) => {
-    try {
-      const memberId = parseInt(req.params.memberId, 10);
-
-      if (!Number.isFinite(memberId)) {
-        console.log(`[PROFILE-IMAGE-PROXY] Invalid member ID: ${req.params.memberId}`);
-        res.status(400).json({ message: 'Invalid member ID' });
-        return;
-      }
-
-      // Tenant-aware dohvat člana: osiguraj da pripada trenutnoj organizaciji
-      const organizationId = getOrganizationId(req);
-      console.log(`[PROFILE-IMAGE-PROXY] Fetching image for member ${memberId}, org ${organizationId}`);
-
-      const member = await prisma.member.findFirst({
-        where: {
-          member_id: memberId,
-          organization_id: organizationId,
-        },
-        select: {
-          profile_image_path: true,
-        },
-      });
-
-      const imagePath = member?.profile_image_path ?? null;
-      console.log(`[PROFILE-IMAGE-PROXY] Member found: ${!!member}, imagePath: ${imagePath}`);
-
-      if (!member || !imagePath) {
-        console.log(`[PROFILE-IMAGE-PROXY] 404 - Member or image not found`);
-        res.status(404).json({ message: 'Profile image not found' });
-        return;
-      }
-
-      // Ako je lokalna /uploads putanja, prepusti poslu statičkom serveru
-      if (imagePath.startsWith('/uploads')) {
-        // Osloni se na postojeći static handler za /uploads
-        res.redirect(imagePath);
-        return;
-      }
-
-      // Za HTTPS (npr. Vercel Blob) napravi proxy preko Node https modula
-      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        https
-          .get(imagePath, (blobRes) => {
-            const statusCode = blobRes.statusCode ?? 500;
-
-            if (statusCode >= 400) {
-              res.status(statusCode).end();
-              return;
-            }
-
-            const contentType = blobRes.headers['content-type'];
-            if (contentType) {
-              res.setHeader('Content-Type', contentType);
-            }
-
-            blobRes.pipe(res);
-          })
-          .on('error', (err) => {
-            console.error('[PROFILE-IMAGE-PROXY] Error fetching image:', err);
-            res.status(502).json({ message: 'Failed to fetch profile image' });
-          });
-
-        return;
-      }
-
-      // Nepoznat format putanje
-      res.status(400).json({ message: 'Unsupported profile image path format' });
-    } catch (error) {
-      console.error('[PROFILE-IMAGE-PROXY] Unexpected error:', error);
-      res.status(500).json({ message: 'Failed to load profile image' });
-    }
-  }
-);
+// Rute za profilnu sliku - GET ruta je premještena u publicMembersRouter (gore)
+// jer <img> tagovi ne šalju Authorization header i ne mogu proći kroz authMiddleware
 
 // POST: upload profilne slike (Vercel Blob ili lokalni uploads)
 router.post(
