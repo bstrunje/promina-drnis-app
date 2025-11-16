@@ -148,13 +148,13 @@ export async function refreshTokenHandler(req: Request, res: Response): Promise<
         iat: Math.floor(Date.now() / 1000) 
       }, 
       REFRESH_TOKEN_SECRET, 
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
     
     if (isDev) console.log(`[REFRESH-TOKEN] Rotiram refresh token s grace periodom (čuvam stari kratko vrijeme)`);
     
     try {
-      const expiresAt = getTokenExpiryDate(7);
+      const expiresAt = getTokenExpiryDate(30);
       
       // GRACE PERIOD PRISTUP: Ne brišemo stari token odmah.
       // U serverless okruženju moramo imati duži grace period zbog race conditions
