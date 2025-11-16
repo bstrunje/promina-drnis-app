@@ -119,6 +119,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
 
       // Update UI state
       setImgKey(Date.now());
+      setPreviewUrl(null); // Očisti preview da se prikaže stvarna slika s servera
+      setImageFailed(false); // Reset error state
 
       toast({
         title: t('profileImage.uploadSuccessTitle'),
