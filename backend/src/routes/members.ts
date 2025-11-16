@@ -631,6 +631,7 @@ async function cleanupInvalidProfileImages(memberId: number): Promise<void> {
 
 // Rute za profilnu sliku (Uvjetno: Vercel Blob ili lokalni uploads)
 // GET: vraća sliku preko API-ja (proxy za Blob URL-ove, tenant-aware)
+// VAŽNO: Ova ruta NEMA authenticateToken middleware jer <img> tagovi ne šalju Authorization header
 router.get(
   '/:memberId/profile-image',
   async (req: Request, res: Response) => {
