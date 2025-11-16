@@ -70,7 +70,8 @@ const MemberProfileImage: React.FC<Props> = ({ member, onUpdate }) => {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       const tenant = getCurrentTenant();
       // Koristi API_BASE_URL (s /api) + tenant parametar za tenant-aware backend poziv
-      return `${API_BASE_URL}/members/${member.member_id}/profile-image?tenant=${encodeURIComponent(tenant)}&t=${imgKey}`;
+      // TEMP: Koristim v2 rutu da zaobiđem Vercel cache
+      return `${API_BASE_URL}/members/${member.member_id}/profile-image-v2?tenant=${encodeURIComponent(tenant)}&t=${imgKey}`;
     }
 
     return path;
