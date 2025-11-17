@@ -9,11 +9,20 @@ import {
 import { startOfDay, endOfDay, format, addDays, subDays, isSameDay } from 'date-fns';
 import { Request } from 'express';
 import { getOrganizationId } from '../middleware/tenant.middleware.js';
+import { tBackend, detectLocale, type Locale } from '../utils/i18n.js';
+
+/**
+ * Helper funkcija za dohvaćanje locale-a iz Request objekta
+ */
+const getLocale = (req: Request): Locale => {
+  const acceptLanguage = req.get('accept-language');
+  return detectLocale(acceptLanguage);
+};
 
 /**
  * Dohvaća ID tipa aktivnosti "DEŽURSTVA"
  */
-const getDutyActivityTypeId = async (organizationId: number): Promise<number> => {
+const getDutyActivityTypeId = async (req: Request, organizationId: number): Promise<number> => {
   const dutyType = await prisma.activityType.findUnique({
     where: { 
       organization_id_key: {
@@ -24,7 +33,8 @@ const getDutyActivityTypeId = async (organizationId: number): Promise<number> =>
   });
   
   if (!dutyType) {
-    throw new Error('Duty activity type (dezurstva) not found in database. Please run seed.');
+    const locale = getLocale(req);
+    throw new Error(tBackend('duty.errors.typeNotFound', locale));
   }
   
   return dutyType.type_id;
@@ -55,6 +65,7 @@ const getDutySettings = async (organizationId: number) => {
  * Traži aktivnosti istog člana ili bilo kojeg člana (za pridruživanje)
  */
 const findRelatedDutyActivities = async (
+  req: Request,
   organizationId: number, 
   date: Date, 
   memberId: number
@@ -62,7 +73,7 @@ const findRelatedDutyActivities = async (
   memberOwnDuties: unknown[];
   availableGroupDuties: unknown[];
 }> => {
-  const dutyTypeId = await getDutyActivityTypeId(organizationId);
+  const dutyTypeId = await getDutyActivityTypeId(req, organizationId);
   
   // Definiraj raspon pretraživanja (±2 dana)
   const searchStart = startOfDay(subDays(date, 2));
@@ -126,7 +137,7 @@ const findRelatedDutyActivities = async (
 /**
  * Generiraj pametni naziv aktivnosti na temelju datuma
  */
-const generateSmartActivityName = async (dates: Date[]): Promise<string> => {
+const generateSmartActivityName = async (dates: Date[], organizationId?: number): Promise<string> => {
   if (dates.length === 0) return 'Dežurstvo';
   
   // Sortiraj datume
@@ -136,7 +147,7 @@ const generateSmartActivityName = async (dates: Date[]): Promise<string> => {
   
   // Provjeri ima li blagdana u rasponu
   const holidays = await Promise.all(
-    sortedDates.map(date => holidayService.getHolidayForDate(date))
+    sortedDates.map(date => holidayService.getHolidayForDate(date, organizationId))
   );
   const hasHoliday = holidays.some(h => h !== null);
   
@@ -200,20 +211,22 @@ const extractDatesFromActivity = (activity: unknown): Date[] => {
 /**
  * Provjerava validnost dežurstva prije kreiranja
  */
-const validateDutySlot = async (organizationId: number, date: Date, memberId: number) => {
+const validateDutySlot = async (req: Request, organizationId: number, date: Date, memberId: number) => {
+  const locale = getLocale(req);
   // 1. Provjeri System Settings - je li kalendar omogućen
   const settings = await getDutySettings(organizationId);
   if (!settings.dutyCalendarEnabled) {
-    throw new Error('Duty calendar is currently disabled by System Manager');
+    throw new Error(tBackend('duty.errors.calendarDisabled', locale));
   }
   
-  // 2. Check if date is allowed (weekend or specific logic per month)
-  if (!isDutyDateAllowed(date)) {
-    throw new Error('Duty shifts are not available on this date');
+  // 2. Provjeri je li datum dopušten (vikend, praznik ili specifična logika po mjesecu)
+  const isDateAllowed = await isDutyDateAllowed(date, organizationId);
+  if (!isDateAllowed) {
+    throw new Error(tBackend('duty.errors.dateNotAllowed', locale));
   }
   
   // 3. Dohvati postojeće dežurstvo za taj datum
-  const dutyTypeId = await getDutyActivityTypeId(organizationId);
+  const dutyTypeId = await getDutyActivityTypeId(req, organizationId);
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
   
@@ -235,29 +248,29 @@ const validateDutySlot = async (organizationId: number, date: Date, memberId: nu
     return { canCreate: true, existingDuty: null };
   }
   
-  // 5. Check participant count (from settings)
+  // 5. Provjeri broj sudionika (iz postavki)
   const maxParticipants = settings.dutyMaxParticipants || 2;
   if (existingDuty.participants.length >= maxParticipants) {
-    throw new Error(`Duty shift is full (maximum ${maxParticipants} members)`);
+    throw new Error(tBackend('duty.errors.shiftFull', locale, { maxParticipants: String(maxParticipants) }));
   }
   
-  // 6. Check if member is already registered
+  // 6. Provjeri je li član već prijavljen
   const alreadyJoined = existingDuty.participants.some(p => p.member_id === memberId);
   if (alreadyJoined) {
-    throw new Error('You are already registered for this duty shift');
+    throw new Error(tBackend('duty.errors.alreadyRegistered', locale));
   }
   
   return { canCreate: false, existingDuty };
 };
 
 /**
- * Creates a new duty shift or adds member to existing one with Smart Grouping
+ * Kreira novo dežurstvo ili dodaje člana postojećem s Smart Grouping logikom
  */
 export const createDutyShift = async (req: Request, memberId: number, date: Date) => {
   const organizationId = await getOrganizationId(req);
-  const validation = await validateDutySlot(organizationId, date, memberId);
+  const validation = await validateDutySlot(req, organizationId, date, memberId);
   
-  // If duty shift already exists for this exact date, add member to it
+  // Ako dežurstvo već postoji za ovaj točan datum, dodaj člana u njega
   if (validation.existingDuty) {
     await prisma.activityParticipation.create({
       data: {
@@ -269,7 +282,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
       }
     });
     
-    // Return updated duty
+    // Vrati ažurirano dežurstvo
     return prisma.activity.findUnique({
       where: { activity_id: validation.existingDuty.activity_id },
       include: {
@@ -295,7 +308,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
   }
   
   // Smart Grouping: Provjeri ima li povezanih dežurstava
-  const relatedDuties = await findRelatedDutyActivities(organizationId, date, memberId);
+  const relatedDuties = await findRelatedDutyActivities(req, organizationId, date, memberId);
   
   // Prioritet 1: Dodaj u vlastito postojeće dežurstvo (grupiranje)
   if (relatedDuties.memberOwnDuties.length > 0) {
@@ -320,7 +333,7 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
     // Ažuriraj naziv aktivnosti da uključuje novi datum
     const existingDates = extractDatesFromActivity(targetDuty);
     const allDates = [...existingDates, date];
-    const newName = await generateSmartActivityName(allDates);
+    const newName = await generateSmartActivityName(allDates, organizationId);
     
     await prisma.activity.update({
       where: { activity_id: targetDuty.activity_id },
@@ -398,8 +411,8 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
   
   // Prioritet 3: Kreiraj novo dežurstvo
   const startTime = createDutyStartTime(date);
-  const activityName = await generateSmartActivityName([date]);
-  const dutyTypeId = await getDutyActivityTypeId(organizationId);
+  const activityName = await generateSmartActivityName([date], organizationId);
+  const dutyTypeId = await getDutyActivityTypeId(req, organizationId);
   
   const activity = await createActivityService(req, {
     name: activityName,
@@ -416,12 +429,12 @@ export const createDutyShift = async (req: Request, memberId: number, date: Date
  * Dohvaća sve dežurstva za određeni mjesec
  * Uključuje i ručno kreirane duty aktivnosti kroz Activities stranicu
  */
-export const getDutiesForMonth = async (organizationId: number, year: number, month: number) => {
+export const getDutiesForMonth = async (req: Request, organizationId: number, year: number, month: number) => {
   // Pravilno filtriranje po godini i mjesecu
   const monthStart = new Date(year, month - 1, 1); // Prvi dan mjeseca
   const monthEnd = new Date(year, month, 1); // Prvi dan sljedećeg mjeseca
   
-  const dutyTypeId = await getDutyActivityTypeId(organizationId);
+  const dutyTypeId = await getDutyActivityTypeId(req, organizationId);
   
   const duties = await prisma.activity.findMany({
     where: {
@@ -508,9 +521,9 @@ export const getHolidaysForMonth = async (year: number, month: number) => {
 /**
  * Dohvaća kalendar za mjesec (duties + holidays + settings)
  */
-export const getCalendarForMonth = async (organizationId: number, year: number, month: number) => {
+export const getCalendarForMonth = async (req: Request, organizationId: number, year: number, month: number) => {
   const [duties, holidays, settings] = await Promise.all([
-    getDutiesForMonth(organizationId, year, month),
+    getDutiesForMonth(req, organizationId, year, month),
     getHolidaysForMonth(year, month),
     getDutySettings(organizationId)
   ]);
@@ -571,10 +584,11 @@ export const getDutySettingsPublic = async (organizationId: number) => {
  */
 export const getDutyCreationOptions = async (req: Request, memberId: number, date: Date) => {
   const organizationId = await getOrganizationId(req);
+  const locale = getLocale(req);
   
   try {
     // Provjeri osnovne uvjete
-    const validation = await validateDutySlot(organizationId, date, memberId);
+    const validation = await validateDutySlot(req, organizationId, date, memberId);
     
     // Ako već postoji dežurstvo za taj datum
     if (validation.existingDuty) {
@@ -583,13 +597,13 @@ export const getDutyCreationOptions = async (req: Request, memberId: number, dat
         options: [{
           type: 'join_existing',
           activity: validation.existingDuty,
-          message: 'Join existing duty shift for this date'
+          message: tBackend('duty.messages.joinExisting', locale)
         }]
       };
     }
     
     // Smart Grouping opcije
-    const relatedDuties = await findRelatedDutyActivities(organizationId, date, memberId);
+    const relatedDuties = await findRelatedDutyActivities(req, organizationId, date, memberId);
     const options: unknown[] = [];
     
     // Opcija 1: Dodaj u vlastito dežurstvo
@@ -597,13 +611,13 @@ export const getDutyCreationOptions = async (req: Request, memberId: number, dat
       const targetDuty = relatedDuties.memberOwnDuties[0] as { activity_id: number; name: string };
       const existingDates = extractDatesFromActivity(targetDuty);
       const allDates = [...existingDates, date];
-      const newName = await generateSmartActivityName(allDates);
+      const newName = await generateSmartActivityName(allDates, organizationId);
       
       options.push({
         type: 'extend_own',
         activity: targetDuty,
         newName,
-        message: `Extend your existing duty shift to include ${format(date, 'dd.MM.yyyy')}`
+        message: tBackend('duty.messages.extendOwn', locale, { date: format(date, 'dd.MM.yyyy') })
       });
     }
     
@@ -613,16 +627,16 @@ export const getDutyCreationOptions = async (req: Request, memberId: number, dat
       options.push({
         type: 'join_group',
         activity: targetDuty,
-        message: `Join existing duty shift: ${targetDuty.name}`
+        message: tBackend('duty.messages.joinGroup', locale, { name: targetDuty.name })
       });
     }
     
     // Opcija 3: Kreiraj novo
-    const newActivityName = await generateSmartActivityName([date]);
+    const newActivityName = await generateSmartActivityName([date], organizationId);
     options.push({
       type: 'create_new',
       newName: newActivityName,
-      message: `Create new duty shift: ${newActivityName}`
+      message: tBackend('duty.messages.createNew', locale, { name: newActivityName })
     });
     
     return {

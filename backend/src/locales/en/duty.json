@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "typeNotFound": "Duty activity type not found in database. Please run seed.",
+    "calendarDisabled": "Duty calendar is currently disabled by System Manager",
+    "dateNotAllowed": "Duty shifts are not available on this date",
+    "shiftFull": "Duty shift is full (maximum {{maxParticipants}} members)",
+    "alreadyRegistered": "You are already registered for this duty shift"
+  },
+  "messages": {
+    "joinExisting": "Join existing duty shift for this date",
+    "extendOwn": "Extend your existing duty shift to include {{date}}",
+    "joinGroup": "Join existing duty shift: {{name}}",
+    "createNew": "Create new duty shift: {{name}}"
+  }
+}

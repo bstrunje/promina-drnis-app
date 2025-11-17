@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "typeNotFound": "Tip aktivnosti \"Dežurstva\" nije pronađen u bazi. Molimo pokrenite seed.",
+    "calendarDisabled": "Kalendar dežurstava je trenutno onemogućen od strane System Managera",
+    "dateNotAllowed": "Dežurstva nisu dostupna na ovaj datum",
+    "shiftFull": "Dežurstvo je popunjeno (maksimalno {{maxParticipants}} članova)",
+    "alreadyRegistered": "Već ste prijavljeni za ovo dežurstvo"
+  },
+  "messages": {
+    "joinExisting": "Pridruži se postojećem dežurstvu za ovaj datum",
+    "extendOwn": "Proširi svoje postojeće dežurstvo da uključi {{date}}",
+    "joinGroup": "Pridruži se postojećem dežurstvu: {{name}}",
+    "createNew": "Kreiraj novo dežurstvo: {{name}}"
+  }
+}

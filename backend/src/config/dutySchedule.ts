@@ -1,4 +1,5 @@
 // Funkcije za rad s duty calendar rasporedom
+import { isHoliday } from '../services/holiday.service.js';
 
 export interface DutySchedule {
   startTime: string;  // "09:00"
@@ -56,11 +57,17 @@ export function isWeekend(date: Date): boolean {
 
 /**
  * Provjerava je li datum dopušten za dežurstvo
- * (vikend ili specifična logika po mjesecu)
+ * (vikend, državni praznik ili specifična logika po mjesecu)
  */
-export function isDutyDateAllowed(date: Date): boolean {
+export async function isDutyDateAllowed(date: Date, organizationId?: number): Promise<boolean> {
   const month = date.getMonth() + 1;
   const dayOfWeek = date.getDay();
+  
+  // Provjeri je li državni praznik - uvijek dopušteno
+  const isHolidayDate = await isHoliday(date, organizationId);
+  if (isHolidayDate) {
+    return true;
+  }
   
   // Srpanj/kolovoz - samo nedjelja
   if (month === 7 || month === 8) {

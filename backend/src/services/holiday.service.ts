@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma.js';
-import { startOfDay, endOfDay, startOfYear, endOfYear } from 'date-fns';
+import { startOfYear, endOfYear } from 'date-fns';
 import { getDefaultHolidaysForYear } from '../config/defaultHolidays.js';
 
 export interface HolidayData {
@@ -49,15 +49,23 @@ export const getHolidayById = async (id: number) => {
 
 /**
  * Dohvaća praznik za određeni datum
+ * Koristi UTC ponoć za usporedbu jer su datumi u bazi pohranjeni u UTC
  */
-export const getHolidayForDate = async (date: Date) => {
-  const dayStart = startOfDay(date);
+export const getHolidayForDate = async (date: Date, organizationId?: number) => {
+  // Konvertiraj datum u UTC ponoć (00:00:00.000Z)
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  
+  const dayStartUTC = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  const dayEndUTC = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
   
   return prisma.holiday.findFirst({
     where: {
+      organization_id: organizationId,
       date: {
-        gte: dayStart,
-        lt: endOfDay(date)
+        gte: dayStartUTC,
+        lte: dayEndUTC
       }
     }
   });
@@ -66,8 +74,8 @@ export const getHolidayForDate = async (date: Date) => {
 /**
  * Provjerava je li datum praznik
  */
-export const isHoliday = async (date: Date): Promise<boolean> => {
-  const holiday = await getHolidayForDate(date);
+export const isHoliday = async (date: Date, organizationId?: number): Promise<boolean> => {
+  const holiday = await getHolidayForDate(date, organizationId);
   return holiday !== null;
 };
 
@@ -80,7 +88,7 @@ export const createHoliday = async (data: HolidayData) => {
     : data.date;
   
   // Provjeri postoji li već praznik za taj datum
-  const existing = await getHolidayForDate(holidayDate);
+  const existing = await getHolidayForDate(holidayDate, data.organization_id);
   if (existing) {
     throw new Error(`Holiday already exists for date ${holidayDate.toISOString().split('T')[0]}`);
   }
@@ -106,7 +114,7 @@ export const updateHoliday = async (id: number, data: Partial<HolidayData>) => {
       ? new Date(data.date) 
       : data.date;
       
-    const existing = await getHolidayForDate(newDate);
+    const existing = await getHolidayForDate(newDate, data.organization_id);
     if (existing && existing.id !== id) {
       throw new Error(`Holiday already exists for date ${newDate.toISOString().split('T')[0]}`);
     }
@@ -145,7 +153,7 @@ export const seedDefaultHolidays = async (year: number, organizationId?: number,
       const holidayDate = new Date(holiday.date);
       
       // Provjeri postoji li već
-      const existing = await getHolidayForDate(holidayDate);
+      const existing = await getHolidayForDate(holidayDate, organizationId);
       if (existing) {
         skipped.push(holiday.name);
         continue;

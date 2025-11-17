@@ -59,7 +59,7 @@ export const getCalendarForMonth = async (req: Request, res: Response, next: Nex
     }
     
     const organizationId = getOrganizationId(req);
-    const calendar = await dutyService.getCalendarForMonth(organizationId, year, month);
+    const calendar = await dutyService.getCalendarForMonth(req, organizationId, year, month);
     
     res.status(200).json(calendar);
   } catch (error) {
@@ -83,7 +83,7 @@ export const getDutiesForMonth = async (req: Request, res: Response, next: NextF
     }
     
     const organizationId = getOrganizationId(req);
-    const duties = await dutyService.getDutiesForMonth(organizationId, year, month);
+    const duties = await dutyService.getDutiesForMonth(req, organizationId, year, month);
     
     res.status(200).json(duties);
   } catch (error) {
