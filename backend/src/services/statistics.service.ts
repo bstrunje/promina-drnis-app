@@ -57,13 +57,14 @@ export const updateAnnualStatistics = async (memberId: number, year: number, tx:
   const totalRecognizedMinutes = participations.reduce((acc, p) => {
     let minuteValue = 0;
 
-    // Prioritet 1: Manualni sati na razini aktivnosti (vrijednost je u satima)
-    if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && Number(p.activity.manual_hours) > 0) {
-      minuteValue = Number(p.activity.manual_hours) * 60;
-    // Prioritet 2: Manualni sati na razini sudjelovanja (vrijednost je u satima)
-    } else if (p.manual_hours !== null && p.manual_hours !== undefined && Number(p.manual_hours) > 0) {
+    // PRIORITET 1: Individualni prilagođeni sati sudionika (participation.manual_hours)
+    // Ovo su konačni sati nakon svih prilagodbi i najvažniji su
+    if (p.manual_hours !== null && p.manual_hours !== undefined && Number(p.manual_hours) > 0) {
       minuteValue = Number(p.manual_hours) * 60;
-    // Prioritet 3: Izračun iz vremena početka i kraja
+    // PRIORITET 2: Ručno uneseni sati na razini aktivnosti (activity.manual_hours)
+    } else if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && Number(p.activity.manual_hours) > 0) {
+      minuteValue = Number(p.activity.manual_hours) * 60;
+    // PRIORITET 3: Automatski izračun iz stvarnog vremena
     } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
       const minutes = differenceInMinutes(
         new Date(p.activity.actual_end_time),

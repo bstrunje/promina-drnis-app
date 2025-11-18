@@ -330,27 +330,10 @@ export const getActivitiesByTypeIdService = async (req: Request, type_id: number
   const organizationId = getOrganizationId(req);
   const activities = await activityRepository.getActivitiesByTypeId(organizationId, type_id, year);
 
-  // Kreiramo novi tip koji proširuje postojeći tip aktivnosti s opcionalnim manual_hours
-  type ActivityWithManualHours = (typeof activities)[0] & { manual_hours?: number | null };
-
-  const activitiesWithManualHours: ActivityWithManualHours[] = activities.map(activity => {
-    // Pronalazimo prvog sudionika koji ima definirane manual_hours
-    const participantWithManualHours = activity.participants.find(
-      p => p.manual_hours !== null && p.manual_hours !== undefined
-    );
-
-    // Ako takav sudionik postoji, dodajemo manual_hours na objekt aktivnosti
-    if (participantWithManualHours) {
-      return {
-        ...activity,
-        manual_hours: participantWithManualHours.manual_hours,
-      };
-    }
-
-    return activity;
-  });
-
-  return activitiesWithManualHours;
+  // Vraćamo aktivnosti kako jesu - activity.manual_hours je ručni unos na razini aktivnosti
+  // Prilagodbe po sudioniku (participation.manual_hours) se NE smiju kopirati u activity.manual_hours
+  // jer bi to pogrešno prikazalo trajanje aktivnosti umjesto individualnih prilagodbi
+  return activities;
 };
 
 export const getActivitiesByStatusService = async (req: Request, status: string) => {

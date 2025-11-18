@@ -84,11 +84,17 @@ export const updateMemberTotalHours = async (memberId: number, prismaClient: Tra
     }) => {
       let minuteValue = 0;
 
-      if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
-        minuteValue = p.activity.manual_hours * 60;
-      } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      // PRIORITET 1: Individualni prilagođeni sati sudionika (participation.manual_hours)
+      // Ovo su konačni sati nakon svih prilagodbi i najvažniji su
+      if (p.manual_hours !== null && p.manual_hours !== undefined) {
         minuteValue = Math.round(p.manual_hours * 60);
-      } else if (p.activity.actual_start_time && p.activity.actual_end_time) {
+      } 
+      // PRIORITET 2: Ručno uneseni sati na razini aktivnosti (activity.manual_hours)
+      else if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+        minuteValue = p.activity.manual_hours * 60;
+      } 
+      // PRIORITET 3: Automatski izračun iz stvarnog vremena
+      else if (p.activity.actual_start_time && p.activity.actual_end_time) {
         const minutes = differenceInMinutes(
           new Date(p.activity.actual_end_time),
           new Date(p.activity.actual_start_time)
@@ -193,13 +199,16 @@ export const updateMemberActivityHours = async (memberId: number, prismaClient: 
     }) => {
       let minuteValue = 0;
 
-      // Prioritet imaju manual_hours ako su postavljeni
-      if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
-        minuteValue = p.activity.manual_hours * 60;
-      } else if (p.manual_hours !== null && p.manual_hours !== undefined) {
+      // PRIORITET 1: Individualni prilagođeni sati sudionika (participation.manual_hours)
+      // Ovo su konačni sati nakon svih prilagodbi i najvažniji su
+      if (p.manual_hours !== null && p.manual_hours !== undefined) {
         minuteValue = Math.round(p.manual_hours * 60);
       } 
-      // Ako manual_hours nije postavljen, računamo iz actual_start_time i actual_end_time
+      // PRIORITET 2: Ručno uneseni sati na razini aktivnosti (activity.manual_hours)
+      else if (p.activity.manual_hours !== null && p.activity.manual_hours !== undefined && p.activity.manual_hours > 0) {
+        minuteValue = p.activity.manual_hours * 60;
+      } 
+      // PRIORITET 3: Automatski izračun iz stvarnog vremena
       else if (p.activity.actual_start_time && p.activity.actual_end_time) {
         const minutes = differenceInMinutes(
           new Date(p.activity.actual_end_time),
