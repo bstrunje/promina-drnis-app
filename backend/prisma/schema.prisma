@@ -137,6 +137,12 @@ model Member {
   @@index([full_name], map: "idx_members_full_name")
   @@index([oib], map: "idx_members_oib")
   @@index([total_hours], map: "idx_members_total_hours")
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, full_name], map: "idx_members_org_fullname")
+  @@index([organization_id, total_hours], map: "idx_members_org_hours")
+  @@index([organization_id, created_at], map: "idx_members_org_created")
+  @@index([organization_id, status], map: "idx_members_org_status")
+  @@index([organization_id, role], map: "idx_members_org_role")
   @@map("members")
 }
 
@@ -155,6 +161,8 @@ model ActivityType {
 
   @@unique([organization_id, key])
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, is_visible], map: "idx_activity_types_org_visible")
   @@map("activity_types")
 }
 
@@ -183,6 +191,10 @@ model Activity {
   @@index([organization_id])
   @@index([type_id])
   @@index([start_date])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, start_date], map: "idx_activities_org_date")
+  @@index([organization_id, status], map: "idx_activities_org_status")
+  @@index([organization_id, type_id], map: "idx_activities_org_type")
   @@map("activities")
 }
 
@@ -204,6 +216,9 @@ model ActivityParticipation {
   @@unique([activity_id, member_id])
   @@index([organization_id])
   @@index([member_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, member_id], map: "idx_participations_org_member")
+  @@index([organization_id, activity_id], map: "idx_participations_org_activity")
   @@map("activity_participations")
 }
 
@@ -314,6 +329,9 @@ model MembershipPeriod {
 
   @@index([organization_id])
   @@index([is_test_data], map: "idx_membership_periods_test_data")
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, member_id], map: "idx_membership_periods_org_member")
+  @@index([organization_id, start_date], map: "idx_membership_periods_org_start")
   @@map("membership_periods")
 }
 
@@ -330,6 +348,8 @@ model StampInventory {
 
   @@unique([organization_id, stamp_type, stamp_year], name: "stamp_type_year_unique")
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, stamp_year], map: "idx_stamp_inventory_org_year")
   @@map("stamp_inventory")
 }
 
@@ -347,6 +367,8 @@ model EquipmentInventory {
 
   @@unique([organization_id, equipment_type, size, gender], name: "equipment_unique")
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, equipment_type], map: "idx_equipment_org_type")
   @@map("equipment_inventory")
 }
 
@@ -362,6 +384,9 @@ model ConsumedCardNumber {
 
   @@unique([organization_id, card_number])
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, member_id], map: "idx_consumed_cards_org_member")
+  @@index([organization_id, consumed_at], map: "idx_consumed_cards_org_date")
   @@map("consumed_card_numbers")
 }
 
@@ -381,6 +406,10 @@ model MemberMessage {
   recipient_statuses MessageRecipientStatus[]
 
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, created_at], map: "idx_messages_org_created")
+  @@index([organization_id, sender_id], map: "idx_messages_org_sender")
+  @@index([organization_id, recipient_id], map: "idx_messages_org_recipient")
   @@map("member_messages")
 }
 
@@ -416,6 +445,9 @@ model AnnualStatistics {
   @@unique([member_id, year], map: "unique_member_year")
   @@index([organization_id])
   @@index([member_id, year], map: "idx_annual_statistics_member_year")
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, year], map: "idx_annual_stats_org_year")
+  @@index([organization_id, member_id], map: "idx_annual_stats_org_member")
   @@map("annual_statistics")
 }
 
@@ -434,6 +466,10 @@ model AuditLog {
   organization    Organization?  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, created_at], map: "idx_audit_logs_org_created")
+  @@index([organization_id, action_type], map: "idx_audit_logs_org_action")
+  @@index([organization_id, performed_by], map: "idx_audit_logs_org_performer")
   @@map("audit_logs")
 }
 
@@ -500,6 +536,9 @@ model CardNumber {
   @@index([organization_id])
   @@index([member_id], map: "idx_card_numbers_member_id")
   @@index([status], map: "idx_card_numbers_status")
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, status], map: "idx_card_numbers_org_status")
+  @@index([organization_id, member_id], map: "idx_card_numbers_org_member")
   @@map("card_numbers")
 }
 
@@ -528,6 +567,8 @@ model stamp_history {
 
   @@index([organization_id])
   @@index([organization_id, stamp_year])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, reset_date], map: "idx_stamp_history_org_date")
 }
 
 model refresh_tokens {
@@ -571,6 +612,8 @@ model SystemManager {
   @@unique([organization_id, username])
   @@unique([organization_id, email])
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, last_login], map: "idx_system_manager_org_login")
   @@map("system_manager")
 }
 
@@ -586,6 +629,8 @@ model Holiday {
 
   @@unique([organization_id, date])
   @@index([organization_id])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, is_recurring], map: "idx_holidays_org_recurring")
   @@map("holidays")
 }
 
@@ -646,6 +691,10 @@ model SupportTicket {
   @@index([category])
   @@index([created_by])
   @@index([assigned_to])
+  // Composite indexi za multi-tenancy performanse
+  @@index([organization_id, status], map: "idx_support_tickets_org_status")
+  @@index([organization_id, category], map: "idx_support_tickets_org_category")
+  @@index([organization_id, created_at], map: "idx_support_tickets_org_created")
   @@map("support_tickets")
 }
 

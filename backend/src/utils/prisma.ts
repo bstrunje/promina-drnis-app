@@ -33,15 +33,29 @@ if (process.env.VERCEL) {
     },
   });
 } else {
-  // Development/lokalno okruženje
+  // Development/lokalno/VPS okruženje s optimiziranim connection poolingom
+  if (isDev) console.log('[PRISMA] Inicijalizacija za lokalno/VPS okruženje s connection poolingom');
+  
   prisma = new PrismaClient({
-    log: ['query', 'info', 'warn', 'error'],
+    log: isDev ? ['query', 'info', 'warn', 'error'] : ['warn', 'error'],
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
       },
     },
+    // Connection pool optimizacije za multi-tenancy
+    // Ove postavke osiguravaju efikasno korištenje konekcija
+    // za više organizacija istovremeno
+    // Note: Prisma koristi connection pool automatski, ali možemo
+    // optimizirati timeout i retry strategije
+    transactionOptions: {
+      timeout: 10000, // 10 sekundi timeout za transakcije (više nego serverless)
+      maxWait: 5000,  // Maksimalno čekanje za dobivanje konekcije
+      isolationLevel: 'ReadCommitted', // Optimalan isolation level za multi-tenancy
+    },
   });
+  
+  if (isDev) console.log('[PRISMA] Connection pool konfiguriran za multi-tenancy');
 }
 
 // Graceful shutdown za serverless funkcije
