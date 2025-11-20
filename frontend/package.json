@@ -1,5 +1,5 @@
 {
-  "name": "@promina-drnis-app/frontend",
+  "name": "@member-management-app/frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",
-    "@promina-drnis-app/shared": "file:shared",
+    "@member-management-app/shared": "file:shared",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-avatar": "^1.1.3",
     "@radix-ui/react-checkbox": "^1.1.4",

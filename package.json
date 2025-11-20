@@ -1,5 +1,5 @@
 {
-  "name": "promina-drnis-app",
+  "name": "member-management-app",
   "private": true,
   "packageManager": "npm@10.2.4",
   "workspaces": [
