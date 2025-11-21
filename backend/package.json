@@ -7,6 +7,7 @@
   },
   "scripts": {
     "start": "node dist/src/server.js",
+    "start:production": "prisma migrate deploy && node dist/prisma/seed.js && node dist/src/server.js",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && prisma generate && tsc && node -e \"const fs=require('fs');if(fs.existsSync('uploads')){fs.cpSync('uploads','dist/uploads',{recursive:true})};fs.cpSync('src/locales','dist/src/locales',{recursive:true})\"",
     "build:vercel": "prisma migrate deploy && prisma generate && tsc -p tsconfig.vercel.json && node -e \"require('fs').cpSync('src/locales','dist/src/locales',{recursive:true})\" && npm run seed",
     "postinstall": "prisma generate",
