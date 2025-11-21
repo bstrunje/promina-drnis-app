@@ -48,7 +48,9 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
 
   const pendingCount = members ? members.filter(m => (m.status ?? 'pending') === 'pending').length : 0;
   const withoutCardCount = members ? members.filter(m => !m.membership_details?.card_number).length : 0;
-  const withoutStampCount = members ? members.filter(m => m.membership_details?.card_stamp_issued !== true).length : 0;
+  const withoutStampCount = members
+    ? members.filter(m => m.status !== 'inactive' && m.membership_details?.card_stamp_issued !== true).length
+    : 0;
 
   // Izračun filtriranih članova za quick view
   const filteredQuickMembers: Member[] = React.useMemo(() => {
@@ -59,7 +61,7 @@ export const DashboardNavCards: React.FC<DashboardNavCardsProps> = ({
       case 'without-card':
         return members.filter(m => !m.membership_details?.card_number);
       case 'without-stamp':
-        return members.filter(m => m.membership_details?.card_stamp_issued !== true);
+        return members.filter(m => m.status !== 'inactive' && m.membership_details?.card_stamp_issued !== true);
       default:
         return [];
     }

@@ -289,6 +289,7 @@ app.use('/system-manager', systemManagerRoutes);     // alias za proxy koji skid
 // 🔧 SUPPORT rute također PRIJE tenant middleware-a
 // jer GSM (Global System Manager) ne treba tenant context za support tickete
 app.use('/api/support', supportTicketRoutes); // Support & Feedback system
+app.use('/support', supportTicketRoutes);     // alias za proxy koji skida /api
 
 // TENANT MIDDLEWARE - Globalni tenant context za sve API pozive
 app.use('/api', tenantMiddleware); // Globalni tenant context za sve API pozive
