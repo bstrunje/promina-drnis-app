@@ -284,6 +284,7 @@ app.use('/api/messages', (req, res, next) => {
 // 🔧 SYSTEM MANAGER rute definiramo PRIJE tenant middleware-a
 // jer Global System Manager ne treba tenant context (može kreirati organizacije)
 app.use('/api/system-manager', systemManagerRoutes);
+app.use('/system-manager', systemManagerRoutes);     // alias za proxy koji skida /api
 
 // 🔧 SUPPORT rute također PRIJE tenant middleware-a
 // jer GSM (Global System Manager) ne treba tenant context za support tickete
