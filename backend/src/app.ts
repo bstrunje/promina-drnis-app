@@ -111,15 +111,15 @@ app.use('/uploads', (req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, HEAD");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Cross-Origin-Resource-Policy", "cross-origin");
-  
+
   // Log CORS headers for debugging
   if (isDev) console.log(`[CORS] Setting headers for ${req.url}`);
-  
+
   // Handle OPTIONS preflight request
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
-  
+
   next();
 });
 
@@ -128,7 +128,7 @@ app.use('/uploads', async (req, res, next) => {
   const fullPath = path.join(uploadsDir, req.url.split('?')[0]); // Remove query parameters
   if (isDev) console.log(`Static file request: ${req.method} ${req.url}`);
   if (isDev) console.log(`Looking for file at: ${fullPath}`);
-  
+
   try {
     await fs.access(fullPath, fs.constants.F_OK);
     if (isDev) console.log(`File exists: ${fullPath}`);
@@ -141,20 +141,22 @@ app.use('/uploads', async (req, res, next) => {
 
 // CORS configuration
 const corsOptions = {
-  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps, curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'https://promina-drnis-app.vercel.app',  // Production frontend
       'http://localhost:5173',                 // Development frontend
       'http://localhost:3000',                 // Development backend
       'http://localhost:3001',                 // Development API
+      'https://managemembers.org',             // NOVO: produkcija na Coolify
+      'http://managemembers.org',              // NOVO: HTTP varijanta (opcionalno, ali ne smeta)
     ];
-    
+
     // Allow all Vercel preview deployments
     if (
-      allowedOrigins.includes(origin) || 
+      allowedOrigins.includes(origin) ||
       origin.match(/https:\/\/promina-drnis.*\.vercel\.app/) ||
       origin.endsWith('vercel.app')
     ) {
@@ -168,12 +170,12 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Content-Type',
+    'Authorization',
     'X-Requested-With',
-    'Cache-Control',    
-    'Pragma',           
-    'Expires',          
+    'Cache-Control',
+    'Pragma',
+    'Expires',
     'X-Test-Mode',      // Dodano za podršku testnog načina rada
     'x-mock-date',      // Time Traveler funkcionalnost (dev mode)
     'Cookie'            // Eksplicitno dozvoljavamo Cookie zaglavlje
@@ -185,7 +187,7 @@ app.use(cors(corsOptions));
 
 
 // Express middleware za parsanje JSON-a s UTF-8 kodiranjem
-app.use(express.json({ 
+app.use(express.json({
   limit: '10mb',
   verify: (_req, _res, buf, _encoding) => {
     // Provjera UTF-8 kompatibilnosti
@@ -201,17 +203,17 @@ app.use(express.json({
 }));
 
 // Eksplicitno postavljamo standard za parsiranje URL-encoded podataka s UTF-8 kodiranjem
-app.use(express.urlencoded({ 
-  extended: true, 
+app.use(express.urlencoded({
+  extended: true,
   limit: '10mb',
   parameterLimit: 50000
 }));
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const timestamp = getCurrentDate().toLocaleString('en-US', { 
+  const timestamp = getCurrentDate().toLocaleString('en-US', {
     timeZone: 'Europe/Zagreb',
-    hour12: false 
+    hour12: false
   });
   if (isDev) console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
@@ -225,13 +227,13 @@ app.use((req, res, next) => {
       req.headers['content-type'] = req.headers['content-type'] + '; charset=utf-8';
     }
   }
-  
+
   // Postaviti charset za izlazne podatke
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  
+
   // Postaviti Collation za ispravno sortiranje hrvatskih znakova
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  
+
   next();
 });
 
@@ -353,7 +355,7 @@ app.get('/api', (req: Request, res: Response) => {
 // Error handling middleware
 app.use((_err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('❌ Error occurred:', _err);
-  
+
   res.status(500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? _err.message : 'An unexpected error occurred',
