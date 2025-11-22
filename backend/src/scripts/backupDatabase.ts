@@ -31,7 +31,7 @@ async function createBackupDirectory() {
   // Za Render, koristimo privremeni direktorij jer imamo read-only filesystem
   // u produkciji, ali možemo koristiti /tmp direktorij
   const backupDir = process.env.NODE_ENV === 'production' 
-    ? '/tmp/promina-drnis-backups' 
+    ? '/tmp/managemembers-backups' 
     : path.join(__dirname, '..', '..', 'backups');
   
   try {

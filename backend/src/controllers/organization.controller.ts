@@ -324,10 +324,19 @@ export const getOrganizationById = async (req: Request, res: Response): Promise<
     // Dodaj system_manager podatke u root response (prvi SM za tu org)
     const systemManager = organization.system_managers[0] || null;
 
+    // Izračunaj broj registriranih članova (status = 'registered')
+    const registeredMembersCount = await prisma.member.count({
+      where: {
+        organization_id: organizationId,
+        status: 'registered'
+      }
+    });
+
     res.json({ 
       organization: {
         ...organization,
-        system_manager: systemManager
+        system_manager: systemManager,
+        registered_members_count: registeredMembersCount
       }
     });
   } catch (error) {

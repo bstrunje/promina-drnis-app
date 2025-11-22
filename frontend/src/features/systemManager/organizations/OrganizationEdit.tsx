@@ -529,9 +529,14 @@ const OrganizationEdit: React.FC = () => {
                       : 'Leave empty for unlimited. Set a number (e.g., 30) to limit members.'
                     }
                   </p>
-                  {organization?._count && (
+                  {(organization?.registered_members_count !== undefined || organization?._count) && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Current members: <span className="font-semibold">{organization._count.members}</span>
+                      Current members: {
+                        /* Broji samo registered članove ako je dostupno, inače fallback na ukupni _count.members */
+                      }
+                      <span className="font-semibold">
+                        {organization?.registered_members_count ?? organization?._count?.members ?? 0}
+                      </span>
                       {formData.member_limit && !formData.is_donor && (
                         <span className="text-gray-500"> / {formData.member_limit}</span>
                       )}

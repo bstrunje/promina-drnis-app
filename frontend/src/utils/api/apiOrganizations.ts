@@ -25,6 +25,7 @@ export interface Organization {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  registered_members_count?: number;
   _count?: {
     members: number;
     activities: number;
