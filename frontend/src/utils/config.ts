@@ -18,11 +18,11 @@ if (import.meta.env.DEV) {
 
 export const API_BASE_URL = isLocalDevelopment 
   ? `http://localhost:${backendPort}/api`  // Dinamički port (3001=Docker, 3000=lokalni)
-  : '/api';                                // Produkcija - relativna putanja
+  : 'https://api.managemembers.org/api';   // Produkcija - API na zasebnoj domeni
 
 export const IMAGE_BASE_URL = isLocalDevelopment 
   ? `http://localhost:${backendPort}/uploads`  // Dinamički port
-  : '/uploads';                                 // Produkcija - relativna putanja
+  : 'https://api.managemembers.org/uploads';    // Produkcija - statika s API domene
 
 // Debug logging za lakše praćenje konfiguracije (samo u developmentu)
 if (import.meta.env.DEV) {
