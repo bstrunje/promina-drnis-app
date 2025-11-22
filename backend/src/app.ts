@@ -314,8 +314,11 @@ app.use('/api', pwaRoutes); // PWA dynamic manifest (needs tenant context)
 // Public members subroutes (must be before protected members routes)
 app.use('/api/members', publicMembersRouter);
 
+// Alias rute za slučaj da proxy skida /api
+app.use('/auth', tenantMiddleware);   // tenant context za member auth bez /api prefiksa
+app.use('/auth', authRoutes);         // alias za proxy koji skida /api
+
 app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes);      // alias za proxy koji skida /api
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
