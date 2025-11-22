@@ -308,6 +308,7 @@ app.use('/api', localeMiddleware); // Multi-tenant language detection
 app.use(sanitizationMiddleware);
 
 // Public routes (bez authMiddleware)
+app.use('/', orgConfigRoutes);   // omogućava /org-config...
 app.use('/api', orgConfigRoutes); // Public org config endpoints
 app.use('/api', pwaRoutes); // PWA dynamic manifest (needs tenant context)
 // Public members subroutes (must be before protected members routes)

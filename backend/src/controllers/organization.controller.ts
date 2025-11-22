@@ -627,9 +627,11 @@ export const uploadOrganizationLogo = async (req: Request, res: Response): Promi
   const organizationId = parseInt(id, 10);
 
   try {
-    // Produkcija bez Bloba: fail-fast (trajnost nije osigurana)
-    if (isProduction && !isBlobConfigured()) {
-      res.status(503).json({ message: 'Blob storage not configured. Logo upload is disabled in production.' });
+    // Produkcija bez Bloba: dopuštamo lokalni upload ako uploadsDir nije ephemeral (/tmp/uploads)
+    // i dalje fail-fast samo ako smo u produkciji, Blob nije konfiguriran, a koristimo /tmp/uploads
+    const isEphemeralUploads = uploadsDir === '/tmp/uploads';
+    if (isProduction && !isBlobConfigured() && isEphemeralUploads) {
+      res.status(503).json({ message: 'Persistent storage for uploads is not configured.' });
       return;
     }
     if (isDev) console.log(`[LOGO-UPLOAD] Starting logo upload for organization ${id}`);
