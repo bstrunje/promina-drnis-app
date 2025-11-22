@@ -107,7 +107,7 @@ Nov 16 10:00:48.09
 POST
 200
 managemembers.vercel.app
-/api/auth/login
+
 3
 [0mPOST /api/auth/login?tenant=pdpromina&path=auth%2Flogin [32m200[0m 370.447 ms - 693[0m
 Nov 16 10:00:37.83

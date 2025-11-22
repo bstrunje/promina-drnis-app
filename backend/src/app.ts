@@ -315,6 +315,7 @@ app.use('/api', pwaRoutes); // PWA dynamic manifest (needs tenant context)
 app.use('/api/members', publicMembersRouter);
 
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);      // alias za proxy koji skida /api
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', authMiddleware, adminMessagesRouter);
 app.use('/api/activities', authMiddleware, activityRoutes); // KONAČNI ISPRAVAK
