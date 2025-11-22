@@ -141,8 +141,8 @@ export const getApiBaseUrl = (): string => {
     return `http://localhost:${backendPort}/api`;
   }
 
-  // Production - isti domain kao frontend s /api prefiksom
-  return `${window.location.origin}/api`;
+  // Production - API ide preko zasebne domene na Hetzneru
+  return 'https://api.managemembers.org/api';
 };
 
 /**
