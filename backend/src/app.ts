@@ -140,21 +140,27 @@ app.use('/uploads', async (req, res, next) => {
 }, express.static(uploadsDir));
 
 // CORS configuration
+const envAllowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter((o) => o.length > 0);
+
+const defaultAllowedOrigins = [
+  'https://managemembers.org', // Production on Coolify/Hetzner
+  'http://managemembers.org',  // Optional HTTP variant
+  'http://localhost:5173',     // Development frontend
+  'http://localhost:3000',     // Development backend
+  'http://localhost:3001',     // Development API
+];
+
+const allowedOrigins = envAllowedOrigins.length > 0 ? envAllowedOrigins : defaultAllowedOrigins;
+
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps, curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = [
-      'https://promina-drnis-app.vercel.app',  // Production frontend
-      'http://localhost:5173',                 // Development frontend
-      'http://localhost:3000',                 // Development backend
-      'http://localhost:3001',                 // Development API
-      'https://managemembers.org',             // NOVO: produkcija na Coolify
-      'http://managemembers.org',              // NOVO: HTTP varijanta (opcionalno, ali ne smeta)
-    ];
-
-    // Allow all Vercel preview deployments
+    // Allow all Vercel preview deployments (dok se koristi Vercel kao sekundarno okruženje)
     if (
       allowedOrigins.includes(origin) ||
       origin.match(/https:\/\/promina-drnis.*\.vercel\.app/) ||

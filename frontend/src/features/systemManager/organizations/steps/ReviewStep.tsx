@@ -36,7 +36,12 @@ const ReviewStep: React.FC<StepProps> = ({ formData }) => {
         <div className="space-y-2 text-sm">
           <div><strong>Name:</strong> {formData.name}</div>
           {formData.short_name && <div><strong>Short Name:</strong> {formData.short_name}</div>}
-          <div><strong>Path:</strong> managemembers.vercel.app/{formData.subdomain}</div>
+          <div>
+            <strong>Path:</strong>{' '}
+            {typeof window !== 'undefined'
+              ? `${window.location.host}/${formData.subdomain}`
+              : `/${formData.subdomain}`}
+          </div>
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             {formData.email}

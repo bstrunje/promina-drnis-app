@@ -152,7 +152,11 @@ const OrganizationList: React.FC<OrganizationListProps> = ({ standalone = true }
                       <CardTitle className="text-base sm:text-lg truncate">{org.name}</CardTitle>
                       <p className="text-xs sm:text-sm text-gray-500 truncate">
                         <span className="sm:hidden">/{org.subdomain}</span>
-                        <span className="hidden sm:inline">managemembers.vercel.app/{org.subdomain}</span>
+                        <span className="hidden sm:inline">
+                          {typeof window !== 'undefined'
+                            ? `${window.location.host}/${org.subdomain}`
+                            : `/${org.subdomain}`}
+                        </span>
                       </p>
                     </div>
                   </div>
