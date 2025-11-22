@@ -32,12 +32,11 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
     // U produkciji: sve je na istoj domeni
     const host = req.get('host') || '';
     let frontendOrigin: string;
-    
-    // KRITIČNO: U produkciji, UVIJEK koristi produkcijski URL, ne preview deployment URL
-    // Ovo sprječava da browser cache-ira manifest s preview URL-ovima
-    if (host.includes('managemembers.vercel.app')) {
-      // Produkcijski Vercel deployment
-      frontendOrigin = 'https://managemembers.vercel.app';
+
+    const envFrontendUrl = process.env.FRONTEND_PUBLIC_URL;
+    if (envFrontendUrl) {
+      // Uvijek koristi eksplicitno konfigurirani frontend URL ako postoji
+      frontendOrigin = envFrontendUrl.replace(/\/+$/, '');
     } else if (host.includes('localhost') || host.includes('127.0.0.1')) {
       // Lokalni razvoj - koristi referer da dohvati frontend port
       const referer = req.get('referer') || req.get('origin');
@@ -45,10 +44,10 @@ export const getManifest = async (req: Request, res: Response): Promise<void> =>
         const refererUrl = new URL(referer);
         frontendOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
       } else {
-        frontendOrigin = 'http://localhost:5174'; // Default frontend port
+        frontendOrigin = 'http://localhost:5173'; // Default frontend port
       }
     } else {
-      // Vercel preview deployment ili nepoznat host - koristi backend origin
+      // Produkcija, preview deployment ili nepoznat host - koristi backend origin
       frontendOrigin = `${req.protocol}://${host}`;
     }
     
